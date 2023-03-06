@@ -5,16 +5,38 @@ import net.corda.data.membership.command.registration.member.PersistMemberRegist
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
+import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.util.UUID
 
 class PersistMemberRegistrationStateHandlerTest {
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val records = Record(
+        "topic",
+        "key",
+        33
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(records)
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on {
+            setRegistrationRequestStatus(
+                any(),
+                any(),
+                any(),
+                anyOrNull(),
+            )
+        } doReturn operation
+    }
     val command = PersistMemberRegistrationState(
         HoldingIdentity("O=Alice, L=London, C=GB", "GroupId"),
         SetOwnRegistrationStatus(
@@ -48,7 +70,7 @@ class PersistMemberRegistrationStateHandlerTest {
     }
 
     @Test
-    fun `invoke returns nothing`() {
+    fun `invoke returns the commands`() {
         val result = handler.invoke(
             command = command,
             key = "key",
@@ -56,7 +78,7 @@ class PersistMemberRegistrationStateHandlerTest {
         )
 
         assertSoftly { softly ->
-            softly.assertThat(result.outputStates).isEmpty()
+            softly.assertThat(result.outputStates).containsExactly(records)
             softly.assertThat(result.updatedState).isNull()
         }
     }

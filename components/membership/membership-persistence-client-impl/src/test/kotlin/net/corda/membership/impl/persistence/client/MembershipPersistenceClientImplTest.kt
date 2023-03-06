@@ -208,7 +208,7 @@ class MembershipPersistenceClientImplTest {
         val result = membershipPersistenceClient.persistRegistrationRequest(
             ourHoldingIdentity,
             ourRegistrationRequest
-        )
+        ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
@@ -371,7 +371,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest)
+        membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest).execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
             verify(rpcSender).sendRequest(capture())
@@ -514,7 +514,7 @@ class MembershipPersistenceClientImplTest {
             ourHoldingIdentity,
             registrationId,
             RegistrationStatus.DECLINED
-        )
+        ).execute()
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
     }
 
@@ -888,7 +888,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 bob,
                 registrationRequestId
-            )
+            ).execute()
 
             with(argumentCaptor<MembershipPersistenceRequest>()) {
                 verify(rpcSender).sendRequest(capture())
@@ -917,7 +917,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 bob,
                 registrationRequestId,
-            )
+            ).execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -933,7 +933,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 bob,
                 registrationRequestId,
-            )
+            ).execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }

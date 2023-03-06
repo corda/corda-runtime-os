@@ -14,9 +14,11 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -61,7 +63,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun setMemberAndRegistrationRequestAsApproved(
         viewOwningIdentity: HoldingIdentity,
@@ -73,14 +75,14 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         declinedMember: HoldingIdentity,
         registrationRequestId: String,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
@@ -193,5 +195,12 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun stop() {
         persistenceCoordinator.stop()
         queryCoordinator.stop()
+    }
+
+    private class Operation<T>(private val result: MembershipPersistenceResult<T>): MembershipPersistenceOperation<T> {
+        override fun execute() =  result
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> = emptyList()
+
     }
 }

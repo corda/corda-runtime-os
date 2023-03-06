@@ -13,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -104,7 +105,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -126,7 +127,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         declinedMember: HoldingIdentity,
         registrationRequestId: String
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -138,7 +139,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

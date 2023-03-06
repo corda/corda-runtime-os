@@ -50,11 +50,11 @@ internal class DeclineRegistrationHandler(
             logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
         logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
-        membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
+        val declined = membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
             viewOwningIdentity = declinedBy.toCorda(),
             declinedMember = declinedMember.toCorda(),
             registrationRequestId = registrationId,
-        )
+        ).createAsyncCommands()
         val persistDeclineMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,
             destination = declinedMember,
@@ -68,7 +68,7 @@ internal class DeclineRegistrationHandler(
         )
         return RegistrationHandlerResult(
             state,
-            listOf(persistDeclineMessage)
+            listOf(persistDeclineMessage) + declined
         )
     }
 

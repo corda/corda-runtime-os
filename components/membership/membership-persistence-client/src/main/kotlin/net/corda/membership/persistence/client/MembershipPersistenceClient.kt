@@ -18,7 +18,8 @@ import java.util.UUID
 
 /**
  * Interface to be implemented by the service which requires membership persistence outside of the DB worker.
- * This client handles persistence over RPC.
+ * This client handles persistence either over RPC or by creating records that can be posted to the
+ * message bus to be handled eventually.
  */
 @Suppress("TooManyFunctions")
 interface MembershipPersistenceClient : Lifecycle {
@@ -109,13 +110,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param registrationRequest The registration request to persist.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Set a member and registration request as approved
@@ -140,14 +141,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param declinedMember The member that had been declined
      * @param registrationRequestId The ID of the registration request
      *
-     * @return membership persistence result with the persisted member information to indicate the result of the
-     * persistence operation. No payload is returned in case of success.
+     * @return membership persistence operation.
      */
     fun setMemberAndRegistrationRequestAsDeclined(
         viewOwningIdentity: HoldingIdentity,
         declinedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Set the status of an existing registration request.
@@ -157,7 +157,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param registrationRequestStatus The new status of the registration request.
      * @param reason Reason why the status specified by [registrationRequestStatus] is being set.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun setRegistrationRequestStatus(
@@ -165,7 +165,7 @@ interface MembershipPersistenceClient : Lifecycle {
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String? = null,
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Add mutual TLS client certificate subject to the allowed list.

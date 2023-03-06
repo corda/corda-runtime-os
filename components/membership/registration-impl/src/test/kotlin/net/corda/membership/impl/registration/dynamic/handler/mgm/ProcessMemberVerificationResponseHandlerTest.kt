@@ -97,7 +97,7 @@ class ProcessMemberVerificationResponseHandlerTest {
                 eq(RegistrationStatus.PENDING_AUTO_APPROVAL),
                 anyOrNull()
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn mock()
     }
     private val manuallyApproveAllRule = mock<ApprovalRuleDetails> {
         on { ruleRegex } doReturn APPROVE_ALL_STRING

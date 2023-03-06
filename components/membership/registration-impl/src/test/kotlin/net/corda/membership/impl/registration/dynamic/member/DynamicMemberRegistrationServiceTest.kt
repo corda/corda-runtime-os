@@ -67,7 +67,7 @@ import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -279,13 +279,21 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val command = Record(
+        "topic",
+        "key",
+        "value"
+    )
+    private val persistenceOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(command)
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
                 any(),
                 any(),
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn persistenceOperation
     }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -378,12 +386,12 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration successfully builds unauthenticated message and publishes it`() {
             postConfigChangedEvent()
             registrationService.start()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            registrationService.register(registrationResultId, member, context)
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-            val publishedMessageList = capturedPublishedList.firstValue
+            val publishedMessageList = registrationService.register(registrationResultId, member, context)
+
             SoftAssertions.assertSoftly {
-                it.assertThat(publishedMessageList.size).isEqualTo(1)
+                it.assertThat(publishedMessageList)
+                    .contains(command)
+                    .hasSize(2)
                 val publishedMessage = publishedMessageList.first()
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
                 it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
@@ -407,7 +415,7 @@ class DynamicMemberRegistrationServiceTest {
                     status.capture()
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                persistenceOperation
             )
 
             registrationService.register(registrationResultId, member, context)

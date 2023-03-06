@@ -109,7 +109,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -508,7 +507,7 @@ class MembershipPersistenceTest {
                     KeyValuePairList(emptyList()),
                 ),
             )
-        )
+        ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -1106,7 +1105,7 @@ class MembershipPersistenceTest {
                     KeyValuePairList(emptyList()),
                 ),
             )
-        )
+        ).execute()
 
         assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -1122,7 +1121,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity,
             registrationId,
             RegistrationStatus.PENDING_AUTO_APPROVAL
-        )
+        ).execute()
 
         assertThat(updateRegRequestStatusResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -1326,7 +1325,7 @@ class MembershipPersistenceTest {
                     KeyValuePairList(emptyList()),
                 ),
             )
-        )
+        ).execute()
     }
 
     private class TestGroupParametersImpl(

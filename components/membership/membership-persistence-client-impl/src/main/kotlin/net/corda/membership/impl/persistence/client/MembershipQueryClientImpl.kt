@@ -98,13 +98,13 @@ class MembershipQueryClientImpl(
         if (queryFilter.isNotEmpty()) {
             logger.info("Querying for member infos represented by ${queryFilter.size} holding identities")
         }
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryMemberInfo(queryFilter.map { it.toAvro() })
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is MemberInfoQueryResponse -> {
-                logger.info("Found ${(result.payload as MemberInfoQueryResponse).members.size} results.")
+                logger.info("Found ${payload.members.size} results.")
                 MembershipQueryResult.Success(
                     payload.members.map { memberInfoFactory.create(it) }
                 )
@@ -138,11 +138,11 @@ class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
     ): MembershipQueryResult<RegistrationRequestStatus?> {
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryRegistrationRequest(registrationId)
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is RegistrationRequestQueryResponse -> {
                 MembershipQueryResult.Success(
                     payload.registrationRequest?.toStatus()
@@ -166,11 +166,11 @@ class MembershipQueryClientImpl(
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is RegistrationRequestsQueryResponse -> {
                 MembershipQueryResult.Success(
                     payload.registrationRequests.map { it.toStatus() }
@@ -196,11 +196,11 @@ class MembershipQueryClientImpl(
         if (holdingsIdentities.isEmpty()) {
             return MembershipQueryResult.Success(emptyMap())
         }
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryMemberSignature(holdingsIdentities.map { it.toAvro() })
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is MemberSignatureQueryResponse -> {
                 MembershipQueryResult.Success(
                     payload.membersSignatures.associate { memberSignature ->
@@ -218,11 +218,11 @@ class MembershipQueryClientImpl(
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is GroupPolicyQueryResponse -> {
                 MembershipQueryResult.Success(
                     layeredPropertyMapFactory.createMap(payload.properties.toMap())
@@ -237,11 +237,11 @@ class MembershipQueryClientImpl(
     override fun mutualTlsListAllowedCertificates(
         mgmHoldingIdentity: HoldingIdentity
     ): MembershipQueryResult<Collection<String>> {
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
             MutualTlsListAllowedCertificates()
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is MutualTlsListAllowedCertificatesResponse -> {
                 MembershipQueryResult.Success(
                     payload.subjects,
@@ -266,11 +266,11 @@ class MembershipQueryClientImpl(
         }
         val ownerX500NameString = ownerX500Name?.let { ownerX500Name.toString() }
         val preAuthTokenIdString = preAuthTokenId?.let { preAuthTokenId.toString() }
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
             QueryPreAuthToken(ownerX500NameString, preAuthTokenIdString, statuses)
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is PreAuthTokenQueryResponse -> {
                 MembershipQueryResult.Success(
                     payload.tokens,
@@ -286,11 +286,11 @@ class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>> {
-        val result = MembershipPersistenceRequest(
+        val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryApprovalRules(ruleType)
         ).execute()
-        return when (val payload = result.payload) {
+        return when (payload) {
             is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
             else -> MembershipQueryResult.Failure("Failed to retrieve approval rules.")
         }

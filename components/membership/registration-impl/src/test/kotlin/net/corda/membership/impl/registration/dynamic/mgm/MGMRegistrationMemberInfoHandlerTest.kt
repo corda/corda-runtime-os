@@ -33,7 +33,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -162,6 +164,14 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { create(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
     }
+    private val command = Record(
+        "topic",
+        "key",
+        432
+    )
+    private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(command)
+    }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
@@ -169,7 +179,7 @@ class MGMRegistrationMemberInfoHandlerTest {
 
         on {
             persistRegistrationRequest(any(), any())
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn persistRegistrationRequestOperation
     }
 
     private val platformInfoProvider: PlatformInfoProvider = mock {
@@ -221,7 +231,20 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(result).isEqualTo(memberInfo)
+        assertThat(result.first).isEqualTo(memberInfo)
+    }
+
+    @Test
+    fun `Command is created successfully`() {
+        val result = assertDoesNotThrow {
+            mgmRegistrationMemberInfoHandler.buildAndPersist(
+                registrationId,
+                holdingIdentity,
+                validTestContext
+            )
+        }
+
+        assertThat(result.second).contains(command)
     }
 
     @Test
@@ -379,27 +402,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(holdingIdentity),
             eq(listOf(memberInfo))
-        )
-    }
-
-    @Test
-    fun `expected exception thrown if registration request persistence fails`() {
-        whenever(
-            membershipPersistenceClient.persistRegistrationRequest(
-                eq(holdingIdentity), any()
-            )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(membershipPersistenceClient).persistRegistrationRequest(
-            eq(holdingIdentity),
-            any()
         )
     }
 

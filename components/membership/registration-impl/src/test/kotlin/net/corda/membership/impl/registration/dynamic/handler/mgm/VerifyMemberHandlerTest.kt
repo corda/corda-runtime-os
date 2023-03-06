@@ -13,7 +13,6 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -62,7 +61,7 @@ class VerifyMemberHandlerTest {
                 REGISTRATION_ID,
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn mock()
     }
     private val verificationRequestRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {

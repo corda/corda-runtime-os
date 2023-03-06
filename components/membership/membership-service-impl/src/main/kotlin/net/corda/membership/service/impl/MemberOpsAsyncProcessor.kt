@@ -43,25 +43,25 @@ internal class MemberOpsAsyncProcessor(
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
         val canRetry = numberOfRetriesSoFar < MAX_RETRIES
-        val outcome = when (val request = event.value?.request) {
+        val (outcome, records) = when (val request = event.value?.request) {
             is RegistrationAsyncRequest -> {
                 register(request, canRetry)
             }
             else -> {
                 logger.warn("Can not handle: $request")
-                Outcome.FAILED_CANNOT_RETRY
+                Outcome.FAILED_CANNOT_RETRY to emptyList()
             }
         }
 
         return when (outcome) {
             Outcome.SUCCESS -> StateAndEventProcessor.Response(
                 updatedState = null,
-                responseEvents = emptyList(),
+                responseEvents = records,
                 markForDLQ = false,
             )
             Outcome.FAILED_CANNOT_RETRY -> StateAndEventProcessor.Response(
                 updatedState = null,
-                responseEvents = emptyList(),
+                responseEvents = records,
                 markForDLQ = true,
             )
             Outcome.FAILED_CAN_RETRY -> StateAndEventProcessor.Response(
@@ -71,7 +71,7 @@ internal class MemberOpsAsyncProcessor(
                     clock.instant(),
                 ),
                 markForDLQ = false,
-                responseEvents = emptyList(),
+                responseEvents = records,
             )
         }
     }
@@ -80,7 +80,7 @@ internal class MemberOpsAsyncProcessor(
     override val eventValueClass = MembershipAsyncRequest::class.java
     override val stateValueClass = MembershipAsyncRequestState::class.java
 
-    private fun register(request: RegistrationAsyncRequest, canRetry: Boolean): Outcome {
+    private fun register(request: RegistrationAsyncRequest, canRetry: Boolean): Pair<Outcome, List<Record<*, *>>> {
         val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
         val holdingIdentity =
             virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
@@ -89,13 +89,13 @@ internal class MemberOpsAsyncProcessor(
                 "Registration ${request.requestId} failed." +
                     " Could not find holding identity associated with ${request.holdingIdentityId}"
             )
-            return Outcome.FAILED_CAN_RETRY
+            return Outcome.FAILED_CAN_RETRY to emptyList()
         }
         val registrationId = try {
             UUID.fromString(request.requestId)
         } catch (e: IllegalArgumentException) {
             logger.warn("Registration ${request.requestId} failed. Invalid request ID.", e)
-            return Outcome.FAILED_CANNOT_RETRY
+            return Outcome.FAILED_CANNOT_RETRY to emptyList()
         }
         return try {
             val requestStatus = membershipQueryClient.queryRegistrationRequestStatus(
@@ -104,38 +104,37 @@ internal class MemberOpsAsyncProcessor(
             ).getOrThrow()
             if ((requestStatus != null) && (requestStatus.status != RegistrationStatus.NEW)) {
                 // This request had already passed this state. no need to continue.
-                return Outcome.SUCCESS
+                return Outcome.SUCCESS to emptyList()
             }
 
             logger.info("Processing registration ${request.requestId} to ${holdingIdentity.x500Name}.")
             // CORE-10367: return the status update command as part of the onNext
-            registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
+            val records = registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
-            Outcome.SUCCESS
+            Outcome.SUCCESS to records.toList()
         } catch (e: InvalidMembershipRegistrationException) {
-            // CORE-10367: return the status update command as part of the onNext
-            membershipPersistenceClient.setRegistrationRequestStatus(
+            val records = membershipPersistenceClient.setRegistrationRequestStatus(
                 holdingIdentity,
                 registrationId.toString(),
                 RegistrationStatus.INVALID,
                 e.message?.take(255),
-            )
+            ).createAsyncCommands()
             logger.warn("Registration ${request.requestId} failed. Invalid registration request.", e)
-            Outcome.FAILED_CANNOT_RETRY
+            Outcome.FAILED_CANNOT_RETRY to records.toList()
         } catch (e: Exception) {
             if (canRetry) {
                 logger.warn("Registration ${request.requestId} failed. Will retry soon.", e)
-                Outcome.FAILED_CAN_RETRY
+                Outcome.FAILED_CAN_RETRY to emptyList()
             } else {
                 // CORE-10367: return the status update command as part of the onNext
-                membershipPersistenceClient.setRegistrationRequestStatus(
+                val records = membershipPersistenceClient.setRegistrationRequestStatus(
                     holdingIdentity,
                     registrationId.toString(),
                     RegistrationStatus.INVALID,
                     e.message?.take(255),
-                )
+                ).createAsyncCommands()
                 logger.warn("Registration ${request.requestId} failed too many times. Will not retry again", e)
-                Outcome.FAILED_CANNOT_RETRY
+                Outcome.FAILED_CANNOT_RETRY to records.toList()
             }
         }
     }

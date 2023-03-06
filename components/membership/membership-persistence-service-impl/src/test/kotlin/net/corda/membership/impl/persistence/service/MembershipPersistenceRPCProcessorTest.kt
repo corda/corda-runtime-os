@@ -46,6 +46,7 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -240,15 +241,17 @@ class MembershipPersistenceRPCProcessorTest {
     @BeforeEach
     fun setUp() {
         processor = MembershipPersistenceRPCProcessor(
-            clock,
-            dbConnectionManager,
-            jpaEntitiesRegistry,
-            memberInfoFactory,
-            cordaAvroSerializationFactory,
-            virtualNodeInfoReadService,
-            keyEncodingService,
-            platformInfoProvider,
-            mock(),
+            HandlerFactories(
+                clock,
+                dbConnectionManager,
+                jpaEntitiesRegistry,
+                memberInfoFactory,
+                cordaAvroSerializationFactory,
+                virtualNodeInfoReadService,
+                keyEncodingService,
+                platformInfoProvider,
+                mock(),
+            )
         )
         responseFuture = CompletableFuture()
         rqContext = MembershipRequestContext(

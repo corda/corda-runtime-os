@@ -35,6 +35,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.Publisher
@@ -45,6 +46,7 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -257,11 +259,11 @@ class MemberResourceClientImpl @Activate constructor(
                 )
             }
             val sent = clock.instant()
-            try {
+            return try {
                 val context = keyValuePairListSerializer.serialize(
                     memberRegistrationRequest.context.toWire()
                 )
-                membershipPersistenceClient.persistRegistrationRequest(
+                val persistentOperation = membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
                     RegistrationRequest(
                         RegistrationStatus.NEW,
@@ -274,15 +276,21 @@ class MemberResourceClientImpl @Activate constructor(
                             KeyValuePairList(emptyList())
                         ),
                     )
-                ).getOrThrow()
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    sent,
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    true,
-                    "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
                 )
+                when (val result = persistentOperation.execute()) {
+                    is MembershipPersistenceResult.Failure -> {
+                        asyncPublisher.publish(persistentOperation.createAsyncCommands().toList())
+                        throw CordaRuntimeException(result.errorMsg)
+                    }
+                    is MembershipPersistenceResult.Success -> RegistrationRequestProgressDto(
+                        requestId,
+                        sent,
+                        SubmittedRegistrationStatus.SUBMITTED,
+                        true,
+                        "Submitting registration request was successful.",
+                        MemberInfoSubmittedDto(memberRegistrationRequest.context)
+                    )
+                }
             } catch (e: Exception) {
                 logger.warn(
                     "Could not persist registration request for holding identity ID" +

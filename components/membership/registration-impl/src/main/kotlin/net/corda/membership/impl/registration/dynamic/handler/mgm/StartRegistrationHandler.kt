@@ -83,12 +83,9 @@ internal class StartRegistrationHandler(
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
             logger.info("Persisting the received registration request.")
-            membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist the received registration request. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
-            }
+            val persistentCommands = membershipPersistenceClient
+                .persistRegistrationRequest(mgmHoldingId, registrationRequest)
+                .createAsyncCommands()
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
@@ -146,7 +143,7 @@ internal class StartRegistrationHandler(
             )
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(pendingMemberRecord))
+            Pair(VerifyMember(), listOf(pendingMemberRecord) + persistentCommands)
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration(ex.originalMessage), emptyList())

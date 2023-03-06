@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -148,6 +149,16 @@ class StartRegistrationHandlerTest {
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
+    private val commands = listOf(
+        Record(
+            "topic",
+            "key",
+            "value",
+        )
+    )
+    private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn commands
+    }
 
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
@@ -174,8 +185,8 @@ class StartRegistrationHandlerTest {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistRegistrationRequest(any(), any()) } doReturn persistRegistrationRequestOperation
+            on { persistMemberInfo(any(), any()) } doReturn mock()
         }
         membershipQueryClient = mock {
             on {
@@ -203,7 +214,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).hasSize(3).containsAll(commands)
 
             assertRegistrationStarted()
 
@@ -219,25 +230,6 @@ class StartRegistrationHandlerTest {
             verify = true,
             queryMemberInfo = true,
             persistMemberInfo = true
-        )
-    }
-
-    @Test
-    fun `declined if persistence of registration request fails`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("error"))
-
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
-
-            assertDeclinedRegistration()
-        }
-        verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
         )
     }
 
@@ -360,7 +352,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).hasSize(3).containsAll(commands)
 
             assertRegistrationStarted()
         }

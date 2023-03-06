@@ -8,7 +8,9 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -50,7 +52,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun setMemberAndRegistrationRequestAsApproved(
         viewOwningIdentity: HoldingIdentity,
@@ -62,14 +64,14 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         viewOwningIdentity: HoldingIdentity,
         declinedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
@@ -112,6 +114,14 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleId: String,
         ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
+
+    private class MembershipPersistenceOperationImpl<T>(
+        private val results: MembershipPersistenceResult<T>
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = results
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> = emptyList()
+    }
 
     override val isRunning = true
 

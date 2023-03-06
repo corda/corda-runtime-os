@@ -70,6 +70,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -247,9 +248,17 @@ class StaticMemberRegistrationServiceTest {
     private val mockContext: Map<String, String> = mock {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
+    private val command = Record(
+        "topic",
+        "key-1",
+        "value",
+    )
+    private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(command)
+    }
     private val persistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mock())
-        on { persistRegistrationRequest(any(), any()) }  doReturn MembershipPersistenceResult.success()
+        on { persistRegistrationRequest(any(), any()) } doReturn persistRegistrationRequestOperation
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -413,13 +422,23 @@ class StaticMemberRegistrationServiceTest {
                     eq(alice),
                     status.capture()
                 )
-            ).doReturn(MembershipPersistenceResult.success())
+            ).doReturn(persistRegistrationRequestOperation)
             setUpPublisher()
             registrationService.start()
 
             registrationService.register(registrationId, alice, mockContext)
 
             assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+        }
+
+        @Test
+        fun `registration return the approve command`() {
+            setUpPublisher()
+            registrationService.start()
+
+            val commands = registrationService.register(registrationId, alice, mockContext)
+
+            assertThat(commands).contains(command)
         }
 
         @Test
