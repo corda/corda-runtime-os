@@ -90,7 +90,8 @@ cpi_checksum() {
 }
 
 create_vnode() {
-    local MGM_HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.["holdingIdentity"]|.["shortHash"]' | tr -d '"')
+    local MGM_HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.requestId' | tr -d '"')
+    sleep 2
     echo $MGM_HOLDING_ID_SHORT_HASH
 }
 
