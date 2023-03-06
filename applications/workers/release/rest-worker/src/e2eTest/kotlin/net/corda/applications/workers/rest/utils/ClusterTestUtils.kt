@@ -4,10 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.rest.ResponseCode
-import net.corda.rest.client.exceptions.RequestErrorException
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.JsonObject
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -15,9 +11,6 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.packaging.testutils.TestUtils
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
@@ -31,12 +24,13 @@ import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.JsonObject
+import net.corda.rest.ResponseCode
+import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.test.util.eventually
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.nio.file.Files
 import java.nio.file.Path
