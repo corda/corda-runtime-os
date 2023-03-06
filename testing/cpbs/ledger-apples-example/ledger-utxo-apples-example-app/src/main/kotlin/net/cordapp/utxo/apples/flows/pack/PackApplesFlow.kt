@@ -41,9 +41,9 @@ class PackApplesFlow : ClientStartableFlow {
         }.ledgerKeys.first()
         val notary = Party(notaryInfo.name, notaryKey)
 
-        val myInfo = memberLookup.myInfo()
-        val ourIdentity = Party(myInfo.name, myInfo.ledgerKeys.first())
-        //val ourIdentity = memberLookup.myInfo().let { Party(it.name, it.ledgerKeys.first()) }
+        //val myInfo = memberLookup.myInfo()
+        //val ourIdentity = Party(myInfo.name, myInfo.ledgerKeys.first())
+        val ourIdentity = memberLookup.myInfo().let { Party(it.name, it.ledgerKeys.first()) }
 
         // Building the output BasketOfApples state
         val basket = BasketOfApples(
