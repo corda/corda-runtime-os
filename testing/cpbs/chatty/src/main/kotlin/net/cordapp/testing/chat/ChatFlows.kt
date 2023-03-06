@@ -12,9 +12,11 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonNodeReaderType
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.NewInterface
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 
@@ -46,6 +48,12 @@ class ChatOutgoingFlow : ClientStartableFlow {
     @CordaInject
     lateinit var persistenceService: PersistenceService
 
+    class NewInterfaceImpl : NewInterface {
+        override fun someFunction1() {
+            log.info("@@@ someFunction1")
+        }
+    }
+
     @Suspendable
     override fun call(requestBody: RestRequestBody): String {
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
@@ -53,16 +61,19 @@ class ChatOutgoingFlow : ClientStartableFlow {
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
         inputs.message ?: throw IllegalArgumentException("Chat message not supplied")
 
-        val a = JsonNodeReaderType.ARRAY
-        if (a != JsonNodeReaderType.ARRAY) {
-            log.info("")
+        if (jsonMarshallingService.returnSomeReaderTypeEnum() != JsonNodeReaderType.ARRAY) {
+            throw CordaRuntimeException("enum is bad!")
         }
+
+        val newInterface = NewInterfaceImpl()
 
         repeat(10000) {
             log.info("Processing chat message destined for ${inputs.recipientX500Name} iteration $it")
 
             val session = flowMessaging.initiateFlow(MemberX500Name.parse(inputs.recipientX500Name))
             session.send(MessageContainer(inputs.message + " iteration $it"))
+
+            session.acceptNewInterface(newInterface)
 
             storeOutgoingMessage(
                 persistenceService = persistenceService, recipient = inputs.recipientX500Name, message = inputs.message
