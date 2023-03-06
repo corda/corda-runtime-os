@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.interop.service.InteropAliasTranslator
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
@@ -14,6 +15,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -41,7 +43,11 @@ class InteropService @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = InteropMemberRegistrationService::class)
-    private val registrationService: InteropMemberRegistrationService
+    private val registrationService: InteropMemberRegistrationService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = InteropAliasTranslator::class)
+    private val interopAliasTranslator: InteropAliasTranslator
 ) : Lifecycle {
 
     companion object {
@@ -90,7 +96,7 @@ class InteropService @Activate constructor(
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
-                InteropProcessor(cordaAvroSerializationFactory),
+                InteropProcessor(cordaAvroSerializationFactory, membershipGroupReaderProvider, interopAliasTranslator),
                 messagingConfig,
                 null
             ).also {

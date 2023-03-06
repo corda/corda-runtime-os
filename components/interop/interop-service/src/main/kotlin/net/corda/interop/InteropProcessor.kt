@@ -7,12 +7,14 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.interop.service.InteropAliasTranslator
 import net.corda.interop.service.impl.InteropMessageTransformer
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.lang.NumberFormatException
 import java.nio.ByteBuffer
@@ -21,7 +23,11 @@ import java.util.UUID
 
 //Based on FlowP2PFilter
 @Suppress("Unused")
-class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) :
+class InteropProcessor(
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val interopAliasTranslator: InteropAliasTranslator
+) :
     DurableProcessor<String, AppMessage> {
 
     companion object {
@@ -42,10 +48,13 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
             if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
+                val groupReader = membershipGroupReaderProvider.getGroupReader(unAuthMessage.header.destination.toCorda())
+                val memberInfo = groupReader.lookup(unAuthMessage.header.destination.toCorda().x500Name)
+                val realHoldingIdentityFromAliasMapping = memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
                 logger.info(
                     "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
-                        getRealHoldingIdentity(
-                            unAuthMessage.header.destination
+                        interopAliasTranslator.getRealHoldingIdentity(
+                            realHoldingIdentityFromAliasMapping
                         )
                     }"
                 )
@@ -107,13 +116,6 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         "${toInt() + 1}"
     } catch (e: NumberFormatException) {
         "${UUID.randomUUID()}"
-    }
-
-    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): HoldingIdentity {
-        val cache = mutableMapOf<String, HoldingIdentity>()
-        // As the cache is empty returning hardcoded Alice from Gold for now
-        return cache[recipientId.x500Name.toString()]
-            ?: HoldingIdentity(MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"), "Gold")
     }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
