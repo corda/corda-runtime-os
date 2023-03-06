@@ -18,7 +18,6 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
-import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryApprovalRules
@@ -57,7 +56,6 @@ import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRe
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsHandler
 import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
-import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToDeclinedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -108,8 +106,6 @@ internal class MembershipPersistenceRPCProcessor(
         QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
         UpdateMemberAndRegistrationRequestToApproved::class.java to
             { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },
-        UpdateMemberAndRegistrationRequestToDeclined::class.java to
-            { UpdateMemberAndRegistrationRequestToDeclinedHandler(persistenceHandlerServices) },
         UpdateRegistrationRequestStatus::class.java to { UpdateRegistrationRequestStatusHandler(persistenceHandlerServices) },
         QueryGroupPolicy::class.java to { QueryGroupPolicyHandler(persistenceHandlerServices) },
         QueryRegistrationRequest::class.java to { QueryRegistrationRequestHandler(persistenceHandlerServices) },

@@ -36,7 +36,8 @@ internal class QueryMemberSignatureHandler(
                         MemberSignatureEntity::class.java,
                         MemberInfoEntityPrimaryKey(
                             holdingIdentity.groupId,
-                            holdingIdentity.x500Name
+                            holdingIdentity.x500Name,
+                            false
                         )
                     ) ?: throw MembershipPersistenceException("Could not find signature for $holdingIdentity")
                     val signatureContext = if (signatureEntity.context.isEmpty()) {

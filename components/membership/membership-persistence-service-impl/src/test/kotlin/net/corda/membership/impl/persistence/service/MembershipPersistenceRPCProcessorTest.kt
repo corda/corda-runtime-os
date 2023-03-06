@@ -303,7 +303,8 @@ class MembershipPersistenceRPCProcessorTest {
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),
                         KeyValuePairList(emptyList())
-                    )
+                    ),
+                    true
                 )
             )
         )
@@ -398,7 +399,8 @@ class MembershipPersistenceRPCProcessorTest {
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),
                         KeyValuePairList(emptyList())
-                    )
+                    ),
+                    false
                 )
             )
         )
