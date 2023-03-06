@@ -15,8 +15,6 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl

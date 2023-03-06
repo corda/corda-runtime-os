@@ -1,4 +1,4 @@
-package net.corda.uniqueness.backingstore.jpa.datamodel
+package net.corda.uniqueness.backingstore.impl
 
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_LENGTH
@@ -16,7 +16,7 @@ import javax.persistence.Table
 /*
  * JPA entity definitions used by the JPA backing store implementation
  */
-object JPABackingStoreEntities {
+internal object JPABackingStoreEntities {
     val classes = setOf(
         UniquenessStateDetailEntity::class.java,
         UniquenessTransactionDetailEntity::class.java,
@@ -24,7 +24,7 @@ object JPABackingStoreEntities {
     )
 }
 
-data class UniquenessTxAlgoStateRefKey(
+internal class UniquenessTxAlgoStateRefKey(
     val issueTxIdAlgo: String = "",
     val issueTxId: ByteArray = ByteArray(0),
     val issueTxOutputIndex: Int = 0
@@ -55,7 +55,7 @@ data class UniquenessTxAlgoStateRefKey(
     }
 }
 
-data class UniquenessTxAlgoIdKey(
+internal class UniquenessTxAlgoIdKey(
     val txIdAlgo: String = "",
     val txId: ByteArray = ByteArray(0),
 ) : Serializable {
@@ -100,7 +100,7 @@ data class UniquenessTxAlgoIdKey(
 )
 
 @IdClass(UniquenessTxAlgoStateRefKey::class)
-data class UniquenessStateDetailEntity(
+internal class UniquenessStateDetailEntity(
     @Id
     @Column(name = "issue_tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
     val issueTxIdAlgo: String,
@@ -156,7 +156,7 @@ data class UniquenessStateDetailEntity(
 )
 
 @IdClass(UniquenessTxAlgoIdKey::class)
-data class UniquenessTransactionDetailEntity(
+internal class UniquenessTransactionDetailEntity(
     @Id
     @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
     val txIdAlgo: String,
@@ -202,7 +202,7 @@ data class UniquenessTransactionDetailEntity(
     query = "SELECT t FROM UniquenessRejectedTransactionEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
 )
 @IdClass(UniquenessTxAlgoIdKey::class)
-data class UniquenessRejectedTransactionEntity(
+internal class UniquenessRejectedTransactionEntity(
     @Id
     @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
     val txIdAlgo: String,
@@ -212,8 +212,7 @@ data class UniquenessRejectedTransactionEntity(
     @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
     val txId: ByteArray,
 
-    @Column(name = "error_details", nullable = false)
-    val errorDetails: ByteArray
+    @Column(name = "error_details", nullable = false) val errorDetails: ByteArray
 ) {
     init {
         if (errorDetails.size > REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH) {

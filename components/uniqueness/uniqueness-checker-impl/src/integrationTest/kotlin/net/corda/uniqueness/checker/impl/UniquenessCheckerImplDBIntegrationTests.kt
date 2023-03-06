@@ -5,21 +5,18 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
-import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
+import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
@@ -155,29 +152,30 @@ class UniquenessCheckerImplDBIntegrationTests {
      * Creates an in-memory database and applies the relevant migration scripts
      */
     init {
-        val databaseInstaller = DatabaseInstaller(
-            EntityManagerFactoryFactoryImpl(),
-            LiquibaseSchemaMigratorImpl(),
-            JpaEntitiesRegistryImpl())
-
         // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
         // respect schema name
-        defaultHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_default", defaultHoldingIdentityDbName, rewriteBatchedInserts = true),
-            "vnode-uniqueness",
-            JPABackingStoreEntities.classes
+        defaultHoldingIdentityDb = JPABackingStoreTestUtilities.setupUniquenessDatabase(
+            TestDbInfo(
+                "uniq_test_default",
+                defaultHoldingIdentityDbName,
+                rewriteBatchedInserts = true
+            )
         )
 
-        bobHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_bob", bobHoldingIdentityDbName, rewriteBatchedInserts = true),
-            "vnode-uniqueness",
-            JPABackingStoreEntities.classes
+        bobHoldingIdentityDb =  JPABackingStoreTestUtilities.setupUniquenessDatabase(
+            TestDbInfo(
+                "uniq_test_bob",
+                bobHoldingIdentityDbName,
+                rewriteBatchedInserts = true
+            )
         )
 
-        charlieHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_charlie", charlieHoldingIdentityDbName, rewriteBatchedInserts = true),
-            "vnode-uniqueness",
-            JPABackingStoreEntities.classes
+        charlieHoldingIdentityDb = JPABackingStoreTestUtilities.setupUniquenessDatabase(
+            TestDbInfo(
+                "uniq_test_charlie",
+                charlieHoldingIdentityDbName,
+                rewriteBatchedInserts = true
+            )
         )
     }
 

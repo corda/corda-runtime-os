@@ -1,4 +1,4 @@
-package net.corda.uniqueness.backingstore.jpa.datamodel.tests
+package net.corda.uniqueness.backingstore.impl
 
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -9,15 +9,12 @@ import net.corda.db.testkit.DbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoIdKey
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoStateRefKey
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
+import org.hibernate.Session
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
@@ -160,5 +157,130 @@ class JPABackingStoreEntitiesIntegrationTest {
         )
 
         assertEquals(rejectedTx, retrieved)
+    }
+
+    @Test
+    fun `equality consistency - state details entity`() {
+        val issueTxId = SecureHashUtils.randomSecureHash()
+        val consumingTxId = SecureHashUtils.randomSecureHash()
+
+        assertEqualityConsistency(
+            UniquenessStateDetailEntity(
+                issueTxId.algorithm,
+                issueTxId.bytes,
+                0,
+                consumingTxId.algorithm,
+                consumingTxId.bytes),
+            UniquenessTxAlgoStateRefKey(
+                issueTxId.algorithm,
+                issueTxId.bytes,
+                0)
+        )
+    }
+
+    @Test
+    fun `equality consistency - transaction details entity`() {
+        val txId = SecureHashUtils.randomSecureHash()
+
+        assertEqualityConsistency(
+            UniquenessTransactionDetailEntity(
+                txId.algorithm,
+                txId.bytes,
+                testClock.instant(),
+                testClock.instant(),
+                RESULT_ACCEPTED_REPRESENTATION),
+            UniquenessTxAlgoIdKey(txId.algorithm, txId.bytes)
+        )
+    }
+
+    @Test
+    fun `equality consistency - rejected transaction entity`() {
+        val txId = SecureHashUtils.randomSecureHash()
+
+        assertEqualityConsistency(
+            UniquenessRejectedTransactionEntity(
+                txId.algorithm,
+                txId.bytes,
+                SecureHashUtils.randomBytes()
+            ),
+            UniquenessTxAlgoIdKey(txId.algorithm, txId.bytes)
+        )
+    }
+
+    private fun assertEqualityConsistency(entity: Any, pk: Any) {
+        val clazz = entity::class.java
+        val tuples: MutableSet<Any> = HashSet()
+
+        tuples.add(entity)
+
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            entityManager.persist(entity)
+            entityManager.flush()
+            assertTrue(
+                tuples.contains(entity),
+                "Entity is not found in set after it's persisted."
+            )
+        }
+        assertTrue(tuples.contains(entity))
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            val entityProxy = entityManager.getReference(clazz, pk)
+            assertNotNull(entity)
+            assertTrue(
+                entityProxy.equals(entity),
+                "Entity proxy is not equal with the entity.",
+            )
+        }
+
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            val entityProxy = entityManager.getReference(clazz, pk)
+            assertNotNull(entity)
+            assertTrue(
+                entity.equals(entityProxy),
+                "Entity is not equal with the entity proxy."
+            )
+        }
+
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            val newEntity = entityManager.merge(entity)
+            assertTrue(
+                tuples.contains(newEntity),
+                "Entity is not found in the Set after it's merged."
+            )
+        }
+
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            entityManager.unwrap(Session::class.java).update(entity)
+            assertTrue(
+                tuples.contains(entity),
+                "Entity is not found in the Set after it's reattached."
+            )
+        }
+
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            val newEntity = entityManager.find(clazz, pk)
+            assertTrue(
+                tuples.contains(newEntity),
+                "Entity is not found in the Set after it's loaded in a different Persistence Context."
+            )
+        }
+
+        entityManagerFactory.createEntityManager().transaction { entityManager ->
+            val newEntity = entityManager.getReference(clazz, pk)
+            assertTrue(
+                tuples.contains(newEntity),
+                "Entity is not found in the Set after it's loaded as a proxy in a different Persistence Context."
+            )
+        }
+
+        val deletedEntity = entityManagerFactory.createEntityManager().transaction { entityManager ->
+            val storedEntity = entityManager.getReference(clazz, pk)
+            entityManager.remove(storedEntity)
+            storedEntity
+        }
+
+        assertTrue(
+            tuples.contains(deletedEntity),
+            "Entity is not found in the Set after it's deleted."
+        )
     }
 }
