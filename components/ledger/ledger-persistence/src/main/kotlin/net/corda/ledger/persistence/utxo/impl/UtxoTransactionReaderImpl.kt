@@ -10,6 +10,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
@@ -38,7 +39,7 @@ class UtxoTransactionReaderImpl(
         sandbox: SandboxGroupContext,
         externalEventContext: ExternalEventContext,
         transaction: PersistTransaction
-    ) : this (
+    ) : this(
         sandbox,
         externalEventContext,
         transaction.transaction.array(),
@@ -50,7 +51,7 @@ class UtxoTransactionReaderImpl(
         sandbox: SandboxGroupContext,
         externalEventContext: ExternalEventContext,
         transaction: PersistTransactionIfDoesNotExist
-    ) : this (
+    ) : this(
         sandbox,
         externalEventContext,
         transaction.transaction.array(),
@@ -83,14 +84,14 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.signatures
 
     override val cpkMetadata: List<CordaPackageSummary>
-        get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        get() = signedTransaction.wireTransaction.metadata.cpkMetadata
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
         val relevantStatesSet = relevantStatesIndexes.toSet()
         return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
-            .filter { indexed -> relevantStatesSet.contains(indexed.index)}
+            .filter { indexed -> relevantStatesSet.contains(indexed.index) }
             .map { (index, value) ->
                 Triple(
                     index,
@@ -107,17 +108,24 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
-        return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionId }
-            .flatMap { inputsByTransaction ->
-                // this is not the most efficient way of doing this - to be fixed in CORE-8971
-                val tx =
-                    persistenceService.findTransaction(inputsByTransaction.key.toString(), TransactionStatus.VERIFIED)
-                requireNotNull(tx) { "Failed to load transaction ${inputsByTransaction.key}" }
-                val wrappedTx = WrappedUtxoWireTransaction(tx.wireTransaction, serializer)
-                inputsByTransaction.value.map { ref -> wrappedTx.outputStateAndRefs[ref.index] }
+        val inputsGroupedByTransactionId = wrappedWireTransaction.inputStateRefs.groupBy { it.transactionId }
+
+        return inputsGroupedByTransactionId.flatMap { inputsByTransactionId ->
+
+            val transaction = persistenceService.findTransaction(
+                id = inputsByTransactionId.key.toString(),
+                transactionStatus = TransactionStatus.VERIFIED
+            )
+
+            requireNotNull(transaction) { "Failed to load transaction ${inputsByTransactionId.key}" }
+
+            val wrappedTransaction = WrappedUtxoWireTransaction(transaction.wireTransaction, serializer)
+
+            inputsByTransactionId.value.map { stateRef ->
+                wrappedTransaction.outputStateAndRefs[stateRef.index].cast(ContractState::class.java)
             }
+        }
     }
 
     override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
-
 }

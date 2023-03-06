@@ -48,7 +48,8 @@ internal sealed class MemberRole {
         }
 
         private fun readNotary(context: Map<String, String>): Notary {
-            val serviceName = context[NOTARY_SERVICE_NAME] ?: throw IllegalArgumentException("Notary must have a service name")
+            val serviceName = context[NOTARY_SERVICE_NAME]
+            if(serviceName.isNullOrEmpty()) throw IllegalArgumentException("Notary must have a non-empty service name.")
             val plugin = context[NOTARY_SERVICE_PLUGIN]
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),

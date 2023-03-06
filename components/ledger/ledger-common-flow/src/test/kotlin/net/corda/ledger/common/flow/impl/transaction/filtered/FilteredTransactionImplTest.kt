@@ -614,6 +614,6 @@ class FilteredTransactionImplTest {
     }
 
     private fun indexedMerkleLeaf(index: Int, leafData: ByteArray = byteArrayOf(1, 2, 3)): IndexedMerkleLeaf {
-        return IndexedMerkleLeaf(index, nonce = byteArrayOf(), leafData)
+        return IndexedMerkleLeaf(index, byteArrayOf(), leafData)
     }
 }

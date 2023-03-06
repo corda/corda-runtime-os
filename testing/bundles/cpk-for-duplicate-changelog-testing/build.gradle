@@ -23,5 +23,6 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-base'
 
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'javax.persistence:javax.persistence-api'
 }

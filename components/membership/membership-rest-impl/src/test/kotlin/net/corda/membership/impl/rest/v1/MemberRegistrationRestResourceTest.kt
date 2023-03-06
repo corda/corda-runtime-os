@@ -1,8 +1,9 @@
 package net.corda.membership.impl.rest.v1
 
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.crypto.core.ShortHash
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
@@ -25,7 +26,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import net.corda.test.util.time.TestClock
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doThrow

@@ -1,12 +1,12 @@
 package net.corda.virtualnode.rpcops.impl.validation.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.impl.validation.VirtualNodeValidationService
@@ -42,12 +42,12 @@ internal class VirtualNodeValidationServiceImpl(
     }
 
     override fun validateCpiUpgradePrerequisites(currentCpi: CpiMetadata, upgradeCpi: CpiMetadata) {
-        require(upgradeCpi.cpiId.name == currentCpi.cpiId.name) {
-            "Upgrade CPI must have the same name as the current CPI."
+        if (upgradeCpi.cpiId.name != currentCpi.cpiId.name) {
+            throw BadRequestException("Upgrade CPI must have the same name as the current CPI.")
         }
 
-        require(upgradeCpi.cpiId.signerSummaryHash == currentCpi.cpiId.signerSummaryHash) {
-            "Upgrade CPI must have the same signature summary hash."
+        if (upgradeCpi.cpiId.signerSummaryHash != currentCpi.cpiId.signerSummaryHash) {
+            throw BadRequestException("Upgrade CPI must have the same signature summary hash.")
         }
     }
 

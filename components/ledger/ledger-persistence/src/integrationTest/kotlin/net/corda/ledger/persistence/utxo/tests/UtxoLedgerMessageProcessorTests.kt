@@ -32,9 +32,9 @@ import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.virtualnode.toAvro
@@ -82,9 +82,7 @@ class UtxoLedgerMessageProcessorTests {
         )
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         private val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("RSA")
-            .also {
-                it.initialize(512)
-            }.genKeyPair().public
+            .also { it.initialize(512) }.genKeyPair().public
         private val notaryExample = Party(notaryX500Name, publicKeyExample)
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -152,7 +150,8 @@ class UtxoLedgerMessageProcessorTests {
             virtualNodeInfo.holdingIdentity,
             FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
         )
-        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        responses =
+            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses).hasSize(1)
         val flowEvent = responses.first().value as FlowEvent
@@ -170,7 +169,7 @@ class UtxoLedgerMessageProcessorTests {
         ).bytes
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-            null, null, notaryExample, TestContractState::class.java.name, "contract tag"
+                null, null, notaryExample, TestContractState::class.java.name, "contract tag"
             )
         ).bytes
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()
@@ -225,8 +224,10 @@ class UtxoLedgerMessageProcessorTests {
     }
 
     class TestContractState : ContractState {
-        override val participants: List<PublicKey>
-            get() = emptyList()
+
+        override fun getParticipants(): List<PublicKey> {
+            return emptyList()
+        }
     }
 
     /* Simple wrapper to serialize bytes correctly during test */

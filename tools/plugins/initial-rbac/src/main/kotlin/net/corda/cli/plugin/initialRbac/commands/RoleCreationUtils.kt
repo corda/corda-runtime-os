@@ -1,8 +1,8 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -20,7 +20,7 @@ internal object RoleCreationUtils {
         return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
     }
 
-    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
+    fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
         return checkOrCreateRole(
             roleName,
             permissionsToCreate.map { PermissionTemplate(it.key, it.value, null) }.toSet()
@@ -33,7 +33,7 @@ internal object RoleCreationUtils {
      * - creates role;
      * - assigns permissions to the role.
      */
-    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
+    fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
@@ -43,7 +43,7 @@ internal object RoleCreationUtils {
 
         val start = System.currentTimeMillis()
 
-        createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
+        createRestClient(RoleEndpoint::class).use { roleEndpointClient ->
             val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
             val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
                 roleEndpointClient.start().proxy
@@ -60,7 +60,7 @@ internal object RoleCreationUtils {
                 roleEndpoint.createRole(CreateRoleType(roleName, null)).responseBody.id
             }
 
-            createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
+            createRestClient(PermissionEndpoint::class).use { permissionEndpointClient ->
                 val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
                     permissionEndpointClient.start().proxy
                 }

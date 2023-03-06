@@ -2,15 +2,16 @@ package net.corda.membership.impl.rest.v1
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -36,9 +37,9 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
+import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -533,7 +534,8 @@ class MGMRestResourceImpl internal constructor(
                 registrationSent,
                 registrationLastModified,
                 status.fromAvro(),
-                MemberInfoSubmitted(memberContext.toMap())
+                MemberInfoSubmitted(memberContext.toMap()),
+                reason,
             )
 
         private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
@@ -650,6 +652,8 @@ class MGMRestResourceImpl internal constructor(
                 holdingIdentityNotFound(holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
+            } catch (e: CordaRPCAPIPartitionException) {
+                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
             }
         }
     }

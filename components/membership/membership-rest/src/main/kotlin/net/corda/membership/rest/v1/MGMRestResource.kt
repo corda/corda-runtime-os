@@ -1,14 +1,14 @@
 package net.corda.membership.rest.v1
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.ManualDeclinationReason

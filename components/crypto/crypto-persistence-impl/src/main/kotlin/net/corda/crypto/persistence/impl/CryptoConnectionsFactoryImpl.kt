@@ -11,6 +11,7 @@ import net.corda.crypto.config.impl.CryptoConnectionsFactoryConfig
 import net.corda.crypto.config.impl.cryptoConnectionFactory
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
@@ -20,7 +21,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

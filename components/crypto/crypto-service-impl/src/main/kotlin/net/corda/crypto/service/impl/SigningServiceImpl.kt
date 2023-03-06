@@ -10,9 +10,12 @@ import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.fullId
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStore
@@ -20,14 +23,11 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
@@ -193,11 +193,7 @@ class SigningServiceImpl(
             )
         }
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
-        return DigitalSignature.WithKey(
-            by = record.publicKey,
-            bytes = signedBytes,
-            context = context
-        )
+        return DigitalSignature.WithKey(record.publicKey, signedBytes, context)
     }
 
     override fun deriveSharedSecret(
@@ -274,12 +270,12 @@ class SigningServiceImpl(
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
-                it.fullId(schemeMetadata, digestService) to it
+                it.fullIdHash(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
                 val found = store.lookupByFullIds(
                     tenantId,
-                    chunk.map { SecureHash.parse(it.first) }
+                    chunk.map { it.first }
                 )
                 if (found.isNotEmpty()) {
                     for (key in chunk) {

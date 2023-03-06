@@ -20,8 +20,8 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'
 
-    implementation project(":tools:plugins:plugins-http-rpc")
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation project(":tools:plugins:plugins-rest")
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
@@ -35,6 +35,7 @@ dependencies {
     // the Postgres drivers are packaged within the tool itself.
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"

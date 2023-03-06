@@ -51,6 +51,12 @@ class RegistrationRequestEntity(
      */
     @Column(nullable = false, updatable = false, columnDefinition = "BLOB")
     val context: ByteArray,
+
+    /**
+     * Reason why the request is in the status specified by [status].
+     */
+    @Column(nullable = true)
+    var reason: String? = null,
 ) {
 
     override fun equals(other: Any?): Boolean {

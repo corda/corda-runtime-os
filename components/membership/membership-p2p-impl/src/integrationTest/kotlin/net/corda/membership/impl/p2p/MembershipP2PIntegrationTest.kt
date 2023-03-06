@@ -71,8 +71,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -81,7 +82,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -151,11 +152,13 @@ class MembershipP2PIntegrationTest {
                     """
                 $INSTANCE_ID = 1
                 $BUS_TYPE = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 100000
                 """
                 )
             )
         private const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

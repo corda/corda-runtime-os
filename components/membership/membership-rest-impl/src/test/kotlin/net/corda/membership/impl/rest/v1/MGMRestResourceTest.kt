@@ -1,13 +1,14 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,7 +24,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse

@@ -47,7 +47,7 @@ import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
 import net.corda.virtualnode.write.db.VirtualNodeWriteService

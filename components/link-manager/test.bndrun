@@ -27,6 +27,7 @@
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.membership-persistence-client-impl',\
     bnd.identity;id='net.corda.crypto-impl',\

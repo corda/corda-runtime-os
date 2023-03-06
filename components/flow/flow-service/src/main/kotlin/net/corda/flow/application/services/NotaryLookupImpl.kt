@@ -13,20 +13,23 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [ NotaryLookup::class, UsedByFlow::class ], scope = PROTOTYPE)
+@Component(service = [NotaryLookup::class, UsedByFlow::class], scope = PROTOTYPE)
 class NotaryLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
 ) : NotaryLookup, UsedByFlow, SingletonSerializeAsToken {
-    override val notaryServices: Collection<NotaryInfo>
-        @Suspendable
-        get() = notaries ?: emptyList()
+
+    @Suspendable
+    override fun getNotaryServices(): Collection<NotaryInfo> {
+        return notaries ?: emptyList()
+    }
 
     @Suspendable
     override fun isNotaryVirtualNode(virtualNodeName: MemberX500Name): Boolean =
         groupReader.lookup(virtualNodeName)?.notaryDetails?.let {
             lookup(it.serviceName)
         } != null
+
 
     @Suspendable
     override fun lookup(notaryServiceName: MemberX500Name): NotaryInfo? {

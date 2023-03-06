@@ -1,7 +1,11 @@
 package net.corda.application.impl.services.json
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.type.TypeFactory
@@ -16,7 +20,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -45,9 +49,12 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
 
         // Provide our own AnnotationIntrospector to avoid using a shared global cache.
         setAnnotationIntrospector(JacksonAnnotationIntrospector())
-
+        val module = SimpleModule()
+        module.addSerializer(SecureHash::class.java, SecureHashSerializer)
+        module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
         // Register Kotlin after resetting the AnnotationIntrospector.
         registerModule(KotlinModule.Builder().build())
+        registerModule(module)
     }
 
     private val customSerializableClasses = mutableSetOf<Class<*>>()
@@ -120,9 +127,22 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         // convenient. Because we have no type information available at compile time we need to be very unspecific about
         // what our deserializer can support. This has no effect at runtime because type erasure precludes Jackson
         // knowing anything about these types except via typeless Class objects once the code is compiled.
-        module.addDeserializer(uncheckedCast(jsonDeserializerAdaptor.deserializingType), jsonDeserializerAdaptor)
+        @Suppress("unchecked_cast")
+        module.addDeserializer(jsonDeserializerAdaptor.deserializingType as Class<Any>, jsonDeserializerAdaptor)
         mapper.registerModule(module)
 
         return true
+    }
+}
+
+internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerializer<SecureHash>() {
+    override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+        generator.writeString(obj.toString())
+    }
+}
+
+internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
+    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
+        return SecureHash.parse(parser.text)
     }
 }

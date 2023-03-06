@@ -47,7 +47,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -596,7 +596,8 @@ class MembershipQueryClientImplTest {
                     RegistrationStatus.PENDING_APPROVAL_FLOW,
                     "id",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value")))
+                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    "test reason"
                 )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -625,7 +626,8 @@ class MembershipQueryClientImplTest {
                         registrationSent = status.registrationSent,
                         registrationLastModified = status.registrationLastModified,
                         protocolVersion = status.registrationProtocolVersion,
-                        memberContext = status.memberProvidedContext
+                        memberContext = status.memberProvidedContext,
+                        reason = status.reason
                     )
                 )
         }
@@ -740,7 +742,8 @@ class MembershipQueryClientImplTest {
                     RegistrationStatus.PENDING_APPROVAL_FLOW,
                     "id 1",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value")))
+                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    "test reason 1"
                 ),
                 RegistrationStatusDetails(
                     clock.instant(),
@@ -748,7 +751,8 @@ class MembershipQueryClientImplTest {
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id 2",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2")))
+                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    "test reason 2"
                 ),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
@@ -779,7 +783,8 @@ class MembershipQueryClientImplTest {
                             registrationSent = it.registrationSent,
                             registrationLastModified = it.registrationLastModified,
                             protocolVersion = it.registrationProtocolVersion,
-                            memberContext = it.memberProvidedContext
+                            memberContext = it.memberProvidedContext,
+                            reason = it.reason
                         )
                     }
                 )

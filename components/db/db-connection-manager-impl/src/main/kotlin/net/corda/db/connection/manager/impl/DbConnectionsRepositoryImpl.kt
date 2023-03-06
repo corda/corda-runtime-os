@@ -108,27 +108,4 @@ class DbConnectionsRepositoryImpl(
     }
 
     override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
-
-    override fun testAllConnections(): Boolean {
-        try {
-            val connectionConfigs = entityManagerFactory.createEntityManager().use {
-                it.createQuery("SELECT c FROM DbConnectionConfig c", DbConnectionConfig::class.java).resultList
-            }
-            return connectionConfigs.all(::testConnection)
-        } catch (e: Exception) {
-            logger.debug("DB check failed", e)
-            return false
-        }
-    }
-
-    private fun testConnection(connectionConfig: DbConnectionConfig): Boolean = try {
-        logger.debug("Checking connection ${connectionConfig.name}")
-        val config = dbConfigFactory.create(ConfigFactory.parseString(connectionConfig.config))
-        dataSourceFactory.createFromConfig(config).use { it.connection.close() }
-        true
-    } catch (e: Exception) {
-        logger.debug("DB check failed", e)
-        false
-    }
 }
-

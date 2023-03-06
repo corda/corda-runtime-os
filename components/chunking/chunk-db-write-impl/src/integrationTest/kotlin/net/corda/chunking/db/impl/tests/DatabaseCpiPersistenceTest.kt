@@ -14,10 +14,10 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -51,6 +51,7 @@ import java.time.Instant
 import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
+import net.corda.libs.cpi.datamodel.CpkFile
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -99,6 +100,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
     private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
+    private val cpkFileRepository = CpkFileRepositoryImpl()
 
     @Suppress("Unused")
     @AfterAll
@@ -210,8 +212,10 @@ internal class DatabaseCpiPersistenceTest {
         val cpi = mockCpi(mockCpk())
         cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
 
-        val cpkDataEntities: List<CpkFileEntity> = query("fileChecksum", cpi.cpks.first().fileChecksum)
-        assertThat(cpkDataEntities.first().data).isEqualTo(mockCpkContent.toByteArray())
+        entityManagerFactory.createEntityManager().transaction {
+            val cpkFile: CpkFile = cpkFileRepository.findById(it, cpi.cpks.first().metadata.fileChecksum)
+            assertThat(cpkFile.data).isEqualTo(mockCpkContent.toByteArray())
+        }
     }
 
     @Test
@@ -663,7 +667,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun newRandomSecureHash(): SecureHash {
         val random = Random()
-        return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
     private fun genChangeLogs(
@@ -704,21 +708,21 @@ internal class DatabaseCpiPersistenceTest {
                     cpi.metadata.cpiId.signerSummaryHash.toString(),
                     cpk.metadata.fileChecksum.toString()
                 )
-                val cpkKey = cpk.metadata.fileChecksum.toString()
+                val cpkKey = cpk.metadata.fileChecksum
                 val cpiCpk = it.find(CpiCpkEntity::class.java, cpiCpkKey)
-                val cpkMetadata = it.find(CpkMetadataEntity::class.java, cpkKey)
-                val cpkFile = it.find(CpkFileEntity::class.java, cpkKey)
+                val cpkMetadata = it.find(CpkMetadataEntity::class.java, cpkKey.toString())
+                val cpkFile = cpkFileRepository.findById(it, cpkKey)
                 Triple(cpkMetadata, cpkFile, cpiCpk)
             }
 
-            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.fileChecksum)
-            assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.fileChecksum)
+            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum.toString())
+            assertThat(cpkFile.fileChecksum.toString()).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum.toString())
 
             assertThat(cpkMetadata.entityVersion)
                 .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")
                 .isEqualTo(expectedMetadataEntityVersion)
-            assertThat(cpkFile.entityVersion)
-                .withFailMessage("CpkFileEntity.entityVersion expected $expectedFileEntityVersion but was ${cpkFile.entityVersion}.")
+            assertThat(cpkFile.version)
+                .withFailMessage("CpkFileEntity.entityVersion expected $expectedFileEntityVersion but was ${cpkFile.version}.")
                 .isEqualTo(expectedFileEntityVersion)
             assertThat(cpiCpk.entityVersion)
                 .withFailMessage("CpiCpkEntity.entityVersion expected $expectedCpiCpkEntityVersion but was ${cpiCpk.entityVersion}.")

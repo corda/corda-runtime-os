@@ -32,8 +32,8 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach

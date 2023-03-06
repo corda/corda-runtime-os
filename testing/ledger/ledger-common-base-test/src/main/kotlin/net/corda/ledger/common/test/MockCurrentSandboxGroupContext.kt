@@ -57,7 +57,7 @@ private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
         emptyMap()
     ),
     CpkType.UNKNOWN,
-    SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32) { i.toByte() }),
+    SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32) { i.toByte() }),
     emptySet(),
     Instant.now()
 )

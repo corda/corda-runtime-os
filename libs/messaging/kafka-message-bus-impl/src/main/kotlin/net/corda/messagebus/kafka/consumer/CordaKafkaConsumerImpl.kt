@@ -16,8 +16,7 @@ import net.corda.messagebus.kafka.utils.toTopicPartitions
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.trace
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
@@ -52,8 +51,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private var currentAssignment = mutableSetOf<Int>()
     private val bufferedRecords = mutableMapOf<Int, List<ConsumerRecord<Any, Any>>>()
 
-    companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun close() {
@@ -140,9 +139,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         polledRecords.forEach { consumerRecord ->
             val value = consumerRecord.value()
             val key = consumerRecord.key()
-            if (key is ChunkKey && value is Chunk) {
+            if (key is ChunkKey && value == null) {
                 log.trace {
-                    "Read chunk offset ${consumerRecord.offset()} and chunkId ${value.requestId} and partNumber ${value.partNumber}"
+                    "Ignoring cleaned up ChunkKey $key at offset ${consumerRecord.offset()}"
+                }
+            } else if (key is ChunkKey && value is Chunk) {
+                log.trace {
+                    "Read chunk with offset ${consumerRecord.offset()} and chunkId ${value.requestId} and partNumber ${value.partNumber}"
                 }
                 getCompleteRecord(key, value, consumerRecord, currentChunks)?.let {
                     log.trace { "Adding complete record with offset ${consumerRecord.offset()} and chunkId ${value.requestId}" }
@@ -150,12 +153,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             } else {
                 completeRecords.add(
+                    @Suppress("unchecked_cast")
                     CordaConsumerRecord(
                         consumerRecord.topic().removePrefix(config.topicPrefix),
                         consumerRecord.partition(),
                         consumerRecord.offset(),
-                        uncheckedCast(consumerRecord.key()),
-                        uncheckedCast(consumerRecord.value()),
+                        consumerRecord.key() as K,
+                        consumerRecord.value() as? V,
                         consumerRecord.timestamp(),
                     )
                 )

@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -16,6 +18,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,11 +42,14 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDistinctKeys
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDuplicatedVNodeName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -56,36 +62,38 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.InvalidMembershipRegistrationException
-import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.PublicKeyHash
-import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -110,6 +118,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -128,6 +137,8 @@ class StaticMemberRegistrationServiceTest {
     private val charlie = HoldingIdentity(charlieName, DUMMY_GROUP_ID)
     private val daisy = HoldingIdentity(daisyName, DUMMY_GROUP_ID)
     private val eric = HoldingIdentity(ericName, DUMMY_GROUP_ID)
+
+    private val notary = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
 
     private val aliceId = alice.shortHash
     private val bobId = bob.shortHash
@@ -269,9 +280,19 @@ class StaticMemberRegistrationServiceTest {
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(any()) } doReturn mockGroupParameters
     }
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on {
+            queryRegistrationRequestsStatus(
+                any(),
+                any(),
+                any(),
+            )
+        } doReturn MembershipQueryResult.Success(emptyList())
+    }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
-    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(any()) } doReturn mock()
+    private val groupReader: MembershipGroupReader = mock()
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
+        on { getGroupReader(any()) } doReturn groupReader
     }
 
     private val registrationService = StaticMemberRegistrationService(
@@ -293,6 +314,7 @@ class StaticMemberRegistrationServiceTest {
         virtualNodeInfoReadService,
         groupParametersWriterService,
         membershipGroupReaderProvider,
+        membershipQueryClient,
     )
 
     private fun setUpPublisher() {
@@ -436,28 +458,14 @@ class StaticMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration pass when the member is not active`() {
-            val memberInfo = mock<MemberInfo> {
-                on { isActive } doReturn false
-            }
-            val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn memberInfo
-            }
-            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
-            setUpPublisher()
-            registrationService.start()
-
-            assertDoesNotThrow {
-                registrationService.register(registrationId, alice, mockContext)
-            }
-        }
-
-        @Test
         fun `registration pass when the member is not found`() {
-            val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn null
-            }
-            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    alice,
+                    aliceName,
+                    listOf(RegistrationStatus.APPROVED),
+                )
+            ).doReturn(MembershipQueryResult.Success(emptyList()))
             setUpPublisher()
             registrationService.start()
 
@@ -471,13 +479,16 @@ class StaticMemberRegistrationServiceTest {
     inner class FailedRegistrationTests {
         @Test
         fun `it fails when the member is active`() {
-            val memberInfo = mock<MemberInfo> {
-                on { isActive } doReturn true
+            val status = mock<RegistrationRequestStatus> {
+                on { registrationId } doReturn "ID"
             }
-            val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn memberInfo
-            }
-            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    alice,
+                    aliceName,
+                    listOf(RegistrationStatus.APPROVED),
+                )
+            ).doReturn(MembershipQueryResult.Success(listOf(status)))
             setUpPublisher()
             registrationService.start()
 
@@ -553,8 +564,8 @@ class StaticMemberRegistrationServiceTest {
 
             assertThat(exception)
                 .hasMessage(
-                    "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB " +
-                        "is not listed in the static member list."
+                    "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is either not " +
+                            "listed in the static member list or there is another member with the same name."
                 )
             registrationService.stop()
         }
@@ -582,6 +593,37 @@ class StaticMemberRegistrationServiceTest {
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
             )
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }
+        }
+
+        @Test
+        fun `registration fails when role is set to notary and notary service name already exists`() {
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+            val mockNotaryDetails = MemberNotaryDetails(
+                notary,
+                null,
+                emptyList()
+            )
+            val mockMemberContext: MemberContext = mock {
+                on { entries } doReturn mapOf(
+                    String.format(ROLES_PREFIX, 0) to MemberInfoExtension.NOTARY_ROLE
+                ).entries
+                on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn mockNotaryDetails
+            }
+            val mockNotaryMember: MemberInfo = mock {
+                on { memberProvidedContext } doReturn mockMemberContext
+            }
+            whenever(groupReader.lookup()).thenReturn(listOf(mockNotaryMember))
 
             assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, context)
@@ -643,7 +685,7 @@ class StaticMemberRegistrationServiceTest {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.name" to notary.toString(),
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
 
@@ -675,7 +717,7 @@ class StaticMemberRegistrationServiceTest {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.name" to notary.toString(),
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
 
@@ -691,7 +733,7 @@ class StaticMemberRegistrationServiceTest {
             assertSoftly {
                 assertThat(notaryDetails).isNotNull
                 assertThat(notaryDetails?.serviceName)
-                    .isEqualTo(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"))
+                    .isEqualTo(MemberX500Name.parse(notary.toString()))
                 assertThat(notaryDetails?.servicePlugin).isEqualTo("net.corda.notary.MyNotaryService")
 
                 assertThat(notaryDetails?.keys?.toList())
@@ -736,7 +778,7 @@ class StaticMemberRegistrationServiceTest {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.name" to notary.toString(),
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
             whenever(
@@ -762,7 +804,7 @@ class StaticMemberRegistrationServiceTest {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.name" to notary.toString(),
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -775,6 +817,87 @@ class StaticMemberRegistrationServiceTest {
             verify(groupParametersWriterService).put(eq(bob), eq(mockGroupParameters))
             verify(groupParametersWriterService).put(eq(alice), eq(mockGroupParameters))
             verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockGroupParameters))
+        }
+
+        @Test
+        fun `registration fails when there is a virtual node having the same name as the notary service`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to aliceName.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("There is a virtual node having the same name")
+        }
+
+        @Test
+        fun `registration fails when notary service name is blank`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("Notary must have a non-empty service name.")
+        }
+
+        @Test
+        fun `registration fails when the virtual node and notary service name is the same`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to bobName.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("and virtual node name cannot be the same")
+        }
+
+        @Test
+        fun `registration fails when there are two virtual nodes in the static list having the same name`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(alice))
+                .thenReturn(groupPolicyWithStaticNetworkAndDuplicatedVNodeName)
+            whenever(virtualNodeInfoReadService.get(alice)).thenReturn(buildTestVirtualNodeInfo(alice))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }
+            assertThat(message.message).contains("or there is another member with the same name.")
         }
     }
 

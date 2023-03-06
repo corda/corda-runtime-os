@@ -6,9 +6,9 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowRecordFactory::class])

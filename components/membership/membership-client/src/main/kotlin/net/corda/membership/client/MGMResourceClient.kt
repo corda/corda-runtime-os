@@ -1,5 +1,6 @@
 package net.corda.membership.client
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.preauth.PreAuthToken
@@ -8,7 +9,6 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.ShortHash
 import java.time.Instant
 import java.util.UUID
 import kotlin.jvm.Throws

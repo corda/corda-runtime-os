@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
@@ -16,6 +17,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -81,6 +83,10 @@ class RegistrationServiceLifecycleHandlerTest {
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(any()) } doReturn mock()
     }
+    private val membershipQueryClient = mock<MembershipQueryClient>()
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroSerializer<Any>(any()) } doReturn mock()
+    }
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -93,7 +99,7 @@ class RegistrationServiceLifecycleHandlerTest {
         hsmRegistrationClient,
         memberInfoFactory,
         mock(),
-        mock(),
+        cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
         mock(),
         platformInfoProvider,
@@ -101,6 +107,7 @@ class RegistrationServiceLifecycleHandlerTest {
         virtualNodeInfoReadService,
         mock(),
         membershipGroupReaderProvider,
+        membershipQueryClient,
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
@@ -268,6 +275,7 @@ class RegistrationServiceLifecycleHandlerTest {
             addDependency<GroupPolicyProvider>()
             addDependency<ConfigurationReadService>()
             addDependency<HSMRegistrationClient>()
+            addDependency<MembershipQueryClient>()
             addDependency(subName)
 
             val staticMemberRegistrationService = StaticMemberRegistrationService(
@@ -281,7 +289,7 @@ class RegistrationServiceLifecycleHandlerTest {
                 hsmRegistrationClient,
                 memberInfoFactory,
                 mock(),
-                mock(),
+                cordaAvroSerializationFactory,
                 membershipSchemaValidatorFactory,
                 mock(),
                 platformInfoProvider,
@@ -289,6 +297,7 @@ class RegistrationServiceLifecycleHandlerTest {
                 virtualNodeInfoReadService,
                 mock(),
                 membershipGroupReaderProvider,
+                membershipQueryClient,
             )
 
             val handle = RegistrationServiceLifecycleHandler(staticMemberRegistrationService)

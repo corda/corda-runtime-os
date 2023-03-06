@@ -80,7 +80,7 @@ class DbConnectionManagerImpl @Activate constructor(
     override fun bootstrap(config: SmartConfig) {
     }
 
-    override fun testAllConnections(): Boolean {
+    override fun testConnection(): Boolean {
         return true
     }
 

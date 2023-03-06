@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -14,7 +15,6 @@ import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat

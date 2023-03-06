@@ -27,7 +27,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -179,7 +179,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             if (!checkpoint.doesExist) {
                 return@withEscalation flowEventContextConverter.convert(
                     context.copy(
-                        outputRecords = createFlowKilledStatusRecord(checkpoint, exception.message),
+                        outputRecords = createFlowKilledStatusRecord(
+                            checkpoint, exception.message ?: "No exception message provided."
+                        ),
                         sendToDlq = false
                     )
                 )
@@ -201,7 +203,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
             )
-            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message)
+            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
 
             checkpoint.markDeleted()
 

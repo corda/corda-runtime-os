@@ -6,12 +6,12 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResol
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import org.slf4j.Logger
@@ -131,7 +131,7 @@ class UtxoReceiveFinalityFlow(
                     "${transaction.id} with message: ${failure.message}"
             log.warn(message)
             val reason = failure.reason
-            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.UNRECOVERABLE) {
+            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
                 persistInvalidTransaction(transaction)
             }
             CordaRuntimeException(message)

@@ -1,16 +1,15 @@
 package com.example.cpk.crypto
 
+import net.corda.v5.crypto.DigestAlgorithmName
 import java.io.InputStream
 import java.security.MessageDigest
-import net.corda.v5.crypto.DigestAlgorithmName.Companion.SHA2_256
+import net.corda.v5.crypto.DigestAlgorithmName.SHA2_256
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
-import net.corda.v5.crypto.sha256Bytes
 
 @Suppress("unused")
 class TripleSHA256 : DigestAlgorithmFactory {
-    override val algorithm: String
-        get() = TripleSHA256Digest.ALGORITHM
+    override fun getAlgorithm() = TripleSHA256Digest.ALGORITHM
 
     override fun getInstance(): DigestAlgorithm = TripleSHA256Digest()
 }
@@ -20,9 +19,8 @@ private class TripleSHA256Digest : DigestAlgorithm {
         const val ALGORITHM = "SHA-256-TRIPLE"
     }
 
-    override val algorithm = ALGORITHM
-    override val digestLength = 32
-
+    override fun getAlgorithm() = ALGORITHM
+    override fun getDigestLength() = 32
     override fun digest(bytes: ByteArray): ByteArray = bytes.sha256Bytes().sha256Bytes().sha256Bytes()
 
     override fun digest(inputStream: InputStream): ByteArray {
@@ -38,3 +36,8 @@ private class TripleSHA256Digest : DigestAlgorithm {
         return messageDigest.digest().sha256Bytes().sha256Bytes()
     }
 }
+
+private fun messageDigestSha256(): MessageDigest =
+    MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+
+fun ByteArray.sha256Bytes(): ByteArray = messageDigestSha256().digest(this)

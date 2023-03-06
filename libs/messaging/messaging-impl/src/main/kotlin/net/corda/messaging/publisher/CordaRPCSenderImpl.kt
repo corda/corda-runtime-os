@@ -30,8 +30,8 @@ import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.utils.FutureTracker
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.Companion.getRPCResponseTopic
-import net.corda.v5.base.util.debug
+import net.corda.schema.Schemas.getRPCResponseTopic
+import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer

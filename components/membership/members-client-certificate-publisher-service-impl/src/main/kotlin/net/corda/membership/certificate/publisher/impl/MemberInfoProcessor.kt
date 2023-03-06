@@ -7,7 +7,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.P2P.Companion.P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT_TOPIC
 
 internal class MemberInfoProcessor : DurableProcessor<String, PersistentMemberInfo> {
     override val keyClass = String::class.java

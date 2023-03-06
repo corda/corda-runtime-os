@@ -1,7 +1,7 @@
 package net.corda.flow.application.services
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.flow.ALICE_X500_NAME
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

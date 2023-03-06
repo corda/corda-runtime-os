@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.Unirest
 import kong.unirest.json.JSONObject
-import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
+import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
 import net.corda.cli.plugins.mgm.Helpers.urlFromClusterName
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
@@ -101,10 +101,10 @@ abstract class BaseOnboard : Runnable {
     var mtls: Boolean = false
 
     @Option(
-        names = ["--rpc-worker-deployment-name"],
-        description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
+        names = ["--rest-worker-deployment-name"],
+        description = ["The REST worker deployment name (default to corda-rest-worker)"]
     )
-    var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+    var restWorkerDeploymentName: String = "corda-rest-worker"
 
     @Option(
         names = ["--tls-certificate-subject"],
@@ -119,18 +119,18 @@ abstract class BaseOnboard : Runnable {
         ObjectMapper()
     }
 
-    private val rpcPassword by lazy {
-        rpcPasswordFromClusterName(cordaClusterName)
+    private val restPassword by lazy {
+        restPasswordFromClusterName(cordaClusterName)
     }
 
     private val url by lazy {
-        urlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)
+        urlFromClusterName(cordaClusterName, restWorkerDeploymentName)
     }
 
     protected fun setupClient() {
         Unirest.config()
             .verifySsl(false)
-            .setDefaultBasicAuth("admin", rpcPassword)
+            .setDefaultBasicAuth("admin", restPassword)
             .defaultBaseUrl(url)
     }
 

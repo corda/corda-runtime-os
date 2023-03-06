@@ -2,13 +2,13 @@ package net.corda.processors.rpc
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
-import net.corda.flow.rpcops.v1.FlowClassRestResource
-import net.corda.flow.rpcops.v1.FlowRestResource
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.config.models.RestContext
-import net.corda.httprpc.server.config.models.RestServerSettings
-import net.corda.httprpc.server.factory.RestServerFactory
+import net.corda.flow.rest.v1.FlowClassRestResource
+import net.corda.flow.rest.v1.FlowRestResource
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.server.config.models.RestContext
+import net.corda.rest.server.config.models.RestServerSettings
+import net.corda.rest.server.factory.RestServerFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint

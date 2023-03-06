@@ -27,10 +27,14 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -239,7 +243,6 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `init checkpoint`() {
-        val newFlowId = "F1"
         val flowKey = FlowKey("R1", BOB_X500_HOLDING_IDENTITY)
         val flowStartContext = FlowStartContext().apply {
             statusKey = flowKey
@@ -247,11 +250,14 @@ class FlowCheckpointImplTest {
             contextPlatformProperties = platformPropertiesLevel0.avro
         }
 
+        val cpk = mock<SecureHash>()
+        val cpks = setOf(cpk)
+        whenever(cpk.bytes).thenReturn("abc".toByteArray())
+        whenever(cpk.algorithm).thenReturn(DigestAlgorithmName.SHA2_256.name)
+
         val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
-
-        flowCheckpoint.initFlowState(flowStartContext)
-
-        assertThat(flowCheckpoint.flowId).isEqualTo(newFlowId)
+        flowCheckpoint.initFlowState(flowStartContext, cpks)
+        assertThat(flowCheckpoint.cpkFileHashes).isNotEmpty
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
         assertThat(flowCheckpoint.flowStartContext).isEqualTo(flowStartContext)
         assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
@@ -506,14 +512,20 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `rollback - original state restored when checkpoint rolled back from init`() {
-        val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
+        val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false,
+            retryState = RetryState().apply {
+                retryCount = 1
+        }))
         val context = FlowStartContext().apply {
             statusKey = FlowKey(FLOW_ID_1, BOB_X500_HOLDING_IDENTITY)
             identity = BOB_X500_HOLDING_IDENTITY
             contextPlatformProperties = platformPropertiesLevel0.avro
         }
+        val cpk = mock<SecureHash>()
+        val cpks = setOf(cpk)
+        whenever(cpk.bytes).thenReturn(byteArrayOf())
 
-        flowCheckpoint.initFlowState(context)
+        flowCheckpoint.initFlowState(context, cpks)
         flowCheckpoint.putSessionState(SessionState().apply { sessionId = "sid1" })
         flowCheckpoint.suspendedOn = "s2"
         flowCheckpoint.waitingFor = WaitingFor(Wakeup())
@@ -524,7 +536,8 @@ class FlowCheckpointImplTest {
         assertThat(afterRollback?.flowState?.suspendedOn).isNull()
         assertThat(afterRollback?.flowState?.waitingFor).isNull()
         assertThat(afterRollback?.flowState?.sessions).isNull()
-
+        assertThat(afterRollback?.pipelineState?.cpkFileHashes).isEmpty()
+        assertThat(afterRollback).isNotNull()
         validateUninitialisedCheckpointThrows(flowCheckpoint)
     }
 

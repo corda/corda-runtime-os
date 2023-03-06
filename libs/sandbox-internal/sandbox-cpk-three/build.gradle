@@ -18,8 +18,8 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':libs:sandbox-internal:sandbox-cpk-library')
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'org.jetbrains:annotations'
     cordaProvided 'org.osgi:osgi.core'
     cordaProvided 'net.corda:corda-application'

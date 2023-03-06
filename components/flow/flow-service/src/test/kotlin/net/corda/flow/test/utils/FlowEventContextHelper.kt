@@ -20,7 +20,8 @@ fun <T> buildFlowEventContext(
     config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false
+    sendToDlq: Boolean = false,
+    isRetryEvent: Boolean = false
 ): FlowEventContext<T> {
 
 
@@ -34,6 +35,7 @@ fun <T> buildFlowEventContext(
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
         configWithRequired,
+        isRetryEvent,
         outputRecords,
         sendToDlq,
         emptyMap()
@@ -46,13 +48,15 @@ fun <T> buildFlowEventContext(
     config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false
+    sendToDlq: Boolean = false,
+    isRetryEvent: Boolean = false
 ): FlowEventContext<T> {
     return FlowEventContext(
         mock(),
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
         config,
+        isRetryEvent,
         outputRecords,
         sendToDlq,
         emptyMap()

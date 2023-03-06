@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.datamodel.tests
 
+import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -17,7 +18,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -124,6 +124,28 @@ class VirtualNodeRepositoryTest {
         // Validate relation for holdingIdentity has been resolved
         assertNotNull(virtualNode.holdingIdentity.x500Name)
         assertEquals(virtualNode.holdingIdentity.x500Name.toString(), vnodes.last().holdingIdentity.x500Name)
+    }
+
+    @Test
+    fun findVirtualNodeOperationByRequestId() {
+        val requestId = UUID.randomUUID().toString()
+
+        VNodeTestUtils.newVNodeOperation(
+            entityManagerFactory,
+            requestId,
+            "data",
+            VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE
+        )
+
+        val virtualNodeOperation = entityManagerFactory.createEntityManager().use {
+            VirtualNodeRepositoryImpl().findVirtualNodeOperationByRequestId(it, requestId)
+        }
+
+        assertThat(virtualNodeOperation).isNotEmpty
+        assertNotNull(virtualNodeOperation[0].operationType)
+        assertNotNull(virtualNodeOperation[0].state)
+        assertEquals(virtualNodeOperation[0].requestData.toString(), "data")
     }
 
     @Test
@@ -327,8 +349,7 @@ class VirtualNodeRepositoryTest {
         }
 
         assertThat(foundEntity).isNotNull
-        assertThat(foundEntity.operationInProgress).isNotNull
-        assertThat(foundEntity.operationInProgress!!.id).isEqualTo(operationId)
+        assertThat(foundEntity.operationInProgress).isNull()
 
         val foundOperation = entityManagerFactory.createEntityManager().transaction {
             it.find(VirtualNodeOperationEntity::class.java, operationId)

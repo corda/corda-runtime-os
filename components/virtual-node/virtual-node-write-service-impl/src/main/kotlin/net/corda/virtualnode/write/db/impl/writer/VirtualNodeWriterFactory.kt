@@ -15,13 +15,16 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 
@@ -115,6 +118,9 @@ internal class VirtualNodeWriterFactory(
             virtualNodeDbAdmin,
             schemaMigrator
         )
+        val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             vnodePublisher,
             dbConnectionManager,
@@ -122,7 +128,9 @@ internal class VirtualNodeWriterFactory(
             vNodeDbFactory,
             groupPolicyParser,
             UTCClock(),
+            virtualNodeOperationStatusHandler,
             cpkDbChangeLogRepository,
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
         )
 

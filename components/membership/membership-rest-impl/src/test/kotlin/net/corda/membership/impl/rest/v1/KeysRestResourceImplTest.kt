@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -12,12 +13,9 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -26,8 +24,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

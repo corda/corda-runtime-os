@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
-import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -8,6 +7,8 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowMessaging
@@ -15,9 +16,8 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
@@ -195,11 +195,11 @@ class UtxoFinalityFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
-            val (message, failureReason) = if (e is NotaryException) {
+            val (message, failureReason) = if (e is NotaryExceptionFatal) {
                 persistInvalidTransaction(transaction)
-                "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.UNRECOVERABLE
+                "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
             } else {
-                "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.OTHER
+                "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
             }
 
             flowMessaging.sendAll(
@@ -225,7 +225,7 @@ class UtxoFinalityFlow(
             flowMessaging.sendAll(
                 Payload.Failure<List<DigitalSignatureAndMetadata>>(
                     message,
-                    FinalityNotarizationFailureType.UNRECOVERABLE.value
+                    FinalityNotarizationFailureType.FATAL.value
                 ), sessions.toSet()
             )
             throw CordaRuntimeException(message)
@@ -239,7 +239,7 @@ class UtxoFinalityFlow(
                 flowMessaging.sendAll(
                     Payload.Failure<List<DigitalSignatureAndMetadata>>(
                         message,
-                        FinalityNotarizationFailureType.UNRECOVERABLE.value
+                        FinalityNotarizationFailureType.FATAL.value
                     ), sessions.toSet()
                 )
                 throw e

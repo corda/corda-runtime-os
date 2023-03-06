@@ -3,6 +3,7 @@ package net.corda.virtualnode.rpcops.impl.v1
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -10,22 +11,26 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
+import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.asynchronous.v1.AsyncResponse
-import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.asynchronous.v1.AsyncResponse
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatus
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.DependentComponents
@@ -40,15 +45,14 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.debug
 import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
+import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.translate
@@ -61,6 +65,10 @@ import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
+import java.lang.IllegalArgumentException
+import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -231,6 +239,41 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         return ResponseEntity.accepted(AsyncResponse(requestId))
     }
 
+    override fun getVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatuses {
+        val instant = clock.instant()
+
+        // Send request for update to kafka, processed by the db worker in VirtualNodeWriterProcessor
+        val rpcRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeOperationStatusRequest(requestId)
+        )
+
+        // Actually send request and await response message on bus
+        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeOperationStatusResponse -> {
+                resolvedResponse.run {
+                    val statuses = this.operationHistory.map{
+                        VirtualNodeOperationStatus(
+                            it.requestId,
+                            it.requestData,
+                            it.requestTimestamp,
+                            it.latestUpdateTimestamp,
+                            it.heartbeatTimestamp,
+                            it.state,
+                            it.errors
+                        )
+                    }
+
+                    VirtualNodeOperationStatuses(this.requestId, statuses)
+                }
+            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
+    }
+
     private fun sendAsynchronousRequest(
         requestTime: Instant,
         virtualNodeShortId: String,
@@ -348,7 +391,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        // TODO: Validate newState
+        validateStateChange(virtualNodeShortId, newState)
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
@@ -375,6 +418,15 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         }
     }
 
+    private fun validateStateChange(virtualNodeShortId: String, newState: String) {
+        try {
+            VirtualNodeStateTransitions.valueOf(newState.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
+        }
+        getVirtualNode(virtualNodeShortId)
+    }
+
     private fun handleFailure(exception: ExceptionEnvelope?): java.lang.Exception {
         if (exception == null) {
             logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
@@ -383,7 +435,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         logger.warn(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
-        return InternalServerException(exception.errorMessage)
+        return when(exception.errorType) {
+            InvalidStateChangeRuntimeException::class.java.name ->  InvalidStateChangeException(exception.errorMessage)
+            else -> InternalServerException(exception.errorMessage)
+        }
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =

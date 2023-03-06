@@ -2,6 +2,7 @@ package net.corda.messaging.chunking
 
 import java.nio.ByteBuffer
 import java.util.UUID
+import kotlin.math.ceil
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
@@ -12,8 +13,9 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.LoggerFactory
 
@@ -56,11 +58,55 @@ class ChunkSerializerServiceImpl(
             ChunkKey.newBuilder()
                 .setPartNumber(it.partNumber)
                 .setRealKey(ByteBuffer.wrap(serializedKey))
-                .setRequestId(it.requestId)
                 .build()
         }
 
         return chunksToKey.map { CordaProducerRecord(producerRecord.topic, it.key, it.value) }
+    }
+
+    override fun getChunkKeysToClear(key: Any, oldValue: Any?, newValue: Any?): List<ChunkKey>? {
+        return try {
+            val oldValueChunkCount = getChunkCount(oldValue)
+            if (oldValueChunkCount == 0) return null
+            val newValueChunkCount = getChunkCount(newValue)
+            if (oldValueChunkCount > newValueChunkCount) {
+                generateChunkKeysToClear(key, oldValueChunkCount, newValueChunkCount)
+            } else null
+        } catch (ex: Exception) {
+            logger.warn("Failed to calculate ChunkKeys to clear", ex)
+            null
+        }
+    }
+
+    /**
+     * Get the total amount of chunks that this object will generate.
+     * This is calculated by comparing the serialized objects bytes count to the max record size.
+     * If the answer is not 0 then add 1 extra to account for the tombstone chunk.
+     * @param value the value to serialize
+     * @return Total amount of chunks this [value] will generate.
+     */
+    private fun getChunkCount(value: Any?): Int {
+        if (value == null) return 0
+        val bytes = cordaAvroSerializer.serialize(value) ?: throw CordaRuntimeException("Failed to serialize record value")
+        val byteSize = bytes.size
+        if (byteSize <= maxRecordSize) return 0
+        return ceil(byteSize.toDouble()/maxRecordSize).toInt() + 1
+    }
+
+    /**
+     * Generate ChunkKeys which are no longer set for the new value
+     * @param key the real key for the record
+     * @param oldValueChunkCount the count of chunks for the previous value
+     * @param newValueChunkCount the count of chunks for the new value
+     * @return ChunkKeys to set to null on the topic
+     */
+    private fun generateChunkKeysToClear(key: Any, oldValueChunkCount: Int, newValueChunkCount: Int): List<ChunkKey> {
+        val serializedKey = cordaAvroSerializer.serialize(key) ?: return emptyList()
+        val chunkKeys = mutableListOf<ChunkKey>()
+        for (i in oldValueChunkCount downTo  newValueChunkCount+1) {
+            chunkKeys.add(ChunkKey(ByteBuffer.wrap(serializedKey), i))
+        }
+        return chunkKeys
     }
 
     private fun generateChunksFromBytes(bytes: ByteArray, chunkSize: Int): List<Chunk> {

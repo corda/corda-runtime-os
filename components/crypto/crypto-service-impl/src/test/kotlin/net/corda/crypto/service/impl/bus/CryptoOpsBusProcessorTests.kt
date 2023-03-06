@@ -12,6 +12,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
@@ -46,11 +47,11 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.ParameterizedSignatureSpec
-import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -206,6 +207,14 @@ class CryptoOpsBusProcessorTests {
         testSigning(publicKey, data)
     }
 
+    @Test
+    fun `generate key should throw InvalidParamsException if invalid scheme name`() {
+        // generate
+        val exception = assertFailsWith<ExecutionException> {
+            process<CryptoPublicKey>(GenerateKeyPairCommand(LEDGER, newAlias(), null, "InvalidSchema", basicContext))
+        }
+        assertThat(exception.cause).isInstanceOf(InvalidParamsException::class.java)
+    }
 
     @Test
     fun `Second attempt to generate key with same alias should throw KeyAlreadyExistsException`() {
@@ -292,6 +301,16 @@ class CryptoOpsBusProcessorTests {
         assertEquals(externalId, info.externalId)
         // signing
         testSigning(publicKey, data)
+    }
+
+    @Test
+    fun `generate fresh key pair should throw InvalidParamsException if invalid scheme name`() {
+        // generate
+        val externalId = UUID.randomUUID().toString()
+        val exception = assertFailsWith<ExecutionException> {
+            process<CryptoPublicKey>(GenerateFreshKeyRpcCommand(CI, externalId, "InvalidSchema", basicContext))
+        }
+        assertThat(exception.cause).isInstanceOf(InvalidParamsException::class.java)
     }
 
     @Test
@@ -418,7 +437,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         factory.verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
         // sign using public key and custom scheme
-        val signatureSpec4 = SignatureSpec(signatureName = "SHA512withECDSA")
+        val signatureSpec4 = SignatureSpec("SHA512withECDSA")
         val css4 = CryptoSignatureSpec(signatureSpec4.signatureName, null, null)
         val signature4 = process<CryptoSignatureWithKey>(SignRpcCommand(encKey, css4, ByteBuffer.wrap(data), emptyContext))
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature3.publicKey.array()))

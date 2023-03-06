@@ -4,10 +4,12 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -30,8 +32,6 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

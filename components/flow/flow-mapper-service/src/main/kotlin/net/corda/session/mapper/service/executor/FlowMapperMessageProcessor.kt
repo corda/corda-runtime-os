@@ -1,5 +1,6 @@
 package net.corda.session.mapper.service.executor
 
+import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.ExecuteCleanup
@@ -12,10 +13,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 /**
  * The [FlowMapperMessageProcessor] receives states and events that are keyed by strings. These strings can be either:

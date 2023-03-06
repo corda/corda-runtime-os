@@ -29,11 +29,13 @@ quasar {
     excludePackages.addAll([
             'com.zaxxer.hikari**',
             'liquibase**',
+            'net.bytebuddy**',
             'net.corda.membership**',
             'org.eclipse.jetty**',
             'org.hibernate**',
             'org.jboss.logging',
-            'org.postgresql**'
+            'org.postgresql**',
+            'org.yaml.snakeyaml**'
     ])
 }
 
@@ -79,6 +81,7 @@ dependencies {
     implementation project(':processors:verification-processor')
     implementation project(':processors:link-manager-processor')
     implementation project(':processors:gateway-processor')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'

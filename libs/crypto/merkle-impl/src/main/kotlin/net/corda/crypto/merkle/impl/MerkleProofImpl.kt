@@ -10,10 +10,10 @@ import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 
 class MerkleProofImpl(
-    override val proofType: MerkleProofType,
-    override val treeSize: Int,
-    override val leaves: List<IndexedMerkleLeaf>,
-    override val hashes: List<SecureHash>
+    private val proofType: MerkleProofType,
+    private val treeSize: Int,
+    private val leaves: List<IndexedMerkleLeaf>,
+    private val hashes: List<SecureHash>
 ) : MerkleProof {
 
     // CORE-5111: add serialize/deserialize (and its test)
@@ -141,4 +141,12 @@ class MerkleProofImpl(
         result = 31 * result + hashes.hashCode()
         return result
     }
+
+    override fun getProofType() = proofType
+
+    override fun getTreeSize() = treeSize
+
+    override fun getLeaves() = leaves
+
+    override fun getHashes() = hashes
 }
