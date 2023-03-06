@@ -6,7 +6,8 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 @CordaSerializable
-class TransactionMetadataImpl (private val properties: Map<String, Any>) : TransactionMetadata {
+class TransactionMetadataImpl(private val properties: Map<String, Any>) : TransactionMetadata,
+    TransactionMetadataInternal {
 
     operator fun get(key: String): Any? = properties[key]
 
