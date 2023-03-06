@@ -28,7 +28,7 @@ public abstract class NotaryException extends CordaRuntimeException {
     }
 
     /**
-     * @return txId Id of the transaction to be notarised. Can be _null_ if an error occurred before the id could be
+     * @return txId Id of the transaction to be notarized. Can be _null_ if an error occurred before the id could be
      * resolved.
      */
     @Nullable
@@ -37,7 +37,7 @@ public abstract class NotaryException extends CordaRuntimeException {
     }
 
     NotaryException(@NotNull String notaryErrorMessage, @Nullable SecureHash txId) {
-        super("Unable to notarise transaction " + (txId != null ? txId : "<Unknown>:") + " " + notaryErrorMessage);
+        super("Unable to notarize transaction " + (txId != null ? txId : "<Unknown>:") + " " + notaryErrorMessage);
         this.notaryErrorMessage = notaryErrorMessage;
         this.txId = txId;
     }

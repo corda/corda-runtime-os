@@ -5,7 +5,7 @@ package net.corda.v5.ledger.notary.plugin.api
  * define the type of the notary plugin it instantiates.
  * See [PluggableNotaryClientFlowProvider] for more details.
  *
- * This type is used to select the proper plugin when a transaction needs to be notarised.
+ * This type is used to select the proper plugin when a transaction needs to be notarized.
  */
 @kotlin.annotation.Target(AnnotationTarget.CLASS)
 @kotlin.annotation.Retention

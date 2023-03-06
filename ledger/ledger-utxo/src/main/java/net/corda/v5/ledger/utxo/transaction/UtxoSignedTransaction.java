@@ -72,17 +72,17 @@ public interface UtxoSignedTransaction extends TransactionWithMetadata {
     List<StateAndRef<?>> getOutputStateAndRefs();
 
     /**
-     * Gets the notary {@link Party} used for notarising the current transaction.
+     * Gets the notary {@link Party} used for notarizing the current transaction.
      *
-     * @return Returns the notary {@link Party} used for notarising the current transaction.
+     * @return Returns the notary {@link Party} used for notarizing the current transaction.
      */
     @NotNull
     Party getNotary();
 
     /**
-     * Gets the validity {@link TimeWindow} for notarising and finalizing the current transaction.
+     * Gets the validity {@link TimeWindow} for notarizing and finalizing the current transaction.
      *
-     * @return Returns the validity {@link TimeWindow} for notarising and finalizing the current transaction.
+     * @return Returns the validity {@link TimeWindow} for notarizing and finalizing the current transaction.
      */
     @NotNull
     TimeWindow getTimeWindow();

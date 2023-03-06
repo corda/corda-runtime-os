@@ -53,9 +53,9 @@ public interface UtxoFilteredTransaction {
     TransactionMetadata getMetadata();
 
     /**
-     * Gets the validity time window for finalizing/notarising the current transaction, or null if filtered.
+     * Gets the validity time window for finalizing/notarizing the current transaction, or null if filtered.
      *
-     * @return Returns the validity time window for finalizing/notarising the current transaction, or null if filtered.
+     * @return Returns the validity time window for finalizing/notarizing the current transaction, or null if filtered.
      */
     @Nullable
     TimeWindow getTimeWindow();
