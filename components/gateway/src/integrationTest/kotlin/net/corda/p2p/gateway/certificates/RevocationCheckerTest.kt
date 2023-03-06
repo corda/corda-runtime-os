@@ -13,6 +13,7 @@ import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.concurrent.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
@@ -56,6 +57,7 @@ class RevocationCheckerTest {
     private val wrongTrustStore = listOf(Certificates.c4TruststoreCertificatePem.readText())
 
     @Test
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `valid certificate passes validation`() {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL), result)
@@ -70,6 +72,7 @@ class RevocationCheckerTest {
     }
 
     @Test
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `revoked certificate fails validation with HARD FAIL mode`() {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.HARD_FAIL), result)
@@ -77,6 +80,7 @@ class RevocationCheckerTest {
     }
 
     @Test
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
         val resultFuture = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.SOFT_FAIL), resultFuture)

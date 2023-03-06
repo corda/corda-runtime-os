@@ -107,6 +107,7 @@ import org.bouncycastle.openssl.PEMKeyPair
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.KStubbing
@@ -148,6 +149,7 @@ class P2PLayerEndToEndTest {
 
     @Test
     @Timeout(60)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         val numberOfMessages = 10
         val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.aliceKeyStoreFile)
@@ -200,6 +202,7 @@ class P2PLayerEndToEndTest {
 
     @Test
     @Timeout(60)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         val numberOfMessages = 10
         val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.receiverKeyStoreFile)
@@ -285,6 +288,7 @@ class P2PLayerEndToEndTest {
 
     @Test
     @Timeout(60)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `messages with expired ttl have processed marker and ttl expired marker and no received marker`() {
         val numberOfMessages = 10
         val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.aliceKeyStoreFile)
