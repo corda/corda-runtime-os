@@ -89,8 +89,8 @@ import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberContext

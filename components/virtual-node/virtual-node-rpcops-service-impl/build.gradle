@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:rest:rest-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:membership:membership-common')
     implementation project(":libs:utilities")
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'

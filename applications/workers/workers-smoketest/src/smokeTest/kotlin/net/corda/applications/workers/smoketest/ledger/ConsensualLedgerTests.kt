@@ -1,6 +1,11 @@
 package net.corda.applications.workers.smoketest.ledger
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
@@ -28,6 +33,10 @@ class ConsensualLedgerTests {
 
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
+            val module = SimpleModule()
+            module.addSerializer(SecureHash::class.java, SecureHashSerializer)
+            module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+            registerModule(module)
         }
     }
 
@@ -130,4 +139,16 @@ class ConsensualLedgerTests {
         val transaction: ConsensualTransactionResult?,
         val errorMessage: String?
     )
+}
+
+internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerializer<SecureHash>() {
+    override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+        generator.writeString(obj.toString())
+    }
+}
+
+internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
+    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
+        return SecureHash.parse(parser.text)
+    }
 }

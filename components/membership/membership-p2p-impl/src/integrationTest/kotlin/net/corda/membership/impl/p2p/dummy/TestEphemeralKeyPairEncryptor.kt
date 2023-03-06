@@ -2,11 +2,11 @@ package net.corda.membership.impl.p2p.dummy
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
-import net.corda.crypto.hes.HybridEncryptionParams
-import net.corda.crypto.hes.HybridEncryptionParamsProvider
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.HybridEncryptionParamsProvider
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

@@ -3,8 +3,8 @@ package net.corda.libs.cpi.datamodel.repository
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import javax.persistence.EntityManager
 
@@ -21,7 +21,7 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
         em: EntityManager,
         cpkFileChecksums: Set<String>
     ): List<CpkDbChangeLog> {
-        return cpkFileChecksums.chunked(100) { batch ->
+        return cpkFileChecksums.chunked(100).map { batch ->
             em.createQuery(
                 "FROM ${CpkDbChangeLogEntity::class.simpleName}" +
                         " WHERE id.cpkFileChecksum IN :cpkFileChecksums",
@@ -68,7 +68,7 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     /**
      * Converts a data transport object to an entity.
      */
-    private fun CpkDbChangeLog.toEntity(): CpkDbChangeLogEntity =
+    private fun CpkDbChangeLog.toEntity() =
         CpkDbChangeLogEntity(id.toEntity(), content)
 
     private fun CpkDbChangeLogIdentifier.toEntity() =

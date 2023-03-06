@@ -117,7 +117,7 @@ class ConvertersTest {
     fun `CPI․Metadata round trip`() {
         val original = CpiMetadata(
             CpkMetaTestData.cpiId,
-            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(CpkMetaTestData.random::nextBytes)),
+            SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(CpkMetaTestData.random::nextBytes)),
             listOf(CpkMetaTestData.create()),
             "someString",
             -1,

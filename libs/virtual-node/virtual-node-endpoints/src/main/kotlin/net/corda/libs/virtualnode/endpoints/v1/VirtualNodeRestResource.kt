@@ -11,9 +11,10 @@ import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 
 /** Rest operations for virtual node management. */
 @HttpRestResource(
@@ -24,9 +25,8 @@ import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 interface VirtualNodeRestResource : RestResource {
 
     /**
-     * Creates a virtual node.
+     * Requests the creation of a virtual node.
      *
-     * @throws `VirtualNodeRPCOpsServiceException` If the virtual node creation request could not be published.
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpPOST(
@@ -36,8 +36,8 @@ interface VirtualNodeRestResource : RestResource {
     )
     fun createVirtualNode(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
-        request: VirtualNodeRequest
-    ): VirtualNodeInfo
+        request: CreateVirtualNodeRequest
+    ): ResponseEntity<AsyncResponse>
 
     /**
      * Lists all virtual nodes onboarded to the cluster.
@@ -87,6 +87,21 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
     ): VirtualNodeInfo
+
+    /**
+     * Returns the VirtualNodeOperationStatus for a given [requestId].
+     */
+    @HttpGET(
+        path = "status/{requestId}",
+        title = "Gets the VirtualNodeOperationStatus for an operation request id.",
+        description = "This method returns the VirtualNodeOperationStatus for a given operation request id.",
+        responseDescription = "VirtualNodeOperationStatus for the specified virtual node."
+    )
+    fun getVirtualNodeOperationStatus(
+        @RestPathParameter(description = "The requestId for the operation; obtained during node creation/upgrade")
+        requestId: String
+    ): VirtualNodeOperationStatuses
+
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

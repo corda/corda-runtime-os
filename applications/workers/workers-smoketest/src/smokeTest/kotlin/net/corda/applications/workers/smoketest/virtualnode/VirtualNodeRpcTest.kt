@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
+import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
@@ -46,6 +47,7 @@ class VirtualNodeRpcTest {
         private const val ERROR_IS_CLUSTER_RUNNING = "Initial upload failed - is the cluster running?"
         private const val ERROR_HOLDING_ID =
             "Holding id could not be created - this test needs to be run on a clean cluster."
+        private const val ERROR_REQUEST_ID = "Request Id not found."
         private const val ERROR_VNODE_NOT_IN_MAINTENANCE =
             "Virtual node must be in maintenance to perform an upgrade."
 
@@ -327,11 +329,19 @@ class VirtualNodeRpcTest {
     private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(cpiFileChecksum, x500Name) }
-            condition { it.code == 200 }
+            condition { it.code == 202 }
             failMessage(ERROR_HOLDING_ID)
         }.toJson()
-        val vnodeShortHash = vNodeJson["holdingIdentity"]["shortHash"].textValue()
+        val vnodeShortHash = vNodeJson["requestId"].textValue()
         assertThat(vnodeShortHash).isNotNull.isNotEmpty
+
+        assertWithRetry {
+            command { getVNode(vnodeShortHash)}
+            condition { it.code == 200 }
+            failMessage(
+                "The virtual node was submitted for creation but no vNode found for '$vnodeShortHash'"
+            )
+        }
         return vnodeShortHash
     }
 
@@ -408,7 +418,7 @@ class VirtualNodeRpcTest {
             eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
 
             val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
-            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 503)
+            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 405)
             getFlowStatus(aliceHoldingId, requestId, 404)
 
 
@@ -703,9 +713,18 @@ class VirtualNodeRpcTest {
             eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
 
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
-            triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
+            val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
+
+            val statusAfterUpgrade = getVirtualNodeOperationStatus(requestId!!)
+            val operationState = statusAfterUpgrade["response"].single()["state"].textValue()
+            assertThat(operationState).isIn("COMPLETED", "IN_PROGRESS")
+
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
             awaitVirtualNodeOperationCompletion(bobHoldingId)
+
+            val statusAfterCompletion = getVirtualNodeOperationStatus(requestId)
+            val operationStateAfterCompletion = statusAfterCompletion["response"].single()["state"].textValue()
+            assertThat(operationStateAfterCompletion).isEqualTo("COMPLETED")
         }
     }
 
@@ -733,12 +752,22 @@ class VirtualNodeRpcTest {
         return vNodeJson["requestId"].textValue()
     }
 
+    private fun ClusterBuilder.getVirtualNodeOperationStatus(requestId: String): JsonNode {
+        val operationStatus = assertWithRetry {
+            command { getVNodeOperationStatus(requestId) }
+            condition { it.code == 200 }
+            failMessage(ERROR_REQUEST_ID)
+        }.toJson()
+        return operationStatus
+    }
+
     private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
         virtualNodeShortHash: String, cpiName: String, cpiVersion: String
     ) = assertWithRetry {
         timeout(Duration.of(30, ChronoUnit.SECONDS))
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
+
             response.code == 200 &&
                     response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
                     response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&

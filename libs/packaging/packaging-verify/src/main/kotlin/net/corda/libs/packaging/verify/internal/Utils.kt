@@ -32,7 +32,7 @@ internal fun Manifest.requireAttributeValueIn(name: String, vararg values: Strin
  * @return the resulting [SecureHash]
  */
 internal inline fun hash(
-    algorithm : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME,
+    algorithm : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
     withDigestAction : (MessageDigest) -> Unit
 ) : SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
@@ -41,7 +41,7 @@ internal inline fun hash(
 }
 
 internal val secureHashComparator = Comparator.nullsFirst(
-    Comparator.comparing(SecureHash::algorithm)
+    Comparator.comparing(SecureHash::getAlgorithm)
         .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
 
 internal fun Sequence<SecureHash>.sortedSequenceHash() : SecureHash {

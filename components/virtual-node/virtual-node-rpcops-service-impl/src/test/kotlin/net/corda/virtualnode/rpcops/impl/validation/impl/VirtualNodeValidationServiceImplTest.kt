@@ -15,17 +15,25 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
+import java.time.Instant
+import java.util.UUID
 
 class VirtualNodeValidationServiceImplTest {
+    private val now = Instant.now()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
-
     private val validationService = VirtualNodeValidationServiceImpl(virtualNodeInfoReadService, cpiInfoReadService)
     private val vnodeId = "aaaa1111bbbb"
-    private val cpiFileChecksum = "2234567800"
-    private val cpiFileChecksumFull = "SHA-256:2234567800"
+    private val cpiFileChecksum = "0123456789AB"
+    private val cpiFileChecksumFull = "SHA-256:0123456789AB"
     private val vnodeShortHash = ShortHash.of(vnodeId)
     private val cpiSecureHash = SecureHash.parse(cpiFileChecksumFull)
     private val mockVnode = mock<VirtualNodeInfo> {
@@ -135,5 +143,145 @@ class VirtualNodeValidationServiceImplTest {
         assertThrows<BadRequestException> {
             validationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
         }
+    }
+
+    @Test
+    fun `validate and get group id - invalid x500`() {
+        val request = getExampleVirtualNodeRequest(x500Name = "abc")
+        assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
+    }
+
+    @Test
+    fun `validate and get group id - throws if CPI checksum is valid 12 digit hex number`() {
+        val invalidValues = listOf<String>(
+            "0123456789A", // to short
+            "0123456789ABC", // to long
+            "0123456789AX", // right length not hex
+        )
+        invalidValues.forEach { example->
+            val request = getExampleVirtualNodeRequest(cpiShortFileChecksum = example)
+            assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
+        }
+    }
+
+    @Test
+    fun `validate and get group id - vault DML must be provided when DDL set`() {
+        val request = getExampleVirtualNodeRequest(vaultDmlConnection = null)
+        assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
+    }
+
+    @Test
+    fun `validate and get group id - crypt DML must be provided when DDL set`() {
+        val request = getExampleVirtualNodeRequest(cryptoDmlConnection = null)
+        assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
+    }
+
+    @Test
+    fun `validate and get group id - uniqueness DML must be provided when DDL set`() {
+        val request = getExampleVirtualNodeRequest(uniquenessDmlConnection = null)
+        assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
+    }
+
+    @Test
+    fun `validate and get group id - CPI Meta data not found `() {
+        val request = getExampleVirtualNodeRequest()
+        whenever(cpiInfoReadService.getAll()).thenReturn(listOf())
+        assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
+    }
+
+    @Test
+    fun `validate and get group id - CPI Meta missing group policy`() {
+        val cpiMetadataInvalid = CpiMetadata(
+            CpiIdentifier("name", "v1", SecureHash("SHA-256", ByteArray(16))),
+            cpiSecureHash,
+            listOf(),
+            null,
+            1,
+            now
+        )
+        val request = getExampleVirtualNodeRequest()
+        whenever(cpiInfoReadService.getAll()).thenReturn(listOf(cpiMetadataInvalid))
+        assertThrows<InternalServerException> { validationService.validateAndGetGroupId(request) }
+    }
+
+    @Test
+    fun `validate and get group id - returns group ID`() {
+        val cpiMetadata = CpiMetadata(
+            CpiIdentifier("name", "v1", SecureHash("SHA-256", ByteArray(16))),
+            cpiSecureHash,
+            listOf(),
+            """{ "groupId":"grp1"}""",
+            1,
+            now
+        )
+        whenever(cpiInfoReadService.getAll()).thenReturn(listOf(cpiMetadata))
+        val request = getExampleVirtualNodeRequest()
+        assertThat(validationService.validateAndGetGroupId(request)).isEqualTo("grp1")
+    }
+
+    @Test
+    fun `validate and get group id - returns new UUID when group ID is special MGM group`() {
+        val cpiMetadata = CpiMetadata(
+            CpiIdentifier("name", "v1", SecureHash("SHA-256", ByteArray(16))),
+            cpiSecureHash,
+            listOf(),
+            """{ "groupId":"CREATE_ID"}""",
+            1,
+            now
+        )
+        whenever(cpiInfoReadService.getAll()).thenReturn(listOf(cpiMetadata))
+        val request = getExampleVirtualNodeRequest()
+        // check a UUID is returned
+        UUID.fromString(validationService.validateAndGetGroupId(request))
+    }
+
+    @Test
+    fun `validate virtual node does not exists throws when matching virtual node found`() {
+        val alice = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        val holdingIdentity = HoldingIdentity(alice, "grp1")
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash))
+            .thenReturn(mockVnode)
+
+        val error = assertThrows<ResourceAlreadyExistsException> {
+            validationService.validateVirtualNodeDoesNotExist(holdingIdentity)
+        }
+
+        assertThat(error.message)
+            .isEqualTo(
+                "Virtual Node 'HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=grp1)' already exists."
+            )
+    }
+
+    @Test
+    fun `validate virtual node does not exists passes when no matching virtual node found`() {
+        val alice = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        val holdingIdentity = HoldingIdentity(alice, "grp1")
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash))
+            .thenReturn(null)
+
+        validationService.validateVirtualNodeDoesNotExist(holdingIdentity)
+    }
+
+    @Suppress("LongParameterList")
+    private fun getExampleVirtualNodeRequest(
+        x500Name: String = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+        cpiShortFileChecksum: String = cpiFileChecksum,
+        vaultDdlConnection: String? = "vddl",
+        vaultDmlConnection: String? = "vdml",
+        cryptoDdlConnection: String? = "cdml",
+        cryptoDmlConnection: String? = "cddl",
+        uniquenessDdlConnection: String? = "uddl",
+        uniquenessDmlConnection: String? = "udml"
+    ): CreateVirtualNodeRequest {
+        return CreateVirtualNodeRequest(
+            x500Name,
+            cpiShortFileChecksum,
+            vaultDdlConnection,
+            vaultDmlConnection,
+            cryptoDdlConnection,
+            cryptoDmlConnection,
+            uniquenessDdlConnection,
+            uniquenessDmlConnection,
+        )
     }
 }
