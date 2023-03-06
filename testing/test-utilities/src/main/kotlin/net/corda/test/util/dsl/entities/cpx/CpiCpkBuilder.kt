@@ -4,18 +4,13 @@ import java.util.UUID
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
-
-fun cpiCpk(init: CpiCpkBuilder.() -> Unit): CpiCpkBuilder {
-    val cpiCpk = CpiCpkBuilder()
-    init(cpiCpk)
-    return cpiCpk
-}
+import net.corda.v5.crypto.SecureHash
 
 class CpiCpkBuilder(
-    private var cpkFileChecksumSupplier: () -> String? = { null },
+    private var cpkFileChecksumSupplier: () -> SecureHash? = { null },
     private var cpiNameSupplier: () -> String? = { null },
     private var cpiVersionSupplier: () -> String? = { null },
-    private var cpiSignerSummaryHashSupplier: () -> String? = { null },
+    private var cpiSignerSummaryHashSupplier: () -> SecureHash? = { null },
     private var randomId: UUID = UUID.randomUUID()
 ) {
 
@@ -23,7 +18,7 @@ class CpiCpkBuilder(
         cpk: CpkMetadataBuilder,
         cpiNameSupplier: () -> String? = { null },
         cpiVersionSupplier: () -> String? = { null },
-        cpiSignerSummaryHashSupplier: () -> String? = { null },
+        cpiSignerSummaryHashSupplier: () -> SecureHash? = { null },
     ) : this(cpk.fileChecksumSupplier, cpiNameSupplier, cpiVersionSupplier, cpiSignerSummaryHashSupplier) {
         cpkName = cpk.cpkName
         cpkVersion = cpk.cpkVersion
@@ -37,11 +32,16 @@ class CpiCpkBuilder(
         cpk: CpkMetadataEntity,
         cpiNameSupplier: () -> String? = { null },
         cpiVersionSupplier: () -> String? = { null },
-        cpiSignerSummaryHashSupplier: () -> String? = { null },
-    ) : this({ cpk.cpkFileChecksum }, cpiNameSupplier, cpiVersionSupplier, cpiSignerSummaryHashSupplier) {
+        cpiSignerSummaryHashSupplier: () -> SecureHash? = { null },
+    ) : this(
+        { SecureHash.parse(cpk.cpkFileChecksum) },
+        cpiNameSupplier,
+        cpiVersionSupplier,
+        cpiSignerSummaryHashSupplier
+    ) {
         cpkName = cpk.cpkName
         cpkVersion = cpk.cpkVersion
-        cpkSignerSummaryHash = cpk.cpkSignerSummaryHash
+        cpkSignerSummaryHash = SecureHash.parse(cpk.cpkSignerSummaryHash)
         formatVersion = cpk.formatVersion
         serializedMetadata = cpk.serializedMetadata
         metadataEntity = cpk
@@ -50,7 +50,7 @@ class CpiCpkBuilder(
     // cpk
     private var cpkName: String? = null
     private var cpkVersion: String? = null
-    private var cpkSignerSummaryHash: String? = null
+    private var cpkSignerSummaryHash: SecureHash? = null
 
     // cpicpk
     private var fileName: String? = null
@@ -76,7 +76,7 @@ class CpiCpkBuilder(
         return this
     }
 
-    fun cpiSignerSummaryHash(value: String): CpiCpkBuilder {
+    fun cpiSignerSummaryHash(value: SecureHash): CpiCpkBuilder {
         cpiSignerSummaryHashSupplier = { value }
         return this
     }
@@ -91,7 +91,7 @@ class CpiCpkBuilder(
         return this
     }
 
-    fun cpkSignerSummaryHash(value: String): CpiCpkBuilder {
+    fun cpkSignerSummaryHash(value: SecureHash): CpiCpkBuilder {
         cpkSignerSummaryHash = value
         return this
     }
@@ -113,7 +113,7 @@ class CpiCpkBuilder(
         return this
     }
 
-    fun fileChecksum(value: String): CpiCpkBuilder {
+    fun fileChecksum(value: SecureHash): CpiCpkBuilder {
         cpkFileChecksumSupplier = { value }
         return this
     }
@@ -125,12 +125,18 @@ class CpiCpkBuilder(
 
     @Suppress("ThrowsCount")
     fun build(): CpiCpkEntity {
-        if (cpkFileChecksumSupplier.invoke() == null) cpkFileChecksumSupplier = { "cpk_file_checksum_$randomId" }
+        if (cpkFileChecksumSupplier.invoke() == null) cpkFileChecksumSupplier =
+            { SecureHash("SHA1", "cpk_file_checksum_$randomId".toByteArray()) }
         val cpk: CpkMetadataEntity = metadataEntity
             ?: metadata?.build() ?: CpkMetadataBuilder(cpkFileChecksumSupplier, randomId)
                 .cpkName(cpkName ?: "cpkName_$randomId")
                 .cpkVersion(cpkVersion ?: "cpkVersion_$randomId")
-                .cpkSignerSummaryHash(cpkSignerSummaryHash ?: "cpkSignerSummaryHash_$randomId")
+                .cpkSignerSummaryHash(
+                    cpkSignerSummaryHash ?: SecureHash(
+                        "SHA1",
+                        "cpkSignerSummaryHash_$randomId".toByteArray()
+                    )
+                )
                 .formatVersion(formatVersion)
                 .serializedMetadata(serializedMetadata)
                 .build()
@@ -139,9 +145,8 @@ class CpiCpkBuilder(
             CpiCpkKey(
                 cpiNameSupplier.invoke() ?: throw DslException("CpiCpkBuilder.cpiNameSupplier is mandatory"),
                 cpiVersionSupplier.invoke() ?: throw DslException("CpiCpkBuilder.cpiVersionSupplier is mandatory"),
-                cpiSignerSummaryHashSupplier.invoke()
-                    ?: throw DslException("CpiCpkBuilder.cpiSignerSummaryHashSupplier is mandatory"),
-                cpkFileChecksumSupplier()!!
+                cpiSignerSummaryHashSupplier.invoke().toString(),
+                cpkFileChecksumSupplier()!!.toString()
             ),
             fileName ?: "cpk_filename_$randomId",
             cpk

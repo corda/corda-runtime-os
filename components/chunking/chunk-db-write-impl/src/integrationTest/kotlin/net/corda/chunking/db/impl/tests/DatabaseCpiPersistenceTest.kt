@@ -268,7 +268,7 @@ internal class DatabaseCpiPersistenceTest {
             groupId,
             listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.fileChecksum)
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 }
             )
@@ -294,11 +294,11 @@ internal class DatabaseCpiPersistenceTest {
             groupId,
             listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.fileChecksum)
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 },
                 cpkDbChangeLog {
-                    fileChecksum(cpk2.fileChecksum)
+                    fileChecksum(cpk2.metadata.fileChecksum)
                     filePath(cpk2.path.toString())
                 }
             )
@@ -310,10 +310,10 @@ internal class DatabaseCpiPersistenceTest {
         assertThat(forceUploadedCpi.entityVersion).isEqualTo(3)
         assertThat(forceUploadedCpi.cpks.size).isEqualTo(2)
         // cpk1 has incremented because we called merge on the CPI with this entity already existing in the set.
-        val forceUploadedCpk1 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk1.fileChecksum }
+        val forceUploadedCpk1 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk1.metadata.fileChecksum.toString() }
         assertThat(forceUploadedCpk1.entityVersion).isEqualTo(0)
         assertThat(forceUploadedCpk1.metadata.entityVersion).isEqualTo(0)
-        val forceUploadedCpk2 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk2.fileChecksum }
+        val forceUploadedCpk2 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk2.metadata.fileChecksum.toString() }
         assertThat(forceUploadedCpk2.entityVersion).isEqualTo(0)
         assertThat(forceUploadedCpk2.metadata.entityVersion).isEqualTo(0)
 
@@ -322,10 +322,9 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun assertChangeLogPersistedWithCpi(cpk: Cpk) {
-        val cpkFileChecksum = cpk.metadata.fileChecksum.toString()
-        val dbChangeLogAsList = loadCpkDbChangeLog(CpkDbChangeLogIdentifier(cpkFileChecksum, cpk.path.toString()))
+        val dbChangeLogAsList = loadCpkDbChangeLog(CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, cpk.path.toString()))
         assertThat(dbChangeLogAsList).isNotNull
-        assertThat(dbChangeLogAsList.id.cpkFileChecksum).isEqualTo(cpkFileChecksum)
+        assertThat(dbChangeLogAsList.id.cpkFileChecksum).isEqualTo(cpk.metadata.fileChecksum)
     }
 
     private fun loadCpkDbChangeLog(fileChecksum: SecureHash): List<CpkDbChangeLog> {
@@ -414,7 +413,7 @@ internal class DatabaseCpiPersistenceTest {
         assertCpkIsNotAssociatedWithCpi(cpi, cpk)
         findAndAssertCpks(
             listOf(Pair(cpi, updatedCpk)),
-            expectedCpkFileChecksum = newChecksum.toString()
+            expectedCpkFileChecksum = newChecksum
         )
     }
 
@@ -435,11 +434,11 @@ internal class DatabaseCpiPersistenceTest {
 
         findAndAssertCpks(
             listOf(Pair(cpi, cpk1)),
-            expectedCpkFileChecksum = cpkFileChecksum1.toString()
+            expectedCpkFileChecksum = cpkFileChecksum1
         )
         findAndAssertCpks(
             listOf(Pair(cpi, cpk2)),
-            expectedCpkFileChecksum = cpkFileChecksum2.toString()
+            expectedCpkFileChecksum = cpkFileChecksum2
         )
     }
 
@@ -460,7 +459,7 @@ internal class DatabaseCpiPersistenceTest {
         assertCpkIsNotAssociatedWithCpi(cpi, cpk1)
         findAndAssertCpks(
             listOf(Pair(cpi, updatedCpk)),
-            expectedCpkFileChecksum = updatedCpk.fileChecksum,
+            expectedCpkFileChecksum = updatedCpk.metadata.fileChecksum
         )
 
         // a new cpi object, with a new cpk file checksum
@@ -473,7 +472,7 @@ internal class DatabaseCpiPersistenceTest {
         assertCpkIsNotAssociatedWithCpi(cpi, updatedCpk)
         findAndAssertCpks(
             listOf(Pair(cpi, anotherUpdatedCpk)),
-            expectedCpkFileChecksum = thirdChecksum.toString(),
+            expectedCpkFileChecksum = thirdChecksum,
         )
     }
 
@@ -508,7 +507,7 @@ internal class DatabaseCpiPersistenceTest {
             cpiWithChangelogs,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.fileChecksum)
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 }
             )
@@ -551,14 +550,14 @@ internal class DatabaseCpiPersistenceTest {
             cpi,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.metadata.fileChecksum.toString())
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(filePath)
                 }
             )
         )
 
         val changelogs = findChangelogs(cpiEntity)
-        val changelogAudits = findAuditLogs(listOf(cpk1.fileChecksum))
+        val changelogAudits = findAuditLogs(listOf(cpk1.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
         assertThat(changelogAudits.size).isEqualTo(1)
 
@@ -569,17 +568,17 @@ internal class DatabaseCpiPersistenceTest {
             updatedCpi,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.metadata.fileChecksum.toString())
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(filePath)
                 },
                 cpkDbChangeLog {
-                    fileChecksum(cpk2.metadata.fileChecksum.toString())
+                    fileChecksum(cpk2.metadata.fileChecksum)
                     filePath(filePath)
                 }
             )
         )
         val updatedChangelogs = findChangelogs(updateCpiEntity)
-        val updatedChangelogAudits = findAuditLogs(listOf(cpk1.fileChecksum, cpk2.fileChecksum))
+        val updatedChangelogAudits = findAuditLogs(listOf(cpk1.metadata.fileChecksum, cpk2.metadata.fileChecksum))
 
         assertThat(updatedChangelogs.size)
             .withFailMessage("Expecting 2 changelogs, one for each CPK with unique file path associated")
@@ -593,7 +592,7 @@ internal class DatabaseCpiPersistenceTest {
     fun `force upload adds multiple changelog audit entry for multiple changesets with different filePaths`() {
         val cpk = mockCpk()
         val cpi = mockCpi(cpk)
-        val cpk1FileChecksum = cpk.metadata.fileChecksum.toString()
+        val cpk1FileChecksum = cpk.metadata.fileChecksum
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
             cpkDbChangeLog = listOf(
@@ -604,13 +603,13 @@ internal class DatabaseCpiPersistenceTest {
         )
 
         val changelogs = findChangelogs(cpiEntity)
-        val changelogAudits = findAuditLogs(listOf(cpk.fileChecksum))
+        val changelogAudits = findAuditLogs(listOf(cpk.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
         assertThat(changelogAudits.size).isEqualTo(1)
 
         val cpk2 = mockCpk()
         val updatedCpi = mockCpiWithId(listOf(cpk2), cpi.metadata.cpiId)
-        val cpk2FileChecksum = cpk2.metadata.fileChecksum.toString()
+        val cpk2FileChecksum = cpk2.metadata.fileChecksum
 
         val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
@@ -636,7 +635,7 @@ internal class DatabaseCpiPersistenceTest {
         cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, SecureHash.parse(cpiEntity.signerSummaryHash)))
     }
 
-    private fun findAuditLogs(cpkFileChecksums: List<String>) = entityManagerFactory.createEntityManager().transaction {
+    private fun findAuditLogs(cpkFileChecksums: Collection<SecureHash>) = entityManagerFactory.createEntityManager().transaction {
         cpkDbChangeLogAuditRepository.findByFileChecksums(it, cpkFileChecksums)
     }
 
@@ -649,7 +648,7 @@ internal class DatabaseCpiPersistenceTest {
                         cpi.metadata.cpiId.name,
                         cpi.metadata.cpiId.version,
                         cpi.metadata.cpiId.signerSummaryHash.toString(),
-                        cpk.fileChecksum
+                        cpk.metadata.fileChecksum.toString()
                     )
                 )
             ).isNull()
@@ -676,7 +675,7 @@ internal class DatabaseCpiPersistenceTest {
     ): List<CpkDbChangeLog> = cpks.flatMap { cpk ->
         changeLogs.map { changeLog ->
             CpkDbChangeLog(
-                CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum.toString(), "resources/$changeLog"),
+                CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, "resources/$changeLog"),
                 changeLog
             )
         }
@@ -695,7 +694,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun findAndAssertCpks(
         combos: List<Pair<Cpi, Cpk>>,
-        expectedCpkFileChecksum: String? = null,
+        expectedCpkFileChecksum: SecureHash? = null,
         expectedMetadataEntityVersion: Int = 0,
         expectedFileEntityVersion: Int = 0,
         expectedCpiCpkEntityVersion: Int = 0
@@ -715,8 +714,8 @@ internal class DatabaseCpiPersistenceTest {
                 Triple(cpkMetadata, cpkFile, cpiCpk)
             }
 
-            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum.toString())
-            assertThat(cpkFile.fileChecksum.toString()).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum.toString())
+            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum?.toString() ?: cpk.metadata.fileChecksum.toString())
+            assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
 
             assertThat(cpkMetadata.entityVersion)
                 .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")

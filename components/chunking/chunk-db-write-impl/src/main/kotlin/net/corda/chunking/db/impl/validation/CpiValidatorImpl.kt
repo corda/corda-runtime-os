@@ -4,7 +4,6 @@ import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.cpiupload.ValidationException
@@ -91,7 +90,7 @@ class CpiValidatorImpl(
 
         cpiPersistence.validateCanUpsertCpi(
             cpiName = cpi.metadata.cpiId.name,
-            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHash,
             cpiVersion = cpi.metadata.cpiId.version,
             groupId = groupId,
             forceUpload = fileInfo.forceUpload,

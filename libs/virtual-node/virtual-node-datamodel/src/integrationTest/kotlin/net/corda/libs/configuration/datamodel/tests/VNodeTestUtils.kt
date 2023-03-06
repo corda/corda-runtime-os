@@ -2,26 +2,27 @@ package net.corda.libs.configuration.datamodel.tests
 
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.OperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.orm.utils.transaction
-import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.test.util.TestRandom
+import net.corda.v5.crypto.SecureHash
 
 internal object VNodeTestUtils {
     fun newVNode(
         entityManagerFactory: EntityManagerFactory,
         cpiName: String,
         cpiVersion: String,
-        cpiSignerSummaryHash: String,
+        cpiSignerSummaryHash: SecureHash,
         virtualNodeOperationEntity: VirtualNodeOperationEntity? = null,
         holdingIdentityEntity: HoldingIdentityEntity? = null
     ): VirtualNodeEntity {
@@ -35,7 +36,7 @@ internal object VNodeTestUtils {
             holdingIdentity,
             cpiName,
             cpiVersion,
-            cpiSignerSummaryHash,
+            cpiSignerSummaryHash.toString(),
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -106,11 +107,11 @@ internal object VNodeTestUtils {
     fun newCpiMetadataEntity(
         name: String,
         version: String,
-        hash: String
+        signerSummaryHash: SecureHash,
     ) = CpiMetadataEntity(
         name = name,
         version = version,
-        signerSummaryHash = hash,
+        signerSummaryHash = signerSummaryHash.toString(),
         fileName = "file",
         fileChecksum = TestRandom.hex(24),
         groupPolicy = "group policy",

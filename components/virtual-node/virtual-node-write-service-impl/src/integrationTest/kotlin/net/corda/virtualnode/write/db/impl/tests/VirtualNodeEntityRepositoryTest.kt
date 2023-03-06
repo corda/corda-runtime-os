@@ -69,7 +69,8 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.parse(signerSummaryHash))
-        val expectedCpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
+        val expectedCpiMetadata =
+            CpiMetadataLite(cpiId, SecureHash.parse(fileChecksum), "Test Group ID", "Test Group Policy")
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -128,7 +129,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiId = CpiIdentifier("Test CPI 2", "2.0", SecureHash.parse(signerSummaryHash))
         val mgmGroupId = "Test Group ID 2"
         val groupPolicy = "Test Group Policy 2"
-        val expectedCpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, mgmGroupId, groupPolicy)
+        val expectedCpiMetadata = CpiMetadataLite(cpiId, SecureHash.parse(fileChecksum), mgmGroupId, groupPolicy)
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -150,6 +151,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         Assertions.assertThat(repository.getCpiMetadataByChecksum("")).isNull()
         Assertions.assertThat(repository.getCpiMetadataByChecksum("123456")).isNull()
-        Assertions.assertThat(repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12))).isEqualTo(expectedCpiMetadata)
+        Assertions.assertThat(repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12)))
+            .isEqualTo(expectedCpiMetadata)
     }
 }

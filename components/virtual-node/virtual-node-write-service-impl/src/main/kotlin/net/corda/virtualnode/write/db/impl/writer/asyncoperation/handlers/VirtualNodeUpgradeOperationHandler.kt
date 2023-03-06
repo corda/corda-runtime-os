@@ -167,11 +167,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         val targetCpiMetadata = oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(request.cpiFileChecksum)
             ?: throw VirtualNodeUpgradeRejectedException("CPI with file checksum ${request.cpiFileChecksum} was not found", requestId)
 
-        val originalCpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+        val originalCpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataById(
             em,
-            currentVirtualNode.cpiIdentifier.name,
-            currentVirtualNode.cpiIdentifier.version,
-            currentVirtualNode.cpiIdentifier.signerSummaryHash.toString()
+            currentVirtualNode.cpiIdentifier
         ) ?: throw VirtualNodeUpgradeRejectedException(
             "CPI with name ${currentVirtualNode.cpiIdentifier.name}, version ${currentVirtualNode.cpiIdentifier.version} was not found",
             requestId

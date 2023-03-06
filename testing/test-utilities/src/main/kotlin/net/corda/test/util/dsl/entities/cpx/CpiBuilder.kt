@@ -3,6 +3,7 @@ package net.corda.test.util.dsl.entities.cpx
 import java.util.UUID
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.v5.crypto.SecureHash
 
 fun cpi(init: CpiBuilder.() -> Unit): CpiMetadataEntity {
     val cpi = CpiBuilder()
@@ -13,7 +14,7 @@ fun cpi(init: CpiBuilder.() -> Unit): CpiMetadataEntity {
 class CpiBuilder(private val randomId: UUID = UUID.randomUUID()) {
     private var name: String? = null
     private var version: String? = null
-    private var signerSummaryHash: String? = null
+    private var signerSummaryHash: SecureHash? = null
     private var fileName: String? = null
     private var groupPolicy: String? = null
     private var groupId: String? = null
@@ -32,7 +33,7 @@ class CpiBuilder(private val randomId: UUID = UUID.randomUUID()) {
         return this
     }
 
-    fun signerSummaryHash(value: String): CpiBuilder {
+    fun signerSummaryHash(value: SecureHash): CpiBuilder {
         signerSummaryHash = value
         return this
     }
@@ -111,12 +112,12 @@ class CpiBuilder(private val randomId: UUID = UUID.randomUUID()) {
         val randomCpkId = "${randomId}_${UUID.randomUUID()}"
         if (name == null) name = "name_$randomCpkId"
         if (version == null) version = "version_$randomCpkId"
-        if (signerSummaryHash == null) signerSummaryHash = "signerSummaryHash_$randomCpkId"
+        if (signerSummaryHash == null) signerSummaryHash = SecureHash("SHA1","signerSummaryHash_$randomCpkId".toByteArray())
         if (fileChecksum == null) fileChecksum = "file_checksum_$randomCpkId"
         return CpiMetadataEntity(
             name!!,
             version!!,
-            signerSummaryHash!!,
+            signerSummaryHash!!.toString(),
             fileName ?: "filename_$randomCpkId",
             fileChecksum!!,
             groupPolicy ?: "group_policy_$randomCpkId",
