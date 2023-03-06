@@ -86,7 +86,7 @@ interface VirtualNodeRepository {
         reason: String,
         operationType: VirtualNodeOperationType,
         state: VirtualNodeOperationStateDto
-    )
+    ): VirtualNodeInfo
 
     /**
      * Update a virtual node operation with failure details caused by failure to run migrations.
@@ -101,6 +101,6 @@ interface VirtualNodeRepository {
         reason: String,
         operationType: VirtualNodeOperationType,
         state: VirtualNodeOperationStateDto
-    )
+    ): VirtualNodeInfo
 }
 

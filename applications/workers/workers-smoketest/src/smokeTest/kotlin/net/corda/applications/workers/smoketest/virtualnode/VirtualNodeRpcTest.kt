@@ -756,9 +756,7 @@ class VirtualNodeRpcTest {
             val cpiV3 = getCpiChecksum(upgradeTestingCpiName, "v3")
             val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV3)
 
-            val statusAfterUpgrade = getVirtualNodeOperationStatus(requestId)
-            val operationState = statusAfterUpgrade["response"].single()["state"].textValue()
-            assertThat(operationState).isEqualTo("LIQUIBASE_DIFF_CHECK_FAILED")
+            eventuallyAssertVNodeOperationState(requestId, "LIQUIBASE_DIFF_CHECK_FAILED")
         }
     }
 
@@ -774,9 +772,7 @@ class VirtualNodeRpcTest {
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v4")
             awaitVirtualNodeOperationCompletion(bobHoldingId)
 
-            val statusAfterCompletion = getVirtualNodeOperationStatus(requestId)
-            val operationStateAfterCompletion = statusAfterCompletion["response"].single()["state"].textValue()
-            assertThat(operationStateAfterCompletion).isEqualTo("COMPLETED")
+            eventuallyAssertVNodeOperationState(requestId, "COMPLETED")
 
         }
     }
@@ -811,6 +807,21 @@ class VirtualNodeRpcTest {
             command { getVNodeOperationStatus(requestId) }
             condition { it.code == 200 }
             failMessage(ERROR_REQUEST_ID)
+        }.toJson()
+        return operationStatus
+    }
+
+    private fun ClusterBuilder.eventuallyAssertVNodeOperationState(
+        requestId: String,
+        expectedState: String
+    ): JsonNode {
+        val operationStatus = assertWithRetry {
+            command { getVNodeOperationStatus(requestId) }
+            condition {
+                val response = it.toJson()["response"]
+                it.code == 200 && !response.isEmpty && response.first()["state"].textValue() == expectedState
+            }
+            failMessage("Could not assert a virtual node operation with state $expectedState")
         }.toJson()
         return operationStatus
     }

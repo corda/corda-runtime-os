@@ -72,8 +72,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         requestTimestamp: Instant,
         e: MigrationsFailedException
-    ) {
-        entityManagerFactory.createEntityManager().transaction { em ->
+    ): VirtualNodeInfo {
+        return entityManagerFactory.createEntityManager().transaction { em ->
             virtualNodeRepository.failedOperation(
                 em,
                 request.virtualNodeShortHash,
@@ -92,8 +92,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         requestTimestamp: Instant,
         e: VirtualNodeUpgradeRejectedException
-    ) {
-        entityManagerFactory.createEntityManager().transaction { em ->
+    ): VirtualNodeInfo {
+        return entityManagerFactory.createEntityManager().transaction { em ->
             virtualNodeRepository.rejectedOperation(
                 em,
                 request.virtualNodeShortHash,
@@ -112,8 +112,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         requestTimestamp: Instant,
         e: LiquibaseDiffCheckFailedException
-    ) {
-        entityManagerFactory.createEntityManager().transaction { em ->
+    ): VirtualNodeInfo {
+        return entityManagerFactory.createEntityManager().transaction { em ->
             virtualNodeRepository.rejectedOperation(
                 em,
                 request.virtualNodeShortHash,
@@ -132,8 +132,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         requestTimestamp: Instant,
         e: Exception
-    ) {
-        entityManagerFactory.createEntityManager().transaction { em ->
+    ): VirtualNodeInfo {
+        return entityManagerFactory.createEntityManager().transaction { em ->
             virtualNodeRepository.failedOperation(
                 em,
                 request.virtualNodeShortHash,
@@ -289,22 +289,26 @@ internal class VirtualNodeUpgradeOperationHandler(
         when (e) {
             is VirtualNodeUpgradeRejectedException -> {
                 logger.info("Virtual node upgrade (request $requestId) validation failed: ${e.message}")
-                handleValidationFailed(request, requestId, requestTimestamp, e)
+                val vNodeInfo = handleValidationFailed(request, requestId, requestTimestamp, e)
+                publishVirtualNodeInfo(vNodeInfo)
             }
 
             is MigrationsFailedException -> {
                 logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
-                handleMigrationsFailed(request, requestId, requestTimestamp, e)
+                val vNodeInfo = handleMigrationsFailed(request, requestId, requestTimestamp, e)
+                publishVirtualNodeInfo(vNodeInfo)
             }
 
             is LiquibaseDiffCheckFailedException -> {
                 logger.warn("Unable to determine if vault for virtual node ${request.virtualNodeShortHash} is in sync with CPI.")
-                handleLiquibaseDiffFunctionFailed(request, requestId, requestTimestamp, e)
+                val vNodeInfo = handleLiquibaseDiffFunctionFailed(request, requestId, requestTimestamp, e)
+                publishVirtualNodeInfo(vNodeInfo)
             }
 
             else -> {
                 logger.warn("Virtual node upgrade (request $requestId) could not complete due to exception: ${e.message}")
-                handleUnexpectedFailure(request, requestId, requestTimestamp, e)
+                val vNodeInfo = handleUnexpectedFailure(request, requestId, requestTimestamp, e)
+                publishVirtualNodeInfo(vNodeInfo)
             }
         }
     }
