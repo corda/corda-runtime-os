@@ -131,9 +131,6 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
-        logger.info("Processing outbound message ${message.header.messageId} from ${message.header.source} " +
-                "to ${message.header.destination}.")
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
@@ -160,8 +157,9 @@ internal class OutboundMessageProcessor(
             val source = message.header.source.toCorda()
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
             if (groupPolicy == null) {
+                //TODO extended warn statement added temporarily for Interop Team, revert to debug as part of CORE-10683
                 logger.warn(
-                    "Could not find the group information in the GroupPolicyProvider for $source. " +
+                    "Could not find the group information in the GroupPolicyProvider for $source to ${message.header.destination}. " +
                     "The message ${message.header.messageId} was discarded."
                 )
                 return emptyList()
