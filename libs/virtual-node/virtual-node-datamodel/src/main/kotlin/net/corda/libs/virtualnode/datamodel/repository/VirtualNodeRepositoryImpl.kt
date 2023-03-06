@@ -5,6 +5,7 @@ import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
@@ -66,6 +67,10 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             )
                 .setParameter("requestId", requestId)
                 .resultList
+
+            if (operationStatuses.isEmpty()) {
+                throw VirtualNodeOperationNotFoundException(requestId)
+            }
 
             return operationStatuses.map {
                 VirtualNodeOperationDto(
