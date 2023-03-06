@@ -16,7 +16,6 @@ import net.corda.rest.exception.ForbiddenException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -47,6 +46,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
+import net.corda.rest.exception.OperationNotAllowedException
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRestResource::class, PluggableRestResource::class], immediate = true)
@@ -116,7 +116,7 @@ class FlowRestResourceImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
         if (vNode.flowStartOperationalStatus == OperationalStatus.INACTIVE.name) {
-            throw ServiceUnavailableException("Cannot start flow. Virtual node $holdingIdentityShortHash is in maintenance mode.")
+            throw OperationNotAllowedException("Flow start capabilities of virtual node $holdingIdentityShortHash are not operational.")
         }
 
         val clientRequestId = startFlow.clientRequestId
@@ -258,7 +258,7 @@ class FlowRestResourceImpl @Activate constructor(
                 flowStatusFeedRegistration.close()
             }
         } catch (e: WebSocketValidationException) {
-            log.warn("Validation error while registering flow status listener - ${e.message}")
+            log.warn("Validation error while registering flow status listener - ${e.message ?: "No exception message provided."}")
             error(e)
         } catch (e: Exception) {
             log.error("Unexpected error at registerFlowStatusListener")

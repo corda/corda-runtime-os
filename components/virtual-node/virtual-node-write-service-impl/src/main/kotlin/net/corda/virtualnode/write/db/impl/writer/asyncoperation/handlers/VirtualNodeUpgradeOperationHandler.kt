@@ -46,7 +46,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestTimestamp: Instant,
         requestId: String,
         request: VirtualNodeUpgradeRequest
-    ): Record<*, *>? {
+    ) {
         logger.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
         request.validateMandatoryFields()
 
@@ -59,10 +59,16 @@ internal class VirtualNodeUpgradeOperationHandler(
             logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
             handleMigrationsFailed(request, requestId, requestTimestamp, e)
         }
-
-        return null
     }
 
+    /**
+     * If migrations have failed, we do not roll back the changes to the VirtualNode entity. We remove the operationInProgress (since there
+     * is no longer an active operation). Some migrations could have run on the vault, while others may have failed. In this situation, the
+     * virtual node operator is restricted from transitioning the virtual node to "ACTIVE" state because the vault won't be in sync with
+     * the currently associated CPI. In this situation, it is up to DB admin to correct the vault using liquibase commands to manually run
+     * migrations. Alternatively, if the migrations failed due to some internal server error, the virtual node operator can re-trigger the
+     * upgrade and have corda re-attempt the migrations.
+     */
     private fun handleMigrationsFailed(
         request: VirtualNodeUpgradeRequest,
         requestId: String,

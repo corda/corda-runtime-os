@@ -29,10 +29,7 @@ class CreateTokenRequest {
 
         private fun UUID.toStateRef(): StateRef {
             val algorithm = DigestAlgorithmName.SHA2_256.name
-            val txId = SecureHash(
-                algorithm = algorithm,
-                bytes = MessageDigest.getInstance(algorithm).digest(this.toString().toByteArray())
-            )
+            val txId = SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(this.toString().toByteArray()))
 
             return StateRef(txId, 1)
         }

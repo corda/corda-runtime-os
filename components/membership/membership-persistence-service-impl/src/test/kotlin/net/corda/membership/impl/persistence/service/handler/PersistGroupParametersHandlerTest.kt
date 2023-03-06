@@ -25,11 +25,13 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -38,6 +40,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
@@ -65,6 +68,7 @@ class PersistGroupParametersHandlerTest {
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serializedParams) } doReturn mockGroupParameters
     }
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -83,12 +87,12 @@ class PersistGroupParametersHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val transaction = mock<EntityTransaction>()
-    private val resultList: List<GroupParametersEntity> = mock {
-        on { isEmpty() } doReturn false
-        on { size } doReturn 1
-        on { singleOrNull() } doReturn GroupParametersEntity(1, "test".toByteArray(), null, null, null)
-    }
+    private val currentEntity = GroupParametersEntity(1, "test".toByteArray(), null, null, null)
+    private val resultList = listOf(
+        currentEntity
+    )
     private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
+        on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
         on { resultList } doReturn resultList
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
@@ -112,6 +116,13 @@ class PersistGroupParametersHandlerTest {
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(eq(query)) } doReturn groupParametersQuery
         on { transaction } doReturn transaction
+        on {
+            find(
+                GroupParametersEntity::class.java,
+                1,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        } doReturn currentEntity
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
@@ -143,6 +154,8 @@ class PersistGroupParametersHandlerTest {
 
     @Test
     fun `invoke is successful`() {
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(mockGroupParameters)
+
         val result = assertDoesNotThrow { handler.invoke(requestContext, request) }
         assertThat(result).isInstanceOf(Unit::class.java)
 
@@ -153,28 +166,18 @@ class PersistGroupParametersHandlerTest {
 
     @Test
     fun `persisting group parameters is successful when there was nothing persisted previously`() {
-        val previousEntry: TypedQuery<GroupParametersEntity> = mock {
-            on { resultList } doReturn emptyList()
-        }
-        val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-            on { setMaxResults(1) } doReturn previousEntry
-        }
-        whenever(entityManager.createQuery(eq(query))).doReturn(groupParametersQuery)
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(mockGroupParameters)
+        whenever(
+            entityManager.find(
+                GroupParametersEntity::class.java,
+                1,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(null)
 
         val result = assertDoesNotThrow { handler.invoke(requestContext, request) }
+
         assertThat(result).isInstanceOf(Unit::class.java)
-    }
-
-    @Test
-    fun `invoke with lower epoch than previous group parameters throws exception`() {
-        whenever(keyValuePairListDeserializer.deserialize(serializedParams)).doReturn(
-            KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, "0")))
-        )
-
-        val ex = assertFailsWith<MembershipPersistenceException> {
-            handler.invoke(requestContext, request)
-        }
-        assertThat(ex.message).contains("already exist")
     }
 
     @Test
@@ -185,5 +188,47 @@ class PersistGroupParametersHandlerTest {
             handler.invoke(requestContext, request)
         }
         assertThat(ex.message).contains("epoch not found")
+    }
+
+    @Test
+    fun `invoke with same parameters should not persist anything`() {
+        val parameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "1"),
+            )
+        )
+        val request = PersistGroupParameters(
+            parameters
+        )
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(parameters)
+
+        handler.invoke(requestContext, request)
+
+        verify(entityManager, never()).persist(any())
+    }
+
+    @Test
+    fun `invoke with different parameters should throw an exception`() {
+        val requestParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "1")
+            )
+        )
+        val persistedParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "1"),
+                KeyValuePair("key", "value")
+            )
+        )
+        val request = PersistGroupParameters(
+            requestParameters
+        )
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray()))
+            .doReturn(persistedParameters)
+
+        val exception = assertThrows<MembershipPersistenceException> {
+            handler.invoke(requestContext, request)
+        }
+        assertThat(exception).hasMessageContaining("already exist with different parameters")
     }
 }

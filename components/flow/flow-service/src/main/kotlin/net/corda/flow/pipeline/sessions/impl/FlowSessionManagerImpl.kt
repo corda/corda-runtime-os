@@ -130,7 +130,7 @@ class FlowSessionManagerImpl @Activate constructor(
         throwable: Throwable,
         instant: Instant
     ): List<SessionState> {
-        val errorMessage = throwable.message ?: ""
+        val errorMessage = throwable.message ?: "No exception message provided."
         return sessionIds.map { sessionId ->
             sendSessionMessageToExistingSession(
                 checkpoint,

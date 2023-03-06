@@ -32,7 +32,7 @@ class UtilsTest {
         val bobCert = mockCert(bobX500Name)
         val certs = listOf(aliceCert, bobCert)
 
-        val algoName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        val algoName = DigestAlgorithmName.SHA2_256.name
         val md = MessageDigest.getInstance(algoName)
         certs
             .map { MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash() }

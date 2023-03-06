@@ -39,6 +39,7 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.bytes
@@ -71,6 +72,7 @@ class MembershipPersistenceClientImpl(
     publisherFactory: PublisherFactory,
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
+    private val groupParametersFactory: GroupParametersFactory,
     private val keyEncodingService: KeyEncodingService,
     private val cordaAvroSerialisationFactory: CordaAvroSerializationFactory,
     clock: Clock,
@@ -91,6 +93,8 @@ class MembershipPersistenceClientImpl(
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
+        @Reference(service = GroupParametersFactory::class)
+        groupParametersFactory: GroupParametersFactory,
         @Reference(service = KeyEncodingService::class)
         keyEncodingService: KeyEncodingService,
         @Reference(service = CordaAvroSerializationFactory::class)
@@ -100,6 +104,7 @@ class MembershipPersistenceClientImpl(
         publisherFactory,
         configurationReadService,
         memberInfoFactory,
+        groupParametersFactory,
         keyEncodingService,
         cordaAvroSerialisationFactory,
         UTCClock(),
@@ -175,7 +180,9 @@ class MembershipPersistenceClientImpl(
             )
         ).execute()
         return when (val response = result.payload) {
-            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(groupParameters)
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(
+                groupParametersFactory.create(response.groupParameters)
+            )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }

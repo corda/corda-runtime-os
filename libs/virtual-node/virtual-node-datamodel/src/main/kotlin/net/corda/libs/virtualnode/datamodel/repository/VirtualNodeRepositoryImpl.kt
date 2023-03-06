@@ -4,9 +4,10 @@ import net.corda.crypto.core.ShortHash
 import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
-import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -54,6 +55,31 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .resultList
             .singleOrNull()
             ?.toVirtualNodeInfo()
+    }
+
+    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto> {
+        entityManager.transaction {
+            val operationStatuses = entityManager.createQuery(
+                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
+                        "order by latestUpdateTimestamp desc",
+                VirtualNodeOperationEntity::class.java
+            )
+                .setParameter("requestId", requestId)
+                .resultList
+
+            return operationStatuses.map {
+                VirtualNodeOperationDto(
+                    it.requestId,
+                    it.data,
+                    it.operationType.name,
+                    it.requestTimestamp,
+                    it.latestUpdateTimestamp,
+                    it.heartbeatTimestamp,
+                    it.state.name,
+                    it.errors
+                )
+            }
+        }
     }
 
     /**
@@ -208,7 +234,9 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         failedOperation.latestUpdateTimestamp = Instant.now()
         failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
         failedOperation.errors = reason
+        virtualNode.operationInProgress = null
 
+        entityManager.merge(failedOperation)
         entityManager.merge(virtualNode)
     }
 

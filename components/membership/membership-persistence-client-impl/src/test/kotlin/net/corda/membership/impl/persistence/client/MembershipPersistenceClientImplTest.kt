@@ -50,6 +50,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -129,6 +130,7 @@ class MembershipPersistenceClientImplTest {
     private val ourGroupId = "Group ID"
     private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
     private val bobX500Name = MemberX500Name.parse("O=Bob,L=London,C=GB")
+    private val groupParametersFactory = mock<GroupParametersFactory>()
 
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
@@ -201,6 +203,7 @@ class MembershipPersistenceClientImplTest {
             publisherFactory,
             configurationReadService,
             memberInfoFactory,
+            groupParametersFactory,
             keyEncodingService,
             cordaAvroSerialisationFactory,
             clock
@@ -583,6 +586,7 @@ class MembershipPersistenceClientImplTest {
                 on { entries } doReturn mapOf(EPOCH_KEY to "5").entries
             }
             postConfigChangedEvent()
+            whenever(groupParametersFactory.create(groupParameters.toAvro())).doReturn(groupParameters)
             mockPersistenceResponse(
                 PersistGroupParametersResponse(groupParameters.toAvro()),
             )

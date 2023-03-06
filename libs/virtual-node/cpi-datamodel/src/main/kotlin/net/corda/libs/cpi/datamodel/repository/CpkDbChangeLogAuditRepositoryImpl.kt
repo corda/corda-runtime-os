@@ -2,7 +2,7 @@ package net.corda.libs.cpi.datamodel.repository
 
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogAuditEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogAuditEntity
 import javax.persistence.EntityManager
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 

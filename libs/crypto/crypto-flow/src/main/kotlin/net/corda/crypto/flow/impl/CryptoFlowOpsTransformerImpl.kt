@@ -139,9 +139,9 @@ class CryptoFlowOpsTransformerImpl(
     private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
-            by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
-            bytes = resp.bytes.array(),
-            context = resp.context.toMap()
+            keyEncodingService.decodePublicKey(resp.publicKey.array()),
+            resp.bytes.array(),
+            resp.context.toMap()
         )
     }
 
@@ -215,5 +215,5 @@ class CryptoFlowOpsTransformerImpl(
 private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): SecureHash =
     digestService.hash(
         keyEncodingService.encodeAsByteArray(this),
-        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+        DigestAlgorithmName.SHA2_256
     )

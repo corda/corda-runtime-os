@@ -23,6 +23,7 @@ dependencies {
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":libs:configuration:configuration-core")

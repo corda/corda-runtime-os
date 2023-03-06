@@ -14,6 +14,7 @@ import net.corda.membership.lib.addNewNotaryService
 import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -60,6 +61,7 @@ internal class AddNotaryToGroupParametersHandler(
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
             val previous = em.createQuery(query)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .setMaxResults(1)
             if(previous.resultList.isEmpty()) {
                 throw MembershipPersistenceException("Cannot add notary to group parameters, no group parameters found.")

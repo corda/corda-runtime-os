@@ -22,6 +22,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:configuration:configuration-read-service")

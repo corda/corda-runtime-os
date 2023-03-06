@@ -4,8 +4,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -86,9 +84,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceResult<GroupParameters> {
         persistedGroupParameters = groupParameters
-        return MembershipPersistenceResult.success()
+        return MembershipPersistenceResult.Success(groupParameters)
     }
 
     override fun addNotaryToGroupParameters(

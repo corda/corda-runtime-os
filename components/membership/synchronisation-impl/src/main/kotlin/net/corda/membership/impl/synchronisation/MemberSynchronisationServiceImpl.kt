@@ -336,8 +336,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                 }
 
                 val groupParameters = parseGroupParameters(updates.membershipPackage)
-                membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters)
-                groupParametersWriterService.put(viewOwningMember, groupParameters)
+                val latestGroupParameters =
+                    membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters).getOrThrow()
+                groupParametersWriterService.put(viewOwningMember, latestGroupParameters)
 
                 publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {

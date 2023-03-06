@@ -19,7 +19,6 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    cordaProvided project(':libs:crypto:cipher-suite')
     cordaProvided 'net.corda:corda-crypto'
     cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'org.slf4j:slf4j-api'

@@ -166,6 +166,9 @@ class ClusterBuilder {
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
         put("/api/v1/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
 
+    fun getVNodeOperationStatus(requestId: String) =
+        get("/api/v1/virtualnode/status/$requestId")
+
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 

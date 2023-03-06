@@ -18,7 +18,6 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-ledger-utxo'
     cordaProvided 'net.corda:corda-notary-plugin'
-    cordaProvided project(':libs:crypto:cipher-suite')
 
     cordapp project(':testing:bundles:testing-dogs')
     cordapp project(':testing:bundles:cpk-for-duplicate-changelog-testing')

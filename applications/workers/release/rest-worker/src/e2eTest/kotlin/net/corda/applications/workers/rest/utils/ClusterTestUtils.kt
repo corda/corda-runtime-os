@@ -4,15 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.JsonObject
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
@@ -24,16 +22,22 @@ import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.JsonObject
+import net.corda.rest.ResponseCode
+import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.test.util.eventually
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.time.Duration
 import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
@@ -143,19 +147,38 @@ fun E2eCluster.createVirtualNode(
 ) {
     clusterHttpClientFor(VirtualNodeRestResource::class.java)
         .use { client ->
-            client.start().proxy.createVirtualNode(
-                VirtualNodeRequest(
-                    x500Name = member.name,
-                    cpiFileChecksum = cpiCheckSum,
-                    vaultDdlConnection = null,
-                    vaultDmlConnection = null,
-                    cryptoDdlConnection = null,
-                    cryptoDmlConnection = null,
-                    uniquenessDdlConnection = null,
-                    uniquenessDmlConnection = null
-                )
-            ).holdingIdentity.shortHash.also {
-                member.holdingId = it
+            val proxy = client.start().proxy
+
+            eventually {
+                try {
+                    val response = proxy.createVirtualNode(
+                        CreateVirtualNodeRequest(
+                            x500Name = member.name,
+                            cpiFileChecksum = cpiCheckSum,
+                            vaultDdlConnection = null,
+                            vaultDmlConnection = null,
+                            cryptoDdlConnection = null,
+                            cryptoDmlConnection = null,
+                            uniquenessDdlConnection = null,
+                            uniquenessDmlConnection = null
+                        )
+                    )
+
+                    assertThat(response.responseCode).isEqualTo(ResponseCode.ACCEPTED)
+                    member.holdingId = response.responseBody.requestId
+
+                } catch (e: RequestErrorException) {
+                    // It's possible that we get a 400 bad request if there is some lag between the CPI getting created
+                    // and the CPI making it to the cache used to lookup CPIs in the REST worker.
+                    // Therefore, we treat this error as transient. Adding this hack is a short term fix until these
+                    // e2e tests are moved to the e2e test suite.
+                    assertThat(e.message).doesNotContain("No CPI metadata found")
+                }
+            }
+
+            // Block until virtual node is created and available from the REST endpoint
+            eventually(Duration.ofSeconds(10)) {
+                assertDoesNotThrow { proxy.getVirtualNode(member.holdingId) }
             }
         }
 }
@@ -387,7 +410,8 @@ fun E2eCluster.onboardMembers(
         val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
 
         if (useSessionCertificate) {
-            val memberSessionCsr = generateCsr(member, memberSessionKeyId, member.holdingId, addHostToSubjectAlternativeNames = false)
+            val memberSessionCsr =
+                generateCsr(member, memberSessionKeyId, member.holdingId, addHostToSubjectAlternativeNames = false)
             val memberSessionCert = getCa().generateCert(memberSessionCsr)
             uploadSessionCertificate(memberSessionCert, member.holdingId)
         }

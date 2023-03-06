@@ -1,18 +1,18 @@
 package net.corda.membership.p2p.helpers
 
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.GOST3410_GOST3411_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.SM2_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 
 class KeySpecExtractor(
