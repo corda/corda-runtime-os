@@ -37,6 +37,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.v5.crypto.SecureHash
 
 class CreateVirtualNodeServiceImplTest {
     private val vaultDdlDbConnectionDetails = getDbConnection("vault_ddl", "vault ddl")
@@ -114,7 +115,7 @@ class CreateVirtualNodeServiceImplTest {
 
     @Test
     fun `run CPI migrations throw on failure`() {
-        val cpkChangeLogId1 = CpkDbChangeLogIdentifier("checksum1", "fp1")
+        val cpkChangeLogId1 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum1".toByteArray()), "fp1")
         val cpkChangeLogEntity1 = CpkDbChangeLog(cpkChangeLogId1, "content")
 
         whenever(
@@ -133,9 +134,9 @@ class CreateVirtualNodeServiceImplTest {
 
     @Test
     fun `run CPI migrations runs all CPK migrations`() {
-        val cpkChangeLogId1 = CpkDbChangeLogIdentifier("checksum1", "fp1")
-        val cpkChangeLogId2 = CpkDbChangeLogIdentifier("checksum1", "fp2")
-        val cpkChangeLogId3 = CpkDbChangeLogIdentifier("checksum2", "fp1")
+        val cpkChangeLogId1 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum1".toByteArray()), "fp1")
+        val cpkChangeLogId2 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum1".toByteArray()), "fp2")
+        val cpkChangeLogId3 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum2".toByteArray()), "fp1")
         val cpkChangeLogEntity1 = CpkDbChangeLog(cpkChangeLogId1, "content1")
         val cpkChangeLogEntity2 = CpkDbChangeLog(cpkChangeLogId2, "content2")
         val cpkChangeLogEntity3 = CpkDbChangeLog(cpkChangeLogId3, "content3")
@@ -149,8 +150,14 @@ class CreateVirtualNodeServiceImplTest {
 
         target.runCpiMigrations(CPI_METADATA1, vaultPlatformManagedVirtualNodeDb, ALICE_HOLDING_ID1)
 
-        verify(vaultPlatformManagedVirtualNodeDb).runCpiMigrations(any(), eq("checksum1"))
-        verify(vaultPlatformManagedVirtualNodeDb).runCpiMigrations(any(), eq("checksum2"))
+        verify(vaultPlatformManagedVirtualNodeDb).runCpiMigrations(
+            any(),
+            eq(SecureHash("SHA-256", "checksum1".toByteArray()).toString())
+        )
+        verify(vaultPlatformManagedVirtualNodeDb).runCpiMigrations(
+            any(),
+            eq(SecureHash("SHA-256", "checksum2".toByteArray()).toString())
+        )
     }
 
     @Suppress("LongMethod")
@@ -277,16 +284,16 @@ class CreateVirtualNodeServiceImplTest {
 
     @Test
     fun `get CPI metadata returns data for checksum`() {
-        whenever(cpiEntityRepository.getCpiMetadataByChecksum(CPI_CHECKSUM1)).thenReturn(CPI_METADATA1)
+        whenever(cpiEntityRepository.getCpiMetadataByChecksum(CPI_CHECKSUM1.toString())).thenReturn(CPI_METADATA1)
 
-        assertThat(target.getCpiMetaData(CPI_CHECKSUM1)).isEqualTo(CPI_METADATA1)
+        assertThat(target.getCpiMetaData(CPI_CHECKSUM1.toString())).isEqualTo(CPI_METADATA1)
     }
 
     @Test
     fun `get CPI metadata throws if metadata not found`() {
-        whenever(cpiEntityRepository.getCpiMetadataByChecksum(CPI_CHECKSUM1)).thenReturn(null)
+        whenever(cpiEntityRepository.getCpiMetadataByChecksum(CPI_CHECKSUM1.toString())).thenReturn(null)
 
-        assertThrows<CpiNotFoundException> { target.getCpiMetaData(CPI_CHECKSUM1) }
+        assertThrows<CpiNotFoundException> { target.getCpiMetaData(CPI_CHECKSUM1.toString()) }
     }
 
     @Test
