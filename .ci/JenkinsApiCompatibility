@@ -1,4 +1,6 @@
 // Check corda-api compatibility with downstream consumers which implement CordApps
 @Library('corda-shared-build-pipeline-steps@5.0.1') _
 
-cordaApiCompatibilityCheck()
+cordaApiCompatibilityCheck(
+    corda5End2EndBranch: 'release/5.0-Beta2' // not to be merged back to release/os/5.0
+)
