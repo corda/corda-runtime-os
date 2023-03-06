@@ -15,6 +15,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
+import net.corda.v5.application.marshalling.json.JsonNodeReaderType
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -79,6 +80,10 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
+    }
+
+    override fun returnSomeReaderTypeEnum(): JsonNodeReaderType {
+        return JsonNodeReaderType.ARRAY
     }
 
     override fun setSerializer(serializer: JsonSerializer<*>, type: Class<*>): Boolean {

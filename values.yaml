@@ -16,7 +16,7 @@
 imagePullPolicy: "IfNotPresent"
 image:
   registry: "corda-os-docker-dev.software.r3.com"
-  tag: "latest-local-new"
+  tag: "latest-local-old"
 
 logging:
   format: "text"
