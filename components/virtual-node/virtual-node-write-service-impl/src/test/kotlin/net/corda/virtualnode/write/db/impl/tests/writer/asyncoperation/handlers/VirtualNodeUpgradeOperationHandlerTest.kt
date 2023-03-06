@@ -145,19 +145,17 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
 
     private fun withUpgradeValidationFailure(reason: String, block: () -> Any?) {
-        val result = block.invoke()
+        block.invoke()
         verify(virtualNodeRepository, times(1)).rejectedOperation(
             eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE)
         )
-        assertThat(result).isNull()
     }
 
     private fun withMigrationFailure(reason: String, block: () -> Any?) {
-        val result = block.invoke()
+        block.invoke()
         verify(virtualNodeRepository, times(1)).failedMigrationsOperation(
             eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE)
         )
-        assertThat(result).isNull()
     }
 
     @BeforeEach

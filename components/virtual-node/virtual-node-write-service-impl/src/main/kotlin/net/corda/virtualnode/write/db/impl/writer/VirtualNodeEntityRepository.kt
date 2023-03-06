@@ -14,8 +14,8 @@ import javax.persistence.EntityManagerFactory
 // TODO - remove this when moving to repository pattern for everything.
 //  This will likely be done as part of CORE-8744
 internal class VirtualNodeEntityRepository(
-    val entityManagerFactory: EntityManagerFactory
-    ) {
+    private val entityManagerFactory: EntityManagerFactory
+    ) : CpiEntityRepository {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -23,7 +23,7 @@ internal class VirtualNodeEntityRepository(
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
+    override fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null
@@ -52,7 +52,7 @@ internal class VirtualNodeEntityRepository(
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
+    override fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
         val cpiMetadataEntity = entityManagerFactory.use {
             it.transaction {
                 it.createQuery(
@@ -73,7 +73,7 @@ internal class VirtualNodeEntityRepository(
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
-    internal fun getCPIMetadataByNameAndVersion(
+    override fun getCPIMetadataByNameAndVersion(
         em: EntityManager, name: String, version: String, signerSummaryHash: String
     ): CpiMetadataLite? {
         return em.find(
