@@ -39,6 +39,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
@@ -528,6 +529,33 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
+    }
+
+    @Test
+    fun `persistGroupPolicy can persist over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ${GroupPolicyEntity::class.java.simpleName}").executeUpdate()
+        }
+        val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
+        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1, 1)
+        assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
+        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2, 2)
+        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(GroupPolicyEntity::class.java, 1L)
+        }
+        assertThat(cordaAvroDeserializer.deserialize(persistedEntity.properties)!!.toMap()).isEqualTo(
+            groupPolicy1.entries.associate { it.key to it.value }
+        )
+        val secondPersistedEntity = vnodeEmf.use {
+            it.find(GroupPolicyEntity::class.java, 2L)
+        }
+        assertThat(cordaAvroDeserializer.deserialize(secondPersistedEntity.properties)!!.toMap()).isEqualTo(
+            groupPolicy2.entries.associate { it.key to it.value }
+        )
     }
 
     @Test
