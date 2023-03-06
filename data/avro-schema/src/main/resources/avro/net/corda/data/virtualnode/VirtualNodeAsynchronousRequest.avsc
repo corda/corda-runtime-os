@@ -21,7 +21,8 @@
       "name": "request",
       "doc": "The operation specific request.",
       "type": [
-        "net.corda.data.virtualnode.VirtualNodeUpgradeRequest"
+        "net.corda.data.virtualnode.VirtualNodeUpgradeRequest",
+        "net.corda.data.virtualnode.VirtualNodeCreateRequest"
       ]
     }
   ]

@@ -16,7 +16,6 @@
       "name": "request",
       "doc": "The 'request' that we wish to make to the persistence API.",
       "type": [
-        "net.corda.data.virtualnode.VirtualNodeCreateRequest",
         "net.corda.data.virtualnode.VirtualNodeStateChangeRequest",
         "net.corda.data.virtualnode.VirtualNodeDBResetRequest",
         "net.corda.data.virtualnode.VirtualNodeOperationStatusRequest"

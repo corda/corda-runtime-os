@@ -4,8 +4,8 @@
   "namespace": "net.corda.data.virtualnode",
   "fields": [
     {
-      "name": "x500Name",
-      "type": "string"
+      "name": "holdingId",
+      "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
       "name": "cpiFileChecksum",
