@@ -402,7 +402,7 @@ class CryptoProcessorTests {
             Arguments.of(CryptoConsts.Categories.LEDGER, vnodeId),
             Arguments.of(CryptoConsts.Categories.TLS, vnodeId),
             Arguments.of(CryptoConsts.Categories.SESSION_INIT, vnodeId),
-            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.RPC_API),
+            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.REST),
             Arguments.of(CryptoConsts.Categories.TLS, CryptoTenants.P2P)
         )
 
@@ -410,7 +410,7 @@ class CryptoProcessorTests {
         fun testTenants(): Stream<Arguments> = Stream.of(
             Arguments.of(vnodeId),
             Arguments.of(CryptoTenants.P2P),
-            Arguments.of(CryptoTenants.RPC_API)
+            Arguments.of(CryptoTenants.REST)
         )
     }
 

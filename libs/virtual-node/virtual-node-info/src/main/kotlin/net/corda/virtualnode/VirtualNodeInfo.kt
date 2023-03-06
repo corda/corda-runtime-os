@@ -13,7 +13,7 @@ import java.util.UUID
  * This is intended to be returned (initially, and primarily) by the VirtualNodeInfoService which is a 'fast lookup' and
  * does NOT instantiate CPIs.
  *
- * Also see https://github.com/corda/platform-eng-design/blob/mnesbit-rpc-apis/core/corda-5/corda-5.1/rpc-apis/rpc_api.md#cluster-database
+ * Also see https://github.com/corda/platform-eng-design/blob/mnesbit-rests/core/corda-5/corda-5.1/rests/rpc_api.md#cluster-database
  */
 data class VirtualNodeInfo(
     val holdingIdentity: HoldingIdentity,
