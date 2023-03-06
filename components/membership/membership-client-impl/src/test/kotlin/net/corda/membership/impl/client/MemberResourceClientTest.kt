@@ -511,9 +511,9 @@ class MemberResourceClientTest {
         assertThat(records.firstValue).hasSize(1)
             .anySatisfy { record ->
                 assertThat(record.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
+                assertThat(record.key.toString()).isEqualTo(HOLDING_IDENTITY_ID)
                 val value = record.value as? MembershipAsyncRequest
                 val request = value?.request as? RegistrationAsyncRequest
-                assertThat(request?.requestId).isEqualTo(record.key)
                 assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
                 assertThat(request?.registrationAction).isEqualTo(RegistrationAction.REQUEST_JOIN)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
