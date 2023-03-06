@@ -35,7 +35,12 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.persistence.LockModeType
+import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
+import javax.persistence.criteria.Path
+import javax.persistence.criteria.Root
 
 class PersistGroupPolicyHandlerTest {
     private val context = byteArrayOf(1, 2, 3)
@@ -64,9 +69,36 @@ class PersistGroupPolicyHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val transaction = mock<EntityTransaction>()
+    private val resultList: List<GroupPolicyEntity> = mock {
+        on { isEmpty() } doReturn true
+        on { size } doReturn 1
+        on { singleOrNull() } doReturn null
+    }
+    private val previousEntry: TypedQuery<GroupPolicyEntity> = mock {
+        on { resultList } doReturn resultList
+    }
+    private val groupPolicyQuery: TypedQuery<GroupPolicyEntity> = mock {
+        on { setMaxResults(1) } doReturn previousEntry
+        on { setLockMode(any()) } doReturn mock
+    }
+    private val root = mock<Root<GroupPolicyEntity>> {
+        on { get<String>("version") } doReturn mock<Path<String>>()
+    }
+    private val order = mock<Order>()
     private val persistCapture = argumentCaptor<GroupPolicyEntity>()
+    private val query = mock<CriteriaQuery<GroupPolicyEntity>> {
+        on { from(GroupPolicyEntity::class.java) } doReturn root
+        on { select(root) } doReturn mock
+        on { orderBy(order) } doReturn mock
+    }
+    private val criteriaBuilder = mock<CriteriaBuilder> {
+        on { createQuery(GroupPolicyEntity::class.java) } doReturn query
+        on { desc(any()) } doReturn order
+    }
     private val entityManager = mock<EntityManager> {
         on { persist(persistCapture.capture()) } doAnswer {}
+        on { criteriaBuilder } doReturn criteriaBuilder
+        on { createQuery(eq(query)) } doReturn groupPolicyQuery
         on { transaction } doReturn transaction
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
@@ -115,7 +147,10 @@ class PersistGroupPolicyHandlerTest {
 
     @Test
     fun `invoke persists a group policy with version 2 when version 1 already persisted`() {
-        whenever(entityManager.find(eq(GroupPolicyEntity::class.java), eq(1L), any<LockModeType>())).thenReturn(mock())
+        val persistedMemberInfo = mock<GroupPolicyEntity> {
+            on { version } doReturn 1L
+        }
+        whenever(resultList.singleOrNull()).doReturn(persistedMemberInfo)
         val requestContext = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
         }
@@ -139,10 +174,11 @@ class PersistGroupPolicyHandlerTest {
 
     @Test
     fun `invoke does not persists a group policy with version 1 when version 1 already persisted`() {
-        val mockEntity = mock<GroupPolicyEntity> {
+        val persistedMemberInfo = mock<GroupPolicyEntity> {
             on { properties } doReturn context
+            on { version } doReturn 1L
         }
-        whenever(entityManager.find(eq(GroupPolicyEntity::class.java), eq(1L), any<LockModeType>())).doReturn(mockEntity)
+        whenever(resultList.singleOrNull()).doReturn(persistedMemberInfo)
         val requestContext = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
         }
@@ -158,10 +194,11 @@ class PersistGroupPolicyHandlerTest {
 
     @Test
     fun `invoke throws when persisting a different group policy with version 1 when version 1 already persisted`() {
-        val mockEntity = mock<GroupPolicyEntity> {
+        val persistedMemberInfo = mock<GroupPolicyEntity> {
             on { properties } doReturn context
+            on { version } doReturn 1L
         }
-        whenever(entityManager.find(eq(GroupPolicyEntity::class.java), eq(1L), any<LockModeType>())).thenReturn(mockEntity)
+        whenever(resultList.singleOrNull()).doReturn(persistedMemberInfo)
         val requestContext = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
         }
@@ -210,5 +247,27 @@ class PersistGroupPolicyHandlerTest {
         assertThrows<MembershipPersistenceException> { handler.invoke(requestContext, request) }
         verify(entityManager, never()).persist(any())
     }
+    @Test
+    fun `invoke throws when trying to persist version 2 when version 4 already persisted`() {
+        val persistedMemberInfo = mock<GroupPolicyEntity> {
+            on { properties } doReturn context
+            on { version } doReturn 4L
+        }
+        whenever(resultList.singleOrNull()).doReturn(persistedMemberInfo)
+        val requestContext = mock<MembershipRequestContext> {
+            on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
+        }
+        val request = mock<PersistGroupPolicy> {
+            on { properties } doReturn KeyValuePairList(
+                listOf(
+                    KeyValuePair("1", "one"),
+                    KeyValuePair("2", "two"),
+                )
+            )
+            on { version } doReturn 2L
+        }
 
+        assertThrows<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        verify(entityManager, never()).persist(any())
+    }
 }
