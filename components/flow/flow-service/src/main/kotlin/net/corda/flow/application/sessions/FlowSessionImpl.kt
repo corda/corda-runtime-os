@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.NewInterface
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -77,6 +78,15 @@ class FlowSessionImpl(
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
         setSessionConfirmed()
+    }
+
+    @Suspendable
+    override fun acceptNewInterface(newInterface: NewInterface) {
+        newInterface.someFunction1()
+        if (newInterface.someFunction2() != 42) {
+            throw IllegalStateException()
+        }
+        log.info("@@@ successfully called default method")
     }
 
     @Suspendable
