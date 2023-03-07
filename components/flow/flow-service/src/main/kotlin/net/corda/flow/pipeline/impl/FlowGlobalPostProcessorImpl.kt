@@ -94,7 +94,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
          */
         if (null == memberLookup.lookup(counterparty)) {
             if (startTime.plusMillis(config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)) < now) {
-                throw FlowPlatformException("")
+                val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
+                        "[${counterparty}] as the recipient doesn't exist in the network."
+                log.debug(msg)
+                throw FlowPlatformException(msg)
             }
             return false
         }
