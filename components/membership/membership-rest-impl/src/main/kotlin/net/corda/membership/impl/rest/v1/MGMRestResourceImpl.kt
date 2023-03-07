@@ -39,6 +39,7 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -46,6 +47,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
+import javax.persistence.OptimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
@@ -553,14 +555,46 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             suspensionParams: SuspensionActivationParameters
         ) {
-            TODO("Not yet implemented")
+            val memberName = parseX500Name("suspensionParams.x500Name", suspensionParams.x500Name)
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.suspendMember(
+                        it,
+                        memberName,
+                        suspensionParams.serialNumber,
+                        suspensionParams.reason,
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException("${e.message}")
+            } catch (e: OptimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
         }
 
         override fun activateMember(
             holdingIdentityShortHash: String,
             activationParams: SuspensionActivationParameters
         ) {
-            TODO("Not yet implemented")
+            val memberName = parseX500Name("activationParams.x500Name", activationParams.x500Name)
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.activateMember(
+                        it,
+                        memberName,
+                        activationParams.serialNumber,
+                        activationParams.reason,
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException("${e.message}")
+            } catch (e: OptimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
         }
 
         private fun RegistrationRequestStatus.toRest() =

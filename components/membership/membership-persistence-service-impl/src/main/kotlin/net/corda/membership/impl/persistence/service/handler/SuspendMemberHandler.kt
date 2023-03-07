@@ -4,8 +4,10 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -19,7 +21,7 @@ import javax.persistence.LockModeType
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<SuspendMember, Unit>(persistenceHandlerServices) {
+) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
@@ -35,22 +37,23 @@ internal class SuspendMemberHandler(
         }
     }
 
-    override fun invoke(context: MembershipRequestContext, request: SuspendMember)  {
+    override fun invoke(context: MembershipRequestContext, request: SuspendMember): SuspendMemberResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
+            val suspendedMember = request.suspendedMember
             val member = em.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(context.holdingIdentity.groupId, request.suspendedMember, false),
+                MemberInfoEntityPrimaryKey(context.holdingIdentity.groupId, suspendedMember, false),
                 LockModeType.OPTIMISTIC_FORCE_INCREMENT
-            ) ?: throw MembershipPersistenceException("Member '${request.suspendedMember}' does not exist.")
+            ) ?: throw MembershipPersistenceException("Member '$suspendedMember' does not exist.")
             request.serialNumber?.let {
                 require(member.serialNumber == it) {
-                    throw MembershipPersistenceException("The provided serial number corresponds to an older version " +
-                            "of MemberInfo for member '${request.suspendedMember}'.")
+                    throw MembershipPersistenceException("The provided serial number does not match to the current " +
+                            "version of MemberInfo for member '$suspendedMember'.")
                 }
             }
             require(member.status == MEMBER_STATUS_ACTIVE) {
-                throw MembershipPersistenceException("Member '${request.suspendedMember}' cannot be suspended because" +
+                throw MembershipPersistenceException("Member '$suspendedMember' cannot be suspended because" +
                         " it has status '${member.status}'.")
             }
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
@@ -78,6 +81,14 @@ internal class SuspendMemberHandler(
                     member.memberContext,
                     serializedMgmContext,
                     request.serialNumber
+                )
+            )
+
+            SuspendMemberResponse(
+                PersistentMemberInfo(
+                    context.holdingIdentity,
+                    keyValuePairListDeserializer.deserialize(member.memberContext),
+                    mgmContext,
                 )
             )
         }

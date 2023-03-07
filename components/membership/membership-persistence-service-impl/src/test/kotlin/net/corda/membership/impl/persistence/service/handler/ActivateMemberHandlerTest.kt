@@ -5,8 +5,10 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.ActivateMember
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -22,7 +24,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -113,15 +115,15 @@ class ActivateMemberHandlerTest {
     )
     private val request = ActivateMember(knownX500Name.toString(), SERIAL_NUMBER, REASON)
 
-    private fun invokeTestFunction() {
-        handler.invoke(context, request)
+    private fun invokeTestFunction(): ActivateMemberResponse {
+        return handler.invoke(context, request)
     }
 
     private fun invokeTestFunctionWithError(errorMsg: String) {
         assertThrows<MembershipPersistenceException> {
             invokeTestFunction()
         }.apply {
-            Assertions.assertThat(message).contains(errorMsg)
+            assertThat(message).contains(errorMsg)
         }
     }
 
@@ -168,13 +170,13 @@ class ActivateMemberHandlerTest {
         invokeTestFunction()
 
         with(entityCapture.firstValue) {
-            Assertions.assertThat(status).isEqualTo(MEMBER_STATUS_ACTIVE)
-            Assertions.assertThat(serialNumber).isEqualTo(SERIAL_NUMBER)
-            Assertions.assertThat(modifiedTime).isEqualTo(clock.instant())
-            Assertions.assertThat(groupId).isEqualTo(knownGroupId)
-            Assertions.assertThat(memberX500Name).isEqualTo(knownX500Name.toString())
-            Assertions.assertThat(mgmContext).isEqualTo(expectedMgmContext)
-            Assertions.assertThat(isPending).isFalse
+            assertThat(status).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(serialNumber).isEqualTo(SERIAL_NUMBER)
+            assertThat(modifiedTime).isEqualTo(clock.instant())
+            assertThat(groupId).isEqualTo(knownGroupId)
+            assertThat(memberX500Name).isEqualTo(knownX500Name.toString())
+            assertThat(mgmContext).isEqualTo(expectedMgmContext)
+            assertThat(isPending).isFalse
         }
     }
 
@@ -195,10 +197,45 @@ class ActivateMemberHandlerTest {
 
         invokeTestFunction()
 
-        Assertions.assertThat(mgmContextCapture.firstValue.items).contains(
+        assertThat(mgmContextCapture.firstValue.items).contains(
             KeyValuePair(MemberInfoExtension.STATUS, MEMBER_STATUS_ACTIVE),
             KeyValuePair(MemberInfoExtension.MODIFIED_TIME, clock.instant().toString()),
             KeyValuePair(MemberInfoExtension.SERIAL, (SERIAL_NUMBER + 1).toString())
+        )
+    }
+
+    @Test
+    fun `invoke returns the correct data`() {
+        val memberInfoEntity = mock<MemberInfoEntity> {
+            on { memberContext } doReturn byteArrayOf(1)
+            on { mgmContext } doReturn byteArrayOf(2)
+            on { serialNumber } doReturn SERIAL_NUMBER
+            on { status } doReturn MEMBER_STATUS_SUSPENDED
+            on { groupId } doReturn knownGroupId
+            on { memberX500Name } doReturn knownX500Name.toString()
+            on { isPending } doReturn false
+        }
+        mockMemberInfoEntity(memberInfoEntity)
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("one", "1")
+            )
+        )
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("two", "2")
+            )
+        )
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(memberContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(mgmContext)
+
+        val result = invokeTestFunction()
+
+        assertThat(result.memberInfo).isEqualTo(
+            PersistentMemberInfo(
+                context.holdingIdentity,
+                memberContext, mgmContext
+            )
         )
     }
 
@@ -213,7 +250,7 @@ class ActivateMemberHandlerTest {
     fun `invoke throws exception if serial number is outdated`() {
         mockMemberInfoEntity(serial = 6L)
 
-        invokeTestFunctionWithError("older version")
+        invokeTestFunctionWithError("serial number does not match")
     }
 
     @Test

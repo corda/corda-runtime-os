@@ -4,8 +4,10 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.ActivateMember
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -19,7 +21,7 @@ import javax.persistence.LockModeType
 
 internal class ActivateMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<ActivateMember, Unit>(persistenceHandlerServices) {
+) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
@@ -35,22 +37,23 @@ internal class ActivateMemberHandler(
         }
     }
 
-    override fun invoke(context: MembershipRequestContext, request: ActivateMember) {
+    override fun invoke(context: MembershipRequestContext, request: ActivateMember): ActivateMemberResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
+            val activatedMember = request.activatedMember
             val member = em.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(context.holdingIdentity.groupId, request.activatedMember, false),
+                MemberInfoEntityPrimaryKey(context.holdingIdentity.groupId, activatedMember, false),
                 LockModeType.OPTIMISTIC_FORCE_INCREMENT
-            ) ?: throw MembershipPersistenceException("Member '${request.activatedMember}' does not exist.")
+            ) ?: throw MembershipPersistenceException("Member '$activatedMember' does not exist.")
             request.serialNumber?.let {
                 require(member.serialNumber == it) {
-                    throw MembershipPersistenceException("The provided serial number corresponds to an older version " +
-                            "of MemberInfo for member '${request.activatedMember}'.")
+                    throw MembershipPersistenceException("The provided serial number does not match to the current " +
+                            "version of MemberInfo for member '$activatedMember'.")
                 }
             }
             require(member.status == MEMBER_STATUS_SUSPENDED) {
-                throw MembershipPersistenceException("Member '${request.activatedMember}' cannot be activated because" +
+                throw MembershipPersistenceException("Member '$activatedMember' cannot be activated because" +
                         " it has status '${member.status}'.")
             }
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
@@ -78,6 +81,14 @@ internal class ActivateMemberHandler(
                     member.memberContext,
                     serializedMgmContext,
                     request.serialNumber
+                )
+            )
+
+            ActivateMemberResponse(
+                PersistentMemberInfo(
+                    context.holdingIdentity,
+                    keyValuePairListDeserializer.deserialize(member.memberContext),
+                    mgmContext,
                 )
             )
         }

@@ -5,8 +5,10 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -115,8 +117,8 @@ class SuspendMemberHandlerTest {
     )
     private val request = SuspendMember(knownX500Name.toString(), SERIAL_NUMBER, REASON)
 
-    private fun invokeTestFunction() {
-        handler.invoke(context, request)
+    private fun invokeTestFunction(): SuspendMemberResponse {
+        return handler.invoke(context, request)
     }
 
     private fun invokeTestFunctionWithError(errorMsg: String) {
@@ -205,6 +207,41 @@ class SuspendMemberHandlerTest {
     }
 
     @Test
+    fun `invoke returns the correct data`() {
+        val memberInfoEntity = mock<MemberInfoEntity> {
+            on { memberContext } doReturn byteArrayOf(1)
+            on { mgmContext } doReturn byteArrayOf(2)
+            on { serialNumber } doReturn SERIAL_NUMBER
+            on { status } doReturn MEMBER_STATUS_ACTIVE
+            on { groupId } doReturn knownGroupId
+            on { memberX500Name } doReturn knownX500Name.toString()
+            on { isPending } doReturn false
+        }
+        mockMemberInfoEntity(memberInfoEntity)
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("one", "1")
+            )
+        )
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("two", "2")
+            )
+        )
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(memberContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(mgmContext)
+
+        val result = invokeTestFunction()
+
+        assertThat(result.memberInfo).isEqualTo(
+            PersistentMemberInfo(
+                context.holdingIdentity,
+                memberContext, mgmContext
+            )
+        )
+    }
+
+    @Test
     fun `invoke throws exception if member cannot be found`() {
         mockMemberInfoEntity(entity = null)
 
@@ -215,7 +252,7 @@ class SuspendMemberHandlerTest {
     fun `invoke throws exception if serial number is outdated`() {
         mockMemberInfoEntity(serial = 6L)
 
-        invokeTestFunctionWithError("older version")
+        invokeTestFunctionWithError("serial number does not match")
     }
 
     @Test

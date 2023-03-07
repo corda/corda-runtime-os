@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dummy
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -109,11 +110,11 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
     override val isRunning = true
 

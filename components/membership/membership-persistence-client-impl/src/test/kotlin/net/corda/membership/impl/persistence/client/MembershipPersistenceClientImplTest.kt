@@ -1159,7 +1159,7 @@ class MembershipPersistenceClientImplTest {
                 null
             )
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
 
         @Test
@@ -1179,19 +1179,17 @@ class MembershipPersistenceClientImplTest {
         }
 
         @Test
-        fun `suspendMember returns failure for unexpected result`() {
-            mockPersistenceResponse(
-                null,
-            )
+        fun `suspendMember returns failure after unknown result`() {
+            mockPersistenceResponse("Placeholder error")
 
-            val result = membershipPersistenceClient.suspendMember(
+            val response = membershipPersistenceClient.suspendMember(
                 ourHoldingIdentity,
                 bobX500Name,
                 null,
                 null
             )
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Unexpected response: null"))
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
 
         @Test
@@ -1250,19 +1248,17 @@ class MembershipPersistenceClientImplTest {
         }
 
         @Test
-        fun `activateMember returns failure for unexpected result`() {
-            mockPersistenceResponse(
-                null,
-            )
+        fun `activateMember returns failure after unknown result`() {
+            mockPersistenceResponse("Placeholder error")
 
-            val result = membershipPersistenceClient.activateMember(
+            val response = membershipPersistenceClient.activateMember(
                 ourHoldingIdentity,
                 bobX500Name,
                 null,
                 null
             )
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Unexpected response: null"))
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
 
         @Test

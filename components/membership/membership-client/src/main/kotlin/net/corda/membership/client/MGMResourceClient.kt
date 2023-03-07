@@ -185,10 +185,15 @@ interface MGMResourceClient : Lifecycle {
      * @param reason Optional. Reason for suspension.
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
-     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
-     * @throws [IllegalArgumentException] If the specified member is not found, or is not currently active.
+     * @throws [IllegalArgumentException] If the member to be suspended is the MGM itself.
+     * @throws [NoSuchElementException] If the member to be suspended is not found.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    @Throws(
+        CouldNotFindMemberException::class,
+        MemberNotAnMgmException::class,
+        IllegalArgumentException::class,
+        NoSuchElementException::class
+    )
     fun suspendMember(
         holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
@@ -206,9 +211,15 @@ interface MGMResourceClient : Lifecycle {
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
-     * @throws [IllegalArgumentException] If the specified member is not found, or is not currently suspended.
+     * @throws [IllegalArgumentException] If the member to be activated is the MGM itself.
+     * @throws [NoSuchElementException] If the member to be activated is not found.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    @Throws(
+        CouldNotFindMemberException::class,
+        MemberNotAnMgmException::class,
+        IllegalArgumentException::class,
+        NoSuchElementException::class
+    )
     fun activateMember(
         holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
