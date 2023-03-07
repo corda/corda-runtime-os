@@ -177,8 +177,7 @@ class SigningServiceImpl(
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignature.WithKey(record.publicKey, signedBytes, context)
     }
-
-
+    
     override fun deriveSharedSecret(
         tenantId: String,
         publicKey: PublicKey,
