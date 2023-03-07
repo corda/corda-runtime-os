@@ -4,7 +4,9 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -14,16 +16,18 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.util.UUID
 
 class MgmRegistrationRequestHandlerTest {
@@ -58,7 +62,9 @@ class MgmRegistrationRequestHandlerTest {
     )
 
     @Test
-    fun `Expected services are called by persistRegistrationRequest`() {
+    fun `persistRegistrationRequest sends request to persistence client`() {
+        val serialisedPayload = "test".toByteArray()
+        whenever(cordaAvroSerializer.serialize(any())).thenReturn(serialisedPayload)
         assertDoesNotThrow {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
@@ -67,28 +73,31 @@ class MgmRegistrationRequestHandlerTest {
             )
         }
 
-        verify(membershipPersistenceClient).persistRegistrationRequest(any(), any())
-        verify(cordaAvroSerializer).serialize(any())
+        val captor = argumentCaptor<RegistrationRequest>()
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
+        assertThat(captor.firstValue.registrationId).isEqualTo(registrationId.toString())
+        assertThat(captor.firstValue.memberContext).isEqualTo(ByteBuffer.wrap(serialisedPayload))
+        assertThat(captor.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+        verify(cordaAvroSerializer).serialize(memberInfo.memberProvidedContext.toWire())
     }
 
     @Test
-    fun `expected services is called by throwIfRegistrationAlreadyApproved`() {
+    fun `throwIfRegistrationAlreadyApproved sends request to the query client`() {
         whenever(membershipQueryClient.queryRegistrationRequestsStatus(holdingIdentity)).doReturn(
             MembershipQueryResult.Success(emptyList())
         )
         mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
         verify(membershipQueryClient).queryRegistrationRequestsStatus(
-            eq(holdingIdentity), anyOrNull(), any()
+            eq(holdingIdentity), eq(null), eq(RegistrationStatus.values().toList())
         )
     }
 
     @Test
     fun `expected exception thrown if registration request persistence fails`() {
-        whenever(
-            membershipPersistenceClient.persistRegistrationRequest(
-                eq(holdingIdentity), any()
-            )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
+        whenever(membershipPersistenceClient.persistRegistrationRequest(eq(holdingIdentity), any())).
+            doReturn(MembershipPersistenceResult.Failure(""))
+        val serialisedPayload = "test".toByteArray()
+        whenever(cordaAvroSerializer.serialize(any())).thenReturn(serialisedPayload)
 
         assertThrows<InvalidMembershipRegistrationException> {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
@@ -97,19 +106,11 @@ class MgmRegistrationRequestHandlerTest {
                 memberInfo
             )
         }
-        verify(membershipPersistenceClient).persistRegistrationRequest(
-            eq(holdingIdentity),
-            any()
-        )
     }
 
     @Test
     fun `expected exception thrown if serializing the registration request fails`() {
-        whenever(
-            cordaAvroSerializer.serialize(
-                any()
-            )
-        ).doReturn(null)
+        whenever(cordaAvroSerializer.serialize(any())).doReturn(null)
 
         assertThrows<InvalidMembershipRegistrationException> {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
@@ -118,7 +119,6 @@ class MgmRegistrationRequestHandlerTest {
                 memberInfo
             )
         }
-        verify(cordaAvroSerializer).serialize(any())
     }
 
     @Test
