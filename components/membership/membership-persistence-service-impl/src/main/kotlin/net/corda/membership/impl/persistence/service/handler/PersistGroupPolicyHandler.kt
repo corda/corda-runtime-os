@@ -36,36 +36,14 @@ internal class PersistGroupPolicyHandler(
         }
 
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val criteriaBuilder = em.criteriaBuilder
-            val queryBuilder = criteriaBuilder.createQuery(GroupPolicyEntity::class.java)
-            val root = queryBuilder.from(GroupPolicyEntity::class.java)
-            val query = queryBuilder
-                .select(root)
-                .orderBy(criteriaBuilder.desc(root.get<String>("version")))
-
-            val lastPersistedVersion = with(em.createQuery(query).setLockMode(LockModeType.PESSIMISTIC_WRITE).setMaxResults(1).resultList) {
-                singleOrNull()?.let { persistedGroupPolicy ->
-                    if (request.version == persistedGroupPolicy.version) {
-                        val persistedProperties = keyValuePairListDeserializer.deserialize(persistedGroupPolicy.properties)
-                        if (persistedProperties != request.properties) {
-                            throw MembershipPersistenceException(
-                                "Cannot update group policy: a group policy with version ${request.version} already exists."
-                            )
-                        }
-                        return@transaction
-                    }
-                    persistedGroupPolicy.version
-                } ?: 0
-            }
-
-            if (request.version != lastPersistedVersion + 1) {
-                if (request.version > lastPersistedVersion) {
-                    throw MembershipPersistenceException("Cannot update group policy: with version ${request.version}. No policy " +
-                        "with version ${request.version - 1} exists.")
-                } else {
-                    throw MembershipPersistenceException("Cannot update group policy: with version ${request.version} smaller " +
-                            "than the latest persisted version.")
+            em.find(GroupPolicyEntity::class.java, request.version, LockModeType.PESSIMISTIC_WRITE)?.let {
+                val persistedProperties = keyValuePairListDeserializer.deserialize(it.properties)
+                if (persistedProperties != request.properties) {
+                    throw MembershipPersistenceException(
+                        "Cannot update group policy: a group policy with version ${request.version} already exists."
+                    )
                 }
+                return@transaction
             }
 
             val entity = GroupPolicyEntity(
