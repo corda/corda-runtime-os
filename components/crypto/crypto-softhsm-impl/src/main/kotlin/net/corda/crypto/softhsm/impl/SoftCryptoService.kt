@@ -133,9 +133,13 @@ open class SoftCryptoService(
         val keyPair = keyPairGenerator.generateKeyPair()
         val wrappingKey = getWrappingKey(spec.masterKeyAlias)
         wrapCounter.incrementAndGet()
-        val privateKeyMaterial = wrappingKey.wrap(keyPair.private)
+        val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
-        return GeneratedWrappedKey(keyPair.public, privateKeyMaterial, PRIVATE_KEY_ENCODING_VERSION)
+        return GeneratedWrappedKey(
+            publicKey = keyPair.public,
+            keyMaterial = keyMaterial,
+            encodingVersion = PRIVATE_KEY_ENCODING_VERSION
+        )
     }
 
     override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
