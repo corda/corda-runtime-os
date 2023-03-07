@@ -30,7 +30,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 @Suppress("MaxLineLength")
-class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
+class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     private lateinit var originalTransactionalBuilder: UtxoTransactionBuilder
     private val session = mock<FlowSession>()
 
@@ -59,7 +59,9 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
 
     @Test
     fun `called with empty builder and receiving empty returns an empty builder`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(UtxoTransactionBuilderContainer())
+        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
+            UtxoTransactionBuilderContainer()
+        )
         val returnedTransactionBuilder = callSendFlow()
 
         assertEquals(utxoLedgerService.transactionBuilder, returnedTransactionBuilder)
@@ -147,7 +149,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving duplicated attachments appends once`() {
         originalTransactionalBuilder.addAttachment(hash1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(attachments = mutableListOf(hash1, hash2, hash2)))
+            UtxoTransactionBuilderContainer(attachments = mutableListOf(hash1, hash2, hash2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -158,7 +161,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     @Test
     fun `receiving new commands appends it`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command2)))
+            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -170,7 +174,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving existing commands does not append it`() {
         originalTransactionalBuilder.addCommand(command1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(commands = mutableListOf(command1)))
+            UtxoTransactionBuilderContainer(commands = mutableListOf(command1))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -182,7 +187,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving duplicated commands appends once`() {
         originalTransactionalBuilder.addCommand(command1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command2, command2)))
+            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command2, command2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -193,7 +199,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     @Test
     fun `receiving new signatories appends it`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKey)))
+            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKey))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -205,7 +212,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving existing signatories does not append it`() {
         originalTransactionalBuilder.addSignatories(publicKeyExample)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample)))
+            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -235,7 +243,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     @Test
     fun `receiving new input StateRefs appends it`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2)))
+            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -254,7 +263,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving existing input StateRefs does not append it`() {
         originalTransactionalBuilder.addInputState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1)))
+            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -272,7 +282,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving duplicated input StateRefs appends once`() {
         originalTransactionalBuilder.addInputState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2)))
+            UtxoTransactionBuilderContainer(inputStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -290,7 +301,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     @Test
     fun `receiving new reference StateRefs appends it`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2)))
+            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -309,7 +321,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving existing reference StateRefs does not append it`() {
         originalTransactionalBuilder.addReferenceState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1)))
+            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -327,7 +340,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving duplicated reference StateRefs appends once`() {
         originalTransactionalBuilder.addReferenceState(stateRef1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2)))
+            UtxoTransactionBuilderContainer(referenceStateRefs = mutableListOf(stateRef1, stateRef2, stateRef2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -345,7 +359,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     @Test
     fun `receiving new outputs appends it`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc2)))
+            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -357,7 +372,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving existing outputs does not append it`() {
         originalTransactionalBuilder.addOutputState(state1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1)))
+            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 
@@ -369,7 +385,8 @@ class ReceiveAndUpdateTransactionBuilderFlowTest: UtxoLedgerTest() {
     fun `receiving duplicated outputs appends once`() {
         originalTransactionalBuilder.addOutputState(state1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2)))
+            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2))
+        )
 
         val returnedTransactionBuilder = callSendFlow()
 

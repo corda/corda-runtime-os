@@ -31,7 +31,7 @@ class ReceiveAndUpdateTransactionBuilderFlow(
     override fun call(): UtxoTransactionBuilder {
         log.trace { "Starting receive and update transaction builder flow" }
 
-        log.trace { "Waiting for transaction builder proposal." }
+        log.trace { "Waiting for transaction builder proposal from ${session.counterparty}." }
         val receivedTransactionBuilder = session.receive(UtxoTransactionBuilderContainer::class.java)
 
         val updatedTransactionBuilder = originalTransactionBuilder.append(receivedTransactionBuilder)

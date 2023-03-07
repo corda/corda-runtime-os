@@ -32,7 +32,7 @@ class SendTransactionBuilderDiffFlow(
 
         val transactionBuilderDiff = transactionBuilder - originalTransactionalBuilder
 
-        log.trace { "Sending proposed transaction builder parts." }
+        log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
         session.send(transactionBuilderDiff)
 
         val newTransactionIds = transactionBuilderDiff.dependencies

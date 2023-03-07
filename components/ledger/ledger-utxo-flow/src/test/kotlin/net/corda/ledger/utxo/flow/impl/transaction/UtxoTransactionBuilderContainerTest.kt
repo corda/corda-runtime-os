@@ -124,7 +124,13 @@ class UtxoTransactionBuilderContainerTest : UtxoLedgerTest() {
     @Test
     fun `minus - signatories get set when there is a new one`() {
         val result =
-            UtxoTransactionBuilderContainer(signatories = listOf(publicKeyExample, publicKeyExample, anotherPublicKey)) -
+            UtxoTransactionBuilderContainer(
+                signatories = listOf(
+                    publicKeyExample,
+                    publicKeyExample,
+                    anotherPublicKey
+                )
+            ) -
                     UtxoTransactionBuilderContainer(signatories = listOf(publicKeyExample))
         assertContentEquals(listOf(anotherPublicKey), result.signatories)
     }

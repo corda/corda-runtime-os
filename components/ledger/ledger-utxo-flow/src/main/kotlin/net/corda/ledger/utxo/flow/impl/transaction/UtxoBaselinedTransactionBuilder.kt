@@ -9,8 +9,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.time.Instant
 import java.util.Objects
 
-class UtxoBaselinedTransactionBuilder
-private constructor(
+class UtxoBaselinedTransactionBuilder private constructor(
     val baselineTransactionBuilder: UtxoTransactionBuilderInternal,
     private val currentTransactionBuilder: UtxoTransactionBuilderInternal,
 ) : UtxoTransactionBuilderInternal by currentTransactionBuilder {

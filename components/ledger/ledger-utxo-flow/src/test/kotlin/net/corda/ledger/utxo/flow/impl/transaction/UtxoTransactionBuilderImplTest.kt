@@ -277,7 +277,11 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         val originalTransactionBuilder = utxoTransactionBuilder
 
         val mutatedTransactionBuilder = utxoTransactionBuilder.addInputState(stateRef1)
-        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(stateRef1))
+        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(
+            listOf(
+                stateRef1
+            )
+        )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
             System.identityHashCode(
@@ -286,7 +290,12 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         )
 
         val mutatedTransactionBuilder2 = utxoTransactionBuilder.addInputStates(listOf(stateRef2))
-        assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(stateRef1, stateRef2))
+        assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(
+            listOf(
+                stateRef1,
+                stateRef2
+            )
+        )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder2)).isEqualTo(
             System.identityHashCode(
@@ -424,7 +433,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         val attachmentId = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
         utxoTransactionBuilder
             .addAttachment(attachmentId)
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addAttachment(attachmentId)
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -435,7 +444,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         val command = UtxoCommandExample()
         utxoTransactionBuilder
             .addCommand(command)
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addCommand(command)
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -443,7 +452,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating signatories throws`() {
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addSignatories(List(2) { publicKeyExample })
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -453,7 +462,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `Duplicating input states one by one throws`() {
         utxoTransactionBuilder
             .addInputState(stateRef1)
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addInputState(stateRef1)
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -461,7 +470,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating input states adding as a list throws`() {
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addInputStates(List(2) { stateRef1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -471,7 +480,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `Duplicating reference states one by one throws`() {
         utxoTransactionBuilder
             .addReferenceState(stateRef1)
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addReferenceState(stateRef1)
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -479,7 +488,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating reference states adding as a list throws`() {
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addReferenceStates(List(2) { stateRef1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -489,7 +498,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `Duplicating non encumbered outputs one by one throws`() {
         utxoTransactionBuilder
             .addOutputState(state1)
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addOutputState(state1)
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -497,7 +506,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating non encumbered outputs adding as a list throws`() {
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addOutputStates(List(2) { state1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -505,7 +514,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating encumbered outputs throws`() {
-        assertThatThrownBy{
+        assertThatThrownBy {
             utxoTransactionBuilder
                 .addEncumberedOutputStates("tag", List(2) { state1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
