@@ -49,6 +49,8 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param privateKeyCache an optional [Cache] which optimises access to private keys
  * @param digestService optionally supply a platform digest service instance; if not one will be constructed
  */
+
+@Suppress("LongParameterList")
 open class SoftCryptoService(
     private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
