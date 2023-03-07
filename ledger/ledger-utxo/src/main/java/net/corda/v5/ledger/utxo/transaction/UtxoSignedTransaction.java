@@ -1,6 +1,7 @@
 package net.corda.v5.ledger.utxo.transaction;
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
+import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
 import net.corda.v5.ledger.common.Party;
@@ -36,6 +37,7 @@ import java.util.List;
  * A transaction ID should be the hash of the wrapped wire representation's Merkle tree root, therefore adding or
  * removing a signature does not change it.
  */
+@CordaSerializable
 @DoNotImplement
 public interface UtxoSignedTransaction extends TransactionWithMetadata {
 

@@ -1,10 +1,12 @@
 package net.corda.v5.base.types;
 
+import net.corda.v5.base.annotations.CordaSerializable;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Class is public for serialization purposes.
  */
+@CordaSerializable
 public final class OpaqueBytesSubSequence extends ByteSequence {
     private final byte[] bytes;
 

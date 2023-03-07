@@ -1,6 +1,7 @@
 package net.corda.v5.ledger.consensual.transaction;
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
+import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata;
@@ -32,6 +33,7 @@ import java.util.List;
  * <p>
  * Adding or removing a signature does not change the transaction ID.
  */
+@CordaSerializable
 @DoNotImplement
 public interface ConsensualSignedTransaction extends TransactionWithMetadata {
 
