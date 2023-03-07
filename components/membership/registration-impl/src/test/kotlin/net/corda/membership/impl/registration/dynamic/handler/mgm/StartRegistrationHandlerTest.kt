@@ -149,15 +149,8 @@ class StartRegistrationHandlerTest {
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
-    private val commands = listOf(
-        Record(
-            "topic",
-            "key",
-            "value",
-        )
-    )
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
-        on { createAsyncCommands() } doReturn commands
+        on { execute() } doReturn MembershipPersistenceResult.success()
     }
 
     private val memberTypeChecker = mock<MemberTypeChecker> {
@@ -214,7 +207,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(3).containsAll(commands)
+            assertThat(outputStates).hasSize(2)
 
             assertRegistrationStarted()
 
@@ -352,7 +345,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(3).containsAll(commands)
+            assertThat(outputStates).hasSize(2)
 
             assertRegistrationStarted()
         }

@@ -248,13 +248,8 @@ class StaticMemberRegistrationServiceTest {
     private val mockContext: Map<String, String> = mock {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
-    private val command = Record(
-        "topic",
-        "key-1",
-        "value",
-    )
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
-        on { createAsyncCommands() } doReturn listOf(command)
+        on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val persistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mock())
@@ -429,16 +424,6 @@ class StaticMemberRegistrationServiceTest {
             registrationService.register(registrationId, alice, mockContext)
 
             assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
-        }
-
-        @Test
-        fun `registration return the approve command`() {
-            setUpPublisher()
-            registrationService.start()
-
-            val commands = registrationService.register(registrationId, alice, mockContext)
-
-            assertThat(commands).contains(command)
         }
 
         @Test

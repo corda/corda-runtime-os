@@ -212,7 +212,7 @@ class MembershipPersistenceClientImpl(
             )
         )
         return request.operation {
-            when(it) {
+            when (it) {
                 null -> Either.Left(Unit)
                 is PersistenceFailedResponse -> Either.Right(it.errorMessage)
                 else -> Either.Right("Unexpected response: $it")

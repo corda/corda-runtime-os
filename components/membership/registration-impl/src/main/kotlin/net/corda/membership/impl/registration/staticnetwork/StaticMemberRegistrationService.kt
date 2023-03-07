@@ -220,7 +220,9 @@ class StaticMemberRegistrationService @Activate constructor(
 
             persistGroupParameters(memberInfo, staticMemberList)
 
-            return persistRegistrationRequest(registrationId, memberInfo)
+            persistRegistrationRequest(registrationId, memberInfo)
+
+            return emptyList()
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
@@ -274,10 +276,10 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) : Collection<Record<*, *>> {
+    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
         val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
             ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-        return persistenceClient.persistRegistrationRequest(
+        persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
@@ -290,7 +292,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     KeyValuePairList(emptyList())
                 )
             )
-        ).createAsyncCommands()
+        ).getOrThrow()
     }
 
     private fun validateNotaryDetails(

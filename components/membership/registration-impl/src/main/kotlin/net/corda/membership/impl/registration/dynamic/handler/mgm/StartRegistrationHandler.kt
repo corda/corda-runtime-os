@@ -83,9 +83,9 @@ internal class StartRegistrationHandler(
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
             logger.info("Persisting the received registration request.")
-            val persistentCommands = membershipPersistenceClient
+            membershipPersistenceClient
                 .persistRegistrationRequest(mgmHoldingId, registrationRequest)
-                .createAsyncCommands()
+                .getOrThrow()
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
@@ -143,7 +143,7 @@ internal class StartRegistrationHandler(
             )
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(pendingMemberRecord) + persistentCommands)
+            Pair(VerifyMember(), listOf(pendingMemberRecord))
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration(ex.originalMessage), emptyList())

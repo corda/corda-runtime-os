@@ -33,7 +33,6 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
@@ -72,10 +71,11 @@ internal class MGMRegistrationMemberInfoHandler(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): Pair<MemberInfo, Collection<Record<*, *>>> {
-        val mgmInfo = buildMgmInfo(holdingIdentity, context)
-        persistMemberInfo(holdingIdentity, mgmInfo)
-        return mgmInfo to persistRegistrationRequest(registrationId, holdingIdentity, mgmInfo)
+    ): MemberInfo {
+        return buildMgmInfo(holdingIdentity, context).also {
+            persistMemberInfo(holdingIdentity, it)
+            persistRegistrationRequest(registrationId, holdingIdentity, it)
+        }
     }
 
     @Suppress("ThrowsCount")
@@ -166,13 +166,13 @@ internal class MGMRegistrationMemberInfoHandler(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
         mgmInfo: MemberInfo
-    ): Collection<Record<*, *>> {
+    ) {
         val serializedMemberContext = keyValuePairListSerializer.serialize(
             mgmInfo.memberProvidedContext.toWire()
         ) ?: throw MGMRegistrationMemberInfoHandlingException(
             "Failed to serialize the member context for this request."
         )
-        return membershipPersistenceClient.persistRegistrationRequest(
+        val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
             viewOwningIdentity = holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
@@ -185,7 +185,12 @@ internal class MGMRegistrationMemberInfoHandler(
                     KeyValuePairList(emptyList())
                 )
             )
-        ).createAsyncCommands()
+        ).execute()
+        if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
+            throw MGMRegistrationMemberInfoHandlingException(
+                "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
+            )
+        }
     }
 }
 

@@ -153,7 +153,7 @@ class MGMRegistrationService @Activate constructor(
             return try {
                 mgmRegistrationContextValidator.validate(context)
 
-                val (mgmInfo, commands) = mgmRegistrationMemberInfoHandler.buildAndPersist(
+                val mgmInfo = mgmRegistrationMemberInfoHandler.buildAndPersist(
                     registrationId,
                     member,
                     context
@@ -175,7 +175,7 @@ class MGMRegistrationService @Activate constructor(
                 val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
                 groupParametersWriterService.put(member, groupParameters)
 
-                commands + mgmRegistrationOutputPublisher.createRecords(mgmInfo)
+                mgmRegistrationOutputPublisher.createRecords(mgmInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {

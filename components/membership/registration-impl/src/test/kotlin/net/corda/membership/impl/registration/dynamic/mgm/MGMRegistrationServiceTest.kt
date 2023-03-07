@@ -68,7 +68,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -189,13 +188,8 @@ class MGMRegistrationServiceTest {
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val mockGroupParametersList: KeyValuePairList = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
-    private val commands = Record(
-        "topic",
-        "key",
-        3,
-    )
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
-        on { createAsyncCommands() } doReturn listOf(commands)
+        on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
@@ -301,8 +295,7 @@ class MGMRegistrationServiceTest {
             assertSoftly {
                 val expectedRecordKey = "$mgmId-$mgmId"
                 it.assertThat(publishedList)
-                    .hasSize(3)
-                    .contains(commands)
+                    .hasSize(2)
                 assertThat(publishedList).anySatisfy { publishedMgmInfo ->
                     assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
                     assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
