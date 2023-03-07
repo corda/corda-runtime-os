@@ -24,6 +24,7 @@ import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -68,18 +69,20 @@ open class SoftCryptoService(
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(masterKeyAlias != "") { "Alias must not be empty" }
-        val cached = wrappingKeyCache?.getIfPresent(masterKeyAlias) != null
-        val available = if (cached) true else wrappingKeyStore.findWrappingKey(masterKeyAlias) != null
-        logger.info("createWrappingKey(alias=$masterKeyAlias failIfExists=$failIfExists) cached=$cached available=$available")
-        if (available) {
+        val isCached = wrappingKeyCache?.getIfPresent(masterKeyAlias) != null
+        val isAvailable = if (isCached) true else wrappingKeyStore.findWrappingKey(masterKeyAlias) != null
+        logger.trace {
+            "createWrappingKey(alias=$masterKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
+        }
+        if (isAvailable) {
             if (failIfExists) throw IllegalStateException("There is an existing key with the alias: $masterKeyAlias")
-            logger.info("Not creating wrapping key for '$masterKeyAlias' since a key is available")
+            logger.debug { "Not creating wrapping key for '$masterKeyAlias' since a key is available" }
             return
         }
         val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
-        val wrappedKeyMaterial = rootWrappingKey.wrap(wrappingKey)
+        val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
-            WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappedKeyMaterial)
+            WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
         wrappingKeyStore.saveWrappingKey(masterKeyAlias, wrappingKeyInfo)
         wrappingKeyCache?.put(masterKeyAlias, wrappingKey)
     }
@@ -114,20 +117,18 @@ open class SoftCryptoService(
         require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
-        logger.info(
-            "generateKeyPair(alias={},masterKeyAlias={},scheme={})",
-            spec.alias,
-            spec.masterKeyAlias,
-            spec.keyScheme.codeName
-        )
+        logger.trace {
+            "generateKeyPair(alias=${spec.alias},masterKeyAlias={$spec.masterKeyAlias},scheme={spec.keyScheme.codeName})"
+        }
         val keyPairGenerator = KeyPairGenerator.getInstance(
             spec.keyScheme.algorithmName,
             providerFor(spec.keyScheme)
         )
+        val keySize = spec.keyScheme.keySize
         if (spec.keyScheme.algSpec != null) {
             keyPairGenerator.initialize(spec.keyScheme.algSpec, schemeMetadata.secureRandom)
-        } else if (spec.keyScheme.keySize != null) {
-            keyPairGenerator.initialize(spec.keyScheme.keySize!!, schemeMetadata.secureRandom)
+        } else if (keySize != null) {
+            keyPairGenerator.initialize(keySize, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
         val wrappingKey = getWrappingKey(spec.masterKeyAlias)
