@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
@@ -80,8 +81,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
             .toSignedTransaction() as UtxoSignedTransactionImpl
 
-        val metadata = tx.wireTransaction.metadata
-        assertEquals(1, metadata.getLedgerVersion())
+        val metadata = tx.wireTransaction.metadata as TransactionMetadataInternal
+        assertEquals(1, metadata.ledgerVersion)
 
         val expectedCpiMetadata = CordaPackageSummaryImpl(
             "CPI name",
