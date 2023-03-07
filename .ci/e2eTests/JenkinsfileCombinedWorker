@@ -18,7 +18,7 @@ def checkConnection(){
     while (status != "200"){
         sleep(time: 3, unit: "SECONDS")
         try{
-            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7000/status', returnStdout: true)
+            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7004/status', returnStdout: true)
         }catch(error){
             echo "can't connect, retrying..."
         }
@@ -140,7 +140,7 @@ pipeline {
                 '''        
             }            
         }
-        stage('connect to worker') {
+        stage('connect to combined worker') {
             steps {
                 script{
                     try {

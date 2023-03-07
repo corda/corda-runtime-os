@@ -7,7 +7,7 @@ import net.corda.schema.configuration.ConfigDefaults
 import picocli.CommandLine.Option
 
 /** The startup parameters handled by all workers. */
-class DefaultWorkerParams {
+class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     @Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit."])
     var helpRequested = false
 
@@ -42,7 +42,7 @@ class DefaultWorkerParams {
         names = ["-p", "--worker-monitor-port"],
         description = ["The port the worker monitor should listen on. Defaults to $WORKER_MONITOR_PORT."]
     )
-    var workerMonitorPort = WORKER_MONITOR_PORT
+    var workerMonitorPort = healthPortOverride
 
     @Option(names = ["-m", "--messaging-params"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()
