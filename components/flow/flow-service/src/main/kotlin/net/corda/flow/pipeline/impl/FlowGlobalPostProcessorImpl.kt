@@ -4,15 +4,20 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStatus
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
+import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +33,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
+    private val flowRecordFactory: FlowRecordFactory,
+    @Reference(service = MemberLookup::class)
+    private val memberLookup: MemberLookup
 ) : FlowGlobalPostProcessor {
 
     private companion object {
@@ -51,7 +58,14 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
+
         return checkpoint.sessions
+            .filter {
+                when (it.status) {
+                    SessionStateType.CREATED -> verifyCounterparty(context, it, now)
+                    else -> true
+                }
+            }
             .map { sessionState ->
                 sessionManager.getMessagesToSend(
                     sessionState,
@@ -67,6 +81,25 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             }
             .flatMap { (_, events) -> events }
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
+    }
+
+    private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
+        val config = context.config
+        val startTime = sessionState.sessionStartTime
+        val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
+
+        /**
+         * If the counterparty doesn't exist in our network, don't send our queued messages yet.
+         * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
+         */
+        if (null == memberLookup.lookup(counterparty)) {
+            if (startTime.plusMillis(config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)) < now) {
+                throw FlowPlatformException("")
+            }
+            return false
+        }
+
+        return true
     }
 
     private fun getFlowMapperSessionCleanupEvents(
@@ -88,7 +121,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun postProcessPendingPlatformError(context: FlowEventContext<Any>) {
-        /**
+        /**s
          * If a platform error was previously reported to the user the error should now be cleared. If we have reached
          * the post-processing step we can assume the pending error has been processed.
          */
