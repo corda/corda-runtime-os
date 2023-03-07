@@ -25,6 +25,7 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
     @Reference(service = VaultNamedQueryBuilderFactory::class, scope = ReferenceScope.PROTOTYPE)
     private val vaultNamedQueryBuilderFactory: VaultNamedQueryBuilderFactory
 ) : UsedByPersistence, CustomMetadataConsumer {
+
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope
 import org.slf4j.LoggerFactory
+
 @Suppress("unused")
 @Component(
     service = [
@@ -26,6 +27,7 @@ class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
     @Reference(service = VaultNamedQueryRegistry::class, scope = ReferenceScope.PROTOTYPE)
     private val vaultNamedQueryRegistry: VaultNamedQueryRegistry
 ): VaultNamedQueryBuilderFactory, UsedByPersistence {
+
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

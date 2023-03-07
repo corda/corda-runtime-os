@@ -12,6 +12,7 @@ data class VaultNamedQueryImpl(
     private val mapper: VaultNamedQueryTransformer<*, *>?,
     private val collector: VaultNamedQueryCollector<*, *>?
 ) : VaultNamedQuery {
+
     override fun getName(): String = name
 
     override fun getJsonString(): String? = jsonString

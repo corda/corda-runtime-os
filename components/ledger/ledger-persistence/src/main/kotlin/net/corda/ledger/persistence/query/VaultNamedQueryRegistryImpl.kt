@@ -18,8 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
     ],
     scope = ServiceScope.PROTOTYPE
 )
-class VaultNamedQueryRegistryImpl @Activate constructor(
-): VaultNamedQueryRegistry, UsedByPersistence {
+class VaultNamedQueryRegistryImpl @Activate constructor(): VaultNamedQueryRegistry, UsedByPersistence {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
