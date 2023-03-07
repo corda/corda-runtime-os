@@ -13,53 +13,44 @@ import net.corda.v5.crypto.KeySchemeCodes.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 
-
-val SUPPORTED_SCHEMES: List<Pair<String, List<SignatureSpec>>> = listOf(
-    Pair(
-        RSA_CODE_NAME, listOf(
-            SignatureSpec.RSA_SHA256,
-            SignatureSpec.RSA_SHA384,
-            SignatureSpec.RSA_SHA512,
-            SignatureSpec.RSASSA_PSS_SHA256,
-            SignatureSpec.RSASSA_PSS_SHA384,
-            SignatureSpec.RSASSA_PSS_SHA512,
-            SignatureSpec.RSA_SHA256_WITH_MGF1,
-            SignatureSpec.RSA_SHA384_WITH_MGF1,
-            SignatureSpec.RSA_SHA512_WITH_MGF1
-        )
+private val SUPPORTED_SCHEMES: Map<String, List<SignatureSpec>> = mapOf(
+    RSA_CODE_NAME to listOf(
+        SignatureSpec.RSA_SHA256,
+        SignatureSpec.RSA_SHA384,
+        SignatureSpec.RSA_SHA512,
+        SignatureSpec.RSASSA_PSS_SHA256,
+        SignatureSpec.RSASSA_PSS_SHA384,
+        SignatureSpec.RSASSA_PSS_SHA512,
+        SignatureSpec.RSA_SHA256_WITH_MGF1,
+        SignatureSpec.RSA_SHA384_WITH_MGF1,
+        SignatureSpec.RSA_SHA512_WITH_MGF1
     ),
-    Pair(
-        ECDSA_SECP256K1_CODE_NAME, listOf(
-            SignatureSpec.ECDSA_SHA256,
-            SignatureSpec.ECDSA_SHA384,
-            SignatureSpec.ECDSA_SHA512
-        )
+    ECDSA_SECP256K1_CODE_NAME to listOf(
+        SignatureSpec.ECDSA_SHA256,
+        SignatureSpec.ECDSA_SHA384,
+        SignatureSpec.ECDSA_SHA512
     ),
-    Pair(
-        ECDSA_SECP256R1_CODE_NAME, listOf(
-            SignatureSpec.ECDSA_SHA256,
-            SignatureSpec.ECDSA_SHA384,
-            SignatureSpec.ECDSA_SHA512
-        )
+    ECDSA_SECP256R1_CODE_NAME to listOf(
+        SignatureSpec.ECDSA_SHA256,
+        SignatureSpec.ECDSA_SHA384,
+        SignatureSpec.ECDSA_SHA512
     ),
-    Pair(EDDSA_ED25519_CODE_NAME, listOf(SignatureSpec.EDDSA_ED25519)),
-    Pair(X25519_CODE_NAME, emptyList()),
-    Pair(SPHINCS256_CODE_NAME, listOf(SignatureSpec.SPHINCS256_SHA512)),
-    Pair(SM2_CODE_NAME, listOf(SignatureSpec.SM2_SM3)),
-    Pair(GOST3410_GOST3411_CODE_NAME, listOf(SignatureSpec.GOST3410_GOST3411))
+    EDDSA_ED25519_CODE_NAME to listOf(SignatureSpec.EDDSA_ED25519),
+    X25519_CODE_NAME to emptyList(),
+    SPHINCS256_CODE_NAME to listOf(SignatureSpec.SPHINCS256_SHA512),
+    SM2_CODE_NAME to listOf(SignatureSpec.SM2_SM3),
+    GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpec.GOST3410_GOST3411)
 )
-
 
 fun deriveSupportedSchemes(schemeMetadata: CipherSchemeMetadata): Map<KeyScheme, List<SignatureSpec>> =
     SUPPORTED_SCHEMES
-        .filter { combo -> schemeMetadata.schemes.any { it.codeName == combo.first } }
-        .map {
-            val scheme = schemeMetadata.findKeyScheme(it.first)
-            if (it.second.isNotEmpty()) {
+        .filter { (codeName, _) -> schemeMetadata.schemes.any { it.codeName == codeName } }
+        .entries.associate { (codeName, signatureSpecs) ->
+            val scheme = schemeMetadata.findKeyScheme(codeName)
+            if (signatureSpecs.isNotEmpty()) {
                 require(scheme.canDo(KeySchemeCapability.SIGN)) {
                     "Key scheme '${scheme.codeName}' cannot be used for signing."
                 }
             }
-            Pair(scheme, it.second)
+            scheme to signatureSpecs
         }
-        .toMap()
