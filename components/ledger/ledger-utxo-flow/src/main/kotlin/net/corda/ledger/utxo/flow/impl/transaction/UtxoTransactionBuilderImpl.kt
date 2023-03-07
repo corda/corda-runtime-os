@@ -41,9 +41,6 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addCommand(command: Command): UtxoTransactionBuilder {
-        require(command !in commands) {
-            "Duplicating commands is not allowed."
-        }
         this.commands += command
         return this
     }
@@ -110,23 +107,12 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
-        val outputState = contractState.withEncumbrance(null)
-        require(outputState !in outputStates) {
-            "Duplicating output states is not allowed."
-        }
-        this.outputStates += outputState
+        this.outputStates += contractState.withEncumbrance(null)
         return this
     }
 
     override fun addOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
-        val outputStates = contractStates.map { it.withEncumbrance(null) }
-        require(
-            this.outputStates.intersect(outputStates.toSet()).isEmpty()
-                    && outputStates.distinct().size == outputStates.count()
-        ) {
-            "Duplicating output states is not allowed."
-        }
-        this.outputStates += outputStates
+        this.outputStates += contractStates.map { it.withEncumbrance(null) }
         return this
     }
 
@@ -138,14 +124,7 @@ class UtxoTransactionBuilderImpl(
         tag: String,
         contractStates: Iterable<ContractState>
     ): UtxoTransactionBuilder {
-        val outputStates = contractStates.map { it.withEncumbrance(tag) }
-        require(
-            this.outputStates.intersect(outputStates.toSet()).isEmpty()
-                    && outputStates.distinct().size == outputStates.count()
-        ) {
-            "Duplicating output states is not allowed."
-        }
-        this.outputStates += outputStates
+        this.outputStates += contractStates.map { it.withEncumbrance(tag) }
         return this
     }
 

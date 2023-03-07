@@ -440,17 +440,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `Duplicating commands throws`() {
-        val command = UtxoCommandExample()
-        utxoTransactionBuilder
-            .addCommand(command)
-        assertThatThrownBy {
-            utxoTransactionBuilder
-                .addCommand(command)
-        }.isInstanceOf(IllegalArgumentException::class.java)
-    }
-
-    @Test
     fun `Duplicating signatories throws`() {
         assertThatThrownBy {
             utxoTransactionBuilder
@@ -491,32 +480,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         assertThatThrownBy {
             utxoTransactionBuilder
                 .addReferenceStates(List(2) { stateRef1 })
-        }.isInstanceOf(IllegalArgumentException::class.java)
-    }
-
-    @Test
-    fun `Duplicating non encumbered outputs one by one throws`() {
-        utxoTransactionBuilder
-            .addOutputState(state1)
-        assertThatThrownBy {
-            utxoTransactionBuilder
-                .addOutputState(state1)
-        }.isInstanceOf(IllegalArgumentException::class.java)
-    }
-
-    @Test
-    fun `Duplicating non encumbered outputs adding as a list throws`() {
-        assertThatThrownBy {
-            utxoTransactionBuilder
-                .addOutputStates(List(2) { state1 })
-        }.isInstanceOf(IllegalArgumentException::class.java)
-    }
-
-    @Test
-    fun `Duplicating encumbered outputs throws`() {
-        assertThatThrownBy {
-            utxoTransactionBuilder
-                .addEncumberedOutputStates("tag", List(2) { state1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
 }
