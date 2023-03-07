@@ -210,27 +210,11 @@ class TestServicesFactory {
         }
     }
 
-    val wrappingKeyCache: Cache<String, WrappingKey> = CacheFactoryImpl().build(
-        "test wrapping key cache", Caffeine.newBuilder()
-            .expireAfterAccess(3600, TimeUnit.MINUTES)
-            .maximumSize(100)
-    )
-    val privateKeycache: Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
-        "test private key cache", Caffeine.newBuilder()
-            .maximumSize(0)
-    )
-
     val rootWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
 
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
-            SoftCryptoService(
-                wrappingKeyStore,
-                schemeMetadata,
-                rootWrappingKey,
-                wrappingKeyCache,
-                privateKeycache
-            ),
+            SoftCryptoService(wrappingKeyStore, schemeMetadata, rootWrappingKey),
             recordedCryptoContexts
         )
     }
