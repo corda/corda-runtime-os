@@ -99,6 +99,14 @@ class UtxoLedgerTransactionVerifierTest {
     }
 
     @Test
+    fun `throws an exception if there are overlapping input and reference states`() {
+        whenever(transaction.referenceStateRefs).thenReturn(listOf(stateRef))
+        assertThatThrownBy { verifier.verify() }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("cannot be both input and reference for a transaction.")
+    }
+
+    @Test
     fun `throws an exception if the notary is not allowed`() {
         // TODO CORE-8956 Check the notary is in the group parameters whitelist
     }

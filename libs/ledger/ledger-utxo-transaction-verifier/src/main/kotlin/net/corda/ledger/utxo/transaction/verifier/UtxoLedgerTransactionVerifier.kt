@@ -30,6 +30,7 @@ class UtxoLedgerTransactionVerifier(
          */
         verifySignatories(transaction.signatories)
         verifyInputsAndOutputs(transaction.inputStateRefs, transaction.outputContractStates)
+        verifyInputsAndReferencesDoNotOverlap(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyCommands(transaction.commands)
         verifyNotaryIsWhitelisted()
 
