@@ -1,5 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
+import com.github.benmanes.caffeine.cache.Cache
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
@@ -18,7 +20,9 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
+import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.security.KeyPairGenerator
@@ -26,29 +30,26 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import javax.crypto.Cipher
-import com.github.benmanes.caffeine.cache.Cache
-import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.deriveSupportedSchemes
 
-val WRAPPING_KEY_ENCODING_VERSION: Int = 1
-val PRIVATE_KEY_ENCODING_VERSION: Int = 1
+const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
+const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 
 /**
- * The heart of the crypto processor.
+ * This class is all about the business logic of generating, storing and using key pairs; it can be run
+ * without a database, without OSGi and without SmartConfig, which makes it easy to test.
  *
  * @param wrappingKeyStore which provides save and find operations for wrapping keys.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
-
- * This class is all about the business logic of generating, storing and using key pairs; it can be run
- * without a database, without OSGi and without SmartConfig, which makes it easy to test.
+ * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
+ * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys
+ * @param privateKeyCache an optional [Cache] which optimises access to private keys
  */
 open class SoftCryptoService(
     private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
-    private val wrappingKeyCache: Cache<String, WrappingKey>,
-    private val privateKeyCache: Cache<PublicKey, PrivateKey>
+    private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
+    private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null
 ) : CryptoService {
     private val digestService = PlatformDigestServiceImpl(schemeMetadata)
 
@@ -64,7 +65,7 @@ open class SoftCryptoService(
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(masterKeyAlias != "") { "Alias must not be empty" }
-        val cached = wrappingKeyCache.getIfPresent(masterKeyAlias) != null
+        val cached = wrappingKeyCache?.getIfPresent(masterKeyAlias) != null
         val available = if (cached) true else wrappingKeyStore.findWrappingKey(masterKeyAlias) != null
         logger.info("createWrappingKey(alias=$masterKeyAlias failIfExists=$failIfExists) cached=$cached available=$available")
         if (available) {
@@ -77,7 +78,7 @@ open class SoftCryptoService(
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappedKeyMaterial)
         wrappingKeyStore.saveWrappingKey(masterKeyAlias, wrappingKeyInfo)
-        wrappingKeyCache.put(masterKeyAlias, wrappingKey)
+        wrappingKeyCache?.put(masterKeyAlias, wrappingKey)
     }
 
     override fun delete(alias: String, context: Map<String, String>): Boolean =
@@ -133,7 +134,7 @@ open class SoftCryptoService(
         val keyPair = keyPairGenerator.generateKeyPair()
         val wrappingKey = getWrappingKey(spec.masterKeyAlias)
         val privateKeyMaterial = wrapPrivateKey(wrappingKey, keyPair.private)
-        privateKeyCache.put(keyPair.public, keyPair.private)
+        privateKeyCache?.put(keyPair.public, keyPair.private)
         return GeneratedWrappedKey(keyPair.public, privateKeyMaterial, PRIVATE_KEY_ENCODING_VERSION)
     }
 
@@ -174,7 +175,10 @@ open class SoftCryptoService(
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
-    fun getWrappingKey(alias: String): WrappingKey = wrappingKeyCache.get(alias) {
+    fun getWrappingKey(alias: String): WrappingKey =
+        wrappingKeyCache?.get(alias, ::getWrappingKeyUncached) ?: getWrappingKeyUncached(alias)
+
+    private fun getWrappingKeyUncached(alias: String): WrappingKey {
         val wrappingKeyInfo =
             wrappingKeyStore.findWrappingKey(alias) ?: throw IllegalStateException("The $alias is not created yet.")
         require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
@@ -183,20 +187,18 @@ open class SoftCryptoService(
         require(rootWrappingKey.algorithm == wrappingKeyInfo.algorithmName) {
             "Expected algorithm is ${rootWrappingKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
         }
-        rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
+        return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
     // See comment on wrapPrivateKey - also pulled out so it can be counted.
     open fun unwrapPrivateKey(key: WrappingKey, keyMaterial: ByteArray): PrivateKey = key.unwrap(keyMaterial)
 
     fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
-        privateKeyCache.get(publicKey) {
-            unwrapPrivateKey(getWrappingKey(spec.masterKeyAlias), spec.keyMaterial)
-        }
+        privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
 
-    fun wrappingKeyExists(wrappingKeyAlias: String): Boolean {
-        if (wrappingKeyCache.getIfPresent(wrappingKeyAlias) != null) return true
-        if (wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null) return true
-        return false
-    }
+    private fun getPrivateKeyUncached(spec: KeyMaterialSpec) =
+        unwrapPrivateKey(getWrappingKey(spec.masterKeyAlias), spec.keyMaterial)
+
+    fun wrappingKeyExists(wrappingKeyAlias: String): Boolean =
+        wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null || wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
 }

@@ -29,17 +29,17 @@ class SoftCryptoServiceCachingTests {
     val rootWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
 
     @ParameterizedTest
-    @ValueSource(longs = [0, 3])
-    fun `getPrivateKey should cache requested key using public key as cache key`(cacheSize: Long) {
+    @ValueSource(booleans = [false, true])
+    fun `getPrivateKey should cache requested key using public key as cache key`(cachePrivateKeys: Boolean) {
         var unwrapCounter = 0
-        val privateKeyCache = makePrivateKeyCache(cacheSize)
+        val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache(3) else null
         // Consider adding counter metrics to SoftCrytpoService so that we don't need to subclass and add
         // counters here
         val myCryptoService = object : SoftCryptoService(
             TestWrappingKeyStore(mock()),
             CipherSchemeMetadataImpl(),
             rootWrappingKey,
-            makeWrappingKeyCache(),
+            null,
             privateKeyCache
         ) {
             override fun unwrapPrivateKey(key: WrappingKey, keyMaterial: ByteArray): PrivateKey {
@@ -51,10 +51,10 @@ class SoftCryptoServiceCachingTests {
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
         val key2 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-2", "master-alias"), emptyMap())
-        val privateKey1 = privateKeyCache.getIfPresent(key1.publicKey)
-        val privateKey2 = privateKeyCache.getIfPresent(key2.publicKey)
-        privateKeyCache.invalidate(key1.publicKey)
-        privateKeyCache.invalidate(key2.publicKey)
+        val privateKey1 = privateKeyCache?.getIfPresent(key1.publicKey)
+        val privateKey2 = privateKeyCache?.getIfPresent(key2.publicKey)
+        privateKeyCache?.invalidate(key1.publicKey)
+        privateKeyCache?.invalidate(key2.publicKey)
         val key1Spec = KeyMaterialSpec(key1.keyMaterial, "master-alias", key1.encodingVersion)
         val key2Spec = KeyMaterialSpec(key2.keyMaterial, "master-alias", key2.encodingVersion)
         val key11 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
@@ -63,7 +63,7 @@ class SoftCryptoServiceCachingTests {
         val key22 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
         assertNotSame(key11, key21)
         assertNotSame(key12, key22)
-        if (cacheSize >= 2) {
+        if (cachePrivateKeys) {
             assertSame(key11, key12)
             assertSame(key21, key22)
         } else {
@@ -83,7 +83,7 @@ class SoftCryptoServiceCachingTests {
             assertNotSame(key22, privateKey2)
             assertEquals(key21, privateKey2)
         }
-        Assertions.assertThat(unwrapCounter).isEqualTo(if (cacheSize >= 2) 2 else 4)
+        Assertions.assertThat(unwrapCounter).isEqualTo(if (cachePrivateKeys) 2 else 4)
     }
 
 
