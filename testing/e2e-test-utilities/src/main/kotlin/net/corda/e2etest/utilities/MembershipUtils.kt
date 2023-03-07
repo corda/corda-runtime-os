@@ -48,7 +48,7 @@ fun onboardMember(
     cpb: String,
     cpiName: String,
     groupPolicy: String,
-    x500Name: MemberX500Name,
+    x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ): NetworkOnboardingMetadata {
@@ -94,7 +94,7 @@ fun onboardNotaryMember(
     resourceName: String,
     cpiName: String,
     groupPolicy: String,
-    x500Name: MemberX500Name,
+    x500Name: String,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ) = onboardMember(
@@ -262,7 +262,7 @@ fun createRegistrationContext(
  */
 data class NetworkOnboardingMetadata(
     val holdingId: String,
-    val x500Name: MemberX500Name,
+    val x500Name: String,
     val registrationId: String,
     val registrationContext: Map<String, String>
 )

@@ -6,6 +6,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
@@ -58,12 +59,12 @@ internal class MigrationUtilityImpl(
     }
 
     private fun runCpkMigrations(
-        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLog>
+        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: SecureHash, changeLogs: List<CpkDbChangeLog>
     ) {
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
         val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
         try {
-            liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum)
+            liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum.toString())
         } catch (e: Exception) {
             val msg =
                 "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +

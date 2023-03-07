@@ -71,7 +71,7 @@ class LiquibaseScriptExtractorHelpers {
 
             liquibaseScripts.add(
                 CpkDbChangeLog(
-                    CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum.toString(), path),
+                    CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, path),
                     xmlContent
                 )
             )

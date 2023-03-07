@@ -16,7 +16,7 @@ class CustomSerializerRegistryTests {
     private val unit = CachingCustomSerializerRegistry(descriptorBasedRegistry, mock())
 
     @Test
-    fun `a custom serializer cannot register to serialize a type already annotated with CordaSerializable`() {
+    fun `a custom serializer can register to serialize a type already annotated with CordaSerializable`() {
         @CordaSerializable
         class AnnotatedWithCordaSerializable
         class NotAnnotatedWithCordaSerializable
@@ -35,10 +35,7 @@ class CustomSerializerRegistryTests {
         unit.register(serializerForEverything)
 
         assertSame(serializerForEverything, unit.find(NotAnnotatedWithCordaSerializable::class.java))
-
-        assertFailsWith<IllegalCustomSerializerException> {
-            unit.find(AnnotatedWithCordaSerializable::class.java)
-        }
+        assertSame(serializerForEverything, unit.find(AnnotatedWithCordaSerializable::class.java))
     }
 
     class MyCustomException : CordaRuntimeException("Custom exception")

@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
@@ -15,6 +16,7 @@ import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
+@CordaSerializable
 class WireTransaction(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,

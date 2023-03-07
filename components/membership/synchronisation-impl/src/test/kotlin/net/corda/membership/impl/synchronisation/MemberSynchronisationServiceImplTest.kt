@@ -240,7 +240,11 @@ class MemberSynchronisationServiceImplTest {
     }
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val verifier = mock<Verifier>()
-    private val persistenceClient = mock<MembershipPersistenceClient>()
+    private val persistenceClient = mock<MembershipPersistenceClient> {
+        on { persistGroupParameters(any(), any()) } doAnswer {
+            MembershipPersistenceResult.Success(it.getArgument<GroupParameters>(1))
+        }
+    }
     private val groupParameters = mock<GroupParameters>()
     private val groupParametersFactory = mock<GroupParametersFactory> {
         on { create(any()) } doReturn groupParameters
