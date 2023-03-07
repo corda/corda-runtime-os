@@ -3,7 +3,7 @@ package net.corda.membership.persistence.client
 import net.corda.messaging.api.records.Record
 
 /**
- * A persistent operation. Can be executed to send to the command to the persistence layer or via RPC
+ * A persistence operation. Can be executed to send the command to the persistence layer via RPC or
  * create a collection of commands to post to the message bus to be handled eventually.
  */
 interface MembershipPersistenceOperation<T> {

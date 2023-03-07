@@ -580,7 +580,7 @@ class MemberResourceClientTest {
     }
 
     @Test
-    fun `startRegistration will be try to post async command to persistence layter if sync command failed`() {
+    fun `startRegistration will try to post async command to persistence layer if sync command failed`() {
         val record = Record(
             "topic",
             "key",
