@@ -29,6 +29,7 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
+import java.util.concurrent.atomic.AtomicInteger
 import javax.crypto.Cipher
 
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
@@ -49,9 +50,11 @@ open class SoftCryptoService(
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
     private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
-    private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null
+    private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
 ) : CryptoService {
     private val digestService = PlatformDigestServiceImpl(schemeMetadata)
+    private var wrapCounter = AtomicInteger()
+    private var unwrapCounter = AtomicInteger()
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -107,11 +110,6 @@ open class SoftCryptoService(
         )
     }
 
-    // This is pulled out as a separate method so that it can be overriden and test fixtures can count
-    // the number of times this was called. TODO - Consider add metrics for wrap and unwrap and using those
-    // from the test cases.
-    open fun wrapPrivateKey(wrappingKey: WrappingKey, privateKey: PrivateKey): ByteArray = wrappingKey.wrap(privateKey)
-
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
         require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
@@ -133,7 +131,8 @@ open class SoftCryptoService(
         }
         val keyPair = keyPairGenerator.generateKeyPair()
         val wrappingKey = getWrappingKey(spec.masterKeyAlias)
-        val privateKeyMaterial = wrapPrivateKey(wrappingKey, keyPair.private)
+        wrapCounter.incrementAndGet()
+        val privateKeyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
         return GeneratedWrappedKey(keyPair.public, privateKeyMaterial, PRIVATE_KEY_ENCODING_VERSION)
     }
@@ -190,15 +189,17 @@ open class SoftCryptoService(
         return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
-    // See comment on wrapPrivateKey - also pulled out so it can be counted.
-    open fun unwrapPrivateKey(key: WrappingKey, keyMaterial: ByteArray): PrivateKey = key.unwrap(keyMaterial)
-
     fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
         privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
 
-    private fun getPrivateKeyUncached(spec: KeyMaterialSpec) =
-        unwrapPrivateKey(getWrappingKey(spec.masterKeyAlias), spec.keyMaterial)
+    private fun getPrivateKeyUncached(spec: KeyMaterialSpec): PrivateKey {
+        unwrapCounter.incrementAndGet()
+        return getWrappingKey(spec.masterKeyAlias).unwrap(spec.keyMaterial)
+    }
 
     fun wrappingKeyExists(wrappingKeyAlias: String): Boolean =
         wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null || wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
+
+    fun getWrapCounter() = wrapCounter.get()
+    fun getUnwrapCounter() = unwrapCounter.get()
 }
