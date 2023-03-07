@@ -24,6 +24,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
@@ -60,6 +61,8 @@ class MGMRegistrationService @Activate constructor(
     private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = LayeredPropertyMapFactory::class)
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
@@ -155,6 +158,11 @@ class MGMRegistrationService @Activate constructor(
 
     private inner class ActiveImpl : InnerRegistrationService {
 
+        private val mgmRegistrationRequestHandler = MGMRegistrationRequestHandler(
+            cordaAvroSerializationFactory,
+            membershipPersistenceClient,
+            membershipQueryClient
+        )
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
             membershipSchemaValidatorFactory,
             configurationGetService = configurationGetService,
@@ -181,6 +189,7 @@ class MGMRegistrationService @Activate constructor(
             context: Map<String, String>
         ) {
             try {
+                mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(member)
                 mgmRegistrationContextValidator.validate(context)
 
                 val mgmInfo = mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(member, context)
@@ -196,7 +205,7 @@ class MGMRegistrationService @Activate constructor(
                 if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
                     throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
                 }
-                mgmRegistrationMemberInfoHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
+                mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
 
                 // Publish group parameters to Kafka
                 val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())

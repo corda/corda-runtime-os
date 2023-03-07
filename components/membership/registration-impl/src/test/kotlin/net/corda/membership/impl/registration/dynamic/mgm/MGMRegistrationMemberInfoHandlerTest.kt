@@ -73,7 +73,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
-    private val registrationId = UUID(0, 1)
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }
@@ -166,10 +165,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         on {
             persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
         } doReturn MembershipPersistenceResult.success()
-
-        on {
-            persistRegistrationRequest(any(), any())
-        } doReturn MembershipPersistenceResult.success()
     }
 
     private val platformInfoProvider: PlatformInfoProvider = mock {
@@ -240,20 +235,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(keyEncodingService, times(2)).decodePublicKey(any<ByteArray>())
         verify(cryptoOpsClient, times(2)).lookupKeysByIds(any(), any())
         verify(virtualNodeInfoReadService).get(any())
-    }
-
-    @Test
-    fun `Expected services are called by persistRegistrationRequest`() {
-        assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.persistRegistrationRequest(
-                registrationId,
-                holdingIdentity,
-                memberInfo
-            )
-        }
-
-        verify(membershipPersistenceClient).persistRegistrationRequest(any(), any())
-        verify(cordaAvroSerializer).serialize(any())
     }
 
     @Test
@@ -383,45 +364,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             eq(holdingIdentity),
             eq(listOf(memberInfo))
         )
-    }
-
-    @Test
-    fun `expected exception thrown if registration request persistence fails`() {
-        whenever(
-            membershipPersistenceClient.persistRegistrationRequest(
-                eq(holdingIdentity), any()
-            )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.persistRegistrationRequest(
-                registrationId,
-                holdingIdentity,
-                memberInfo
-            )
-        }
-        verify(membershipPersistenceClient).persistRegistrationRequest(
-            eq(holdingIdentity),
-            any()
-        )
-    }
-
-    @Test
-    fun `expected exception thrown if serializing the registration request fails`() {
-        whenever(
-            cordaAvroSerializer.serialize(
-                any()
-            )
-        ).doReturn(null)
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.persistRegistrationRequest(
-                registrationId,
-                holdingIdentity,
-                memberInfo
-            )
-        }
-        verify(cordaAvroSerializer).serialize(any())
     }
 
     @Test
