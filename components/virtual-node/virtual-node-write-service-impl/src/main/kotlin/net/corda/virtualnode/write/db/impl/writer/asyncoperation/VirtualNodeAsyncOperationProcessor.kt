@@ -1,42 +1,55 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
-import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 internal class VirtualNodeAsyncOperationProcessor(
-    private val virtualNodeUpgradeHandler: VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest>
+    private val requestHandlers: Map<Class<*>, VirtualNodeAsyncOperationHandler<*>>,
+    private val logger: Logger
 ) : DurableProcessor<String, VirtualNodeAsynchronousRequest> {
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    override fun onNext(events: List<Record<String, VirtualNodeAsynchronousRequest>>): List<Record<*, *>> {
+        logger.debug("Received ${events.size} asynchronous virtual node operation requests.")
+        events.forEach { handleEvent(it) }
+        return emptyList()
     }
 
-    override fun onNext(events: List<Record<String, VirtualNodeAsynchronousRequest>>): List<Record<*, *>> {
-        logger.info("Received ${events.size} asynchronous virtual node operation requests.")
-        events.map { record ->
-            try {
-                when (val typedRequest = record.value?.request) {
-                    is VirtualNodeUpgradeRequest -> {
-                        virtualNodeUpgradeHandler.handle(
-                            record.value!!.timestamp,
-                            record.value!!.requestId,
-                            typedRequest
-                        )
-                    }
-                    null -> logger.warn("Received null payload for asynchronous virtual node operation not supported: $record")
-                    else -> logger.warn("Asynchronous virtual node operation not supported: $record")
-                }
-            } catch (e: Exception) {
-                logger.warn(
-                    "Error while processing asynchronous virtual node operation key: ${record.key}, requestId: ${record.value?.requestId}",
-                    e
-                )
-            }
+    @Suppress("unchecked_cast")
+    private fun handleEvent(eventRecord: Record<String, VirtualNodeAsynchronousRequest>) {
+
+        if (eventRecord.value == null) {
+            logger.warn("Received a virtual node asynchronous operation record without a value: $eventRecord")
+            return
         }
-        return emptyList()
+
+        val operation = eventRecord.value!!
+
+        if (operation.request == null) {
+            logger.warn("Received virtual node asynchronous operation without a request message: $operation")
+            return
+        }
+
+        val request = operation.request!!
+        val requestType = request.javaClass
+
+        if (!requestHandlers.containsKey(requestType)) {
+            logger.warn("Asynchronous virtual node operation not supported: $requestType")
+            return
+        }
+
+        val handler: VirtualNodeAsyncOperationHandler<Any> =
+            requestHandlers[requestType] as VirtualNodeAsyncOperationHandler<Any>
+
+        try {
+            handler.handle(operation.timestamp, operation.requestId, request)
+        } catch (e: Exception) {
+            logger.warn(
+                "Error while processing virtual node asynchronous operation record: ${eventRecord}",
+                e
+            )
+        }
     }
 
     override val keyClass: Class<String> = String::class.java

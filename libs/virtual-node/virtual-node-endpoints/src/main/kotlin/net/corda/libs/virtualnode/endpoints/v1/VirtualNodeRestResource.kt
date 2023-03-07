@@ -11,7 +11,7 @@ import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
@@ -25,9 +25,8 @@ import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuse
 interface VirtualNodeRestResource : RestResource {
 
     /**
-     * Creates a virtual node.
+     * Requests the creation of a virtual node.
      *
-     * @throws `VirtualNodeRPCOpsServiceException` If the virtual node creation request could not be published.
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpPOST(
@@ -37,8 +36,8 @@ interface VirtualNodeRestResource : RestResource {
     )
     fun createVirtualNode(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
-        request: VirtualNodeRequest
-    ): VirtualNodeInfo
+        request: CreateVirtualNodeRequest
+    ): ResponseEntity<AsyncResponse>
 
     /**
      * Lists all virtual nodes onboarded to the cluster.

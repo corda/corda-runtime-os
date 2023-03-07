@@ -46,7 +46,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestTimestamp: Instant,
         requestId: String,
         request: VirtualNodeUpgradeRequest
-    ): Record<*, *>? {
+    ) {
         logger.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
         request.validateMandatoryFields()
 
@@ -59,8 +59,6 @@ internal class VirtualNodeUpgradeOperationHandler(
             logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
             handleMigrationsFailed(request, requestId, requestTimestamp, e)
         }
-
-        return null
     }
 
     /**
@@ -169,11 +167,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         val targetCpiMetadata = oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(request.cpiFileChecksum)
             ?: throw VirtualNodeUpgradeRejectedException("CPI with file checksum ${request.cpiFileChecksum} was not found", requestId)
 
-        val originalCpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+        val originalCpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataById(
             em,
-            currentVirtualNode.cpiIdentifier.name,
-            currentVirtualNode.cpiIdentifier.version,
-            currentVirtualNode.cpiIdentifier.signerSummaryHash.toString()
+            currentVirtualNode.cpiIdentifier
         ) ?: throw VirtualNodeUpgradeRejectedException(
             "CPI with name ${currentVirtualNode.cpiIdentifier.name}, version ${currentVirtualNode.cpiIdentifier.version} was not found",
             requestId

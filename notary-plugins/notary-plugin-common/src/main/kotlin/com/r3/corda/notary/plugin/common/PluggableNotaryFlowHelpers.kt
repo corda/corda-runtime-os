@@ -1,3 +1,5 @@
+@file:JvmName("PluggableNotaryFlowHelpers")
+
 package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -26,16 +28,16 @@ import java.security.MessageDigest
 import java.security.PublicKey
 
 /**
- * Verifies that the correct notarisation request was signed by the counterparty.
+ * Verifies that the correct notarization request was signed by the counterparty.
  *
  * @throws IllegalStateException if the request signature could not be validated.
  */
 @Suspendable
-fun validateRequestSignature(notarisationRequest: NotarisationRequest,
+fun validateRequestSignature(notarizationRequest: NotarizationRequest,
                              requestingParty: Party,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
-                             signature: NotarisationRequestSignature
+                             signature: NotarizationRequestSignature
 ) {
     val digitalSignature = signature.digitalSignature
 
@@ -46,7 +48,7 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
         )
     }
 
-    val expectedSignedBytes = serializationService.serialize(notarisationRequest).bytes
+    val expectedSignedBytes = serializationService.serialize(notarizationRequest).bytes
 
     try {
         signatureVerifier.verify(
@@ -60,46 +62,46 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
     }
 }
 
-/** Creates a signature over the notarisation request using the legal identity key. */
+/** Creates a signature over the notarization request using the legal identity key. */
 @Suspendable
-fun generateRequestSignature(notarisationRequest: NotarisationRequest,
+fun generateRequestSignature(notarizationRequest: NotarizationRequest,
                              memberInfo: MemberInfo,
                              serializationService: SerializationService,
                              signingService: SigningService
-): NotarisationRequestSignature {
-    val serializedRequest = serializationService.serialize(notarisationRequest).bytes
+): NotarizationRequestSignature {
+    val serializedRequest = serializationService.serialize(notarizationRequest).bytes
     val myLegalIdentity = memberInfo.sessionInitiationKey
     val signature = signingService.sign(
         serializedRequest,
         myLegalIdentity,
         SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
     )
-    return NotarisationRequestSignature(signature, memberInfo.platformVersion)
+    return NotarizationRequestSignature(signature, memberInfo.platformVersion)
 }
 
 /**
- * A helper function that will convert a [UniquenessCheckResult] to a [NotarisationResponse].
+ * A helper function that will convert a [UniquenessCheckResult] to a [NotarizationResponse].
  */
 @Suspendable
-fun UniquenessCheckResult.toNotarisationResponse(
+fun UniquenessCheckResult.toNotarizationResponse(
     txId: SecureHash?,
     signature: DigitalSignatureAndMetadata?
-): NotarisationResponse {
+): NotarizationResponse {
     return when (val uniquenessResult = this) {
         is UniquenessCheckResultSuccess -> {
             require(signature != null) {
                 "If the uniqueness check result was successful, a signature must be provided!"
             }
-            NotarisationResponse(
+            NotarizationResponse(
                 listOf(signature),
                 null
             )
         }
-        is UniquenessCheckResultFailure -> NotarisationResponse(
+        is UniquenessCheckResultFailure -> NotarizationResponse(
             emptyList(),
             uniquenessResult.error.toNotaryException(txId)
         )
-        else -> NotarisationResponse(
+        else -> NotarizationResponse(
             emptyList(),
             NotaryExceptionGeneral("Unknown uniqueness check result: $uniquenessResult")
         )
