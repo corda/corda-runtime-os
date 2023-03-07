@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
+import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -9,7 +10,6 @@ import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.utilities.trace
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -19,8 +19,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 
 @Component(
-    service = [ TransactionBackchainVerifier::class, UsedByFlow::class ],
-    property = [ CORDA_SYSTEM_SERVICE ],
+    service = [TransactionBackchainVerifier::class, UsedByFlow::class],
+    property = [CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
 class TransactionBackchainVerifierImpl @Activate constructor(
@@ -39,24 +39,47 @@ class TransactionBackchainVerifierImpl @Activate constructor(
         val sortedTransactions = topologicalSort.complete().iterator()
 
         for (transactionId in sortedTransactions) {
-            val transaction = utxoLedgerPersistenceService.find(transactionId, UNVERIFIED) as UtxoSignedTransactionInternal?
-                ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
-            try {
-                log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
-                transaction.verifySignatures()
-                transaction.verifyNotarySignatureAttached()
-                utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
-                log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
-            } catch (e: Exception) {
-                // TODO revisit what exceptions get caught
+            val (transaction, status) = utxoLedgerPersistenceService.findTransactionWithStatus(
+                transactionId,
+                UNVERIFIED
+            )
+            if (status == INVALID) {
                 log.warn(
-                    "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
-                            "${e.message}"
+                    "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
+                            "The transaction is already invalid."
                 )
                 return false
             }
-            utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
-            log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId to verified" }
+            if (status == VERIFIED) {
+                log.trace { "Backchain resolution of $initialTransactionIds - The transaction is already verified $transactionId." }
+            } else {
+                if (status == null || transaction == null) {
+                    log.warn(
+                        "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
+                                "The transaction disappeared."
+                    )
+                    return false
+                }
+                transaction as UtxoSignedTransactionInternal
+
+                try {
+                    log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
+                    transaction.verifySignatures()
+                    transaction.verifyNotarySignatureAttached()
+                    utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
+                    log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
+                } catch (e: Exception) {
+                    // TODO revisit what exceptions get caught
+                    log.warn(
+                        "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
+                                "${e.message}"
+                    )
+                    return false
+                }
+                utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
+                log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId to verified" }
+
+            }
             sortedTransactions.remove()
         }
 

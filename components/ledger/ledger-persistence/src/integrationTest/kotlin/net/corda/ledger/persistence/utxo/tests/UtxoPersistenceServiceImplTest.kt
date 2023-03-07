@@ -152,19 +152,19 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
+        val retval = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
 
-        assertThat(dbSignedTransaction).isEqualTo(transaction)
+        assertThat(retval).isEqualTo(transaction to "U")
     }
 
     @Test
-    fun `find signed transaction with different status returns null`() {
+    fun `find signed transaction with different status returns null to Status`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
+        val retval = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
 
-        assertThat(dbSignedTransaction).isNull()
+        assertThat(retval).isEqualTo(null to "U")
     }
 
     @Test

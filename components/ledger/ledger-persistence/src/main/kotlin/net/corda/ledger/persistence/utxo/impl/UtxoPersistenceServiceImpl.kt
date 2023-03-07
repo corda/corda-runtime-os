@@ -27,14 +27,17 @@ class UtxoPersistenceServiceImpl constructor(
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
-    override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
+    override fun findTransaction(
+        id: String,
+        transactionStatus: TransactionStatus
+    ): Pair<SignedTransactionContainer?, String?> {
         return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
             } else {
                 null
-            }
+            } to status
         }
     }
 

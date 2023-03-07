@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -44,13 +45,23 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun find(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
+        return findTransactionWithStatus(id, transactionStatus).first
+    }
+
+    @Suspendable
+    override fun findTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<UtxoSignedTransaction?, TransactionStatus?> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindTransactionExternalEventFactory::class.java,
                 FindTransactionParameters(id.toString(), transactionStatus)
             )
-        }.firstOrNull()?.let {
-            serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
+        }.firstOrNull().let {
+            if (it == null) return null to null
+            val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+            transaction?.toSignedTransaction() to status?.toTransactionStatus()
         }
     }
 
