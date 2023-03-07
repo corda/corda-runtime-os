@@ -46,8 +46,6 @@ class InteropService @Activate constructor(
     private val registrationService: InteropMemberRegistrationService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    @Reference(service = InteropAliasTranslator::class)
-    private val interopAliasTranslator: InteropAliasTranslator
 ) : Lifecycle {
 
     companion object {
@@ -96,7 +94,7 @@ class InteropService @Activate constructor(
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
-                InteropProcessor(cordaAvroSerializationFactory, membershipGroupReaderProvider, interopAliasTranslator),
+                InteropProcessor(cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory, subscriptionFactory, messagingConfig),
                 messagingConfig,
                 null
             ).also {

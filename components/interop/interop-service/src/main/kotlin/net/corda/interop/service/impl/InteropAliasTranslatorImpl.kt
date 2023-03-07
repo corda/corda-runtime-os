@@ -28,13 +28,9 @@ import java.util.concurrent.ConcurrentHashMap
  * in the MemberInfo and the translator can be removed
  */
 
-@Component(service = [InteropAliasTranslator::class])
-class InteropAliasTranslatorImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class InteropAliasTranslatorImpl (
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = SmartConfig::class)
     private val config: SmartConfig
 ) : InteropAliasTranslator {
     companion object {

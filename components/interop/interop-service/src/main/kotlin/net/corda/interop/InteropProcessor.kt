@@ -8,11 +8,15 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropAliasTranslator
+import net.corda.interop.service.impl.InteropAliasTranslatorImpl
 import net.corda.interop.service.impl.InteropMessageTransformer
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -26,7 +30,9 @@ import java.util.UUID
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val interopAliasTranslator: InteropAliasTranslator
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val subscriptionFactory: SubscriptionFactory,
+    private val config: SmartConfig
 ) :
     DurableProcessor<String, AppMessage> {
 
@@ -38,6 +44,7 @@ class InteropProcessor(
     private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
         cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
     private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
+    private val interopAliasTranslator: InteropAliasTranslator = InteropAliasTranslatorImpl(lifecycleCoordinatorFactory, subscriptionFactory, config)
 
         override fun onNext(
         events: List<Record<String, AppMessage>>
