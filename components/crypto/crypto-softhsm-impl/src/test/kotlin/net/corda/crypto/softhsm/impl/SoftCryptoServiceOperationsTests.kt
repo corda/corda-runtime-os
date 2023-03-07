@@ -16,7 +16,6 @@ import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
-import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -27,7 +26,6 @@ import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.SM2_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
@@ -69,14 +67,7 @@ class SoftCryptoServiceOperationsTests {
                 ).toMap()
             )
         )
-        private val wrappingKeyCache = makeWrappingKeyCache()
-        private val cryptoService = SoftCryptoService(
-            wrappingKeyStore,
-            schemeMetadata,
-            rootWrappingKey,
-            wrappingKeyCache,
-            makePrivateKeyCache()
-        )
+        private val cryptoService = SoftCryptoService(wrappingKeyStore, schemeMetadata, rootWrappingKey)
         private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
@@ -359,7 +350,7 @@ class SoftCryptoServiceOperationsTests {
 
 
     @Test
-    fun `getWrappingKey should cache requested key using alias as cache key`() {
+    fun `getWrappingKey request key using alias without caching`() {
         val expected1 = WrappingKey.generateWrappingKey(schemeMetadata)
         val expected2 = WrappingKey.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
@@ -388,8 +379,8 @@ class SoftCryptoServiceOperationsTests {
         val key22 = cryptoService.getWrappingKey(alias2)
         assertEquals(expected2, key22)
 
-        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(1)
-        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(1)
+        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(2)
+        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(2)
     }
 
     @Test
@@ -433,51 +424,14 @@ class SoftCryptoServiceOperationsTests {
     }
 
     @Test
-    fun `createWrappingKey should put to cache using public key as cache key`() {
-        val alias = UUID.randomUUID().toString()
-        var saveCount = 0
-        var findCount = 0
-        val countingWrappingStore = object : TestWrappingKeyStore(mock()) {
-            override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
-                saveCount++
-                return super.saveWrappingKey(alias, key)
-            }
-
-            override fun findWrappingKey(alias: String): WrappingKeyInfo? {
-                findCount++
-                return super.findWrappingKey(alias)
-            }
-        }
-        val myCryptoService = SoftCryptoService(
-            countingWrappingStore,
-            schemeMetadata,
-            rootWrappingKey,
-            makeWrappingKeyCache(),
-            makePrivateKeyCache()
-        )
-        myCryptoService.createWrappingKey(alias, true, mapOf())
-        assertThat(findCount).isEqualTo(1) // we do a find to check for conflicts
-        myCryptoService.getWrappingKey(alias)
-        assertThat(saveCount).isEqualTo(1)
-        assertThat(findCount).isEqualTo(1) // but we should not do another find
-    }
-
-    @Test
-    fun `wrappingKeyExists should return true whenever key exist in cache or store and false otherwise`() {
+    fun `wrappingKeyExists should return true whenever key exist in store and false otherwise`() {
         val storeAlias = UUID.randomUUID().toString()
-        val cacheAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
         assertFalse(cryptoService.wrappingKeyExists(storeAlias))
-        assertFalse(cryptoService.wrappingKeyExists(cacheAlias))
-        assertFalse(cryptoService.wrappingKeyExists(unknownAlias))
-        wrappingKeyCache.put(cacheAlias, knownWrappingKey)
-        assertFalse(cryptoService.wrappingKeyExists(storeAlias))
-        assertTrue(cryptoService.wrappingKeyExists(cacheAlias))
         assertFalse(cryptoService.wrappingKeyExists(unknownAlias))
         wrappingKeyStore.saveWrappingKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
         assertTrue(cryptoService.wrappingKeyExists(storeAlias))
         assertFalse(cryptoService.wrappingKeyExists(unknownAlias))
-        assertTrue(cryptoService.wrappingKeyExists(cacheAlias))
     }
 
     @Test

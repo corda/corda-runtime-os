@@ -13,8 +13,6 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
-import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
-import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -36,8 +34,7 @@ class SoftCryptoServiceGeneralTests {
     private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf())
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
-    private val service =
-        SoftCryptoService(wrappingKeyStore, cipherSchemeMetadata, mock(), makeWrappingKeyCache(), makePrivateKeyCache())
+    private val service = SoftCryptoService(wrappingKeyStore, cipherSchemeMetadata, mock())
 
     @Test
     fun `Should throw IllegalStateException when wrapping key alias exists and failIfExists is true`() {
