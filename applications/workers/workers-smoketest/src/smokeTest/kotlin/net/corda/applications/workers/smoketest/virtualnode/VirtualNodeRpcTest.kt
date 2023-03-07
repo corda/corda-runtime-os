@@ -756,13 +756,13 @@ class VirtualNodeRpcTest {
             val cpiV3 = getCpiChecksum(upgradeTestingCpiName, "v3")
             val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV3)
 
-            eventuallyAssertVNodeOperationState(requestId, setOf("LIQUIBASE_DIFF_CHECK_FAILED"))
+            eventuallyAssertVNodeOperationState(requestId, "LIQUIBASE_DIFF_CHECK_FAILED")
         }
     }
 
     @Test
     @Order(116)
-    fun `upgrading to a CPI with a corrupt changelog can be recovered from`() {
+    fun `can recover a failed virtual node upgrade due to corrupt XML changeset`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -772,7 +772,7 @@ class VirtualNodeRpcTest {
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v4")
             awaitVirtualNodeOperationCompletion(bobHoldingId)
 
-            eventuallyAssertVNodeOperationState(requestId, setOf("COMPLETED"))
+            eventuallyAssertVNodeOperationState(requestId, "COMPLETED")
         }
     }
 
@@ -812,15 +812,15 @@ class VirtualNodeRpcTest {
 
     private fun ClusterBuilder.eventuallyAssertVNodeOperationState(
         requestId: String,
-        expectedStates: Set<String>
+        expectedState: String
     ): JsonNode {
         val operationStatus = assertWithRetry {
             command { getVNodeOperationStatus(requestId) }
             condition {
                 val response = it.toJson()["response"]
-                it.code == 200 && !response.isEmpty && expectedStates.contains(response.first()["state"].textValue())
+                it.code == 200 && !response.isEmpty && response.first()["state"].textValue() == expectedState
             }
-            failMessage("Could not assert a virtual node operation with state in set: ${expectedStates.joinToString()}")
+            failMessage("Could not assert a virtual node operation with state: $expectedState")
         }.toJson()
         return operationStatus
     }
@@ -831,9 +831,7 @@ class VirtualNodeRpcTest {
         timeout(Duration.of(30, ChronoUnit.SECONDS))
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
-
             response.code == 200 &&
-                    response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
                     response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&
                     response.toJson()["cpiIdentifier"]["cpiVersion"].textValue().equals(cpiVersion)
         }

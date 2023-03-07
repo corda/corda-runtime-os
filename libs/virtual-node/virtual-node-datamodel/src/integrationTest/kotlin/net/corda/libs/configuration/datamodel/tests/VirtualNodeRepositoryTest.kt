@@ -375,7 +375,7 @@ class VirtualNodeRepositoryTest {
         val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
 
         entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().rejectedOperation(
+            VirtualNodeRepositoryImpl().failedOperation(
                 it,
                 vnode.holdingIdentityId,
                 requestId,

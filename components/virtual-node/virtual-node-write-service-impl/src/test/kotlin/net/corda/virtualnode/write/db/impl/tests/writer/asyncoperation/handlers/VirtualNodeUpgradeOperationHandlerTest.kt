@@ -150,7 +150,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     )
 
     private fun withRejectedOperation(state: VirtualNodeOperationStateDto, reason: String, block: () -> Unit) {
-        whenever(virtualNodeRepository.rejectedOperation(
+        whenever(virtualNodeRepository.failedOperation(
             eq(em),
             eq(vnodeId),
             eq(requestId),

@@ -199,31 +199,6 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .toVirtualNodeInfo()
     }
 
-    override fun rejectedOperation(
-        entityManager: EntityManager,
-        holdingIdentityShortHash: String,
-        requestId: String,
-        serializedRequest: String,
-        requestTimestamp: Instant,
-        reason: String,
-        operationType: VirtualNodeOperationType,
-        state: VirtualNodeOperationStateDto
-    ): VirtualNodeInfo {
-        entityManager.persist(
-            VirtualNodeOperationEntity(
-                UUID.randomUUID().toString(),
-                requestId,
-                serializedRequest,
-                VirtualNodeOperationState.fromDto(state),
-                OperationType.from(operationType),
-                requestTimestamp,
-                errors = reason
-            )
-        )
-        return entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
-            .toVirtualNodeInfo()
-    }
-
     override fun failedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,

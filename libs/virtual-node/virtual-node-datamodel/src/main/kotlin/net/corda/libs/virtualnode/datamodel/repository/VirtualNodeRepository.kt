@@ -74,22 +74,8 @@ interface VirtualNodeRepository {
     ): VirtualNodeInfo
 
     /**
-     * Create a virtual node operation holding the details of a rejected request.
-     */
-    @Suppress("LongParameterList")
-    fun rejectedOperation(
-        entityManager: EntityManager,
-        holdingIdentityShortHash: String,
-        requestId: String,
-        serializedRequest: String,
-        requestTimestamp: Instant,
-        reason: String,
-        operationType: VirtualNodeOperationType,
-        state: VirtualNodeOperationStateDto
-    ): VirtualNodeInfo
-
-    /**
-     * Update a virtual node operation with failure details caused by failure to run migrations.
+     * Given a virtual node identified by the [holdingIdentityShortHash], remove any operation in progress associated with this virtual
+     * node and update the operation record with failure details.
      */
     @Suppress("LongParameterList")
     fun failedOperation(
