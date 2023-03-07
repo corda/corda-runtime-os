@@ -2,6 +2,7 @@ package net.corda.crypto.softhsm.impl
 
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.libs.configuration.SmartConfig
@@ -21,13 +22,15 @@ import kotlin.test.assertTrue
 class SoftCryptoServiceProviderTests {
     private val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
     private val schemeMetadata = CipherSchemeMetadataImpl()
+    private val digestService = PlatformDigestServiceImpl(schemeMetadata)
     private val wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
         it.start()
         eventually {
             assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
         }
     }
-    private val component = SoftCryptoServiceProviderImpl(coordinatorFactory, schemeMetadata, wrappingKeyStore)
+    private val component =
+        SoftCryptoServiceProviderImpl(coordinatorFactory, schemeMetadata, wrappingKeyStore, digestService)
     private val defaultConfig: SmartConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
 
     @Test

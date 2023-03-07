@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningSpec
@@ -45,6 +46,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
  * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys
  * @param privateKeyCache an optional [Cache] which optimises access to private keys
+ * @param digestService optionally supply a platform digest service instance; if not one will be constructed
  */
 open class SoftCryptoService(
     private val wrappingKeyStore: WrappingKeyStore,
@@ -52,8 +54,8 @@ open class SoftCryptoService(
     private val rootWrappingKey: WrappingKey,
     private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
+    private val digestService: PlatformDigestService = PlatformDigestServiceImpl(schemeMetadata)
 ) : CryptoService {
-    private val digestService = PlatformDigestServiceImpl(schemeMetadata)
     private var wrapCounter = AtomicInteger()
     private var unwrapCounter = AtomicInteger()
 

@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.aes.WrappingKey
@@ -43,7 +44,9 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = WrappingKeyStore::class)
-    private val wrappingKeyStore: WrappingKeyStore
+    private val wrappingKeyStore: WrappingKeyStore,
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService,
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -58,7 +61,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService)
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
@@ -66,7 +69,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
-        private val wrappingKeyStore: WrappingKeyStore
+        private val wrappingKeyStore: WrappingKeyStore,
+        private val digestService: PlatformDigestService
     ) : AbstractImpl {
 
         fun getInstance(config: SmartConfig): CryptoService {
@@ -109,7 +113,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 schemeMetadata,
                 rootWrappingKey,
                 wrappingKeyCache,
-                privateKeyCache
+                privateKeyCache,
+                digestService
             )
         }
     }
