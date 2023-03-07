@@ -109,7 +109,7 @@ internal class CreateVirtualNodeServiceImpl(
                 val allChangeLogsForCpk =
                     VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id, it.content) })
                 try {
-                    vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum)
+                    vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum.toString())
                 } catch (e: Exception) {
                     val msg = "CPI migrations failed for virtual node '${holdingIdentity.shortHash}`. Failure " +
                             "occurred running CPI migrations on CPK with file checksum $cpkFileChecksum."

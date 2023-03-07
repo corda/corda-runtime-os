@@ -2,7 +2,6 @@ package net.corda.chunking.db.impl.persistence.database
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.CpkFile
@@ -25,9 +24,11 @@ import java.nio.file.Files
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
+import net.corda.libs.packaging.core.CpiIdentifier
 
 /**
- * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
+ * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated
+ * metadata.
  */
 class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFactory) : CpiPersistence {
 
@@ -49,8 +50,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    override fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
-        getCpiMetadataEntity(cpiName, cpiVersion, signerSummaryHash) != null
+    override fun cpiExists(cpiId: CpiIdentifier): Boolean =
+        getCpiMetadataEntity(cpiId) != null
 
     override fun persistMetadataAndCpks(
         cpi: Cpi,
@@ -73,9 +74,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
 
-            persistNewCpkFileEntities(cpi.metadata.fileChecksum.toString(), em, cpi.cpks)
+            persistNewCpkFileEntities(em, cpi.metadata.fileChecksum, cpi.cpks)
 
-            persistNewChangelogs(changelogsExtractedFromCpi, em)
+            persistNewChangelogs(em, changelogsExtractedFromCpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -100,7 +101,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 CpiCpkKey(
                     cpi.metadata.cpiId.name,
                     cpi.metadata.cpiId.version,
-                    cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+                    cpi.metadata.cpiId.signerSummaryHash.toString(),
                     cpkFileChecksum
                 ),
                 thisCpk.originalFileName!!,
@@ -123,9 +124,10 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             val cpiCpkKey = CpiCpkKey(
                 cpi.metadata.cpiId.name,
                 cpi.metadata.cpiId.version,
-                cpi.metadata.cpiId.signerSummaryHashForDbQuery,
-                cpkFileChecksum
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
+                cpkFileChecksum.toString()
             )
+
             // cpiCpk relationship might already exist for this CPI, for example, if a force uploaded CPI doesn't change a CPK, otherwise
             // create a new one with the CpkMetadataEntity
             em.find(CpiCpkEntity::class.java, cpiCpkKey)
@@ -133,7 +135,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     CpiCpkKey(
                         cpi.metadata.cpiId.name,
                         cpi.metadata.cpiId.version,
-                        cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+                        cpi.metadata.cpiId.signerSummaryHash.toString(),
                         cpkFileChecksum
                     ),
                     thisCpk.originalFileName!!,
@@ -156,8 +158,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
      * @return [Boolean] indicating whether we actually updated any changelogs
      */
     private fun persistNewChangelogs(
-        changelogsExtractedFromCpi: List<CpkDbChangeLog>,
-        em: EntityManager
+        em: EntityManager,
+        changelogsExtractedFromCpi: Collection<CpkDbChangeLog>
     ) {
 
         changelogsExtractedFromCpi.forEach { changelog ->
@@ -176,7 +178,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpiFileChecksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        changelogsExtractedFromCpi: List<CpkDbChangeLog>
+        changelogsExtractedFromCpi: Collection<CpkDbChangeLog>
     ): CpiMetadataEntity {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
@@ -187,9 +189,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             val existingMetadataEntity = requireNotNull(
                 findCpiMetadataEntityInTransaction(
                     em,
-                    cpiId.name,
-                    cpiId.version,
-                    cpiId.signerSummaryHashForDbQuery
+                    cpiId
                 )
             ) {
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
@@ -204,9 +204,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             val cpiMetadataEntity = em.merge(updatedMetadata)
 
-            persistNewCpkFileEntities(cpiMetadataEntity.fileChecksum, em, cpi.cpks)
+            persistNewCpkFileEntities(em, cpiFileChecksum, cpi.cpks)
 
-            persistNewChangelogs(changelogsExtractedFromCpi, em)
+            persistNewChangelogs(em, changelogsExtractedFromCpi)
 
             return cpiMetadataEntity
         }
@@ -216,18 +216,17 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
      * @return null if not found
      */
     private fun findCpiMetadataEntityInTransaction(
-        entityManager: EntityManager,
-        name: String,
-        version: String,
-        signerSummaryHash: String
+        em: EntityManager,
+        cpiId: CpiIdentifier
     ): CpiMetadataEntity? {
+
         val primaryKey = CpiMetadataEntityKey(
-            name,
-            version,
-            signerSummaryHash
+            cpiId.name,
+            cpiId.version,
+            cpiId.signerSummaryHash.toString()
         )
 
-        return entityManager.find(
+        return em.find(
             CpiMetadataEntity::class.java,
             primaryKey,
             // In case of force update, we want the entity to change regardless of whether the CPI being uploaded
@@ -237,14 +236,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         )
     }
 
-    private fun getCpiMetadataEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
+    private fun getCpiMetadataEntity(cpiId: CpiIdentifier): CpiMetadataEntity? {
         return entityManagerFactory.createEntityManager().transaction {
-            findCpiMetadataEntityInTransaction(it, name, version, signerSummaryHash)
+            findCpiMetadataEntityInTransaction(it, cpiId)
         }
     }
 
-    override fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String? {
-        return getCpiMetadataEntity(cpiName, cpiVersion, signerSummaryHash)?.groupId
+    override fun getGroupId(cpiId: CpiIdentifier): String? {
+        return getCpiMetadataEntity(cpiId)?.groupId
     }
 
     /**
@@ -267,11 +266,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity.create(
-            name = cpiMetadata.cpiId.name,
-            version = cpiMetadata.cpiId.version,
-            signerSummaryHash = cpiMetadata.cpiId.signerSummaryHashForDbQuery,
+            id = cpiMetadata.cpiId,
             fileName = cpiFileName,
-            fileChecksum = checksum.toString(),
+            fileChecksum = checksum,
             groupPolicy = cpi.metadata.groupPolicy!!,
             groupId = groupId,
             fileUploadRequestId = requestId,
@@ -279,7 +276,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         )
     }
 
-    private fun persistNewCpkFileEntities(cpiFileChecksum: String, em: EntityManager, cpks: Collection<Cpk>) {
+    private fun persistNewCpkFileEntities(em: EntityManager, cpiFileChecksum: SecureHash, cpks: Collection<Cpk>) {
         val existingCpkMap =
             cpkFileRepository.findById(em, cpks.map { it.metadata.fileChecksum }).associateBy { it.fileChecksum }
 
@@ -293,15 +290,16 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
         if (existingCpks.isNotEmpty()) {
             log.info(
-                "When persisting CPK files for CPI $cpiFileChecksum, ${existingCpks.size} file entities already existed with " +
-                        "checksums ${existingCpkMap.keys.joinToString()}. No changes were made to these files."
+                "When persisting CPK files for CPI $cpiFileChecksum, ${existingCpks.size} file entities already" +
+                        "existed with checksums ${existingCpkMap.keys.joinToString()}. No changes were made to these" +
+                        "files."
             )
         }
     }
 
     override fun validateCanUpsertCpi(
         cpiName: String,
-        cpiSignerSummaryHash: String,
+        cpiSignerSummaryHash: SecureHash,
         cpiVersion: String,
         groupId: String,
         forceUpload: Boolean,
@@ -315,7 +313,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 CpiMetadataEntity::class.java
             )
                 .setParameter("cpiName", cpiName)
-                .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash).resultList
+                .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash.toString()).resultList
         }
 
         if (forceUpload) {

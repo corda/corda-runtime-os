@@ -6,6 +6,7 @@ import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManager
 
 class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
@@ -61,7 +62,7 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     override fun findById(em: EntityManager, cpkChangeLogIdentifier: CpkDbChangeLogIdentifier): CpkDbChangeLog {
         return em.find(
             CpkDbChangeLogEntity::class.java,
-            CpkDbChangeLogKey(cpkChangeLogIdentifier.cpkFileChecksum, cpkChangeLogIdentifier.filePath)
+            CpkDbChangeLogKey(cpkChangeLogIdentifier.cpkFileChecksum.toString(), cpkChangeLogIdentifier.filePath)
         ).toDto()
     }
 
@@ -72,7 +73,7 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
         CpkDbChangeLogEntity(id.toEntity(), content)
 
     private fun CpkDbChangeLogIdentifier.toEntity() =
-        CpkDbChangeLogKey(cpkFileChecksum, filePath)
+        CpkDbChangeLogKey(cpkFileChecksum.toString(), filePath)
 
 
     /**
@@ -85,6 +86,6 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
      * Converts an entity to a data transport object.
      */
     private fun CpkDbChangeLogKey.toDto() =
-        CpkDbChangeLogIdentifier(cpkFileChecksum, filePath)
+        CpkDbChangeLogIdentifier(SecureHash.parse(cpkFileChecksum), filePath)
 
 }
