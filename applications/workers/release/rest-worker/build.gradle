@@ -51,6 +51,7 @@ dependencies {
     runtimeOnly project(":libs:messaging:messaging-impl")
 
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
+    e2eTestImplementation project(':libs:chunking:chunking-core')
     e2eTestImplementation project(':libs:crypto:certificate-generation')
     e2eTestImplementation project(':libs:crypto:cipher-suite')
     e2eTestImplementation project(':libs:crypto:cipher-suite-impl')
