@@ -21,6 +21,11 @@
       "name": "memberSignature",
       "doc": "Signature of the member over the memberContext.",
       "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    },
+    {
+      "name": "isPending",
+      "doc": "Indicates if the signature is for pending registration request information.",
+      "type": "boolean"
     }
   ]
 }
