@@ -63,7 +63,9 @@ class InteropProcessor(
         val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
         logger.info(
             "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
-                interopAliasTranslator.getRealHoldingIdentity(getRealHoldingIdentityFromAliasMapping(unAuthMessage.header.destination.toCorda()))}"
+                interopAliasTranslator.getRealHoldingIdentity(
+                    getRealHoldingIdentityFromAliasMapping(unAuthMessage.header.destination.toCorda())
+                )}"
         )
         getOutputRecord(header, unAuthMessage.payload, key)
     }
