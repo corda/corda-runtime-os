@@ -6,7 +6,7 @@
   "symbols": [
     "P2P_TLS",
     "P2P_SESSION",
-    "RPC_API_TLS",
+    "REST_TLS",
     "CODE_SIGNER"
   ]
 }
