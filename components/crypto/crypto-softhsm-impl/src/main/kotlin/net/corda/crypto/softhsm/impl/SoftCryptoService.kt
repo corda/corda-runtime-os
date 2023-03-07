@@ -24,6 +24,7 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -181,21 +182,26 @@ open class SoftCryptoService(
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
+    @VisibleForTesting
     fun getWrappingKey(alias: String): WrappingKey =
         wrappingKeyCache?.get(alias, ::getWrappingKeyUncached) ?: getWrappingKeyUncached(alias)
 
     private fun getWrappingKeyUncached(alias: String): WrappingKey {
+        // use IllegalArgumentException instead for not found?
         val wrappingKeyInfo =
-            wrappingKeyStore.findWrappingKey(alias) ?: throw IllegalStateException("The $alias is not created yet.")
+            wrappingKeyStore.findWrappingKey(alias)
+                ?: throw IllegalStateException("Wrapping key with alias $alias not found")
         require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
             "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
         }
+        // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
         require(rootWrappingKey.algorithm == wrappingKeyInfo.algorithmName) {
             "Expected algorithm is ${rootWrappingKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
         }
         return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
+    @VisibleForTesting
     fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
         privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
 
@@ -204,6 +210,7 @@ open class SoftCryptoService(
         return getWrappingKey(spec.masterKeyAlias).unwrap(spec.keyMaterial)
     }
 
+    @VisibleForTesting
     fun wrappingKeyExists(wrappingKeyAlias: String): Boolean =
         wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null || wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
 
