@@ -30,7 +30,7 @@ import kotlin.test.assertNull
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CryptoConnectionsFactoryTest {
+class CryptoConnectionsFactoryImplTest {
 
     fun cryptoConnectionsFactoryConfig(expireAfterAccessMins: Int, maximumSize: Int) =
         SmartConfigImpl.empty()
