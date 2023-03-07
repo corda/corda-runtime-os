@@ -4,6 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
@@ -556,7 +557,7 @@ class UtxoPersistenceServiceImplTest {
         override val signatures: List<DigitalSignatureAndMetadata>
             get() = transactionContainer.signatures
         override val cpkMetadata: List<CordaPackageSummary>
-            get() = transactionContainer.wireTransaction.metadata.cpkMetadata
+            get() = (transactionContainer.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
             return listOf(
