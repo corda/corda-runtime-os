@@ -25,6 +25,7 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.InteropService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -74,6 +75,9 @@ class InteropServiceIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+    @InjectService(timeout = 4000)
+    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
     @InjectService(timeout = 4000)
     lateinit var interopService: InteropService

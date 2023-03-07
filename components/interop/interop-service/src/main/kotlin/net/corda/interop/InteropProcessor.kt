@@ -18,6 +18,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.lang.NumberFormatException
@@ -47,7 +48,7 @@ class InteropProcessor(
     private val interopAliasTranslator: InteropAliasTranslator =
         InteropAliasTranslatorImpl(lifecycleCoordinatorFactory, subscriptionFactory, config)
 
-        override fun onNext(
+    override fun onNext(
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
         val unAuthMessage = value?.message
@@ -62,10 +63,7 @@ class InteropProcessor(
         val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
         logger.info(
             "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
-                interopAliasTranslator.getRealHoldingIdentity(
-                    getRealHoldingIdentityFromAliasMapping(unAuthMessage)
-                )
-            }"
+                interopAliasTranslator.getRealHoldingIdentity(getRealHoldingIdentityFromAliasMapping(unAuthMessage.header.destination.toCorda()))}"
         )
         getOutputRecord(header, unAuthMessage.payload, key)
     }
@@ -123,9 +121,9 @@ class InteropProcessor(
         )
     }
 
-    fun getRealHoldingIdentityFromAliasMapping(unAuthMessage: UnauthenticatedMessage): String? {
-        val groupReader = membershipGroupReaderProvider.getGroupReader(unAuthMessage.header.destination.toCorda())
-        val memberInfo = groupReader.lookup(unAuthMessage.header.destination.toCorda().x500Name)
+    private fun getRealHoldingIdentityFromAliasMapping(holdingIdentity: HoldingIdentity): String? {
+        val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+        val memberInfo = groupReader.lookup(holdingIdentity.x500Name)
         return memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
     }
 
