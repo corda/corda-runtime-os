@@ -146,7 +146,7 @@ class VirtualNodeRepositoryTest {
         assertThat(virtualNodeOperation).isNotEmpty
         assertNotNull(virtualNodeOperation[0].operationType)
         assertNotNull(virtualNodeOperation[0].state)
-        assertEquals(virtualNodeOperation[0].requestData.toString(), "data")
+        assertEquals(virtualNodeOperation[0].requestData, "data")
     }
 
     @Test
@@ -372,7 +372,7 @@ class VirtualNodeRepositoryTest {
         val testName = "Testing ${UUID.randomUUID()}"
         val requestId = UUID.randomUUID().toString()
 
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString())
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().rejectedOperation(
