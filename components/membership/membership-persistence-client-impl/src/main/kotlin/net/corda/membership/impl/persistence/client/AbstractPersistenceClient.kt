@@ -18,13 +18,13 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.Either
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.Either
 import net.corda.utilities.time.Clock
 import java.util.UUID
 
@@ -54,7 +54,7 @@ abstract class AbstractPersistenceClient(
         holdingIdentity
     )
 
-    fun <T> MembershipPersistenceRequest.operation(
+    internal fun <T> MembershipPersistenceRequest.operation(
         convertResult: (Any?) -> Either<T, String>,
     ): MembershipPersistenceOperationImpl<T> {
         return MembershipPersistenceOperationImpl(

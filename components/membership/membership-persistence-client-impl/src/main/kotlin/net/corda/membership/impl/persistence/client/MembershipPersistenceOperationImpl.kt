@@ -4,18 +4,28 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
-import net.corda.membership.lib.Either
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
+import net.corda.utilities.Either
 import net.corda.utilities.concurrent.getOrThrow
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.TimeoutException
 
-class MembershipPersistenceOperationImpl<T>(
+/**
+ * An implementation of the MembershipPersistenceOperation.
+ *
+ * @param sender - An RPC sender to enable the send request.
+ * @param request The persistence request (to be sent either via the RPC sender or to
+ *   create the asynchronous command from).
+ * @param convertResult - A function to convert the result from the
+ *   MembershipPersistenceResponse payload to either a successful
+ *   result (Either.Left) or a failure message (Either.Right)
+ */
+internal class MembershipPersistenceOperationImpl<T>(
     private val sender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse>?,
     private val request: MembershipPersistenceRequest,
     private val convertResult: (Any?) -> Either<T, String>,

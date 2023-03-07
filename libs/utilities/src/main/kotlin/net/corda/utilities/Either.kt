@@ -1,4 +1,4 @@
-package net.corda.membership.lib
+package net.corda.utilities
 
 sealed interface Either<out T, out S> {
     data class Left<T>(

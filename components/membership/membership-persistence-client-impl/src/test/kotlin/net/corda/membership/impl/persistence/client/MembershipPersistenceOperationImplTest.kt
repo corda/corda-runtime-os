@@ -7,10 +7,10 @@ import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequ
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
-import net.corda.membership.lib.Either
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
+import net.corda.utilities.Either
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
