@@ -21,6 +21,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -296,6 +297,7 @@ class FlowGlobalPostProcessorImplTest {
         }
 
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
+        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
 
         assertThrows(FlowPlatformException::class.java) {
             flowGlobalPostProcessor.postProcess(testContext)

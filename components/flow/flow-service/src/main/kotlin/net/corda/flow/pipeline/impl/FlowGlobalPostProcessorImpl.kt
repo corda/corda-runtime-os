@@ -84,8 +84,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
-        val config = context.config
-        val startTime = sessionState.sessionStartTime
+        val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
+        val expiryTime = sessionState.sessionStartTime.plusMillis(timeoutWindow)
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
 
         /**
@@ -93,7 +93,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
          */
         if (null == memberLookup.lookup(counterparty)) {
-            if (startTime.plusMillis(config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)) < now) {
+            if (expiryTime < now) {
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
                         "[${counterparty}] as the recipient doesn't exist in the network."
                 log.debug(msg)
