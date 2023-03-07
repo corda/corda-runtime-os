@@ -19,11 +19,12 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.SessionManager
 import net.corda.v5.application.membership.MemberLookup
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.provider.Arguments
