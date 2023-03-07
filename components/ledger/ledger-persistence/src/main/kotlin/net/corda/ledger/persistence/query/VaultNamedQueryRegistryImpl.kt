@@ -4,7 +4,6 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.query.VaultNamedQuery
 import net.corda.v5.ledger.common.query.VaultNamedQueryRegistry
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
