@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
-import java.security.PrivateKey
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
@@ -31,22 +30,16 @@ class SoftCryptoServiceCachingTests {
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `getPrivateKey should cache requested key using public key as cache key`(cachePrivateKeys: Boolean) {
-        var unwrapCounter = 0
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache(3) else null
         // Consider adding counter metrics to SoftCrytpoService so that we don't need to subclass and add
         // counters here
-        val myCryptoService = object : SoftCryptoService(
+        val myCryptoService = SoftCryptoService(
             TestWrappingKeyStore(mock()),
             CipherSchemeMetadataImpl(),
             rootWrappingKey,
             null,
             privateKeyCache
-        ) {
-            override fun unwrapPrivateKey(key: WrappingKey, keyMaterial: ByteArray): PrivateKey {
-                unwrapCounter++
-                return key.unwrap(keyMaterial)
-            }
-        }
+        )
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
@@ -83,37 +76,25 @@ class SoftCryptoServiceCachingTests {
             assertNotSame(key22, privateKey2)
             assertEquals(key21, privateKey2)
         }
-        Assertions.assertThat(unwrapCounter).isEqualTo(if (cachePrivateKeys) 2 else 4)
+        Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(if (cachePrivateKeys) 2 else 4)
     }
 
 
     @Test
     fun `wrapPrivateKey should put to cache using public key as cache key`() {
-        var unwrapCounter = 0
-        var wrapCounter = 0
-        val myCryptoService = object : SoftCryptoService(
+        val myCryptoService = SoftCryptoService(
             TestWrappingKeyStore(mock()),
             CipherSchemeMetadataImpl(),
             rootWrappingKey,
             makeWrappingKeyCache(),
             makePrivateKeyCache(3)
-        ) {
-            override fun wrapPrivateKey(wrappingKey: WrappingKey, privateKey: PrivateKey): ByteArray {
-                wrapCounter++
-                return wrappingKey.wrap(privateKey)
-            }
-
-            override fun unwrapPrivateKey(key: WrappingKey, keyMaterial: ByteArray): PrivateKey {
-                unwrapCounter++
-                return key.unwrap(keyMaterial)
-            }
-        }
+        )
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val key = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
         val keySpec = KeyMaterialSpec(key.keyMaterial, "master-alias", key.encodingVersion)
         myCryptoService.getPrivateKey(key.publicKey, keySpec)
-        assertThat(unwrapCounter).isEqualTo(0)
-        assertThat(wrapCounter).isEqualTo(1)
+        assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(0)
+        assertThat(myCryptoService.getWrapCounter()).isEqualTo(1)
     }
 }
