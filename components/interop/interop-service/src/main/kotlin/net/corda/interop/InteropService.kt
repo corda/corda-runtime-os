@@ -3,7 +3,6 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.interop.service.InteropAliasTranslator
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
@@ -94,7 +93,10 @@ class InteropService @Activate constructor(
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
-                InteropProcessor(cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory, subscriptionFactory, messagingConfig),
+                InteropProcessor(
+                    cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
+                    subscriptionFactory, messagingConfig
+                ),
                 messagingConfig,
                 null
             ).also {

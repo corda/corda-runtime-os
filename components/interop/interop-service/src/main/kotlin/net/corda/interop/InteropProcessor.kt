@@ -44,7 +44,8 @@ class InteropProcessor(
     private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
         cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
     private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
-    private val interopAliasTranslator: InteropAliasTranslator = InteropAliasTranslatorImpl(lifecycleCoordinatorFactory, subscriptionFactory, config)
+    private val interopAliasTranslator: InteropAliasTranslator =
+        InteropAliasTranslatorImpl(lifecycleCoordinatorFactory, subscriptionFactory, config)
 
         override fun onNext(
         events: List<Record<String, AppMessage>>
