@@ -68,7 +68,7 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
         @RestPathParameter(description = "State to transition virtual node instance into. " +
-                "Possible values are: IN_MAINTENANCE and ACTIVE.")
+                "Possible values are: MAINTENANCE and ACTIVE.")
         newState: String
     ): ChangeVirtualNodeStateResponse
 

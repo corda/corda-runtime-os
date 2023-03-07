@@ -11,6 +11,7 @@ import java.util.stream.Stream
 import javax.persistence.EntityManager
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
+import net.corda.virtualnode.OperationalStatus
 
 /**
  * Interface for CRUD operations for a virtual node.
@@ -51,7 +52,7 @@ interface VirtualNodeRepository {
     /**
      * Update a virtual node's state.
      */
-    fun updateVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: String): VirtualNodeInfo
+    fun updateVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: OperationalStatus): VirtualNodeInfo
 
     /**
      * Upgrade the CPI associated with a virtual node.

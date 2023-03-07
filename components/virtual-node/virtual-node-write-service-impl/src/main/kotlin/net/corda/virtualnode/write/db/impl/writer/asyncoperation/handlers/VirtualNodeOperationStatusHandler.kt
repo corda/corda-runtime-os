@@ -6,6 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
+import net.corda.data.virtualnode.VirtualNodeState
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
@@ -33,7 +34,7 @@ internal class VirtualNodeOperationStatusHandler(
                     it.requestTimestamp,
                     it.latestUpdateTimestamp,
                     it.heartbeatTimestamp,
-                    it.state,
+                    VirtualNodeState.valueOf(it.state),
                     it.errors
                 )
             }

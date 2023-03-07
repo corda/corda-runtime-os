@@ -11,6 +11,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
+import net.corda.data.virtualnode.VirtualNodeState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -25,8 +26,12 @@ import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -47,27 +52,21 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
 import java.time.Instant
 import java.util.UUID
-import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 import javax.sql.DataSource
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import kotlin.system.measureTimeMillis
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
-import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
-import net.corda.virtualnode.OperationalStatus
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -404,19 +403,19 @@ internal class VirtualNodeWriterProcessor(
                     nodeInfo.vaultDbOperationalStatus
                 ).any { it == OperationalStatus.INACTIVE }
 
-                val newState = VirtualNodeStateTransitions.valueOf(stateChangeRequest.newState.uppercase())
+                val newState = OperationalStatus.fromAvro(stateChangeRequest.newState)
 
                 // Compare new state to current state
                 when (inMaintenance) {
-                    true -> if (newState == VirtualNodeStateTransitions.MAINTENANCE)
+                    true -> if (newState == OperationalStatus.INACTIVE)
                         throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
 
-                    false -> if (newState == VirtualNodeStateTransitions.ACTIVE)
+                    false -> if (newState == OperationalStatus.ACTIVE)
                         throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
                 }
 
                 val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
-                if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
+                if (stateChangeRequest.newState == VirtualNodeState.ACTIVE) {
                     val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
                         stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
                     )
@@ -429,7 +428,7 @@ internal class VirtualNodeWriterProcessor(
                 virtualNodeRepository.updateVirtualNodeState(
                     entityManager,
                     stateChangeRequest.holdingIdentityShortHash,
-                    stateChangeRequest.newState
+                    newState
                 )
             }
 
@@ -457,10 +456,10 @@ internal class VirtualNodeWriterProcessor(
                 instant,
                 VirtualNodeStateChangeResponse(
                     stateChangeRequest.holdingIdentityShortHash,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro(),
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro(),
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro(),
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro()
                 )
             )
             respFuture.complete(response)
@@ -782,10 +781,10 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.uniquenessDdlConnectionId?.toString(),
                 dbConnections.uniquenessDmlConnectionId.toString(),
                 null,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro(),
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro(),
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro(),
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.toAvro()
             )
         )
         respFuture.complete(response)
