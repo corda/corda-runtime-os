@@ -1,7 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.chunking.toAvro
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
