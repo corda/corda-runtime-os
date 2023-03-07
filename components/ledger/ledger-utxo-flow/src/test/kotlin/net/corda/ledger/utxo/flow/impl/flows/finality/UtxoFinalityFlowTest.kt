@@ -107,7 +107,7 @@ class UtxoFinalityFlowTest {
     private val initialTx = mock<UtxoSignedTransactionInternal>()
     private val updatedTxSomeSigs = mock<UtxoSignedTransactionInternal>()
     private val updatedTxAllSigs = mock<UtxoSignedTransactionInternal>()
-    private val notarisedTx = mock<UtxoSignedTransactionInternal>()
+    private val notarizedTx = mock<UtxoSignedTransactionInternal>()
 
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
@@ -156,7 +156,7 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.id).thenReturn(TX_ID)
         whenever(updatedTxAllSigs.notary).thenReturn(notaryService)
         whenever(updatedTxAllSigs.addSignature(signatureNotary)).thenReturn(
-            notarisedTx
+            notarizedTx
         )
 
         whenever(ledgerTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 11)))
@@ -216,7 +216,7 @@ class UtxoFinalityFlowTest {
     }
 
     @Test
-    fun `receiving valid signatures over a transaction with successful notarisation (from one of the notary VNodes) leads to it being recorded and distributed for recording to passed in sessions`() {
+    fun `receiving valid signatures over a transaction with successful notarization (from one of the notary VNodes) leads to it being recorded and distributed for recording to passed in sessions`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -241,7 +241,7 @@ class UtxoFinalityFlowTest {
             )
         )
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
-        whenever(notarisedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
@@ -259,7 +259,7 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED, emptyList())
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED, emptyList())
-        verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED, listOf(0))
+        verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED, listOf(0))
 
         verify(sessionAlice).receive(Payload::class.java)
         verify(sessionBob).receive(Payload::class.java)
@@ -273,7 +273,7 @@ class UtxoFinalityFlowTest {
     }
 
     @Test
-    fun `receiving valid signatures over a transaction then permanent failing notarisation throws and invalidates tx`() {
+    fun `receiving valid signatures over a transaction then permanent failing notarization throws and invalidates tx`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -306,12 +306,12 @@ class UtxoFinalityFlowTest {
         ) : NotaryExceptionFatal(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(
-            TestNotaryExceptionFatal("notarisation error", null)
+            TestNotaryExceptionFatal("notarization error", null)
         )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(NotaryException::class.java)
-            .hasMessageContaining("notarisation error")
+            .hasMessageContaining("notarization error")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -338,15 +338,15 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed permanently with Unable to notarise transaction <Unknown>:" +
-                        " notarisation error.",
+                "Notarization failed permanently with Unable to notarize transaction <Unknown>:" +
+                        " notarization error.",
                 FinalityNotarizationFailureType.FATAL.value
             ), sessions
         )
     }
 
     @Test
-    fun `receiving valid signatures over a transaction then non-permanent failing notarisation throws, but does not invalidate tx`() {
+    fun `receiving valid signatures over a transaction then non-permanent failing notarization throws, but does not invalidate tx`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -379,11 +379,11 @@ class UtxoFinalityFlowTest {
         ) : NotaryExceptionUnknown(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
-            .thenThrow(TestNotaryExceptionNonFatal("notarisation error"))
+            .thenThrow(TestNotaryExceptionNonFatal("notarization error"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("Unable to notarise transaction <Unknown>: notarisation error")
+            .hasMessage("Unable to notarize transaction <Unknown>: notarization error")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -410,7 +410,7 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed with Unable to notarise transaction <Unknown>: notarisation error.",
+                "Notarization failed with Unable to notarize transaction <Unknown>: notarization error.",
                 FinalityNotarizationFailureType.UNKNOWN.value
             ), sessions
         )
@@ -700,7 +700,7 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED)
 
         verify(sessionAlice).receive(Payload::class.java)
         verify(sessionBob).receive(Payload::class.java)

@@ -9,7 +9,7 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryException
  * signatures from the server side and the error, if applicable.
  */
 @CordaSerializable
-class NotarisationResponse(
+class NotarizationResponse(
     val signatures: List<DigitalSignatureAndMetadata>,
     val error: NotaryException?
 )
