@@ -52,13 +52,10 @@ class InteropProcessor(
         // they are of not the expected type (not UnauthenticatedMessage)
 
         val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-        val groupReader = membershipGroupReaderProvider.getGroupReader(unAuthMessage.header.destination.toCorda())
-        val memberInfo = groupReader.lookup(unAuthMessage.header.destination.toCorda().x500Name)
-        val realHoldingIdentityFromAliasMapping = memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
         logger.info(
             "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
                 interopAliasTranslator.getRealHoldingIdentity(
-                    realHoldingIdentityFromAliasMapping
+                    getRealHoldingIdentityFromAliasMapping(unAuthMessage)
                 )
             }"
         )
@@ -116,6 +113,12 @@ class InteropProcessor(
                 ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
             )
         )
+    }
+
+    fun getRealHoldingIdentityFromAliasMapping(unAuthMessage: UnauthenticatedMessage): String? {
+        val groupReader = membershipGroupReaderProvider.getGroupReader(unAuthMessage.header.destination.toCorda())
+        val memberInfo = groupReader.lookup(unAuthMessage.header.destination.toCorda().x500Name)
+        return memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
     }
 
     //Temporary function to increment message id to debug the lifecycle of seed messages

@@ -1,8 +1,10 @@
 package net.corda.interop.service.impl
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.interop.service.InteropAliasTranslator
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -14,16 +16,29 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-class InteropAliasTranslatorImpl(
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    subscriptionFactory: SubscriptionFactory,
-    configuration: SmartConfig
+/**
+ * Temporary solution to convert the aliases into real holding identities to allow running of flows,
+ * this will be replaced with another solution in milestone 4 CORE10442 where the holding identity will be stored
+ * in the MemberInfo and the translator can be removed
+ */
+
+@Component(service = [InteropAliasTranslator::class])
+class InteropAliasTranslatorImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = SmartConfig::class)
+    private val config: SmartConfig
 ) : InteropAliasTranslator {
     companion object {
-        private const val GROUP_NAME = "interop_stub_hosting_map"
+        private const val GROUP_NAME = "interop_alias_translator"
     }
 
     private val ready = CompletableFuture<Unit>()
@@ -37,7 +52,7 @@ class InteropAliasTranslatorImpl(
         subscriptionFactory.createCompactedSubscription(
             subscriptionConfig,
             Processor(),
-            configuration,
+            config
         )
     }
 
