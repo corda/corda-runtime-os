@@ -81,7 +81,7 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI $i",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
+                TestRandom.secureHash())
         }
 
         // Now check the query - and also we should look at the console output for this
@@ -113,7 +113,7 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI ${UUID.randomUUID()}",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
+                TestRandom.secureHash())
         }
 
         // Now check the query - and also we should look at the console output for this
@@ -157,7 +157,7 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI $i ${UUID.randomUUID()}",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
+                TestRandom.secureHash())
         }
 
         val virtualNode = entityManagerFactory.createEntityManager().use {
@@ -169,11 +169,11 @@ class VirtualNodeRepositoryTest {
 
     @Test
     fun put() {
-        val hash = TestRandom.secureHash()
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
+        val cpiSignerSummaryHash = TestRandom.secureHash()
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", cpiSignerSummaryHash)
 
         val hi = vnode.holdingIdentity.toHoldingIdentity()
-        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
+        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, cpiSignerSummaryHash)
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().put(
@@ -224,9 +224,9 @@ class VirtualNodeRepositoryTest {
 
     @Test
     fun updateVirtualNodeState() {
-        val hash = TestRandom.secureHash()
+        val cpiSignerSummaryHash = TestRandom.secureHash()
         val vnode = VNodeTestUtils
-            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
+            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", cpiSignerSummaryHash)
 
         entityManagerFactory.createEntityManager().use {
             VirtualNodeRepositoryImpl().updateVirtualNodeState(
@@ -248,10 +248,11 @@ class VirtualNodeRepositoryTest {
     fun `upgrade virtual node CPI test`() {
         val signerSummaryHash = TestRandom.secureHash()
         val testName = "Testing ${UUID.randomUUID()}"
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString())
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
 
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newCpiMetadataEntity(testName, "v2", signerSummaryHash.toString()))
+            //cpiMetadataRepository = CpiMetadataRepositoryImpl()
+            em.persist(VNodeTestUtils.newCpiMetadataEntity(testName, "v2", signerSummaryHash))
         }
 
         val requestId = "request ${UUID.randomUUID()}"
@@ -297,7 +298,7 @@ class VirtualNodeRepositoryTest {
 
         val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
             OperationType.UPGRADE, Instant.now())
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().completeOperation(it, vnode.holdingIdentityId)
@@ -330,7 +331,7 @@ class VirtualNodeRepositoryTest {
 
         val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
             OperationType.UPGRADE, Instant.now())
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().failedMigrationsOperation(

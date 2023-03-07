@@ -22,7 +22,7 @@ internal class MembershipPersistenceRPCProcessor(
         request: MembershipPersistenceRequest,
         respFuture: CompletableFuture<MembershipPersistenceResponse>
     ) {
-        logger.info("Processor received new RPC persistence request. Selecting handler.")
+        logger.info("Received membership persistence request: ${request.request::class.java}")
         val result = try {
             val result = handlerFactories.handle(
                 request,

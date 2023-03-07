@@ -86,7 +86,7 @@ class DbClientImplTest {
     @Test
     fun `importCertificates merge the certificate into the RPC API tenant`() {
         client.importCertificates(
-            CertificateUsage.RPC_API_TLS,
+            CertificateUsage.REST_TLS,
             null,
             "alias",
             "certificate"
@@ -95,7 +95,7 @@ class DbClientImplTest {
         verify(clusterEntityManager).merge(
             ClusterCertificate(
                 "alias",
-                CertificateUsage.RPC_API_TLS.publicName,
+                CertificateUsage.REST_TLS.publicName,
                 "certificate"
             )
         )
@@ -105,7 +105,7 @@ class DbClientImplTest {
     fun `importCertificates with invalid node throw an exception`() {
         assertThrows<NoSuchNode> {
             client.importCertificates(
-                CertificateUsage.RPC_API_TLS,
+                CertificateUsage.REST_TLS,
                 ShortHash.Companion.of("123456789011"),
                 "alias",
                 "certificate"
@@ -117,7 +117,7 @@ class DbClientImplTest {
     fun `retrieveCertificates find the certificate from the RPC API tenant`() {
         client.retrieveCertificates(
             null,
-            CertificateUsage.RPC_API_TLS,
+            CertificateUsage.REST_TLS,
             "alias"
         )
 
@@ -180,7 +180,7 @@ class DbClientImplTest {
     @Test
     fun `importCertificates merge the certificate into the node entity`() {
         client.importCertificates(
-            CertificateUsage.RPC_API_TLS,
+            CertificateUsage.REST_TLS,
             nodeTenantId,
             "alias",
             "certificate"
@@ -189,7 +189,7 @@ class DbClientImplTest {
         verify(nodeEntityManager).merge(
             Certificate(
                 "alias",
-                CertificateUsage.RPC_API_TLS.publicName,
+                CertificateUsage.REST_TLS.publicName,
                 "certificate",
             )
         )
@@ -240,7 +240,7 @@ class DbClientImplTest {
 
         assertThrows<RuntimeException> {
             client.importCertificates(
-                CertificateUsage.RPC_API_TLS,
+                CertificateUsage.REST_TLS,
                 null,
                 "alias",
                 "certificate"
@@ -254,7 +254,7 @@ class DbClientImplTest {
 
         assertThrows<RuntimeException> {
             client.importCertificates(
-                CertificateUsage.RPC_API_TLS,
+                CertificateUsage.REST_TLS,
                 nodeTenantId,
                 "alias",
                 "certificate"

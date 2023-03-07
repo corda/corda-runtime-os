@@ -329,11 +329,19 @@ class VirtualNodeRpcTest {
     private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(cpiFileChecksum, x500Name) }
-            condition { it.code == 200 }
+            condition { it.code == 202 }
             failMessage(ERROR_HOLDING_ID)
         }.toJson()
-        val vnodeShortHash = vNodeJson["holdingIdentity"]["shortHash"].textValue()
+        val vnodeShortHash = vNodeJson["requestId"].textValue()
         assertThat(vnodeShortHash).isNotNull.isNotEmpty
+
+        assertWithRetry {
+            command { getVNode(vnodeShortHash)}
+            condition { it.code == 200 }
+            failMessage(
+                "The virtual node was submitted for creation but no vNode found for '$vnodeShortHash'"
+            )
+        }
         return vnodeShortHash
     }
 

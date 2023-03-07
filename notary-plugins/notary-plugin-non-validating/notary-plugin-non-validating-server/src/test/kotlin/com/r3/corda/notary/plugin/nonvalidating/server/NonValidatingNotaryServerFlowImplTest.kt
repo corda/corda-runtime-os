@@ -1,10 +1,10 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
-import com.r3.corda.notary.plugin.common.NotarisationResponse
+import com.r3.corda.notary.plugin.common.NotarizationRequestSignature
+import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
-import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
+import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
@@ -53,7 +53,7 @@ class NonValidatingNotaryServerFlowImplTest {
         const val DUMMY_PLATFORM_VERSION = 9001
 
         /* Cache for storing response from server */
-        val responseFromServer = mutableListOf<NotarisationResponse>()
+        val responseFromServer = mutableListOf<NotarizationResponse>()
 
         /* Notary VNodes */
         val notaryVNodeAliceKey = mock<PublicKey>()
@@ -317,7 +317,7 @@ class NonValidatingNotaryServerFlowImplTest {
         sigVerifier: DigitalSignatureVerificationService = mockSigVerifier,
         flowSession: FlowSession? = null,
         txVerificationLogic: () -> Unit = {},
-        extractData: (sigs: List<NotarisationResponse>) -> Unit
+        extractData: (sigs: List<NotarizationResponse>) -> Unit
     ) {
         val txId = randomSecureHash()
 
@@ -387,9 +387,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 3. Mock the receive and send from the counterparty session, unless it is overwritten
         val paramOrDefaultSession = flowSession ?: mock {
-            on { receive(NonValidatingNotarisationPayload::class.java) } doReturn NonValidatingNotarisationPayload(
+            on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
-                NotarisationRequestSignature(
+                NotarizationRequestSignature(
                     DigitalSignature.WithKey(
                         memberCharlieKey,
                         "ABC".toByteArray(),
@@ -400,7 +400,7 @@ class NonValidatingNotaryServerFlowImplTest {
                 notaryServiceKey
             )
             on { send(any()) } doAnswer {
-                responseFromServer.add(it.arguments.first() as NotarisationResponse)
+                responseFromServer.add(it.arguments.first() as NotarizationResponse)
                 Unit
             }
             on { counterparty } doReturn memberCharlieParty.name
