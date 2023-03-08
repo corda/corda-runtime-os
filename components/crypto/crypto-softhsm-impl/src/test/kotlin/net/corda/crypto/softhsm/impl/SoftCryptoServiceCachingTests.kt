@@ -98,6 +98,9 @@ class SoftCryptoServiceCachingTests {
         if (privateKey1 != null) {
             assertNotSame(key1direct, privateKey1)
             assertEquals(key11, privateKey1)
+            assertEquals(key11, key1direct)
+            assertEquals(privateKey1, key1direct)
+
         }
         if (privateKey2 != null) {
             assertNotSame(key22, privateKey2)
