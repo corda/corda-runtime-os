@@ -5,7 +5,7 @@ package net.corda.crypto.cipher.suite
  *
  * @property keyMaterial The encoded and encrypted private key.
  * @property masterKeyAlias The wrapping key's alias which was used for wrapping, the value
- * could still be null for HSMs which use built-in wrapping keys. TODO - rename to wrappingKeyAlias
+ * could still be null for HSMs which use built-in wrapping keys. TODO - rename to wrappingKeyAlias, CORE-11474
  * @property encodingVersion The encoding version which was used to encode the private key.
  */
 class KeyMaterialSpec(
