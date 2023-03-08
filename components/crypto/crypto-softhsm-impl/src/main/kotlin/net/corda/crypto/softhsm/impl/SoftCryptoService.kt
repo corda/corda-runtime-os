@@ -212,8 +212,4 @@ class SoftCryptoService(
     private fun getPrivateKeyUncached(spec: KeyMaterialSpec): PrivateKey {
         return getWrappingKey(spec.masterKeyAlias).unwrap(spec.keyMaterial)
     }
-
-    @VisibleForTesting
-    fun wrappingKeyExists(wrappingKeyAlias: String): Boolean =
-        wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null || wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
 }

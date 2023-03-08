@@ -43,6 +43,8 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private val schemeMetadata = CipherSchemeMetadataImpl()
@@ -424,14 +426,14 @@ class SoftCryptoServiceOperationsTests {
     }
 
     @Test
-    fun `wrappingKeyExists should return true whenever key exist in store and false otherwise`() {
+    fun `wrapping key store can find keys that have been stored`() {
         val storeAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
-        assertFalse(cryptoService.wrappingKeyExists(storeAlias))
-        assertFalse(cryptoService.wrappingKeyExists(unknownAlias))
+        assertNull(wrappingKeyStore.findWrappingKey(storeAlias))
+        assertNull(wrappingKeyStore.findWrappingKey(unknownAlias))
         wrappingKeyStore.saveWrappingKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
-        assertTrue(cryptoService.wrappingKeyExists(storeAlias))
-        assertFalse(cryptoService.wrappingKeyExists(unknownAlias))
+        assertNotNull(wrappingKeyStore.findWrappingKey(storeAlias))
+        assertNull(wrappingKeyStore.findWrappingKey(unknownAlias))
     }
 
     @Test
