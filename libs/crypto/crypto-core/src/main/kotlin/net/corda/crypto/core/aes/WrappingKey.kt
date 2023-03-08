@@ -2,10 +2,7 @@ package net.corda.crypto.core.aes
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.ManagedKey
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import java.security.PrivateKey
-import java.security.spec.PKCS8EncodedKeySpec
-import javax.crypto.Cipher
 
 /**
  * Wrapping key which can wrap/unwrap other [WrappingKey]s or [PrivateKey]s.
