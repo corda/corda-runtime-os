@@ -111,12 +111,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                     )
             )
             return SoftCryptoService(
-                wrappingKeyStore,
-                schemeMetadata,
-                rootWrappingKey,
-                wrappingKeyCache,
-                privateKeyCache,
-                digestService
+                wrappingKeyStore = wrappingKeyStore,
+                schemeMetadata = schemeMetadata,
+                rootWrappingKey = rootWrappingKey,
+                wrappingKeyCache = wrappingKeyCache,
+                privateKeyCache = privateKeyCache,
+                digestService = digestService
             )
         }
     }

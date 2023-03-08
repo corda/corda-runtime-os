@@ -1,6 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
@@ -68,8 +69,13 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
-        private val cryptoService =
-            SoftCryptoService(wrappingKeyStore, schemeMetadata, rootWrappingKey, wrappingKeyCache = wrappingKeyCache)
+        private val cryptoService = SoftCryptoService(
+            wrappingKeyStore = wrappingKeyStore,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = rootWrappingKey,
+            wrappingKeyCache = wrappingKeyCache,
+            digestService = PlatformDigestServiceImpl(schemeMetadata)
+        )
         private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)

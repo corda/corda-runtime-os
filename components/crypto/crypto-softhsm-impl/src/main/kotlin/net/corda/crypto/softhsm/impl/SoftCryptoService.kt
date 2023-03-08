@@ -47,6 +47,8 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys
  * @param privateKeyCache an optional [Cache] which optimises access to private keys
  * @param digestService optionally supply a platform digest service instance; if not one will be constructed
+ * @param keyPairGeneratorFactory creates a key pair generator given algorithm and provider
+ * @param wrappingKeyFactory creates a wrapping key given scheme metadata
  */
 
 
@@ -55,9 +57,9 @@ class SoftCryptoService(
     private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
+    private val digestService: PlatformDigestService,
     private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
-    private val digestService: PlatformDigestService = PlatformDigestServiceImpl(schemeMetadata),
     private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator = { algorithm: String, provider: Provider ->
         KeyPairGenerator.getInstance(algorithm, provider)
     },

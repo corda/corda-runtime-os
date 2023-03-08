@@ -2,6 +2,7 @@ package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.core.aes.WrappingKey
@@ -118,11 +119,12 @@ class SoftCryptoServiceCachingTests {
         wrappingKeyCache: Cache<String, WrappingKey>? = null
     ) =
         SoftCryptoService(
-            TestWrappingKeyStore(mock()),
-            schemeMetadata,
-            rootWrappingKey,
-            wrappingKeyCache,
-            privateKeyCache,
+            wrappingKeyStore = TestWrappingKeyStore(mock()),
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = rootWrappingKey,
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            wrappingKeyCache = wrappingKeyCache,
+            privateKeyCache = privateKeyCache,
             wrappingKeyFactory = {
                 CountingWrappingKey(
                     WrappingKeyImpl.generateWrappingKey(it),
@@ -156,8 +158,12 @@ class SoftCryptoServiceCachingTests {
         }
         val wrappingKeyCache = makeWrappingKeyCache()
         val myCryptoService = SoftCryptoService(
-            countingWrappingStore, schemeMetadata,
-            rootWrappingKey, wrappingKeyCache, makePrivateKeyCache()
+            wrappingKeyStore = countingWrappingStore,
+            schemeMetadata = schemeMetadata,
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            rootWrappingKey = rootWrappingKey,
+            wrappingKeyCache = wrappingKeyCache,
+            privateKeyCache = makePrivateKeyCache()
         )
 
         // starting fresh, all 3 aliases are missing from both store and cache
