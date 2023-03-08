@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import com.typesafe.config.ConfigFactory
-import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
