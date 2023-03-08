@@ -1,0 +1,23 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+tasks.named("jar") {
+    archiveBaseName = 'upgrade-testing-cordapp'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
+    contract {
+        name "Version upgrade testing v3"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    cordaProvided 'net.corda:corda-application'
+}
