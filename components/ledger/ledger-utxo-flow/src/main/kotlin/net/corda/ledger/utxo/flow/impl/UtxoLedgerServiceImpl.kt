@@ -193,8 +193,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         flowEngine.subFlow(
             SendTransactionBuilderDiffFlow(
                 transactionBuilder,
-                session,
-                transactionBuilder.baselineTransactionBuilder
+                session
             )
         )
     }
@@ -207,8 +206,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         flowEngine.subFlow(
             SendTransactionBuilderDiffFlow(
                 transactionBuilder as UtxoTransactionBuilderInternal,
-                session,
-                getTransactionBuilder()
+                session
             )
         )
         return flowEngine.subFlow(

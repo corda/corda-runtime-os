@@ -4,7 +4,7 @@ import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.Party
@@ -31,7 +31,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
         )
             .setNotary(notary)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal

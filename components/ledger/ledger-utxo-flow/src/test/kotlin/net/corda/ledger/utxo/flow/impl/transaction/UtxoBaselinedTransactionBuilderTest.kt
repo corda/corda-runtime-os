@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
@@ -9,8 +10,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import java.security.KeyPairGenerator
-import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 
 /**
@@ -36,9 +35,6 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
 
     @Test
     fun `Overwriting to different notary throws`() {
-        val anotherPublicKey = KeyPairGenerator.getInstance("EC")
-            .apply { initialize(ECGenParameterSpec("secp256r1")) }
-            .generateKeyPair().public
         utxoBaselinedTransactionBuilder
             .setNotary(utxoNotaryExample)
         assertThatThrownBy {
@@ -46,7 +42,7 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
                 .setNotary(
                     Party(
                         MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
-                        anotherPublicKey
+                        anotherPublicKeyExample
                     )
                 )
         }.isInstanceOf(IllegalArgumentException::class.java)

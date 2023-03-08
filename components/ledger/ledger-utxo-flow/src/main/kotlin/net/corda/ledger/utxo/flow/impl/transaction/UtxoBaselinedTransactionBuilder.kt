@@ -3,23 +3,46 @@ package net.corda.ledger.utxo.flow.impl.transaction
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
 
+@Suppress("TooManyFunctions")
 class UtxoBaselinedTransactionBuilder private constructor(
     val baselineTransactionBuilder: UtxoTransactionBuilderInternal,
     private val currentTransactionBuilder: UtxoTransactionBuilderInternal,
-) : UtxoTransactionBuilderInternal by currentTransactionBuilder {
+) : UtxoTransactionBuilderInternal {
 
     constructor(transactionBuilderInternal: UtxoTransactionBuilderInternal) : this(
         transactionBuilderInternal.copy(),
         transactionBuilderInternal
     )
 
-    override fun setNotary(notary: Party): UtxoTransactionBuilder {
+    override val timeWindow: TimeWindow?
+        get() = currentTransactionBuilder.timeWindow
+    override val attachments: List<SecureHash>
+        get() = currentTransactionBuilder.attachments
+    override val commands: List<Command>
+        get() = currentTransactionBuilder.commands
+    override val signatories: List<PublicKey>
+        get() = currentTransactionBuilder.signatories
+    override val inputStateRefs: List<StateRef>
+        get() = currentTransactionBuilder.inputStateRefs
+    override val referenceStateRefs: List<StateRef>
+        get() = currentTransactionBuilder.referenceStateRefs
+    override val outputStates: List<ContractStateAndEncumbranceTag>
+        get() = currentTransactionBuilder.outputStates
+
+    override fun getNotary(): Party? = currentTransactionBuilder.notary
+
+    override fun setNotary(notary: Party): UtxoBaselinedTransactionBuilder {
         require(this.notary == null || this.notary == notary) {
             "Original notary cannot be overridden."
         }
@@ -27,7 +50,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
         return this
     }
 
-    override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
+    override fun setTimeWindowUntil(until: Instant): UtxoBaselinedTransactionBuilder {
         val timeWindow = TimeWindowUntilImpl(until)
         require(this.timeWindow == null || this.timeWindow == timeWindow) {
             "Original time window cannot be overridden."
@@ -36,7 +59,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
         return this
     }
 
-    override fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder {
+    override fun setTimeWindowBetween(from: Instant, until: Instant): UtxoBaselinedTransactionBuilder {
         val timeWindow = TimeWindowBetweenImpl(from, until)
         require(this.timeWindow == null || this.timeWindow == timeWindow) {
             "Original time window cannot be overridden."
@@ -91,4 +114,111 @@ class UtxoBaselinedTransactionBuilder private constructor(
                 "outputStates=$outputStates (orig: ${baselineTransactionBuilder.outputStates})" +
                 ")"
     }
+
+    override fun addAttachment(attachmentId: SecureHash): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addAttachment(attachmentId)
+        return this
+    }
+
+    override fun addCommand(command: Command): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addCommand(command)
+        return this
+    }
+
+    override fun addSignatories(signatories: MutableIterable<PublicKey>): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addSignatories(signatories)
+        return this
+    }
+
+    override fun addSignatories(vararg signatories: PublicKey?): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addSignatories(signatories.toList())
+        return this
+    }
+
+    override fun addInputState(stateRef: StateRef): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addInputState(stateRef)
+        return this
+    }
+
+    override fun addInputStates(stateRefs: MutableIterable<StateRef>): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addInputStates(stateRefs)
+        return this
+    }
+
+    override fun addInputStates(vararg stateRefs: StateRef?): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addInputStates(stateRefs.toList())
+        return this
+    }
+
+    override fun addReferenceState(stateRef: StateRef): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addReferenceState(stateRef)
+        return this
+    }
+
+    override fun addReferenceStates(stateRefs: MutableIterable<StateRef>): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addReferenceStates(stateRefs)
+        return this
+    }
+
+    override fun addReferenceStates(vararg stateRefs: StateRef?): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addReferenceStates(stateRefs.toList())
+        return this
+    }
+
+    override fun addOutputState(contractState: ContractState): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addOutputState(contractState)
+        return this
+    }
+
+    override fun addOutputStates(contractStates: MutableIterable<ContractState>): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addOutputStates(contractStates)
+        return this
+    }
+
+    override fun addOutputStates(vararg contractStates: ContractState?): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addOutputStates(contractStates.toList())
+        return this
+    }
+
+    override fun addEncumberedOutputStates(
+        tag: String,
+        contractStates: MutableIterable<ContractState>
+    ): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addEncumberedOutputStates(tag, contractStates)
+        return this
+    }
+
+    override fun addEncumberedOutputStates(tag: String, vararg contractStates: ContractState?): UtxoBaselinedTransactionBuilder {
+        currentTransactionBuilder.addEncumberedOutputStates(tag, contractStates.toList())
+        return this
+    }
+
+    override fun copy(): UtxoTransactionBuilderInternal =
+        currentTransactionBuilder.copy()
+
+    override fun append(other: UtxoTransactionBuilderContainer) =
+        currentTransactionBuilder.append(other)
+
+    override fun getEncumbranceGroup(tag: String) = currentTransactionBuilder.getEncumbranceGroup(tag)
+    override fun getEncumbranceGroups(): MutableMap<String, MutableList<ContractState>> =
+        currentTransactionBuilder.encumbranceGroups
+
+    /**
+     * Calculates what got added to a transaction builder comparing to the baseline.
+     * Notary and TimeWindow changes are not considered if the original had them set already.
+     * This gives precedence to those original values.
+     * We cannot use list minus on commands and output states since those are user defined therefore there
+     * are no guarantees that value semantics has been implemented on them.
+     */
+    fun diff(): UtxoTransactionBuilderContainer =
+        UtxoTransactionBuilderContainer(
+            if (baselineTransactionBuilder.notary == null) notary else null,
+            if (baselineTransactionBuilder.timeWindow == null) timeWindow else null,
+            attachments - baselineTransactionBuilder.attachments.toSet(),
+            commands.drop(baselineTransactionBuilder.commands.size),
+            signatories - baselineTransactionBuilder.signatories.toSet(),
+            inputStateRefs - baselineTransactionBuilder.inputStateRefs.toSet(),
+            referenceStateRefs - baselineTransactionBuilder.referenceStateRefs.toSet(),
+            outputStates.drop(baselineTransactionBuilder.outputStates.size)
+        )
 }

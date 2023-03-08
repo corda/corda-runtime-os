@@ -1,7 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderData
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
@@ -14,10 +15,14 @@ import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class SendTransactionBuilderDiffFlow(
-    private val transactionBuilder: UtxoTransactionBuilderInternal,
-    private val session: FlowSession,
-    private val originalTransactionalBuilder: UtxoTransactionBuilderInternal
+    private val transactionBuilder: UtxoTransactionBuilderData,
+    private val session: FlowSession
 ) : SubFlow<Unit> {
+
+    constructor(
+        transactionBuilder: UtxoBaselinedTransactionBuilder,
+        session: FlowSession
+    ) : this(transactionBuilder.diff(), session)
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
@@ -30,12 +35,10 @@ class SendTransactionBuilderDiffFlow(
     override fun call() {
         log.trace { "Starting send transaction builder flow." }
 
-        val transactionBuilderDiff = transactionBuilder - originalTransactionalBuilder
-
         log.trace { "Sending proposed transaction builder components to ${session.counterparty}." }
-        session.send(transactionBuilderDiff)
+        session.send(transactionBuilder)
 
-        val newTransactionIds = transactionBuilderDiff.dependencies
+        val newTransactionIds = transactionBuilder.dependencies
 
         if (newTransactionIds.isEmpty()) {
             log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }

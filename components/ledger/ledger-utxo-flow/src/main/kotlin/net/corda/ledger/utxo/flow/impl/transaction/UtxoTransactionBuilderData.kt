@@ -23,21 +23,4 @@ interface UtxoTransactionBuilderData {
             .toSet()
 
     fun getNotary(): Party?
-
-    /**
-     * Calculates what got added to a transaction builder comparing to another.
-     * Notary and TimeWindow changes are not considered if the original had them set already.
-     * This gives precedence to those original values.
-     */
-    operator fun minus(orig: UtxoTransactionBuilderData): UtxoTransactionBuilderContainer =
-        UtxoTransactionBuilderContainer(
-            if (orig.getNotary() == null) getNotary() else null,
-            if (orig.timeWindow == null) timeWindow else null,
-            attachments - orig.attachments.toSet(),
-            commands - orig.commands.toSet(),
-            signatories - orig.signatories.toSet(),
-            inputStateRefs - orig.inputStateRefs.toSet(),
-            referenceStateRefs - orig.referenceStateRefs.toSet(),
-            outputStates - orig.outputStates.toSet()
-        )
 }

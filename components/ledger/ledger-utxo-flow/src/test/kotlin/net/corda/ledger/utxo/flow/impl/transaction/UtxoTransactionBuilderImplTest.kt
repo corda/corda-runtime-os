@@ -7,9 +7,9 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
+import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
@@ -33,18 +33,18 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
 
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateAndRef = getExampleStateAndRefImpl()
         val inputStateRef = inputStateAndRef.ref
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateAndRef = getExampleStateAndRefImpl(2)
         val referenceStateRef = referenceStateAndRef.ref
 
         whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
-            .thenReturn(listOf(inputStateAndRef))
+            .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val tx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
@@ -54,7 +54,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         assertIs<SecureHash>(tx.id)
         assertEquals(inputStateRef, tx.inputStateRefs.single())
         assertEquals(referenceStateRef, tx.referenceStateRefs.single())
-        assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
+        assertEquals(getUtxoStateExample(), tx.outputStateAndRefs.single().state.contractState)
         assertEquals(utxoNotaryExample, tx.notary)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
         assertEquals(publicKeyExample, tx.signatories.first())
@@ -65,14 +65,14 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         val tx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
         assertThat(tx.inputStateRefs).isEmpty()
         assertThat(tx.referenceStateRefs).isEmpty()
-        assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
+        assertEquals(getUtxoStateExample(), tx.outputStateAndRefs.single().state.contractState)
         assertEquals(utxoNotaryExample, tx.notary)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
         assertEquals(publicKeyExample, tx.signatories.first())
@@ -83,7 +83,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         val tx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
@@ -123,7 +123,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             val builder = utxoTransactionBuilder
                 .setNotary(utxoNotaryExample)
                 .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-                .addOutputState(utxoStateExample)
+                .addOutputState(getUtxoStateExample())
                 .addSignatories(listOf(publicKeyExample))
                 .addCommand(UtxoCommandExample())
                 .addAttachment(SecureHash("SHA-256", ByteArray(12)))
@@ -135,13 +135,13 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Calculate encumbranceGroup groups correctly`() {
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateAndRef = getExampleStateAndRefImpl()
         val inputStateRef = inputStateAndRef.ref
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateAndRef = getExampleStateAndRefImpl(2)
         val referenceStateRef = referenceStateAndRef.ref
 
         whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
-            .thenReturn(listOf(inputStateAndRef))
+            .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val tx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)
@@ -151,7 +151,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
                 UtxoStateClassExample("test 1", listOf(publicKeyExample)),
                 UtxoStateClassExample("test 2", listOf(publicKeyExample))
             )
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addEncumberedOutputStates(
                 "encumbranceGroup 2",
                 UtxoStateClassExample("test 3", listOf(publicKeyExample)),

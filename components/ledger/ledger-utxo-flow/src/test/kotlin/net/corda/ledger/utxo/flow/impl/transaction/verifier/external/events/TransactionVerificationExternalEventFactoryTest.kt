@@ -3,9 +3,9 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals

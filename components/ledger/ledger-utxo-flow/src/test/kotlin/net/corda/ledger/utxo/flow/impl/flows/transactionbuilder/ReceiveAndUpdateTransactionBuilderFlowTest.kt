@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 
+import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
@@ -8,13 +9,12 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
+import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -24,8 +24,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.KeyPairGenerator
-import java.security.spec.ECGenParameterSpec
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
@@ -44,10 +42,6 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     private val stateWithEnc1 = ContractStateAndEncumbranceTag(state1, null)
     private val state2 = UtxoStateClassExample("test 2", listOf(publicKeyExample))
     private val stateWithEnc2 = ContractStateAndEncumbranceTag(state2, null)
-
-    private val anotherPublicKey = KeyPairGenerator.getInstance("EC")
-        .apply { initialize(ECGenParameterSpec("secp256r1")) }
-        .generateKeyPair().public
 
     private val mockFlowEngine = mock<FlowEngine>()
 
@@ -82,13 +76,9 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
 
     @Test
     fun `called with original notary and receives a different new notary returns with the original notary`() {
-        val alternativeNotary = Party(
-            MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
-            anotherPublicKey
-        )
         originalTransactionalBuilder.setNotary(utxoNotaryExample)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notary = alternativeNotary)
+            UtxoTransactionBuilderContainer(notary = anotherUtxoNotaryExample)
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -171,40 +161,27 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `receiving existing commands does not append it`() {
+    fun `receiving commands appends it`() {
         originalTransactionalBuilder.addCommand(command1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(commands = mutableListOf(command1))
+            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command1, command2))
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertContentEquals(listOf(command1), returnedTransactionBuilder.commands)
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
-    fun `receiving duplicated commands appends once`() {
-        originalTransactionalBuilder.addCommand(command1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(commands = mutableListOf(command1, command2, command2))
-        )
-
-        val returnedTransactionBuilder = callSendFlow()
-
-        assertContentEquals(listOf(command1, command2), returnedTransactionBuilder.commands)
+        assertContentEquals(listOf(command1, command1, command1, command2), returnedTransactionBuilder.commands)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
     fun `receiving new signatories appends it`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKey))
+            UtxoTransactionBuilderContainer(signatories = mutableListOf(publicKeyExample, anotherPublicKeyExample))
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertContentEquals(listOf(publicKeyExample, anotherPublicKey), returnedTransactionBuilder.signatories)
+        assertContentEquals(listOf(publicKeyExample, anotherPublicKeyExample), returnedTransactionBuilder.signatories)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
@@ -228,15 +205,15 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
             UtxoTransactionBuilderContainer(
                 signatories = mutableListOf(
                     publicKeyExample,
-                    anotherPublicKey,
-                    anotherPublicKey
+                    anotherPublicKeyExample,
+                    anotherPublicKeyExample
                 )
             )
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertContentEquals(listOf(publicKeyExample, anotherPublicKey), returnedTransactionBuilder.signatories)
+        assertContentEquals(listOf(publicKeyExample, anotherPublicKeyExample), returnedTransactionBuilder.signatories)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
@@ -369,20 +346,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `receiving existing outputs does not append it`() {
-        originalTransactionalBuilder.addOutputState(state1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1))
-        )
-
-        val returnedTransactionBuilder = callSendFlow()
-
-        assertContentEquals(listOf(stateWithEnc1), returnedTransactionBuilder.outputStates)
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
-    fun `receiving duplicated outputs appends once`() {
+    fun `receiving outputs append it`() {
         originalTransactionalBuilder.addOutputState(state1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
             UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2))
@@ -390,7 +354,10 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertContentEquals(listOf(stateWithEnc1, stateWithEnc2), returnedTransactionBuilder.outputStates)
+        assertContentEquals(
+            listOf(stateWithEnc1, stateWithEnc1, stateWithEnc1, stateWithEnc2),
+            returnedTransactionBuilder.outputStates
+        )
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 

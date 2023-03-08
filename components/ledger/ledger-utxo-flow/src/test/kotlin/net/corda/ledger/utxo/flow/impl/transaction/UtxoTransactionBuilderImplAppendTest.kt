@@ -1,21 +1,19 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
+import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.security.KeyPairGenerator
-import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import kotlin.test.assertContentEquals
 
@@ -32,10 +30,6 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     private val stateWithEnc1 = ContractStateAndEncumbranceTag(state1, null)
     private val state2 = UtxoStateClassExample("test 2", listOf(publicKeyExample))
     private val stateWithEnc2 = ContractStateAndEncumbranceTag(state2, null)
-
-    private val anotherPublicKey = KeyPairGenerator.getInstance("EC")
-        .apply { initialize(ECGenParameterSpec("secp256r1")) }
-        .generateKeyPair().public
 
     @BeforeEach
     fun beforeEach() {
@@ -60,14 +54,10 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
 
     @Test
     fun `Does not set new notary if old exists`() {
-        val alternativeNotary = Party(
-            MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
-            anotherPublicKey
-        )
         originalTransactionalBuilder.setNotary(utxoNotaryExample)
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
-                notary = alternativeNotary
+                notary = anotherUtxoNotaryExample
             )
         )
         assertEquals(utxoNotaryExample, result.notary)
@@ -116,24 +106,14 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `Does not add again already added commands`() {
+    fun `Appends commands`() {
         originalTransactionalBuilder.addCommand(command1)
-        val result = originalTransactionalBuilder.append(
-            UtxoTransactionBuilderContainer(
-                commands = listOf(command1)
-            )
-        )
-        assertContentEquals(listOf(command1), result.commands)
-    }
-
-    @Test
-    fun `Appends and deduplicates new commands`() {
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
                 commands = listOf(command1, command1, command2)
             )
         )
-        assertContentEquals(listOf(command1, command2), result.commands)
+        assertContentEquals(listOf(command1, command1, command1, command2), result.commands)
     }
 
     @Test
@@ -151,10 +131,10 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     fun `Appends and deduplicates new signatories`() {
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
-                signatories = listOf(publicKeyExample, publicKeyExample, anotherPublicKey)
+                signatories = listOf(publicKeyExample, publicKeyExample, anotherPublicKeyExample)
             )
         )
-        assertContentEquals(listOf(publicKeyExample, anotherPublicKey), result.signatories)
+        assertContentEquals(listOf(publicKeyExample, anotherPublicKeyExample), result.signatories)
     }
 
     @Test
@@ -200,23 +180,13 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `Does not add again already added output state`() {
+    fun `Appends output states`() {
         originalTransactionalBuilder.addOutputState(state1)
-        val result = originalTransactionalBuilder.append(
-            UtxoTransactionBuilderContainer(
-                outputStates = listOf(stateWithEnc1)
-            )
-        )
-        assertContentEquals(listOf(stateWithEnc1), result.outputStates)
-    }
-
-    @Test
-    fun `Appends and deduplicates new output states`() {
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
                 outputStates = listOf(stateWithEnc1, stateWithEnc1, stateWithEnc2)
             )
         )
-        assertContentEquals(listOf(stateWithEnc1, stateWithEnc2), result.outputStates)
+        assertContentEquals(listOf(stateWithEnc1, stateWithEnc1, stateWithEnc1, stateWithEnc2), result.outputStates)
     }
 }
