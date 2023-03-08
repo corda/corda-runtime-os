@@ -39,9 +39,11 @@ import kotlin.test.assertTrue
 class SoftCryptoServiceCachingTests {
     val schemeMetadata = CipherSchemeMetadataImpl()
 
+    val wrapCount = AtomicInteger()
     val unwrapCount = AtomicInteger()
-    val rootWrappingKey = CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), unwrapCount)
-    
+    val rootWrappingKey =
+        CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
+
     fun makePrivateKeyCache(): Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
@@ -58,14 +60,7 @@ class SoftCryptoServiceCachingTests {
     @ValueSource(booleans = [false, true])
     fun `getPrivateKey should cache requested key using public key as cache key`(cachePrivateKeys: Boolean) {
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
-        val myCryptoService = SoftCryptoService(
-            TestWrappingKeyStore(mock()),
-            schemeMetadata,
-            rootWrappingKey,
-            makeWrappingKeyCache(),
-            privateKeyCache,
-            wrappingKeyFactory = { CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(it), unwrapCount) }
-        )
+        val myCryptoService = makeSoftCryptoService(privateKeyCache)
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
@@ -110,13 +105,7 @@ class SoftCryptoServiceCachingTests {
 
     @Test
     fun `wrapPrivateKey should put to cache using public key as cache key`() {
-        val myCryptoService = SoftCryptoService(
-            TestWrappingKeyStore(mock()),
-            schemeMetadata,
-            rootWrappingKey,
-            makeWrappingKeyCache(),
-            makePrivateKeyCache()
-        )
+        val myCryptoService = makeSoftCryptoService(makePrivateKeyCache())
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         val key = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
@@ -124,7 +113,25 @@ class SoftCryptoServiceCachingTests {
         myCryptoService.getPrivateKey(key.publicKey, keySpec)
         assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(0)
         assertThat(myCryptoService.getWrapCounter()).isEqualTo(1)
+        assertThat(unwrapCount.get()).isEqualTo(0)
+        assertThat(wrapCount.get()).isEqualTo(2)
     }
+
+    private fun makeSoftCryptoService(privateKeyCache: Cache<PublicKey, PrivateKey>?) =
+        SoftCryptoService(
+            TestWrappingKeyStore(mock()),
+            schemeMetadata,
+            rootWrappingKey,
+            makeWrappingKeyCache(),
+            privateKeyCache,
+            wrappingKeyFactory = {
+                CountingWrappingKey(
+                    WrappingKeyImpl.generateWrappingKey(it),
+                    wrapCount,
+                    unwrapCount
+                )
+            }
+        )
 
     @Test
     fun `wrappingKeyExists should return true whenever key exist in cache and false otherwise`() {
