@@ -457,7 +457,7 @@ class SoftCryptoServiceOperationsTests {
             cryptoService.createWrappingKey("", true, mapOf())
         }
         assertThrows<java.lang.IllegalStateException> {
-            cryptoService.getWrappingKey("")
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", ""), emptyMap())
         }
     }
     /*
