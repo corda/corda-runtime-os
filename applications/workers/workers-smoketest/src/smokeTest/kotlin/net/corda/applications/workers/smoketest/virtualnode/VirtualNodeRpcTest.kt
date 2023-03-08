@@ -664,7 +664,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(110)
-    fun `can upload v1, v2 and v3 of a CPI with the same name`() {
+    fun `can upload multiple versions of a CPI with the same name`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
