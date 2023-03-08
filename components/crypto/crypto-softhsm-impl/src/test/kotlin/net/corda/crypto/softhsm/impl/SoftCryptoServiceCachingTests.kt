@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions
@@ -21,6 +22,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
@@ -37,15 +39,9 @@ import kotlin.test.assertTrue
 class SoftCryptoServiceCachingTests {
     val schemeMetadata = CipherSchemeMetadataImpl()
 
-//    class CountingWrappingKey(
-//        val key: WrappingKey, private var wrapCount: Int = 0, private var unwrapCount: Int = 0
-//    ) :
-//        WrappingKey {
-//
-//    }
-
-    val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-
+    val unwrapCount = AtomicInteger()
+    val rootWrappingKey = CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), unwrapCount)
+    
     fun makePrivateKeyCache(): Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
