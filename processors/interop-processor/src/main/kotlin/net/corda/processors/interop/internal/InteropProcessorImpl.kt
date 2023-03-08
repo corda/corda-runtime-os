@@ -27,7 +27,7 @@ class InteropProcessorImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = InteropService::class)
-    private val interopService: InteropService,
+    private val interopService: InteropService
 ) : InteropProcessor {
 
     private companion object {
