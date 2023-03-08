@@ -105,12 +105,8 @@ fun getOrCreateVirtualNodeFor(
             val holdingId = createVNodeRequest["requestId"].textValue()
 
             // Wait for the vNode creation to propagate through the system before moving on
-            eventually {
-                val vNodeList = vNodeList().toJson()["virtualNodes"].map {
-                    it["holdingIdentity"]["shortHash"].textValue()
-                }
-
-                assertThat(vNodeList).contains(holdingId)
+            eventually(duration = Duration.ofSeconds(30)) {
+                assertThat(getVNode(holdingId).code).isNotEqualTo(404)
             }
 
             holdingId
