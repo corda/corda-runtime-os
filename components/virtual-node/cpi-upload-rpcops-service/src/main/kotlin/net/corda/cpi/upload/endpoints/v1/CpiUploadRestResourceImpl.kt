@@ -1,6 +1,6 @@
 package net.corda.cpi.upload.endpoints.v1
 
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService

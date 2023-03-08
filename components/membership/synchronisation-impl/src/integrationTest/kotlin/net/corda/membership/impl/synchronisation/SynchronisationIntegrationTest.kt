@@ -3,7 +3,7 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider

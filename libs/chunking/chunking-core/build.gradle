@@ -19,6 +19,7 @@ dependencies {
     api "net.corda:corda-crypto"
 
     implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:crypto:crypto-core')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
