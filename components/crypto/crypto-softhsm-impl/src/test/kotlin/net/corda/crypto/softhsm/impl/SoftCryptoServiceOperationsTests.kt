@@ -1,5 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -11,11 +12,13 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -39,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.security.PublicKey
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -66,7 +70,9 @@ class SoftCryptoServiceOperationsTests {
                 ).toMap()
             )
         )
-        private val cryptoService = SoftCryptoService(wrappingKeyStore, schemeMetadata, rootWrappingKey)
+        private val wrappingKeyCache = makeWrappingKeyCache()
+        private val cryptoService =
+            SoftCryptoService(wrappingKeyStore, schemeMetadata, rootWrappingKey, wrappingKeyCache = wrappingKeyCache)
         private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
@@ -349,7 +355,7 @@ class SoftCryptoServiceOperationsTests {
 
 
     @Test
-    fun `getWrappingKey request key using alias without caching`() {
+    fun `getWrappingKey request key using alias`() {
         val expected1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val expected2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
@@ -378,8 +384,8 @@ class SoftCryptoServiceOperationsTests {
         val key22 = cryptoService.getWrappingKey(alias2)
         assertEquals(expected2, key22)
 
-        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(2)
-        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(2)
+        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(1)
+        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(1)
     }
 
     @Test

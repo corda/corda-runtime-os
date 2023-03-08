@@ -12,6 +12,8 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
+import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
@@ -43,18 +45,6 @@ class SoftCryptoServiceCachingTests {
     val unwrapCount = AtomicInteger()
     val rootWrappingKey =
         CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
-
-    fun makePrivateKeyCache(): Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
-        "test private key cache", Caffeine.newBuilder()
-            .expireAfterAccess(3600, TimeUnit.MINUTES)
-            .maximumSize(3)
-    )
-
-    private fun makeWrappingKeyCache(): Cache<String, WrappingKey> = CacheFactoryImpl().build(
-        "test wrapping key cache", Caffeine.newBuilder()
-            .expireAfterAccess(3600, TimeUnit.MINUTES)
-            .maximumSize(100)
-    )
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
