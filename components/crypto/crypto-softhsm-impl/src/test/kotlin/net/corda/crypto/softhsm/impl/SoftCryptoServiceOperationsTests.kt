@@ -123,6 +123,8 @@ class SoftCryptoServiceOperationsTests {
         fun ecdsaSchemes() = listOf(
             ECDSA_SECP256K1_CODE_NAME, ECDSA_SECP256R1_CODE_NAME
         ).flatMap { listOf(Arguments.of(false, it), Arguments.of(true, it)) }
+
+        val rsaScheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
     }
 
     @ParameterizedTest
@@ -380,14 +382,13 @@ class SoftCryptoServiceOperationsTests {
         val key2StillMissing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2StillMissing)
 
-        val scheme = cryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
-        cryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key1", alias1), emptyMap())
+        cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias1), emptyMap())
         val key1Found = wrappingKeyCache.getIfPresent(alias1)
         assertEquals(expected1, key1Found)
         val key2AgainStillMissing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2AgainStillMissing)
 
-        cryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key2", alias2), emptyMap())
+        cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key2", alias2), emptyMap())
         val key2Found = wrappingKeyCache.getIfPresent(alias2)
         assertEquals(expected2, key2Found)
         assertNotEquals(key1Found, key2Found)
