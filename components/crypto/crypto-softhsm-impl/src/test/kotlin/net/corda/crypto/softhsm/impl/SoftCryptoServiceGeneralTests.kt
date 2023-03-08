@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
@@ -14,6 +13,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -35,11 +35,10 @@ class SoftCryptoServiceGeneralTests {
     private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf())
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
-    private val service = SoftCryptoService(
+    private val service = makeSoftCryptoService(
         wrappingKeyStore = wrappingKeyStore,
         schemeMetadata = schemeMetadata,
         rootWrappingKey = mock(),
-        digestService = PlatformDigestServiceImpl(schemeMetadata)
     )
 
     @Test
@@ -90,7 +89,7 @@ class SoftCryptoServiceGeneralTests {
                     publicKey = mock(),
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = ByteArray(2),
-                        masterKeyAlias = UUID.randomUUID().toString(),
+                        wrappingKeyAlias = UUID.randomUUID().toString(),
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = service.supportedSchemes.keys.first { it.codeName == ECDSA_SECP256R1_CODE_NAME },
@@ -110,7 +109,7 @@ class SoftCryptoServiceGeneralTests {
                     publicKey = mock(),
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = ByteArray(2),
-                        masterKeyAlias = UUID.randomUUID().toString(),
+                        wrappingKeyAlias = UUID.randomUUID().toString(),
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
@@ -130,7 +129,7 @@ class SoftCryptoServiceGeneralTests {
                     publicKey = mock(),
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = ByteArray(2),
-                        masterKeyAlias = UUID.randomUUID().toString(),
+                        wrappingKeyAlias = UUID.randomUUID().toString(),
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = service.supportedSchemes.keys.first { it.codeName == X25519_CODE_NAME },
@@ -160,7 +159,7 @@ class SoftCryptoServiceGeneralTests {
                     publicKey = myKeyPair.public,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = ByteArray(2),
-                        masterKeyAlias = UUID.randomUUID().toString(),
+                        wrappingKeyAlias = UUID.randomUUID().toString(),
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = keyScheme,
@@ -182,7 +181,7 @@ class SoftCryptoServiceGeneralTests {
                     publicKey = myKeyPair.public,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = ByteArray(2),
-                        masterKeyAlias = UUID.randomUUID().toString(),
+                        wrappingKeyAlias = UUID.randomUUID().toString(),
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = keyScheme,

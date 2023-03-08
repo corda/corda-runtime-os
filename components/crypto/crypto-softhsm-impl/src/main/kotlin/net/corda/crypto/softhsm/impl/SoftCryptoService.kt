@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
@@ -47,8 +46,10 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys
  * @param privateKeyCache an optional [Cache] which optimises access to private keys
  * @param digestService optionally supply a platform digest service instance; if not one will be constructed
- * @param keyPairGeneratorFactory creates a key pair generator given algorithm and provider
- * @param wrappingKeyFactory creates a wrapping key given scheme metadata
+ * @param keyPairGeneratorFactory creates a key pair generator given algorithm and provider. For instance:
+ *     `{ algorithm: String, provider: Provider -> KeyPairGenerator.getInstance(algorithm, provider) }`
+ * @param wrappingKeyFactory creates a wrapping key given scheme metadata. For instance:
+ *        `{ WrappingKeyImpl.generateWrappingKey(it) }`
  */
 
 
@@ -58,11 +59,9 @@ class SoftCryptoService(
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
     private val digestService: PlatformDigestService,
-    private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
-    private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
-    private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator = { algorithm: String, provider: Provider ->
-        KeyPairGenerator.getInstance(algorithm, provider)
-    },
+    private val wrappingKeyCache: Cache<String, WrappingKey>?,
+    private val privateKeyCache: Cache<PublicKey, PrivateKey>?,
+    private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator,
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
         WrappingKeyImpl.generateWrappingKey(it)
     }
@@ -213,6 +212,6 @@ class SoftCryptoService(
         privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
 
     private fun getPrivateKeyUncached(spec: KeyMaterialSpec): PrivateKey {
-        return getWrappingKey(spec.masterKeyAlias).unwrap(spec.keyMaterial)
+        return getWrappingKey(spec.wrappingKeyAlias).unwrap(spec.keyMaterial)
     }
 }

@@ -34,6 +34,8 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
+import java.security.KeyPairGenerator
+import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
@@ -212,7 +214,13 @@ class TestServicesFactory {
                 wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
-                digestService = PlatformDigestServiceImpl(schemeMetadata)
+                digestService = PlatformDigestServiceImpl(schemeMetadata),
+                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                    KeyPairGenerator.getInstance(algorithm, provider)
+                },
+                wrappingKeyFactory = {
+                    WrappingKeyImpl.generateWrappingKey(it)
+                }
             ),
             recordedCryptoContexts
         )

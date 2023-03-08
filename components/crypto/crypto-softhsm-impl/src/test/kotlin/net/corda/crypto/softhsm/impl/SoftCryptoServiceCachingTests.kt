@@ -3,14 +3,17 @@ package net.corda.crypto.softhsm.impl
 import com.github.benmanes.caffeine.cache.Cache
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
+import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
@@ -18,7 +21,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
+import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -35,13 +40,6 @@ import kotlin.test.assertNull
  */
 
 class SoftCryptoServiceCachingTests {
-    val schemeMetadata = CipherSchemeMetadataImpl()
-
-    val wrapCount = AtomicInteger()
-    val unwrapCount = AtomicInteger()
-    val rootWrappingKey =
-        CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
-
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `private key unwrapping and identity works as expected`(cachePrivateKeys: Boolean) {
@@ -49,7 +47,23 @@ class SoftCryptoServiceCachingTests {
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
         val wrappingKeyCache = makeWrappingKeyCache()
         val wrappingKeyAlias = "wrapper1"
-        val myCryptoService = makeSoftCryptoService(privateKeyCache, wrappingKeyCache)
+        val wrapCount = AtomicInteger()
+        val unwrapCount = AtomicInteger()
+        val schemeMetadata = CipherSchemeMetadataImpl()
+        val rootWrappingKey =
+            CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
+
+        val myCryptoService =
+            makeSoftCryptoService(privateKeyCache = privateKeyCache, wrappingKeyCache = wrappingKeyCache,
+                rootWrappingKey = rootWrappingKey,
+                wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
+                    CountingWrappingKey(
+                        WrappingKeyImpl.generateWrappingKey(metadata),
+                        wrapCount,
+                        unwrapCount
+                    )
+                }
+            )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
 
@@ -104,7 +118,26 @@ class SoftCryptoServiceCachingTests {
     @Test
     fun `wrapPrivateKey should put to cache using public key as cache key`() {
         val privateKeyCache = makePrivateKeyCache()
-        val myCryptoService = makeSoftCryptoService(privateKeyCache)
+        val wrapCount = AtomicInteger()
+        val unwrapCount = AtomicInteger()
+        val schemeMetadata = CipherSchemeMetadataImpl()
+        val rootWrappingKey =
+            CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
+
+        val myCryptoService =
+            makeSoftCryptoService(
+                privateKeyCache = privateKeyCache,
+                wrappingKeyCache = null,
+                schemeMetadata = schemeMetadata,
+                rootWrappingKey = rootWrappingKey,
+                wrappingKeyFactory = {
+                    CountingWrappingKey(
+                        WrappingKeyImpl.generateWrappingKey(it),
+                        wrapCount,
+                        unwrapCount
+                    )
+                }
+            )
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         val key = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
@@ -114,25 +147,6 @@ class SoftCryptoServiceCachingTests {
         assertThat(wrapCount.get()).isEqualTo(2)
     }
 
-    private fun makeSoftCryptoService(
-        privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
-        wrappingKeyCache: Cache<String, WrappingKey>? = null
-    ) =
-        SoftCryptoService(
-            wrappingKeyStore = TestWrappingKeyStore(mock()),
-            schemeMetadata = schemeMetadata,
-            rootWrappingKey = rootWrappingKey,
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            wrappingKeyCache = wrappingKeyCache,
-            privateKeyCache = privateKeyCache,
-            wrappingKeyFactory = {
-                CountingWrappingKey(
-                    WrappingKeyImpl.generateWrappingKey(it),
-                    wrapCount,
-                    unwrapCount
-                )
-            }
-        )
 
     @Test
     fun `createWrappingKey should put to cache using public key as cache key`() {
@@ -157,13 +171,12 @@ class SoftCryptoServiceCachingTests {
             }
         }
         val wrappingKeyCache = makeWrappingKeyCache()
-        val myCryptoService = SoftCryptoService(
+        val myCryptoService = makeSoftCryptoService(
             wrappingKeyStore = countingWrappingStore,
             schemeMetadata = schemeMetadata,
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
-            privateKeyCache = makePrivateKeyCache()
+            privateKeyCache = makePrivateKeyCache(),
         )
 
         // starting fresh, all 3 aliases are missing from both store and cache

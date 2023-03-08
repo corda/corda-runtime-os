@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
@@ -17,6 +16,7 @@ import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.v5.base.types.OpaqueBytes
@@ -69,12 +69,11 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
-        private val cryptoService = SoftCryptoService(
+        private val cryptoService = makeSoftCryptoService(
             wrappingKeyStore = wrappingKeyStore,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
-            digestService = PlatformDigestServiceImpl(schemeMetadata)
         )
         private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER
@@ -147,7 +146,7 @@ class SoftCryptoServiceOperationsTests {
                         publicKey = key.publicKey,
                         keyMaterialSpec = KeyMaterialSpec(
                             keyMaterial = key.keyMaterial,
-                            masterKeyAlias = UUID.randomUUID().toString(),
+                            wrappingKeyAlias = UUID.randomUUID().toString(),
                             encodingVersion = key.encodingVersion
                         ),
                         keyScheme = scheme,
@@ -318,7 +317,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = anotherWrappingKey,
+                        wrappingKeyAlias = anotherWrappingKey,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -346,7 +345,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = anotherWrappingKey,
+                        wrappingKeyAlias = anotherWrappingKey,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,

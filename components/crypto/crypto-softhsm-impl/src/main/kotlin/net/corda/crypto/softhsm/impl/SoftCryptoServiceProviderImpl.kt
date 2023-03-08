@@ -23,7 +23,9 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 
@@ -113,10 +115,16 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             return SoftCryptoService(
                 wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
+                digestService = digestService,
                 rootWrappingKey = rootWrappingKey,
                 wrappingKeyCache = wrappingKeyCache,
                 privateKeyCache = privateKeyCache,
-                digestService = digestService
+                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                    KeyPairGenerator.getInstance(algorithm, provider)
+                },
+                wrappingKeyFactory = {
+                    WrappingKeyImpl.generateWrappingKey(it)
+                }
             )
         }
     }

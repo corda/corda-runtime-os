@@ -286,7 +286,7 @@ class SigningServiceImpl(
         )
         return KeyMaterialSpec(
             keyMaterial = keyMaterial,
-            masterKeyAlias = masterKeyAlias,
+            wrappingKeyAlias = masterKeyAlias,
             encodingVersion = encodingVersion
         )
     }
