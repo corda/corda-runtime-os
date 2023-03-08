@@ -24,11 +24,11 @@ import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
-import net.corda.crypto.softhsm.KeyPairGeneratorFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
@@ -58,7 +58,9 @@ class SoftCryptoService(
     private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     private val digestService: PlatformDigestService = PlatformDigestServiceImpl(schemeMetadata),
-    private val keyPairGeneratorFactory: KeyPairGeneratorFactory = JavaKeyPairGenerator(),
+    private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator = { algorithm: String, provider: Provider ->
+        KeyPairGenerator.getInstance(algorithm, provider)
+    },
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
         WrappingKeyImpl.generateWrappingKey(it)
     }
@@ -127,7 +129,7 @@ class SoftCryptoService(
         logger.trace {
             "generateKeyPair(alias=${spec.alias},masterKeyAlias={$spec.masterKeyAlias},scheme={spec.keyScheme.codeName})"
         }
-        val keyPairGenerator = keyPairGeneratorFactory.getInstance(
+        val keyPairGenerator = keyPairGeneratorFactory(
             spec.keyScheme.algorithmName,
             providerFor(spec.keyScheme)
         )
