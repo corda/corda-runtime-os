@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -152,7 +153,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             wireTransaction,
             signatures
         )
-        val testId = SecureHash.parse("SHA256:1234567890123456")
+        val testId = parseSecureHash("SHA256:1234567890123456")
 
         whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
             .thenReturn(SignedTransactionContainer(wireTransaction, signatures))

@@ -1,5 +1,6 @@
 package net.corda.flow.testing.tests
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 
@@ -34,4 +35,4 @@ const val INITIATED_SESSION_ID_1 = "S1-INITIATED"
 val DATA_MESSAGE_0 = byteArrayOf(0)
 val DATA_MESSAGE_1 = byteArrayOf(1)
 val DATA_MESSAGE_2 = byteArrayOf(2)
-val CPK1_CHECKSUM = SecureHash("ALG", byteArrayOf(0, 0, 0, 0))
+val CPK1_CHECKSUM = SecureHashImpl("ALG", byteArrayOf(0, 0, 0, 0))

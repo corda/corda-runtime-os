@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.stream.Stream
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.rest.v1.FlowClassRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -42,8 +43,10 @@ class FlowClassRestResourceImplTest {
 
     private fun getStubVirtualNode(): VirtualNodeInfo {
         return VirtualNodeInfo(createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
-            CpiIdentifier("", "",
-            SecureHash("", "bytes".toByteArray())),
+            CpiIdentifier(
+                "", "",
+                SecureHashImpl("", "bytes".toByteArray())
+            ),
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),

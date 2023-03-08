@@ -1,6 +1,7 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness.checker.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomBytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -39,7 +40,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
-import java.lang.UnsupportedOperationException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -1276,9 +1276,9 @@ class UniquenessCheckerImplTests {
         @Test
         fun `The same hash code produced by different algorithms are distinct states`() {
             val randomBytes = randomBytes()
-            val hash1 = SecureHash("SHA-256", randomBytes)
-            val hash2 = SecureHash("SHA-512", randomBytes)
-            val hash3 = SecureHash("SHAKE256", randomBytes)
+            val hash1 = SecureHashImpl("SHA-256", randomBytes)
+            val hash2 = SecureHashImpl("SHA-512", randomBytes)
+            val hash3 = SecureHashImpl("SHAKE256", randomBytes)
 
             processRequests(
                 newRequestBuilder(hash1)

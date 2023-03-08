@@ -1,8 +1,8 @@
 package net.cordapp.demo.utxo
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.cordapp.demo.utxo.contract.TestUtxoState
@@ -20,7 +20,7 @@ class TestFindTransactionFlow {
         val flow = FindTransactionFlow()
 
         // val txIdGood = SecureHash("SHA256", "12345".toByteArray())
-        val txIdBad = SecureHash( "SHA256", "Fail!".toByteArray())
+        val txIdBad = SecureHashImpl( "SHA256", "Fail!".toByteArray())
         val ledgerService = mock<UtxoLedgerService>()
         whenever (ledgerService.findLedgerTransaction(txIdBad)).thenReturn(null)
 
@@ -42,7 +42,7 @@ class TestFindTransactionFlow {
         val flow = FindTransactionFlow()
 
 
-        val txIdGood = SecureHash("SHA256", "12345".toByteArray())
+        val txIdGood = SecureHashImpl("SHA256", "12345".toByteArray())
 
         val keyGenerator = KeyPairGenerator.getInstance("EC")
 

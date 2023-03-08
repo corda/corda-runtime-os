@@ -7,9 +7,9 @@ import net.corda.chunking.ChunksCombined
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpiupload.ValidationException
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,7 +49,7 @@ internal class AssembleFromChunksTest {
         }
         val requestId = UUID.randomUUID().toString()
         val expectedFileName = "some.cpi"
-        val expectedChecksum = SecureHash.parse("DUMMY:1234567890")
+        val expectedChecksum = parseSecureHash("DUMMY:1234567890")
         val chunkReader = object : ChunkReader {
             var cb: ChunksCombined? = null
             override fun read(chunk: Chunk) {

@@ -2,6 +2,7 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -32,12 +33,12 @@ class PlatformDigestServiceImpl @Activate constructor(
 
     override fun hash(bytes: ByteArray, platformDigestName: DigestAlgorithmName): SecureHash {
         val hashBytes = digestFor(platformDigestName).digest(bytes)
-        return SecureHash(platformDigestName.name, hashBytes)
+        return SecureHashImpl(platformDigestName.name, hashBytes)
     }
 
     override fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash {
         val hashBytes = digestFor(platformDigestName).digest(inputStream)
-        return SecureHash(platformDigestName.name, hashBytes)
+        return SecureHashImpl(platformDigestName.name, hashBytes)
     }
 
     override fun digestLength(platformDigestName: DigestAlgorithmName): Int =

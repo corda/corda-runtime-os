@@ -1,6 +1,7 @@
 package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.rest.FlowRestResourceServiceException
@@ -100,7 +101,7 @@ class FlowRestResourceImplTest {
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
             CpiIdentifier(
                 "", "",
-                SecureHash("", "bytes".toByteArray())
+                SecureHashImpl("", "bytes".toByteArray())
             ),
             UUID.randomUUID(),
             UUID.randomUUID(),

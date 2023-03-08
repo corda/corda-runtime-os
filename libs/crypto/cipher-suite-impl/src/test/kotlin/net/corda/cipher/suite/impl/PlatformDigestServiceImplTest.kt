@@ -2,9 +2,9 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.DigestScheme
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.impl.DoubleSHA256Digest
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -73,7 +73,7 @@ class PlatformDigestServiceImplTest {
         assertTrue(hash.bytes.isNotEmpty())
         assertEquals(algorithmName.name, hash.algorithm)
         assertTrue(digestService.digestLength(algorithmName) > 0)
-        assertEquals(digestService.digestLength(algorithmName), hash.size)
+        assertEquals(digestService.digestLength(algorithmName), hash.bytes.size)
         assertEquals(
             digestService.hash(message, algorithmName),
             digestService.hash(message, algorithmName))
@@ -82,10 +82,10 @@ class PlatformDigestServiceImplTest {
     @Test
     fun `Should calculate sha2-256 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_256)
-        assertEquals(32, hash.size)
+        assertEquals(32, hash.bytes.size)
         assertEquals(32, digestService.digestLength(SHA2_256))
         assertEquals(
-            SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"),
+            parseSecureHash("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"),
             hash
         )
         assertEquals("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F", hash.toString())
@@ -94,10 +94,10 @@ class PlatformDigestServiceImplTest {
     @Test
     fun `Should calculate sha2-384 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_384)
-        assertEquals(48, hash.size)
+        assertEquals(48, hash.bytes.size)
         assertEquals(48, digestService.digestLength(SHA2_384))
         assertEquals(
-            SecureHash.parse(
+            parseSecureHash(
             "SHA-384:5E3DBD33BEC467F625E28D4C5DF90CAACEA722F2DBB2AE9EF9C59EF4FB0FA31A070F5911156713F6AA0FCB09186B78FF"),
             hash
         )
@@ -109,10 +109,10 @@ class PlatformDigestServiceImplTest {
     @Test
     fun `Should calculate sha2-512 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_512)
-        assertEquals(64, hash.size)
+        assertEquals(64, hash.bytes.size)
         assertEquals(64, digestService.digestLength(SHA2_512))
         assertEquals(
-            SecureHash.parse(
+            parseSecureHash(
             "SHA-512:A0F54F81E7FC7387989E1582E83F3A9051151E380F67E0F71D5CEE266B582F4105E08E8707A554FC9D3A6B3BEA1ECA" +
                     "8CC4E6BA1CF4DE78D8822B3EA724DE9D6C"),
             hash)
@@ -124,10 +124,10 @@ class PlatformDigestServiceImplTest {
     fun `Should calculate sha3-256 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_256)
-        assertEquals(32, hash.size)
+        assertEquals(32, hash.bytes.size)
         assertEquals(32, digestService.digestLength(SHA3_256))
         assertEquals(
-            SecureHash.parse(
+            parseSecureHash(
             "SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880"),
             hash
         )
@@ -140,10 +140,10 @@ class PlatformDigestServiceImplTest {
     fun `Should calculate sha3-384 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_384)
-        assertEquals(48, hash.size)
+        assertEquals(48, hash.bytes.size)
         assertEquals(48, digestService.digestLength(SHA3_384))
         assertEquals(
-            SecureHash.parse("SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC0" +
+            parseSecureHash("SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC0" +
                 "7CF817998E855B6D3A56797F1182AC24307"),
             hash
         )
@@ -157,10 +157,10 @@ class PlatformDigestServiceImplTest {
     fun `Should calculate sha3-512 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_512)
-        assertEquals(64, hash.size)
+        assertEquals(64, hash.bytes.size)
         assertEquals(64, digestService.digestLength(SHA3_512))
         assertEquals(
-            SecureHash.parse("SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C2" +
+            parseSecureHash("SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C2" +
                 "7CAFC5989ECC6E6D7590BDBB57F9E4C945B16DB60E2D09C4F72C8D826A34A2D03C4E"),
             hash
         )
@@ -173,10 +173,10 @@ class PlatformDigestServiceImplTest {
     @Test
     fun `Should calculate secure hash using custom factory`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), CUSTOM_DIGEST)
-        assertEquals(32, hash.size)
+        assertEquals(32, hash.bytes.size)
         assertEquals(32, digestService.digestLength(CUSTOM_DIGEST))
         assertEquals(
-            SecureHash.parse(
+            parseSecureHash(
                 "SHA-256D:CB2A6BC131E59DC17DF10769ACBDFEC06965F0AFEAF1C3359E69CB915873E051"
             ),
             hash
@@ -198,7 +198,7 @@ class PlatformDigestServiceImplTest {
         assertTrue(hash.bytes.isNotEmpty())
         assertEquals(algorithmName.name, hash.algorithm)
         assertTrue(digestService.digestLength(algorithmName) > 0)
-        assertEquals(digestService.digestLength(algorithmName), hash.size)
+        assertEquals(digestService.digestLength(algorithmName), hash.bytes.size)
         assertEquals(
             digestService.hash(message, algorithmName),
             digestService.hash(message, algorithmName))

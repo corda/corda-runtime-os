@@ -1,5 +1,6 @@
 package net.corda.libs.packaging
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER
 import net.corda.libs.packaging.core.CpkIdentifier
@@ -29,7 +30,7 @@ import javax.xml.validation.SchemaFactory
 class CpkDocumentReader {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val SAME_SIGNER_PLACEHOLDER = SecureHash("NONE", byteArrayOf(0))
+        val SAME_SIGNER_PLACEHOLDER = SecureHashImpl("NONE", byteArrayOf(0))
 
         private const val CORDA_CPK_V1 = "corda-cpk-1.0.xsd"
 
@@ -108,7 +109,7 @@ class CpkDocumentReader {
                             throw DependencyMetadataException(msg)
                         }
                         val hashData = Base64.getDecoder().decode(signer.textContent)
-                        SecureHash(algorithm, hashData)
+                        SecureHashImpl(algorithm, hashData)
                     }.summaryHash() ?:
                     if (signers.getElementsByTagName(DEPENDENCY_SAME_SIGNER_TAG).length == 1) {
                         // Use this until we can determine this CPK's own certificates.
@@ -182,7 +183,7 @@ class CpkDocumentReader {
                             )
                         )
                     }
-                    SecureHash(algorithmName, Base64.getDecoder().decode(it.textContent))
+                    SecureHashImpl(algorithmName, Base64.getDecoder().decode(it.textContent))
                 }
             }.forEach { pair ->
                 result.put("$CPK_LIB_FOLDER/${pair.first}", pair.second)?.let {

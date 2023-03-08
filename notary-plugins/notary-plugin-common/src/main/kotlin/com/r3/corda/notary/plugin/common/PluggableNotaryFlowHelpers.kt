@@ -2,6 +2,7 @@
 
 package com.r3.corda.notary.plugin.common
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -37,14 +38,15 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
                              requestingParty: Party,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
-                             signature: NotarizationRequestSignature
+                             signature: NotarizationRequestSignature,
+                             digestService: DigestService
 ) {
     val digitalSignature = signature.digitalSignature
 
     if (requestingParty.owningKey != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingParty.owningKey.publicKeyId()}, " +
-                    "but received by ${digitalSignature.by.publicKeyId()}}"
+            "Expected a signature by ${requestingParty.owningKey.publicKeyId(digestService)}, " +
+                    "but received by ${digitalSignature.by.publicKeyId(digestService)}}"
         )
     }
 
@@ -139,11 +141,7 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
 
 private const val SHORT_KEY_ID_LENGTH = 12
 
-private fun PublicKey.publicKeyId(): String {
-    val digestAlgorithm = DigestAlgorithmName.SHA2_256.name
-    val fullKeyId = SecureHash(
-        digestAlgorithm,
-        MessageDigest.getInstance(digestAlgorithm).digest(encoded)
-    )
+private fun PublicKey.publicKeyId(digestService: DigestService): String {
+    val fullKeyId = digestService.hash(encoded, DigestAlgorithmName.SHA2_256)
     return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
 }

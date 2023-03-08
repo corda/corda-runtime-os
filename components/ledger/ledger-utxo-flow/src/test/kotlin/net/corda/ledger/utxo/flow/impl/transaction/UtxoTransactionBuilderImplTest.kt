@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
@@ -49,7 +50,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
         assertEquals(inputStateRef, tx.inputStateRefs.single())
@@ -86,7 +87,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction() as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata as TransactionMetadataInternal
@@ -126,7 +127,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
                 .addOutputState(getUtxoStateExample())
                 .addSignatories(listOf(publicKeyExample))
                 .addCommand(UtxoCommandExample())
-                .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+                .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
 
             builder.toSignedTransaction()
             builder.toSignedTransaction()
@@ -166,7 +167,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
 
         assertThat(tx.outputStateAndRefs).hasSize(7)
@@ -228,7 +229,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `adding attachments mutates and returns the current builder`() {
-        val attachmentId = SecureHash("SHA-256", ByteArray(12))
+        val attachmentId = SecureHashImpl("SHA-256", ByteArray(12))
         val originalTransactionBuilder = utxoTransactionBuilder
         val mutatedTransactionBuilder = utxoTransactionBuilder.addAttachment(attachmentId)
         assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).attachments).isEqualTo(

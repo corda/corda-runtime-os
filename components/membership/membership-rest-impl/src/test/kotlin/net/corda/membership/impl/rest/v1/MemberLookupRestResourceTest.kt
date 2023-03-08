@@ -1,15 +1,17 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.rest.v1.types.response.RestMemberInfo
-import net.corda.membership.rest.v1.types.response.RestMemberInfoList
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -27,15 +29,13 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.rest.v1.types.response.RestMemberInfo
+import net.corda.membership.rest.v1.types.response.RestMemberInfoList
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.rest.exception.BadRequestException
-import net.corda.crypto.core.ShortHash
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
@@ -191,7 +191,7 @@ class MemberLookupRestResourceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
-            CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
+            CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
             null,
             UUID.randomUUID(),
             null,

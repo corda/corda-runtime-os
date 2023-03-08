@@ -14,6 +14,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
@@ -162,7 +163,7 @@ class SigningServiceGeneralTests {
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
             id = ShortHash.of("0123456789AB"),
-            fullId = SecureHash.parse("SHA-256:0123456789ABCDEF"),
+            fullId = parseSecureHash("SHA-256:0123456789ABCDEF"),
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             alias = "alias1",

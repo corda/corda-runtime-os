@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -41,7 +42,7 @@ class SandboxGroupContextTest {
 
     private val virtualNodeContext = VirtualNodeContext(
         holdingIdentity,
-        cpksMetadata.map { SecureHash.parse("DUMMY:1234567890abcdef") }.toSet(),
+        cpksMetadata.map { parseSecureHash("DUMMY:1234567890abcdef") }.toSet(),
         SandboxGroupType.FLOW,
         null
     )

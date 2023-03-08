@@ -1,6 +1,7 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
@@ -36,7 +37,7 @@ class UpsertValidationTest {
     fun `succeeds with unique cpi`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash("SHA-256", "1234567890".toByteArray())
+        val hash = SecureHashImpl("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(emptyList()))
@@ -50,7 +51,7 @@ class UpsertValidationTest {
     fun `succeeds force upload when version exact`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash("SHA-256", "1234567890".toByteArray())
+        val hash = SecureHashImpl("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
@@ -69,7 +70,7 @@ class UpsertValidationTest {
     fun `fails force upload when version correct but groupId different to previous`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash("SHA-256", "1234567890".toByteArray())
+        val hash = SecureHashImpl("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
@@ -88,7 +89,7 @@ class UpsertValidationTest {
     fun `fails force upload when version is different`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash("SHA-256", "1234567890".toByteArray())
+        val hash = SecureHashImpl("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
@@ -106,7 +107,7 @@ class UpsertValidationTest {
     fun `succeeds upload when version different`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash("SHA-256", "1234567890".toByteArray())
+        val hash = SecureHashImpl("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
@@ -124,7 +125,7 @@ class UpsertValidationTest {
     fun `fails upload when version is same`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash("SHA-256", "1234567890".toByteArray())
+        val hash = SecureHashImpl("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {

@@ -1,5 +1,6 @@
 package net.cordapp.demo.utxo.contract
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
@@ -14,13 +15,12 @@ class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
         return TestUtxoState::class.java
     }
 
-    override fun onCommit(state: TestUtxoState): UtxoToken {
+    override fun onCommit(state: TestUtxoState, digestService: DigestService): UtxoToken {
         return UtxoToken(
             UtxoTokenPoolKey(
                 TestUtxoState::class.java.name,
-                SecureHash(
-                    DigestAlgorithmName.SHA2_256.name,
-                    "EC4F2DBB3B140095550C9AFBBB69B5D6FD9E814B9DA82FAD0B34E9FCBE56F1CB".toByteArray()
+                digestService.parseSecureHash(
+                    "SHA-256:EC4F2DBB3B140095550C9AFBBB69B5D6FD9E814B9DA82FAD0B34E9FCBE56F1CB"
                 ),
                 state.testField
             ),

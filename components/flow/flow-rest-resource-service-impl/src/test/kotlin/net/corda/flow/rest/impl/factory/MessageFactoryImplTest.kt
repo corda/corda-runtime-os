@@ -1,5 +1,6 @@
 package net.corda.flow.rest.impl.factory
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
@@ -29,7 +30,7 @@ internal class MessageFactoryImplTest {
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
             CpiIdentifier(
                 "", "",
-                SecureHash("", "bytes".toByteArray())
+                SecureHashImpl("", "bytes".toByteArray())
             ),
             UUID.fromString(vaultDdlConnectionId),
             UUID.fromString(vaultDmlConnectionId),

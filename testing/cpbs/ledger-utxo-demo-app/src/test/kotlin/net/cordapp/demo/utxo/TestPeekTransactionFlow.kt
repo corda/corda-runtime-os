@@ -1,8 +1,8 @@
 package net.cordapp.demo.utxo
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
@@ -23,7 +23,7 @@ class TestPeekTransactionFlow {
         fun missingTransactionReturnsError() {
             val flow = PeekTransactionFlow()
 
-            val txIdBad = SecureHash("SHA256", "Fail!".toByteArray())
+            val txIdBad = SecureHashImpl("SHA256", "Fail!".toByteArray())
             val ledgerService = mock<UtxoLedgerService>()
             whenever(ledgerService.findLedgerTransaction(txIdBad)).thenReturn(null)
 
@@ -47,7 +47,7 @@ class TestPeekTransactionFlow {
             val flow = PeekTransactionFlow()
 
 
-            val txIdGood = SecureHash("SHA256", "12345".toByteArray())
+            val txIdGood = SecureHashImpl("SHA256", "12345".toByteArray())
 
             val keyGenerator = KeyPairGenerator.getInstance("EC")
 

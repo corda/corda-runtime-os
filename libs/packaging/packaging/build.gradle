@@ -46,6 +46,7 @@ dependencies {
     api 'net.corda:corda-crypto-extensions'
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:utilities')
     implementation project(":libs:packaging:packaging-core")
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

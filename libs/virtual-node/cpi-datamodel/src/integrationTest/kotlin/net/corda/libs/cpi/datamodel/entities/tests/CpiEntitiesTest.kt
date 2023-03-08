@@ -1,17 +1,19 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkFile
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
+import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -59,7 +61,7 @@ class CpiEntitiesIntegrationTest {
         val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
 
         val cpkData = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk =
@@ -102,7 +104,7 @@ class CpiEntitiesIntegrationTest {
         val cpiId = UUID.randomUUID()
         val cpkId = UUID.randomUUID().toString()
         val cpkData = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk =
@@ -128,7 +130,7 @@ class CpiEntitiesIntegrationTest {
         val cpkVer2 = "2.2.3"
         val cpk2SignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkData2 = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpkMetadataEntity2 = TestObject.createCpk(
@@ -195,7 +197,7 @@ class CpiEntitiesIntegrationTest {
         val cpkVer = "1.2.3"
         val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkData = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk1 =
@@ -222,7 +224,7 @@ class CpiEntitiesIntegrationTest {
         val cpk2SignerSummaryHash = TestObject.genRandomChecksum().toString()
         // Create another CPK
         val cpkData2 = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk2 =
@@ -318,7 +320,7 @@ class CpiEntitiesIntegrationTest {
             }
 
         val expectedCpkFile = CpkFile(
-            SecureHash.parse(insertedCpkFilesEntity[0].fileChecksum),
+            parseSecureHash(insertedCpkFilesEntity[0].fileChecksum),
             insertedCpkFilesEntity[0].data,
             insertedCpkFilesEntity[0].entityVersion
         )

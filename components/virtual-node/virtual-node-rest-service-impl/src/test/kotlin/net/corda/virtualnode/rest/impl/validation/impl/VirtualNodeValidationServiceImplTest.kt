@@ -1,7 +1,9 @@
 package net.corda.virtualnode.rest.impl.validation.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -35,7 +37,7 @@ class VirtualNodeValidationServiceImplTest {
     private val cpiFileChecksum = "0123456789AB"
     private val cpiFileChecksumFull = "SHA-256:0123456789AB"
     private val vnodeShortHash = ShortHash.of(vnodeId)
-    private val cpiSecureHash = SecureHash.parse(cpiFileChecksumFull)
+    private val cpiSecureHash = parseSecureHash(cpiFileChecksumFull)
     private val mockVnode = mock<VirtualNodeInfo> {
         whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
         whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
@@ -113,8 +115,8 @@ class VirtualNodeValidationServiceImplTest {
 
     @Test
     fun `validateCpiUpgradePrerequisites CPI name must match`() {
-        val cpiId1 = CpiIdentifier("name1", "v1", SecureHash.parse("SHA-256:1234567890"))
-        val cpiId2 = CpiIdentifier("name2", "v2", SecureHash.parse("SHA-256:1234567890"))
+        val cpiId1 = CpiIdentifier("name1", "v1", parseSecureHash("SHA-256:1234567890"))
+        val cpiId2 = CpiIdentifier("name2", "v2", parseSecureHash("SHA-256:1234567890"))
 
         val currentCpi = mock<CpiMetadata> {
             whenever(it.cpiId).thenReturn(cpiId1)
@@ -130,8 +132,8 @@ class VirtualNodeValidationServiceImplTest {
 
     @Test
     fun `validateCpiUpgradePrerequisites CPI signer summary must match`() {
-        val cpiId1 = CpiIdentifier("name", "v1", SecureHash.parse("SHA-256:1234567890"))
-        val cpiId2 = CpiIdentifier("name", "v2", SecureHash.parse("SHA-256:2234567800"))
+        val cpiId1 = CpiIdentifier("name", "v1", parseSecureHash("SHA-256:1234567890"))
+        val cpiId2 = CpiIdentifier("name", "v2", parseSecureHash("SHA-256:2234567800"))
 
         val currentCpi = mock<CpiMetadata> {
             whenever(it.cpiId).thenReturn(cpiId1)
@@ -192,7 +194,7 @@ class VirtualNodeValidationServiceImplTest {
     @Test
     fun `validate and get group id - CPI Meta missing group policy`() {
         val cpiMetadataInvalid = CpiMetadata(
-            CpiIdentifier("name", "v1", SecureHash("SHA-256", ByteArray(16))),
+            CpiIdentifier("name", "v1", SecureHashImpl("SHA-256", ByteArray(16))),
             cpiSecureHash,
             listOf(),
             null,
@@ -207,7 +209,7 @@ class VirtualNodeValidationServiceImplTest {
     @Test
     fun `validate and get group id - returns group ID`() {
         val cpiMetadata = CpiMetadata(
-            CpiIdentifier("name", "v1", SecureHash("SHA-256", ByteArray(16))),
+            CpiIdentifier("name", "v1", SecureHashImpl("SHA-256", ByteArray(16))),
             cpiSecureHash,
             listOf(),
             """{ "groupId":"grp1"}""",
@@ -222,7 +224,7 @@ class VirtualNodeValidationServiceImplTest {
     @Test
     fun `validate and get group id - returns new UUID when group ID is special MGM group`() {
         val cpiMetadata = CpiMetadata(
-            CpiIdentifier("name", "v1", SecureHash("SHA-256", ByteArray(16))),
+            CpiIdentifier("name", "v1", SecureHashImpl("SHA-256", ByteArray(16))),
             cpiSecureHash,
             listOf(),
             """{ "groupId":"CREATE_ID"}""",

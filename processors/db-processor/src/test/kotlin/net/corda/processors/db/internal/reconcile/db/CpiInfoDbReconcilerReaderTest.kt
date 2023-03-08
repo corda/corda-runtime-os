@@ -1,5 +1,7 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
@@ -34,7 +36,7 @@ class CpiInfoDbReconcilerReaderTest {
     private val dummyCpkMetadata = CpkMetadata(
         CpkIdentifier(
             "SomeName",
-            "1.0", SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+            "1.0", SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
         ),
         CpkManifest(CpkFormatVersion(2, 3)),
         "mainBundle.jar",
@@ -55,7 +57,7 @@ class CpiInfoDbReconcilerReaderTest {
             ),
         ),
         CpkType.CORDA_API,
-        SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
+        SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
         emptySet(),
         Instant.now().truncatedTo(ChronoUnit.MILLIS)
     )
@@ -114,13 +116,13 @@ class CpiInfoDbReconcilerReaderTest {
         val expectedId = CpiIdentifier(
             dummyCpiMetadataEntity.name,
             dummyCpiMetadataEntity.version,
-            SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash)
+            parseSecureHash(dummyCpiMetadataEntity.signerSummaryHash)
         )
 
         assertThat(record.key).isEqualTo(expectedId)
         assertThat(record.value.cpiId).isEqualTo(expectedId)
 
-        assertThat(record.value.fileChecksum).isEqualTo(SecureHash.parse(dummyCpiMetadataEntity.fileChecksum))
+        assertThat(record.value.fileChecksum).isEqualTo(parseSecureHash(dummyCpiMetadataEntity.fileChecksum))
         assertThat(record.value.groupPolicy).isEqualTo(dummyCpiMetadataEntity.groupPolicy)
         assertThat(record.value.cpksMetadata).containsExactly(dummyCpkMetadata)
     }

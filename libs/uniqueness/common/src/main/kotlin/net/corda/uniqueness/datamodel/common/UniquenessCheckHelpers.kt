@@ -1,5 +1,6 @@
 package net.corda.uniqueness.datamodel.common
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
@@ -29,10 +30,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.crypto.SecureHash
 import org.apache.avro.specific.SpecificRecord
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 import java.time.Instant
 
 /**
@@ -172,7 +170,7 @@ fun UniquenessCheckResult.toCharacterRepresentation() = if (this is UniquenessCh
 
 fun String.toStateRef() : UniquenessCheckStateRef {
     return UniquenessCheckStateRefImpl(
-        SecureHash.parse(substringBeforeLast(":")),
+        parseSecureHash(substringBeforeLast(":")),
         substringAfterLast(":").toInt()
     )
 }

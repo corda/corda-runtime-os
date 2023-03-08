@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.services
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
@@ -115,7 +116,7 @@ class CreateVirtualNodeServiceImplTest {
 
     @Test
     fun `run CPI migrations throw on failure`() {
-        val cpkChangeLogId1 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum1".toByteArray()), "fp1")
+        val cpkChangeLogId1 = CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","checksum1".toByteArray()), "fp1")
         val cpkChangeLogEntity1 = CpkDbChangeLog(cpkChangeLogId1, "content")
 
         whenever(
@@ -134,9 +135,9 @@ class CreateVirtualNodeServiceImplTest {
 
     @Test
     fun `run CPI migrations runs all CPK migrations`() {
-        val cpkChangeLogId1 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum1".toByteArray()), "fp1")
-        val cpkChangeLogId2 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum1".toByteArray()), "fp2")
-        val cpkChangeLogId3 = CpkDbChangeLogIdentifier(SecureHash("SHA-256","checksum2".toByteArray()), "fp1")
+        val cpkChangeLogId1 = CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","checksum1".toByteArray()), "fp1")
+        val cpkChangeLogId2 = CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","checksum1".toByteArray()), "fp2")
+        val cpkChangeLogId3 = CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","checksum2".toByteArray()), "fp1")
         val cpkChangeLogEntity1 = CpkDbChangeLog(cpkChangeLogId1, "content1")
         val cpkChangeLogEntity2 = CpkDbChangeLog(cpkChangeLogId2, "content2")
         val cpkChangeLogEntity3 = CpkDbChangeLog(cpkChangeLogId3, "content3")
@@ -152,11 +153,11 @@ class CreateVirtualNodeServiceImplTest {
 
         verify(vaultPlatformManagedVirtualNodeDb).runCpiMigrations(
             any(),
-            eq(SecureHash("SHA-256", "checksum1".toByteArray()).toString())
+            eq(SecureHashImpl("SHA-256", "checksum1".toByteArray()).toString())
         )
         verify(vaultPlatformManagedVirtualNodeDb).runCpiMigrations(
             any(),
-            eq(SecureHash("SHA-256", "checksum2".toByteArray()).toString())
+            eq(SecureHashImpl("SHA-256", "checksum2".toByteArray()).toString())
         )
     }
 

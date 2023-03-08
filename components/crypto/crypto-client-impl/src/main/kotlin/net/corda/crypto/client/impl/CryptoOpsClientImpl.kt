@@ -10,6 +10,7 @@ import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
@@ -63,7 +64,7 @@ class CryptoOpsClientImpl(
 
         private fun SecureHashes.toDto(): List<SecureHash> =
             this.hashes.map {
-                SecureHash(it.algorithm, it.bytes.array())
+                SecureHashImpl(it.algorithm, it.bytes.array())
             }
 
         private fun SecureHash.toAvro(): net.corda.data.crypto.SecureHash =
