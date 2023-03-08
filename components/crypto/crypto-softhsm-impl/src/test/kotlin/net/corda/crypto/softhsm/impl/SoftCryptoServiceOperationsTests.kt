@@ -369,7 +369,7 @@ class SoftCryptoServiceOperationsTests {
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
-
+        
         wrappingKeyStore.saveWrappingKey(alias1, info1)
         wrappingKeyStore.saveWrappingKey(alias2, info2)
 
@@ -378,12 +378,11 @@ class SoftCryptoServiceOperationsTests {
 
         val scheme = cryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         cryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key1", alias1), emptyMap())
-
-        val key11 = cryptoService.getWrappingKey(alias1)
-        assertEquals(expected1, key11)
+        val key1Found = wrappingKeyCache.getIfPresent(alias1)
+        assertEquals(expected1, key1Found)
         val key21 = cryptoService.getWrappingKey(alias2)
         assertEquals(expected2, key21)
-        assertNotEquals(key11, key21)
+        assertNotEquals(key1Found, key21)
 
         val key12 = cryptoService.getWrappingKey(alias1)
         assertEquals(expected1, key12)
