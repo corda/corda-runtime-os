@@ -7,6 +7,7 @@ import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.async.request.RetryCondition
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -28,6 +29,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -72,37 +74,44 @@ class MemberOpsAsyncProcessorTest {
     @Nested
     inner class OnNextTests {
         @Test
-        fun `it with successful registration will clear the state`() {
+        fun `it with successful registration will keep the state to check if P2P passed`() {
             val id = UUID(0, 1)
+            val command = MembershipAsyncRequest(
+                RegistrationAsyncRequest(
+                    shortHash.value,
+                    id.toString(),
+                    RegistrationAction.REQUEST_JOIN,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                "key",
+                                "value"
+                            )
+                        )
+                    )
+                )
+            )
             val reply = processor.onNext(
                 null,
                 Record(
                     "topic",
                     "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
-                    ),
+                    command,
                 )
             )
 
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
-                    updatedState = null,
-                    responseEvents = emptyList(),
+                    updatedState = MembershipAsyncRequestState(
+                        command,
+                        1,
+                        RetryCondition.IS_STATE_SENT_TO_MGM,
+                        clock.instant().plusSeconds(40),
+                    ),
                     markForDLQ = false,
+                    responseEvents = emptyList(),
                 )
+
             )
         }
 
@@ -161,7 +170,8 @@ class MemberOpsAsyncProcessorTest {
                     updatedState = MembershipAsyncRequestState(
                         command,
                         1,
-                        clock.instant(),
+                        RetryCondition.NO_CONDITION,
+                        clock.instant().plusSeconds(2),
                     ),
                     responseEvents = emptyList(),
                     markForDLQ = false,
@@ -194,6 +204,7 @@ class MemberOpsAsyncProcessorTest {
                 MembershipAsyncRequestState(
                     command,
                     4,
+                    RetryCondition.NO_CONDITION,
                     Instant.ofEpochMilli(4000),
                 ),
                 Record(
@@ -208,7 +219,8 @@ class MemberOpsAsyncProcessorTest {
                     updatedState = MembershipAsyncRequestState(
                         command,
                         5,
-                        clock.instant(),
+                        RetryCondition.NO_CONDITION,
+                        clock.instant().plusSeconds(2),
                     ),
                     responseEvents = emptyList(),
                     markForDLQ = false,
@@ -241,6 +253,7 @@ class MemberOpsAsyncProcessorTest {
                 MembershipAsyncRequestState(
                     command,
                     20,
+                    RetryCondition.NO_CONDITION,
                     Instant.ofEpochMilli(4000),
                 ),
                 Record(
@@ -284,6 +297,7 @@ class MemberOpsAsyncProcessorTest {
                 MembershipAsyncRequestState(
                     command,
                     20,
+                    RetryCondition.NO_CONDITION,
                     Instant.ofEpochMilli(4000),
                 ),
                 Record(
@@ -502,6 +516,187 @@ class MemberOpsAsyncProcessorTest {
                             )
                         )
                     ),
+                )
+            )
+
+            verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
+        }
+
+        @Test
+        fun `it should not retry if status is no longer sent to MGM`() {
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(
+                    RegistrationRequestStatus(
+                        RegistrationStatus.RECEIVED_BY_MGM,
+                        "",
+                        mock(),
+                        Instant.MIN,
+                        Instant.MIN,
+                        0
+                    )
+                )
+            )
+            val id = UUID(0, 1)
+            val request = MembershipAsyncRequest(
+                RegistrationAsyncRequest(
+                    shortHash.value,
+                    id.toString(),
+                    RegistrationAction.REQUEST_JOIN,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                "key",
+                                "value"
+                            )
+                        )
+                    )
+                )
+            )
+            processor.onNext(
+                MembershipAsyncRequestState(
+                    request,
+                    1,
+                    RetryCondition.IS_STATE_SENT_TO_MGM,
+                    clock.instant(),
+                ),
+                Record(
+                    "topic",
+                    "key",
+                    request,
+                )
+            )
+
+            verify(registrationProxy, never()).register(any(), any(), any())
+        }
+
+        @Test
+        fun `it should retry if status is stuck in sent to MGM`() {
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(
+                    RegistrationRequestStatus(
+                        RegistrationStatus.SENT_TO_MGM,
+                        "",
+                        mock(),
+                        Instant.MIN,
+                        Instant.MIN,
+                        0
+                    )
+                )
+            )
+            val id = UUID(0, 1)
+            val request = MembershipAsyncRequest(
+                RegistrationAsyncRequest(
+                    shortHash.value,
+                    id.toString(),
+                    RegistrationAction.REQUEST_JOIN,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                "key",
+                                "value"
+                            )
+                        )
+                    )
+                )
+            )
+            processor.onNext(
+                MembershipAsyncRequestState(
+                    request,
+                    1,
+                    RetryCondition.IS_STATE_SENT_TO_MGM,
+                    clock.instant(),
+                ),
+                Record(
+                    "topic",
+                    "key",
+                    request,
+                )
+            )
+
+            verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
+        }
+
+        @Test
+        fun `it should retry if status is stuck in new`() {
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(
+                    RegistrationRequestStatus(
+                        RegistrationStatus.NEW,
+                        "",
+                        mock(),
+                        Instant.MIN,
+                        Instant.MIN,
+                        0
+                    )
+                )
+            )
+            val id = UUID(0, 1)
+            val request = MembershipAsyncRequest(
+                RegistrationAsyncRequest(
+                    shortHash.value,
+                    id.toString(),
+                    RegistrationAction.REQUEST_JOIN,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                "key",
+                                "value"
+                            )
+                        )
+                    )
+                )
+            )
+            processor.onNext(
+                MembershipAsyncRequestState(
+                    request,
+                    1,
+                    RetryCondition.IS_STATE_SENT_TO_MGM,
+                    clock.instant(),
+                ),
+                Record(
+                    "topic",
+                    "key",
+                    request,
+                )
+            )
+
+            verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
+        }
+
+        @Test
+        fun `it should retry if status was not persisted`() {
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(
+                    null
+                )
+            )
+            val id = UUID(0, 1)
+            val request = MembershipAsyncRequest(
+                RegistrationAsyncRequest(
+                    shortHash.value,
+                    id.toString(),
+                    RegistrationAction.REQUEST_JOIN,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                "key",
+                                "value"
+                            )
+                        )
+                    )
+                )
+            )
+            processor.onNext(
+                MembershipAsyncRequestState(
+                    request,
+                    1,
+                    RetryCondition.IS_STATE_SENT_TO_MGM,
+                    clock.instant(),
+                ),
+                Record(
+                    "topic",
+                    "key",
+                    request,
                 )
             )
 

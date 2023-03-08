@@ -15,14 +15,14 @@ internal object RegistrationStatusHelper {
         return when (this) {
             RegistrationStatus.NEW -> 0
             RegistrationStatus.SENT_TO_MGM -> 1
-            RegistrationStatus.RECEIVED_BY_MGM -> 1
-            RegistrationStatus.PENDING_MEMBER_VERIFICATION -> 2
-            RegistrationStatus.PENDING_APPROVAL_FLOW -> 3
-            RegistrationStatus.PENDING_MANUAL_APPROVAL -> 4
-            RegistrationStatus.PENDING_AUTO_APPROVAL -> 4
-            RegistrationStatus.DECLINED -> 5
-            RegistrationStatus.INVALID -> 5
-            RegistrationStatus.APPROVED -> 5
+            RegistrationStatus.RECEIVED_BY_MGM -> 2
+            RegistrationStatus.PENDING_MEMBER_VERIFICATION -> 3
+            RegistrationStatus.PENDING_APPROVAL_FLOW -> 4
+            RegistrationStatus.PENDING_MANUAL_APPROVAL -> 5
+            RegistrationStatus.PENDING_AUTO_APPROVAL -> 5
+            RegistrationStatus.DECLINED -> 6
+            RegistrationStatus.INVALID -> 6
+            RegistrationStatus.APPROVED -> 6
         }
     }
 

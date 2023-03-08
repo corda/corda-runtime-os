@@ -18,7 +18,6 @@ import net.corda.utilities.time.Clock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Long.max
-import java.util.concurrent.TimeUnit
 
 internal class CommandsRetryManager(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -28,7 +27,6 @@ internal class CommandsRetryManager(
 ) : Resource, StateAndEventListener<String, MembershipAsyncRequestState> {
     private companion object {
         const val PUBLISHER_NAME = "MembershipServiceAsyncCommandsRetryManager"
-        const val WAIT_BETWEEN_REQUESTS_IN_SECONDS = 2L
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private val publisher = publisherFactory.createPublisher(
@@ -89,22 +87,22 @@ internal class CommandsRetryManager(
     private fun addTimer(key: String, state: MembershipAsyncRequestState) {
         val durationInMillis = max(
             0,
-            (state.lastFailedOn.toEpochMilli() + TimeUnit.SECONDS.toMillis(WAIT_BETWEEN_REQUESTS_IN_SECONDS)) -
-                    (clock.instant().toEpochMilli())
+            state.retryAfter.toEpochMilli() -
+                clock.instant().toEpochMilli()
         )
         val event = Record(
             MEMBERSHIP_ASYNC_REQUEST_TOPIC,
             key,
             state.request,
         )
-        logger.info("Request $key will be retried in $durationInMillis milliseconds")
+        logger.debug("Request $key will be retried in $durationInMillis milliseconds")
         coordinator.setTimer("retry-$key", durationInMillis) {
             RetryEvent(event, it)
         }
     }
 
     private fun cancelTimer(key: String) {
-        logger.info("Request $key will not be retried")
+        logger.debug("Request $key will not be retried")
         coordinator.cancelTimer("retry-$key")
     }
 }

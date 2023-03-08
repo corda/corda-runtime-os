@@ -4,6 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.async.request.RetryCondition
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -29,10 +30,13 @@ internal class MemberOpsAsyncProcessor(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MAX_RETRIES = 10
+        const val WAIT_BETWEEN_REQUESTS_AFTER_FAILURE_IN_SECONDS = 2L
+        const val WAIT_TO_P2P_IN_SECONDS = 40L
     }
 
     private enum class Outcome {
-        SUCCESS,
+        SUCCESS_NO_CONDITION,
+        SUCCESS_WITH_CONDITION,
         FAILED_CANNOT_RETRY,
         FAILED_CAN_RETRY,
     }
@@ -43,9 +47,10 @@ internal class MemberOpsAsyncProcessor(
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
         val canRetry = numberOfRetriesSoFar < MAX_RETRIES
+        val condition = state?.retryCondition
         val outcome = when (val request = event.value?.request) {
             is RegistrationAsyncRequest -> {
-                register(request, canRetry)
+                register(request, canRetry, condition)
             }
             else -> {
                 logger.warn("Can not handle: $request")
@@ -54,7 +59,7 @@ internal class MemberOpsAsyncProcessor(
         }
 
         return when (outcome) {
-            Outcome.SUCCESS -> StateAndEventProcessor.Response(
+            Outcome.SUCCESS_NO_CONDITION -> StateAndEventProcessor.Response(
                 updatedState = null,
                 responseEvents = emptyList(),
                 markForDLQ = false,
@@ -68,7 +73,18 @@ internal class MemberOpsAsyncProcessor(
                 updatedState = MembershipAsyncRequestState(
                     event.value,
                     numberOfRetriesSoFar + 1,
-                    clock.instant(),
+                    RetryCondition.NO_CONDITION,
+                    clock.instant().plusSeconds(WAIT_BETWEEN_REQUESTS_AFTER_FAILURE_IN_SECONDS),
+                ),
+                markForDLQ = false,
+                responseEvents = emptyList(),
+            )
+            Outcome.SUCCESS_WITH_CONDITION -> StateAndEventProcessor.Response(
+                updatedState = MembershipAsyncRequestState(
+                    event.value,
+                    numberOfRetriesSoFar + 1,
+                    RetryCondition.IS_STATE_SENT_TO_MGM,
+                    clock.instant().plusSeconds(WAIT_TO_P2P_IN_SECONDS),
                 ),
                 markForDLQ = false,
                 responseEvents = emptyList(),
@@ -80,7 +96,11 @@ internal class MemberOpsAsyncProcessor(
     override val eventValueClass = MembershipAsyncRequest::class.java
     override val stateValueClass = MembershipAsyncRequestState::class.java
 
-    private fun register(request: RegistrationAsyncRequest, canRetry: Boolean): Outcome {
+    private fun register(
+        request: RegistrationAsyncRequest,
+        canRetry: Boolean,
+        condition: RetryCondition?
+    ): Outcome {
         val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
         val holdingIdentity =
             virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
@@ -102,16 +122,28 @@ internal class MemberOpsAsyncProcessor(
                 holdingIdentity,
                 request.requestId
             ).getOrThrow()
-            if ((requestStatus != null) && (requestStatus.status != RegistrationStatus.NEW)) {
-                // This request had already passed this state. no need to continue.
-                return Outcome.SUCCESS
+            if (condition == RetryCondition.IS_STATE_SENT_TO_MGM) {
+                if ((requestStatus == null) ||
+                    (requestStatus.status == RegistrationStatus.NEW) ||
+                    (requestStatus.status == RegistrationStatus.SENT_TO_MGM)
+                ) {
+                    logger.info("Request $registrationId had not received any reply from the MGM. Trying again...")
+                } else {
+                    // This request had already moved on.
+                    return Outcome.SUCCESS_NO_CONDITION
+                }
+            } else {
+                if ((requestStatus != null) && (requestStatus.status != RegistrationStatus.NEW)) {
+                    // This request had already passed this state. no need to continue.
+                    return Outcome.SUCCESS_NO_CONDITION
+                }
             }
 
             logger.info("Processing registration ${request.requestId} to ${holdingIdentity.x500Name}.")
             // CORE-10367: return the status update command as part of the onNext
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
-            Outcome.SUCCESS
+            Outcome.SUCCESS_WITH_CONDITION
         } catch (e: InvalidMembershipRegistrationException) {
             // CORE-10367: return the status update command as part of the onNext
             membershipPersistenceClient.setRegistrationRequestStatus(

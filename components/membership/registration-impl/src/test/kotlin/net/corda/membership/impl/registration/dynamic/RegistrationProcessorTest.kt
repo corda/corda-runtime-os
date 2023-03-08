@@ -214,7 +214,7 @@ class RegistrationProcessorTest {
     fun `start registration command - onNext can be called for start registration command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         assertThat(result.updatedState).isNotNull
-        assertThat(result.responseEvents).isNotEmpty.hasSize(2)
+        assertThat(result.responseEvents).isNotEmpty.hasSize(3)
         assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
             .isNotNull
             .isInstanceOf(VerifyMember::class.java)

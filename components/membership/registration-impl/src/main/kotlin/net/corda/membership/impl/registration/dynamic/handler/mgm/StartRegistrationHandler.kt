@@ -8,6 +8,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -26,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -52,6 +54,10 @@ internal class StartRegistrationHandler(
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    ),
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
@@ -144,9 +150,18 @@ internal class StartRegistrationHandler(
                 key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}",
                 value = persistentMemberInfo,
             )
+            val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
+                source = mgmHoldingId.toAvro(),
+                destination = pendingMemberHoldingId.toAvro(),
+                content = SetOwnRegistrationStatus(
+                    registrationRequest.registrationId,
+                    RegistrationStatus.RECEIVED_BY_MGM,
+                ),
+                minutesToWait = 5
+            )
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(pendingMemberRecord))
+            Pair(VerifyMember(), listOf(pendingMemberRecord, persistMemberStatusMessage))
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration(ex.originalMessage), emptyList())

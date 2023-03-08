@@ -39,9 +39,7 @@ class CommandsRetryManagerTest {
         on { createPublisher(any(), same(messagingConfig)) } doReturn publisher
     }
     private val nowInMillis = 10000L
-    private val now = mock<Instant> {
-        on { toEpochMilli() } doReturn nowInMillis
-    }
+    private val now = Instant.ofEpochMilli(10000L)
     private val clock = mock<Clock> {
         on { instant() } doReturn now
     }
@@ -86,7 +84,7 @@ class CommandsRetryManagerTest {
     fun `onPartitionSynced will add a timer for each command`() {
         val states = (1..3).associate {
             "key-$it" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
+                on { retryAfter } doReturn now.plusSeconds(2)
                 on { request } doReturn mock()
             }
         }
@@ -116,12 +114,12 @@ class CommandsRetryManagerTest {
         val states = mapOf(
             "key-1" to null,
             "key-2" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
+                on { retryAfter } doReturn now
                 on { request } doReturn mock()
             },
             "key-3" to null,
             "key-4" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
+                on { retryAfter } doReturn now
                 on { request } doReturn mock()
             },
         )
@@ -139,12 +137,12 @@ class CommandsRetryManagerTest {
         val states = mapOf(
             "key-1" to null,
             "key-2" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
+                on { retryAfter } doReturn now.plusSeconds(2)
                 on { request } doReturn mock()
             },
             "key-3" to null,
             "key-4" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
+                on { retryAfter } doReturn now.plusSeconds(2)
                 on { request } doReturn mock()
             },
         )
@@ -160,11 +158,11 @@ class CommandsRetryManagerTest {
     @Test
     fun `addTimer will use the correct delay`() {
         val failedOn = mock<Instant> {
-            on { toEpochMilli() } doReturn nowInMillis - 500
+            on { toEpochMilli() } doReturn nowInMillis + 1500
         }
         val states = mapOf(
             "key" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn failedOn
+                on { retryAfter } doReturn failedOn
                 on { request } doReturn mock()
             },
         )
@@ -181,7 +179,7 @@ class CommandsRetryManagerTest {
         }
         val states = mapOf(
             "key" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn failedOn
+                on { retryAfter } doReturn failedOn
                 on { request } doReturn mock()
             },
         )
@@ -200,7 +198,7 @@ class CommandsRetryManagerTest {
         val command = mock<MembershipAsyncRequest>()
         val states = mapOf(
             "key" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
+                on { retryAfter } doReturn now
                 on { request } doReturn command
             },
         )
