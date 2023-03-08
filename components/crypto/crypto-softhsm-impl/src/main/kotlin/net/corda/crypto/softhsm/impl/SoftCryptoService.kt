@@ -26,7 +26,6 @@ import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.KeyPairGeneratorFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
-import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
