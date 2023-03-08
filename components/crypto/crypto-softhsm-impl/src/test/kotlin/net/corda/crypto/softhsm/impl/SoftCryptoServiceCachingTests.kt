@@ -90,14 +90,9 @@ class SoftCryptoServiceCachingTests {
         val key22 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
         assertNotSame(key1direct, key2direct)
         assertNotSame(key12, key22)
-        if (cachePrivateKeys) {
-            assertSame(key11, key12)
-            assertSame(key21, key22)
-        } else {
-            assertNotSame(key11, key12)
-            assertEquals(key11, key12)
-            assertEquals(key21, key22)
-        }
+        assertNotSame(key1direct, key12)
+        assertEquals(key1direct, key12)
+        assertEquals(key2direct, key22)
         // the keys we pulled out are reconstructed from encrypted key material, so are
         // not the same objects but are equal
         if (privateKey1 != null) {
