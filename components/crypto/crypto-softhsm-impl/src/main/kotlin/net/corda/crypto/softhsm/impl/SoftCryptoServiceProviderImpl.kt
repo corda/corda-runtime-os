@@ -47,6 +47,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
+    @Reference(service = CacheFactoryImpl::class)
+    private val cacheFactoryImpl: CacheFactoryImpl
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -61,7 +63,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService, cacheFactoryImpl)
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
@@ -70,7 +72,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val wrappingKeyStore: WrappingKeyStore,
-        private val digestService: PlatformDigestService
+        private val digestService: PlatformDigestService,
+        private val cacheFactoryImpl: CacheFactoryImpl
     ) : AbstractImpl {
 
         fun getInstance(config: SmartConfig): CryptoService {
@@ -84,7 +87,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 )
             val wrappingKeyCacheConfig = wrappingKeyMapConfig.getConfig("cache")
             // TODO drop this compatibility code that supports name between KEY_MAP_TRANSIENT_NAME and if so disables caching
-            val wrappingKeyCache: Cache<String, WrappingKey> = CacheFactoryImpl().build(
+            val wrappingKeyCache: Cache<String, WrappingKey> = cacheFactoryImpl.build(
                 "HSM-Wrapping-Keys-Map",
                 Caffeine.newBuilder()
                     .expireAfterAccess(wrappingKeyCacheConfig.getLong("expireAfterAccessMins"), TimeUnit.MINUTES)
