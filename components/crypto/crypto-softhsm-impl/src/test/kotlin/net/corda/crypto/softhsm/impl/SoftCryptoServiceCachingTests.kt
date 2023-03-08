@@ -14,6 +14,7 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.jcajce.provider.symmetric.AES.Wrap
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -61,17 +62,20 @@ class SoftCryptoServiceCachingTests {
     fun `getPrivateKey should cache requested key using public key as cache key`(cachePrivateKeys: Boolean) {
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
         val wrappingKeyCache = makeWrappingKeyCache()
+        val wrappingKeyAlias = "wrapper1"
         val myCryptoService = makeSoftCryptoService(privateKeyCache, wrappingKeyCache)
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
-        myCryptoService.createWrappingKey("master-alias", true, emptyMap())
-        val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
-        val key2 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-2", "master-alias"), emptyMap())
+        myCryptoService.createWrappingKey(wrappingKeyAlias, true, emptyMap())
+        val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", wrappingKeyAlias), emptyMap())
+        val key2 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-2", wrappingKeyAlias), emptyMap())
         val privateKey1 = privateKeyCache?.getIfPresent(key1.publicKey)
         val privateKey2 = privateKeyCache?.getIfPresent(key2.publicKey)
         privateKeyCache?.invalidate(key1.publicKey)
         privateKeyCache?.invalidate(key2.publicKey)
-        val key1Spec = KeyMaterialSpec(key1.keyMaterial, "master-alias", key1.encodingVersion)
-        val key2Spec = KeyMaterialSpec(key2.keyMaterial, "master-alias", key2.encodingVersion)
+        val key1Spec = KeyMaterialSpec(key1.keyMaterial, wrappingKeyAlias, key1.encodingVersion)
+        val key2Spec = KeyMaterialSpec(key2.keyMaterial, wrappingKeyAlias, key2.encodingVersion)
+        val wrappingKey = wrappingKeyCache.getIfPresent(wrappingKeyAlias)
+        assertNotNull(wrappingKey)
         val key11 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
         val key11c = privateKeyCache?.getIfPresent(key1.publicKey)
         val key21 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
