@@ -296,7 +296,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             tagContainer(builder, "${tagPrefix}${version}")
         } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "${tagPrefix}unstable-Gecko") // not to be merged back to release/os/5.0
+            tagContainer(builder, "${tagPrefix}unstable-Gecko-Java17") // not to be merged back to release/os/5.0
             gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
         } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
