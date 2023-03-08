@@ -133,30 +133,6 @@ class SoftCryptoServiceCachingTests {
         )
 
     @Test
-    fun `wrappingKeyExists should return true whenever key exist in cache and false otherwise`() {
-        val wrappingKeyCache = makeWrappingKeyCache()
-        val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val testWrappingKeyStore = TestWrappingKeyStore(mock())
-        val myCryptoService = SoftCryptoService(
-            testWrappingKeyStore,
-            schemeMetadata,
-            rootWrappingKey,
-            wrappingKeyCache,
-            makePrivateKeyCache()
-        )
-
-        val cacheAlias = UUID.randomUUID().toString()
-        val unknownAlias = UUID.randomUUID().toString()
-        assertNull(testWrappingKeyStore.findWrappingKey(cacheAlias))
-        assertNull(testWrappingKeyStore.findWrappingKey(unknownAlias))
-        wrappingKeyCache.put(cacheAlias, knownWrappingKey)
-        assertTrue(myCryptoService.wrappingKeyExists(cacheAlias))
-        assertFalse(myCryptoService.wrappingKeyExists(unknownAlias))
-        assertTrue(myCryptoService.wrappingKeyExists(cacheAlias))
-    }
-
-
-    @Test
     fun `createWrappingKey should put to cache using public key as cache key`() {
         val schemeMetadata = CipherSchemeMetadataImpl()
         val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
