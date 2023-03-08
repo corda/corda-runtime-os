@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -162,6 +163,8 @@ class SoftCryptoServiceCachingTests {
 
         val alias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
+        val cacheAlias = UUID.randomUUID().toString()
+
         var saveCount = 0
         var findCount = 0
         val countingWrappingStore = object : TestWrappingKeyStore(mock()) {
@@ -180,43 +183,46 @@ class SoftCryptoServiceCachingTests {
             countingWrappingStore, schemeMetadata,
             rootWrappingKey, wrappingKeyCache, makePrivateKeyCache()
         )
+
+        // starting fresh, all 3 aliases are missing from both store and cache
         assertNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
+        assertNull(wrappingKeyCache.getIfPresent(cacheAlias))
+        assertNull(countingWrappingStore.findWrappingKey(alias))
+        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
+        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+
+        assertThat(findCount).isEqualTo(3)
+        assertThat(saveCount).isEqualTo(0)
+
         myCryptoService.createWrappingKey(alias, true, mapOf())
-        assertThat(findCount).isEqualTo(1) // we do a find to check for conflicts
-        myCryptoService.getWrappingKey(alias)
+
+        assertThat(findCount).isEqualTo(4) // we do a find to check for conflicts
         assertThat(saveCount).isEqualTo(1)
-        assertThat(findCount).isEqualTo(1) // but we should not do another find
-    }
 
-    @Test
-    fun `wrappingKeyExists should return true whenever key exist in cache or store and false otherwise`() {
-        val storeAlias = UUID.randomUUID().toString()
-        val cacheAlias = UUID.randomUUID().toString()
-        val unknownAlias = UUID.randomUUID().toString()
-        val wrappingKeyCache = makeWrappingKeyCache()
-        val schemaMetadata = CipherSchemeMetadataImpl()
+        // now the cache and store should have alias but not the other two
+        assertNotNull(wrappingKeyCache.getIfPresent(alias))
+        assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
+        assertNull(wrappingKeyCache.getIfPresent(cacheAlias))
+        assertNotNull(countingWrappingStore.findWrappingKey(alias))
+        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
+        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+
+        assertThat(findCount).isEqualTo(7)
+
+        assertThat(saveCount).isEqualTo(1)
+
+        // stick a key in the cache underneath the SoftCryptoService 
         val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyStore = TestWrappingKeyStore(mock())
-        val myCryptoService = SoftCryptoService(
-            wrappingKeyStore,
-            schemaMetadata,
-            rootWrappingKey,
-            wrappingKeyCache,
-            makePrivateKeyCache()
-        )
-        assertFalse(myCryptoService.wrappingKeyExists(cacheAlias))
         wrappingKeyCache.put(cacheAlias, knownWrappingKey)
-        assertFalse(myCryptoService.wrappingKeyExists(storeAlias))
-        assertTrue(myCryptoService.wrappingKeyExists(cacheAlias))
-        assertFalse(myCryptoService.wrappingKeyExists(unknownAlias))
-        wrappingKeyStore.saveWrappingKey(
-            storeAlias,
-            WrappingKeyInfo(1, "t", byteArrayOf())
-        )
-        assertTrue(myCryptoService.wrappingKeyExists(storeAlias))
-        assertFalse(myCryptoService.wrappingKeyExists(unknownAlias))
-        assertTrue(myCryptoService.wrappingKeyExists(cacheAlias))
-    }
 
+        // now the cache and store should have alias and cacheAlias
+        assertNotNull(wrappingKeyCache.getIfPresent(alias))
+        assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
+        assertNotNull(wrappingKeyCache.getIfPresent(cacheAlias))
+        assertNotNull(countingWrappingStore.findWrappingKey(alias))
+        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
+        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+    }
+    
 }
