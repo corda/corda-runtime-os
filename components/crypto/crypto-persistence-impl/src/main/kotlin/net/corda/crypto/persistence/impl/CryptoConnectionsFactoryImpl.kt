@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 @Component(service = [CryptoConnectionsFactory::class])
 class CryptoConnectionsFactoryImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
