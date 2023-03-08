@@ -200,7 +200,7 @@ class ActivateMemberHandlerTest {
         assertThat(mgmContextCapture.firstValue.items).contains(
             KeyValuePair(MemberInfoExtension.STATUS, MEMBER_STATUS_ACTIVE),
             KeyValuePair(MemberInfoExtension.MODIFIED_TIME, clock.instant().toString()),
-            KeyValuePair(MemberInfoExtension.SERIAL, (SERIAL_NUMBER + 1).toString())
+            KeyValuePair(MemberInfoExtension.SERIAL, (SERIAL_NUMBER + 2).toString())
         )
     }
 

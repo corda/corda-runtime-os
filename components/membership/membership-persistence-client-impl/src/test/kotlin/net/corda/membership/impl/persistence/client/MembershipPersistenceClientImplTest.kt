@@ -28,11 +28,13 @@ import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
+import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.preauth.PreAuthToken
@@ -1154,7 +1156,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `suspendMember returns the correct result`() {
-            mockPersistenceResponse()
+            mockPersistenceResponse(SuspendMemberResponse(mock()))
 
             val result = membershipPersistenceClient.suspendMember(
                 ourHoldingIdentity,
@@ -1223,7 +1225,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `activateMember returns the correct result`() {
-            mockPersistenceResponse()
+            mockPersistenceResponse(ActivateMemberResponse(mock()))
 
             val result = membershipPersistenceClient.activateMember(
                 ourHoldingIdentity,
@@ -1232,7 +1234,7 @@ class MembershipPersistenceClientImplTest {
                 null
             )
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
 
         @Test

@@ -63,7 +63,9 @@ internal class SuspendMemberHandler(
                     when (it.key) {
                         STATUS -> KeyValuePair(it.key, MEMBER_STATUS_SUSPENDED)
                         MODIFIED_TIME -> KeyValuePair(it.key, now.toString())
-                        SERIAL -> KeyValuePair(it.key, (request.serialNumber + 1).toString())
+                        // Optimistic force increment + calling merge on MemberInfoEntity will increment serialNumber
+                        // by 2. To match this, incrementing serial number in MGM-provided context by 2 as well.
+                        SERIAL -> KeyValuePair(it.key, (member.serialNumber + 2).toString())
                         else -> it
                     }
                 }
@@ -75,12 +77,12 @@ internal class SuspendMemberHandler(
                 MemberInfoEntity(
                     member.groupId,
                     member.memberX500Name,
-                    false,
+                    member.isPending,
                     MEMBER_STATUS_SUSPENDED,
                     now,
                     member.memberContext,
                     serializedMgmContext,
-                    request.serialNumber
+                    member.serialNumber
                 )
             )
 

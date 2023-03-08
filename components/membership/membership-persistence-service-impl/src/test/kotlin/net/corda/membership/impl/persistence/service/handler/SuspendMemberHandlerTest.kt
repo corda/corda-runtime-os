@@ -202,7 +202,7 @@ class SuspendMemberHandlerTest {
         assertThat(mgmContextCapture.firstValue.items).contains(
             KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
             KeyValuePair(MODIFIED_TIME, clock.instant().toString()),
-            KeyValuePair(SERIAL, (SERIAL_NUMBER + 1).toString())
+            KeyValuePair(SERIAL, (SERIAL_NUMBER + 2).toString())
         )
     }
 
