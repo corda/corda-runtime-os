@@ -139,7 +139,9 @@ class SoftCryptoService(
             keyPairGenerator.initialize(keySize, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        val wrappingKey = getWrappingKey(spec.masterKeyAlias)
+        val wrappingKey = wrappingKeyCache?.get(spec.masterKeyAlias, ::getWrappingKeyUncached)
+            ?: getWrappingKeyUncached(spec.masterKeyAlias)
+
         val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
         return GeneratedWrappedKey(
@@ -186,7 +188,6 @@ class SoftCryptoService(
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
-    @VisibleForTesting
     fun getWrappingKey(alias: String): WrappingKey =
         wrappingKeyCache?.get(alias, ::getWrappingKeyUncached) ?: getWrappingKeyUncached(alias)
 
