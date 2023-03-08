@@ -376,6 +376,9 @@ class SoftCryptoServiceOperationsTests {
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
 
+        val scheme = cryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
+        cryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key1", alias1), emptyMap())
+
         val key11 = cryptoService.getWrappingKey(alias1)
         assertEquals(expected1, key11)
         val key21 = cryptoService.getWrappingKey(alias2)
