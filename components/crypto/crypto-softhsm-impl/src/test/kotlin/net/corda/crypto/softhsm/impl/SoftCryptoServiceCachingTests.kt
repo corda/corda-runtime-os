@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -134,8 +135,9 @@ class SoftCryptoServiceCachingTests {
     fun `wrappingKeyExists should return true whenever key exist in cache and false otherwise`() {
         val wrappingKeyCache = makeWrappingKeyCache()
         val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val testWrappingKeyStore = TestWrappingKeyStore(mock())
         val myCryptoService = SoftCryptoService(
-            TestWrappingKeyStore(mock()),
+            testWrappingKeyStore,
             schemeMetadata,
             rootWrappingKey,
             wrappingKeyCache,
@@ -144,8 +146,8 @@ class SoftCryptoServiceCachingTests {
 
         val cacheAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
-        assertFalse(myCryptoService.wrappingKeyExists(cacheAlias))
-        assertFalse(myCryptoService.wrappingKeyExists(unknownAlias))
+        assertNull(testWrappingKeyStore.findWrappingKey(cacheAlias))
+        assertNull(testWrappingKeyStore.findWrappingKey(unknownAlias))
         wrappingKeyCache.put(cacheAlias, knownWrappingKey)
         assertTrue(myCryptoService.wrappingKeyExists(cacheAlias))
         assertFalse(myCryptoService.wrappingKeyExists(unknownAlias))
