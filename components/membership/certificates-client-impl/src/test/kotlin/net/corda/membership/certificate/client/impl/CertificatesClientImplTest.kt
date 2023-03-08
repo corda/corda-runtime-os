@@ -102,12 +102,12 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.importCertificates(CertificateUsage.RPC_API_TLS, null, "alias", "certificate")
+            client.importCertificates(CertificateUsage.REST_TLS, null, "alias", "certificate")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        CertificateUsage.RPC_API_TLS,
+                        CertificateUsage.REST_TLS,
                         null,
                         ImportCertificateRpcRequest(
                             "alias",
