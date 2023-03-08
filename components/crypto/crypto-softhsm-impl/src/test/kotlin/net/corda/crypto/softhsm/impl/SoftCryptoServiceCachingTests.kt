@@ -78,12 +78,16 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(wrappingKey)
         val key11 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
         val key11c = privateKeyCache?.getIfPresent(key1.publicKey)
+        val key1direct = wrappingKey.unwrap(key1Spec.keyMaterial)
+        val key2direct = wrappingKey.unwrap(key2Spec.keyMaterial)
         val key21 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
         val key21c = privateKeyCache?.getIfPresent(key2.publicKey)
         if (cachePrivateKeys) {
             assertEquals(key11, key11c)
             assertEquals(key21, key21c)
         }
+        assertEquals(key11, key1direct)
+        assertEquals(key21, key2direct)
         val key12 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
         val key22 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
         assertNotSame(key11, key21)
@@ -107,7 +111,7 @@ class SoftCryptoServiceCachingTests {
             assertEquals(key21, privateKey2)
         }
 
-        Assertions.assertThat(unwrapCount.get()).isEqualTo(if (cachePrivateKeys) 2 else 4)
+        Assertions.assertThat(unwrapCount.get()).isEqualTo(if (cachePrivateKeys) 4 else 6)
     }
 
 
