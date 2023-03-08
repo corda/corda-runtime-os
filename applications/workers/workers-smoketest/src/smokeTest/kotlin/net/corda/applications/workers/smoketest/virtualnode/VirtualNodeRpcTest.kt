@@ -32,6 +32,8 @@ import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCA
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V3
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V4
 import net.corda.e2etest.utilities.getFlowStatus
 
 /**
@@ -662,12 +664,14 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(110)
-    fun `can upload v1 and v2 of a CPI with the same name`() {
+    fun `can upload multiple versions of a CPI with the same name`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
+            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V3, upgradeTestingCpiName, "v3")
+            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V4, upgradeTestingCpiName, "v4")
         }
     }
 
@@ -715,7 +719,7 @@ class VirtualNodeRpcTest {
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
             val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
 
-            val statusAfterUpgrade = getVirtualNodeOperationStatus(requestId!!)
+            val statusAfterUpgrade = getVirtualNodeOperationStatus(requestId)
             val operationState = statusAfterUpgrade["response"].single()["state"].textValue()
             assertThat(operationState).isIn("COMPLETED", "IN_PROGRESS")
 
@@ -741,9 +745,54 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Test
+    @Order(115)
+    fun `upgrading to a CPI with a corrupt changelog writes failed operation and removes operation in progress`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
+
+            val cpiV3 = getCpiChecksum(upgradeTestingCpiName, "v3")
+            val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV3)
+
+            eventuallyAssertVNodeOperationState(requestId, "LIQUIBASE_DIFF_CHECK_FAILED")
+        }
+    }
+
+    @Test
+    @Order(116)
+    fun `can recover a failed virtual node upgrade due to corrupt XML changeset`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val cpiV4 = getCpiChecksum(upgradeTestingCpiName, "v4")
+            val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV4)
+
+            eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v4")
+            awaitVirtualNodeOperationCompletion(bobHoldingId)
+
+            eventuallyAssertVNodeOperationState(requestId, "COMPLETED")
+        }
+    }
+
+    @Test
+    @Order(117)
+    fun `can run flows of virtual node after recovering from failed upgrade`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
+
+            runReturnAStringFlow("upgrade-test-v4", bobHoldingId)
+            runSimplePersistenceCheckFlow("Could persist egg", bobHoldingId)
+
+        }
+    }
+
     private fun ClusterBuilder.triggerVirtualNodeUpgrade(
         virtualNodeShortHash: String, targetCpiFileChecksum: String
-    ): String? {
+    ): String {
         val vNodeJson = assertWithRetry {
             command { vNodeUpgrade(virtualNodeShortHash, targetCpiFileChecksum) }
             condition { it.code == 202 }
@@ -761,15 +810,28 @@ class VirtualNodeRpcTest {
         return operationStatus
     }
 
+    private fun ClusterBuilder.eventuallyAssertVNodeOperationState(
+        requestId: String,
+        expectedState: String
+    ): JsonNode {
+        val operationStatus = assertWithRetry {
+            command { getVNodeOperationStatus(requestId) }
+            condition {
+                val response = it.toJson()["response"]
+                it.code == 200 && !response.isEmpty && response.first()["state"].textValue() == expectedState
+            }
+            failMessage("Could not assert a virtual node operation with state: $expectedState")
+        }.toJson()
+        return operationStatus
+    }
+
     private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
         virtualNodeShortHash: String, cpiName: String, cpiVersion: String
     ) = assertWithRetry {
         timeout(Duration.of(30, ChronoUnit.SECONDS))
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
-
             response.code == 200 &&
-                    response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
                     response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&
                     response.toJson()["cpiIdentifier"]["cpiVersion"].textValue().equals(cpiVersion)
         }

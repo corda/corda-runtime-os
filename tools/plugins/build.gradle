@@ -134,7 +134,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('cliBaseTag')) {
         baseImageTag = cliBaseTag
     } else {
-        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable-network" // not for merging back to release/os/5.0
+        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
 
     if (project.hasProperty('useDockerDaemon')) {

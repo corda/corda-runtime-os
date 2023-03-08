@@ -8,7 +8,7 @@ import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunksCombined
 import net.corda.chunking.Constants.Companion.SECURE_HASH_VALIDATION_ERROR
 import net.corda.chunking.RequestId
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException

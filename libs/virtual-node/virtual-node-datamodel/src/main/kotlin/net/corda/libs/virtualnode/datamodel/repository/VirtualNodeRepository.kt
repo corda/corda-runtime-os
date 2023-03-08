@@ -10,6 +10,7 @@ import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 /**
@@ -30,7 +31,7 @@ interface VirtualNodeRepository {
      * Find a virtual node operation by the given operation requestId
      * @throws VirtualNodeOperationNotFoundException
      */
-    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto>
+    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto>
 
     /**
      * Persist a holding identity with the given holdingId and CPI.
@@ -67,37 +68,25 @@ interface VirtualNodeRepository {
     /**
      * Complete an in-progress operation on a virtual node.
      */
-    fun completeOperation(
+    fun completedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String
     ): VirtualNodeInfo
 
     /**
-     * Create a virtual node operation holding the details of a rejected request.
+     * Given a virtual node identified by the [holdingIdentityShortHash], remove any operation in progress associated with this virtual
+     * node and update the operation record with failure details.
      */
     @Suppress("LongParameterList")
-    fun rejectedOperation(
+    fun failedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
         serializedRequest: String,
         requestTimestamp: Instant,
         reason: String,
-        operationType: VirtualNodeOperationType
-    )
-
-    /**
-     * Update a virtual node operation with failure details caused by failure to run migrations.
-     */
-    @Suppress("LongParameterList")
-    fun failedMigrationsOperation(
-        entityManager: EntityManager,
-        holdingIdentityShortHash: String,
-        requestId: String,
-        serializedRequest: String,
-        requestTimestamp: Instant,
-        reason: String,
-        operationType: VirtualNodeOperationType
-    )
+        operationType: VirtualNodeOperationType,
+        state: VirtualNodeOperationStateDto
+    ): VirtualNodeInfo
 }
 

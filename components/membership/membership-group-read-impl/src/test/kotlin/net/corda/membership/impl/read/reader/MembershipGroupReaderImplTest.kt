@@ -1,8 +1,8 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache

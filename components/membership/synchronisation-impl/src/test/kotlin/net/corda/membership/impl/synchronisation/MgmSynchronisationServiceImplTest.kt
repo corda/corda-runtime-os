@@ -1,7 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient

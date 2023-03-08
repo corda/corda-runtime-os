@@ -16,6 +16,7 @@ dependencies {
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
     implementation project(":libs:crypto:crypto-utils")
     
     api project(':libs:crypto:cipher-suite')
