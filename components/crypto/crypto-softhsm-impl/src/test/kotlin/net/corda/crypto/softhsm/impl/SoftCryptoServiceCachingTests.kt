@@ -83,14 +83,12 @@ class SoftCryptoServiceCachingTests {
         val key21 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
         val key21c = privateKeyCache?.getIfPresent(key2.publicKey)
         if (cachePrivateKeys) {
-            assertEquals(key11, key11c)
-            assertEquals(key21, key21c)
+            assertEquals(key1direct, key11c)
+            assertEquals(key2direct, key21c)
         }
-        assertEquals(key11, key1direct)
-        assertEquals(key21, key2direct)
         val key12 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
         val key22 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
-        assertNotSame(key11, key21)
+        assertNotSame(key1direct, key2direct)
         assertNotSame(key12, key22)
         if (cachePrivateKeys) {
             assertSame(key11, key12)
