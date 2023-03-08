@@ -530,11 +530,13 @@ class MembershipPersistenceTest {
     fun `persistGroupPolicy will increase the version every persistance`() {
         val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
         val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1)
+            .execute()
         assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val version1 = (persisted1 as? MembershipPersistenceResult.Success<Int>)?.payload !!
 
         val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
         val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2)
+            .execute()
         assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val version2 = (persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload
         assertThat(version2).isEqualTo(version1 + 1)
@@ -546,6 +548,7 @@ class MembershipPersistenceTest {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
         }
         val persisted = membershipPersistenceClientWrapper.persistGroupParametersInitialSnapshot(viewOwningHoldingIdentity)
+            .execute()
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.use {
@@ -589,6 +592,7 @@ class MembershipPersistenceTest {
             MODIFIED_TIME_KEY to clock.instant().toString()
         ))
         val persisted = membershipPersistenceClientWrapper.persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
+            .execute()
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.use {
@@ -667,6 +671,7 @@ class MembershipPersistenceTest {
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+            .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
@@ -751,6 +756,7 @@ class MembershipPersistenceTest {
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+            .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
@@ -841,6 +847,7 @@ class MembershipPersistenceTest {
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+            .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
@@ -893,7 +900,7 @@ class MembershipPersistenceTest {
                     mgmContext.toSortedMap()
                 )
             )
-        )
+        ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -1296,7 +1303,7 @@ class MembershipPersistenceTest {
                     mgmContext.toSortedMap()
                 )
             )
-        )
+        ).execute()
     }
 
     private fun persistRequest(

@@ -28,26 +28,26 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ) = MembershipPersistenceResult.Success(1)
+    ): MembershipPersistenceOperation<Int> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(1))
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceOperation<KeyValuePairList> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(KeyValuePairList()))
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ): MembershipPersistenceResult<GroupParameters> = MembershipPersistenceResult.Success(groupParameters)
+    ): MembershipPersistenceOperation<GroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(groupParameters))
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceOperation<KeyValuePairList> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(KeyValuePairList()))
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -58,7 +58,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceResult<MemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<MemberInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun setMemberAndRegistrationRequestAsDeclined(
         viewOwningIdentity: HoldingIdentity,
@@ -76,12 +76,12 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun mutualTlsRemoveCertificateFromAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun generatePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
@@ -89,31 +89,30 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ownerX500Name: MemberX500Name,
         ttl: Instant?,
         remarks: String?,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun consumePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         ownerX500Name: MemberX500Name,
         preAuthTokenId: UUID
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun revokePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
         remarks: String?,
-    ): MembershipPersistenceResult<PreAuthToken> = MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<PreAuthToken> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleParams: ApprovalRuleParams,
-    ): MembershipPersistenceResult<ApprovalRuleDetails> = MembershipPersistenceResult.Failure("Unsupported")
-
+    ): MembershipPersistenceOperation<ApprovalRuleDetails> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
         ruleType: ApprovalRuleType,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     private class MembershipPersistenceOperationImpl<T>(
         private val results: MembershipPersistenceResult<T>

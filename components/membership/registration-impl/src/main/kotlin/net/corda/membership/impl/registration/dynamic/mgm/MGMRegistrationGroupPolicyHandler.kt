@@ -25,7 +25,7 @@ internal class MGMRegistrationGroupPolicyHandler(
         val groupPolicyPersistenceResult = membershipPersistenceClient.persistGroupPolicy(
             holdingIdentity,
             groupPolicy,
-        )
+        ).execute()
         if (groupPolicyPersistenceResult is MembershipPersistenceResult.Failure) {
             throw MGMRegistrationGroupPolicyHandlingException(
                 "Registration failed, persistence error. Reason: ${groupPolicyPersistenceResult.errorMsg}"

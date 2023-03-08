@@ -42,7 +42,6 @@ import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -239,8 +238,12 @@ class MemberSynchronisationServiceImplTest {
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val verifier = mock<Verifier>()
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doAnswer {
-            MembershipPersistenceResult.Success(it.getArgument<GroupParameters>(1))
+        on { persistGroupParameters(any(), any()) } doAnswer { invocation ->
+            mock {
+                on {
+                    getOrThrow()
+                } doReturn invocation.getArgument(1)
+            }
         }
     }
     private val groupParameters = mock<GroupParameters>()
@@ -349,7 +352,7 @@ class MemberSynchronisationServiceImplTest {
                 any(),
                 capturedPersistedGroupParameters.capture()
             )
-        ).thenReturn(MembershipPersistenceResult.Success(mock()))
+        ).thenReturn(mock())
 
         synchronisationService.processMembershipUpdates(updates)
 

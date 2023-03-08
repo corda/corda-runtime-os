@@ -7,6 +7,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy.P2PParameters
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -52,11 +53,14 @@ class MtlsMgmClientCertificateKeeperTest {
         on { getGroupReader(mgmHoldingIdentity) } doReturn groupReader
     }
     private val createdPropertyMap = mock<LayeredPropertyMap>()
+    private val operation = mock<MembershipPersistenceOperation<Int>> {
+        on { execute() } doReturn MembershipPersistenceResult.Success(2)
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupPolicy(
             mgmHoldingIdentity,
             createdPropertyMap,
-        ) } doReturn MembershipPersistenceResult.Success(2)
+        ) } doReturn operation
     }
     private val savedGroupPolicy = mock<LayeredPropertyMap> {
         on { entries } doReturn mapOf("hello" to "world").entries
@@ -118,17 +122,14 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `addMgmCertificateSubjectToGroupPolicy will throw an exception if persist fails`() {
-        whenever(membershipPersistenceClient.persistGroupPolicy(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("oops"))
+    fun `addMgmCertificateSubjectToGroupPolicy will invoke the persistant operation`() {
+        keeper.addMgmCertificateSubjectToGroupPolicy(
+            mgmHoldingIdentity,
+            groupProperty,
+            "certificate",
+        )
 
-        assertThrows<MembershipPersistenceResult.PersistenceRequestException> {
-            keeper.addMgmCertificateSubjectToGroupPolicy(
-                mgmHoldingIdentity,
-                groupProperty,
-                "certificate",
-            )
-        }
+        verify(operation).getOrThrow()
     }
 
     @Test

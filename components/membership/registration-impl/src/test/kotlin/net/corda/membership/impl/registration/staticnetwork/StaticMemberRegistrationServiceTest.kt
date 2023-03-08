@@ -166,6 +166,13 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(daisy) } doReturn groupPolicyWithStaticNetwork
         on { getGroupPolicy(eric) } doReturn groupPolicyWithEmptyStaticNetwork
     }
+    private class SuccessOperation<T>(
+        private val result: T,
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = MembershipPersistenceResult.Success(result)
+
+        override fun createAsyncCommands() = emptyList<Record<*, *>>()
+    }
 
     private val mockPublisher: Publisher = mock()
 
@@ -252,7 +259,7 @@ class StaticMemberRegistrationServiceTest {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mock())
+        on { persistGroupParameters(any(), any()) } doReturn SuccessOperation(mock())
         on { persistRegistrationRequest(any(), any()) } doReturn persistRegistrationRequestOperation
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
@@ -435,7 +442,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     status.capture()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(mock()))
+            ).doReturn(SuccessOperation(mock()))
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
             setUpPublisher()
@@ -790,7 +797,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     any()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(mock()))
+            ).doReturn(SuccessOperation(mock()))
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
             setUpPublisher()

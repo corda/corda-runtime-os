@@ -24,7 +24,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -177,7 +176,7 @@ class RegistrationProcessorTest {
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn operation
             on { setRegistrationRequestStatus(any(), any(), any(), anyOrNull()) } doReturn operation
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistMemberInfo(any(), any()) } doReturn operation
         }
         membershipQueryClient = mock {
             on {

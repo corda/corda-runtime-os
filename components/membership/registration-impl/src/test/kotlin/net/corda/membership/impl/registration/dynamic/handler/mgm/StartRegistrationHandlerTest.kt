@@ -371,8 +371,17 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member info fails to persist`() {
+        val failure = object: MembershipPersistenceOperation<Unit> {
+            override fun execute(): MembershipPersistenceResult<Unit> {
+                return MembershipPersistenceResult.Failure("error")
+            }
+
+            override fun createAsyncCommands(): Collection<Record<*, *>> {
+                return emptyList()
+            }
+        }
         whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
-            MembershipPersistenceResult.Failure("error")
+            failure
         )
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull

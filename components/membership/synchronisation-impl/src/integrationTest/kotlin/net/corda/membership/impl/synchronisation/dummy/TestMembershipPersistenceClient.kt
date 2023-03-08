@@ -13,6 +13,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -58,7 +59,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -68,14 +69,14 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap
-    ): MembershipPersistenceResult<Int> {
+    ): MembershipPersistenceOperation<Int> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<KeyValuePairList> {
+    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceOperation<KeyValuePairList> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -85,15 +86,21 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<GroupParameters> {
+    ): MembershipPersistenceOperation<GroupParameters> {
         persistedGroupParameters = groupParameters
-        return MembershipPersistenceResult.Success(groupParameters)
+        return object : MembershipPersistenceOperation<GroupParameters> {
+            override fun execute() = MembershipPersistenceResult.Success(groupParameters)
+
+            override fun createAsyncCommands(): Collection<Record<*, *>> {
+                throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+            }
+        }
     }
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceOperation<KeyValuePairList> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -114,7 +121,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String
-    ): MembershipPersistenceResult<MemberInfo> {
+    ): MembershipPersistenceOperation<MemberInfo> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -146,7 +153,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity, ruleParams: ApprovalRuleParams
-    ): MembershipPersistenceResult<ApprovalRuleDetails> {
+    ): MembershipPersistenceOperation<ApprovalRuleDetails> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -155,7 +162,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity, ruleId: String, ruleType: ApprovalRuleType
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

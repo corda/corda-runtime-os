@@ -35,6 +35,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -169,7 +170,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn Operation(MembershipPersistenceResult.success())
 
         on {
             persistRegistrationRequest(any(), any())
@@ -371,7 +372,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             membershipPersistenceClient.persistMemberInfo(
                 eq(holdingIdentity), eq(listOf(memberInfo))
             )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
+        ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
             mgmRegistrationMemberInfoHandler.buildAndPersist(
@@ -534,6 +535,15 @@ class MGMRegistrationMemberInfoHandlerTest {
                 holdingIdentity,
                 validTestContext
             )
+        }
+    }
+    private class Operation(
+        private val value: MembershipPersistenceResult<Unit>
+    ) : MembershipPersistenceOperation<Unit> {
+        override fun execute() = value
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> {
+            return emptyList()
         }
     }
 }

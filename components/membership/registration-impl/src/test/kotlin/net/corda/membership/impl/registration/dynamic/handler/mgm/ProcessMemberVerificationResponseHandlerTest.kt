@@ -26,6 +26,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -268,13 +269,20 @@ class ProcessMemberVerificationResponseHandlerTest {
         private fun mockConsumeToken(
             result: MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
         ) {
+            val operation = object : MembershipPersistenceOperation<Unit> {
+                override fun execute(): MembershipPersistenceResult<Unit> = result
+
+                override fun createAsyncCommands(): Collection<Record<*, *>> {
+                    return emptyList()
+                }
+            }
             whenever(
                 membershipPersistenceClient.consumePreAuthToken(
                     mgm.toCorda(),
                     member.toCorda().x500Name,
                     preAuthToken
                 )
-            ).doReturn(result)
+            ).doReturn(operation)
         }
 
         private fun mockPreAuthTokenInRegistrationContext(

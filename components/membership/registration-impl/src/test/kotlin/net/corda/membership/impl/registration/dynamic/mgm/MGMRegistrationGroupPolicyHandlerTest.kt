@@ -2,7 +2,9 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -33,14 +35,23 @@ class MGMRegistrationGroupPolicyHandlerTest {
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock {
         on { createMap(groupPolicyContextCaptor.capture()) } doReturn mockLayeredPropertyMap
     }
+    private class Operation<T>(
+        private val value: MembershipPersistenceResult<T>
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = value
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> {
+            return emptyList()
+        }
+    }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistGroupPolicy(eq(testHoldingIdentity), eq(mockLayeredPropertyMap))
-        } doReturn MembershipPersistenceResult.Success(0)
+        } doReturn Operation(MembershipPersistenceResult.Success(0))
 
         on {
             persistGroupParametersInitialSnapshot(eq(testHoldingIdentity))
-        } doReturn MembershipPersistenceResult.Success(mock())
+        } doReturn Operation(MembershipPersistenceResult.Success(mock()))
     }
 
     private val testContext: Map<String, String> = mapOf(
@@ -82,7 +93,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
     fun `Failed group policy persistence is rethrown as group policy handling exception`() {
         whenever (
             membershipPersistenceClient.persistGroupPolicy(any(), any())
-        ) doReturn MembershipPersistenceResult.Failure("")
+        ) doReturn Operation(MembershipPersistenceResult.Failure(""))
 
         assertThrows<MGMRegistrationGroupPolicyHandlingException> {
             mgmRegistrationGroupPolicyHandler.buildAndPersist(testHoldingIdentity, testContext)

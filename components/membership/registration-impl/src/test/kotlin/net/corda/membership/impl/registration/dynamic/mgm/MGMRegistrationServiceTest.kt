@@ -68,6 +68,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -191,16 +192,25 @@ class MGMRegistrationServiceTest {
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
+    private class Operation<T>(
+        private val value: MembershipPersistenceResult<T>
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = value
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> {
+            return emptyList()
+        }
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
-        on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
+        on { persistMemberInfo(any(), any()) } doReturn Operation(MembershipPersistenceResult.Success(Unit))
+        on { persistGroupPolicy(any(), any()) } doReturn Operation(MembershipPersistenceResult.Success(2))
         on {
             persistRegistrationRequest(
                 eq(mgm),
                 statusUpdate.capture()
             )
         } doReturn persistRegistrationRequestOperation
-        on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
+        on { persistGroupParametersInitialSnapshot(any()) } doReturn Operation(MembershipPersistenceResult.Success(mockGroupParametersList))
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -371,7 +381,7 @@ class MGMRegistrationServiceTest {
                         eq(mgm),
                         groupProperties.capture(),
                     )
-            ).thenReturn(MembershipPersistenceResult.Success(3))
+            ).thenReturn(Operation(MembershipPersistenceResult.Success(3)))
 
             registrationService.register(registrationRequest, mgm, properties)
 
@@ -458,7 +468,7 @@ class MGMRegistrationServiceTest {
             postUpEvent()
             registrationService.start()
             whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
-                .doReturn(MembershipPersistenceResult.Failure("Nop"))
+                .doReturn(Operation(MembershipPersistenceResult.Failure("Nop")))
 
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, properties)

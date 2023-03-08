@@ -68,18 +68,18 @@ internal class ApproveRegistrationHandler(
                 )
             }
 
-            val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
+            val memberInfo = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
                 viewOwningIdentity = approvedBy.toCorda(),
                 approvedMember = approvedMember.toCorda(),
                 registrationRequestId = registrationId,
-            )
-            val memberInfo = persistState.getOrThrow()
+            ).getOrThrow()
 
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
             // Otherwise, retrieve epoch of current group parameters from the group reader.
             val epoch = if (memberInfo.notaryDetails != null) {
                 val mgmHoldingIdentity = mgm.holdingIdentity
                 val result = membershipPersistenceClient.addNotaryToGroupParameters(mgmHoldingIdentity, memberInfo)
+                    .execute()
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +

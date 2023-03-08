@@ -124,7 +124,8 @@ internal class StartRegistrationHandler(
             validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
             // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo))
+                .execute().also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to persist pending member info. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
