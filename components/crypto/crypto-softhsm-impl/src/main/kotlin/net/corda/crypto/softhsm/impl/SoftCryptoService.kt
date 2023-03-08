@@ -62,7 +62,10 @@ class SoftCryptoService(
     private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     private val digestService: PlatformDigestService = PlatformDigestServiceImpl(schemeMetadata),
-    private val keyPairGeneratorFactory: KeyPairGeneratorFactory = JavaKeyPairGenerator()
+    private val keyPairGeneratorFactory: KeyPairGeneratorFactory = JavaKeyPairGenerator(),
+    private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
+        WrappingKeyImpl.generateWrappingKey(it)
+    }
 ) : CryptoService {
     private var wrapCounter = AtomicInteger()
     private var unwrapCounter = AtomicInteger()
@@ -89,7 +92,7 @@ class SoftCryptoService(
             logger.debug { "Not creating wrapping key for '$masterKeyAlias' since a key is available" }
             return
         }
-        val wrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val wrappingKey = wrappingKeyFactory(schemeMetadata)
         val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)

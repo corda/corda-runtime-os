@@ -101,7 +101,9 @@ class SoftCryptoServiceCachingTests {
             assertNotSame(key22, privateKey2)
             assertEquals(key21, privateKey2)
         }
+
         Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(if (cachePrivateKeys) 2 else 4)
+        //Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(unwrapCount.get())
     }
 
 
