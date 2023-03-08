@@ -161,6 +161,7 @@ class SoftCryptoServiceCachingTests {
         val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
         val alias = UUID.randomUUID().toString()
+        val unknownAlias = UUID.randomUUID().toString()
         var saveCount = 0
         var findCount = 0
         val countingWrappingStore = object : TestWrappingKeyStore(mock()) {
@@ -174,10 +175,13 @@ class SoftCryptoServiceCachingTests {
                 return super.findWrappingKey(alias)
             }
         }
+        val wrappingKeyCache = makeWrappingKeyCache()
         val myCryptoService = SoftCryptoService(
             countingWrappingStore, schemeMetadata,
-            rootWrappingKey, makeWrappingKeyCache(), makePrivateKeyCache()
+            rootWrappingKey, wrappingKeyCache, makePrivateKeyCache()
         )
+        assertNull(wrappingKeyCache.getIfPresent(alias))
+        assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         myCryptoService.createWrappingKey(alias, true, mapOf())
         assertThat(findCount).isEqualTo(1) // we do a find to check for conflicts
         myCryptoService.getWrappingKey(alias)
@@ -201,9 +205,7 @@ class SoftCryptoServiceCachingTests {
             wrappingKeyCache,
             makePrivateKeyCache()
         )
-        assertFalse(myCryptoService.wrappingKeyExists(storeAlias))
         assertFalse(myCryptoService.wrappingKeyExists(cacheAlias))
-        assertFalse(myCryptoService.wrappingKeyExists(unknownAlias))
         wrappingKeyCache.put(cacheAlias, knownWrappingKey)
         assertFalse(myCryptoService.wrappingKeyExists(storeAlias))
         assertTrue(myCryptoService.wrappingKeyExists(cacheAlias))
