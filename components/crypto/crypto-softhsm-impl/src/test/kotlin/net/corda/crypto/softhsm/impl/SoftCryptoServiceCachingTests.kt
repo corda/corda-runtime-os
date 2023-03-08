@@ -7,6 +7,7 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
@@ -35,7 +36,15 @@ import kotlin.test.assertTrue
 
 class SoftCryptoServiceCachingTests {
     val schemeMetadata = CipherSchemeMetadataImpl()
-    val rootWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+
+//    class CountingWrappingKey(
+//        val key: WrappingKey, private var wrapCount: Int = 0, private var unwrapCount: Int = 0
+//    ) :
+//        WrappingKey {
+//
+//    }
+
+    val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
     fun makePrivateKeyCache(): Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
@@ -121,7 +130,7 @@ class SoftCryptoServiceCachingTests {
     @Test
     fun `wrappingKeyExists should return true whenever key exist in cache and false otherwise`() {
         val wrappingKeyCache = makeWrappingKeyCache()
-        val knownWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val myCryptoService = SoftCryptoService(
             TestWrappingKeyStore(mock()),
             schemeMetadata,
@@ -144,7 +153,7 @@ class SoftCryptoServiceCachingTests {
     @Test
     fun `createWrappingKey should put to cache using public key as cache key`() {
         val schemeMetadata = CipherSchemeMetadataImpl()
-        val rootWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
         val alias = UUID.randomUUID().toString()
         var saveCount = 0
@@ -178,7 +187,7 @@ class SoftCryptoServiceCachingTests {
         val unknownAlias = UUID.randomUUID().toString()
         val wrappingKeyCache = makeWrappingKeyCache()
         val schemaMetadata = CipherSchemeMetadataImpl()
-        val knownWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyStore = TestWrappingKeyStore(mock())
         val myCryptoService = SoftCryptoService(
             wrappingKeyStore,

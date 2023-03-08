@@ -12,6 +12,7 @@ import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
@@ -50,8 +51,8 @@ private val schemeMetadata = CipherSchemeMetadataImpl()
 class SoftCryptoServiceOperationsTests {
     companion object {
         private val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        private val rootWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
-        private val knownWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
         private val wrappingKeyStore = TestWrappingKeyStore(
@@ -350,8 +351,8 @@ class SoftCryptoServiceOperationsTests {
 
     @Test
     fun `getWrappingKey request key using alias without caching`() {
-        val expected1 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val expected2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val expected1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val expected2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
         val alias2 = UUID.randomUUID().toString()
         val info1 = WrappingKeyInfo(

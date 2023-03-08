@@ -204,7 +204,7 @@ class TestServicesFactory {
         }
     }
 
-    val rootWrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+    val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(

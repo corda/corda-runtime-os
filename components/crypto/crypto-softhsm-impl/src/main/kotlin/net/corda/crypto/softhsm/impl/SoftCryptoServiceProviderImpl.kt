@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
@@ -78,7 +79,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             val wrappingKeyMapConfig = config.getConfig("wrappingKeyMap")
             val rootWrappingKey =
-                WrappingKey.derive(
+                WrappingKeyImpl.derive(
                     schemeMetadata,
                     wrappingKeyMapConfig.getString("salt"),
                     wrappingKeyMapConfig.getString("passphrase")

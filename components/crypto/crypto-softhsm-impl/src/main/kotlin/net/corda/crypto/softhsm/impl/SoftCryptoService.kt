@@ -18,6 +18,7 @@ import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.CordaSecureRandomService.Companion.algorithm
 import net.corda.crypto.impl.SignatureInstances
@@ -88,7 +89,7 @@ class SoftCryptoService(
             logger.debug { "Not creating wrapping key for '$masterKeyAlias' since a key is available" }
             return
         }
-        val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val wrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
