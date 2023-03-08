@@ -1,6 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -12,7 +11,6 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -42,7 +40,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.security.PublicKey
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -370,8 +367,14 @@ class SoftCryptoServiceOperationsTests {
             expected2.algorithm,
             rootWrappingKey.wrap(expected2)
         )
+        val key1Missing = wrappingKeyCache.getIfPresent(alias1)
+        assertNull(key1Missing)
+
         wrappingKeyStore.saveWrappingKey(alias1, info1)
         wrappingKeyStore.saveWrappingKey(alias2, info2)
+
+        val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
+        assertNull(key1StillMissing)
 
         val key11 = cryptoService.getWrappingKey(alias1)
         assertEquals(expected1, key11)
