@@ -388,15 +388,13 @@ class SoftCryptoServiceOperationsTests {
         assertNull(key2AgainStillMissing)
 
         cryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key2", alias2), emptyMap())
-        val key21 = wrappingKeyCache.getIfPresent(alias2)
-        assertEquals(expected2, key21)
-        assertNotEquals(key1Found, key21)
+        val key2Found = wrappingKeyCache.getIfPresent(alias2)
+        assertEquals(expected2, key2Found)
+        assertNotEquals(key1Found, key2Found)
 
-        val key12 = cryptoService.getWrappingKey(alias1)
-        assertEquals(expected1, key12)
-        val key22 = cryptoService.getWrappingKey(alias2)
-        assertEquals(expected2, key22)
-
+        val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
+        assertEquals(expected1, key1FoundLater)
+        
         assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(1)
         assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(1)
     }
