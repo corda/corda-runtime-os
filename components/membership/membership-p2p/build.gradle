@@ -17,7 +17,7 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-config-schema'
 
-    implementation project(':libs:chunking:chunking-core')
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:layered-property-map')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:messaging:messaging')

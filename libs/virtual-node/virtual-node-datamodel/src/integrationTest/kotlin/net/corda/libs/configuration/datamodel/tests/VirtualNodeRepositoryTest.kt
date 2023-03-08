@@ -30,6 +30,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.streams.toList
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
@@ -145,7 +146,7 @@ class VirtualNodeRepositoryTest {
         assertThat(virtualNodeOperation).isNotEmpty
         assertNotNull(virtualNodeOperation[0].operationType)
         assertNotNull(virtualNodeOperation[0].state)
-        assertEquals(virtualNodeOperation[0].requestData.toString(), "data")
+        assertEquals(virtualNodeOperation[0].requestData, "data")
     }
 
     @Test
@@ -301,7 +302,7 @@ class VirtualNodeRepositoryTest {
         val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
 
         entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().completeOperation(it, vnode.holdingIdentityId)
+            VirtualNodeRepositoryImpl().completedOperation(it, vnode.holdingIdentityId)
         }
 
         val foundEntity = entityManagerFactory.createEntityManager().transaction {
@@ -334,14 +335,15 @@ class VirtualNodeRepositoryTest {
         val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
 
         entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().failedMigrationsOperation(
+            VirtualNodeRepositoryImpl().failedOperation(
                 it,
                 vnode.holdingIdentityId,
                 requestId,
                 "data",
                 Instant.now(),
                 "Migrations didn't go so well",
-                VirtualNodeOperationType.UPGRADE
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.MIGRATIONS_FAILED
             )
         }
 
@@ -362,5 +364,50 @@ class VirtualNodeRepositoryTest {
         assertThat(foundOperation.state).isEqualTo(VirtualNodeOperationState.MIGRATIONS_FAILED)
         assertThat(foundOperation.latestUpdateTimestamp).isNotNull
         assertThat(foundOperation.errors).isEqualTo("Migrations didn't go so well")
+    }
+
+    @Test
+    fun `reject upgrade with validation error`() {
+        val signerSummaryHash = TestRandom.secureHash()
+        val testName = "Testing ${UUID.randomUUID()}"
+        val requestId = UUID.randomUUID().toString()
+
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
+
+        entityManagerFactory.createEntityManager().transaction {
+            VirtualNodeRepositoryImpl().failedOperation(
+                it,
+                vnode.holdingIdentityId,
+                requestId,
+                "data",
+                Instant.now(),
+                "validation failed",
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.VALIDATION_FAILED
+            )
+        }
+
+        val foundEntity = entityManagerFactory.createEntityManager().transaction {
+            it.find(VirtualNodeEntity::class.java, vnode.holdingIdentityId)
+        }
+
+        assertThat(foundEntity).isNotNull
+        assertThat(foundEntity.operationInProgress).isNull()
+
+        val foundOperation = entityManagerFactory.createEntityManager().transaction {
+            it.createQuery(
+                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId",
+                VirtualNodeOperationEntity::class.java
+            )
+                .setParameter("requestId", requestId)
+                .singleResult
+        }
+
+        assertThat(foundOperation).isNotNull
+        assertThat(foundOperation.requestId).isEqualTo(requestId)
+        assertThat(foundOperation.data).isEqualTo("data")
+        assertThat(foundOperation.state).isEqualTo(VirtualNodeOperationState.VALIDATION_FAILED)
+        assertThat(foundOperation.latestUpdateTimestamp).isNotNull
+        assertThat(foundOperation.errors).isEqualTo("validation failed")
     }
 }

@@ -138,21 +138,6 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceOperation<MemberInfo>
 
     /**
-     * Set a member and registration request as declined
-     *
-     * @param viewOwningIdentity The holding identity of the owner of the view of data.
-     * @param declinedMember The member that had been declined
-     * @param registrationRequestId The ID of the registration request
-     *
-     * @return membership persistence operation.
-     */
-    fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceOperation<Unit>
-
-    /**
      * Set the status of an existing registration request.
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.

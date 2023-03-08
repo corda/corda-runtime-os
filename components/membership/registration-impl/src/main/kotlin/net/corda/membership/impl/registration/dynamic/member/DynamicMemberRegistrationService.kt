@@ -299,7 +299,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
-                    memberSignature
+                    memberSignature,
+                    true
                 )
 
                 val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
@@ -347,6 +348,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
+                        isPending = true
                     )
                 ).createAsyncCommands()
 

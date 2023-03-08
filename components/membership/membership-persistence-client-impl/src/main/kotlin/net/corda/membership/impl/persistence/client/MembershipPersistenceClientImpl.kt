@@ -21,7 +21,6 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
-import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
@@ -212,6 +211,7 @@ class MembershipPersistenceClientImpl(
                         registrationId,
                         memberContext,
                         signature,
+                        isPending
                     )
                 }
             )
@@ -237,21 +237,6 @@ class MembershipPersistenceClientImpl(
                 memberInfoFactory.create(it.memberInfo)
             }
         }
-    }
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceOperation<Unit> {
-        val request = MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            UpdateMemberAndRegistrationRequestToDeclined(
-                declinedMember.toAvro(),
-                registrationRequestId
-            )
-        )
-        return request.operation(::nullToUnitConvertor)
     }
 
     override fun setRegistrationRequestStatus(

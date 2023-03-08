@@ -12,6 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service-impl')
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:rest:rest')
     implementation project(':libs:rest:rest-common')
     implementation project(':libs:lifecycle:lifecycle')

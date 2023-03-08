@@ -275,6 +275,7 @@ class MemberResourceClientImpl @Activate constructor(
                             ByteBuffer.wrap(byteArrayOf()),
                             KeyValuePairList(emptyList())
                         ),
+                        true
                     )
                 )
                 when (val result = persistentOperation.execute()) {

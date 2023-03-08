@@ -4,6 +4,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -84,7 +85,7 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.signatures
 
     override val cpkMetadata: List<CordaPackageSummary>
-        get() = signedTransaction.wireTransaction.metadata.cpkMetadata
+        get() = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
         val relevantStatesSet = relevantStatesIndexes.toSet()

@@ -128,17 +128,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     }
 
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String
-    ): MembershipPersistenceOperation<Unit> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,

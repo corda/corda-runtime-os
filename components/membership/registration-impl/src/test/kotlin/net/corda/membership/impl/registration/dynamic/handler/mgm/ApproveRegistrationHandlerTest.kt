@@ -27,6 +27,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
@@ -107,6 +108,7 @@ class ApproveRegistrationHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record
     }
@@ -185,6 +187,7 @@ class ApproveRegistrationHandlerTest {
                 ),
                 anyOrNull(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         ).doReturn(record)
 
