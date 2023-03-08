@@ -60,7 +60,8 @@ class SoftCryptoServiceCachingTests {
     @ValueSource(booleans = [false, true])
     fun `getPrivateKey should cache requested key using public key as cache key`(cachePrivateKeys: Boolean) {
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
-        val myCryptoService = makeSoftCryptoService(privateKeyCache)
+        val wrappingKeyCache = makeWrappingKeyCache()
+        val myCryptoService = makeSoftCryptoService(privateKeyCache, wrappingKeyCache)
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
         val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
@@ -87,9 +88,7 @@ class SoftCryptoServiceCachingTests {
             assertSame(key11, key12)
             assertSame(key21, key22)
         } else {
-            // without caching we generally expect key11 and key12 to be different objects, but 
-            // it seems they can sometimes be the same, which suggests that caffine even with cache size set to 0
-            // sometimes can cache for a short period. So if we have assertNotSame(key11, key12) here it can fail.
+            assertNotSame(key11, key12)
             assertEquals(key11, key12)
             assertEquals(key21, key22)
         }
@@ -120,12 +119,15 @@ class SoftCryptoServiceCachingTests {
         assertThat(wrapCount.get()).isEqualTo(2)
     }
 
-    private fun makeSoftCryptoService(privateKeyCache: Cache<PublicKey, PrivateKey>?) =
+    private fun makeSoftCryptoService(
+        privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
+        wrappingKeyCache: Cache<String, WrappingKey>? = null
+    ) =
         SoftCryptoService(
             TestWrappingKeyStore(mock()),
             schemeMetadata,
             rootWrappingKey,
-            makeWrappingKeyCache(),
+            wrappingKeyCache,
             privateKeyCache,
             wrappingKeyFactory = {
                 CountingWrappingKey(
