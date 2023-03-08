@@ -1,9 +1,9 @@
 package net.corda.ledger.persistence.query
 
+import net.corda.ledger.persistence.query.impl.VaultNamedQueryBuilderFactoryImpl
 import net.corda.v5.ledger.common.query.VaultNamedQuery
 import net.corda.v5.ledger.common.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.common.query.VaultNamedQueryFilter
-import net.corda.v5.ledger.common.query.VaultNamedQueryRegistry
 import net.corda.v5.ledger.common.query.VaultNamedQueryTransformer
 import net.corda.v5.ledger.utxo.ContractState
 import org.assertj.core.api.Assertions.assertThat

@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.query
+package net.corda.ledger.persistence.query.impl
 
 import net.corda.v5.ledger.common.query.VaultNamedQuery
 import net.corda.v5.ledger.common.query.VaultNamedQueryCollector

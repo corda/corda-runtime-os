@@ -3,7 +3,6 @@ package net.cordapp.demo.utxo.contract
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.query.VaultNamedQueryBuilderFactory
 import net.corda.v5.ledger.common.query.VaultNamedQueryFactory
-import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 class UtxoVaultNamedQueryFactory : VaultNamedQueryFactory {

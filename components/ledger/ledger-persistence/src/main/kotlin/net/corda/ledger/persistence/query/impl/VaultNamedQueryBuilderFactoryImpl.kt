@@ -1,11 +1,11 @@
-package net.corda.ledger.persistence.query
+package net.corda.ledger.persistence.query.impl
 
+import net.corda.ledger.persistence.query.VaultNamedQueryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.query.VaultNamedQueryBuilderFactory
 import net.corda.v5.ledger.common.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.common.query.VaultNamedQueryFilter
-import net.corda.v5.ledger.common.query.VaultNamedQueryRegistry
 import net.corda.v5.ledger.common.query.VaultNamedQueryTransformer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
