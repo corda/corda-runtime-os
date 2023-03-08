@@ -51,7 +51,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  */
 
 @Suppress("LongParameterList")
-open class SoftCryptoService(
+class SoftCryptoService(
     private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
