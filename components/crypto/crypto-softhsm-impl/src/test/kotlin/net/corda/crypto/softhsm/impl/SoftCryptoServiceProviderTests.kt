@@ -34,8 +34,7 @@ class SoftCryptoServiceProviderTests {
             coordinatorFactory,
             schemeMetadata,
             wrappingKeyStore,
-            PlatformDigestServiceImpl(schemeMetadata),
-            CacheFactoryImpl()
+            PlatformDigestServiceImpl(schemeMetadata)
         )
     private val defaultConfig: SmartConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
 

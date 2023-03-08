@@ -47,8 +47,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
-    @Reference(service = CacheFactoryImpl::class)
-    private val cacheFactoryImpl: CacheFactoryImpl
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -63,7 +61,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService, cacheFactoryImpl)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService, CacheFactoryImpl())
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
