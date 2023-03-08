@@ -67,7 +67,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
                     alias = "whatever",
-                    masterKeyAlias = "stuff3",
+                    wrappingKeyAlias = "stuff3",
                 ),
                 defaultContext
             )

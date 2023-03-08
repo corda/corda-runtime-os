@@ -255,11 +255,11 @@ class TestServicesFactory {
 
         override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = impl.supportedSchemes
 
-        override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
+        override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
             }
-            impl.createWrappingKey(masterKeyAlias, failIfExists, context)
+            impl.createWrappingKey(wrappingKeyAlias, failIfExists, context)
         }
 
         override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {

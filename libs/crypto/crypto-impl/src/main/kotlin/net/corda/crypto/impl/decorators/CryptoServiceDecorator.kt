@@ -61,7 +61,7 @@ class CryptoServiceDecorator(
         get() = try {
             cryptoService.supportedSchemes
         } catch (e: RuntimeException) {
-            if(e.isRecoverable()) {
+            if (e.isRecoverable()) {
                 throw CryptoException("Calling supportedSchemes failed", e)
             } else {
                 throw e
@@ -70,26 +70,26 @@ class CryptoServiceDecorator(
             throw CryptoException("Calling supportedSchemes failed", e)
         }
 
-    // TODO - rename masterKeyAlias to wrappingKeyAlias
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
-        withTimeout.executeWithRetry {
-            cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
-        }
-    } catch (e: RuntimeException) {
-        if (e.isRecoverable()) {
+    override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) =
+        try {
+            withTimeout.executeWithRetry {
+                cryptoService.createWrappingKey(wrappingKeyAlias, failIfExists, context)
+            }
+        } catch (e: RuntimeException) {
+            if (e.isRecoverable()) {
+                throw CryptoException(
+                    "Calling createWrappingKey failed (masterKeyAlias=$wrappingKeyAlias,failIfExists=$failIfExists)",
+                    e
+                )
+            } else {
+                throw e
+            }
+        } catch (e: Throwable) {
             throw CryptoException(
-                "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
+                "Calling createWrappingKey failed (masterKeyAlias=$wrappingKeyAlias,failIfExists=$failIfExists)",
                 e
             )
-        } else {
-            throw e
         }
-    } catch (e: Throwable) {
-        throw CryptoException(
-            "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
-            e
-        )
-    }
 
     override fun generateKeyPair(
         spec: KeyGenerationSpec,

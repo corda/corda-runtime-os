@@ -83,7 +83,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = it,
                     alias = UUID.randomUUID().toString(),
-                    masterKeyAlias = knownWrappingKeyAlias
+                    wrappingKeyAlias = knownWrappingKeyAlias
                 ),
                 defaultContext
             )
@@ -93,7 +93,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = it,
                     alias = null,
-                    masterKeyAlias = knownWrappingKeyAlias
+                    wrappingKeyAlias = knownWrappingKeyAlias
                 ),
                 defaultContext
             )
@@ -294,7 +294,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
                     alias = null,
-                    masterKeyAlias = knownWrappingKeyAlias
+                    wrappingKeyAlias = knownWrappingKeyAlias
                 ),
                 defaultContext
             )

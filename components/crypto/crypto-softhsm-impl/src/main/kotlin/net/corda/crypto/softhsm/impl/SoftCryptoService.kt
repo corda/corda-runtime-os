@@ -43,9 +43,9 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param wrappingKeyStore which provides save and find operations for wrapping keys.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
- * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys
- * @param privateKeyCache an optional [Cache] which optimises access to private keys
- * @param digestService optionally supply a platform digest service instance; if not one will be constructed
+ * @param digestService supply a platform digest service instance; if not one will be constructed
+ * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys, or null for no caching
+ * @param privateKeyCache an optional [Cache] which optimises access to private keys, or null for no caching
  * @param keyPairGeneratorFactory creates a key pair generator given algorithm and provider. For instance:
  *     `{ algorithm: String, provider: Provider -> KeyPairGenerator.getInstance(algorithm, provider) }`
  * @param wrappingKeyFactory creates a wrapping key given scheme metadata. For instance:
@@ -77,24 +77,24 @@ class SoftCryptoService(
 
     override val extensions = listOf(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
 
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
-        require(masterKeyAlias != "") { "Alias must not be empty" }
-        val isCached = wrappingKeyCache?.getIfPresent(masterKeyAlias) != null
-        val isAvailable = if (isCached) true else wrappingKeyStore.findWrappingKey(masterKeyAlias) != null
+    override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
+        require(wrappingKeyAlias != "") { "Alias must not be empty" }
+        val isCached = wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null
+        val isAvailable = if (isCached) true else wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
         logger.trace {
-            "createWrappingKey(alias=$masterKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
+            "createWrappingKey(alias=$wrappingKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
         }
         if (isAvailable) {
-            if (failIfExists) throw IllegalStateException("There is an existing key with the alias: $masterKeyAlias")
-            logger.debug { "Not creating wrapping key for '$masterKeyAlias' since a key is available" }
+            if (failIfExists) throw IllegalStateException("There is an existing key with the alias: $wrappingKeyAlias")
+            logger.debug { "Not creating wrapping key for '$wrappingKeyAlias' since a key is available" }
             return
         }
         val wrappingKey = wrappingKeyFactory(schemeMetadata)
         val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
-        wrappingKeyStore.saveWrappingKey(masterKeyAlias, wrappingKeyInfo)
-        wrappingKeyCache?.put(masterKeyAlias, wrappingKey)
+        wrappingKeyStore.saveWrappingKey(wrappingKeyAlias, wrappingKeyInfo)
+        wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
     override fun delete(alias: String, context: Map<String, String>): Boolean =
@@ -141,8 +141,8 @@ class SoftCryptoService(
             keyPairGenerator.initialize(keySize, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        val wrappingKey = wrappingKeyCache?.get(spec.masterKeyAlias, ::getWrappingKeyUncached)
-            ?: getWrappingKeyUncached(spec.masterKeyAlias)
+        val wrappingKey = wrappingKeyCache?.get(spec.wrappingKeyAlias, ::getWrappingKeyUncached)
+            ?: getWrappingKeyUncached(spec.wrappingKeyAlias)
 
         val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
