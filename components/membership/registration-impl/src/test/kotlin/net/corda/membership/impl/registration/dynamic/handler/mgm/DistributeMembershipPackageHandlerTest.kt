@@ -115,6 +115,7 @@ class DistributeMembershipPackageHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
+                any()
             )
         } doReturn record
     }
@@ -186,6 +187,7 @@ class DistributeMembershipPackageHandlerTest {
                 eq(allMembershipPackage),
                 anyOrNull(),
                 any(),
+                any(),
             )
         ).doReturn(allMemberPackage)
 
@@ -218,6 +220,7 @@ class DistributeMembershipPackageHandlerTest {
                     eq(memberAvro),
                     eq(memberPackage),
                     anyOrNull(),
+                    any(),
                     any(),
                 )
             ).doReturn(record)
