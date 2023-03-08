@@ -96,7 +96,7 @@ class SoftCryptoServiceCachingTests {
         // the keys we pulled out are reconstructed from encrypted key material, so are
         // not the same objects but are equal
         if (privateKey1 != null) {
-            assertNotSame(key11, privateKey1)
+            assertNotSame(key1direct, privateKey1)
             assertEquals(key11, privateKey1)
         }
         if (privateKey2 != null) {
