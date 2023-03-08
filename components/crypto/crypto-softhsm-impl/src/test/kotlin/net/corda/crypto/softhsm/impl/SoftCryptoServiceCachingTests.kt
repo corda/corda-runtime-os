@@ -109,8 +109,8 @@ class SoftCryptoServiceCachingTests {
             makeWrappingKeyCache(),
             makePrivateKeyCache()
         )
-        val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
+        val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         val key = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
         val keySpec = KeyMaterialSpec(key.keyMaterial, "master-alias", key.encodingVersion)
         myCryptoService.getPrivateKey(key.publicKey, keySpec)

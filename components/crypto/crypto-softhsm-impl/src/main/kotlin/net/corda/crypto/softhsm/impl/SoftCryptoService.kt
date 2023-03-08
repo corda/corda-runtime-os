@@ -19,10 +19,12 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
+import net.corda.crypto.impl.CordaSecureRandomService.Companion.algorithm
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.KeyPairGeneratorFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
@@ -50,6 +52,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param digestService optionally supply a platform digest service instance; if not one will be constructed
  */
 
+
 @Suppress("LongParameterList")
 class SoftCryptoService(
     private val wrappingKeyStore: WrappingKeyStore,
@@ -57,7 +60,8 @@ class SoftCryptoService(
     private val rootWrappingKey: WrappingKey,
     private val wrappingKeyCache: Cache<String, WrappingKey>? = null,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
-    private val digestService: PlatformDigestService = PlatformDigestServiceImpl(schemeMetadata)
+    private val digestService: PlatformDigestService = PlatformDigestServiceImpl(schemeMetadata),
+    private val keyPairGeneratorFactory: KeyPairGeneratorFactory = JavaKeyPairGenerator()
 ) : CryptoService {
     private var wrapCounter = AtomicInteger()
     private var unwrapCounter = AtomicInteger()
@@ -125,7 +129,7 @@ class SoftCryptoService(
         logger.trace {
             "generateKeyPair(alias=${spec.alias},masterKeyAlias={$spec.masterKeyAlias},scheme={spec.keyScheme.codeName})"
         }
-        val keyPairGenerator = KeyPairGenerator.getInstance(
+        val keyPairGenerator = keyPairGeneratorFactory.getInstance(
             spec.keyScheme.algorithmName,
             providerFor(spec.keyScheme)
         )
