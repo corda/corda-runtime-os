@@ -59,7 +59,7 @@ class SoftCryptoServiceCachingTests {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `getPrivateKey should cache requested key using public key as cache key`(cachePrivateKeys: Boolean) {
+    fun `private key unwrapping and identity works as expected`(cachePrivateKeys: Boolean) {
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
         val wrappingKeyCache = makeWrappingKeyCache()
         val wrappingKeyAlias = "wrapper1"
