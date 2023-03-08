@@ -10,6 +10,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
@@ -69,7 +70,8 @@ fun generateAppMessage(
         Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(SESSION_P2P_TTL)),
         sessionEvent.sessionId + "-" + UUID.randomUUID(),
         "",
-        FLOW_SESSION_SUBSYSTEM
+        FLOW_SESSION_SUBSYSTEM,
+        MembershipStatusFilter.ACTIVE
     )
     return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
 }

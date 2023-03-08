@@ -102,7 +102,7 @@ class MemberOpsServiceProcessorTest {
     }
 
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
+        on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
     }
 
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {

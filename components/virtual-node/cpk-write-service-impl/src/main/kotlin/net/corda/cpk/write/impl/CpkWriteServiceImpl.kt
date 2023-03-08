@@ -1,7 +1,7 @@
 package net.corda.cpk.write.impl
 
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.CpkWriteService

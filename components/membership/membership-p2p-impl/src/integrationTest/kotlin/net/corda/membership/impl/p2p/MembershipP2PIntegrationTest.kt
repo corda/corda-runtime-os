@@ -33,6 +33,7 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.sync.BloomFilter
@@ -316,7 +317,8 @@ class MembershipP2PIntegrationTest {
         val message = MembershipRegistrationRequest(
             registrationId,
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
-            fakeSigWithKey
+            fakeSigWithKey,
+            true
         )
 
         var latestHeader: UnauthenticatedRegistrationRequestHeader? = null
@@ -425,7 +427,8 @@ class MembershipP2PIntegrationTest {
             destination.toAvro(),
             source.toAvro(),
             requestTimestamp,
-            registrationId
+            registrationId,
+            MembershipStatusFilter.PENDING
         )
         val verificationRequest = VerificationRequest(registrationId, requestBody)
 
@@ -587,14 +590,16 @@ class MembershipP2PIntegrationTest {
         destination: HoldingIdentity,
         source: HoldingIdentity,
         timestamp: Instant,
-        id: String
+        id: String,
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ) = AuthenticatedMessageHeader(
         destination,
         source,
         timestamp.plusMillis(300000L),
         id,
         null,
-        MEMBERSHIP_P2P_SUBSYSTEM
+        MEMBERSHIP_P2P_SUBSYSTEM,
+        filter
     )
 
     private fun buildUnauthenticatedP2PRequest(

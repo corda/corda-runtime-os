@@ -16,6 +16,7 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
@@ -168,10 +169,9 @@ internal class VirtualNodeRestResourceImpl(
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
-                    //val rpcConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
+                    val rpcConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofSeconds(60) // Temporary change till CORE-7646 properly resolved
-                    // Duration.ofMillis(rpcConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
@@ -271,7 +271,7 @@ internal class VirtualNodeRestResourceImpl(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatusResponse -> {
                 resolvedResponse.run {
-                    val statuses = this.operationHistory.map{
+                    val statuses = this.operationHistory.map {
                         VirtualNodeOperationStatus(
                             it.requestId,
                             it.requestData,
@@ -409,6 +409,7 @@ internal class VirtualNodeRestResourceImpl(
         )
         return when(exception.errorType) {
             InvalidStateChangeRuntimeException::class.java.name ->  InvalidStateChangeException(exception.errorMessage)
+            VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
             else -> InternalServerException(exception.errorMessage)
         }
     }

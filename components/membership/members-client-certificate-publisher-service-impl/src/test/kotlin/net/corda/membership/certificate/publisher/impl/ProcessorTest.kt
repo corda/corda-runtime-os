@@ -5,7 +5,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_DECLINED
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.messaging.api.records.Record
@@ -131,7 +131,7 @@ internal class ProcessorTest {
                     if (active) {
                         MEMBER_STATUS_ACTIVE
                     } else {
-                        MEMBER_STATUS_DECLINED
+                        MEMBER_STATUS_SUSPENDED
                     }
                 )
             )

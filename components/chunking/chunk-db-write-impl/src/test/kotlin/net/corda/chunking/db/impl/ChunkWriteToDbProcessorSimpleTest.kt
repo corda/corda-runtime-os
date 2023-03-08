@@ -3,7 +3,7 @@ package net.corda.chunking.db.impl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException

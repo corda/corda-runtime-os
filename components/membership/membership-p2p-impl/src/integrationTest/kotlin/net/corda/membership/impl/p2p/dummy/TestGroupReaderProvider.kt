@@ -1,6 +1,7 @@
 package net.corda.membership.impl.p2p.dummy
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -84,23 +85,23 @@ class TestGroupReader : MembershipGroupReader {
         member = memberToLoad
     }
 
-    override fun lookup(): Collection<MemberInfo> {
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookup(name: MemberX500Name): MemberInfo? = member
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? = member
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
