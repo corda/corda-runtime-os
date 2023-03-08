@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactory
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -34,18 +35,36 @@ import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
 @Component(service = [CryptoConnectionsFactory::class])
-class CryptoConnectionsFactoryImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class CryptoConnectionsFactoryImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
-    @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val cacheFactory: CacheFactory
 ) : CryptoConnectionsFactory {
+
+    @Activate
+    constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager,
+        @Reference(service = JpaEntitiesRegistry::class)
+        jpaEntitiesRegistry: JpaEntitiesRegistry,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService
+    ) : this(
+        coordinatorFactory,
+        configurationReadService,
+        dbConnectionManager,
+        jpaEntitiesRegistry,
+        virtualNodeInfoReadService,
+        CacheFactoryImpl()
+    )
+
     companion object {
         private val log = LoggerFactory.getLogger(CryptoConnectionsFactory::class.java)
     }
@@ -131,7 +150,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                                 + "maximumSize = ${newConfig.maximumSize}, expireAfterAccessMins = ${newConfig.expireAfterAccessMins}"
                     )
                     clearCache()
-                    connectionsCache = createConnectionsCache(newConfig)
+                    connectionsCache = cacheFactory.createConnectionsCache(newConfig)
                     previousConfig = newConfig
                 }
                 updateStatus(LifecycleStatus.UP)
@@ -180,11 +199,10 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
     }
 }
 
-private fun createConnectionsCache(config: CryptoConnectionsFactoryCacheConfig): Cache<String, EntityManagerFactory> {
-    return CacheFactoryImpl().build(
+private fun CacheFactory.createConnectionsCache(config: CryptoConnectionsFactoryCacheConfig): Cache<String, EntityManagerFactory> =
+    build(
         "Crypto-Db-Connections-Cache",
         Caffeine.newBuilder()
             .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
             .maximumSize(config.maximumSize)
             .evictionListener { _, value, _ -> value?.close() })
-}
