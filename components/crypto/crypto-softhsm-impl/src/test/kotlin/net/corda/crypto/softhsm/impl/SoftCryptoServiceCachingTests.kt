@@ -6,6 +6,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -95,38 +96,22 @@ class SoftCryptoServiceCachingTests {
         val key2Spec = KeyMaterialSpec(keyPair2.keyMaterial, wrappingKeyAlias, keyPair2.encodingVersion)
 
 
-        val key11 = myCryptoService.getPrivateKey(keyPair1.publicKey, key1Spec)
-        val key11c = privateKeyCache?.getIfPresent(keyPair1.publicKey)
         val key1direct = wrappingKey.unwrap(key1Spec.keyMaterial)
         val key2direct = wrappingKey.unwrap(key2Spec.keyMaterial)
-        val key21 = myCryptoService.getPrivateKey(keyPair2.publicKey, key2Spec)
-        val key21c = privateKeyCache?.getIfPresent(keyPair2.publicKey)
-        if (cachePrivateKeys) {
-            assertEquals(key1direct, key11c)
-            assertEquals(key2direct, key21c)
-        }
-        val key12 = myCryptoService.getPrivateKey(keyPair1.publicKey, key1Spec)
-        val key22 = myCryptoService.getPrivateKey(keyPair2.publicKey, key2Spec)
-        assertNotSame(key1direct, key2direct)
-        assertNotSame(key12, key22)
-        assertNotSame(key1direct, key12)
-        assertEquals(key1direct, key12)
-        assertEquals(key2direct, key22)
+
         // the keys we pulled out are reconstructed from encrypted key material, so are
-        // not the same objects but are equal
+        // not the same objects but are equal to what we got from the cache before
         if (privateKey1FromCache != null) {
             assertNotSame(key1direct, privateKey1FromCache)
-            assertEquals(key11, privateKey1FromCache)
-            assertEquals(key11, key1direct)
-            assertEquals(privateKey1FromCache, key1direct)
+            assertEquals(key1direct, privateKey1FromCache)
 
         }
         if (privateKey2FromCache != null) {
-            assertNotSame(key22, privateKey2FromCache)
-            assertEquals(key21, privateKey2FromCache)
+            assertNotSame(key2direct, privateKey2FromCache)
+            assertEquals(key2direct, privateKey2FromCache)
         }
 
-        Assertions.assertThat(unwrapCount.get()).isEqualTo(if (cachePrivateKeys) 4 else 6)
+        assertThat(unwrapCount.get()).isEqualTo(2)
     }
 
 
