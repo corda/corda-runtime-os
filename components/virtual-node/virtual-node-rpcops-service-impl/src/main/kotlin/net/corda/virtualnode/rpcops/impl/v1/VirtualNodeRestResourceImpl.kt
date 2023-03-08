@@ -17,16 +17,10 @@ import net.corda.data.virtualnode.VirtualNodeState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.asynchronous.v1.AsyncResponse
-import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
-import net.corda.rest.response.ResponseEntity
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
@@ -46,6 +40,15 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.asynchronous.v1.AsyncResponse
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import net.corda.utilities.time.ClockFactory
@@ -63,14 +66,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.time.Instant
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
-import java.lang.IllegalArgumentException
-import net.corda.rest.exception.InvalidStateChangeException
-import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -263,7 +262,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                             it.requestTimestamp,
                             it.latestUpdateTimestamp,
                             it.heartbeatTimestamp,
-                            it.state.name,
+                            it.state,
                             it.errors
                         )
                     }
