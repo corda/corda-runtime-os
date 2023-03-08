@@ -401,7 +401,7 @@ class SoftCryptoServiceOperationsTests {
     }
 
     @Test
-    fun `getWrappingKey should throw IllegalArgumentException when encoding version is not recognised`() {
+    fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
         wrappingKeyStore.saveWrappingKey(
             alias, WrappingKeyInfo(
@@ -411,13 +411,13 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         assertThrows<IllegalArgumentException> {
-            cryptoService.getWrappingKey(alias)
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
     }
 
 
     @Test
-    fun `getWrappingKey should throw IllegalArgumentException when key algorithm does not match master key`() {
+    fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
         wrappingKeyStore.saveWrappingKey(
             alias, WrappingKeyInfo(
@@ -427,7 +427,7 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         assertThrows<IllegalArgumentException> {
-            cryptoService.getWrappingKey(alias)
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
     }
 
