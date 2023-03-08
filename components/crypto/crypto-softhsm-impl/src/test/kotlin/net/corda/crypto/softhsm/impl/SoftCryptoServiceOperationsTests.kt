@@ -433,10 +433,10 @@ class SoftCryptoServiceOperationsTests {
 
 
     @Test
-    fun `getWrappingKey should throw IllegalStateException when wrapping key is not found`() {
+    fun `generateKeyPair should throw IllegalStateException when wrapping key is not found`() {
         val alias = UUID.randomUUID().toString()
         assertThrows<IllegalStateException> {
-            cryptoService.getWrappingKey(alias)
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
     }
 
