@@ -14,6 +14,7 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 
+@Suppress("LongParameterList")
 fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,

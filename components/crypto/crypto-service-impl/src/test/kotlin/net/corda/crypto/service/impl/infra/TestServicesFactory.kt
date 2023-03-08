@@ -215,6 +215,8 @@ class TestServicesFactory {
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
                 digestService = PlatformDigestServiceImpl(schemeMetadata),
+                wrappingKeyCache = null,
+                privateKeyCache = null,
                 keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                     KeyPairGenerator.getInstance(algorithm, provider)
                 },
