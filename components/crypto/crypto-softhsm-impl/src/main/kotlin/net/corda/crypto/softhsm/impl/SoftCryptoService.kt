@@ -205,8 +205,7 @@ class SoftCryptoService(
         return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
-    @VisibleForTesting
-    fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
+    private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
         privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
 
     private fun getPrivateKeyUncached(spec: KeyMaterialSpec): PrivateKey {
