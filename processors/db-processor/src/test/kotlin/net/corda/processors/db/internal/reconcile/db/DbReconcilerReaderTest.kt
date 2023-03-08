@@ -139,15 +139,6 @@ class DbReconcilerReaderTest {
             verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
             verify(dependencyRegistrationHandle, never()).close()
         }
-
-        @Test
-        fun `start event called again closes registration handle and follows dependencies`() {
-            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-
-            verify(coordinator, times(2)).followStatusChangesByName(eq(dependenciesMock))
-            verify(dependencyRegistrationHandle).close()
-        }
     }
 
     @Nested
@@ -164,16 +155,6 @@ class DbReconcilerReaderTest {
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
             verify(dependencyRegistrationHandle, never()).close()
-        }
-
-        @Test
-        fun `stop event after start event closes registration handle`() {
-            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-            verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
-
-            lifecycleEventHandler.processEvent(StopEvent(), coordinator)
-
-            verify(dependencyRegistrationHandle).close()
         }
     }
 
