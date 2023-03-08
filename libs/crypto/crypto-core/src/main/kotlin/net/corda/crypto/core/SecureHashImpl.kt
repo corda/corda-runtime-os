@@ -38,9 +38,6 @@ class SecureHashImpl(
     override fun toString() = "$algorithm$DELIMITER${toHexString()}"
 }
 
-// TODO rename parameter to `hexString`
-// TODO rename function to `parseSecureHash`
-// Make `DigestService.parse` delegate to this one
 fun parseSecureHash(algoNameAndHexString: String): SecureHash {
     val idx = algoNameAndHexString.indexOf(DELIMITER)
     return if (idx == -1) {
