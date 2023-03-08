@@ -352,7 +352,7 @@ class SoftCryptoServiceOperationsTests {
 
 
     @Test
-    fun `getWrappingKey request key using alias`() {
+    fun `wrapping keys appear at the expected times using keyalias`() {
         val expected1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val expected2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
@@ -369,17 +369,24 @@ class SoftCryptoServiceOperationsTests {
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
-        
+        val key2Missing = wrappingKeyCache.getIfPresent(alias2)
+        assertNull(key2Missing)
+
         wrappingKeyStore.saveWrappingKey(alias1, info1)
         wrappingKeyStore.saveWrappingKey(alias2, info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
+        val key2StillMissing = wrappingKeyCache.getIfPresent(alias2)
+        assertNull(key2StillMissing)
 
         val scheme = cryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         cryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key1", alias1), emptyMap())
         val key1Found = wrappingKeyCache.getIfPresent(alias1)
         assertEquals(expected1, key1Found)
+        val key2AgainStillMissing = wrappingKeyCache.getIfPresent(alias2)
+        assertNull(key2AgainStillMissing)
+
         val key21 = cryptoService.getWrappingKey(alias2)
         assertEquals(expected2, key21)
         assertNotEquals(key1Found, key21)
