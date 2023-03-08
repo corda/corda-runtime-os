@@ -63,7 +63,8 @@ class SoftCryptoServiceCachingTests {
             schemeMetadata,
             rootWrappingKey,
             makeWrappingKeyCache(),
-            privateKeyCache
+            privateKeyCache,
+            wrappingKeyFactory = { CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(it), unwrapCount) }
         )
         val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
         myCryptoService.createWrappingKey("master-alias", true, emptyMap())
@@ -103,7 +104,7 @@ class SoftCryptoServiceCachingTests {
         }
 
         Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(if (cachePrivateKeys) 2 else 4)
-        //Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(unwrapCount.get())
+        Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(unwrapCount.get())
     }
 
 
