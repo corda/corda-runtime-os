@@ -20,7 +20,6 @@ import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
-import net.corda.crypto.impl.CordaSecureRandomService.Companion.algorithm
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -31,11 +30,9 @@ import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
-import java.util.concurrent.atomic.AtomicInteger
 import javax.crypto.Cipher
 
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
@@ -67,8 +64,6 @@ class SoftCryptoService(
         WrappingKeyImpl.generateWrappingKey(it)
     }
 ) : CryptoService {
-    private var wrapCounter = AtomicInteger()
-    private var unwrapCounter = AtomicInteger()
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -145,7 +140,6 @@ class SoftCryptoService(
         }
         val keyPair = keyPairGenerator.generateKeyPair()
         val wrappingKey = getWrappingKey(spec.masterKeyAlias)
-        wrapCounter.incrementAndGet()
         val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
         return GeneratedWrappedKey(
@@ -216,14 +210,10 @@ class SoftCryptoService(
         privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
 
     private fun getPrivateKeyUncached(spec: KeyMaterialSpec): PrivateKey {
-        unwrapCounter.incrementAndGet()
         return getWrappingKey(spec.masterKeyAlias).unwrap(spec.keyMaterial)
     }
 
     @VisibleForTesting
     fun wrappingKeyExists(wrappingKeyAlias: String): Boolean =
         wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null || wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
-
-    fun getWrapCounter() = wrapCounter.get()
-    fun getUnwrapCounter() = unwrapCounter.get()
 }

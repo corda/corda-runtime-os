@@ -98,8 +98,7 @@ class SoftCryptoServiceCachingTests {
             assertEquals(key21, privateKey2)
         }
 
-        Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(if (cachePrivateKeys) 2 else 4)
-        Assertions.assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(unwrapCount.get())
+        Assertions.assertThat(unwrapCount.get()).isEqualTo(if (cachePrivateKeys) 2 else 4)
     }
 
 
@@ -111,8 +110,6 @@ class SoftCryptoServiceCachingTests {
         val key = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", "master-alias"), emptyMap())
         val keySpec = KeyMaterialSpec(key.keyMaterial, "master-alias", key.encodingVersion)
         myCryptoService.getPrivateKey(key.publicKey, keySpec)
-        assertThat(myCryptoService.getUnwrapCounter()).isEqualTo(0)
-        assertThat(myCryptoService.getWrapCounter()).isEqualTo(1)
         assertThat(unwrapCount.get()).isEqualTo(0)
         assertThat(wrapCount.get()).isEqualTo(2)
     }
