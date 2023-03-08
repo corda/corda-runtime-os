@@ -14,7 +14,6 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.jcajce.provider.symmetric.AES.Wrap
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -28,7 +27,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
-import kotlin.test.assertSame
 
 /**
  * Testing of the crypto service with caching.
@@ -60,34 +58,55 @@ class SoftCryptoServiceCachingTests {
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `private key unwrapping and identity works as expected`(cachePrivateKeys: Boolean) {
+        // setup
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
         val wrappingKeyCache = makeWrappingKeyCache()
         val wrappingKeyAlias = "wrapper1"
         val myCryptoService = makeSoftCryptoService(privateKeyCache, wrappingKeyCache)
-        val scheme = myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
+        val rsaScheme =
+            myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
+
+        // set up a second level wrapping key
         myCryptoService.createWrappingKey(wrappingKeyAlias, true, emptyMap())
-        val key1 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-1", wrappingKeyAlias), emptyMap())
-        val key2 = myCryptoService.generateKeyPair(KeyGenerationSpec(scheme, "key-2", wrappingKeyAlias), emptyMap())
-        val privateKey1 = privateKeyCache?.getIfPresent(key1.publicKey)
-        val privateKey2 = privateKeyCache?.getIfPresent(key2.publicKey)
-        privateKeyCache?.invalidate(key1.publicKey)
-        privateKeyCache?.invalidate(key2.publicKey)
-        val key1Spec = KeyMaterialSpec(key1.keyMaterial, wrappingKeyAlias, key1.encodingVersion)
-        val key2Spec = KeyMaterialSpec(key2.keyMaterial, wrappingKeyAlias, key2.encodingVersion)
         val wrappingKey = wrappingKeyCache.getIfPresent(wrappingKeyAlias)
         assertNotNull(wrappingKey)
-        val key11 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
-        val key11c = privateKeyCache?.getIfPresent(key1.publicKey)
+
+        // make two key pairs
+        val keyPair1 =
+            myCryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key-1", wrappingKeyAlias), emptyMap())
+        val keyPair2 =
+            myCryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key-2", wrappingKeyAlias), emptyMap())
+
+        // if we have a private key cache, it should now have entries for both key pairs
+        val privateKey1FromCache = privateKeyCache?.getIfPresent(keyPair1.publicKey)
+        val privateKey2FromCache = privateKeyCache?.getIfPresent(keyPair2.publicKey)
+
+        if (privateKeyCache != null) {
+            assertNotNull(privateKey1FromCache)
+            assertNotNull(privateKey2FromCache)
+        }
+
+        // clear the private key cache, if there is one
+        privateKeyCache?.invalidate(keyPair1.publicKey)
+        privateKeyCache?.invalidate(keyPair2.publicKey)
+
+        // make spec objects with the public key material 
+        val key1Spec = KeyMaterialSpec(keyPair1.keyMaterial, wrappingKeyAlias, keyPair1.encodingVersion)
+        val key2Spec = KeyMaterialSpec(keyPair2.keyMaterial, wrappingKeyAlias, keyPair2.encodingVersion)
+
+
+        val key11 = myCryptoService.getPrivateKey(keyPair1.publicKey, key1Spec)
+        val key11c = privateKeyCache?.getIfPresent(keyPair1.publicKey)
         val key1direct = wrappingKey.unwrap(key1Spec.keyMaterial)
         val key2direct = wrappingKey.unwrap(key2Spec.keyMaterial)
-        val key21 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
-        val key21c = privateKeyCache?.getIfPresent(key2.publicKey)
+        val key21 = myCryptoService.getPrivateKey(keyPair2.publicKey, key2Spec)
+        val key21c = privateKeyCache?.getIfPresent(keyPair2.publicKey)
         if (cachePrivateKeys) {
             assertEquals(key1direct, key11c)
             assertEquals(key2direct, key21c)
         }
-        val key12 = myCryptoService.getPrivateKey(key1.publicKey, key1Spec)
-        val key22 = myCryptoService.getPrivateKey(key2.publicKey, key2Spec)
+        val key12 = myCryptoService.getPrivateKey(keyPair1.publicKey, key1Spec)
+        val key22 = myCryptoService.getPrivateKey(keyPair2.publicKey, key2Spec)
         assertNotSame(key1direct, key2direct)
         assertNotSame(key12, key22)
         assertNotSame(key1direct, key12)
@@ -95,16 +114,16 @@ class SoftCryptoServiceCachingTests {
         assertEquals(key2direct, key22)
         // the keys we pulled out are reconstructed from encrypted key material, so are
         // not the same objects but are equal
-        if (privateKey1 != null) {
-            assertNotSame(key1direct, privateKey1)
-            assertEquals(key11, privateKey1)
+        if (privateKey1FromCache != null) {
+            assertNotSame(key1direct, privateKey1FromCache)
+            assertEquals(key11, privateKey1FromCache)
             assertEquals(key11, key1direct)
-            assertEquals(privateKey1, key1direct)
+            assertEquals(privateKey1FromCache, key1direct)
 
         }
-        if (privateKey2 != null) {
-            assertNotSame(key22, privateKey2)
-            assertEquals(key21, privateKey2)
+        if (privateKey2FromCache != null) {
+            assertNotSame(key22, privateKey2FromCache)
+            assertEquals(key21, privateKey2FromCache)
         }
 
         Assertions.assertThat(unwrapCount.get()).isEqualTo(if (cachePrivateKeys) 4 else 6)
