@@ -11,7 +11,6 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.detailedLogger
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.time.format.DateTimeFormatter
 
@@ -20,10 +19,6 @@ import java.time.format.DateTimeFormatter
  */
 @InitiatingFlow(protocol = "fetch-land-title")
 class FetchLandTitleFlow : ClientStartableFlow {
-
-    private companion object {
-        val log = detailedLogger()
-    }
 
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
@@ -51,7 +46,7 @@ class FetchLandTitleFlow : ClientStartableFlow {
                     stateAndRef.state.contractState.location,
                     stateAndRef.state.contractState.areaInSquareMeter.toString().plus(" sqmt"),
                     stateAndRef.state.contractState.extraDetails,
-                    formatter.format(stateAndRef.state.contractState.registrationTitleStamp),
+                    formatter.format(stateAndRef.state.contractState.registrationTimeStamp),
                     memberLookup.lookup(stateAndRef.state.contractState.owner)!!.name,
                     memberLookup.lookup(stateAndRef.state.contractState.issuer)!!.name,
                 )
@@ -64,7 +59,7 @@ class FetchLandTitleFlow : ClientStartableFlow {
                     it.state.contractState.location,
                     it.state.contractState.areaInSquareMeter.toString().plus(" sqmt"),
                     it.state.contractState.extraDetails,
-                    formatter.format(it.state.contractState.registrationTitleStamp),
+                    formatter.format(it.state.contractState.registrationTimeStamp),
                     memberLookup.lookup(it.state.contractState.owner)!!.name,
                     memberLookup.lookup(it.state.contractState.issuer)!!.name,
                 )

@@ -17,7 +17,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
-import net.corda.v5.base.util.detailedLogger
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -29,10 +28,6 @@ import java.time.LocalDateTime
  */
 @InitiatingFlow(protocol = "issue-title")
 class IssueLandTitleFlow: ClientStartableFlow {
-
-    private companion object {
-        val log = detailedLogger()
-    }
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -99,10 +94,6 @@ class IssueLandTitleFlow: ClientStartableFlow {
 
 @InitiatedBy(protocol = "issue-title")
 class IssueLandTitleResponderFlow: ResponderFlow {
-
-    private companion object {
-        val log = detailedLogger()
-    }
 
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService

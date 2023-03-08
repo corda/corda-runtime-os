@@ -8,12 +8,12 @@ import java.time.LocalDateTime
 
 @Suppress("LongParameterList")
 @BelongsToContract(LandTitleContract::class)
-class LandTitleState(
+data class LandTitleState(
     val titleNumber: String,
     val location: String,
     val areaInSquareMeter: Int,
     val extraDetails: String,
-    val registrationTitleStamp: LocalDateTime,
+    val registrationTimeStamp: LocalDateTime,
     val owner: PublicKey,
     val issuer: PublicKey
     ) : ContractState {

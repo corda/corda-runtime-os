@@ -17,7 +17,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
-import net.corda.v5.base.util.detailedLogger
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.time.Instant
 import java.time.LocalDateTime
@@ -27,10 +26,6 @@ import java.time.LocalDateTime
  */
 @InitiatingFlow(protocol = "transfer-title")
 class TransferLandTitleFlow : ClientStartableFlow {
-
-    private companion object {
-        val log = detailedLogger()
-    }
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -47,23 +42,18 @@ class TransferLandTitleFlow : ClientStartableFlow {
     @Suspendable
     override fun call(requestBody: RestRequestBody): String {
         val request = requestBody.getRequestBodyAs<TransferLandTitleRequest>(jsonMarshallingService)
-        val owner = memberLookup.lookup(request.owner)
+        val newOwner = memberLookup.lookup(request.owner)
             ?: throw CordaRuntimeException("Unknown holder: ${request.owner}.")
 
-        val oldStateAndRef = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).firstOrNull {
+        val oldStateAndRef = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).singleOrNull {
             it.state.contractState.titleNumber == request.titleNumber
-        } ?: throw java.lang.IllegalArgumentException("Title Number: ${request.titleNumber} does not exist.")
+        } ?: throw CordaRuntimeException("Title Number: ${request.titleNumber} does not exist.")
 
         val oldState = oldStateAndRef.state.contractState
 
-        val landTitleState = LandTitleState(
-            oldState.titleNumber,
-            oldState.location,
-            oldState.areaInSquareMeter,
-            oldState.extraDetails,
-            LocalDateTime.now(),
-            owner.ledgerKeys.first(),
-            oldState.issuer
+        val landTitleState = oldState.copy(
+            owner = newOwner.ledgerKeys.first(),
+            registrationTimeStamp = LocalDateTime.now()
         )
 
         val transaction = utxoLedgerService
@@ -96,10 +86,6 @@ class TransferLandTitleFlow : ClientStartableFlow {
 
 @InitiatedBy(protocol = "transfer-title")
 class TransferLandTitleResponderFlow: ResponderFlow {
-
-    private companion object {
-        val log = detailedLogger()
-    }
 
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService

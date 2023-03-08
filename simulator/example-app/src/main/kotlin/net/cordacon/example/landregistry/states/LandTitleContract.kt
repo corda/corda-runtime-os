@@ -1,5 +1,6 @@
 package net.cordacon.example.landregistry.states
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -8,7 +9,7 @@ class LandTitleContract: Contract {
 
     override fun verify(transaction: UtxoLedgerTransaction) {
         val command = transaction.getCommands(LandTitleCommand::class.java).singleOrNull()
-            ?: throw IllegalArgumentException("Expected a single command of type: ${LandTitleCommand::class.java}.")
+            ?: throw CordaRuntimeException("Expected a single command of type: ${LandTitleCommand::class.java}.")
         command.verify(transaction)
     }
 
