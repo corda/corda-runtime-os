@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.provider.Arguments
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -156,6 +157,7 @@ class FlowGlobalPostProcessorImplTest {
 
         setOf(sessionState1, sessionState2, sessionState3).forEach {
             it.sessionStartTime = Instant.now()
+            it.lastReceivedMessageTime = Instant.now()
         }
     }
 
@@ -307,12 +309,28 @@ class FlowGlobalPostProcessorImplTest {
     fun `Raise a platform error if counterparties cannot be confirmed within timeout window`() {
         sessionState3.apply {
             sessionStartTime = Instant.now().minusSeconds(86400)
+            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
         }
 
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
         whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
 
         assertThrows(FlowPlatformException::class.java) {
+            flowGlobalPostProcessor.postProcess(testContext)
+        }
+    }
+
+    @Test
+    fun `Don't raise a platform error if counterparty currently null, but last message was received within timeout window`() {
+        sessionState3.apply {
+            sessionStartTime = Instant.now().minusSeconds(86400)
+            lastReceivedMessageTime = Instant.now()
+        }
+
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
+        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
+
+        assertDoesNotThrow {
             flowGlobalPostProcessor.postProcess(testContext)
         }
     }

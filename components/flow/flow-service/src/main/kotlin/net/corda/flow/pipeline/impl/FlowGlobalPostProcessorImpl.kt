@@ -91,7 +91,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
          */
         if (!counterpartyExists) {
             val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
-            val expiryTime = sessionState.sessionStartTime.plusMillis(timeoutWindow)
+            val expiryTime = maxOf(
+                sessionState.lastReceivedMessageTime,
+                sessionState.sessionStartTime
+            ).plusMillis(timeoutWindow)
 
             if (expiryTime < now) {
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
