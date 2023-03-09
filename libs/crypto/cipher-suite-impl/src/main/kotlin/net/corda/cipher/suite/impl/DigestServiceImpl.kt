@@ -3,7 +3,6 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.parseSecureHash
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification

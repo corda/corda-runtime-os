@@ -9,7 +9,6 @@ import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any

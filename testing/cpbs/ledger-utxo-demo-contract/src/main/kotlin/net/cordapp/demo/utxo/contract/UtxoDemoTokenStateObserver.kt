@@ -1,8 +1,6 @@
 package net.cordapp.demo.utxo.contract
 
 import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields

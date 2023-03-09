@@ -25,7 +25,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
-import java.security.MessageDigest
 import java.security.PublicKey
 
 /**
@@ -34,6 +33,7 @@ import java.security.PublicKey
  * @throws IllegalStateException if the request signature could not be validated.
  */
 @Suspendable
+@Suppress("LongParameterList")
 fun validateRequestSignature(notarizationRequest: NotarizationRequest,
                              requestingParty: Party,
                              serializationService: SerializationService,

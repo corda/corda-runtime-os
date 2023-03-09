@@ -1,18 +1,14 @@
 package net.corda.flow.rest.impl.v1
 
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.rest.v1.FlowClassRestResource
-import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
@@ -24,6 +20,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
 
 class FlowClassRestResourceImplTest {
 

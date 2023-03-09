@@ -2,7 +2,6 @@ package net.corda.flow.testing.tests
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 
 // HACK: needed to use this group id as it is hard
 // coded in the implementation code, we need to remove this

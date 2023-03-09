@@ -38,7 +38,6 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.v5.crypto.SecureHash
 
 class CreateVirtualNodeServiceImplTest {
     private val vaultDdlDbConnectionDetails = getDbConnection("vault_ddl", "vault ddl")
