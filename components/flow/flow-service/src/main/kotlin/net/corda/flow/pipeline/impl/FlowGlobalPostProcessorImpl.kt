@@ -12,11 +12,11 @@ import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -34,8 +34,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory,
-    @Reference(service = MemberLookup::class)
-    private val memberLookup: MemberLookup
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : FlowGlobalPostProcessor {
 
     private companion object {
@@ -61,10 +61,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         return checkpoint.sessions
             .filter {
-                when (it.status) {
-                    SessionStateType.CREATED -> verifyCounterparty(context, it, now)
-                    else -> true
-                }
+                verifyCounterparty(context, it, now)
             }
             .map { sessionState ->
                 sessionManager.getMessagesToSend(
@@ -84,21 +81,25 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
-        val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
-        val expiryTime = sessionState.sessionStartTime.plusMillis(timeoutWindow)
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
+        val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
+        val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
 
         /**
          * If the counterparty doesn't exist in our network, don't send our queued messages yet.
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
          */
-        if (null == memberLookup.lookup(counterparty)) {
+        if (!counterpartyExists) {
+            val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
+            val expiryTime = sessionState.sessionStartTime.plusMillis(timeoutWindow)
+
             if (expiryTime < now) {
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
                         "[${counterparty}] as the recipient doesn't exist in the network."
                 log.debug(msg)
                 throw FlowPlatformException(msg)
             }
+
             return false
         }
 

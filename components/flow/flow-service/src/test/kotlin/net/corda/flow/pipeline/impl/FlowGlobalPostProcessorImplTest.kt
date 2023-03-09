@@ -9,7 +9,9 @@ import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
+import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.ALICE_X500_NAME
+import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
@@ -18,9 +20,10 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -35,6 +38,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.anyOrNull
 import java.time.Instant
 
 class FlowGlobalPostProcessorImplTest {
@@ -57,15 +61,17 @@ class FlowGlobalPostProcessorImplTest {
     private val sessionState1 = SessionState().apply {
         this.sessionId = SESSION_ID_1
         this.hasScheduledCleanup = false
+        this.counterpartyIdentity = ALICE_X500_HOLDING_IDENTITY
     }
     private val sessionState2 = SessionState().apply {
         this.sessionId = SESSION_ID_2
         this.hasScheduledCleanup = false
+        this.counterpartyIdentity = ALICE_X500_HOLDING_IDENTITY
     }
     private val sessionState3 = SessionState().apply {
         this.sessionId = SESSION_ID_3
         this.status = SessionStateType.CREATED
-        this.counterpartyIdentity = ALICE_X500_HOLDING_IDENTITY
+        this.counterpartyIdentity = BOB_X500_HOLDING_IDENTITY
     }
     private val sessionEvent1 = SessionEvent().apply {
         this.sessionId = SESSION_ID_1
@@ -93,7 +99,8 @@ class FlowGlobalPostProcessorImplTest {
     private val sessionManager = mock<SessionManager>()
     private val externalEventManager = mock<ExternalEventManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
-    private val memberLookup = mock<MemberLookup>()
+    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
+    private val membershipGroupReader = mock<MembershipGroupReader>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
@@ -102,7 +109,7 @@ class FlowGlobalPostProcessorImplTest {
         sessionManager,
         flowMessageFactory,
         flowRecordFactory,
-        memberLookup
+        membershipGroupReaderProvider
     )
 
     @Suppress("Unused")
@@ -143,7 +150,13 @@ class FlowGlobalPostProcessorImplTest {
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_2), any<ScheduleCleanup>())).thenReturn(
             scheduleCleanupRecord2
         )
-        whenever(memberLookup.lookup(ALICE_X500_NAME)).thenReturn(null)
+        whenever(membershipGroupReaderProvider.getGroupReader(anyOrNull())).thenReturn(membershipGroupReader)
+        whenever(membershipGroupReader.lookup(ALICE_X500_NAME)).thenReturn(mock())
+        whenever(membershipGroupReader.lookup(BOB_X500_NAME)).thenReturn(null)
+
+        setOf(sessionState1, sessionState2, sessionState3).forEach {
+            it.sessionStartTime = Instant.now()
+        }
     }
 
     @Test
@@ -281,8 +294,8 @@ class FlowGlobalPostProcessorImplTest {
 
     @Test
     fun `Don't retrieve messages from sessions with unconfirmed counterparties`() {
-        sessionState3.apply { sessionStartTime = Instant.now() }
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
+        whenever(membershipGroupReader.lookup(ALICE_X500_NAME)).thenReturn(mock())
 
         val result = flowGlobalPostProcessor.postProcess(testContext)
         assertThat(result.outputRecords).contains(sessionRecord1)
