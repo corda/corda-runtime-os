@@ -1,11 +1,17 @@
  package net.corda.flow.pipeline.handlers.waiting.sessions
 
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.CounterPartyFlowInfo
+import net.corda.flow.application.sessions.FlowInfoImpl
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
+import net.corda.flow.utils.KeyValueStore
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
+import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Component
 
@@ -38,7 +44,12 @@ class CounterPartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterParty
                     )
                 )
             }
-            else -> FlowContinuation.Continue
+            else -> FlowContinuation.Run(getFlowEventInfo(sessionState))
         }
     }
-}
+
+     private fun getFlowEventInfo(sessionState: SessionState): FlowInfo {
+         val props = KeyValueStore(sessionState.counterpartySessionProperties)
+         return FlowInfoImpl(props[FLOW_PROTOCOL].toString(), props[FLOW_PROTOCOL_VERSION_USED]!!.toInt())
+     }
+ }
