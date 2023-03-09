@@ -30,7 +30,7 @@ class TestFindTransactionFlow {
         val digestService = mock<DigestService>().also {
             val secureHashStringCaptor = argumentCaptor<String>()
             whenever(it.parseSecureHash(secureHashStringCaptor.capture())).thenAnswer {
-                val secureHashString= secureHashStringCaptor.firstValue
+                val secureHashString = secureHashStringCaptor.firstValue
                 parseSecureHash(secureHashString)
             }
         }
@@ -73,7 +73,7 @@ class TestFindTransactionFlow {
         val digestService = mock<DigestService>().also {
             val secureHashStringCaptor = argumentCaptor<String>()
             whenever(it.parseSecureHash(secureHashStringCaptor.capture())).thenAnswer {
-                val secureHashString= secureHashStringCaptor.firstValue
+                val secureHashString = secureHashStringCaptor.firstValue
                 parseSecureHash(secureHashString)
             }
         }
