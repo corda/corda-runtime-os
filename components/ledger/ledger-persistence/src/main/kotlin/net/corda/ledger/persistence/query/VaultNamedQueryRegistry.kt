@@ -2,7 +2,7 @@ package net.corda.ledger.persistence.query
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.query.VaultNamedQuery
+import net.corda.v5.ledger.utxo.query.VaultNamedQuery
 
 /**
  * An interface representing a named query storage.

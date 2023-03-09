@@ -1,9 +1,9 @@
 package net.corda.ledger.persistence.query.impl
 
-import net.corda.v5.ledger.common.query.VaultNamedQuery
-import net.corda.v5.ledger.common.query.VaultNamedQueryCollector
-import net.corda.v5.ledger.common.query.VaultNamedQueryFilter
-import net.corda.v5.ledger.common.query.VaultNamedQueryTransformer
+import net.corda.v5.ledger.utxo.query.VaultNamedQuery
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
 
 data class VaultNamedQueryImpl(
     private val name: String,

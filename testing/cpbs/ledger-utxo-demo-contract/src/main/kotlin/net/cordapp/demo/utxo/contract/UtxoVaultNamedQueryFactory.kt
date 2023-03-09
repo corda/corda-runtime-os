@@ -1,8 +1,8 @@
 package net.cordapp.demo.utxo.contract
 
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.query.VaultNamedQueryBuilderFactory
-import net.corda.v5.ledger.common.query.VaultNamedQueryFactory
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderFactory
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 
 @Suppress("unused")
 class UtxoVaultNamedQueryFactory : VaultNamedQueryFactory {

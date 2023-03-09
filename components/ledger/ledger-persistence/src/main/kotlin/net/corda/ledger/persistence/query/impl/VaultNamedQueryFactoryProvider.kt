@@ -6,8 +6,8 @@ import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.query.VaultNamedQueryBuilderFactory
-import net.corda.v5.ledger.common.query.VaultNamedQueryFactory
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderFactory
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
