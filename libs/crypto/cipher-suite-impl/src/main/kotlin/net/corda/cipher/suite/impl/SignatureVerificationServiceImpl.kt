@@ -52,7 +52,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
             "verify(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
         }
         val result = try {
-            !isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, originalData)
+            !isValid(originalData, signatureData, publicKey, signatureSpec, schemeMetadata.findKeyScheme(publicKey))
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Throwable) {
@@ -78,7 +78,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         val result = try {
-            !isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, originalData)
+            !isValid(originalData, signatureData, publicKey, signatureSpec, schemeMetadata.findKeyScheme(publicKey))
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Throwable) {
@@ -98,7 +98,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
         logger.debug {
             "isValid(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
         }
-        return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, originalData)
+        return isValid(originalData, signatureData, publicKey, signatureSpec, schemeMetadata.findKeyScheme(publicKey))
     }
 
     override fun isValid(
@@ -115,15 +115,15 @@ class SignatureVerificationServiceImpl @Activate constructor(
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
-        return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, originalData)
+        return isValid(originalData, signatureData, publicKey, signatureSpec, schemeMetadata.findKeyScheme(publicKey))
     }
 
     private fun isValid(
-        publicKey: PublicKey,
-        scheme: KeyScheme,
-        signatureSpec: SignatureSpec,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        scheme: KeyScheme
     ): Boolean {
         require(schemeMetadata.schemes.contains(scheme)) {
             "Unsupported key/algorithm for codeName: ${scheme.codeName}"
@@ -131,10 +131,10 @@ class SignatureVerificationServiceImpl @Activate constructor(
         require(signatureData.isNotEmpty()) {
             "Signature data is empty!"
         }
-        require(clearData.isNotEmpty()) {
+        require(originalData.isNotEmpty()) {
             "Clear data is empty, nothing to verify!"
         }
-        val signingData = signatureSpec.getSigningData(hashingService, clearData)
+        val signingData = signatureSpec.getSigningData(hashingService, originalData)
         return if (signatureSpec is CustomSignatureSpec && scheme.algorithmName == "RSA") {
             val cipher = Cipher.getInstance(
                 signatureSpec.signatureName,
