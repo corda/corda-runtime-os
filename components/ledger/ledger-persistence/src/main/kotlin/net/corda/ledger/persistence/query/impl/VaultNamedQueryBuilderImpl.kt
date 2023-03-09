@@ -9,14 +9,14 @@ import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
 import org.slf4j.LoggerFactory
 
 class VaultNamedQueryBuilderImpl(
-    private val vaultNamedQueryRegistry: VaultNamedQueryRegistry
+    private val vaultNamedQueryRegistry: VaultNamedQueryRegistry,
+    private val name: String
 ) : VaultNamedQueryBuilder {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private var name: String? = null
     private var whereJson: String? = null
     private var filter: VaultNamedQueryFilter<*>? = null
     private var mapper: VaultNamedQueryTransformer<*, *>? = null
@@ -47,13 +47,10 @@ class VaultNamedQueryBuilderImpl(
         if (logger.isDebugEnabled) {
             logger.debug("Registering custom query with name: $name")
         }
-        require(name != null) {
-            "Named ledger query can't be registered without a name."
-        }
 
         vaultNamedQueryRegistry.registerQuery(
             VaultNamedQueryImpl(
-                name!!,
+                name,
                 whereJson,
                 filter,
                 mapper,

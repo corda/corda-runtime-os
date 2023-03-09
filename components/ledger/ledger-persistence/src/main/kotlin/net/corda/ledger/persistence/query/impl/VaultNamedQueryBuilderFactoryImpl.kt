@@ -35,6 +35,6 @@ class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
         if (logger.isDebugEnabled) {
             logger.debug("Creating custom query with name: $queryName")
         }
-        return VaultNamedQueryBuilderImpl(vaultNamedQueryRegistry)
+        return VaultNamedQueryBuilderImpl(vaultNamedQueryRegistry, queryName)
     }
 }

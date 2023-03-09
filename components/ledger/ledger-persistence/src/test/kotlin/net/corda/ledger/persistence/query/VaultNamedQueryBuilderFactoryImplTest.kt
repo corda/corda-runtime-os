@@ -1,15 +1,14 @@
 package net.corda.ledger.persistence.query
 
 import net.corda.ledger.persistence.query.impl.VaultNamedQueryBuilderFactoryImpl
-import net.corda.v5.ledger.common.query.VaultNamedQuery
-import net.corda.v5.ledger.common.query.VaultNamedQueryCollector
-import net.corda.v5.ledger.common.query.VaultNamedQueryFilter
-import net.corda.v5.ledger.common.query.VaultNamedQueryTransformer
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.query.VaultNamedQuery
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
@@ -78,15 +77,6 @@ class VaultNamedQueryBuilderFactoryImplTest {
         assertThat(storedQuery.collector).isNull()
     }
 
-    @Test
-    fun `builder will throw exception if the query has no name`() {
-        val ex = assertThrows<IllegalArgumentException> {
-            VaultNamedQueryBuilderFactoryImpl(mockRegistry).register()
-        }
-
-        assertThat(ex.message).contains("Named ledger query can't be registered without a name.")
-        assertThat(storedQueries).isEmpty()
-    }
 
     private class DummyPojo
 }

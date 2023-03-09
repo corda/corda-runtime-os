@@ -1,7 +1,7 @@
 package net.corda.ledger.persistence.query
 
 import net.corda.ledger.persistence.query.impl.VaultNamedQueryRegistryImpl
-import net.corda.v5.ledger.common.query.VaultNamedQuery
+import net.corda.v5.ledger.utxo.query.VaultNamedQuery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
