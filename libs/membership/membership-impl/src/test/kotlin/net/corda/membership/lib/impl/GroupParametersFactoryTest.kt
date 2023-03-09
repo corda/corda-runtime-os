@@ -112,7 +112,7 @@ class GroupParametersFactoryTest {
             assertThat(groupParameters.entries)
                 .containsExactlyElementsOf(groupParametersValues.entries)
             assertThat(groupParameters.bytes).isEqualTo(serialisedGroupParameters)
-            assertThat(groupParameters.signature.context).isEqualTo(sigContext)
+            assertThat((groupParameters as SignedGroupParameters).signature.context).isEqualTo(sigContext)
             assertThat(groupParameters.signature.by).isEqualTo(pubKey)
             assertThat(groupParameters.signature.bytes).isEqualTo(sigBytes)
         }

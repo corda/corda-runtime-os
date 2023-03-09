@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -147,8 +148,8 @@ class GroupParametersReconcilerTest {
     }
 
     private val reconciler: Reconciler = mock()
-    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, SignedGroupParameters> = mock()
-    private val reconcilerReader: ReconcilerReader<HoldingIdentity, SignedGroupParameters> = mock()
+    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, InternalGroupParameters> = mock()
+    private val reconcilerReader: ReconcilerReader<HoldingIdentity, InternalGroupParameters> = mock()
     private val reconcilerFactory: ReconcilerFactory = mock {
         on {
             create(
@@ -156,7 +157,7 @@ class GroupParametersReconcilerTest {
                 eq(reconcilerReader),
                 eq(reconcilerWriter),
                 eq(HoldingIdentity::class.java),
-                eq(SignedGroupParameters::class.java),
+                eq(InternalGroupParameters::class.java),
                 any()
             )
         } doReturn reconciler

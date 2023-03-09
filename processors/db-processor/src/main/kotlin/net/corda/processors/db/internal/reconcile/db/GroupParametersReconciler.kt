@@ -9,7 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.datamodel.getCurrentGroupParameters
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
@@ -41,8 +41,8 @@ class GroupParametersReconciler(
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val groupParametersFactory: GroupParametersFactory,
     private val reconcilerFactory: ReconcilerFactory,
-    private val kafkaReconcilerWriter: ReconcilerWriter<HoldingIdentity, SignedGroupParameters>,
-    private val kafkaReconcilerReader: ReconcilerReader<HoldingIdentity, SignedGroupParameters>,
+    private val kafkaReconcilerWriter: ReconcilerWriter<HoldingIdentity, InternalGroupParameters>,
+    private val kafkaReconcilerReader: ReconcilerReader<HoldingIdentity, InternalGroupParameters>,
 ) : ReconcilerWrapper {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -67,7 +67,7 @@ class GroupParametersReconciler(
             )
 
     @VisibleForTesting
-    internal var dbReconcilerReader: DbReconcilerReader<HoldingIdentity, SignedGroupParameters>? = null
+    internal var dbReconcilerReader: DbReconcilerReader<HoldingIdentity, InternalGroupParameters>? = null
 
     @VisibleForTesting
     internal var reconciler: Reconciler? = null
@@ -89,7 +89,7 @@ class GroupParametersReconciler(
                 dbReconcilerReader = DbReconcilerReader(
                     coordinatorFactory,
                     HoldingIdentity::class.java,
-                    SignedGroupParameters::class.java,
+                    InternalGroupParameters::class.java,
                     dependencies,
                     reconciliationContextFactory,
                     ::getAllGroupParametersDBVersionedRecords
@@ -104,7 +104,7 @@ class GroupParametersReconciler(
                     kafkaReader = kafkaReconcilerReader,
                     writer = kafkaReconcilerWriter,
                     keyClass = HoldingIdentity::class.java,
-                    valueClass = SignedGroupParameters::class.java,
+                    valueClass = InternalGroupParameters::class.java,
                     reconciliationIntervalMs = intervalMillis
                 ).also { it.start() }
             } else {
@@ -121,21 +121,23 @@ class GroupParametersReconciler(
     }
 
     private fun getAllGroupParametersDBVersionedRecords(context: ReconciliationContext):
-            Stream<VersionedRecord<HoldingIdentity, SignedGroupParameters>> {
+            Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>> {
         require(context is VirtualNodeReconciliationContext) {
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
         return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
-            val signature = CryptoSignatureWithKey(
-                entity.signaturePublicKey.buffer,
-                entity.signatureContent.buffer,
-                cordaAvroDeserializer.deserialize(entity.signatureContext)
-            )
+            val signature = if (entity.isSigned()) {
+                CryptoSignatureWithKey(
+                    entity.signaturePublicKey!!.buffer,
+                    entity.signatureContent!!.buffer,
+                    entity.signatureContext!!.let { cordaAvroDeserializer.deserialize(it) }
+                )
+            } else null
             val signedGroupParameters = AvroGroupParameters(entity.parameters.buffer, signature)
             val params = groupParametersFactory.create(signedGroupParameters)
 
             Stream.of(
-                object : VersionedRecord<HoldingIdentity, SignedGroupParameters> {
+                object : VersionedRecord<HoldingIdentity, InternalGroupParameters> {
                     override val version = entity.epoch
                     override val isDeleted = false
                     override val key = context.virtualNodeInfo.holdingIdentity

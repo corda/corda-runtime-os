@@ -16,6 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -92,6 +93,8 @@ class TestGroupReader @Activate constructor(
     override val owningMember: MemberX500Name
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val groupParameters: GroupParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val signedGroupParameters: SignedGroupParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
     private val name = MemberX500Name("Corda MGM", "London", "GB")

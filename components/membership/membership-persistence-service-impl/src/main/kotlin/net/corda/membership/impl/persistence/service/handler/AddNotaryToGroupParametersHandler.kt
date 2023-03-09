@@ -14,8 +14,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.virtualnode.toCorda
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.KeyPairGenerator
 import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
@@ -90,7 +88,7 @@ internal class AddNotaryToGroupParametersHandler(
                     logger,
                     clock
                 ).apply {
-                    first ?: return@transaction previous.singleResult.toSignedParameters(deserializer)
+                    first ?: return@transaction previous.singleResult.toAvro(deserializer)
                 }
             } else {
                 // Add new notary service
@@ -102,21 +100,17 @@ internal class AddNotaryToGroupParametersHandler(
                     clock
                 )
             }
-            val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
-
             // Only an MGM should be calling this function and so a signature is not set since it's signed when
             // distributed.
-            val entity = GroupParametersEntity(
+            GroupParametersEntity(
                 epoch = epoch!!,
                 parameters = serializeProperties(groupParameters!!),
-                signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public), //TO-DO: DON'T MERGE
-                signatureContent = byteArrayOf(1),//TO-DO: DON'T MERGE
-                signatureContext = serializeProperties(KeyValuePairList(emptyList()))//TO-DO: DON'T MERGE
-            )
-
-            em.persist(entity)
-
-            entity.toSignedParameters(deserializer)
+                signaturePublicKey = null,
+                signatureContent = null,
+                signatureContext = null
+            ).also {
+                em.persist(it)
+            }.toAvro(deserializer)
         }
         return PersistGroupParametersResponse(persistedGroupParameters)
     }

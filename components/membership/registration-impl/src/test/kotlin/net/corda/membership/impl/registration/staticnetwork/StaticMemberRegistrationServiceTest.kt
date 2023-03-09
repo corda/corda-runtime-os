@@ -258,7 +258,9 @@ class StaticMemberRegistrationServiceTest {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mockGroupParameters)
+        on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(
+            mockSignedGroupParameters
+        )
         on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
@@ -295,12 +297,11 @@ class StaticMemberRegistrationServiceTest {
         on { get(eq(alice)) } doReturn virtualNodeInfo
     }
     private val serializedGroupParameters = "group-params".toByteArray()
-    private val mockGroupParameters: SignedGroupParameters = mock {
+    private val mockSignedGroupParameters: SignedGroupParameters = mock {
         on { bytes } doReturn serializedGroupParameters
     }
     private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(any<AvroGroupParameters>()) } doReturn mockGroupParameters
-        on { create(any<KeyValuePairList>()) } doReturn mockGroupParameters
+        on { create(any<AvroGroupParameters>()) } doReturn mockSignedGroupParameters
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
@@ -467,7 +468,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     status.capture()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(mockGroupParameters))
+            ).doReturn(MembershipPersistenceResult.Success(mockSignedGroupParameters))
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
             setUpPublisher()
@@ -475,7 +476,7 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, knownIdentity, mockContext)
 
-            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(status.firstValue).isEqualTo(mockSignedGroupParameters)
         }
 
         @Test
@@ -490,7 +491,7 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, knownIdentity, mockContext)
 
-            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(status.firstValue).isEqualTo(mockSignedGroupParameters)
         }
 
         @Test
@@ -822,7 +823,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     any()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(mockGroupParameters))
+            ).doReturn(MembershipPersistenceResult.Success(mockSignedGroupParameters))
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
             setUpPublisher()
@@ -830,9 +831,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, bob, context)
 
-            verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockGroupParameters))
-            verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockGroupParameters))
-            verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockGroupParameters))
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockSignedGroupParameters))
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockSignedGroupParameters))
+            verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockSignedGroupParameters))
         }
 
         @Test
@@ -850,9 +851,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, bob, context)
 
-            verify(groupParametersWriterService).put(eq(bob), eq(mockGroupParameters))
-            verify(groupParametersWriterService).put(eq(alice), eq(mockGroupParameters))
-            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockGroupParameters))
+            verify(groupParametersWriterService).put(eq(bob), eq(mockSignedGroupParameters))
+            verify(groupParametersWriterService).put(eq(alice), eq(mockSignedGroupParameters))
+            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockSignedGroupParameters))
         }
 
         @Test

@@ -243,7 +243,8 @@ class MemberSynchronisationServiceImpl internal constructor(
 
         private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
             serializationFactory.createAvroDeserializer({
-                logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
+                logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while " +
+                        "processing membership updates.")
             }, KeyValuePairList::class.java)
 
         private fun delayToNextRequestInMilliSeconds(): Long {

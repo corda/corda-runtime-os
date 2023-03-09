@@ -17,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -90,7 +91,7 @@ class GroupParametersReaderServiceImplTest {
     private val allGroupParams = HashMap<HoldingIdentity, SignedGroupParameters>(
         mapOf(alice to groupParams, bob to groupParams2)
     )
-    private val groupParametersCache: MemberDataCache<SignedGroupParameters> = mock {
+    private val groupParametersCache: MemberDataCache<InternalGroupParameters> = mock {
         on { get(eq(alice)) } doReturn groupParams
         on { getAll() } doReturn allGroupParams
     }

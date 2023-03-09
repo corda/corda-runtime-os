@@ -2,6 +2,7 @@ package net.corda.testing.sandboxes.impl
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -42,6 +43,9 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         override val groupParameters: GroupParameters
             get() = TODO("groupParameters: Not yet implemented")
 
+        override val signedGroupParameters: SignedGroupParameters
+            get() = TODO("groupParameters: Not yet implemented")
+
         override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
             throw IllegalStateException("TEST MODULE: Membership not supported")
         }
@@ -57,6 +61,7 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
             return null
         }
+
         override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
             get() = throw IllegalStateException("TEST MODULE: Membership not supported")
     }

@@ -8,19 +8,19 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.KeyPairGenerator
 import javax.persistence.LockModeType
 
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<PersistGroupParametersInitialSnapshot, PersistGroupParametersResponse>(persistenceHandlerServices) {
+) : BasePersistenceHandler<PersistGroupParametersInitialSnapshot, PersistGroupParametersResponse>(
+    persistenceHandlerServices
+) {
     private val serializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
@@ -72,23 +72,22 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                         "Group parameters initial snapshot already exist with different parameters."
                     )
                 } else {
-                    return@transaction currentGroupParameters.toSignedParameters(deserializer)
+                    return@transaction currentGroupParameters.toAvro(deserializer)
                 }
             }
-            val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
             GroupParametersEntity(
                 epoch = 1,
                 parameters = serializeProperties(groupParameters),
-                signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public), //"TO-DO: DON'T MERGE"
-                signatureContent = byteArrayOf(1), //"TO-DO: DON'T MERGE"
-                signatureContext = serializeProperties(KeyValuePairList(emptyList())) //"TO-DO: DON'T MERGE"
+                signaturePublicKey = null,
+                signatureContent = null,
+                signatureContext = null
             ).also {
                 em.persist(it)
-            }.toSignedParameters(deserializer)
+            }.toAvro(deserializer)
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)
     }
 
-    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys { it != MODIFIED_TIME_KEY }
+    private fun Map<String, String>.removeTime(): Map<String, String> = this.filterKeys { it != MODIFIED_TIME_KEY }
 }

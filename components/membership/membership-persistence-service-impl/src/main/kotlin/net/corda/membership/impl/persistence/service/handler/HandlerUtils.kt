@@ -8,18 +8,19 @@ import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import java.nio.ByteBuffer
 
-fun ByteArray.wrap() = ByteBuffer.wrap(this)
-
-fun GroupParametersEntity.toSignedParameters(
+fun GroupParametersEntity.toAvro(
     deserializer: CordaAvroDeserializer<KeyValuePairList>
 ) = SignedGroupParameters(
-        parameters.wrap(),
+    ByteBuffer.wrap(parameters),
+    if (isSigned()) {
         CryptoSignatureWithKey(
-            signaturePublicKey.wrap(),
-            signatureContent.wrap(),
-            deserializer.deserializeKeyValuePairList(signatureContext)
+            ByteBuffer.wrap(signaturePublicKey!!),
+            ByteBuffer.wrap(signatureContent!!),
+            deserializer.deserializeKeyValuePairList(signatureContext!!)
         )
-    )
+    } else null
+
+)
 
 
 fun CordaAvroDeserializer<KeyValuePairList>.deserializeKeyValuePairList(

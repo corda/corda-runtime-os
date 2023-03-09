@@ -6,14 +6,13 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.exceptions.FailedGroupParametersSerialization
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.membership.GroupParameters
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -43,9 +42,9 @@ class GroupParametersFactoryImpl @Activate constructor(
         logger.error("Failed to deserialise group parameters to KeyValuePairList.")
     }, KeyValuePairList::class.java)
 
-    override fun create(parameters: AvroGroupParameters): SignedGroupParameters = parameters.toCorda()
+    override fun create(parameters: AvroGroupParameters): InternalGroupParameters = parameters.toCorda()
 
-    override fun create(parameters: KeyValuePairList): GroupParameters =
+    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters =
         avroSerializer.serialize(parameters)?.toUnsignedGroupParameters() ?: throw FailedGroupParametersSerialization
 
 
@@ -56,9 +55,14 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    private fun AvroGroupParameters.toCorda() = SignedGroupParametersImpl(
+    private fun AvroGroupParameters.toCorda() = mgmSignature?.let {
+        SignedGroupParametersImpl(
+            groupParameters.array(),
+            it.toCorda(),
+            ::deserializeLayeredPropertyMap
+        )
+    } ?: UnsignedGroupParametersImpl(
         groupParameters.array(),
-        mgmSignature.toCorda(),
         ::deserializeLayeredPropertyMap
     )
 

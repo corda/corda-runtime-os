@@ -37,6 +37,7 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -153,8 +154,8 @@ class MembershipPersistenceClientImpl(
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: SignedGroupParameters
-    ): MembershipPersistenceResult<SignedGroupParameters> {
+        groupParameters: InternalGroupParameters
+    ): MembershipPersistenceResult<InternalGroupParameters> {
         logger.info("Persisting group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -163,7 +164,7 @@ class MembershipPersistenceClientImpl(
                     ByteBuffer.wrap(
                         groupParameters.bytes
                     ),
-                    groupParameters.signature.toAvro()
+                    (groupParameters as? SignedGroupParameters)?.signature?.toAvro()
                 )
             )
         ).execute()
@@ -179,7 +180,7 @@ class MembershipPersistenceClientImpl(
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<SignedGroupParameters> {
+    ): MembershipPersistenceResult<InternalGroupParameters> {
         logger.info("Persisting initial snapshot of group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -198,7 +199,7 @@ class MembershipPersistenceClientImpl(
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<SignedGroupParameters> {
+    ): MembershipPersistenceResult<InternalGroupParameters> {
         logger.info("Adding notary to persisted group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),

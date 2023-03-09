@@ -13,6 +13,7 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -99,6 +100,9 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
                 )
             )
         )
+    override val signedGroupParameters: SignedGroupParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
     private var members = emptyList<MemberInfo>()
 
     fun loadMembers(memberList: List<MemberInfo>) {

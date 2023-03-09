@@ -213,8 +213,9 @@ class AddNotaryToGroupParametersHandlerTest {
             assertThat(firstValue).isInstanceOf(GroupParametersEntity::class.java)
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
-            assertThat(entity.signaturePublicKey).isEqualTo("test-key".toByteArray())
-            assertThat(entity.signatureContent).isEqualTo(byteArrayOf(1))
+            assertThat(entity.signaturePublicKey).isNull()
+            assertThat(entity.signatureContent).isNull()
+            assertThat(entity.signatureContext).isNull()
         }
     }
 
@@ -288,8 +289,9 @@ class AddNotaryToGroupParametersHandlerTest {
             assertThat(firstValue).isInstanceOf(GroupParametersEntity::class.java)
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
-            assertThat(entity.signaturePublicKey).isEqualTo("test-key".toByteArray())
-            assertThat(entity.signatureContent).isEqualTo(byteArrayOf(1))
+            assertThat(entity.signaturePublicKey).isNull()
+            assertThat(entity.signatureContent).isNull()
+            assertThat(entity.signatureContext).isNull()
         }
     }
 

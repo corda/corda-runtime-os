@@ -59,14 +59,15 @@ internal class PersistGroupParametersHandler(
                     )
                 }
             } else {
-                val entity = GroupParametersEntity(
+                GroupParametersEntity(
                     epoch = epochFromRequest,
                     parameters = serialisedGroupParameters,
                     signaturePublicKey = request.groupParameters.mgmSignature.publicKey.array(),
                     signatureContent = request.groupParameters.mgmSignature.bytes.array(),
                     signatureContext = serialize(request.groupParameters.mgmSignature.context)
-                )
-                em.persist(entity)
+                ).also {
+                    em.persist(it)
+                }
             }
 
             // Find the latest parameters
@@ -81,7 +82,7 @@ internal class PersistGroupParametersHandler(
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .resultList
                 .first()
-                .toSignedParameters(deserializer)
+                .toAvro(deserializer)
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)

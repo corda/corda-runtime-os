@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -28,7 +29,7 @@ import java.util.*
  * Created for mocking and simplifying membership persistence client functionalities used by the membership services.
  */
 interface TestMembershipPersistenceClient : MembershipPersistenceClient {
-    fun getPersistedGroupParameters(): SignedGroupParameters?
+    fun getPersistedGroupParameters(): InternalGroupParameters?
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -42,7 +43,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
     }
 
-    private var persistedGroupParameters: SignedGroupParameters? = null
+    private var persistedGroupParameters: InternalGroupParameters? = null
 
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()) { event, coordinator ->
@@ -51,7 +52,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
             }
         }
 
-    override fun getPersistedGroupParameters(): SignedGroupParameters? = persistedGroupParameters
+    override fun getPersistedGroupParameters(): InternalGroupParameters? = persistedGroupParameters
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
@@ -73,7 +74,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     }
 
-    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<SignedGroupParameters> {
+    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<InternalGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -82,8 +83,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: SignedGroupParameters
-    ): MembershipPersistenceResult<SignedGroupParameters> {
+        groupParameters: InternalGroupParameters
+    ): MembershipPersistenceResult<InternalGroupParameters> {
         persistedGroupParameters = groupParameters
         return MembershipPersistenceResult.Success(groupParameters)
     }
@@ -91,7 +92,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<SignedGroupParameters> {
+    ): MembershipPersistenceResult<InternalGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

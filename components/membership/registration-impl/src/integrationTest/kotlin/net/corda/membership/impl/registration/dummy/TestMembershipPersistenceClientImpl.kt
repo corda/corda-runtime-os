@@ -4,6 +4,7 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -34,18 +35,18 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<SignedGroupParameters> =
+    ): MembershipPersistenceResult<InternalGroupParameters> =
         throw UnsupportedOperationException("not implemented for testing")
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: SignedGroupParameters,
-    ): MembershipPersistenceResult<SignedGroupParameters> = MembershipPersistenceResult.Success(groupParameters)
+        groupParameters: InternalGroupParameters,
+    ): MembershipPersistenceResult<InternalGroupParameters> = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-    ): MembershipPersistenceResult<SignedGroupParameters> =
+    ): MembershipPersistenceResult<InternalGroupParameters> =
         throw UnsupportedOperationException("not implemented for testing")
 
     override fun persistRegistrationRequest(

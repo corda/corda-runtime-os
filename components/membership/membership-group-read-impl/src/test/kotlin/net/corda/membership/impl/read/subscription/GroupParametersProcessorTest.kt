@@ -8,6 +8,7 @@ import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.SignedGroupParameters
@@ -24,7 +25,7 @@ import java.time.Instant
 
 class GroupParametersProcessorTest {
     private companion object {
-        val groupParametersCache = MemberDataCache.Impl<SignedGroupParameters>()
+        val groupParametersCache = MemberDataCache.Impl<InternalGroupParameters>()
         lateinit var groupParametersProcessor: GroupParametersProcessor
         val clock = TestClock(Instant.ofEpochSecond(100))
 

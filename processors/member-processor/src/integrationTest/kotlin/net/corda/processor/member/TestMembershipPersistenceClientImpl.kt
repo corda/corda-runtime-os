@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -49,7 +50,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: SignedGroupParameters,
+        groupParameters: InternalGroupParameters,
     ) = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(

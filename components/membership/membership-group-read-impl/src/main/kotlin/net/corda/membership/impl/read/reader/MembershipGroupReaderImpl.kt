@@ -9,6 +9,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -33,6 +34,9 @@ class MembershipGroupReaderImpl(
 
     override val groupParameters: GroupParameters?
         get() = groupParametersReaderService.get(holdingIdentity)
+
+    override val signedGroupParameters: SignedGroupParameters?
+        get() = groupParametersReaderService.getSigned(holdingIdentity)
 
     override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> =
         memberList.filterBy(filter)

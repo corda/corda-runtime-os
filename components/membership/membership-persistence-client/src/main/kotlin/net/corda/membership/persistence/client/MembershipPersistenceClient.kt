@@ -5,6 +5,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -14,7 +15,6 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 import java.util.UUID
-import net.corda.membership.lib.SignedGroupParameters
 
 /**
  * Interface to be implemented by the service which requires membership persistence outside of the DB worker.
@@ -61,11 +61,11 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      *
      * @return Membership persistence result to indicate the result of the operation. In the case of success, the
-     * payload will include a [SignedGroupParameters] of the newly persisted group parameters.
+     * payload will include a [InternalGroupParameters] of the newly persisted group parameters.
      */
     fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<SignedGroupParameters>
+    ): MembershipPersistenceResult<InternalGroupParameters>
 
     /**
      * Persists a set of group parameters. This method is expected to be used by members to persist group parameters
@@ -83,8 +83,8 @@ interface MembershipPersistenceClient : Lifecycle {
      */
     fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: SignedGroupParameters
-    ): MembershipPersistenceResult<SignedGroupParameters>
+        groupParameters: InternalGroupParameters
+    ): MembershipPersistenceResult<InternalGroupParameters>
 
     /**
      * Adds notary information to an existing set of group parameters. This method is expected to be used by an MGM to
@@ -101,12 +101,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param notary [MemberInfo] of the notary to be added.
      *
      * @return Membership persistence result to indicate the result of the operation. In the case of success, the
-     * payload will include a [SignedGroupParameters] of the newly persisted group parameters.
+     * payload will include a [InternalGroupParameters] of the newly persisted group parameters.
      */
     fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<SignedGroupParameters>
+    ): MembershipPersistenceResult<InternalGroupParameters>
 
     /**
      * Persists a registration request record as viewed by a specific holding identity.

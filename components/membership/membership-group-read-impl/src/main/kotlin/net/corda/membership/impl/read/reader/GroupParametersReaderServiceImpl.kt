@@ -16,6 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.subscription.GroupParametersProcessor
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -39,7 +40,7 @@ class GroupParametersReaderServiceImpl internal constructor(
     private val configurationReadService: ConfigurationReadService,
     private val subscriptionFactory: SubscriptionFactory,
     private val groupParametersFactory: GroupParametersFactory,
-    private val groupParametersCache: MemberDataCache<SignedGroupParameters>,
+    private val groupParametersCache: MemberDataCache<InternalGroupParameters>,
 ) : GroupParametersReaderService {
 
     @Activate
@@ -95,32 +96,34 @@ class GroupParametersReaderServiceImpl internal constructor(
         coordinator.stop()
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, SignedGroupParameters>>? =
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>>? =
         impl.getAllVersionedRecords()
 
-    override fun get(identity: HoldingIdentity): SignedGroupParameters? = impl.get(identity)
+    override fun get(identity: HoldingIdentity) = impl.get(identity)
+
+    override fun getSigned(identity: HoldingIdentity) = get(identity) as? SignedGroupParameters
 
     private interface InnerGroupParametersReaderService : AutoCloseable {
-        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, SignedGroupParameters>>
+        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>>
 
-        fun get(identity: HoldingIdentity): SignedGroupParameters?
+        fun get(identity: HoldingIdentity): InternalGroupParameters?
     }
 
     private object InactiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, SignedGroupParameters>> =
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>> =
             throw IllegalStateException("$serviceName is currently inactive.")
 
-        override fun get(identity: HoldingIdentity): SignedGroupParameters =
+        override fun get(identity: HoldingIdentity): InternalGroupParameters =
             throw IllegalStateException("$serviceName is currently inactive.")
 
         override fun close() = Unit
     }
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, SignedGroupParameters>> {
-            val recordList: List<VersionedRecord<HoldingIdentity, SignedGroupParameters>> =
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>> {
+            val recordList: List<VersionedRecord<HoldingIdentity, InternalGroupParameters>> =
                 groupParametersCache.getAll().map {
-                    object : VersionedRecord<HoldingIdentity, SignedGroupParameters> {
+                    object : VersionedRecord<HoldingIdentity, InternalGroupParameters> {
                         override val version = it.value.epoch
                         override val isDeleted = false
                         override val key = it.key
@@ -130,7 +133,7 @@ class GroupParametersReaderServiceImpl internal constructor(
             return recordList.stream()
         }
 
-        override fun get(identity: HoldingIdentity): SignedGroupParameters? = groupParametersCache.get(identity)
+        override fun get(identity: HoldingIdentity): InternalGroupParameters? = groupParametersCache.get(identity)
 
         override fun close() {
             groupParametersCache.clear()

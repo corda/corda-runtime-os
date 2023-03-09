@@ -1,6 +1,7 @@
 package net.corda.membership.read
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -25,6 +26,11 @@ interface MembershipGroupReader {
      * The current group parameters for the group represented by [groupId].
      */
     val groupParameters: GroupParameters?
+
+    /**
+     * The current group parameters for the group represented by [groupId] which have been signed by the MGM.
+     */
+    val signedGroupParameters: SignedGroupParameters?
 
     /**
      * Returns a list of all visible [MemberInfo]s for the member represented by [owningMember]

@@ -44,6 +44,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -224,7 +225,7 @@ class MembershipPersistenceTest {
 
             override fun persistGroupParameters(
                 viewOwningIdentity: HoldingIdentity,
-                groupParameters: SignedGroupParameters
+                groupParameters: InternalGroupParameters
             ) = safeCall {
                 membershipPersistenceClient.persistGroupParameters(viewOwningIdentity, groupParameters)
             }
@@ -685,7 +686,7 @@ class MembershipPersistenceTest {
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        with((persisted as? MembershipPersistenceResult.Success<SignedGroupParameters>)!!.payload.entries) {
+        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
             assertThat(size).isEqualTo(6)
             assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
         }
@@ -771,7 +772,7 @@ class MembershipPersistenceTest {
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        with((persisted as? MembershipPersistenceResult.Success<SignedGroupParameters>)!!.payload.entries) {
+        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
             assertThat(size).isEqualTo(6)
             assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
         }
@@ -864,7 +865,7 @@ class MembershipPersistenceTest {
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        with((persisted as? MembershipPersistenceResult.Success<SignedGroupParameters>)!!.payload.entries) {
+        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
             assertThat(size).isEqualTo(7)
             assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
         }
