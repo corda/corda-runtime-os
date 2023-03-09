@@ -28,7 +28,7 @@ import java.time.Instant
 import java.util.UUID
 
 //Based on FlowP2PFilter
-@Suppress("Unused")
+@Suppress("LongParameterList", "Unused")
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
