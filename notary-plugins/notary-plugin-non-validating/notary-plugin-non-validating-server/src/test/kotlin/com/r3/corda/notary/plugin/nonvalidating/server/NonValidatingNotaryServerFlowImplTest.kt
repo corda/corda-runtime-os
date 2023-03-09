@@ -426,8 +426,8 @@ class NonValidatingNotaryServerFlowImplTest {
         }
 
         val mockDigestService = mock<DigestService> {
-            on { hash(any<ByteArray>(), eq(DigestAlgorithmName.SHA2_256)) } doReturn
-                    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, byteArrayOf(0x01, 0x02, 0x03, 0x04))
+            on { hash(any<ByteArray>(), any()) } doReturn
+                    SecureHashImpl("dummy", byteArrayOf(0x01, 0x02, 0x03, 0x04))
         }
 
         val server = NonValidatingNotaryServerFlowImpl(
