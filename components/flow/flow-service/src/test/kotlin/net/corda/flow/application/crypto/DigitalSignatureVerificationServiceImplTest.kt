@@ -18,12 +18,12 @@ class DigitalSignatureVerificationServiceImplTest {
     @Test
     fun `verify calls SignatureService#verify`() {
         signingService.verify(byteArrayOf(), byteArrayOf(), mock(), mock())
-        verify(signatureService).verify(any(), any<SignatureSpec>(), any(), any())
+        verify(signatureService).verify(any(), any(), any(), any<SignatureSpec>())
     }
 
     @Test
     fun `verify throws exception when SignatureService#verify throws`() {
-        whenever(signatureService.verify(any(), any<SignatureSpec>(), any(), any())).thenThrow(CryptoSignatureException("oops!"))
+        whenever(signatureService.verify(any(), any(), any(), any<SignatureSpec>())).thenThrow(CryptoSignatureException("oops!"))
         assertThrows<CryptoSignatureException> { signingService.verify(byteArrayOf(), byteArrayOf(), mock(), mock()) }
     }
 }

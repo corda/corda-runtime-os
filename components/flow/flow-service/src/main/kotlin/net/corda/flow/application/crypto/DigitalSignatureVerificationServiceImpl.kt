@@ -29,7 +29,7 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec
     ) {
-        signatureVerificationService.verify(publicKey, signatureSpec, signatureData, originalData)
+        signatureVerificationService.verify(originalData, signatureData, publicKey, signatureSpec)
     }
 
     override fun verify(
