@@ -255,13 +255,17 @@ class CachingCustomSerializerRegistry(
         return declaredSerializers.first()
     }
 
-    private val Class<*>.isCustomSerializationForbidden: Boolean get() = when {
-        isSubClassOf(PrivateKey::class.java) -> true
-        AMQPTypeIdentifiers.isPrimitive(this) -> true
-        isSubClassOf(CordaThrowable::class.java) -> false
-        allowedFor.any { it.isAssignableFrom(this) } -> false
-        isAnnotationPresent(CordaSerializable::class.java) -> true
-        else -> false
+    private val Class<*>.isCustomSerializationForbidden: Boolean get() {
+        val forbidden = true
+        val allowed = false
+
+        return when {
+            isSubClassOf(PrivateKey::class.java) -> forbidden
+            AMQPTypeIdentifiers.isPrimitive(this) -> forbidden
+            isSubClassOf(CordaThrowable::class.java) -> allowed
+            allowedFor.any { it.isAssignableFrom(this) } -> allowed
+            else -> allowed
+        }
     }
 }
 

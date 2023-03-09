@@ -136,7 +136,7 @@ class CpkFileRepositoryTest {
 
             // Query database
             assertThat(cpkFileRepository.exists(this, cpkFile1.fileChecksum)).isTrue
-            assertThat(cpkFileRepository.exists(this, SecureHash("SHA1", "DUMMY".toByteArray()))).isFalse
+            assertThat(cpkFileRepository.exists(this, SecureHash("SHA-256", "DUMMY".toByteArray()))).isFalse
         }
     }
 

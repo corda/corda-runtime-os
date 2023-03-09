@@ -27,6 +27,10 @@ class MemberInfoEntity(
     @Column(name = "member_name", nullable = false, updatable = false)
     val memberX500Name: String,
 
+    @Id
+    @Column(name = "is_pending", nullable = false, updatable = false)
+    val isPending: Boolean,
+
     @Column(nullable = false)
     var status: String,
 
@@ -42,24 +46,27 @@ class MemberInfoEntity(
     @Column(name = "serial_number", nullable = false)
     val serialNumber: Long,
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
         if (other == null) return false
         if (other !is MemberInfoEntity) return false
         return other.groupId == this.groupId
                 && MemberX500Name.parse(other.memberX500Name) == MemberX500Name.parse(this.memberX500Name)
+                && other.isPending == this.isPending
     }
 
     override fun hashCode(): Int {
         var result = groupId.hashCode()
         result = 31 * result + memberX500Name.hashCode()
+        result = 31 * result + isPending.hashCode()
         return result
     }
+
 }
 
 @Embeddable
 data class MemberInfoEntityPrimaryKey(
     val groupId: String,
-    val memberX500Name: String
+    val memberX500Name: String,
+    val isPending: Boolean,
 ) : Serializable

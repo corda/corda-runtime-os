@@ -41,6 +41,7 @@ import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.sql.DataSource
+import net.corda.v5.crypto.SecureHash
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -128,7 +129,7 @@ internal class VirtualNodeWriterProcessor(
                         return
                     }
 
-                    val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    val cpiMetadataLite = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
@@ -165,7 +166,7 @@ internal class VirtualNodeWriterProcessor(
                     }
 
                     val changelogsToRun =
-                        changeLogsRepository.findByCpiId(em, cpiMetadata.id).groupBy { it.id.cpkFileChecksum }
+                        changeLogsRepository.findByCpiId(em, cpiMetadataLite.id).groupBy { it.id.cpkFileChecksum }
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
@@ -174,11 +175,11 @@ internal class VirtualNodeWriterProcessor(
                             }
                         } catch (e: Exception) {
                             val changeLogs = changelogsForThisCpk.joinToString {
-                                it.id.cpkFileChecksum + ", " + it.id.filePath
+                                it.id.cpkFileChecksum.toString() + ", " + it.id.filePath
                             }
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI " +
-                                        "${cpiMetadata.id.name} - changelogs: [${changeLogs}]",
+                                        "${cpiMetadataLite.id.name} - changelogs: [${changeLogs}]",
                                 e
                             )
                             respFuture.complete(
@@ -256,10 +257,12 @@ internal class VirtualNodeWriterProcessor(
 
                 val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
                 if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
-                    val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
-                        stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
-                    )
-                    if (!inSync) {
+                    if (!migrationUtility.areChangesetsDeployedOnVault(
+                            stateChangeRequest.holdingIdentityShortHash,
+                            changelogsPerCpk,
+                            nodeInfo.vaultDmlConnectionId
+                        )
+                    ) {
                         logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
                         throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
@@ -320,7 +323,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun runCpkResyncMigrations(
         dataSource: CloseableDataSource,
-        cpkFileChecksum: String,
+        cpkFileChecksum: SecureHash,
         changelogs: List<CpkDbChangeLog>
     ) {
         if (changelogs.isEmpty()) return
@@ -337,7 +340,7 @@ internal class VirtualNodeWriterProcessor(
                     ), it.content
                 )
             }),
-            tag = cpkFileChecksum
+            tag = cpkFileChecksum.toString()
         )
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
     }

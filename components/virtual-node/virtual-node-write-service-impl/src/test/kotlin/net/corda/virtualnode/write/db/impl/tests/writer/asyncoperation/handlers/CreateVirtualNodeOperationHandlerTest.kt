@@ -45,7 +45,7 @@ class CreateVirtualNodeOperationHandlerTest {
 
     private val createVirtualNodeService = mock<CreateVirtualNodeService>().apply {
         whenever(validateRequest(any())).thenReturn(null)
-        whenever(getCpiMetaData(CPI_CHECKSUM1)).thenReturn(CPI_METADATA1)
+        whenever(getCpiMetaData(CPI_CHECKSUM1.toString())).thenReturn(CPI_METADATA1)
     }
 
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {

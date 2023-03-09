@@ -1,9 +1,9 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.toCorda
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -18,6 +18,7 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -216,6 +217,7 @@ class MemberSynchronisationServiceImplTest {
                 synchRequest.capture(),
                 isNull(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn synchronisationRequest
     }
@@ -229,7 +231,7 @@ class MemberSynchronisationServiceImplTest {
     private val memberInfo = mock<MemberInfo>()
     private val groupReader = mock<MembershipGroupReader> {
         on { lookup() } doReturn emptyList()
-        on { lookup(any()) } doReturn memberInfo
+        on { lookup(name = any(), filter = any()) } doReturn memberInfo
     }
     private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(member) } doReturn groupReader

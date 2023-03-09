@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.data.state
 
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -13,6 +14,7 @@ import java.util.Objects
  * @property state The [TransactionState] component of the current [StateAndRef].
  * @property ref The [StateRef] component of the current [StateAndRef].
  */
+@CordaSerializable
 data class StateAndRefImpl<out T : ContractState>(
     private val state: TransactionState<T>,
     private val ref: StateRef

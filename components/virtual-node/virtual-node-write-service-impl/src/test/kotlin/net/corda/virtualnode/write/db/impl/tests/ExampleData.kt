@@ -27,15 +27,15 @@ internal val MGM_HOLDING_ID1 = HoldingIdentity(MGM_X500_NAME, GROUP_ID1)
 
 internal const val CPI_NAME1 = "CPI1"
 internal const val CPI_VERSION1 = "1.0"
-internal const val CPI_CHECKSUM1 = "CPI_CHECKSUM1"
-internal val CPI_SIGNER_HASH1 = SecureHash.parse("SHA256:1234567890123456")
+internal val CPI_CHECKSUM1 = SecureHash("SHA-256","CPI_CHECKSUM1".toByteArray())
+internal val CPI_SIGNER_HASH1 = SecureHash.parse("SHA-256:1234567890123456")
 internal val CPI_IDENTIFIER1 = CpiIdentifier(CPI_NAME1, CPI_VERSION1, CPI_SIGNER_HASH1)
 internal val CPI_METADATA1 = CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, GROUP_POLICY1)
 
 internal fun getValidRequest(): VirtualNodeCreateRequest {
     return VirtualNodeCreateRequest().apply {
         holdingId = AvroHoldingIdentity(ALICE_X500, GROUP_ID1)
-        cpiFileChecksum = CPI_CHECKSUM1
+        cpiFileChecksum = CPI_CHECKSUM1.toString()
 
         vaultDdlConnection = "vaultDdlConnection"
         vaultDmlConnection = "vaultDmlConnection"

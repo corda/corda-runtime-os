@@ -540,7 +540,7 @@ class CertificatesRestResourceImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
+                certificatesOps.importCertificateChain("rest-tls", null, "alias", listOf(certificate))
             }
         }
 
@@ -588,7 +588,7 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `no certificates throws an exception`() {
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", emptyList())
+                certificatesOps.importCertificateChain("rest-tls", null, "alias", emptyList())
             }
         }
 
@@ -599,7 +599,7 @@ class CertificatesRestResourceImplTest {
                     "".toByteArray().inputStream()
             }
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
+                certificatesOps.importCertificateChain("rest-tls", null, "alias", listOf(certificate))
             }
         }
 
@@ -723,7 +723,7 @@ class CertificatesRestResourceImplTest {
             }
 
             val details = assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "", listOf(certificate))
+                certificatesOps.importCertificateChain("rest-tls", null, "", listOf(certificate))
             }.details
             assertThat(details).containsKey("alias")
         }
@@ -738,10 +738,10 @@ class CertificatesRestResourceImplTest {
                 on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate1, certificate2))
+            certificatesOps.importCertificateChain("rest-tls", null, "alias", listOf(certificate1, certificate2))
 
             verify(certificatesClient).importCertificates(
-                CertificateUsage.RPC_API_TLS,
+                CertificateUsage.REST_TLS,
                 null,
                 "alias",
                 "$certificateText\n$certificateText\n$certificateText"
@@ -771,7 +771,7 @@ class CertificatesRestResourceImplTest {
         fun `it throws exception for invalid short hash`() {
             assertThrows<BadRequestException> {
                 certificatesOps.getCertificateAliases(
-                    CertificateUsage.RPC_API_TLS.publicName,
+                    CertificateUsage.REST_TLS.publicName,
                     "nop"
                 )
             }
@@ -792,12 +792,12 @@ class CertificatesRestResourceImplTest {
             whenever(certificatesClient.getCertificateAliases(any(), any())).doReturn(emptyList())
 
             certificatesOps.getCertificateAliases(
-                CertificateUsage.RPC_API_TLS.publicName,
+                CertificateUsage.REST_TLS.publicName,
                 "012301230123",
             )
 
             verify(certificatesClient).getCertificateAliases(
-                CertificateUsage.RPC_API_TLS,
+                CertificateUsage.REST_TLS,
                 ShortHash.of("012301230123")
             )
         }
@@ -807,7 +807,7 @@ class CertificatesRestResourceImplTest {
             whenever(certificatesClient.getCertificateAliases(any(), anyOrNull())).doReturn(listOf("one", "two"))
 
             val aliases = certificatesOps.getCertificateAliases(
-                CertificateUsage.RPC_API_TLS.publicName,
+                CertificateUsage.REST_TLS.publicName,
                 null,
             )
 
@@ -820,7 +820,7 @@ class CertificatesRestResourceImplTest {
 
             assertThrows<InternalServerException> {
                 certificatesOps.getCertificateAliases(
-                    CertificateUsage.RPC_API_TLS.publicName,
+                    CertificateUsage.REST_TLS.publicName,
                     "012301230123",
                 )
             }
@@ -832,7 +832,7 @@ class CertificatesRestResourceImplTest {
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.getCertificateAliases(
-                    CertificateUsage.RPC_API_TLS.publicName,
+                    CertificateUsage.REST_TLS.publicName,
                     "012301230123",
                 )
             }
@@ -847,7 +847,7 @@ class CertificatesRestResourceImplTest {
         fun `it throws an exception for empty alias`() {
             assertThrows<InvalidInputDataException> {
                 certificatesOps.getCertificateChain(
-                    CertificateUsage.RPC_API_TLS.publicName,
+                    CertificateUsage.REST_TLS.publicName,
                     null,
                     "  "
                 )
@@ -858,7 +858,7 @@ class CertificatesRestResourceImplTest {
         fun `it throws an exception for invalid holding ID`() {
             assertThrows<BadRequestException> {
                 certificatesOps.getCertificateChain(
-                    CertificateUsage.RPC_API_TLS.publicName,
+                    CertificateUsage.REST_TLS.publicName,
                     " ",
                     "alias"
                 )
@@ -878,10 +878,10 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws an exception if alias can not be found`() {
-            whenever(certificatesClient.retrieveCertificates(null, CertificateUsage.RPC_API_TLS, "alias")).doReturn(null)
+            whenever(certificatesClient.retrieveCertificates(null, CertificateUsage.REST_TLS, "alias")).doReturn(null)
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.getCertificateChain(
-                    CertificateUsage.RPC_API_TLS.publicName,
+                    CertificateUsage.REST_TLS.publicName,
                     null,
                     "alias"
                 )

@@ -5,6 +5,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -50,10 +51,10 @@ internal class DeclineRegistrationHandler(
             logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
         logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
-        membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
+        membershipPersistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = declinedBy.toCorda(),
-            declinedMember = declinedMember.toCorda(),
-            registrationRequestId = registrationId,
+            registrationId = registrationId,
+            registrationRequestStatus = RegistrationStatus.DECLINED
         )
         val persistDeclineMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,
@@ -64,7 +65,8 @@ internal class DeclineRegistrationHandler(
             content = SetOwnRegistrationStatus(
                 registrationId,
                 RegistrationStatus.DECLINED
-            )
+            ),
+            filter = MembershipStatusFilter.PENDING,
         )
         return RegistrationHandlerResult(
             state,

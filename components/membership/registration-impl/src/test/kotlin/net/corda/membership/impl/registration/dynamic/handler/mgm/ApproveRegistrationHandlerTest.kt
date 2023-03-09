@@ -11,6 +11,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -52,7 +53,7 @@ class ApproveRegistrationHandlerTest {
     private val command = ApproveRegistration()
     private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
     private val key = "key"
-    private val mockSignedGroupParameters = mock<SignedGroupParameters>{
+    private val mockSignedGroupParameters = mock<SignedGroupParameters> {
         on { epoch } doReturn 6
     }
     private val memberInfo = mockMemberInfo(member)
@@ -94,6 +95,7 @@ class ApproveRegistrationHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record
     }
@@ -165,6 +167,7 @@ class ApproveRegistrationHandlerTest {
                 ),
                 anyOrNull(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         ).doReturn(record)
 

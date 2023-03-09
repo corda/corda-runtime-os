@@ -2,7 +2,7 @@ package net.corda.chunking.impl
 
 import java.nio.ByteBuffer
 import net.corda.chunking.ChunkBuilderService
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.crypto.SecureHash

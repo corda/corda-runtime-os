@@ -47,7 +47,7 @@ internal class VirtualNodeEntityRepository(
 
         val signerSummaryHash = SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum)
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
@@ -69,22 +69,20 @@ internal class VirtualNodeEntityRepository(
 
         val signerSummaryHash = SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum)
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
-    override fun getCPIMetadataByNameAndVersion(
-        em: EntityManager, name: String, version: String, signerSummaryHash: String
-    ): CpiMetadataLite? {
-        return em.find(
-            CpiMetadataEntity::class.java,
-            CpiMetadataEntityKey(name, version, signerSummaryHash)
-        )?.toLite()
+    override fun getCPIMetadataById(em: EntityManager, id: CpiIdentifier): CpiMetadataLite? {
+        return em.find(CpiMetadataEntity::class.java, id.toEntity())?.toLite()
     }
+
+    private fun CpiIdentifier.toEntity(): CpiMetadataEntityKey =
+        CpiMetadataEntityKey(name, version, signerSummaryHash.toString())
 
     private fun CpiMetadataEntity.toLite(): CpiMetadataLite {
         val cpiId = CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
-        val fileChecksum = SecureHash.parse(fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(fileChecksum)
         return CpiMetadataLite(cpiId, fileChecksum, groupId, groupPolicy)
     }
 }
