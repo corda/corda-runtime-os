@@ -16,6 +16,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
+    implementation 'net.corda:corda-db-schema'
 
     api project(':libs:crypto:cipher-suite')
 
