@@ -9,6 +9,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.mockito.Mockito.mock
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
@@ -51,6 +52,9 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         override val groupParameters: GroupParameters
             get() = TODO("Not yet implemented")
 
+        private val memberList: List<MemberInfo>
+            get() = emptyList()
+
         override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
             TODO("Not yet implemented")
         }
@@ -60,7 +64,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         }
 
         override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
-            TODO("Not yet implemented")
+            return mock()
         }
 
         override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
