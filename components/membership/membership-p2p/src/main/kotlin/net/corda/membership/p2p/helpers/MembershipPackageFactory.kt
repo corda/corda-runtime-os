@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.toAvro
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
@@ -41,11 +40,6 @@ class MembershipPackageFactory(
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))
             .setPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.by)))
-            .setContext(
-                KeyValuePairList(
-                    this.context.map { KeyValuePair(it.key, it.value) }
-                )
-            )
             .build()
 
     private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {

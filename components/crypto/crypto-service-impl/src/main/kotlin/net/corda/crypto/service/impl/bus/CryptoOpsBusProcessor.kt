@@ -13,7 +13,6 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
@@ -227,8 +226,7 @@ class CryptoOpsBusProcessor(
             )
             return CryptoSignatureWithKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes),
-                signature.context.toWire()
+                ByteBuffer.wrap(signature.bytes)
             )
         }
 
