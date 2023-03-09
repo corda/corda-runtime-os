@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
+import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.getOrThrow
@@ -14,6 +15,7 @@ import org.eclipse.jetty.websocket.api.StatusCode
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.Duration
@@ -55,8 +57,8 @@ class SmokeTestWebsocketClient(
 ) : AutoCloseable {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val baseWssPath = "wss://localhost:8888/api/v1"
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val baseWssPath = with(URI("wss", CLUSTER_URI.schemeSpecificPart, CLUSTER_URI.fragment)) { "${this}api/v1" }
     }
 
     private val httpClient = HttpClient(SslContextFactory.Client(true))
