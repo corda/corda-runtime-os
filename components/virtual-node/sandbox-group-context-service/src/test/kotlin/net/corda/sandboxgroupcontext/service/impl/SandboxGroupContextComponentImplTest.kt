@@ -10,7 +10,11 @@ import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextComponentIm
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class SandboxGroupContextComponentImplTest {
 
