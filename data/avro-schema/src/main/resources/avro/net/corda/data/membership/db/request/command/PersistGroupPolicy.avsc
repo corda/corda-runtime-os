@@ -8,6 +8,11 @@
       "name": "properties",
       "doc": "Group policy properties.",
       "type": "net.corda.data.KeyValuePairList"
+    },
+    {
+      "name": "version",
+      "doc": "The version of the group policy to persist. If a version already exists with this version number then the operation will fail, if the properties differ.",
+      "type": "long"
     }
   ]
 }
