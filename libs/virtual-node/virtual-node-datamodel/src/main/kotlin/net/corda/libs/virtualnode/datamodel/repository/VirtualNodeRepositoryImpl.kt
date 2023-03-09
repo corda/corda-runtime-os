@@ -137,24 +137,19 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     override fun updateVirtualNodeState(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        newState: String
+        newState: OperationalStatus
     ): VirtualNodeInfo {
         entityManager.transaction {
             // Lookup virtual node and grab the latest one based on the cpi Version.
             val latestVirtualNodeInstance = findEntity(entityManager, holdingIdentityShortHash)
                 ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
-            var operationalStatus = OperationalStatus.ACTIVE
-            if (newState == "maintenance") {
-                operationalStatus = OperationalStatus.INACTIVE
-            }
-
             val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
                 update(
-                    operationalStatus,
-                    operationalStatus,
-                    operationalStatus,
-                    operationalStatus
+                    flowP2pOperationalStatus = newState,
+                    flowStartOperationalStatus = newState,
+                    flowOperationalStatus = newState,
+                    vaultDbOperationalStatus = newState
                 )
             }
             return it.merge(updatedVirtualNodeInstance).toVirtualNodeInfo()

@@ -112,10 +112,10 @@ class VirtualNodeWriterProcessorTests {
             connectionId,
             connectionId,
             null,
-            OperationalStatus.ACTIVE.name,
-            OperationalStatus.ACTIVE.name,
-            OperationalStatus.ACTIVE.name,
-            OperationalStatus.ACTIVE.name,
+            OperationalStatus.ACTIVE.toAvro(),
+            OperationalStatus.ACTIVE.toAvro(),
+            OperationalStatus.ACTIVE.toAvro(),
+            OperationalStatus.ACTIVE.toAvro(),
             null,
             -1,
             clock.instant()
@@ -483,10 +483,10 @@ class VirtualNodeWriterProcessorTests {
                 connectionId,
                 connectionId,
                 null,
-                OperationalStatus.ACTIVE.name,
-                OperationalStatus.ACTIVE.name,
-                OperationalStatus.ACTIVE.name,
-                OperationalStatus.ACTIVE.name
+                OperationalStatus.ACTIVE.toAvro(),
+                OperationalStatus.ACTIVE.toAvro(),
+                OperationalStatus.ACTIVE.toAvro(),
+                OperationalStatus.ACTIVE.toAvro()
             )
         )
 
