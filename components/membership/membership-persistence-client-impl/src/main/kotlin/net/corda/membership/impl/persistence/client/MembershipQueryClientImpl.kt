@@ -217,7 +217,7 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()
@@ -225,7 +225,7 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is GroupPolicyQueryResponse -> {
                 MembershipQueryResult.Success(
-                    layeredPropertyMapFactory.createMap(payload.properties.toMap())
+                    layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
                 )
             }
             else -> {
