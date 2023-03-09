@@ -10,6 +10,7 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.cordapp.demo.consensual.contract.TestConsensualState
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -19,6 +20,19 @@ import java.security.KeyPairGenerator
 class TestFindTransactionFlow {
     val marshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
 
+    private lateinit var digestService: DigestService
+
+    @BeforeEach
+    fun setUp() {
+        digestService = mock<DigestService>().also {
+            val secureHashStringCaptor = argumentCaptor<String>()
+            whenever(it.parseSecureHash(secureHashStringCaptor.capture())).thenAnswer {
+                val secureHashString = secureHashStringCaptor.firstValue
+                parseSecureHash(secureHashString)
+            }
+        }
+    }
+
     @Test
     fun missingTransactionReturnsNull(){
         val flow = FindTransactionFlow()
@@ -27,13 +41,6 @@ class TestFindTransactionFlow {
         val txIdBad = SecureHashImpl( "SHA256", "Fail!".toByteArray())
         val ledgerService = mock<ConsensualLedgerService>()
         whenever (ledgerService.findLedgerTransaction(txIdBad)).thenReturn(null)
-        val digestService = mock<DigestService>().also {
-            val secureHashStringCaptor = argumentCaptor<String>()
-            whenever(it.parseSecureHash(secureHashStringCaptor.capture())).thenAnswer {
-                val secureHashString = secureHashStringCaptor.firstValue
-                parseSecureHash(secureHashString)
-            }
-        }
 
         flow.marshallingService = marshallingService
         flow.ledgerService = ledgerService
@@ -69,14 +76,6 @@ class TestFindTransactionFlow {
 
         val ledgerService = mock<ConsensualLedgerService>()
         whenever (ledgerService.findLedgerTransaction(txIdGood)).thenReturn(ledgerTx)
-
-        val digestService = mock<DigestService>().also {
-            val secureHashStringCaptor = argumentCaptor<String>()
-            whenever(it.parseSecureHash(secureHashStringCaptor.capture())).thenAnswer {
-                val secureHashString = secureHashStringCaptor.firstValue
-                parseSecureHash(secureHashString)
-            }
-        }
 
         flow.marshallingService = marshallingService
         flow.ledgerService = ledgerService

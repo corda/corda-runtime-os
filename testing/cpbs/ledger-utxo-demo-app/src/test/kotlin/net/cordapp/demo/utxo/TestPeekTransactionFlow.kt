@@ -2,6 +2,8 @@ package net.cordapp.demo.utxo
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -10,14 +12,28 @@ import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 
 class TestPeekTransactionFlow {
-    class TestFindTransactionFlow {
         private val jsonMarshallingService = JsonMarshallingServiceImpl()
+
+        private lateinit var digestService: DigestService
+
+        @BeforeEach
+        fun setUp() {
+            digestService = mock<DigestService>().also {
+                val secureHashStringCaptor = argumentCaptor<String>()
+                whenever(it.parseSecureHash(secureHashStringCaptor.capture())).thenAnswer {
+                    val secureHashString = secureHashStringCaptor.firstValue
+                    parseSecureHash(secureHashString)
+                }
+            }
+        }
 
         @Test
         fun missingTransactionReturnsError() {
@@ -29,6 +45,7 @@ class TestPeekTransactionFlow {
 
             flow.marshallingService = jsonMarshallingService
             flow.ledgerService = ledgerService
+            flow.digestService = digestService
 
             val badRequest = mock<ClientRequestBody>()
             val body = PeekTransactionParameters(txIdBad.toString())
@@ -75,6 +92,7 @@ class TestPeekTransactionFlow {
 
             flow.marshallingService = jsonMarshallingService
             flow.ledgerService = ledgerService
+            flow.digestService = digestService
 
             val goodRequest = mock<ClientRequestBody>()
             val body = PeekTransactionParameters(txIdGood.toString())
@@ -87,6 +105,4 @@ class TestPeekTransactionFlow {
             Assertions.assertThat(resObj.outputs.first().testField).isEqualTo("text")
             Assertions.assertThat(resObj.errorMessage).isNull()
         }
-
-    }
 }
