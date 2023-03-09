@@ -11,6 +11,9 @@ internal class MGMRegistrationGroupPolicyHandler(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
 ) {
+    private companion object {
+        const val GROUP_POLICY_VERSION = 1L
+    }
 
     fun buildAndPersist(
         holdingIdentity: HoldingIdentity,
@@ -25,6 +28,7 @@ internal class MGMRegistrationGroupPolicyHandler(
         val groupPolicyPersistenceResult = membershipPersistenceClient.persistGroupPolicy(
             holdingIdentity,
             groupPolicy,
+            GROUP_POLICY_VERSION
         )
         if (groupPolicyPersistenceResult is MembershipPersistenceResult.Failure) {
             throw MGMRegistrationGroupPolicyHandlingException(
