@@ -4,9 +4,10 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
+import com.esotericsoftware.kryo.SerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
-import com.esotericsoftware.kryo.serializers.FieldSerializer
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.ArraysAsListSerializer
 import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
@@ -38,11 +39,13 @@ import java.security.cert.CertPath
 import java.security.cert.X509Certificate
 import java.util.Arrays
 import java.util.BitSet
+import java.util.Collections.unmodifiableSet
 
 class DefaultKryoCustomizer {
 
     companion object {
         private const val LOGGER_ID = Int.MAX_VALUE
+        private val FORBIDDEN_TYPES = unmodifiableSet(setOf(NonSerializable::class.java, SpecificRecord::class.java))
 
         internal fun customize(
             kryo: Kryo,
@@ -52,6 +55,7 @@ class DefaultKryoCustomizer {
         ): Kryo {
             return kryo.apply {
 
+                isRegistrationRequired = false
                 classResolver.setKryo(this)
 
                 // The ClassResolver can only be set in the Kryo constructor and Quasar doesn't
@@ -61,10 +65,11 @@ class DefaultKryoCustomizer {
                 }.set(this, classResolver)
 
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
-                fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
+                //fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
                 // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
                 // their parents after deserialization.
-                fieldSerializerConfig.isIgnoreSyntheticFields = false
+
+                //fieldSerializerConfig.isIgnoreSyntheticFields = false
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
@@ -87,12 +92,24 @@ class DefaultKryoCustomizer {
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
-                addDefaultSerializer(Iterator::class.java) { kryo, type ->
-                    IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
-                }
-                addDefaultSerializer(Throwable::class.java) { kryo, type ->
-                    ThrowableSerializer(kryo, type)
-                }
+                addDefaultSerializer(Iterator::class.java, object : SerializerFactory<IteratorSerializer> {
+                    override fun newSerializer(kryo: Kryo?, type: Class<*>): IteratorSerializer {
+                        return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
+                    }
+
+                    override fun isSupported(type: Class<*>): Boolean {
+                        return Iterator::class.java.isAssignableFrom(type)
+                    }
+                })
+                addDefaultSerializer(Throwable::class.java, object : SerializerFactory<ThrowableSerializer<*>> {
+                    override fun newSerializer(kryo: Kryo, type: Class<*>): ThrowableSerializer<*> {
+                        return ThrowableSerializer(kryo, type)
+                    }
+
+                    override fun isSupported(type: Class<*>): Boolean {
+                        return Throwable::class.java.isAssignableFrom(type)
+                    }
+                })
 
                 //register loggers using an int ID to reduce information saved in kryo
                 //ensures Kryo does not write the name of the concrete logging impl class into the serialized stream
@@ -107,8 +124,14 @@ class DefaultKryoCustomizer {
                 // Register a serializer to reject the serialization of Avro generated classes
                 addDefaultSerializer(SpecificRecord::class.java, AvroRecordRejectSerializer)
 
-                //Add external serializers
-                for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
+                // Serializers for more specific types have higher precedence, and
+                // so we cannot add serializers for extensions of forbidden types.
+                val externalSerializers = serializers.filterNot { serializer ->
+                    FORBIDDEN_TYPES.any { type -> type.isAssignableFrom(serializer.key) }
+                }.toSortedMap(compareBy(Class<*>::getName))
+
+                // Add external serializers
+                for ((clazz, serializer) in externalSerializers) {
                     addDefaultSerializer(clazz, serializer)
                 }
             }
@@ -120,7 +143,7 @@ class DefaultKryoCustomizer {
 
         // Use this to allow construction of objects using a JVM backdoor that skips invoking the constructors, if there
         // is no no-arg constructor available.
-        private val defaultStrategy = Kryo.DefaultInstantiatorStrategy(fallbackStrategy)
+        private val defaultStrategy = DefaultInstantiatorStrategy(fallbackStrategy)
 
         override fun <T> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {
             // However, this doesn't work for non-public classes in the java. namespace

@@ -1,6 +1,7 @@
 package net.corda.kryoserialization.testkit
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
@@ -23,7 +24,7 @@ fun createCheckpointSerializer(
 ): KryoCheckpointSerializer {
     val singletonSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
     val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java } + extraClasses)
-    val kryo = Kryo()
+    val kryo = Kryo(MapReferenceResolver())
     kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
     val checkpointSerializer =
         KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup, kryo).let { builder ->

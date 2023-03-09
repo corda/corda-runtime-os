@@ -1,4 +1,5 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
+@file:Suppress("deprecation")
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.cpk.read.CpkReadService

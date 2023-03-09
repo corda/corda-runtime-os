@@ -3,6 +3,7 @@ package net.corda.kryoserialization.serializers
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -10,7 +11,10 @@ import org.objenesis.strategy.StdInstantiatorStrategy
 internal class LinkedHashMapIteratorSerializerTest {
     @Test
     fun `LinkedHashMapIterator serializer returns correct iterator`() {
-        val kryo = Kryo().also { it.instantiatorStrategy = StdInstantiatorStrategy() }
+        val kryo = Kryo(MapReferenceResolver()).also {
+            it.isRegistrationRequired = false
+            it.instantiatorStrategy = StdInstantiatorStrategy()
+        }
         val output = Output(25 * 1024)
         val iterator = (0..1000).associateWith { "$it" }.iterator()
         val index = 100

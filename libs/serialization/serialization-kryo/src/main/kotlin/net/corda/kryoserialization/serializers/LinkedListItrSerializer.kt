@@ -30,7 +30,7 @@ internal object LinkedListItrSerializer : Serializer<ListIterator<*>>() {
         output.writeInt(obj.nextIndex())
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<ListIterator<*>>): ListIterator<*> {
+    override fun read(kryo: Kryo, input: Input, type: Class<out ListIterator<*>>): ListIterator<*> {
         val list = kryo.readClassAndObject(input) as LinkedList<*>
         val index = input.readInt()
         return list.listIterator(index)

@@ -79,7 +79,7 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
     description = "Runs OSGi integration tests."
     group = "verification"
     javaLauncher = javaToolchains.launcherFor {
-        languageVersion = of(11)
+        languageVersion = of(17)
     }
     resultsDirectory = file("$testResultsDir/integrationTest")
     bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)

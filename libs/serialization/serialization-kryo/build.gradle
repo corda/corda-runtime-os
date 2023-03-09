@@ -51,6 +51,7 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
     testImplementation project(":testing:kryo-serialization-testkit")
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project('cpks:serializable-cpk-one')
@@ -71,4 +72,11 @@ def integrationTestResources = tasks.named('processIntegrationTestResources', Pr
 
 tasks.named('testingBundle', Bundle) {
     dependsOn integrationTestResources
+}
+
+tasks.withType(Test).configureEach {
+    // Kryo needs reflective access to these packages.
+    jvmArgs '--add-opens', 'java.base/java.io=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.util=ALL-UNNAMED'
 }

@@ -34,7 +34,7 @@ class ConsensualSignedTransactionKryoSerializer @Activate constructor(
         output.writeClassAndObject(obj.signatures)
     }
 
-    override fun read(input: CheckpointInput, type: Class<ConsensualSignedTransactionInternal>): ConsensualSignedTransactionInternal {
+    override fun read(input: CheckpointInput, type: Class<out ConsensualSignedTransactionInternal>): ConsensualSignedTransactionInternal {
         val wireTransaction = input.readClassAndObject() as WireTransaction
         @Suppress("unchecked_cast")
         val signatures = input.readClassAndObject() as List<DigitalSignatureAndMetadata>

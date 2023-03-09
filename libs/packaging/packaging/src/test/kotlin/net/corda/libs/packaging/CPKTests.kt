@@ -120,7 +120,8 @@ class CPKTests {
             }
 
             // We create a filesystem to copy the zip entries to a temporary directory.
-            FileSystems.newFileSystem(source, null).use { fs ->
+            @Suppress("cast_never_succeeds")
+            FileSystems.newFileSystem(source, null as? ClassLoader).use { fs ->
                 zipEntryNames
                     .map(fs::getPath)
                     .filterNot(Path::isDirectory)

@@ -3,6 +3,7 @@ package net.corda.kryoserialization.serializers
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.kryoserialization.TestCertificate
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -18,7 +19,7 @@ internal class CertPathSerializerTest {
         val certificate = certificateFactory
             .generateCertificate(ByteArrayInputStream(TestCertificate.r3comCert.toByteArray())) as X509Certificate
         val certPath = certificateFactory.generateCertPath(listOf(certificate))
-        val kryo = Kryo()
+        val kryo = Kryo(MapReferenceResolver())
         val output = Output(1600)
         CertPathSerializer.write(kryo, output, certPath)
         val tested = CertPathSerializer.read(kryo, Input(output.buffer), CertPath::class.java)

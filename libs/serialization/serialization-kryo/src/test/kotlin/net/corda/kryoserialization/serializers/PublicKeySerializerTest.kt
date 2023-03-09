@@ -3,6 +3,7 @@ package net.corda.kryoserialization.serializers
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -24,7 +25,7 @@ internal class PublicKeySerializerTest {
         }
         val publicKeySerializer = PublicKeySerializer(keyEncodingService)
 
-        val kryo = Kryo()
+        val kryo = Kryo(MapReferenceResolver())
         val output = Output(100)
         publicKeySerializer.write(kryo, output, publicKey)
         val tested = publicKeySerializer.read(kryo, Input(output.buffer), PublicKey::class.java)

@@ -1,4 +1,5 @@
 @file:JvmName("SandboxServiceUtils")
+@file:Suppress("deprecation")
 package net.corda.sandbox.internal
 
 import net.corda.libs.packaging.Cpk

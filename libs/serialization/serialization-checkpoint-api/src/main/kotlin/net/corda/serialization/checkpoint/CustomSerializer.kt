@@ -7,7 +7,7 @@ interface CheckpointInternalCustomSerializer<OBJ> {
     val type: Class<OBJ>
 
     fun write(output: CheckpointOutput, obj: OBJ)
-    fun read(input: CheckpointInput, type: Class<OBJ>): OBJ
+    fun read(input: CheckpointInput, type: Class<out OBJ>): OBJ
 }
 
 //Implemented in this Module used in other modules which implement KryoSerializer

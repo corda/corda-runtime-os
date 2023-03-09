@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.flow.application.sessions.factory
 
 import java.security.AccessController

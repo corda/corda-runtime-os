@@ -1,5 +1,5 @@
 -tester: biz.aQute.tester.junit-platform
--runee: JavaSE-11
+-runee: JavaSE-17
 -runfw: org.apache.felix.framework
 -runtrace: true
 -resolve.effective: resolve, active

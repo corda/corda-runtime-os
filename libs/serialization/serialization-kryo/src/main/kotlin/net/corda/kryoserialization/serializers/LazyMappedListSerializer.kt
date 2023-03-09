@@ -14,5 +14,5 @@ import net.corda.utilities.LazyMappedList
 @SuppressWarnings("ALL")
 object LazyMappedListSerializer : Serializer<List<*>>() {
     override fun write(kryo: Kryo, output: Output, obj: List<*>) = kryo.writeClassAndObject(output, obj.toList())
-    override fun read(kryo: Kryo, input: Input, type: Class<List<*>>) = kryo.readClassAndObject(input) as List<*>
+    override fun read(kryo: Kryo, input: Input, type: Class<out List<*>>) = kryo.readClassAndObject(input) as List<*>
 }

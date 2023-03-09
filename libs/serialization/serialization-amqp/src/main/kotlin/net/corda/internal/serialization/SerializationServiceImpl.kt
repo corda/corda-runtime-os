@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.DeserializationInput

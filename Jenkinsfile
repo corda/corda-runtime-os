@@ -15,5 +15,8 @@ cordaPipeline(
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
-    enableNotifications: false // POC branch disable while still in state of flux
+    enableNotifications: false, // POC branch disable while still in state of flux
+    workerBaseImageTag: '17.0.4.1',
+    javaVersion: '17',
+    snykDelta: false,
     )

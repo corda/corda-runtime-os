@@ -1,7 +1,7 @@
 # Bndrun for Hello World sample
 -tester: biz.aQute.tester.junit-platform
 
--runee: JavaSE-11
+-runee: JavaSE-17
 -runfw: org.apache.felix.framework
 -resolve.effective: active
 

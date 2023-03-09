@@ -118,9 +118,6 @@ def kafkaResolve = tasks.register('kafkaResolve', Resolve) {
 tasks.register('kafkaIntegrationTest', TestOSGi) {
     description = "Runs Kafka OSGi integration tests."
     group = "verification"
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = of(11)
-    }
     resultsDirectory = file("$testResultsDir/kafkaIntegrationTest")
     bundles = files(configurations.integrationTestRuntimeClasspath, configurations.kafkaIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
     bndrun = kafkaResolve.flatMap { it.outputBndrun }
@@ -129,9 +126,6 @@ tasks.register('kafkaIntegrationTest', TestOSGi) {
 tasks.register('dbIntegrationTest', TestOSGi) {
     description = "Runs DB Message Bus OSGi integration tests."
     group = "verification"
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = of(11)
-    }
     resultsDirectory = file("$testResultsDir/dbIntegrationTest")
     bundles = files(configurations.integrationTestRuntimeClasspath, configurations.dbIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
     bndrun = dbResolve.flatMap { it.outputBndrun }

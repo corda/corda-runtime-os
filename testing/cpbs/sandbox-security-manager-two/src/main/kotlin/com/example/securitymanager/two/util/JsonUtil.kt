@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package com.example.securitymanager.two.util
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect
@@ -10,7 +11,7 @@ class JsonUtil {
     companion object {
         fun privilegedToJson(o: Any): String {
             return AccessController.doPrivileged(
-                PrivilegedAction<String> {
+                PrivilegedAction {
                     val mapper = ObjectMapper()
                     mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                     mapper.writeValueAsString(o)

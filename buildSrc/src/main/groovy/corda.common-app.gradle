@@ -271,7 +271,7 @@ class AppResolution extends DefaultTask {
 
         bndrunFile.getAsFile().get().withPrintWriter { writer ->
             writer.print '''\
--runee: JavaSE-11
+-runee: JavaSE-17
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
 -runrequires:\

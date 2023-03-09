@@ -13,7 +13,7 @@ object LoggerSerializer : Serializer<Logger>() {
         output.writeString(obj.name)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<Logger>): Logger {
+    override fun read(kryo: Kryo, input: Input, type: Class<out Logger>): Logger {
         return LoggerFactory.getLogger(input.readString())
     }
 }

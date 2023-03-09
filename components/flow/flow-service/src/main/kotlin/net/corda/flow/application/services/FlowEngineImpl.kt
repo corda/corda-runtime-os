@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem

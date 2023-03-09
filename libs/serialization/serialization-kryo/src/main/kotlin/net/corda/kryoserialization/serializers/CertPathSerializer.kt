@@ -10,7 +10,7 @@ import java.security.cert.CertPath
 import java.security.cert.CertificateFactory
 
 internal object CertPathSerializer : Serializer<CertPath>() {
-    override fun read(kryo: Kryo, input: Input, type: Class<CertPath>): CertPath {
+    override fun read(kryo: Kryo, input: Input, type: Class<out CertPath>): CertPath {
         val factory = CertificateFactory.getInstance(input.readString())
         return factory.generateCertPath(input.readBytesWithLength().inputStream())
     }

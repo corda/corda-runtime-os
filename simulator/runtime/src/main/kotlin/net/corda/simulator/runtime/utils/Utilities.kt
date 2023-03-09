@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.simulator.runtime.utils
 
 import net.corda.simulator.SimulatorConfiguration

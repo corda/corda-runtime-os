@@ -1,8 +1,16 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
--runee: JavaSE-11
+-runee: JavaSE-17
 -runtrace: true
+
+-runvm: \
+    --add-opens, 'java.base/java.lang=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.lang.invoke=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.security=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.time=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.util=ALL-UNNAMED',\
+    --add-opens, 'jdk.crypto.ec/sun.security.ec=ALL-UNNAMED'
 
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\

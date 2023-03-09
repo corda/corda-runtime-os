@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus

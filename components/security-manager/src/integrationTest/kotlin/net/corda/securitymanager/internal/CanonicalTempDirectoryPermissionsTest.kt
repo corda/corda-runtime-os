@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.securitymanager.internal
 
 import java.io.FilePermission

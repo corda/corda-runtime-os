@@ -70,6 +70,11 @@ def integrationTestResources = tasks.named('processIntegrationTestResources', Pr
     }
 }
 
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+}
+
 tasks.named('testingBundle', Bundle) {
     dependsOn integrationTestResources
 }

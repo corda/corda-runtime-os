@@ -110,6 +110,7 @@ final class OSGiFrameworkMain {
      *
      * @param args passed by the OS when invoking JVM to run this bootable JAR.
      */
+    @SuppressWarnings("removal")
     public static void main(String[] args) throws Exception {
         /**
          * Set the Java security policy programmatically, as required by OSGi Security.
@@ -123,7 +124,7 @@ final class OSGiFrameworkMain {
         /**
          * {@code java.util.logging} logs directly to the console for Apache Aries and Liquibase (at least),
          *  but we can intercept and redirect that here to use our logger.
-         *
+         * <p>
          * Add the following logger to log4j2.xml, to (re)enable the Apache Aries messages if you want them,
          * for example
          * <pre>{@code
