@@ -313,7 +313,8 @@ class MembershipP2PIntegrationTest {
         val message = MembershipRegistrationRequest(
             registrationId,
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
-            fakeSigWithKey
+            fakeSigWithKey,
+            0L
         )
 
         var latestHeader: UnauthenticatedRegistrationRequestHeader? = null

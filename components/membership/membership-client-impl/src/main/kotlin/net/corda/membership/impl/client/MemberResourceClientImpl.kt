@@ -31,6 +31,7 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
@@ -51,6 +52,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.invoke.SerializedLambda
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -259,7 +261,7 @@ class MemberResourceClientImpl @Activate constructor(
             val sent = clock.instant()
             try {
                 val context = keyValuePairListSerializer.serialize(
-                    memberRegistrationRequest.context.toWire()
+                    memberRegistrationRequest.context.filterNot { it.key == SERIAL }.toWire()
                 )
                 membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
@@ -273,6 +275,7 @@ class MemberResourceClientImpl @Activate constructor(
                             ByteBuffer.wrap(byteArrayOf()),
                             KeyValuePairList(emptyList())
                         ),
+                        memberRegistrationRequest.context[SERIAL]?.toLong(),
                     )
                 ).getOrThrow()
                 return RegistrationRequestProgressDto(
@@ -348,7 +351,8 @@ class MemberResourceClientImpl @Activate constructor(
                         *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
                     )
                 ),
-                this.reason
+                this.reason,
+                this.serial,
             )
     }
 

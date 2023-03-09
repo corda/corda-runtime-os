@@ -19,6 +19,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -71,9 +72,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
@@ -313,6 +317,9 @@ class DynamicMemberRegistrationServiceTest {
         on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
+    private val membershipQueryClient = mock<MembershipQueryClient>() {
+        on { queryMemberInfo(any(), any()) } doReturn MembershipQueryResult.Success(emptyList())
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -328,6 +335,7 @@ class DynamicMemberRegistrationServiceTest {
         virtualNodeInfoReadService,
         locallyHostedIdentitiesService,
         configurationGetService,
+        membershipQueryClient
     )
 
     private val context = mapOf(
@@ -394,6 +402,55 @@ class DynamicMemberRegistrationServiceTest {
                 it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))
             }
             registrationService.stop()
+        }
+
+        @Test
+        fun `registration request contains default serial for first time registration`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val capturedContext = argumentCaptor<KeyValuePairList>()
+            val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(keyValuePairListSerializer).serialize(capturedContext.capture())
+            verify(registrationRequestSerializer).serialize(capturedRequest.capture())
+            SoftAssertions.assertSoftly {
+                it.assertThat(capturedContext.firstValue.toMap()).doesNotContainKey(SERIAL)
+                it.assertThat(capturedRequest.firstValue.serial).isEqualTo(0)
+            }
+        }
+
+        @Test
+        fun `registration request contains current serial for re-registration`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val memberInfo = mock<MemberInfo> {
+                on { serial } doReturn 4
+            }
+            whenever(membershipQueryClient.queryMemberInfo(any(), any()))
+                .doReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+            val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(registrationRequestSerializer).serialize(capturedRequest.capture())
+            assertThat(capturedRequest.firstValue.serial).isEqualTo(4)
+        }
+
+        @Test
+        fun `registration request contains serial from registration context when included`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val context = mapOf(
+                "corda.session.key.id" to SESSION_KEY_ID,
+                "corda.session.key.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.endpoints.0.connectionURL" to "https://localhost:1080",
+                "corda.endpoints.0.protocolVersion" to "1",
+                "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
+                "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.serial" to "12"
+            )
+            val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(registrationRequestSerializer).serialize(capturedRequest.capture())
+            assertThat(capturedRequest.firstValue.serial).isEqualTo(12)
         }
 
         @Test

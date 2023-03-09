@@ -55,7 +55,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions.`as`
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -597,7 +596,8 @@ class MembershipQueryClientImplTest {
                     "id",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    "test reason"
+                    "test reason",
+                    0L,
                 )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -627,7 +627,8 @@ class MembershipQueryClientImplTest {
                         registrationLastModified = status.registrationLastModified,
                         protocolVersion = status.registrationProtocolVersion,
                         memberContext = status.memberProvidedContext,
-                        reason = status.reason
+                        reason = status.reason,
+                        serial = status.serial,
                     )
                 )
         }
@@ -743,7 +744,8 @@ class MembershipQueryClientImplTest {
                     "id 1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    "test reason 1"
+                    "test reason 1",
+                    0L,
                 ),
                 RegistrationStatusDetails(
                     clock.instant(),
@@ -752,7 +754,8 @@ class MembershipQueryClientImplTest {
                     "id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    "test reason 2"
+                    "test reason 2",
+                    1L,
                 ),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
@@ -784,7 +787,8 @@ class MembershipQueryClientImplTest {
                             registrationLastModified = it.registrationLastModified,
                             protocolVersion = it.registrationProtocolVersion,
                             memberContext = it.memberProvidedContext,
-                            reason = it.reason
+                            reason = it.reason,
+                            serial = it.serial,
                         )
                     }
                 )

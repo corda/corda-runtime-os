@@ -148,6 +148,7 @@ class MembershipPersistenceClientImplTest {
                 )
             ),
         ),
+        0L,
     )
 
     private val memberInfoFactory = mock<MemberInfoFactory>()

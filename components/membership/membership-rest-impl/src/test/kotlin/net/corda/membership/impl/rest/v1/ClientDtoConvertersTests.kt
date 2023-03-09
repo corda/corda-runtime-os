@@ -18,6 +18,7 @@ import java.time.Instant
 class ClientDtoConvertersTests {
     private companion object {
         const val REASON = "test reason"
+        const val SERIAL = 1L
     }
 
     @Test
@@ -33,7 +34,8 @@ class ClientDtoConvertersTests {
                     "key 2" to "value 2",
                 )
             ),
-            REASON
+            REASON,
+            SERIAL
         )
 
         val status = dto.fromDto()
@@ -50,7 +52,8 @@ class ClientDtoConvertersTests {
                         "key 2" to "value 2",
                     )
                 ),
-                REASON
+                REASON,
+                SERIAL
             )
         )
     }

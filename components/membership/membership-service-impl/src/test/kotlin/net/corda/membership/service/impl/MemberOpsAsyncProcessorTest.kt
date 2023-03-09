@@ -37,6 +37,7 @@ import java.util.UUID
 class MemberOpsAsyncProcessorTest {
     private companion object {
         const val FAILURE_REASON = "oops"
+        const val SERIAL = 1L
     }
 
     private val shortHash = ShortHash.of("123123123123")
@@ -429,12 +430,13 @@ class MemberOpsAsyncProcessorTest {
             whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
                 MembershipQueryResult.Success(
                     RegistrationRequestStatus(
-                        RegistrationStatus.SENT_TO_MGM,
-                        "",
-                        mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
+                        status = RegistrationStatus.SENT_TO_MGM,
+                        registrationId = "",
+                        memberContext = mock(),
+                        registrationSent = Instant.MIN,
+                        registrationLastModified = Instant.MIN,
+                        protocolVersion = 0,
+                        serial = SERIAL,
                     )
                 )
             )
@@ -472,12 +474,13 @@ class MemberOpsAsyncProcessorTest {
             whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
                 MembershipQueryResult.Success(
                     RegistrationRequestStatus(
-                        RegistrationStatus.NEW,
-                        "",
-                        mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
+                        status = RegistrationStatus.NEW,
+                        registrationId = "",
+                        memberContext = mock(),
+                        registrationSent = Instant.MIN,
+                        registrationLastModified = Instant.MIN,
+                        protocolVersion = 0,
+                        serial = SERIAL,
                     )
                 )
             )

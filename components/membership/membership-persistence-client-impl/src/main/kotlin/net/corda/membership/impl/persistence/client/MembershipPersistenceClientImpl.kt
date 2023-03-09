@@ -203,6 +203,7 @@ class MembershipPersistenceClientImpl(
                         registrationId,
                         memberContext,
                         signature,
+                        serial
                     )
                 }
             )

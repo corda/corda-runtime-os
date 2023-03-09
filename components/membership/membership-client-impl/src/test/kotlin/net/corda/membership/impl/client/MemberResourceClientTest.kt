@@ -75,6 +75,7 @@ class MemberResourceClientTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "00AABB00AABB"
         private val clock = TestClock(Instant.ofEpochSecond(100))
+        private const val SERIAL = 0L
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -308,6 +309,7 @@ class MemberResourceClientTest {
                     registrationId = "registration id",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatus(
                     registrationSent = clock.instant().plusSeconds(10),
@@ -316,6 +318,7 @@ class MemberResourceClientTest {
                     registrationId = "registration id 2",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatus(
                     registrationSent = clock.instant().plusSeconds(30),
@@ -324,6 +327,7 @@ class MemberResourceClientTest {
                     registrationId = "registration id 3",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                    serial = SERIAL,
                 ),
             )
         whenever(membershipQueryClient.queryRegistrationRequestsStatus(
@@ -347,7 +351,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key" to "value"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatusDto(
                     registrationId = "registration id 2",
@@ -359,7 +364,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key 2" to "value 2"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatusDto(
                     registrationId = "registration id 3",
@@ -371,7 +377,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key 3" to "value 3"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 ),
             )
     }
@@ -413,6 +420,7 @@ class MemberResourceClientTest {
                 registrationId = "registration id",
                 protocolVersion = 1,
                 memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                serial = SERIAL,
             )
         whenever(
             membershipQueryClient.queryRegistrationRequestStatus(any(), any())
@@ -436,7 +444,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key" to "value"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 )
             )
     }

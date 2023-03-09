@@ -4725,6 +4725,12 @@
             "format" : "datetime",
             "nullable" : true,
             "example" : "2022-06-24T10:15:30Z"
+          },
+          "serial" : {
+            "type" : "integer",
+            "format" : "int64",
+            "nullable" : true,
+            "example" : 0
           }
         }
       },

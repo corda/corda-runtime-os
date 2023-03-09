@@ -280,7 +280,8 @@ class StaticMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf()),
                     KeyValuePairList(emptyList())
-                )
+                ),
+                serial = 0L,
             )
         ).getOrThrow()
     }

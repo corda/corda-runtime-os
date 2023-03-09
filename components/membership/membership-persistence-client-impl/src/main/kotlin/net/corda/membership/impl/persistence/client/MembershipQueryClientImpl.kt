@@ -131,6 +131,7 @@ class MembershipQueryClientImpl(
             protocolVersion = this.registrationProtocolVersion,
             memberContext = this.memberProvidedContext,
             reason = this.reason,
+            serial = this.serial,
         )
     }
 

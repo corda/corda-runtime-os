@@ -47,6 +47,7 @@ fun RegistrationRequestStatusDto.fromDto() = RestRegistrationRequestStatus(
     this.registrationStatus.fromDto(),
     this.memberInfoSubmitted.fromDto(),
     this.reason,
+    this.serial,
 )
 
 fun RegistrationStatusDto.fromDto() = when (this) {

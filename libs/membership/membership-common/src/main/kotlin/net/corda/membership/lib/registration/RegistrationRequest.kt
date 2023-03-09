@@ -13,5 +13,6 @@ data class RegistrationRequest(
     val registrationId: String,
     val requester: HoldingIdentity,
     val memberContext: ByteBuffer,
-    val signature: CryptoSignatureWithKey
+    val signature: CryptoSignatureWithKey,
+    val serial: Long?,
 )

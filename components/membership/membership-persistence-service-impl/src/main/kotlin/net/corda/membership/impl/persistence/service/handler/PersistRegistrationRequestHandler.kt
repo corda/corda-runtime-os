@@ -44,6 +44,7 @@ internal class PersistRegistrationRequestHandler(
                     created = now,
                     lastModified = now,
                     context = request.registrationRequest.memberContext.array(),
+                    serial = request.registrationRequest.serial
                 )
             )
             em.merge(

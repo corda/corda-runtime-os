@@ -35,12 +35,13 @@ import java.time.Instant
 import kotlin.test.assertFailsWith
 
 class MemberRegistrationRestResourceTest {
-    companion object {
-        private const val HOLDING_IDENTITY_ID = "1234567890ab"
-        private const val INVALID_HOLDING_IDENTITY_ID = "${HOLDING_IDENTITY_ID}00"
-        private val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
-        private const val ACTION = "requestJoin"
-        private val clock = TestClock(Instant.ofEpochSecond(100))
+    private companion object {
+        const val HOLDING_IDENTITY_ID = "1234567890ab"
+        const val INVALID_HOLDING_IDENTITY_ID = "${HOLDING_IDENTITY_ID}00"
+        val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
+        const val ACTION = "requestJoin"
+        val clock = TestClock(Instant.ofEpochSecond(100))
+        const val SERIAL =1L
     }
 
     private var coordinatorIsRunning = false
@@ -146,11 +147,12 @@ class MemberRegistrationRestResourceTest {
     fun `checkRegistrationProgress returns the correct data`() {
         val data = (1..3).map {
             RegistrationRequestStatusDto(
-                "id $it",
-                Instant.ofEpochSecond(20L + it),
-                Instant.ofEpochSecond(200L + it),
-                RegistrationStatusDto.APPROVED,
-                MemberInfoSubmittedDto(mapOf("key $it" to "value"))
+                registrationId = "id $it",
+                registrationSent = Instant.ofEpochSecond(20L + it),
+                registrationUpdated = Instant.ofEpochSecond(200L + it),
+                registrationStatus = RegistrationStatusDto.APPROVED,
+                memberInfoSubmitted = MemberInfoSubmittedDto(mapOf("key $it" to "value")),
+                serial = SERIAL,
             )
         }
         whenever(memberResourceClient.checkRegistrationProgress(holdingIdShortHash)).doReturn(data)
@@ -195,11 +197,12 @@ class MemberRegistrationRestResourceTest {
     @Test
     fun `checkSpecificRegistrationProgress returns the correct data`() {
         val data = RegistrationRequestStatusDto(
-            "id",
-            Instant.ofEpochSecond(20L),
-            Instant.ofEpochSecond(200L),
-            RegistrationStatusDto.APPROVED,
-            MemberInfoSubmittedDto(mapOf("key" to "value"))
+            registrationId = "id",
+            registrationSent = Instant.ofEpochSecond(20L),
+            registrationUpdated = Instant.ofEpochSecond(200L),
+            registrationStatus = RegistrationStatusDto.APPROVED,
+            memberInfoSubmitted = MemberInfoSubmittedDto(mapOf("key" to "value")),
+            serial = SERIAL,
         )
 
         whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(data)

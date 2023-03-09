@@ -22,6 +22,7 @@ import java.time.Instant
 class BaseRequestStatusHandlerTest {
     private companion object {
         const val REASON = "test reason"
+        const val SERIAL = 0L
     }
 
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
@@ -56,6 +57,7 @@ class BaseRequestStatusHandlerTest {
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3),
+            SERIAL,
             REASON,
         )
 
@@ -98,7 +100,8 @@ class BaseRequestStatusHandlerTest {
             "Nop",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         assertThrows<MembershipPersistenceException> {
@@ -125,7 +128,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -152,7 +156,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -179,7 +184,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -205,7 +211,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -225,7 +232,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -245,7 +253,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            0L
         )
 
         val details = with(handler) {

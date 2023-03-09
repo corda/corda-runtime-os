@@ -55,6 +55,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
@@ -72,6 +73,7 @@ import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecN
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
@@ -134,6 +136,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -298,10 +302,15 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
+                val serialInfo = context[SERIAL]?.toLong()
+                    ?: membershipQueryClient.queryMemberInfo(member, listOf(member)).getOrThrow().firstOrNull()?.serial
+                    ?: 0
+
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
-                    memberSignature
+                    memberSignature,
+                    serialInfo,
                 )
 
                 val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
@@ -349,6 +358,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
+                        serial = serialInfo,
                     )
                 ).getOrThrow()
 
@@ -388,7 +398,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
-                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) || it.key.startsWith(SERIAL)
             }
             val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
