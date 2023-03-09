@@ -85,10 +85,10 @@ interface MembershipQueryClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity whose view is being requested.
      *
-     * @return a query result with the latest version of group policy if the query executed successfully.
-     * Returns an empty [LayeredPropertyMap] if there was no group policy persisted.
+     * @return a query result with the latest version of group policy if the query executed successfully and the version number.
+     * Returns an empty [LayeredPropertyMap] and version 0 if there was no group policy persisted.
      */
-    fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap>
+    fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>>
 
 
     /**

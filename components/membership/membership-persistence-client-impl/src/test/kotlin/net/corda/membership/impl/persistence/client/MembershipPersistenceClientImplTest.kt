@@ -30,7 +30,6 @@ import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -452,16 +451,14 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `persistGroupPolicy return the correct version`() {
+    fun `persistGroupPolicy return success on success`() {
         val groupPolicy = mock<LayeredPropertyMap>()
         postConfigChangedEvent()
-        mockPersistenceResponse(
-            PersistGroupPolicyResponse(103),
-        )
+        mockPersistenceResponse()
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
-        assertThat(result).isEqualTo(MembershipPersistenceResult.Success(103))
+        assertThat(result).isEqualTo(MembershipPersistenceResult.success())
     }
 
     @Test
@@ -472,22 +469,9 @@ class MembershipPersistenceClientImplTest {
             PersistenceFailedResponse("Placeholder error"),
         )
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
-    }
-
-    @Test
-    fun `persistGroupPolicy return failure for unexpected result`() {
-        val groupPolicy = mock<LayeredPropertyMap>()
-        postConfigChangedEvent()
-        mockPersistenceResponse(
-            null,
-        )
-
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
-
-        assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
     }
 
     @Test
@@ -501,7 +485,7 @@ class MembershipPersistenceClientImplTest {
         val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
         whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
-        membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         val properties = (argument.firstValue.request as? PersistGroupPolicy)?.properties?.items
         assertThat(properties).containsExactly(
