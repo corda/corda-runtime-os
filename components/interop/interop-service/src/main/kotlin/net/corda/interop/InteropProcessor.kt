@@ -22,7 +22,6 @@ import net.corda.schema.Schemas
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -35,7 +34,7 @@ class InteropProcessor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
-    private val config: SmartConfig
+    private val config: SmartConfig,
     private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : DurableProcessor<String, AppMessage> {
 
@@ -133,9 +132,9 @@ class InteropProcessor(
         )
     }
 
-    private fun getRealHoldingIdentityFromAliasMapping(holdingIdentity: HoldingIdentity): String? {
-        val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-        val memberInfo = groupReader.lookup(holdingIdentity.x500Name)
+    private fun getRealHoldingIdentityFromAliasMapping(fakeHoldingIdentity: HoldingIdentity): String? {
+        val groupReader = membershipGroupReaderProvider.getGroupReader(fakeHoldingIdentity)
+        val memberInfo = groupReader.lookup(fakeHoldingIdentity.x500Name)
         return memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
     }
 

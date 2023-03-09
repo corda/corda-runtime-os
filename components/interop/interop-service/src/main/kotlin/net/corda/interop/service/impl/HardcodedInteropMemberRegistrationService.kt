@@ -45,8 +45,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 ): InteropMemberRegistrationService {
 
     companion object {
-        private val ALICE_ALTER_EGO_X500 = MemberX500Name.parse("CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
-        private val ALICE_X500 = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        private val ALICE_ALTER_EGO_X500_ALIAS = MemberX500Name.parse("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
+        private val ALICE_X500_ALIAS = MemberX500Name.parse("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         private const val NON_EXISTING_GROUP_ID = "non-existing-group"
         private const val SUBSYSTEM = "interop"
@@ -55,13 +55,13 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         private val DUMMY_PUBLIC_SESSION_KEY =
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
         private val membersOfInteropGroup =
-            listOf(ALICE_X500, ALICE_ALTER_EGO_X500).map { HoldingIdentity(it, INTEROP_GROUP_ID) }
+            listOf(ALICE_X500_ALIAS, ALICE_ALTER_EGO_X500_ALIAS).map { HoldingIdentity(it, INTEROP_GROUP_ID) }
         private val memberFromOtherClusterOfInteropGroup =
             HoldingIdentity(MemberX500Name.parse("CN=Alice from Other Cluster, O=Alice Corp, L=LDN, C=GB"), INTEROP_GROUP_ID)
         private val unpublishedMemberOfInteropGroup =
             HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID)
         private val membersOfNonExistingGroup =
-            listOf(ALICE_X500, ALICE_ALTER_EGO_X500).map { HoldingIdentity(it, NON_EXISTING_GROUP_ID) }
+            listOf(ALICE_X500_ALIAS, ALICE_ALTER_EGO_X500_ALIAS).map { HoldingIdentity(it, NON_EXISTING_GROUP_ID) }
     }
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC

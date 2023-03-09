@@ -8,6 +8,7 @@ description "Interop service"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":components:configuration:configuration-read-service")

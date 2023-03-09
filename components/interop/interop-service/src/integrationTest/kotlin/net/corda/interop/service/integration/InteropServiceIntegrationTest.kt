@@ -37,6 +37,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -77,7 +78,7 @@ class InteropServiceIntegrationTest {
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
     @InjectService(timeout = 4000)
-    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProviderFake
 
     @InjectService(timeout = 4000)
     lateinit var interopService: InteropService
@@ -99,6 +100,8 @@ class InteropServiceIntegrationTest {
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
+        //val testId = "test1"
+        //val testName = MemberX500Name.parse("O=Alice,C=GB,L=London").toString()
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
