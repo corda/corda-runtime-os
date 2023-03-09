@@ -2,6 +2,7 @@ package net.corda.ledger.utxo
 
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -16,6 +17,7 @@ class VisibilityCheckerImpl @Activate constructor(
     private val signingService: SigningService
 ) : VisibilityChecker, SingletonSerializeAsToken, UsedByFlow {
 
+    @Suspendable
     override fun containsMySigningKeys(keys: Iterable<PublicKey>): Boolean {
         return signingService.findMySigningKeys(keys.toSet()).values.isNotEmpty()
     }
