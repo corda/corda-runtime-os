@@ -29,7 +29,7 @@ import java.time.Instant
 @Suppress("MaxLineLength")
 class SendTransactonBuilderDiffFlowTest {
     private val currentTransactionBuilder = mock<UtxoTransactionBuilderInternal>()
-    private val originalTransactionalBuilder = mock<UtxoTransactionBuilderInternal>()
+    private val originalTransactionalBuilder = mock<UtxoTransactionBuilderContainer>()
     private val session = mock<FlowSession>()
     private val hash1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
     private val hash2 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
@@ -56,7 +56,7 @@ class SendTransactonBuilderDiffFlowTest {
         whenever(currentTransactionBuilder.outputStates).thenReturn(listOf())
         whenever(currentTransactionBuilder.copy()).thenReturn(originalTransactionalBuilder)
 
-        whenever(originalTransactionalBuilder.notary).thenReturn(null)
+        whenever(originalTransactionalBuilder.getNotary()).thenReturn(null)
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(null)
         whenever(originalTransactionalBuilder.attachments).thenReturn(listOf())
         whenever(originalTransactionalBuilder.commands).thenReturn(listOf())
@@ -90,7 +90,7 @@ class SendTransactonBuilderDiffFlowTest {
             MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
             anotherPublicKeyExample
         )
-        whenever(originalTransactionalBuilder.notary).thenReturn(alternativeNotary)
+        whenever(originalTransactionalBuilder.getNotary()).thenReturn(alternativeNotary)
         whenever(currentTransactionBuilder.notary).thenReturn(utxoNotaryExample)
 
         callSendFlow()

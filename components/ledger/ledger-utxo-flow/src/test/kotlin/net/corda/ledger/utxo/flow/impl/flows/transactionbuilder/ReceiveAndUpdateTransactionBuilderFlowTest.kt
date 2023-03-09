@@ -88,7 +88,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `called with original time window null and receives new time window return a builder with the new time window`() {
+    fun `called with original time window null and receives new time window returns a builder with the new time window`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
             UtxoTransactionBuilderContainer(timeWindow = utxoTimeWindowExample)
         )
@@ -346,7 +346,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `receiving outputs append it`() {
+    fun `receiving outputs appends it`() {
         originalTransactionalBuilder.addOutputState(state1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
             UtxoTransactionBuilderContainer(outputStates = mutableListOf(stateWithEnc1, stateWithEnc1, stateWithEnc2))

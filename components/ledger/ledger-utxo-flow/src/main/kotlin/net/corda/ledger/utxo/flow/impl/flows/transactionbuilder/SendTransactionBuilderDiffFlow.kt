@@ -2,7 +2,8 @@ package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderData
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class SendTransactionBuilderDiffFlow(
-    private val transactionBuilder: UtxoTransactionBuilderData,
+    private val transactionBuilder: UtxoTransactionBuilderContainer,
     private val session: FlowSession
 ) : SubFlow<Unit> {
 
@@ -23,6 +24,11 @@ class SendTransactionBuilderDiffFlow(
         transactionBuilder: UtxoBaselinedTransactionBuilder,
         session: FlowSession
     ) : this(transactionBuilder.diff(), session)
+
+    constructor(
+        transactionBuilder: UtxoTransactionBuilderInternal,
+        session: FlowSession
+    ) : this(transactionBuilder.copy(), session)
 
     @CordaInject
     lateinit var flowEngine: FlowEngine

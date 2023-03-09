@@ -193,11 +193,11 @@ class UtxoLedgerTests {
         }
 
         val sendTxBuilder = startRpcFlow(
-            aliceHoldingId,
+            charlieHoldingId,
             mapOf("member" to bobX500),
             "net.cordapp.demo.utxo.UtxoDemoTransactionBuilderSendingFlow"
         )
-        val sendTxBuilderFlowResult = awaitRpcFlowFinished(aliceHoldingId, sendTxBuilder)
+        val sendTxBuilderFlowResult = awaitRpcFlowFinished(charlieHoldingId, sendTxBuilder)
 
         assertThat(sendTxBuilderFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(sendTxBuilderFlowResult.flowError).isNull()
@@ -205,11 +205,11 @@ class UtxoLedgerTests {
         // Peek into the last transaction
 
         val peekFlowId = startRpcFlow(
-            aliceHoldingId,
+            charlieHoldingId,
             mapOf("transactionId" to sendTxBuilderFlowResult.flowResult!!),
             "net.cordapp.demo.utxo.PeekTransactionFlow")
 
-        val peekFlowResult = awaitRpcFlowFinished(aliceHoldingId, peekFlowId)
+        val peekFlowResult = awaitRpcFlowFinished(charlieHoldingId, peekFlowId)
         assertThat(peekFlowResult.flowError).isNull()
         assertThat(peekFlowResult.flowResult).isNotNull()
 

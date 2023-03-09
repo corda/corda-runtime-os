@@ -119,7 +119,7 @@ class UtxoTransactionBuilderSendingResponderFlow : ResponderFlow {
             val previousUnconsumedState = utxoLedgerService.findUnconsumedStatesByType(TestUtxoState::class.java)
                 .first { it.state.contractState.testField == "txbuilder test" }
             val notary = previousUnconsumedState.state.notary
-            log.info("Adjust transactionuilder.")
+            log.info("Adjust transaction builder.")
             // Responder site amends the transaction builder.
             // In this example everything gets populated here.
             transactionBuilder

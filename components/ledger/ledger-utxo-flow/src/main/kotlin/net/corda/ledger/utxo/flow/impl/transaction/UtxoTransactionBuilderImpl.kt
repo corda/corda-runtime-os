@@ -170,9 +170,8 @@ class UtxoTransactionBuilderImpl(
         return sign()
     }
 
-    override fun copy(): UtxoTransactionBuilderImpl {
-        return UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory,
+    override fun copy(): UtxoTransactionBuilderContainer {
+        return UtxoTransactionBuilderContainer(
             notary,
             timeWindow,
             attachments.toMutableList(),

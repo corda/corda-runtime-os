@@ -8,7 +8,7 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
      *
      * @return A copy of the current transaction builder.
      */
-    fun copy(): UtxoTransactionBuilderInternal
+    fun copy(): UtxoTransactionBuilderContainer
 
     /**
      * Appends transaction builder components to a transaction builder.

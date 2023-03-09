@@ -16,7 +16,7 @@ import java.util.Objects
 
 @Suppress("TooManyFunctions")
 class UtxoBaselinedTransactionBuilder private constructor(
-    val baselineTransactionBuilder: UtxoTransactionBuilderInternal,
+    val baselineTransactionBuilder: UtxoTransactionBuilderContainer,
     private val currentTransactionBuilder: UtxoTransactionBuilderInternal,
 ) : UtxoTransactionBuilderInternal {
 
@@ -104,7 +104,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     override fun toString(): String {
         return "UtxoBaselinedTransactionBuilder(" +
-                "notary=$notary (orig: ${baselineTransactionBuilder.notary}), " +
+                "notary=$notary (orig: ${baselineTransactionBuilder.getNotary()}), " +
                 "timeWindow=$timeWindow (orig: ${baselineTransactionBuilder.timeWindow}), " +
                 "attachments=$attachments (orig: ${baselineTransactionBuilder.attachments}), " +
                 "commands=$commands (orig: ${baselineTransactionBuilder.commands}), " +
@@ -114,6 +114,9 @@ class UtxoBaselinedTransactionBuilder private constructor(
                 "outputStates=$outputStates (orig: ${baselineTransactionBuilder.outputStates})" +
                 ")"
     }
+
+    // Unfortunately we cannot just simply delegate everything to currentTransactionBuilder since that would return itself
+    // instead of the baselined transaction builder object.
 
     override fun addAttachment(attachmentId: SecureHash): UtxoBaselinedTransactionBuilder {
         currentTransactionBuilder.addAttachment(attachmentId)
@@ -193,7 +196,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
         return this
     }
 
-    override fun copy(): UtxoTransactionBuilderInternal =
+    override fun copy(): UtxoTransactionBuilderContainer =
         currentTransactionBuilder.copy()
 
     override fun append(other: UtxoTransactionBuilderContainer) =
@@ -212,7 +215,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
      */
     fun diff(): UtxoTransactionBuilderContainer =
         UtxoTransactionBuilderContainer(
-            if (baselineTransactionBuilder.notary == null) notary else null,
+            if (baselineTransactionBuilder.getNotary() == null) notary else null,
             if (baselineTransactionBuilder.timeWindow == null) timeWindow else null,
             attachments - baselineTransactionBuilder.attachments.toSet(),
             commands.drop(baselineTransactionBuilder.commands.size),
