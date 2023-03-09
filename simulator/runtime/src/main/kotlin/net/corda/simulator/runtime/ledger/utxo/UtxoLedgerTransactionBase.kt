@@ -18,10 +18,11 @@ import java.security.MessageDigest
 import java.security.PublicKey
 import java.util.Objects
 
+@Suppress("TooManyFunctions")
 data class UtxoLedgerTransactionBase(
     val ledgerInfo: UtxoStateLedgerInfo,
-    override val inputStateAndRefs: List<StateAndRef<*>>,
-    override val referenceStateAndRefs: List<StateAndRef<*>>,
+    private val inputStateAndRefs: List<StateAndRef<*>>,
+    private val referenceStateAndRefs: List<StateAndRef<*>>,
 ) : UtxoLedgerTransaction {
 
     val bytes: ByteArray by lazy {
@@ -36,46 +37,26 @@ data class UtxoLedgerTransactionBase(
             .plus(serializer.serialize(ledgerInfo.attachments).bytes)
     }
 
-    override val id: SecureHash by lazy {
-        val digest = MessageDigest.getInstance("SHA-256")
-        SecureHash(digest.algorithm, digest.digest(bytes))
-    }
-
-    override val outputStateAndRefs: List<StateAndRef<*>>
-        get() {
-            val encumbranceGroupSizes =
-                ledgerInfo.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
-            return ledgerInfo.outputStates.mapIndexed { index, contractStateAndTag ->
-                val stateRef = StateRef(id, index)
-                val transactionState = contractStateAndTag.toTransactionState(notary,
-                    contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
-                StateAndRefImpl(transactionState, stateRef)
-            }
-        }
-    override val attachments: List<Attachment>
-        get() = emptyList() // TODO Not yet Implemented
-    override val commands: List<Command>
-        get() = ledgerInfo.commands
-
-    override val inputStateRefs: List<StateRef>
-        get() = ledgerInfo.inputStateRefs
-    override val metadata: TransactionMetadata
-        get() =  SimTransactionMetadata()
-    override val notary: Party
-        get() = ledgerInfo.notary
-
     override fun getAttachment(id: SecureHash): Attachment {
-        TODO("Not yet implemented")
+        return requireNotNull(attachments.singleOrNull { it.id == id }) {
+            "Failed to find a single attachment with id: $id."
+        }
     }
-    override val referenceStateRefs: List<StateRef>
-        get() = ledgerInfo.referenceStateRefs
-    override val signatories: List<PublicKey>
-        get() = ledgerInfo.signatories
-    override val timeWindow: TimeWindow
-        get() = ledgerInfo.timeWindow
+
+    override fun getCommands(): List<Command> {
+        return ledgerInfo.commands
+    }
 
     override fun <T : Command> getCommands(type: Class<T>): List<T> {
         return commands.filterIsInstance(type)
+    }
+
+    override fun getInputStateRefs(): List<StateRef> {
+        return ledgerInfo.inputStateRefs
+    }
+
+    override fun getInputStateAndRefs(): List<StateAndRef<*>> {
+        return inputStateAndRefs
     }
 
     override fun <T : ContractState> getInputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
@@ -86,12 +67,31 @@ data class UtxoLedgerTransactionBase(
         return inputContractStates.filterIsInstance(type)
     }
 
+    override fun getReferenceStateRefs(): List<StateRef> {
+        return ledgerInfo.referenceStateRefs
+    }
+
+    override fun getReferenceStateAndRefs(): List<StateAndRef<*>> {
+        return referenceStateAndRefs
+    }
+
     override fun <T : ContractState> getReferenceStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
         return referenceStateAndRefs.filterIsContractStateInstance(type)
     }
 
     override fun <T : ContractState> getReferenceStates(type: Class<T>): List<T> {
         return referenceContractStates.filterIsInstance(type)
+    }
+
+    override fun getOutputStateAndRefs(): List<StateAndRef<*>> {
+        val encumbranceGroupSizes =
+            ledgerInfo.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
+        return ledgerInfo.outputStates.mapIndexed { index, contractStateAndTag ->
+            val stateRef = StateRef(id, index)
+            val transactionState = contractStateAndTag.toTransactionState(notary,
+                contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
+            StateAndRefImpl(transactionState, stateRef)
+        }
     }
 
     override fun <T : ContractState> getOutputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
@@ -111,6 +111,31 @@ data class UtxoLedgerTransactionBase(
 
     override fun hashCode(): Int {
         return Objects.hash(id)
+    }
+
+    override fun getId(): SecureHash {
+        val digest = MessageDigest.getInstance("SHA-256")
+        return SecureHash(digest.algorithm, digest.digest(bytes))
+    }
+
+    override fun getNotary(): Party {
+        return ledgerInfo.notary
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        return SimTransactionMetadata()
+    }
+
+    override fun getTimeWindow(): TimeWindow {
+        return ledgerInfo.timeWindow
+    }
+
+    override fun getSignatories(): List<PublicKey> {
+        return ledgerInfo.signatories
+    }
+
+    override fun getAttachments(): List<Attachment> {
+        return emptyList() // TODO Not yet Implemented
     }
 
 }

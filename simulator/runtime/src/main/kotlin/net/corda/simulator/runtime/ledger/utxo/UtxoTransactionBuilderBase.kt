@@ -22,7 +22,7 @@ import java.time.Instant
 
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderBase(
-    override val notary: Party? = null,
+    private val notary: Party? = null,
     val timeWindow: TimeWindow? = null,
     val attachments: List<SecureHash> = emptyList(),
     val commands: List<Command> = emptyList(),
@@ -97,8 +97,12 @@ data class UtxoTransactionBuilderBase(
         return copy(signatories = this.signatories + signatories)
     }
 
+    override fun addSignatories(vararg signatories: PublicKey): UtxoTransactionBuilder {
+        return addSignatories(signatories.toList())
+    }
+
     override fun getEncumbranceGroup(tag: String): List<ContractState> {
-        return requireNotNull(getEncumbranceGroups()[tag]) {
+        return requireNotNull(encumbranceGroups[tag]) {
             "Encumbrance group with the specified tag does not exist: $tag."
         }
     }
@@ -109,6 +113,10 @@ data class UtxoTransactionBuilderBase(
             .groupBy { outputState -> outputState.encumbranceTag }
             .map { entry -> entry.key!! to entry.value.map { items -> items.contractState } }
             .toMap()
+    }
+
+    override fun getNotary(): Party? {
+        return notary
     }
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
@@ -160,7 +168,7 @@ data class UtxoTransactionBuilderBase(
             "The time window of UtxoTransactionBuilder must not be null."
         }
 
-        check(getEncumbranceGroups().all { it.value.size > 1 }) {
+        check(encumbranceGroups.all { it.value.size > 1 }) {
             "Every encumbrance group of the current UtxoTransactionBuilder must contain more than one output state."
         }
 

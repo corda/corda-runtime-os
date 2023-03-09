@@ -14,11 +14,12 @@ class BaseNotaryLookupFactory: NotaryLookupFactory {
     override fun createNotaryLookup(fiber: SimFiber, notaryInfo: NotaryInfo): NotaryLookup {
         return object : NotaryLookup{
 
-            override val notaryServices: Collection<NotaryInfo>
-                get() = listOf(notaryInfo)
-
             override fun isNotaryVirtualNode(virtualNodeName: MemberX500Name): Boolean =
                 virtualNodeName == notaryInfo.name
+
+            override fun getNotaryServices(): Collection<NotaryInfo> {
+                return listOf(notaryInfo)
+            }
 
             override fun lookup(notaryServiceName: MemberX500Name): NotaryInfo? =
                 if (notaryServiceName == notaryInfo.name) notaryInfo else null

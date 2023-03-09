@@ -1,12 +1,11 @@
 package net.cordacon.example.landregistry.flows
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientStartableFlow
-import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.InitiatedBy
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.cordacon.example.landregistry.states.LandTitleContract
 import net.cordacon.example.landregistry.states.LandTitleState
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -16,12 +15,12 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.time.Instant
 import java.time.LocalDateTime
+import kotlin.time.Duration.Companion.days
 
 /**
  * A flow to issue land title
@@ -45,8 +44,8 @@ class IssueLandTitleFlow: ClientStartableFlow {
     lateinit var notaryLookup: NotaryLookup
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
-        val request = requestBody.getRequestBodyAs<LandRegistryRequest>(jsonMarshallingService)
+    override fun call(requestBody: ClientRequestBody): String {
+        val request = requestBody.getRequestBodyAs(jsonMarshallingService, LandRegistryRequest::class.java)
 
         val exists = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).any {
             it.state.contractState.titleNumber == request.titleNumber
@@ -76,8 +75,8 @@ class IssueLandTitleFlow: ClientStartableFlow {
 
         // Setting time-window is mandatory
         val transaction = utxoLedgerService
-            .getTransactionBuilder()
-            .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
+            .transactionBuilder
+            .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .setNotary(Party(notary.name, notaryKey))
             .addOutputState(landTitleState)
             .addCommand(LandTitleContract.Issue)
@@ -100,7 +99,15 @@ class IssueLandTitleResponderFlow: ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        utxoLedgerService.receiveFinality(session) {}
+        utxoLedgerService.receiveFinality(session) {
+            if(it.outputContractStates.size !=1)
+                throw CordaRuntimeException("Failed verification - transaction did not have exactly one output")
+
+            val landTitleState = it.outputContractStates[0] as LandTitleState
+            if(!(landTitleState.location.contains("Mumbai"))){
+                throw CordaRuntimeException("Failed verification - Land should be located in Mumbai")
+            }
+        }
     }
 }
 

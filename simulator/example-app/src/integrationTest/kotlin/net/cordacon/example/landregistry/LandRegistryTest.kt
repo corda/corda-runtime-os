@@ -4,14 +4,24 @@ import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.factories.JsonMarshallingServiceFactory
-import net.corda.v5.application.marshalling.parse
-import net.cordacon.example.landregistry.flows.*
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.cordacon.example.landregistry.flows.IssueLandTitleFlow
+import net.cordacon.example.landregistry.flows.IssueLandTitleResponderFlow
+import net.cordacon.example.landregistry.flows.FetchLandTitleFlow
+import net.cordacon.example.landregistry.flows.LandRegistryRequest
+import net.cordacon.example.landregistry.flows.TransferLandTitleRequest
+import net.cordacon.example.landregistry.flows.TransferLandTitleFlow
+import net.cordacon.example.landregistry.flows.TransferLandTitleResponderFlow
+import net.cordacon.example.landregistry.flows.Filter
 import net.cordacon.example.utils.createMember
+import org.assertj.core.api.Assertions
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
+@Suppress("UNCHECKED_CAST")
 class LandRegistryTest {
 
     private val jsonMarshallingService = JsonMarshallingServiceFactory.create()
@@ -58,14 +68,16 @@ class LandRegistryTest {
             Filter()
         )
         val issuerFetchResult = nodes[0].callFlow(fetchRequestData)
-        val issuerLandTitle = jsonMarshallingService.parse<List<LinkedHashMap<String, String>>>(issuerFetchResult)
+        val issuerLandTitle = jsonMarshallingService
+            .parse(issuerFetchResult, List::class.java) as List<LinkedHashMap<String, String>>
         assertThat(issuerLandTitle.size, `is`(1))
         assertThat(issuerLandTitle[0]["titleNumber"], `is`("T001"))
         assertThat(issuerLandTitle[0]["issuer"], `is`("CN=Alice, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
         assertThat(issuerLandTitle[0]["owner"], `is`("CN=Bob, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
 
         val ownerFetchResult = nodes[1].callFlow(fetchRequestData)
-        val ownerLandTitle = jsonMarshallingService.parse<List<LinkedHashMap<String, String>>>(ownerFetchResult)
+        val ownerLandTitle = jsonMarshallingService
+            .parse(ownerFetchResult, List::class.java) as List<LinkedHashMap<String, String>>
         assertThat(ownerLandTitle.size, `is`(1))
         assertThat(ownerLandTitle[0]["titleNumber"], `is`("T001"))
         assertThat(ownerLandTitle[0]["issuer"], `is`("CN=Alice, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
@@ -127,22 +139,57 @@ class LandRegistryTest {
             Filter("T002")
         )
         val issuerFetchResult = nodes[0].callFlow(fetchRequestData)
-        val issuerLandTitle = jsonMarshallingService.parse<List<LinkedHashMap<String, String>>>(issuerFetchResult)
+        val issuerLandTitle = jsonMarshallingService
+            .parse(issuerFetchResult, List::class.java) as List<LinkedHashMap<String, String>>
         assertThat(issuerLandTitle.size, `is`(1))
         assertThat(issuerLandTitle[0]["titleNumber"], `is`("T002"))
         assertThat(issuerLandTitle[0]["issuer"], `is`("CN=Alice, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
         assertThat(issuerLandTitle[0]["owner"], `is`("CN=Charlie, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
 
         val ownerFetchResult = nodes[1].callFlow(fetchRequestData)
-        val ownerLandTitle = jsonMarshallingService.parse<List<LinkedHashMap<String, String>>>(ownerFetchResult)
+        val ownerLandTitle = jsonMarshallingService
+            .parse(ownerFetchResult, List::class.java) as List<LinkedHashMap<String, String>>
         assertThat(ownerLandTitle.size, `is`(0))
 
         val newOwnerFetchResult = nodes[2].callFlow(fetchRequestData)
-        val newOwnerLandTitle = jsonMarshallingService.parse<List<LinkedHashMap<String, String>>>(newOwnerFetchResult)
+        val newOwnerLandTitle = jsonMarshallingService
+            .parse(newOwnerFetchResult, List::class.java) as List<LinkedHashMap<String, String>>
         assertThat(newOwnerLandTitle.size, `is`(1))
         assertThat(newOwnerLandTitle[0]["titleNumber"], `is`("T002"))
         assertThat(newOwnerLandTitle[0]["issuer"], `is`("CN=Alice, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
         assertThat(newOwnerLandTitle[0]["owner"], `is`("CN=Charlie, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
+    }
+
+    @Test
+    fun `should fail when responder validation is not passed`() {
+
+        val simulator = Simulator()
+        val nodes = listOf(issuer, owner).map {
+            val node = simulator.createVirtualNode(
+                it,
+                IssueLandTitleFlow::class.java,
+                IssueLandTitleResponderFlow::class.java,
+                FetchLandTitleFlow::class.java
+            )
+            node.generateKey("${it.commonName}-key", HsmCategory.LEDGER, "any-scheme")
+            node
+        }
+
+        val request =  LandRegistryRequest(
+            "T001",
+            "CP, Delhi",
+            500,
+            "Awesome Property",
+            owner
+        )
+
+        val requestData = RequestData.create(
+            "r1",
+            IssueLandTitleFlow::class.java,
+            request
+        )
+
+        assertThrows<CordaRuntimeException> { nodes[0].callFlow(requestData) }
 
     }
 }

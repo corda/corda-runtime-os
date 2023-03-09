@@ -3,12 +3,10 @@ package net.cordacon.example.landregistry.flows
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.getRequestBodyAs
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.cordacon.example.landregistry.states.LandTitleState
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -30,42 +28,40 @@ class FetchLandTitleFlow : ClientStartableFlow {
     lateinit var memberLookup: MemberLookup
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
-        val request = requestBody.getRequestBodyAs<Filter>(jsonMarshallingService)
-        val stateAndRefList = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java)
-        val landTitleList : ArrayList<LandTitle> = ArrayList()
+        val request = requestBody.getRequestBodyAs(jsonMarshallingService, Filter::class.java)
+        val landTitleList : List<LandTitle>
 
         if(request.titleNumber.trim() != ""){
-            val stateAndRef = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).firstOrNull {
-                it.state.contractState.titleNumber == request.titleNumber
-            }
-            if(stateAndRef!=null){
-                val landTitle = LandTitle(
-                    stateAndRef.state.contractState.titleNumber,
-                    stateAndRef.state.contractState.location,
-                    stateAndRef.state.contractState.areaInSquareMeter.toString().plus(" sqmt"),
-                    stateAndRef.state.contractState.extraDetails,
-                    formatter.format(stateAndRef.state.contractState.registrationTimeStamp),
-                    memberLookup.lookup(stateAndRef.state.contractState.owner)!!.name,
-                    memberLookup.lookup(stateAndRef.state.contractState.issuer)!!.name,
-                )
-                landTitleList.add(landTitle)
-            }
+            val stateAndRefs = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java)
+
+            landTitleList = stateAndRefs.filter { it.state.contractState.titleNumber == request.titleNumber }
+                .map {
+                    LandTitle(
+                        it.state.contractState.titleNumber,
+                        it.state.contractState.location,
+                        it.state.contractState.areaInSquareMeter.toString().plus(" sqmt"),
+                        it.state.contractState.extraDetails,
+                        formatter.format(it.state.contractState.registrationTimeStamp),
+                        memberLookup.lookup(it.state.contractState.owner)!!.name,
+                        memberLookup.lookup(it.state.contractState.issuer)!!.name
+                    )
+                }
         }else{
-            stateAndRefList.forEach {
-                val landTitle = LandTitle(
-                    it.state.contractState.titleNumber,
-                    it.state.contractState.location,
-                    it.state.contractState.areaInSquareMeter.toString().plus(" sqmt"),
-                    it.state.contractState.extraDetails,
-                    formatter.format(it.state.contractState.registrationTimeStamp),
-                    memberLookup.lookup(it.state.contractState.owner)!!.name,
-                    memberLookup.lookup(it.state.contractState.issuer)!!.name,
-                )
-                landTitleList.add(landTitle)
+            val stateAndRefList = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java)
+            landTitleList = stateAndRefList.map {
+                    LandTitle(
+                        it.state.contractState.titleNumber,
+                        it.state.contractState.location,
+                        it.state.contractState.areaInSquareMeter.toString().plus(" sqmt"),
+                        it.state.contractState.extraDetails,
+                        formatter.format(it.state.contractState.registrationTimeStamp),
+                        memberLookup.lookup(it.state.contractState.owner)!!.name,
+                        memberLookup.lookup(it.state.contractState.issuer)!!.name,
+                    )
+                }
             }
-        }
         return jsonMarshallingService.format(landTitleList)
     }
 }
@@ -74,7 +70,6 @@ data class Filter(
     val titleNumber: String = ""
 )
 
-@CordaSerializable
 data class LandTitle(
     val titleNumber: String,
     val location: String,

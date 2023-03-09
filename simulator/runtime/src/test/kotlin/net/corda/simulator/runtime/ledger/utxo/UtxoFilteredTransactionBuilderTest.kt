@@ -8,7 +8,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import java.time.Instant
+import kotlin.time.Duration.Companion.days
 
 class UtxoFilteredTransactionBuilderTest {
 
@@ -28,7 +28,7 @@ class UtxoFilteredTransactionBuilderTest {
     private val config = SimulatorConfigurationBuilder.create().build()
     private val publicKeys = generateKeys(2)
     private val notary = Party(notaryX500, generateKey())
-    private val timeWindow = SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
+    private val timeWindow = SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
     private lateinit var signedTx : UtxoSignedTransactionBase
     private val command = TestUtxoCommand()
 

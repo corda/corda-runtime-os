@@ -11,7 +11,6 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
-import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import java.security.PublicKey
 import java.util.function.Predicate
 
@@ -21,37 +20,48 @@ class UtxoFilteredTransactionBase(
     private val filterParams: Map<UtxoComponentGroup, FilterParams?>
 ) : UtxoFilteredTransaction {
 
-    override val id: SecureHash
-        get() = signedTransaction.id
+    override fun getId(): SecureHash {
+        return signedTransaction.id
+    }
 
-    override val notary: Party?
-        get()  {
-            if(builder.notary){
-                return signedTransaction.notary
-            }
-            return null
+    override fun getMetadata(): TransactionMetadata {
+        return signedTransaction.metadata
+    }
+
+    override fun getTimeWindow(): TimeWindow? {
+        if(builder.timeWindow){
+            return signedTransaction.timeWindow
         }
+        return null
+    }
 
-    override val timeWindow: TimeWindow?
-        get() {
-            if(builder.timeWindow){
-                return signedTransaction.timeWindow
-            }
-            return null
+    override fun getNotary(): Party? {
+        if(builder.notary){
+            return signedTransaction.notary
         }
+        return null
+    }
 
-    override val commands: UtxoFilteredData<Command>
-        get() = getFilteredData(UtxoComponentGroup.COMMANDS, signedTransaction.commands)
-    override val inputStateRefs: UtxoFilteredData<StateRef>
-        get() = getFilteredData(UtxoComponentGroup.INPUTS, signedTransaction.inputStateRefs)
-    override val metadata: TransactionMetadata
-        get() = signedTransaction.metadata
-    override val outputStateAndRefs: UtxoFilteredData<StateAndRef<*>>
-        get() = getFilteredData(UtxoComponentGroup.OUTPUTS, signedTransaction.toLedgerTransaction().getOutputStates())
-    override val referenceStateRefs: UtxoFilteredData<StateRef>
-        get() = getFilteredData(UtxoComponentGroup.REFERENCES, signedTransaction.referenceStateRefs)
-    override val signatories: UtxoFilteredData<PublicKey>
-        get() = getFilteredData(UtxoComponentGroup.SIGNATORIES, signedTransaction.signatories)
+    override fun getSignatories(): UtxoFilteredData<PublicKey> {
+        return getFilteredData(UtxoComponentGroup.SIGNATORIES, signedTransaction.signatories)
+    }
+
+    override fun getCommands(): UtxoFilteredData<Command> {
+        return getFilteredData(UtxoComponentGroup.COMMANDS, signedTransaction.commands)
+    }
+
+    override fun getInputStateRefs(): UtxoFilteredData<StateRef> {
+        return getFilteredData(UtxoComponentGroup.INPUTS, signedTransaction.inputStateRefs)
+    }
+
+    override fun getReferenceStateRefs(): UtxoFilteredData<StateRef> {
+        return getFilteredData(UtxoComponentGroup.REFERENCES, signedTransaction.referenceStateRefs)
+    }
+
+    override fun getOutputStateAndRefs(): UtxoFilteredData<StateAndRef<*>> {
+        return getFilteredData(UtxoComponentGroup.OUTPUTS, signedTransaction.toLedgerTransaction().outputStateAndRefs)
+    }
+
     override fun verify() {
 
     }
@@ -91,11 +101,23 @@ class UtxoFilteredTransactionBase(
     }
 }
 
-private class FilteredDataSizeImpl<T>(override val size: Int) : UtxoFilteredData.SizeOnly<T>
+private class FilteredDataSizeImpl<T>(private val size: Int) : UtxoFilteredData.SizeOnly<T> {
+    override fun getSize(): Int {
+        return size
+    }
+}
 
 private class FilteredDataRemovedImpl<T> : UtxoFilteredData.Removed<T>
 
 private class FilteredDataAuditImpl<T>(
-    override val size: Int,
-    override val values: Map<Int, T>
-) : UtxoFilteredData.Audit<T>
+    private val size: Int,
+    private val values: Map<Int, T>
+) : UtxoFilteredData.Audit<T> {
+    override fun getSize(): Int {
+        return size
+    }
+
+    override fun getValues(): Map<Int, T> {
+        return values
+    }
+}

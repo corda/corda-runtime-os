@@ -18,6 +18,7 @@ data class LandTitleState(
     val issuer: PublicKey
     ) : ContractState {
 
-    override val participants: List<PublicKey>
-        get() = listOf(issuer, owner).distinct()
+    override fun getParticipants(): List<PublicKey> {
+        return listOf(issuer, owner).distinct()
     }
+}

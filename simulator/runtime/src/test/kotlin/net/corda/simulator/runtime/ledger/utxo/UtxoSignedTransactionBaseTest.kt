@@ -8,7 +8,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.Party
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -18,6 +17,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import kotlin.time.Duration.Companion.days
 
 
 class UtxoSignedTransactionBaseTest {
@@ -41,7 +41,7 @@ class UtxoSignedTransactionBaseTest {
                 notary,
                 emptyList(),
                 publicKeys,
-                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
+                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(
                     ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                     ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
@@ -68,7 +68,7 @@ class UtxoSignedTransactionBaseTest {
         val serializationService = BaseSerializationService()
         val signingService = mock<SigningService>()
         val timestamp = Instant.now()
-        val timeWindow = SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
+        val timeWindow = SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
 
         val ledgerInfo1 = UtxoStateLedgerInfo(
             listOf(TestUtxoCommand()),
@@ -136,7 +136,7 @@ class UtxoSignedTransactionBaseTest {
                 notary,
                 emptyList(),
                 publicKeys,
-                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
+                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(
                     ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                     ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
@@ -179,7 +179,7 @@ class UtxoSignedTransactionBaseTest {
                 notary,
                 emptyList(),
                 publicKeys,
-                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
+                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(
                     ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                     ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")

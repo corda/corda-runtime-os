@@ -6,8 +6,6 @@ import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -23,7 +21,7 @@ class TransactionBackchainHandlerBase(
     override fun sendBackChain(session: FlowSession) {
         val serializationService = BaseSerializationService()
         while (true) {
-            when (val request = session.receive<TransactionBackchainRequest>()) {
+            when (val request = session.receive(TransactionBackchainRequest::class.java)) {
                 is TransactionBackchainRequest.Get -> {
                     val transactions = request.transactionIds.map { id ->
                         persistenceService.find(UtxoTransactionEntity::class.java, String(id.bytes))
@@ -40,6 +38,7 @@ class TransactionBackchainHandlerBase(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun receiveBackChain(transaction: UtxoSignedTransaction, session: FlowSession) {
         val dependencies = getTxDependencies(transaction)
         val availableTx = dependencies.filter {
@@ -50,9 +49,10 @@ class TransactionBackchainHandlerBase(
         val transactionsToRetrieve = LinkedHashSet(originalTransactionsToRetrieve)
         if(transactionsToRetrieve.isNotEmpty()){
             while (transactionsToRetrieve.isNotEmpty()){
-                val retrievedTransactions = session.sendAndReceive<List<UtxoSignedTransaction>>(
+                val retrievedTransactions = session.sendAndReceive(
+                    List::class.java,
                     TransactionBackchainRequest.Get(setOf(transactionsToRetrieve.first()))
-                )
+                ) as List<UtxoSignedTransaction>
                 for (retrievedTransaction in retrievedTransactions) {
                     val retrievedTransactionId = retrievedTransaction.id
                     persistenceService.persist((retrievedTransaction as UtxoSignedTransactionBase).toEntity())

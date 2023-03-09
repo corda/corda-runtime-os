@@ -8,14 +8,13 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -31,6 +30,7 @@ class UtxoTransactionFinalityHandler(
      private val backchainHandler: TransactionBackchainHandler
 ) {
 
+    @Suppress( "UNCHECKED_CAST")
     fun finalizeTransaction(signedTransaction: UtxoSignedTransaction,
                             sessions: List<FlowSession>): UtxoSignedTransaction {
         val ledgerTx = signedTransaction.toLedgerTransaction()
@@ -40,7 +40,8 @@ class UtxoTransactionFinalityHandler(
                 tx, sess ->
             sess.send(signedTransaction)
             backchainHandler.sendBackChain(sess)
-            (tx as UtxoSignedTransactionBase).addSignatureAndMetadata(sess.receive())
+            val signature = sess.receive(List::class.java) as List<DigitalSignatureAndMetadata>
+            (tx as UtxoSignedTransactionBase).addSignatureAndMetadata(signature)
         }
 
         verifySignatures(finalSignedTransaction)
@@ -52,7 +53,7 @@ class UtxoTransactionFinalityHandler(
     }
 
     fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
-        val signedTransaction = session.receive<UtxoSignedTransactionBase>()
+        val signedTransaction = session.receive(UtxoSignedTransactionBase::class.java)
         backchainHandler.receiveBackChain(signedTransaction, session)
         validator.checkTransaction(signedTransaction.toLedgerTransaction())
 
@@ -61,7 +62,7 @@ class UtxoTransactionFinalityHandler(
         }
         val signatures = sign(signedTransaction, keysToSignWith, signingService)
         session.send(signatures)
-        val notarizedTx = session.receive<UtxoSignedTransactionBase>()
+        val notarizedTx = session.receive(UtxoSignedTransactionBase::class.java)
         return persist(notarizedTx)
     }
 
@@ -92,9 +93,8 @@ class UtxoTransactionFinalityHandler(
 
     private fun verifySignatures(finalTransaction: UtxoSignedTransaction){
         val appliedSignatories = finalTransaction.signatures.map { it.by }.toSet()
-        val missingSignatories = finalTransaction.signatories.filterNot {
-            it.isFulfilledBy(appliedSignatories)
-        }.toSet()
+        val missingSignatories = finalTransaction.signatories
+            .filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw CordaRuntimeException("Transaction ${finalTransaction.id} " +
                     "is missing signatures for signatories ${missingSignatories.map { memberLookup.lookup(it) }}")
@@ -152,13 +152,15 @@ class UtxoTransactionFinalityHandler(
 
 
             // Filter out unencumbered states
-            val encumbranceGroups = statesByTx.value.filter { it.state.encumbrance != null }
+            val encumbranceGroups = statesByTx.value.filter { it.state.encumbranceGroup != null }
                 // within each tx, group by encumbrance tag, store the output index and the encumbrance group size
-                .groupBy({ it.state.encumbrance!!.tag }, { EncumbranceInfo(it.ref.index, it.state.encumbrance!!.size) })
+                .groupBy({ it.state.encumbranceGroup!!.tag },
+                    { EncumbranceInfo(it.ref.index, it.state.encumbranceGroup!!.size) })
 
             // for each encumbrance group (identified by tx id/tag), run the checks
             encumbranceGroups.forEach { encumbranceGroup ->
-                failureReasons.addAll(checkEncumbranceGroup(statesByTx.key, encumbranceGroup.key, encumbranceGroup.value))
+                failureReasons.addAll(
+                    checkEncumbranceGroup(statesByTx.key, encumbranceGroup.key, encumbranceGroup.value))
             }
         }
         return failureReasons
@@ -167,7 +169,8 @@ class UtxoTransactionFinalityHandler(
     private fun checkEncumbranceGroup(txId: SecureHash, encumbranceTag: String, stateInfos: List<EncumbranceInfo>)
             : List<String> {
         // Check that no input states have been duplicated
-        val duplicationFailures = stateInfos.groupBy { it.stateIndex }.filter { it.value.size > 1 }.map { (index, infos) ->
+        val duplicationFailures = stateInfos.groupBy { it.stateIndex }.filter { it.value.size > 1 }.map {
+                (index, infos) ->
                 "Encumbrance check failed: State $txId, $index " +
                         "is used ${infos.size} times as input!"
         }

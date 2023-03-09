@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
@@ -10,12 +9,12 @@ import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -68,28 +67,34 @@ class SimUtxoLedgerService(
             .fromEntity(entity, signingService, serializationService, persistenceService, configuration)
     }
 
+
+//    override fun <T : ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+//
+//    }
+
+    override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
+        return UtxoFilteredTransactionBuilderBase(signedTransaction as UtxoSignedTransactionBase)
+    }
+
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
         val result = persistenceService.query("UtxoTransactionOutputEntity.findUnconsumedStatesByType",
             UtxoTransactionOutputEntity::class.java)
-            .setParameter("type", stateClass.canonicalName)
+            .setParameter("type", type.canonicalName)
             .execute()
         val notaryInfo = fiber.getNotary()
         val notary = Party(notaryInfo.name, notaryInfo.publicKey)
         val stateAndRefs = result.map { utxoTransactionOutputEntity ->
             val stateRef = StateRef(SecureHash.parse(utxoTransactionOutputEntity.transactionId),
                 utxoTransactionOutputEntity.index)
-            val contractState = serializationService.deserialize<ContractState>(utxoTransactionOutputEntity.stateData)
+            val contractState = serializationService.deserialize(
+                utxoTransactionOutputEntity.stateData, ContractState::class.java)
             val encumbrance = serializationService
-                .deserialize<List<EncumbranceGroupImpl>>(utxoTransactionOutputEntity.encumbranceData).firstOrNull()
-            val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance)
+                .deserialize(utxoTransactionOutputEntity.encumbranceData, List::class.java).firstOrNull()
+            val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance as? EncumbranceGroup)
             StateAndRefImpl(transactionState, stateRef)
         }
         return stateAndRefs
-    }
-
-    override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
-        return UtxoFilteredTransactionBuilderBase(signedTransaction as UtxoSignedTransactionBase)
     }
 
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
@@ -115,10 +120,10 @@ class SimUtxoLedgerService(
         ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
                     String(stateRef.transactionId.bytes))
 
-        val contractState = serializer.deserialize<ContractState>(entity.stateData)
+        val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)
         val encumbrance = serializer
-            .deserialize<List<EncumbranceGroupImpl>>(entity.encumbranceData).firstOrNull()
-        val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance)
+            .deserialize(entity.encumbranceData, List::class.java).firstOrNull()
+        val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance as? EncumbranceGroup)
         return StateAndRefImpl(transactionState, stateRef)
     }
 }

@@ -10,7 +10,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
@@ -25,6 +24,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.time.Instant
+import kotlin.time.Duration.Companion.days
 
 class UtxoTransactionBuilderBaseTest {
 
@@ -73,7 +73,7 @@ class UtxoTransactionBuilderBaseTest {
             .addSignatories(listOf(publicKeys[0]))
             .addOutputState(output)
             .setNotary(notary)
-            .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+            .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .addReferenceState(
                 StateRef.parse("SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D:0")
             )
@@ -114,7 +114,7 @@ class UtxoTransactionBuilderBaseTest {
 
         assertThatThrownBy {
             builder.setNotary(notary)
-            .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+            .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .toSignedTransaction()
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -122,7 +122,7 @@ class UtxoTransactionBuilderBaseTest {
 
         assertThatThrownBy {
             builder.setNotary(notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
                 .addSignatories(publicKeys)
                 .toSignedTransaction()
         }
@@ -132,7 +132,7 @@ class UtxoTransactionBuilderBaseTest {
 
         assertThatThrownBy {
             builder.setNotary(notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
                 .addSignatories(publicKeys)
                 .addOutputState(TestUtxoState("StateData", publicKeys))
                 .toSignedTransaction()

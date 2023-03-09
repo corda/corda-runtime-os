@@ -16,7 +16,6 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
@@ -32,6 +31,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import kotlin.time.Duration.Companion.days
 
 class SimUtxoLedgerServiceTest {
 
@@ -93,7 +93,7 @@ class SimUtxoLedgerServiceTest {
                 notary,
                 emptyList(),
                 publicKeys,
-                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
+                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), null)),
                 emptyList()
             ),
@@ -187,7 +187,7 @@ class SimUtxoLedgerServiceTest {
         assertThat(returnedStateAndRef.ref, `is`(stateRef))
         assertThat(returnedStateAndRef.state.contractState, `is`(testState))
         assertThat(returnedStateAndRef.state.notary, `is`(notary))
-        assertThat(returnedStateAndRef.state.encumbrance, `is`(encumbrance))
+        assertThat(returnedStateAndRef.state.encumbranceGroup, `is`(encumbrance))
 
     }
 

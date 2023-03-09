@@ -16,7 +16,9 @@ import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.Embeddable
 
-
+/***
+ * This entity stores Utxo Transaction data
+ */
 @Suppress("LongParameterList")
 @Entity
 @Table(name = "utxo_transaction")
@@ -38,10 +40,10 @@ class UtxoTransactionEntity(
     val referenceStateDate: ByteArray,
 
     @Column(name="signatories_data")
-    val signatoriesDate: ByteArray,
+    val signatoriesData: ByteArray,
 
     @Column(name="time_window_data")
-    val timeWindowDate: ByteArray,
+    val timeWindowData: ByteArray,
 
     @Column(name="output_data")
     val outputData: ByteArray,
@@ -77,6 +79,9 @@ class UtxoTransactionEntity(
     }
 }
 
+/***
+ * Entity to store signature data associated with a signed utxo transaction
+ */
 @Entity
 @Table(name = "utxo_transaction_signature")
 @IdClass(UtxoTransactionEntityId::class)
@@ -111,6 +116,10 @@ class UtxoTransactionSignatureEntity(
     }
 }
 
+
+/***
+ * This entity stores outputs of a transaction and is used to manage/ fetch unconsumed states in simulator
+ */
 @Suppress("LongParameterList")
 @Entity
 @Table(name = "utxo_transaction_output")

@@ -1,12 +1,11 @@
 package net.cordacon.example.landregistry.flows
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.cordacon.example.landregistry.states.LandTitleContract
 import net.cordacon.example.landregistry.states.LandTitleState
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -16,10 +15,10 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.time.Instant
 import java.time.LocalDateTime
+import kotlin.time.Duration.Companion.days
 
 /**
  * A flow to transfer land title from one owner to another.
@@ -40,15 +39,23 @@ class TransferLandTitleFlow : ClientStartableFlow {
     lateinit var flowMessaging: FlowMessaging
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
-        val request = requestBody.getRequestBodyAs<TransferLandTitleRequest>(jsonMarshallingService)
-        val newOwner = memberLookup.lookup(request.owner)
-            ?: throw CordaRuntimeException("Unknown holder: ${request.owner}.")
+    override fun call(requestBody: ClientRequestBody): String {
+        val request = requestBody.getRequestBodyAs(jsonMarshallingService, TransferLandTitleRequest::class.java)
+        val newOwner = memberLookup.lookup(request.newOwner)
+            ?: throw CordaRuntimeException("Unknown holder: ${request.newOwner}.")
 
-        val oldStateAndRef = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).singleOrNull {
+        val oldStateAndRefs = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).filter {
             it.state.contractState.titleNumber == request.titleNumber
-        } ?: throw CordaRuntimeException("Title Number: ${request.titleNumber} does not exist.")
+        }
 
+        if(oldStateAndRefs.isEmpty()){
+            throw CordaRuntimeException("Land Title with title nuumber ${request.titleNumber} does not exist")
+        }
+        if(oldStateAndRefs.size > 1){
+            throw CordaRuntimeException("Multiple Land State Found with title number: ${request.titleNumber}")
+        }
+
+        val oldStateAndRef = oldStateAndRefs[0]
         val oldState = oldStateAndRef.state.contractState
 
         val landTitleState = oldState.copy(
@@ -57,8 +64,8 @@ class TransferLandTitleFlow : ClientStartableFlow {
         )
 
         val transaction = utxoLedgerService
-            .getTransactionBuilder()
-            .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
+            .transactionBuilder
+            .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .setNotary(oldStateAndRef.state.notary)
             .addInputState(oldStateAndRef.ref)
             .addOutputState(landTitleState)
@@ -71,7 +78,7 @@ class TransferLandTitleFlow : ClientStartableFlow {
             ?: throw IllegalArgumentException("Unknown Issuer: ${oldState.issuer}.")
 
         val issuerSession = flowMessaging.initiateFlow(issuer.name)
-        val ownerSession = flowMessaging.initiateFlow(request.owner)
+        val ownerSession = flowMessaging.initiateFlow(request.newOwner)
 
         // CP Signing automatically handled by finalize()
         val finalizedSignedTransaction = utxoLedgerService.finalize(
@@ -98,5 +105,5 @@ class TransferLandTitleResponderFlow: ResponderFlow {
 
 data class TransferLandTitleRequest(
     val titleNumber: String,
-    val owner: MemberX500Name
+    val newOwner: MemberX500Name
 )

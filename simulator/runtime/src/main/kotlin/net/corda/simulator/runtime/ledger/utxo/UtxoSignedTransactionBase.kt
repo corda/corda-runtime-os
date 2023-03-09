@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
@@ -15,7 +14,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
@@ -25,15 +23,16 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class UtxoSignedTransactionBase(
-    override val signatures: List<DigitalSignatureAndMetadata>,
+    private val signatures: List<DigitalSignatureAndMetadata>,
     private val ledgerInfo: UtxoStateLedgerInfo,
     private val signingService: SigningService,
     private val serializer: SerializationService,
@@ -42,6 +41,7 @@ class UtxoSignedTransactionBase(
 ) : UtxoSignedTransaction {
 
     companion object {
+        @Suppress("UNCHECKED_CAST")
         internal fun fromEntity(
             entity: UtxoTransactionEntity,
             signingService: SigningService,
@@ -56,14 +56,14 @@ class UtxoSignedTransactionBase(
             return UtxoSignedTransactionBase(
                 signatures,
                 UtxoStateLedgerInfo(
-                    serializer.deserialize(entity.commandData),
-                    serializer.deserialize(entity.inputData),
-                    serializer.deserialize(entity.notaryData),
-                    serializer.deserialize(entity.referenceStateDate),
-                    serializer.deserialize(entity.signatoriesDate),
-                    serializer.deserialize(entity.timeWindowDate),
-                    serializer.deserialize(entity.outputData),
-                    serializer.deserialize(entity.attachmentData)
+                    serializer.deserialize(entity.commandData, List::class.java) as List<Command>,
+                    serializer.deserialize(entity.inputData, List::class.java) as List<StateRef>,
+                    serializer.deserialize(entity.notaryData, Party::class.java),
+                    serializer.deserialize(entity.referenceStateDate, List::class.java) as List<StateRef>,
+                    serializer.deserialize(entity.signatoriesData, List::class.java) as List<PublicKey>,
+                    serializer.deserialize(entity.timeWindowData, TimeWindow::class.java),
+                    serializer.deserialize(entity.outputData, List::class.java) as List<ContractStateAndEncumbranceTag>,
+                    serializer.deserialize(entity.attachmentData, List::class.java) as List<SecureHash>
                 ),
                 signingService,
                 serializer,
@@ -107,7 +107,7 @@ class UtxoSignedTransactionBase(
         val outputEntities = ledgerInfo.outputStates.mapIndexed{ index, contractStateAndTag ->
             val stateData = serializer.serialize(contractStateAndTag.contractState).bytes
             val encumbrance = contractStateAndTag.toTransactionState(notary,
-                contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]}).encumbrance
+                contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]}).encumbranceGroup
             val encumbranceData = serializer.serialize(listOf(encumbrance)).bytes
             UtxoTransactionOutputEntity(
                 id.toString(),
@@ -127,36 +127,12 @@ class UtxoSignedTransactionBase(
         return outputEntities.filter { relevantIndexes.contains(it.index) }
     }
 
-    override val metadata: TransactionMetadata
-        get() = SimTransactionMetadata()
-
-    override val notary: Party
-        get() = ledgerInfo.notary
-
     private val ledgerTransaction =
         UtxoLedgerTransactionBase(
             ledgerInfo,
             getStateAndRef(ledgerInfo.inputStateRefs),
             getStateAndRef(ledgerInfo.referenceStateRefs)
         )
-
-    override val id: SecureHash = ledgerTransaction.id
-
-    override val outputStateAndRefs: List<StateAndRef<*>>
-        get() {
-            return ledgerTransaction.outputStateAndRefs
-        }
-    override val commands: List<Command>
-        get() = ledgerInfo.commands
-    override val inputStateRefs: List<StateRef>
-        get() = ledgerInfo.inputStateRefs
-
-    override val referenceStateRefs: List<StateRef>
-        get() = ledgerInfo.referenceStateRefs
-    override val signatories: List<PublicKey>
-        get() = ledgerInfo.signatories
-    override val timeWindow: TimeWindow
-        get() = ledgerInfo.timeWindow
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
         return ledgerTransaction
@@ -169,10 +145,10 @@ class UtxoSignedTransactionBase(
                 UtxoTransactionOutputEntityId(it.transactionId.toString(), it.index)
             ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
                         String(it.transactionId.bytes))
-            val contractState = serializer.deserialize<ContractState>(entity.stateData)
+            val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)
             val encumbrance = serializer
-                .deserialize<List<EncumbranceGroupImpl>>(entity.encumbranceData).firstOrNull()
-            val transactionState = TransactionStateImpl(contractState, notary, encumbrance)
+                .deserialize(entity.encumbranceData, List::class.java).firstOrNull()
+            val transactionState = TransactionStateImpl(contractState, notary, encumbrance as? EncumbranceGroup)
             StateAndRefImpl(transactionState, it)
         }
     }
@@ -212,6 +188,46 @@ class UtxoSignedTransactionBase(
 
     override fun hashCode(): Int {
         return Objects.hash(id)
+    }
+
+    override fun getId(): SecureHash {
+        return ledgerTransaction.id
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        return SimTransactionMetadata()
+    }
+
+    override fun getSignatures(): List<DigitalSignatureAndMetadata> {
+        return signatures
+    }
+
+    override fun getInputStateRefs(): List<StateRef> {
+        return ledgerTransaction.inputStateRefs
+    }
+
+    override fun getReferenceStateRefs(): List<StateRef> {
+        return ledgerTransaction.referenceStateRefs
+    }
+
+    override fun getOutputStateAndRefs(): List<StateAndRef<*>> {
+        return ledgerTransaction.outputStateAndRefs
+    }
+
+    override fun getNotary(): Party {
+        return ledgerInfo.notary
+    }
+
+    override fun getTimeWindow(): TimeWindow {
+        return  ledgerInfo.timeWindow
+    }
+
+    override fun getCommands(): List<Command> {
+        return ledgerInfo.commands
+    }
+
+    override fun getSignatories(): List<PublicKey> {
+        return ledgerInfo.signatories
     }
 
 }
