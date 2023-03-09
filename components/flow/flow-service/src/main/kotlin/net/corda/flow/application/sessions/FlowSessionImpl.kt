@@ -9,6 +9,7 @@ import net.corda.flow.state.FlowContext
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.FlowContextProperties
+import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -25,11 +26,25 @@ class FlowSessionImpl(
     direction: Direction
 ) : FlowSession, FlowSessionInternal {
 
+    private var counterpartyFlowInfo: FlowInfo? = null
+
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun getCounterparty(): MemberX500Name = counterparty
+    override fun getCounterpartyFlowInfo(): FlowInfo {
+        val existingCounterPartyFlowInfo = counterpartyFlowInfo
+        if (existingCounterPartyFlowInfo != null) {
+            return existingCounterPartyFlowInfo
+        }
+        val request = FlowIORequest.CounterPartyFlowInfo(getSessionInfo())
+        val received = fiber.suspend(request)
+        //If we are able to receive counterparty info this means the session initiation has been completed.
+        setSessionConfirmed()
+        counterpartyFlowInfo = received
+        return received
+    }
 
     override fun getContextProperties(): FlowContextProperties = flowContext
 

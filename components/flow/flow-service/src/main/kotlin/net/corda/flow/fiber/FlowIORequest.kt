@@ -3,6 +3,7 @@ package net.corda.flow.fiber
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -55,6 +56,14 @@ interface FlowIORequest<out R> {
     ) : FlowIORequest<Map<String, ByteArray>> {
         override fun toString() = "SendAndReceive(${sessionToInfo.keys.joinToString { it.toString() }})"
     }
+
+    /**
+     * IORequest to allow the Flow Fiber to request data from the Flow Engine
+     * This request will be used to get the counterparties flow information.
+     *
+     * @property sessionInfo the session to get flow info for.
+     */
+    data class CounterPartyFlowInfo(val sessionInfo: SessionInfo) : FlowIORequest<FlowInfo>
 
     /**
      * Closes the specified sessions.

@@ -36,10 +36,9 @@ interface FlowSessionManager {
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
-     * @param protocolName The name of the protocol to use in this session
-     * @param protocolVersions The versions of the protocol supported by the initiating side
      * @param contextUserProperties The user context properties
      * @param contextPlatformProperties The platform context properties
+     * @param sessionProperties The session context properties
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
@@ -49,10 +48,29 @@ interface FlowSessionManager {
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
-        protocolName: String,
-        protocolVersions: List<Int>,
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList,
+        sessionProperties: KeyValuePairList,
+        instant: Instant
+    ): SessionState
+
+    /**
+     * Queue [SessionConfirm] messages to send to the passed in sessions.
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionId The session to confirm.
+     * @param contextSessionProperties Session specific context such a protocol version to send back to the initiator
+     * @param instant The [Instant] used within the created [SessionEvent].
+     *
+     * @return Updated [SessionState] containing [SessionConfirm] message to send.
+     *
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
+     * the CONFIRMED state.
+     */
+    fun sendConfirmMessage(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        contextSessionProperties: KeyValuePairList,
         instant: Instant
     ): SessionState
 

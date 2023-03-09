@@ -8,6 +8,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -57,20 +58,18 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
-        protocolName: String,
-        protocolVersions: List<Int>,
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList,
+        sessionProperties: KeyValuePairList,
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
-            .setProtocol(protocolName)
-            .setVersions(protocolVersions)
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(contextPlatformProperties)
             .setContextUserProperties(contextUserProperties)
+            .setContextSessionProperties(sessionProperties)
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -90,6 +89,21 @@ class FlowSessionManagerImpl @Activate constructor(
             event = event,
             instant = instant,
             maxMsgSize = checkpoint.maxMessageSize
+        )
+    }
+
+    override fun sendConfirmMessage(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        contextSessionProperties: KeyValuePairList,
+        instant: Instant,
+    ): SessionState {
+        validateSessionStates(checkpoint, listOf(sessionId), Operation.SENDING)
+        return sendSessionMessageToExistingSession(
+            checkpoint,
+            sessionId,
+            payload = SessionConfirm(contextSessionProperties),
+            instant
         )
     }
 

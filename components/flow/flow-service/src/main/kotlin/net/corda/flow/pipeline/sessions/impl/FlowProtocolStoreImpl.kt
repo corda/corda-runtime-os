@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 
 /**
@@ -35,12 +36,12 @@ class FlowProtocolStoreImpl(
         protocolName: String,
         supportedVersions: Collection<Int>,
         context: FlowEventContext<*>
-    ): String {
+    ): FlowAndProtocolVersion {
         val sortedProtocols = supportedVersions.sortedDescending().map { FlowProtocol(protocolName, it) }
         for (protocol in sortedProtocols) {
             val responder = protocolToResponder[protocol]
             if (responder != null) {
-                return responder
+                return FlowAndProtocolVersion(protocolName, protocol.version, responder)
             }
         }
         throw FlowFatalException(

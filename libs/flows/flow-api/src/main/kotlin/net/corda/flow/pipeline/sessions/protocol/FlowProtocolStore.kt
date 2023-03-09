@@ -35,14 +35,14 @@ interface FlowProtocolStore {
      * @param supportedVersions The versions of the protocol that the initiating side supports. The highest supported
      *                          version will be selected.
      * @param context The flow event context. Used in the event of a failure.
-     * @return The name of the responder flow class to be invoked.
+     * @return The name of the responder flow class to be invoked and the version to be used
      * @throws FlowFatalException if there are no responder flows that match the provided inputs.
      */
     fun responderForProtocol(
         protocolName: String,
         supportedVersions: Collection<Int>,
         context: FlowEventContext<*>
-    ): String
+    ): FlowAndProtocolVersion
 
     /**
      * Retrieve the protocols supported by this initiating flow.
@@ -55,3 +55,12 @@ interface FlowProtocolStore {
     fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>>
 
 }
+
+/**
+ * Class to hold information about which flow is running, the protocol the flow handles and the version of the protocol to run.
+ */
+data class FlowAndProtocolVersion(
+    val protocol: String,
+    val protocolVersion: Int,
+    val flowClassName: String,
+)
