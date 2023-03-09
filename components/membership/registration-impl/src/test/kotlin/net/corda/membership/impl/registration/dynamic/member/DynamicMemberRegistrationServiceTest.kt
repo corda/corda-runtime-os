@@ -199,10 +199,7 @@ class DynamicMemberRegistrationServiceTest {
     private val mockSignature: DigitalSignature.WithKey =
         DigitalSignature.WithKey(
             sessionKey,
-            byteArrayOf(1),
-            mapOf(
-                Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA512.signatureName
-            )
+            byteArrayOf(1)
         )
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)

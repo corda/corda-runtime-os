@@ -47,7 +47,7 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
                 keyParameters
             )
         ).toByteArray()
-        return DigitalSignature.WithKey(publicKey, opaqueBytes, mapOf())
+        return DigitalSignature.WithKey(publicKey, opaqueBytes)
     }
 
     override fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {

@@ -140,8 +140,7 @@ class CryptoFlowOpsTransformerImpl(
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
             keyEncodingService.decodePublicKey(resp.publicKey.array()),
-            resp.bytes.array(),
-            resp.context.toMap()
+            resp.bytes.array()
         )
     }
 

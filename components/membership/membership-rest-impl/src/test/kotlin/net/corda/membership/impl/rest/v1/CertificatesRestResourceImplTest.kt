@@ -161,8 +161,7 @@ class CertificatesRestResourceImplTest {
             ).doReturn(
                 DigitalSignature.WithKey(
                     publicKey,
-                    byteArrayOf(1),
-                    emptyMap()
+                    byteArrayOf(1)
                 )
             )
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(publicKey)
@@ -392,8 +391,7 @@ class CertificatesRestResourceImplTest {
             ).doReturn(
                 DigitalSignature.WithKey(
                     publicKey,
-                    byteArrayOf(1),
-                    emptyMap()
+                    byteArrayOf(1)
                 )
             )
             whenever(cryptoOpsClient.lookupKeysByIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
@@ -435,8 +433,7 @@ class CertificatesRestResourceImplTest {
             ).doReturn(
                 DigitalSignature.WithKey(
                     publicKey,
-                    byteArrayOf(1),
-                    emptyMap()
+                    byteArrayOf(1)
                 )
             )
             whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
@@ -478,8 +475,7 @@ class CertificatesRestResourceImplTest {
             ).doReturn(
                 DigitalSignature.WithKey(
                     publicKey,
-                    byteArrayOf(1),
-                    emptyMap()
+                    byteArrayOf(1)
                 )
             )
             whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))

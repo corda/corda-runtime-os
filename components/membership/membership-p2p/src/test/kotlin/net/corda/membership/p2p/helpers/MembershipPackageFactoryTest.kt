@@ -1,8 +1,8 @@
 package net.corda.membership.p2p.helpers
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
@@ -14,7 +14,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -88,8 +87,7 @@ class MembershipPackageFactoryTest {
             }
             val signature = DigitalSignature.WithKey(
                 publicKey,
-                bytes,
-                mapOf("name" to entry.key.name.toString())
+                bytes
             )
             whenever(mgmSigner.sign(hash)).thenReturn(signature)
         }
@@ -97,12 +95,7 @@ class MembershipPackageFactoryTest {
     private val signature = members.associate {
         it.holdingIdentity to CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-${it.name}".toByteArray()),
-            ByteBuffer.wrap("sig-${it.name}".toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("name", it.name.toString())
-                )
-            ),
+            ByteBuffer.wrap("sig-${it.name}".toByteArray())
         )
     }
     private val allAlg = "all-alg"
@@ -145,8 +138,7 @@ class MembershipPackageFactoryTest {
                 it.assertThat(this.mgmSignature).isEqualTo(
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(pubKey.encoded),
-                        ByteBuffer.wrap(signedGroupParameters.bytes),
-                        KeyValuePairList(emptyList()),
+                        ByteBuffer.wrap(signedGroupParameters.bytes)
                     )
                 )
             }
@@ -182,21 +174,11 @@ class MembershipPackageFactoryTest {
         val expectedMembers = (1..membersCount).map { index ->
             val memberSignature = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-O=name-$index, L=London, C=GB".toByteArray()),
-                ByteBuffer.wrap("sig-O=name-$index, L=London, C=GB".toByteArray()),
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair("name", "O=name-$index, L=London, C=GB")
-                    )
-                )
+                ByteBuffer.wrap("sig-O=name-$index, L=London, C=GB".toByteArray())
             )
             val mgmSignature = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-O=name-$index, L=London, C=GB".toByteArray()),
-                ByteBuffer.wrap("bytes-O=name-$index, L=London, C=GB".toByteArray()),
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair("name", "O=name-$index, L=London, C=GB")
-                    )
-                )
+                ByteBuffer.wrap("bytes-O=name-$index, L=London, C=GB".toByteArray())
             )
             SignedMemberInfo(
                 ByteBuffer.wrap("memberContext-name-$index".toByteArray()),

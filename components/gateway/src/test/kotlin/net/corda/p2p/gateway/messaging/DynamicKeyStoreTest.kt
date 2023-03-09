@@ -239,7 +239,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `when keystore is not using stubs, sign with known publicKey will send the correct data`() {
             val returnedData = "ok".toByteArray()
-            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData)
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
             dynamicKeyStore.sign(publicKeyOne, spec, data)
@@ -250,7 +250,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `when keystore is not using stubs, sign with known publicKey will return the correct data`() {
             val returnedData = "ok".toByteArray()
-            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData)
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
 
@@ -277,7 +277,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `onNext will replace the public key`() {
             val returnedData = "ok".toByteArray()
-            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData)
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
             processorForKeystore.firstValue.onNext(
@@ -395,7 +395,7 @@ class DynamicKeyStoreTest {
             val data = "hello".toByteArray()
             val returnedData = "ok".toByteArray()
             val publicKey = certificates["certificate1"]?.publicKey!!
-            val signatureWithKey = DigitalSignature.WithKey(publicKey, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignature.WithKey(publicKey, returnedData)
             whenever(
                 cryptoOpsClient.sign(
                     "id",

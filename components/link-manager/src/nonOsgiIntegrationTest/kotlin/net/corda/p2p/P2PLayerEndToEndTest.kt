@@ -591,7 +591,7 @@ class P2PLayerEndToEndTest {
                 signature.initSign(key)
                 (signatureSpec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
                 signature.update(data)
-                DigitalSignature.WithKey(publicKey, signature.sign(), emptyMap())
+                DigitalSignature.WithKey(publicKey, signature.sign())
             }
         }
         private val groupPolicyProvider = mockLifeCycle<GroupPolicyProvider> {

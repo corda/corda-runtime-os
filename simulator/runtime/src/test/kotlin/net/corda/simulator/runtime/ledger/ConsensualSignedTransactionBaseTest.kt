@@ -150,7 +150,7 @@ class ConsensualSignedTransactionBaseTest {
     }
 
     private fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = now()) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
+        DigitalSignature.WithKey(key, "some bytes".toByteArray()),
         DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
     )
 

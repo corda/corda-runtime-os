@@ -175,7 +175,7 @@ class SigningServiceImpl(
         else
             SigningAliasSpec(getHsmAlias(record, publicKey, tenantId), publicKey, scheme, signatureSpec)
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
-        return DigitalSignature.WithKey(record.publicKey, signedBytes, context)
+        return DigitalSignature.WithKey(record.publicKey, signedBytes)
     }
     
     override fun deriveSharedSecret(

@@ -222,7 +222,7 @@ class SimConsensualLedgerServiceTest {
     }
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
+        DigitalSignature.WithKey(key, "some bytes".toByteArray()),
         DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
     )
 

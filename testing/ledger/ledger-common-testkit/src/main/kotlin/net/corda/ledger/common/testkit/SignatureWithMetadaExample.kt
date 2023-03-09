@@ -9,6 +9,6 @@ import java.time.Instant
 
 fun getSignatureWithMetadataExample(publicKey: PublicKey = publicKeyExample, createdTs: Instant = Instant.now()) =
     DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(publicKey, "signature".toByteArray(), mapOf("contextKey1" to "contextValue1")),
+        DigitalSignature.WithKey(publicKey, "signature".toByteArray()),
         DigitalSignatureMetadata(createdTs, SignatureSpec("dummySignatureName"), mapOf("propertyKey1" to "propertyValue1"))
     )

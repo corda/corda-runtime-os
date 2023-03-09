@@ -274,8 +274,7 @@ class CryptoOpsClientImpl(
         val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-            response.bytes.array(),
-            response.context.toMap()
+            response.bytes.array()
         )
     }
 
