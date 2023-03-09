@@ -2,24 +2,28 @@ package net.corda.sandboxgroupcontext.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.RemovalListener
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.function.Function
 
 internal class SandboxGroupContextCacheImpl private constructor(
-    override val capacity: Long,
+    override val capacities: Map<SandboxGroupType, Long>,
     private val expiryQueue: ReferenceQueue<SandboxGroupContextWrapper>,
     private val toBeClosed: MutableSet<ToBeClosed>
 ) : SandboxGroupContextCache {
-    constructor(capacity: Long)
-        : this(capacity, ReferenceQueue<SandboxGroupContextWrapper>(), ConcurrentHashMap.newKeySet())
+    constructor(capacities: Map<SandboxGroupType, Long>)
+        : this(capacities, ReferenceQueue<SandboxGroupContextWrapper>(), ConcurrentHashMap.newKeySet())
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -34,6 +38,94 @@ internal class SandboxGroupContextCacheImpl private constructor(
         referenceQueue: ReferenceQueue<SandboxGroupContextWrapper>
     ) : WeakReference<SandboxGroupContextWrapper>(sandboxGroupContext, referenceQueue)
 
+    @Suppress("unused")
+    private class MultiCache(
+        capacities: Map<SandboxGroupType, Long>,
+        private val removalListener: RemovalListener<VirtualNodeContext, SandboxGroupContextWrapper>
+    ) {
+
+        private val caches = capacities.entries.associate { (type, capacity) ->
+            type to CacheFactoryImpl().build(
+                "Sandbox-Cache",
+                Caffeine.newBuilder()
+                    .maximumSize(capacity)
+                    // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
+                    // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
+                    // is not referenced anymore).
+                    .removalListener(removalListener)
+            )
+        }
+
+        fun getIfPresent(key: VirtualNodeContext): SandboxGroupContextWrapper? =
+            caches.atType(key.sandboxGroupType).getIfPresent(key)
+
+        fun get(
+            key: VirtualNodeContext,
+            mappingFunction: Function<in VirtualNodeContext, out SandboxGroupContextWrapper>
+        ): SandboxGroupContextWrapper =
+            caches.atType(key.sandboxGroupType).get(key, mappingFunction)
+
+        fun getAllPresent(keys: Iterable<VirtualNodeContext>): Map<VirtualNodeContext, SandboxGroupContextWrapper> {
+            val ret = mutableMapOf<VirtualNodeContext, SandboxGroupContextWrapper>()
+            val groupTypes = keys.map { it.sandboxGroupType }.distinct()
+            caches.filter { it.key in groupTypes }.values.forEach {
+                ret.putAll(it.getAllPresent(keys))
+            }
+            return ret
+        }
+
+        fun getAll(
+            keys: Iterable<VirtualNodeContext>,
+            mappingFunction: Function<in Set<VirtualNodeContext>, out Map<out VirtualNodeContext, SandboxGroupContextWrapper>>
+        ): Map<VirtualNodeContext, SandboxGroupContextWrapper> {
+            val ret = mutableMapOf<VirtualNodeContext, SandboxGroupContextWrapper>()
+            val groupTypes = keys.map { it.sandboxGroupType }.distinct()
+            caches.filter { it.key in groupTypes }.values.forEach {
+                ret.putAll(it.getAll(keys, mappingFunction))
+            }
+            return ret
+        }
+
+        fun put(key: VirtualNodeContext, value: SandboxGroupContextWrapper) {
+            caches.atType(key.sandboxGroupType).put(key, value)
+        }
+
+        fun putAll(map: Map<out VirtualNodeContext, SandboxGroupContextWrapper>) {
+            map.forEach {
+                val groupType = it.key.sandboxGroupType
+                caches.atType(groupType).put(it.key, it.value)
+            }
+        }
+
+        fun invalidate(key: VirtualNodeContext) {
+            caches.atType(key.sandboxGroupType).invalidate(key)
+        }
+
+        fun invalidateAll(keys: Iterable<VirtualNodeContext>) {
+            keys.forEach {
+                caches.atType(it.sandboxGroupType).invalidate(it)
+            }
+        }
+
+        fun invalidateAll() = caches.values.forEach { it.invalidateAll() }
+
+        fun estimatedSize(sandboxGroupType: SandboxGroupType): Long = caches.atType(sandboxGroupType).estimatedSize()
+
+        fun cleanUp() = caches.values.forEach { it.cleanUp() }
+
+        fun asMap(): Map<VirtualNodeContext, SandboxGroupContextWrapper> {
+            val ret = mutableMapOf<VirtualNodeContext, SandboxGroupContextWrapper>()
+            caches.values.forEach {
+                ret.putAll(it.asMap())
+            }
+            return ret
+        }
+
+        private fun Map<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>>.atType(type: SandboxGroupType) =
+            this[type] ?: // we should never actually get here.  If we do it's a problem in the creation of the map
+            throw CordaRuntimeException("An invalid sandbox group type ($type) has been used in the ${this::class.java.name}")
+    }
+
     /**
      * Wrapper around [CloseableSandboxGroupContext], solely used to keep a [WeakReference] to every instance and only
      * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
@@ -45,8 +137,10 @@ internal class SandboxGroupContextCacheImpl private constructor(
     /**
      * Recreates the cache with [newCapacity], and keeping the same expiry queue.
      */
-    override fun resize(newCapacity: Long): SandboxGroupContextCache
-        = SandboxGroupContextCacheImpl(newCapacity, expiryQueue, toBeClosed)
+    override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache {
+        val newCapacities = capacities.plus(Pair(sandboxGroupType, newCapacity))
+        return SandboxGroupContextCacheImpl(newCapacities, expiryQueue, toBeClosed)
+    }
 
     /**
      * Checks whether there are contexts that were evicted from the cache but haven't been closed yet, either because
@@ -89,27 +183,19 @@ internal class SandboxGroupContextCacheImpl private constructor(
         }
     }
 
-    private val contexts: Cache<VirtualNodeContext, SandboxGroupContextWrapper> = CacheFactoryImpl().build(
-        "Sandbox-Cache",
-        Caffeine.newBuilder()
-            .maximumSize(capacity)
-            // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
-            // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
-            // is not referenced anymore).
-            .removalListener { key, context, cause ->
-                purgeExpiryQueue()
-                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                    toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
-                }
+    private val contexts = MultiCache(capacities) { key, context, cause ->
+        purgeExpiryQueue()
+        (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+            toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
+        }
 
-                logger.info(
-                    "Evicting {} sandbox for {} [{}]",
-                    key!!.sandboxGroupType,
-                    key.holdingIdentity.x500Name,
-                    cause.name
-                )
-            }
-    )
+        logger.info(
+            "Evicting {} sandbox for {} [{}]",
+            key!!.sandboxGroupType,
+            key.holdingIdentity.x500Name,
+            cause.name
+        )
+    }
 
     override fun flush(): CompletableFuture<*> {
         purgeExpiryQueue()
@@ -165,7 +251,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 "Caching {} sandbox for {} (cache size: {})",
                 virtualNodeContext.sandboxGroupType,
                 virtualNodeContext.holdingIdentity.x500Name,
-                contexts.estimatedSize()
+                contexts.estimatedSize(virtualNodeContext.sandboxGroupType)
             )
 
             SandboxGroupContextWrapper(createFunction(virtualNodeContext))

@@ -66,7 +66,7 @@ class SandboxGroupContextServiceImplTest {
             scr,
             bundleContext
         )
-        service.initCache(1)
+        service.initCaches(1)
         virtualNodeContext = createVirtualNodeContextForFlow(
             holdingIdentity,
             cpks.mapTo(mutableSetOf()) { it.metadata.fileChecksum }
@@ -146,7 +146,7 @@ class SandboxGroupContextServiceImplTest {
         val cpkService = CpkReadServiceFake(cpks1 + cpks2 + cpks3)
 
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext).apply {
-            initCache(1)
+            initCaches(1)
         }
 
         val dog1 = Dog("Rover", "Woof!")
