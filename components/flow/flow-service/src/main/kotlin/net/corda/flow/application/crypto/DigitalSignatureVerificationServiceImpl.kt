@@ -24,12 +24,12 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
 ) : DigitalSignatureVerificationService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     override fun verify(
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec
     ) {
-        signatureVerificationService.verify(publicKey, signatureSpec, signatureData, clearData)
+        signatureVerificationService.verify(publicKey, signatureSpec, signatureData, originalData)
     }
 
     override fun verify(
@@ -38,6 +38,6 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec
     ) {
-        verify(publicKey, signatureSpec, signature.bytes, originalData)
+        verify(originalData, signature.bytes, publicKey, signatureSpec)
     }
 }
