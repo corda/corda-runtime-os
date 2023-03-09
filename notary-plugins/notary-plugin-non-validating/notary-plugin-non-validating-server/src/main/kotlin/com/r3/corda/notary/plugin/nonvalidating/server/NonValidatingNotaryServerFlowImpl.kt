@@ -66,13 +66,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
         memberLookup: MemberLookup,
-        transactionSignatureService: TransactionSignatureService
+        transactionSignatureService: TransactionSignatureService,
+        digestService: DigestService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
         this.transactionSignatureService = transactionSignatureService
+        this.digestService = digestService
     }
 
     /**
