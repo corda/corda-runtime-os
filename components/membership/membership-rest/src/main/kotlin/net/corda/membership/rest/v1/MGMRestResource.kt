@@ -434,9 +434,9 @@ interface MGMRestResource : RestResource {
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param suspensionParams Parameters for suspending a member. See [SuspensionActivationParameters] for more details.
      */
-    @HttpPOST(
-        path = "{holdingIdentityShortHash}/suspend"
-    )
+//    @HttpPOST(
+//        path = "{holdingIdentityShortHash}/suspend"
+//    )
     fun suspendMember(
         @RestPathParameter(
             description = "The holding identity ID of the MGM of the membership group"
@@ -461,9 +461,9 @@ interface MGMRestResource : RestResource {
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param activationParams Parameters for activating a member. See [SuspensionActivationParameters] for more details.
      */
-    @HttpPOST(
-        path = "{holdingIdentityShortHash}/activate"
-    )
+//    @HttpPOST(
+//        path = "{holdingIdentityShortHash}/activate"
+//    )
     fun activateMember(
         @RestPathParameter(
             description = "The holding identity ID of the MGM of the membership group"
