@@ -115,7 +115,7 @@
                        tableName="vnode_member_info"/>
 
         <createTable tableName="vnode_group_policy">
-            <column name="version" type="INT" autoIncrement="true">
+            <column name="version" type="BIGINT">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
             <column name="created_at" type="TIMESTAMP">
