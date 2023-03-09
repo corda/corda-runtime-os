@@ -313,7 +313,7 @@ class CryptoServiceDecoratorTests {
         )
         val spec = KeyGenerationSpec(
             alias = expectedAlias,
-            masterKeyAlias = expectedMasterKeyAlias,
+            wrappingKeyAlias = expectedMasterKeyAlias,
             keyScheme = scheme
         )
         whenever(
@@ -327,7 +327,7 @@ class CryptoServiceDecoratorTests {
             argThat {
                 keyScheme == scheme &&
                         alias == expectedAlias &&
-                        masterKeyAlias == expectedMasterKeyAlias
+                        wrappingKeyAlias == expectedMasterKeyAlias
             },
             argThat {
                 size == 2 &&
@@ -349,7 +349,7 @@ class CryptoServiceDecoratorTests {
         val context = emptyMap<String, String>()
         val spec = KeyGenerationSpec(
             alias = alias,
-            masterKeyAlias = masterKeyAlias,
+            wrappingKeyAlias = masterKeyAlias,
             keyScheme = scheme
         )
         whenever(
@@ -375,7 +375,7 @@ class CryptoServiceDecoratorTests {
         val context = emptyMap<String, String>()
         val spec = KeyGenerationSpec(
             alias = alias,
-            masterKeyAlias = masterKeyAlias,
+            wrappingKeyAlias = masterKeyAlias,
             keyScheme = scheme
         )
         whenever(
@@ -402,7 +402,7 @@ class CryptoServiceDecoratorTests {
         val context = emptyMap<String, String>()
         val spec = KeyGenerationSpec(
             alias = alias,
-            masterKeyAlias = masterKeyAlias,
+            wrappingKeyAlias = masterKeyAlias,
             keyScheme = scheme
         )
         whenever(

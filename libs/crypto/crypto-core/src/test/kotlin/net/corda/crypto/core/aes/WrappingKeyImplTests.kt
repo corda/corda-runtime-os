@@ -23,7 +23,7 @@ import java.util.UUID
 import javax.crypto.spec.SecretKeySpec
 import kotlin.test.assertNotSame
 
-class WrappingKeyTests {
+class WrappingKeyImplTests {
     companion object {
         lateinit var provider: Provider
         lateinit var schemeMetadata: CipherSchemeMetadata
@@ -62,14 +62,14 @@ class WrappingKeyTests {
     @Test
     fun `Should fail to derive for blank passphrase`() {
         assertThrows<IllegalArgumentException> {
-            WrappingKey.derive (schemeMetadata,"", UUID.randomUUID().toString())
+            WrappingKeyImpl.derive(schemeMetadata, "", UUID.randomUUID().toString())
         }
     }
 
     @Test
     fun `Should fail to derive for blank salt`() {
         assertThrows<IllegalArgumentException> {
-            WrappingKey.derive(schemeMetadata, UUID.randomUUID().toString(), "")
+            WrappingKeyImpl.derive(schemeMetadata, UUID.randomUUID().toString(), "")
         }
     }
 
@@ -77,8 +77,8 @@ class WrappingKeyTests {
     fun `Should be equal for the same secret key`() {
         val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
-        val key1 = WrappingKey(AesKey(key = secretKey), schemeMetadata)
-        val key2 = WrappingKey(AesKey(key = secretKey), schemeMetadata)
+        val key1 = WrappingKeyImpl(AesKey(key = secretKey), schemeMetadata)
+        val key2 = WrappingKeyImpl(AesKey(key = secretKey), schemeMetadata)
         assertEquals(key1, key2)
     }
 
@@ -86,7 +86,7 @@ class WrappingKeyTests {
     fun `Should be equal to itself`() {
         val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
-        val key = WrappingKey(AesKey(key = secretKey), schemeMetadata)
+        val key = WrappingKeyImpl(AesKey(key = secretKey), schemeMetadata)
         assertEquals(key, key)
     }
 
@@ -96,8 +96,8 @@ class WrappingKeyTests {
         val secretKey1 = SecretKeySpec(encoded1, AES_KEY_ALGORITHM)
         val encoded2 = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey2 = SecretKeySpec(encoded2, AES_KEY_ALGORITHM)
-        val key1 = WrappingKey(AesKey(key = secretKey1), schemeMetadata)
-        val key2 = WrappingKey(AesKey(key = secretKey2), schemeMetadata)
+        val key1 = WrappingKeyImpl(AesKey(key = secretKey1), schemeMetadata)
+        val key2 = WrappingKeyImpl(AesKey(key = secretKey2), schemeMetadata)
         assertNotEquals(key1, key2)
     }
 
@@ -105,7 +105,7 @@ class WrappingKeyTests {
     fun `Should not be equal to the object of different type`() {
         val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
-        val key = WrappingKey(AesKey(key = secretKey), schemeMetadata)
+        val key = WrappingKeyImpl(AesKey(key = secretKey), schemeMetadata)
         assertFalse(key.equals("Hello World!"))
     }
 
@@ -114,14 +114,14 @@ class WrappingKeyTests {
         val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
         val aesKey = AesKey(key = secretKey)
-        val key = WrappingKey(aesKey, schemeMetadata)
+        val key = WrappingKeyImpl(aesKey, schemeMetadata)
         assertEquals(aesKey.hashCode(), key.hashCode())
     }
 
     @Test
     fun `Should generate different keys`() {
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         assertNotEquals(key1, key2)
     }
 
@@ -130,8 +130,8 @@ class WrappingKeyTests {
         val passphrase1 = UUID.randomUUID().toString()
         val passphrase2 = UUID.randomUUID().toString()
         val salt = UUID.randomUUID().toString()
-        val key1 = WrappingKey.derive(schemeMetadata, passphrase1, salt)
-        val key2 = WrappingKey.derive(schemeMetadata, passphrase2, salt)
+        val key1 = WrappingKeyImpl.derive(schemeMetadata, passphrase1, salt)
+        val key2 = WrappingKeyImpl.derive(schemeMetadata, passphrase2, salt)
         assertNotEquals(key1, key2)
     }
 
@@ -140,15 +140,15 @@ class WrappingKeyTests {
         val passphrase = UUID.randomUUID().toString()
         val salt1 = UUID.randomUUID().toString()
         val salt2 = UUID.randomUUID().toString()
-        val key1 = WrappingKey.derive(schemeMetadata, passphrase, salt1)
-        val key2 = WrappingKey.derive(schemeMetadata, passphrase, salt2)
+        val key1 = WrappingKeyImpl.derive(schemeMetadata, passphrase, salt1)
+        val key2 = WrappingKeyImpl.derive(schemeMetadata, passphrase, salt2)
         assertNotEquals(key1, key2)
     }
 
     @Test
     fun `Should wrap and unwrap other wrapping key`() {
-        val master = WrappingKey.derive(schemeMetadata, UUID.randomUUID().toString(), UUID.randomUUID().toString())
-        val other = WrappingKey.derive(schemeMetadata, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        val master = WrappingKeyImpl.derive(schemeMetadata, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        val other = WrappingKeyImpl.derive(schemeMetadata, UUID.randomUUID().toString(), UUID.randomUUID().toString())
         assertNotEquals(master, other)
         val wrapped = master.wrap(other)
         val unwrapped = master.unwrapWrappingKey(wrapped)
@@ -158,7 +158,7 @@ class WrappingKeyTests {
 
     @Test
     fun `Should wrap and unwrap other private key`() {
-        val master = WrappingKey.derive(schemeMetadata, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        val master = WrappingKeyImpl.derive(schemeMetadata, UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val other = generateEcKeyPair().private
         assertNotEquals(master, other)
         val wrapped = master.wrap(other)
