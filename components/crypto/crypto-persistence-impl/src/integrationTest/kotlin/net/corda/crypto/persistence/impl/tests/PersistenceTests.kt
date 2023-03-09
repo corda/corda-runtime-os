@@ -4,6 +4,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -16,6 +18,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
@@ -50,12 +53,10 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.publicKeyId
-import net.corda.v5.crypto.sha256Bytes
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -605,16 +606,16 @@ class PersistenceTests {
 
     @Test
     fun `Should save and then retrieve wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
         val alias2 = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo1 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key1.algorithm,
             keyMaterial = masterKey.wrap(key1)
         )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key2.algorithm,
@@ -628,15 +629,15 @@ class PersistenceTests {
 
     @Test
     fun `Should fail override existing wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo1 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key1.algorithm,
             keyMaterial = masterKey.wrap(key1)
         )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key2.algorithm,
@@ -670,7 +671,7 @@ class PersistenceTests {
     fun `Should save same public keys for different tenants and lookup by id for each tenant`() {
         val hsmId = UUID.randomUUID().toString()
         val tenantId1 = CryptoTenants.P2P
-        val tenantId2 = CryptoTenants.RPC_API
+        val tenantId2 = CryptoTenants.REST
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId1, p1)

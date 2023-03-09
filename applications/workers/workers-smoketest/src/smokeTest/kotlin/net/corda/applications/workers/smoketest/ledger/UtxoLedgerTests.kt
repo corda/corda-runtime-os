@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest.ledger
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
@@ -30,6 +31,10 @@ class UtxoLedgerTests {
 
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
+            val module = SimpleModule()
+            module.addSerializer(SecureHash::class.java, SecureHashSerializer)
+            module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+            registerModule(module)
         }
     }
 

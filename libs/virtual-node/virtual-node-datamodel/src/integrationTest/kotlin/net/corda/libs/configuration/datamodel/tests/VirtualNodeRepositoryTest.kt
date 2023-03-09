@@ -30,6 +30,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.streams.toList
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
@@ -81,7 +82,7 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI $i",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
+                TestRandom.secureHash())
         }
 
         // Now check the query - and also we should look at the console output for this
@@ -113,7 +114,7 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI ${UUID.randomUUID()}",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
+                TestRandom.secureHash())
         }
 
         // Now check the query - and also we should look at the console output for this
@@ -127,6 +128,28 @@ class VirtualNodeRepositoryTest {
     }
 
     @Test
+    fun findVirtualNodeOperationByRequestId() {
+        val requestId = UUID.randomUUID().toString()
+
+        VNodeTestUtils.newVNodeOperation(
+            entityManagerFactory,
+            requestId,
+            "data",
+            VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE
+        )
+
+        val virtualNodeOperation = entityManagerFactory.createEntityManager().use {
+            VirtualNodeRepositoryImpl().findVirtualNodeOperationByRequestId(it, requestId)
+        }
+
+        assertThat(virtualNodeOperation).isNotEmpty
+        assertNotNull(virtualNodeOperation[0].operationType)
+        assertNotNull(virtualNodeOperation[0].state)
+        assertEquals(virtualNodeOperation[0].requestData, "data")
+    }
+
+    @Test
     fun `find returns null if no vnode found`() {
         // "set up"
         val numberOfVNodes = 5
@@ -135,7 +158,7 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI $i ${UUID.randomUUID()}",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
+                TestRandom.secureHash())
         }
 
         val virtualNode = entityManagerFactory.createEntityManager().use {
@@ -147,11 +170,11 @@ class VirtualNodeRepositoryTest {
 
     @Test
     fun put() {
-        val hash = TestRandom.secureHash()
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
+        val cpiSignerSummaryHash = TestRandom.secureHash()
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", cpiSignerSummaryHash)
 
         val hi = vnode.holdingIdentity.toHoldingIdentity()
-        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
+        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, cpiSignerSummaryHash)
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().put(
@@ -202,9 +225,9 @@ class VirtualNodeRepositoryTest {
 
     @Test
     fun updateVirtualNodeState() {
-        val hash = TestRandom.secureHash()
+        val cpiSignerSummaryHash = TestRandom.secureHash()
         val vnode = VNodeTestUtils
-            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
+            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", cpiSignerSummaryHash)
 
         entityManagerFactory.createEntityManager().use {
             VirtualNodeRepositoryImpl().updateVirtualNodeState(
@@ -226,10 +249,11 @@ class VirtualNodeRepositoryTest {
     fun `upgrade virtual node CPI test`() {
         val signerSummaryHash = TestRandom.secureHash()
         val testName = "Testing ${UUID.randomUUID()}"
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString())
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
 
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newCpiMetadataEntity(testName, "v2", signerSummaryHash.toString()))
+            //cpiMetadataRepository = CpiMetadataRepositoryImpl()
+            em.persist(VNodeTestUtils.newCpiMetadataEntity(testName, "v2", signerSummaryHash))
         }
 
         val requestId = "request ${UUID.randomUUID()}"
@@ -275,10 +299,10 @@ class VirtualNodeRepositoryTest {
 
         val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
             OperationType.UPGRADE, Instant.now())
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
 
         entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().completeOperation(it, vnode.holdingIdentityId)
+            VirtualNodeRepositoryImpl().completedOperation(it, vnode.holdingIdentityId)
         }
 
         val foundEntity = entityManagerFactory.createEntityManager().transaction {
@@ -308,17 +332,18 @@ class VirtualNodeRepositoryTest {
 
         val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
             OperationType.UPGRADE, Instant.now())
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
 
         entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().failedMigrationsOperation(
+            VirtualNodeRepositoryImpl().failedOperation(
                 it,
                 vnode.holdingIdentityId,
                 requestId,
                 "data",
                 Instant.now(),
                 "Migrations didn't go so well",
-                VirtualNodeOperationType.UPGRADE
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.MIGRATIONS_FAILED
             )
         }
 
@@ -327,8 +352,7 @@ class VirtualNodeRepositoryTest {
         }
 
         assertThat(foundEntity).isNotNull
-        assertThat(foundEntity.operationInProgress).isNotNull
-        assertThat(foundEntity.operationInProgress!!.id).isEqualTo(operationId)
+        assertThat(foundEntity.operationInProgress).isNull()
 
         val foundOperation = entityManagerFactory.createEntityManager().transaction {
             it.find(VirtualNodeOperationEntity::class.java, operationId)
@@ -340,5 +364,50 @@ class VirtualNodeRepositoryTest {
         assertThat(foundOperation.state).isEqualTo(VirtualNodeOperationState.MIGRATIONS_FAILED)
         assertThat(foundOperation.latestUpdateTimestamp).isNotNull
         assertThat(foundOperation.errors).isEqualTo("Migrations didn't go so well")
+    }
+
+    @Test
+    fun `reject upgrade with validation error`() {
+        val signerSummaryHash = TestRandom.secureHash()
+        val testName = "Testing ${UUID.randomUUID()}"
+        val requestId = UUID.randomUUID().toString()
+
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
+
+        entityManagerFactory.createEntityManager().transaction {
+            VirtualNodeRepositoryImpl().failedOperation(
+                it,
+                vnode.holdingIdentityId,
+                requestId,
+                "data",
+                Instant.now(),
+                "validation failed",
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.VALIDATION_FAILED
+            )
+        }
+
+        val foundEntity = entityManagerFactory.createEntityManager().transaction {
+            it.find(VirtualNodeEntity::class.java, vnode.holdingIdentityId)
+        }
+
+        assertThat(foundEntity).isNotNull
+        assertThat(foundEntity.operationInProgress).isNull()
+
+        val foundOperation = entityManagerFactory.createEntityManager().transaction {
+            it.createQuery(
+                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId",
+                VirtualNodeOperationEntity::class.java
+            )
+                .setParameter("requestId", requestId)
+                .singleResult
+        }
+
+        assertThat(foundOperation).isNotNull
+        assertThat(foundOperation.requestId).isEqualTo(requestId)
+        assertThat(foundOperation.data).isEqualTo("data")
+        assertThat(foundOperation.state).isEqualTo(VirtualNodeOperationState.VALIDATION_FAILED)
+        assertThat(foundOperation.latestUpdateTimestamp).isNotNull
+        assertThat(foundOperation.errors).isEqualTo("validation failed")
     }
 }

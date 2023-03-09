@@ -56,6 +56,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -124,6 +125,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -182,11 +185,15 @@ class StaticMemberRegistrationService @Activate constructor(
                 ex,
             )
         }
-        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
-        val alreadyRegisteredMember = membershipGroupReader.lookup(member.x500Name)
-        if (alreadyRegisteredMember?.isActive == true) {
+        val latestStatuses = membershipQueryClient.queryRegistrationRequestsStatus(
+            member,
+            member.x500Name,
+            listOf(RegistrationStatus.APPROVED)
+        ).getOrThrow()
+        if (latestStatuses.isNotEmpty()) {
             throw InvalidMembershipRegistrationException(
                 "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
+                    "See registrations: ${latestStatuses.map { it.registrationId }}. " +
                     "Can not re-register."
             )
         }
@@ -200,6 +207,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 requireNotNull(this) { "Could not find static member list in group policy file." }
                 map { StaticMember(it, endpointInfoFactory::create) }
             }
+            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
             val (memberInfo, records) = parseMemberTemplate(
                 member,
                 groupPolicy,

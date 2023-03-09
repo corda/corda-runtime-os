@@ -51,7 +51,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
 
-class RegistrationProcessorTest {
+class  RegistrationProcessorTest {
 
     private companion object {
         val clock = TestClock(Instant.now())
@@ -76,6 +76,7 @@ class RegistrationProcessorTest {
             registrationId,
             memberContext.toByteBuffer(),
             signature,
+            true,
             0L,
         )
 
@@ -155,7 +156,7 @@ class RegistrationProcessorTest {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
         }
         membershipGroupReader = mock {
-            on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
+            on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
         }
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader

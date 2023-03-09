@@ -55,6 +55,8 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import net.corda.rest.exception.OperationNotAllowedException
+import net.corda.virtualnode.OperationalStatus
 
 class FlowRestResourceImplTest {
 
@@ -89,7 +91,11 @@ class FlowRestResourceImplTest {
         }
     }
 
-    private fun getStubVirtualNode(): VirtualNodeInfo {
+    private fun getStubVirtualNode(
+        flowStartOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+        flowOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+        flowP2pOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+        vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo {
         return VirtualNodeInfo(
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
             CpiIdentifier(
@@ -104,7 +110,11 @@ class FlowRestResourceImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             version = 0,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            flowStartOperationalStatus = flowStartOperationalStatus,
+            flowOperationalStatus = flowOperationalStatus,
+            flowP2pOperationalStatus = flowP2pOperationalStatus,
+            vaultDbOperationalStatus = vaultDbOperationalStatus,
         )
     }
 
@@ -266,6 +276,19 @@ class FlowRestResourceImplTest {
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, never()).invoke()
+    }
+
+    @Test
+    fun `start flow fails when flowStartOperationalStatus is INACTIVE`() {
+        val flowRestResource = createFlowRestResource()
+
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(
+            getStubVirtualNode(flowStartOperationalStatus = OperationalStatus.INACTIVE)
+        )
+
+        assertThrows<OperationNotAllowedException> {
+            flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
+        }
     }
 
     @Test

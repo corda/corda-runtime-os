@@ -1,5 +1,7 @@
 package net.corda.layeredpropertymap
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.test.util.createTestCase
@@ -10,8 +12,6 @@ import net.corda.utilities.parseSet
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.crypto.PublicKeyHash
-import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -95,7 +95,7 @@ class LayeredPropertyMapTest {
         val single1 = propertyMap.parse<PublicKeyHash>("singlePublicKeyHash")
         val single2 = propertyMap.parseOrNull<PublicKeyHash>("singlePublicKeyHash")
         assertEquals(single1, single2)
-        assertEquals(toHexString("single".toByteArray().sha256Bytes()), single1.value)
+        assertEquals(toHexString("single".toByteArray().sha256Bytes()), single1.toString())
         val set = propertyMap.parseSet<PublicKeyHash>("setPublicKeyHash")
         assertEquals(3, set.size)
         val setContents = set.map { it.value }

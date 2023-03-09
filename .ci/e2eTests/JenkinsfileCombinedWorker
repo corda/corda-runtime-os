@@ -18,7 +18,7 @@ def checkConnection(){
     while (status != "200"){
         sleep(time: 3, unit: "SECONDS")
         try{
-            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7000/status', returnStdout: true)
+            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7004/status', returnStdout: true)
         }catch(error){
             echo "can't connect, retrying..."
         }
@@ -70,7 +70,7 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) { // CHANGE_ID only populated in PRs
+                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null && env.TAG_NAME == null ) { // CHANGE_ID only populated in PRs
                         echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
                         sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {
@@ -140,7 +140,7 @@ pipeline {
                 '''        
             }            
         }
-        stage('connect to worker') {
+        stage('connect to combined worker') {
             steps {
                 script{
                     try {

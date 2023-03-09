@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
@@ -49,23 +50,26 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 
     private fun List<StateAndRef<ContractState>>.toTokens(
         tokenObservers: UtxoTokenObserverMap
-    ): List<Pair<StateAndRef<*>, UtxoToken>> {
-        return this.flatMap { stateAndRef ->
-            tokenObservers.getObserversFor(stateAndRef.state.contractStateType)
-                .mapNotNull { observer ->
-                    try {
-                        val token = observer.onCommit(stateAndRef.state.contractState).let { token ->
-                            token.poolKey.tokenType?.let { token }
-                                ?: token.copy(
-                                    poolKey = token.poolKey.copy(tokenType = stateAndRef.state.contractStateType.name)
-                                )
-                        }
-                        stateAndRef to token
-                    } catch (e: Exception) {
-                        log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
-                        null
-                    }
+    ): List<Pair<StateAndRef<*>, UtxoToken>> = flatMap { stateAndRef ->
+        tokenObservers.getObserversFor(stateAndRef.state.contractStateType).mapNotNull { observer ->
+            try {
+                val token = observer.onCommit(stateAndRef.state.contractState).let { token ->
+                    token.poolKey.tokenType?.let { token } ?: UtxoToken(
+                        UtxoTokenPoolKey(
+                            stateAndRef.state.contractStateType.name,
+                            token.poolKey.issuerHash,
+                            token.poolKey.symbol
+                        ),
+                        token.amount,
+                        token.filterFields
+                    )
                 }
+
+                stateAndRef to token
+            } catch (e: Exception) {
+                log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
+                null
+            }
         }
     }
 }

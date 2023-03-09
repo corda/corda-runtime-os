@@ -19,8 +19,9 @@ import java.security.PublicKey
 class UtxoTransactionEncumbranceVerifierTest {
 
     class TestContractState : ContractState {
-        override val participants: List<PublicKey>
-            get() = TODO("Not yet implemented")
+        override fun getParticipants(): List<PublicKey> {
+            TODO("Not yet implemented")
+        }
     }
     
     private companion object {

@@ -17,8 +17,9 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:chunking:chunking-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")

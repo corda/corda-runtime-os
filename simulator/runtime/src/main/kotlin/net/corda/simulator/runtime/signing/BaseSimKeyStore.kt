@@ -2,7 +2,7 @@ package net.corda.simulator.runtime.signing
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.simulator.crypto.HsmCategory
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 

@@ -4,8 +4,8 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import java.util.Base64
 
 private val base64Decoder = Base64.getDecoder()

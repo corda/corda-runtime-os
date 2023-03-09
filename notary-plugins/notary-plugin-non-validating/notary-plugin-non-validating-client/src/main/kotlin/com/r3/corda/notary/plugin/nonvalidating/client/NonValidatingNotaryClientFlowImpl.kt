@@ -1,9 +1,9 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
-import com.r3.corda.notary.plugin.common.NotarisationRequest
-import com.r3.corda.notary.plugin.common.NotarisationResponse
+import com.r3.corda.notary.plugin.common.NotarizationRequest
+import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.generateRequestSignature
-import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
+import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -92,18 +92,18 @@ class NonValidatingNotaryClientFlowImpl(
                         "representative {} for transaction {}", stx.notary, notaryRepresentative, stx.id)
         }
 
-        val notarisationResponse = session.sendAndReceive(
-            NotarisationResponse::class.java,
+        val notarizationResponse = session.sendAndReceive(
+            NotarizationResponse::class.java,
             payload
         )
 
-        return when (val error = notarisationResponse.error) {
+        return when (val error = notarizationResponse.error) {
             null -> {
                 if (log.isTraceEnabled) {
                     log.trace("Received notarization response from notary service {} for transaction {}",
                               stx.notary, stx.id)
                 }
-                notarisationResponse.signatures
+                notarizationResponse.signatures
             }
             else -> {
                 if (log.isTraceEnabled) {
@@ -116,11 +116,11 @@ class NonValidatingNotaryClientFlowImpl(
     }
 
     /**
-     * This function generates a notarisation request and a signature from that given request via serialization.
-     * Then attaches that signature to a [NonValidatingNotarisationPayload].
+     * This function generates a notarization request and a signature from that given request via serialization.
+     * Then attaches that signature to a [NonValidatingNotarizationPayload].
      */
     @Suspendable
-    internal fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
+    internal fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarizationPayload {
         val filteredTx = utxoLedgerService.filterSignedTransaction(stx)
             .withInputStates()
             .withReferenceStates()
@@ -129,19 +129,19 @@ class NonValidatingNotaryClientFlowImpl(
             .withTimeWindow()
             .build()
 
-        val notarisationRequest = NotarisationRequest(
+        val notarizationRequest = NotarizationRequest(
             stx.inputStateRefs,
             stx.id
         )
 
         val requestSignature = generateRequestSignature(
-            notarisationRequest,
+            notarizationRequest,
             memberLookupService.myInfo(),
             serializationService,
             signingService
         )
 
-        return NonValidatingNotarisationPayload(
+        return NonValidatingNotarizationPayload(
             filteredTx,
             requestSignature,
             stx.notary.owningKey

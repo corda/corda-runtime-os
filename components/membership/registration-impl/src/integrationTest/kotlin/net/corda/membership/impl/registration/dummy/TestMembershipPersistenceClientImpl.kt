@@ -40,7 +40,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceResult<GroupParameters> = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
@@ -57,12 +57,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
     ): MembershipPersistenceResult<MemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,

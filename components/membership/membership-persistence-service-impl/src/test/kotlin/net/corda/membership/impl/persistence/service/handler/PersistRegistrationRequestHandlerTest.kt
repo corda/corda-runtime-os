@@ -132,6 +132,7 @@ class PersistRegistrationRequestHandlerTest {
                 ByteBuffer.wrap("456".toByteArray()),
                 KeyValuePairList(emptyList())
             ),
+            true,
             0L,
         )
     )

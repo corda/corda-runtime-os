@@ -16,12 +16,12 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
-    property = [ CORDA_UNINJECTABLE_SERVICE ],
+    service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
+    property = [CORDA_UNINJECTABLE_SERVICE],
     scope = PROTOTYPE
 )
-class TransactionStateSerializer @Activate constructor()
-    : BaseProxySerializer<TransactionStateImpl<ContractState>, TransactionStateProxy>(), UsedByFlow, UsedByVerification {
+class TransactionStateSerializer @Activate constructor() :
+    BaseProxySerializer<TransactionStateImpl<ContractState>, TransactionStateProxy>(), UsedByFlow, UsedByVerification {
 
     override val type = TransactionStateImpl::class.java
 
@@ -34,7 +34,7 @@ class TransactionStateSerializer @Activate constructor()
             TransactionStateVersion.VERSION_1,
             obj.contractState,
             obj.notary,
-            obj.encumbrance
+            obj.encumbranceGroup
         )
     }
 

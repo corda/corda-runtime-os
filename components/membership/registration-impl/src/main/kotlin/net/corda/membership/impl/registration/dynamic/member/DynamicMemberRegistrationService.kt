@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
@@ -92,7 +93,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -310,6 +310,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature,
+                    true,
                     serialInfo,
                 )
 
@@ -358,6 +359,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
+                        isPending = true,
                         serial = serialInfo,
                     )
                 ).getOrThrow()

@@ -3,8 +3,7 @@ package net.corda.crypto.impl
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.byKeys
-import net.corda.v5.crypto.isFulfilledBy
+import net.corda.v5.crypto.KeyUtils
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -63,17 +62,17 @@ class CompositeKeyImplTests {
 
     @Test
     fun `(Alice) fulfilled by Alice signature`() {
-        assertTrue { alicePublicKey.isFulfilledBy(aliceSignature.by) }
-        assertFalse { alicePublicKey.isFulfilledBy(charlieSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(alicePublicKey, aliceSignature.by) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(alicePublicKey, charlieSignature.by) }
     }
 
     @Test
     fun `(Alice or Bob) fulfilled by either signature`() {
         val aliceOrBob = target.createFromKeys(alicePublicKey, bobPublicKey)
-        assertTrue { aliceOrBob.isFulfilledBy(aliceSignature.by) }
-        assertTrue { aliceOrBob.isFulfilledBy(bobSignature.by) }
-        assertTrue { aliceOrBob.isFulfilledBy(listOf(aliceSignature.by, bobSignature.by)) }
-        assertFalse { aliceOrBob.isFulfilledBy(charlieSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, aliceSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, bobSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, listOf(aliceSignature.by, bobSignature.by)) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(aliceOrBob, charlieSignature.by) }
     }
 
 
@@ -81,15 +80,15 @@ class CompositeKeyImplTests {
     fun `(Alice and Bob) fulfilled by Alice, Bob signatures`() {
         val aliceAndBob = target.createFromKeys(alicePublicKey, bobPublicKey)
         val signatures = listOf(aliceSignature, bobSignature)
-        assertTrue { aliceAndBob.isFulfilledBy(signatures.byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBob, signatures.byKeys()) }
     }
 
     @Test
     fun `(Alice and Bob) requires both signatures to fulfil`() {
         val aliceAndBob = target.createFromKeys(alicePublicKey, bobPublicKey, threshold = null)
-        assertFalse { aliceAndBob.isFulfilledBy(listOf(aliceSignature).byKeys()) }
-        assertFalse { aliceAndBob.isFulfilledBy(listOf(bobSignature).byKeys()) }
-        assertTrue { aliceAndBob.isFulfilledBy(listOf(aliceSignature, bobSignature).byKeys()) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(aliceAndBob, listOf(aliceSignature).byKeys()) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(aliceAndBob, listOf(bobSignature).byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBob, listOf(aliceSignature, bobSignature).byKeys()) }
     }
 
     @Test
@@ -99,7 +98,7 @@ class CompositeKeyImplTests {
 
         val signatures = listOf(aliceSignature, bobSignature)
 
-        assertTrue { aliceAndBobOrCharlie.isFulfilledBy(signatures.byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBobOrCharlie, signatures.byKeys()) }
     }
     
     @Test
@@ -107,7 +106,7 @@ class CompositeKeyImplTests {
         assertEquals(target.createFromKeys(alicePublicKey), alicePublicKey)
         val node1 = target.createFromKeys(alicePublicKey, bobPublicKey) // threshold = 1
         val node2 = target.createFromKeys(alicePublicKey, bobPublicKey, threshold = 2)
-        assertFalse(node2.isFulfilledBy(alicePublicKey))
+        assertFalse(KeyUtils.isKeyFulfilledBy(node2, alicePublicKey))
         // Ordering by weight.
         val tree1 = target.create(CompositeKeyNodeAndWeight(node1, 13), CompositeKeyNodeAndWeight(node2, 27))
         val tree2 = target.create(CompositeKeyNodeAndWeight(node2, 27), CompositeKeyNodeAndWeight(node1, 13))
@@ -287,9 +286,9 @@ class CompositeKeyImplTests {
         ) as CompositeKey
 
         val signatures = listOf(rsaSignature, k1Signature, r1Signature, edSignature1, edSignature2)
-        assertTrue { compositeKey.isFulfilledBy(signatures.byKeys()) }
 
         // One signature is missing.
+        assertTrue { KeyUtils.isKeyFulfilledBy(compositeKey, signatures.byKeys()) }
         val signaturesWithoutRSA = listOf(k1Signature, r1Signature, edSignature1, edSignature2)
         assertFalse { compositeKey.isFulfilledBy(signaturesWithoutRSA.byKeys()) }
     }
@@ -311,6 +310,8 @@ class CompositeKeyImplTests {
         // There are 7! = 5040 permutations, but as sorting is deterministic the following should never fail.
         assertEquals(composite1.children, composite2.children)
     }
+
+    internal fun Iterable<DigitalSignature.WithKey>.byKeys() = map { it.by }.toSet()
 
 //    @Test
 //    fun `Test save to keystore`() {

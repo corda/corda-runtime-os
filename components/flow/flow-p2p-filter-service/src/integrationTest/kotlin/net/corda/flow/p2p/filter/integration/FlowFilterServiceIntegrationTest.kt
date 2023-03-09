@@ -1,6 +1,10 @@
 package net.corda.flow.p2p.filter.integration
 
 import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
@@ -10,6 +14,10 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
@@ -21,12 +29,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -38,10 +44,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -71,6 +73,7 @@ class FlowFilterServiceIntegrationTest {
     private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+        .withValue(BOOT_MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -97,7 +100,9 @@ class FlowFilterServiceIntegrationTest {
         republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
+        val flowHeader = AuthenticatedMessageHeader(
+            identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
+        )
         val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
@@ -119,7 +124,9 @@ class FlowFilterServiceIntegrationTest {
             )
         )
 
-        val invalidHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "other")
+        val invalidHeader = AuthenticatedMessageHeader(
+            identity, identity, Instant.ofEpochMilli(1), "", "", "other", MembershipStatusFilter.ACTIVE
+        )
         val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(
@@ -176,6 +183,7 @@ class FlowFilterServiceIntegrationTest {
 
     private val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

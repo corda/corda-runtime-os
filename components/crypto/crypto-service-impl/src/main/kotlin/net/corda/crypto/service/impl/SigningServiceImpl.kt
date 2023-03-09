@@ -10,7 +10,9 @@ import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
@@ -24,11 +26,10 @@ import net.corda.crypto.service.SigningService
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
 import org.slf4j.LoggerFactory
+import java.lang.IllegalStateException
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
@@ -91,11 +92,7 @@ class SigningServiceImpl(
             "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
                     "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
-        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(
-            masterKeyAlias = masterKeyAlias,
-            failIfExists = failIfExists,
-            context = context
-        )
+        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(masterKeyAlias, failIfExists, context)
     }
 
     override fun generateKeyPair(
@@ -173,33 +170,14 @@ class SigningServiceImpl(
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
-        val spec = if (record.data.keyMaterial != null) {
-            SigningWrappedSpec(
-                publicKey = record.publicKey,
-                keyMaterialSpec = KeyMaterialSpec(
-                    keyMaterial = record.data.keyMaterial!!,
-                    masterKeyAlias = record.data.masterKeyAlias,
-                    encodingVersion = record.data.encodingVersion!!
-                ),
-                keyScheme = scheme,
-                signatureSpec = signatureSpec
-            )
-        } else {
-            SigningAliasSpec(
-                publicKey = record.publicKey,
-                hsmAlias = record.data.hsmAlias!!,
-                keyScheme = scheme,
-                signatureSpec = signatureSpec
-            )
-        }
+        val spec = if (record.data.keyMaterial != null)
+            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
+        else
+            SigningAliasSpec(getHsmAlias(record, publicKey, tenantId), publicKey, scheme, signatureSpec)
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
-        return DigitalSignature.WithKey(
-            by = record.publicKey,
-            bytes = signedBytes,
-            context = context
-        )
+        return DigitalSignature.WithKey(record.publicKey, signedBytes, context)
     }
-
+    
     override fun deriveSharedSecret(
         tenantId: String,
         publicKey: PublicKey,
@@ -215,27 +193,20 @@ class SigningServiceImpl(
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
-        val spec = if (record.data.keyMaterial != null) {
-            SharedSecretWrappedSpec(
-                publicKey = record.publicKey,
-                keyMaterialSpec = KeyMaterialSpec(
-                    keyMaterial = record.data.keyMaterial!!,
-                    masterKeyAlias = record.data.masterKeyAlias,
-                    encodingVersion = record.data.encodingVersion!!
-                ),
-                keyScheme = scheme,
-                otherPublicKey = otherPublicKey
-            )
-        } else {
-            SharedSecretAliasSpec(
-                publicKey = record.publicKey,
-                hsmAlias = record.data.hsmAlias!!,
-                keyScheme = scheme,
-                otherPublicKey = otherPublicKey
-            )
-        }
+        val spec = if (record.data.keyMaterial != null)
+            SharedSecretWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
+        else
+            SharedSecretAliasSpec(getHsmAlias(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
         return cryptoService.deriveSharedSecret(spec, context + mapOf(CRYPTO_TENANT_ID to tenantId))
     }
+
+    private fun getHsmAlias(
+        record: OwnedKeyRecord,
+        publicKey: PublicKey,
+        tenantId: String
+    ): String = record.data.hsmAlias ?: throw IllegalStateException(
+        "HSM alias must be specified if key material is not specified, and both are null for ${publicKey.publicKeyId()} of tenant $tenantId"
+    )
 
     @Suppress("LongParameterList")
     private fun doGenerateKeyPair(
@@ -255,12 +226,9 @@ class SigningServiceImpl(
                 tenantId
             )
         }
+        require(ref.masterKeyAlias != null) { "The master key alias must be defined for tenant $tenantId category $category" }
         val generatedKey = ref.instance.generateKeyPair(
-            KeyGenerationSpec(
-                keyScheme = scheme,
-                alias = alias,
-                masterKeyAlias = ref.masterKeyAlias
-            ),
+            KeyGenerationSpec(scheme, alias, ref.masterKeyAlias),
             context + mapOf(
                 CRYPTO_TENANT_ID to tenantId,
                 CRYPTO_CATEGORY to category
@@ -300,6 +268,29 @@ class SigningServiceImpl(
                 )
         }
     }
+
+    @Suppress("ThrowsCount")
+    private fun getKeySpec(
+        record: OwnedKeyRecord,
+        publicKey: PublicKey,
+        tenantId: String
+    ): KeyMaterialSpec {
+        val keyMaterial: ByteArray = record.data.keyMaterial ?: throw IllegalStateException(
+            "The key material is null for public key ${publicKey.publicKeyId()} of tenant $tenantId  "
+        )
+        val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
+            "The master key alias for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
+        )
+        val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
+            "The encoding version for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
+        )
+        return KeyMaterialSpec(
+            keyMaterial = keyMaterial,
+            wrappingKeyAlias = masterKeyAlias,
+            encodingVersion = encodingVersion
+        )
+    }
+
 
     private fun KeyOrderBy.toSigningKeyOrderBy(): SigningKeyOrderBy =
         SigningKeyOrderBy.valueOf(name)

@@ -39,7 +39,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 class DeliveryTrackerTest {
 
@@ -201,12 +201,12 @@ class DeliveryTrackerTest {
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPostCommit(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
-        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+        verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source, dest))
+                eq(SessionManager.Counterparties(source, dest))
             )
         tracker.stop()
     }
@@ -221,12 +221,12 @@ class DeliveryTrackerTest {
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
-        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+        verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source, dest))
+                eq(SessionManager.Counterparties(source, dest))
             )
         tracker.stop()
     }
@@ -241,18 +241,18 @@ class DeliveryTrackerTest {
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
-        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+        verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source, dest))
+                eq(SessionManager.Counterparties(source, dest))
             )
 
         listener.onPostCommit(mapOf(messageId to null))
         @Suppress("UNCHECKED_CAST")
-        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source, dest))
+        verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
+            .removeFromReplay(messageId, SessionManager.Counterparties(source, dest))
         tracker.stop()
     }
 
@@ -265,18 +265,18 @@ class DeliveryTrackerTest {
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
-        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+        verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source, dest))
+                eq(SessionManager.Counterparties(source, dest))
             )
 
         listener.onPartitionLost(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
-        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source, dest))
+        verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
+            .removeFromReplay(messageId, SessionManager.Counterparties(source, dest))
         tracker.stop()
     }
 }

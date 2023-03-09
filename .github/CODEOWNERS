@@ -11,14 +11,14 @@ gradle/*           @corda/blt
 .github/**          @corda/blt
 CODEOWNERS         @corda/blt @corda/corda5-team-leads
 
-# Modules to be audited by HTTP RPC team
-/applications/workers/release/rpc-worker/     @corda/http-rpc
-/components/http-rpc-gateway-comp/            @corda/http-rpc
-/components/permissions/                      @corda/http-rpc
-/components/rbac-security-manager-service/    @corda/http-rpc
-/libs/http-rpc/                               @corda/http-rpc
-/libs/permissions/                            @corda/http-rpc
-/processors/rpc-processor/                    @corda/http-rpc
+# Modules to be audited by REST team
+/applications/workers/release/rest-worker/      @corda/rest
+/components/rest-gateway-comp/                  @corda/rest
+/components/permissions/                        @corda/rest
+/components/rbac-security-manager-service/      @corda/rest
+/libs/rest/                                     @corda/rest
+/libs/permissions/                              @corda/rest
+/processors/rest-processor/                     @corda/rest
 
 # Corda Helm chart for cluster management team
 /charts/corda/                                @corda/cluster-management
@@ -39,3 +39,38 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /tools/plugins/mgm/                                             @corda/corda-platform-network-team
 /tools/plugins/network/                                         @corda/corda-platform-network-team
 /applications/tools/p2p-test/                                   @corda/corda-platform-network-team
+
+# Modules to be audited by Sandboxing SMEs
+/components/security-manager/                                   @corda/sandboxing
+/components/virtual-node/sandbox-*                              @corda/sandboxing
+/components/sandbox*                                            @corda/sandboxing
+/libs/virtual-node/sandbox-*                                    @corda/sandboxing
+/osgi-*                                                         @corda/sandboxing
+/testing/sandboxes/                                             @corda/sandboxing
+/testing/sandboxes-testkit/                                     @corda/sandboxing
+/testing/security-manager-utilities/                            @corda/sandboxing
+
+# Modules to be audited by Crypto SMEs
+/components/crypto/                                             @corda/crypto
+/libs/crypto/                                                   @corda/crypto
+/processors/crypto/                                             @corda/crypto
+
+# Modules to be audited by Packaging SMEs
+/components/chunking/                                           @corda/packaging
+/components/virtual-node/cpi-*                                  @corda/packaging
+/components/virtual-node/cpk-*                                  @corda/packaging
+/libs/chunking/                                                 @corda/packaging
+/libs/packaging/                                                @corda/packaging
+/libs/serialization/                                            @corda/packaging
+/libs/virtual-node/cpi-*                                        @corda/packaging
+/testing/packaging-test-utilities/                              @corda/packaging
+/tools/plugins/package                                          @corda/packaging
+
+# Modules to be audited by DB SMEs
+/components/db/                                                 @corda/db
+/components/persistence/                                        @corda/db
+/components/reconciliation/                                     @corda/db
+/libs/db/                                                       @corda/db
+/processors/db/                                                 @corda/db
+/testing/persistence-testkit/                                   @corda/db
+/tools/plugins/db-config                                        @corda/db

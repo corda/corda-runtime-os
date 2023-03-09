@@ -57,11 +57,11 @@ class DigestServiceImplTest {
     @Test
     fun `looks for custom digest algorithm if not found in platform digest algorithms`() {
         val digestAlgorithmFactory = object : DigestAlgorithmFactory {
-            override val algorithm = DUMMY_DIGEST
+            override fun getAlgorithm() = DUMMY_DIGEST
             override fun getInstance() =
                 object : DigestAlgorithm {
-                    override val algorithm = DUMMY_DIGEST
-                    override val digestLength = DUMMY_DIGEST_LENGTH
+                    override fun getAlgorithm() = DUMMY_DIGEST
+                    override fun getDigestLength() = DUMMY_DIGEST_LENGTH
                     override fun digest(inputStream: InputStream) = DUMMY_BYTES
                     override fun digest(bytes: ByteArray) = DUMMY_BYTES
                 }

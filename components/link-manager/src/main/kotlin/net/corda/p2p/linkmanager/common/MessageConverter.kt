@@ -8,6 +8,7 @@ import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
@@ -114,6 +115,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
+                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
             )
         }
 
@@ -122,6 +124,7 @@ class MessageConverter {
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
+            serial: Long,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -136,6 +139,8 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
+                message.message.header.statusFilter,
+                serial
             )
         }
 
@@ -147,6 +152,8 @@ class MessageConverter {
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
+            filter: MembershipStatusFilter,
+            serial: Long,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -161,6 +168,8 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
+                filter,
+                serial
             )
         }
 
@@ -187,6 +196,8 @@ class MessageConverter {
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
+            filter: MembershipStatusFilter,
+            serial: Long? = null,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -211,9 +222,15 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination)
+            val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination, filter)
             if (destMemberInfo == null) {
-                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                logger.warn("Attempted to send message to peer $destination with filter $filter " +
+                        "which is not in the network map. The message was discarded.")
+                return null
+            }
+            if(serial != null && destMemberInfo.serial != serial) {
+                logger.warn("Attempted to send message to peer $destination with serial $serial " +
+                        "which is not in the network map. The message was discarded.")
                 return null
             }
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)

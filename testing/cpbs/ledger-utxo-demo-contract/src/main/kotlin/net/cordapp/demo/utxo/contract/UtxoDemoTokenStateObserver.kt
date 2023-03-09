@@ -9,8 +9,10 @@ import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import java.math.BigDecimal
 
 class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
-    
-    override val stateType = TestUtxoState::class.java
+
+    override fun getStateType(): Class<TestUtxoState> {
+        return TestUtxoState::class.java
+    }
 
     override fun onCommit(state: TestUtxoState): UtxoToken {
         return UtxoToken(

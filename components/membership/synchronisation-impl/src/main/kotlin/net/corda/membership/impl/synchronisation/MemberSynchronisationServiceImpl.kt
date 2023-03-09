@@ -1,7 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.chunking.toAvro
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -345,8 +345,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                 }
 
                 val groupParameters = parseGroupParameters(updates.membershipPackage)
-                membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters)
-                groupParametersWriterService.put(viewOwningMember, groupParameters)
+                val latestGroupParameters =
+                    membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters).getOrThrow()
+                groupParametersWriterService.put(viewOwningMember, latestGroupParameters)
 
                 publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {

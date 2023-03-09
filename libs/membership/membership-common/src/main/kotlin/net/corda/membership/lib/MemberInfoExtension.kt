@@ -1,5 +1,6 @@
 package net.corda.membership.lib
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
@@ -7,9 +8,7 @@ import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
 import net.corda.utilities.parseSet
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -101,9 +100,6 @@ class MemberInfoExtension {
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
-
-        /** Membership request was declined by the Group Manager. **/
-        const val MEMBER_STATUS_DECLINED = "DECLINED"
 
         /**
          * Membership request has been submitted but Group Manager still hasn't responded to it. Nodes with this status can't
@@ -205,10 +201,13 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.sessionKeyHash: PublicKeyHash
-            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: sessionInitiationKey.calculateHash().also {
-                logger.warn("Calculating the session key hash for $name in group $groupId. " +
-                        "It is preferable to store this hash in the member context to avoid calculating on each access.")
-            }
+            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: PublicKeyHash.calculate(sessionInitiationKey)
+                .also {
+                    logger.warn(
+                        "Calculating the session key hash for $name in group $groupId. " +
+                                "It is preferable to store this hash in the member context to avoid calculating on each access."
+                    )
+                }
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic
