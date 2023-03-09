@@ -51,6 +51,16 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
+    override fun callFacade(
+        memberName: MemberX500Name,
+        facadeName: String,
+        methodName: String,
+        payload: String
+    ): String {
+        TODO("Not yet implemented")
+    }
+
+    @Suspendable
     override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
         val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
