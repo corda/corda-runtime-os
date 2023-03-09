@@ -24,9 +24,9 @@ import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.utilities.debug
-import net.corda.v5.ledger.common.query.VaultNamedQueryFactory
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
