@@ -20,16 +20,15 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.UnsignedGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -49,12 +48,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.time.Instant
+import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
 class GroupParametersWriterServiceTest {
     private val viewOwner = HoldingIdentity(MemberX500Name("R3", "London", "GB"), "groupId")
-    private val clock = TestClock(Instant.ofEpochSecond(100))
     private val testConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
@@ -93,14 +91,21 @@ class GroupParametersWriterServiceTest {
         on { createPublisher(any(), any()) } doReturn mockPublisher
     }
 
+    private val publicKey = mock<PublicKey>()
     private val keyBytes = "key-bytes".toByteArray()
     private val keyEncodingService: KeyEncodingService = mock {
-        on { encodeAsByteArray(any()) } doReturn keyBytes
+        on { encodeAsByteArray(publicKey) } doReturn keyBytes
     }
     private val serializedGroupParameters = "group-params".toByteArray()
     private val cordaAvroSerialiser: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn serializedGroupParameters
     }
+    private val sigBytes = "signature".toByteArray()
+    private val signature = DigitalSignature.WithKey(
+        publicKey,
+        sigBytes,
+        emptyMap()
+    )
 
     private val cordaAvroSerialisationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerialiser
@@ -254,9 +259,6 @@ class GroupParametersWriterServiceTest {
 
     @Nested
     inner class WriterTests {
-        private inner class GroupParametersLayeredPropertyMapImpl(
-            private val map: LayeredPropertyMap
-        ) : LayeredPropertyMap by map
 
         @Test
         fun `put publishes records to kafka`() {
@@ -267,8 +269,9 @@ class GroupParametersWriterServiceTest {
                 .doReturn(listOf(CompletableFuture.completedFuture(Unit)))
 
             val ownerId = viewOwner.shortHash.toString()
-            val groupParameters: UnsignedGroupParameters = mock {
+            val groupParameters: SignedGroupParameters = mock {
                 on { bytes } doReturn serializedGroupParameters
+                on { signature } doReturn signature
             }
 
             writerService.put(viewOwner, groupParameters)
@@ -286,7 +289,11 @@ class GroupParametersWriterServiceTest {
                 it.assertThat(publishedParams.groupParameters.groupParameters)
                     .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
 
-                it.assertThat(publishedParams.groupParameters.mgmSignature).isNull()
+                it.assertThat(publishedParams.groupParameters.mgmSignature).isNotNull
+                it.assertThat(publishedParams.groupParameters.mgmSignature.publicKey.array()).isEqualTo(keyBytes)
+                it.assertThat(publishedParams.groupParameters.mgmSignature.context)
+                    .isEqualTo(KeyValuePairList(emptyList()))
+                it.assertThat(publishedParams.groupParameters.mgmSignature.bytes.array()).isEqualTo(sigBytes)
             }
         }
 

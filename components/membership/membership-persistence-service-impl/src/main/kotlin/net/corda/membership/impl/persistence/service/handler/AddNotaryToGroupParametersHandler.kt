@@ -8,12 +8,14 @@ import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.addNewNotaryService
-import net.corda.membership.lib.updateExistingNotaryService
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
+import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.virtualnode.toCorda
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security.KeyPairGenerator
 import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
@@ -28,7 +30,7 @@ internal class AddNotaryToGroupParametersHandler(
             logger.error("Failed to serialize key value pair list.")
         }
 
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
                 logger.error("Failed to deserialize key value pair list.")
@@ -44,8 +46,8 @@ internal class AddNotaryToGroupParametersHandler(
     }
 
     private fun deserializeProperties(data: ByteArray): KeyValuePairList {
-        return keyValuePairListDeserializer.deserialize(data) ?: throw MembershipPersistenceException(
-            "Failed to deserialize key value pair list."
+        return deserializer.deserialize(data) ?: throw MembershipPersistenceException(
+            "Failed to deserialize key value pair list A."
         )
     }
 
@@ -63,41 +65,59 @@ internal class AddNotaryToGroupParametersHandler(
             val previous = em.createQuery(query)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .setMaxResults(1)
-            if(previous.resultList.isEmpty()) {
-                throw MembershipPersistenceException("Cannot add notary to group parameters, no group parameters found.")
+            if (previous.resultList.isEmpty()) {
+                throw MembershipPersistenceException(
+                    "Cannot add notary to group parameters, no group parameters found."
+                )
             }
 
             val parametersMap = deserializeProperties(previous.singleResult.parameters).toMap()
             val notary = memberInfoFactory.create(request.notary).notaryDetails
-                ?: throw MembershipPersistenceException("Cannot add notary to group parameters - notary details not found.")
+                ?: throw MembershipPersistenceException(
+                    "Cannot add notary to group parameters - notary details not found."
+                )
             val notaryServiceName = notary.serviceName.toString()
             val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
                 notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
             val (epoch, groupParameters) = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
-                updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, keyEncodingService, logger).apply {
-                    first ?: return@transaction deserializeProperties(previous.singleResult.parameters)
+                updateExistingNotaryService(
+                    parametersMap,
+                    notary,
+                    notaryServiceNumber,
+                    keyEncodingService,
+                    logger,
+                    clock
+                ).apply {
+                    first ?: return@transaction previous.singleResult.toSignedParameters(deserializer)
                 }
             } else {
                 // Add new notary service
-                addNewNotaryService(parametersMap, notary, keyEncodingService, logger)
+                addNewNotaryService(
+                    parametersMap,
+                    notary,
+                    keyEncodingService,
+                    logger,
+                    clock
+                )
             }
+            val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+
             // Only an MGM should be calling this function and so a signature is not set since it's signed when
             // distributed.
             val entity = GroupParametersEntity(
                 epoch = epoch!!,
                 parameters = serializeProperties(groupParameters!!),
-                signaturePublicKey = null,
-                signatureContext = null,
-                signatureContent = null
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public), //TO-DO: DON'T MERGE
+                signatureContent = byteArrayOf(1),//TO-DO: DON'T MERGE
+                signatureContext = serializeProperties(KeyValuePairList(emptyList()))//TO-DO: DON'T MERGE
             )
 
             em.persist(entity)
 
-            groupParameters
+            entity.toSignedParameters(deserializer)
         }
-
         return PersistGroupParametersResponse(persistedGroupParameters)
     }
 }

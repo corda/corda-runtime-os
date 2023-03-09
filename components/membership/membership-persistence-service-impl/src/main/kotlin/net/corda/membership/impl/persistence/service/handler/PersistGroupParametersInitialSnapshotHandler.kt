@@ -14,23 +14,25 @@ import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security.KeyPairGenerator
 import javax.persistence.LockModeType
 
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistGroupParametersInitialSnapshot, PersistGroupParametersResponse>(persistenceHandlerServices) {
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
+    private val serializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
         }
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
+        return serializer.serialize(context) ?: throw MembershipPersistenceException(
             "Failed to serialize key value pair list."
         )
     }
 
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
                 logger.error("Failed to serialize key value pair list.")
@@ -39,8 +41,8 @@ internal class PersistGroupParametersInitialSnapshotHandler(
         )
 
     private fun deserializeProperties(content: ByteArray): KeyValuePairList {
-        return keyValuePairListDeserializer.deserialize(content) ?: throw MembershipPersistenceException(
-            "Failed to deserialize key value pair list."
+        return deserializer.deserialize(content) ?: throw MembershipPersistenceException(
+            "Failed to deserialize key value pair list C."
         )
     }
 
@@ -58,7 +60,11 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 )
             )
 
-            val currentGroupParameters = em.find(GroupParametersEntity::class.java, 1, LockModeType.PESSIMISTIC_WRITE)
+            val currentGroupParameters = em.find(
+                GroupParametersEntity::class.java,
+                1,
+                LockModeType.PESSIMISTIC_WRITE
+            )
             if (currentGroupParameters != null) {
                 val currentParameters = deserializeProperties(currentGroupParameters.parameters).toMap()
                 if (currentParameters.removeTime() != groupParameters.toMap().removeTime()) {
@@ -66,19 +72,19 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                         "Group parameters initial snapshot already exist with different parameters."
                     )
                 } else {
-                    return@transaction groupParameters
+                    return@transaction currentGroupParameters.toSignedParameters(deserializer)
                 }
             }
-            val entity = GroupParametersEntity(
+            val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+            GroupParametersEntity(
                 epoch = 1,
                 parameters = serializeProperties(groupParameters),
-                signaturePublicKey = null,
-                signatureContext = null,
-                signatureContent = null
-            )
-            em.persist(entity)
-
-            groupParameters
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public), //"TO-DO: DON'T MERGE"
+                signatureContent = byteArrayOf(1), //"TO-DO: DON'T MERGE"
+                signatureContext = serializeProperties(KeyValuePairList(emptyList())) //"TO-DO: DON'T MERGE"
+            ).also {
+                em.persist(it)
+            }.toSignedParameters(deserializer)
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)

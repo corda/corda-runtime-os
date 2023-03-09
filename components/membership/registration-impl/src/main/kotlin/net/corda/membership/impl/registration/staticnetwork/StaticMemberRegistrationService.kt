@@ -110,7 +110,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = MembershipPersistenceClient::class)
     private val persistenceClient: MembershipPersistenceClient,
     @Reference(service = CordaAvroSerializationFactory::class)
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     @Reference(service = EndpointInfoFactory::class)
@@ -245,12 +245,12 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
         val cache = lifecycleHandler.groupParametersCache
         val holdingIdentity = memberInfo.holdingIdentity
-        val groupParametersList = cache.getOrCreateGroupParameters(holdingIdentity).run {
+        val updateGroupParameters = cache.getOrCreateGroupParameters(holdingIdentity).run {
             memberInfo.notaryDetails?.let {
                 cache.addNotary(memberInfo)
             } ?: this
         }
-        val groupParameters = groupParametersFactory.create(groupParametersList)
+        val groupParameters = groupParametersFactory.create(updateGroupParameters)
 
         // Persist group parameters for this member, and publish to Kafka.
         persistenceClient.persistGroupParameters(holdingIdentity, groupParameters).getOrThrow()

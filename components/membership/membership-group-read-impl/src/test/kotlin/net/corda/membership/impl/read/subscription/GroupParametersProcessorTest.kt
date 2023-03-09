@@ -4,15 +4,15 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentGroupParameters
-import net.corda.data.membership.SignedGroupParameters
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +24,7 @@ import java.time.Instant
 
 class GroupParametersProcessorTest {
     private companion object {
-        val groupParametersCache = MemberDataCache.Impl<GroupParameters>()
+        val groupParametersCache = MemberDataCache.Impl<SignedGroupParameters>()
         lateinit var groupParametersProcessor: GroupParametersProcessor
         val clock = TestClock(Instant.ofEpochSecond(100))
 
@@ -49,10 +49,10 @@ class GroupParametersProcessorTest {
         val signedGroupParametersBytes: ByteArray = "original-signed".toByteArray()
         val updatedSignedGroupParametersBytes: ByteArray = "updated-signed".toByteArray()
 
-        val signedGroupParameters: SignedGroupParameters = mock {
+        val signedGroupParameters: AvroGroupParameters = mock {
             on { groupParameters } doReturn ByteBuffer.wrap(signedGroupParametersBytes)
         }
-        val updatedSignedGroupParameters: SignedGroupParameters = mock {
+        val updatedSignedGroupParameters: AvroGroupParameters = mock {
             on { groupParameters } doReturn ByteBuffer.wrap(updatedSignedGroupParametersBytes)
         }
 
@@ -69,10 +69,10 @@ class GroupParametersProcessorTest {
             on { groupParameters } doReturn updatedSignedGroupParameters
         }
 
-        val groupParams: GroupParameters = mock {
+        val groupParams: SignedGroupParameters = mock {
             on { entries } doReturn testEntries.entries
         }
-        val updatedGroupParams: GroupParameters = mock {
+        val updatedGroupParams: SignedGroupParameters = mock {
             on { entries } doReturn updatedTestEntries.entries
         }
 

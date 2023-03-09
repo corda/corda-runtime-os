@@ -2,12 +2,10 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -41,10 +39,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.bytes
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.signature
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -53,17 +50,17 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [MembershipPersistenceClient::class])
@@ -74,7 +71,6 @@ class MembershipPersistenceClientImpl(
     private val memberInfoFactory: MemberInfoFactory,
     private val groupParametersFactory: GroupParametersFactory,
     private val keyEncodingService: KeyEncodingService,
-    private val cordaAvroSerialisationFactory: CordaAvroSerializationFactory,
     clock: Clock,
 ) : MembershipPersistenceClient, AbstractPersistenceClient(
     coordinatorFactory,
@@ -97,8 +93,6 @@ class MembershipPersistenceClientImpl(
         groupParametersFactory: GroupParametersFactory,
         @Reference(service = KeyEncodingService::class)
         keyEncodingService: KeyEncodingService,
-        @Reference(service = CordaAvroSerializationFactory::class)
-        cordaAvroSerialisationFactory: CordaAvroSerializationFactory,
     ) : this(
         coordinatorFactory,
         publisherFactory,
@@ -106,7 +100,6 @@ class MembershipPersistenceClientImpl(
         memberInfoFactory,
         groupParametersFactory,
         keyEncodingService,
-        cordaAvroSerialisationFactory,
         UTCClock(),
     )
 
@@ -116,10 +109,6 @@ class MembershipPersistenceClientImpl(
 
     override val groupName = "membership.db.persistence.client.group"
     override val clientName = "membership.db.persistence.client"
-
-    private val keyValuePairSerialiser = cordaAvroSerialisationFactory.createAvroSerializer<KeyValuePairList>{
-        logger.error("Could not serialise KeyValuePairList")
-    }
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
@@ -165,17 +154,17 @@ class MembershipPersistenceClientImpl(
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: GroupParameters
-    ): MembershipPersistenceResult<GroupParameters> {
+        groupParameters: SignedGroupParameters
+    ): MembershipPersistenceResult<SignedGroupParameters> {
         logger.info("Persisting group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(
-                SignedGroupParameters(
+                AvroGroupParameters(
                     ByteBuffer.wrap(
-                        groupParameters.bytes ?: keyValuePairSerialiser.serialize(groupParameters.toAvro())
+                        groupParameters.bytes
                     ),
-                    groupParameters.signature?.toAvro()
+                    groupParameters.signature.toAvro()
                 )
             )
         ).execute()
@@ -183,6 +172,7 @@ class MembershipPersistenceClientImpl(
             is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(
                 groupParametersFactory.create(response.groupParameters)
             )
+
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }
@@ -190,14 +180,17 @@ class MembershipPersistenceClientImpl(
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceResult<SignedGroupParameters> {
         logger.info("Persisting initial snapshot of group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParametersInitialSnapshot()
         ).execute()
         return when (val response = result.payload) {
-            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.groupParameters)
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(
+                groupParametersFactory.create(response.groupParameters)
+            )
+
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }
@@ -206,7 +199,7 @@ class MembershipPersistenceClientImpl(
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceResult<SignedGroupParameters> {
         logger.info("Adding notary to persisted group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -219,7 +212,9 @@ class MembershipPersistenceClientImpl(
             )
         ).execute()
         return when (val response = result.payload) {
-            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.groupParameters)
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(
+                groupParametersFactory.create(response.groupParameters)
+            )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }
@@ -267,6 +262,7 @@ class MembershipPersistenceClientImpl(
             is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.Success(
                 memberInfoFactory.create(payload.memberInfo)
             )
+
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }

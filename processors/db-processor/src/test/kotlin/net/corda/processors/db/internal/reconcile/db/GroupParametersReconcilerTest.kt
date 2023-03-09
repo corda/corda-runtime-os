@@ -20,7 +20,6 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -57,39 +56,29 @@ class GroupParametersReconcilerTest {
     private val vnode3 = buildVnodeInfo("O=Charlie, L=London, C=GB", 200)
     private val allVNodesOnStartup = listOf(vnode1, vnode2)
 
-    private val groupParameters: GroupParameters = mock()
-    private val serialisedGroupParameters = "serialisedGroupParameters".toByteArray()
-
     private val signedGroupParameters: SignedGroupParameters = mock()
     private val serialisedSignedGroupParameters = "serialisedSignedGroupParameters".toByteArray()
 
     private val signatureKey = byteArrayOf(1, 2, 3)
-    private val serializedSignatureContext = byteArrayOf(4, 5, 6)
+    private val signatureContent = byteArrayOf(4, 5, 6)
+    private val serializedSignatureContext = byteArrayOf(7, 8, 9)
     private val deserializedSignatureContext = KeyValuePairList(
         listOf(KeyValuePair("sig-context-key", "sig-context-value"))
     )
-    private val signatureContent = byteArrayOf(7, 8, 9)
 
-    private val groupParametersEntity = GroupParametersEntity(
-        9,
-        serialisedGroupParameters,
-        null,
-        null,
-        null
-    )
     private val signedGroupParametersEntity = GroupParametersEntity(
-        9,
-        serialisedGroupParameters,
-        signatureKey,
-        serializedSignatureContext,
-        signatureContent
+        epoch = 9,
+        parameters = serialisedSignedGroupParameters,
+        signaturePublicKey = signatureKey,
+        signatureContent = signatureContent,
+        signatureContext = serializedSignatureContext
     )
 
     private val tx1: EntityTransaction = mock()
     private val em1: EntityManager = mock<EntityManager> {
         on { transaction } doReturn tx1
     }.also {
-        setUpEntityManagerMocks(it)
+        setUpEntityManagerMocks(it, signedGroupParametersEntity)
     }
     private val emf1: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn em1
@@ -99,7 +88,7 @@ class GroupParametersReconcilerTest {
     private val em2: EntityManager = mock<EntityManager> {
         on { transaction } doReturn tx2
     }.also {
-        setUpEntityManagerMocks(it)
+        setUpEntityManagerMocks(it, signedGroupParametersEntity)
     }
     private val emf2: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn em2
@@ -109,7 +98,7 @@ class GroupParametersReconcilerTest {
     private val em3: EntityManager = mock<EntityManager> {
         on { transaction } doReturn tx3
     }.also {
-        setUpEntityManagerMocks(it)
+        setUpEntityManagerMocks(it, signedGroupParametersEntity)
     }
     private val emf3: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn em3
@@ -143,11 +132,6 @@ class GroupParametersReconcilerTest {
     private val groupParametersFactory: GroupParametersFactory = mock {
         on {
             create(
-                eq(AvroGroupParameters(ByteBuffer.wrap(serialisedGroupParameters), null))
-            )
-        } doReturn groupParameters
-        on {
-            create(
                 eq(
                     AvroGroupParameters(
                         ByteBuffer.wrap(serialisedSignedGroupParameters),
@@ -159,12 +143,12 @@ class GroupParametersReconcilerTest {
                     )
                 )
             )
-        } doReturn signedGroupParameters as GroupParameters
+        } doReturn signedGroupParameters
     }
 
     private val reconciler: Reconciler = mock()
-    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters> = mock()
-    private val reconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters> = mock()
+    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, SignedGroupParameters> = mock()
+    private val reconcilerReader: ReconcilerReader<HoldingIdentity, SignedGroupParameters> = mock()
     private val reconcilerFactory: ReconcilerFactory = mock {
         on {
             create(
@@ -172,7 +156,7 @@ class GroupParametersReconcilerTest {
                 eq(reconcilerReader),
                 eq(reconcilerWriter),
                 eq(HoldingIdentity::class.java),
-                eq(GroupParameters::class.java),
+                eq(SignedGroupParameters::class.java),
                 any()
             )
         } doReturn reconciler
@@ -234,7 +218,7 @@ class GroupParametersReconcilerTest {
                 vnode2.holdingIdentity
             )
             assertThat(records?.map { it.value }).isNotNull.isEqualTo(
-                listOf(groupParameters, groupParameters)
+                listOf(signedGroupParameters, signedGroupParameters)
             )
             assertThat(records?.map { it.isDeleted }).isNotNull.isEqualTo(
                 listOf(false, false)
@@ -246,25 +230,6 @@ class GroupParametersReconcilerTest {
 
         @Test
         fun `processing versioned records stream calls expected functions`() {
-            groupParametersReconciler.updateInterval(1000)
-
-            // call terminal operation to process stream
-            groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()?.count()
-
-            verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
-            verify(em1).criteriaBuilder
-            verify(em1).createQuery(any<CriteriaQuery<GroupParametersEntity>>())
-            verify(em2).criteriaBuilder
-            verify(em2).createQuery(any<CriteriaQuery<GroupParametersEntity>>())
-
-            verify(cordaAvroDeserialiser, never()).deserialize(any())
-            verify(groupParametersFactory, times(2)).create(any<AvroGroupParameters>())
-        }
-
-        @Test
-        fun `processing versioned records stream for signed group parameters calls expected functions`() {
-            setUpEntityManagerMocks(em1, signedGroupParametersEntity)
-            setUpEntityManagerMocks(em2, signedGroupParametersEntity)
             groupParametersReconciler.updateInterval(1000)
 
             // call terminal operation to process stream
@@ -327,7 +292,7 @@ class GroupParametersReconcilerTest {
 
     private fun setUpEntityManagerMocks(
         em: EntityManager,
-        returnEntity: GroupParametersEntity = groupParametersEntity
+        returnEntity: GroupParametersEntity
     ) {
         val typedQuery: TypedQuery<GroupParametersEntity> = mock {
             on { setMaxResults(any()) } doReturn mock

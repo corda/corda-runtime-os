@@ -3,11 +3,12 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.SignedGroupParameters
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
+import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.exceptions.FailedGroupParametersSerialization
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -18,6 +19,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 @Component(service = [GroupParametersFactory::class])
 class GroupParametersFactoryImpl @Activate constructor(
@@ -33,7 +35,7 @@ class GroupParametersFactoryImpl @Activate constructor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList>{
+    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
         logger.error("Failed to serialise group parameters to KeyValuePairList.")
     }
 
@@ -41,7 +43,7 @@ class GroupParametersFactoryImpl @Activate constructor(
         logger.error("Failed to deserialise group parameters to KeyValuePairList.")
     }, KeyValuePairList::class.java)
 
-    override fun create(parameters: SignedGroupParameters): GroupParameters = parameters.toCorda()
+    override fun create(parameters: AvroGroupParameters): SignedGroupParameters = parameters.toCorda()
 
     override fun create(parameters: KeyValuePairList): GroupParameters =
         avroSerializer.serialize(parameters)?.toUnsignedGroupParameters() ?: throw FailedGroupParametersSerialization
@@ -54,23 +56,17 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    private fun SignedGroupParameters.toCorda(): GroupParameters {
-        return if (mgmSignature == null) {
-            groupParameters.array().toUnsignedGroupParameters()
-        } else {
-            SignedGroupParametersImpl(
-                groupParameters.array(),
-                mgmSignature.let {
-                    DigitalSignature.WithKey(
-                        by = keyEncodingService.decodePublicKey(it.publicKey.array()),
-                        bytes = it.bytes.array(),
-                        context = it.context.toMap()
-                    )
-                },
-                ::deserializeLayeredPropertyMap
-            )
-        }
-    }
+    private fun AvroGroupParameters.toCorda() = SignedGroupParametersImpl(
+        groupParameters.array(),
+        mgmSignature.toCorda(),
+        ::deserializeLayeredPropertyMap
+    )
+
+    private fun CryptoSignatureWithKey.toCorda() = DigitalSignature.WithKey(
+        keyEncodingService.decodePublicKey(publicKey.array()),
+        bytes.array(),
+        context.toMap()
+    )
 
     private fun deserializeLayeredPropertyMap(params: ByteArray): LayeredPropertyMap = avroDeserializer
         .deserialize(params)

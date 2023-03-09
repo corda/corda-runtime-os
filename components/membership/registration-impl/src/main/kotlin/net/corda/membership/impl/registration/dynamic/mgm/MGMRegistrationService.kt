@@ -19,7 +19,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -72,8 +71,6 @@ class MGMRegistrationService @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
-    @Reference(service = GroupParametersFactory::class)
-    private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
 ) : MemberRegistrationService {
@@ -202,7 +199,7 @@ class MGMRegistrationService @Activate constructor(
                 }
 
                 // Publish group parameters to Kafka
-                val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
+                val groupParameters = groupParametersPersistenceResult.getOrThrow()
                 groupParametersWriterService.put(member, groupParameters)
 
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
@@ -222,6 +219,7 @@ class MGMRegistrationService @Activate constructor(
                 throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
             }
         }
+
         override fun close() {
             publisher.close()
         }
@@ -268,6 +266,7 @@ class MGMRegistrationService @Activate constructor(
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
+
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()

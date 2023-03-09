@@ -21,7 +21,13 @@ class GroupParametersEntityTest {
 
     private val epoch = 9
     private val parameters = "123".toByteArray()
-    private val entity = GroupParametersEntity(epoch, parameters, null, null, null)
+    private val entity = GroupParametersEntity(
+        epoch = epoch,
+        parameters = parameters,
+        signaturePublicKey = byteArrayOf(0),
+        signatureContent = byteArrayOf(1),
+        signatureContext = byteArrayOf(2)
+    )
     private val epochPath: Path<String> = mock()
     private val order: Order = mock()
     private val root: Root<GroupParametersEntity> = mock {

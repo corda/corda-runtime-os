@@ -53,6 +53,8 @@ class RegistrationServiceLifecycleHandler(
 
     private val keyEncodingService = staticMemberRegistrationService.keyEncodingService
 
+    private val cordaAvroSerializationFactory = staticMemberRegistrationService.cordaAvroSerializationFactory
+
     private var _groupParametersCache: GroupParametersCache? = null
 
     private var _publisher: Publisher? = null
@@ -145,7 +147,12 @@ class RegistrationServiceLifecycleHandler(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
-        _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        _groupParametersCache = GroupParametersCache(
+            platformInfoProvider,
+            publisher,
+            keyEncodingService,
+            cordaAvroSerializationFactory
+        )
 
         recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
         coordinator.updateStatus(LifecycleStatus.UP)
@@ -161,7 +168,7 @@ class RegistrationServiceLifecycleHandler(
         coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
             val subscription = subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, MEMBERSHIP_STATIC_NETWORK_TOPIC),
-                Processor(groupParametersCache),
+                StaticGroupProcessor(groupParametersCache),
                 config
             )
             subscription.start()
@@ -170,7 +177,7 @@ class RegistrationServiceLifecycleHandler(
         }
     }
 
-    internal inner class Processor(
+    internal inner class StaticGroupProcessor(
         private val groupParametersCache: GroupParametersCache
     ) : CompactedProcessor<String, StaticGroupDefinition> {
         override val keyClass = String::class.java

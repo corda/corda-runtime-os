@@ -1,19 +1,19 @@
 package net.corda.membership.impl.read.subscription
 
 import net.corda.data.membership.PersistentGroupParameters
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.impl.read.cache.MemberDataCache
-import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class GroupParametersProcessor(
-    private val groupParametersCache: MemberDataCache<GroupParameters>,
+    private val groupParametersCache: MemberDataCache<SignedGroupParameters>,
     private val groupParametersFactory: GroupParametersFactory
 ) : CompactedProcessor<String, PersistentGroupParameters> {
 
@@ -57,6 +57,6 @@ class GroupParametersProcessor(
         }
     }
 
-    private fun createGroupParameters(signedGroupParameters: SignedGroupParameters) =
+    private fun createGroupParameters(signedGroupParameters: AvroGroupParameters) =
         groupParametersFactory.create(signedGroupParameters)
 }

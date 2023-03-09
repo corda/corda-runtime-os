@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 
 class RegistrationServiceLifecycleHandlerTest {
@@ -86,6 +87,7 @@ class RegistrationServiceLifecycleHandlerTest {
     private val membershipQueryClient = mock<MembershipQueryClient>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<Any>(any()) } doReturn mock()
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn mock()
     }
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(

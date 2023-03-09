@@ -1,6 +1,5 @@
 package net.corda.membership.lib
 
-import net.corda.data.KeyValuePairList
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.membership.GroupParameters
 

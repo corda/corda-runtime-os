@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -16,16 +17,13 @@ import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.toMap
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -47,14 +45,18 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         const val SNAPSHOT_EPOCH = "1"
     }
 
-    private val context = byteArrayOf(1, 2, 3)
+    private val serializedParams = byteArrayOf(1, 2, 3)
+    private val serializedSignatureContent = byteArrayOf(2)
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(any()) } doReturn context
+        on { serialize(any()) } doReturn serializedParams
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(serializedParams) } doReturn KeyValuePairList(emptyList())
+        on { deserialize(serializedSignatureContent) } doReturn KeyValuePairList(emptyList())
+    }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
-        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListDeserializer
+        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn deserializer
     }
     private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
     private val vaultDmlConnectionId = UUID(1, 2)
@@ -89,6 +91,9 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
     private val platformInfoProvider: PlatformInfoProvider = mock {
         on { activePlatformVersion } doReturn MPV
     }
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { encodeAsByteArray(any()) } doReturn "test-key".toByteArray()
+    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
@@ -96,6 +101,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
         on { platformInfoProvider } doReturn platformInfoProvider
+        on { keyEncodingService } doReturn keyEncodingService
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
 
@@ -106,18 +112,17 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         }
         val request = mock<PersistGroupParametersInitialSnapshot>()
 
-        val result = handler.invoke(context, request)
+        handler.invoke(context, request)
 
-        with(result.groupParameters) {
-            assertThat(items.size).isEqualTo(3)
-            assertThat(items).containsAll(
+        verify(keyValuePairListSerializer).serialize(
+            KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, SNAPSHOT_EPOCH),
-                    KeyValuePair(MPV_KEY, MPV.toString())
+                    KeyValuePair(MPV_KEY, MPV.toString()),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
             )
-            assertDoesNotThrow { Instant.parse(this.toMap()[MODIFIED_TIME_KEY]) }
-        }
+        )
     }
 
     @Test
@@ -128,7 +133,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         val request = mock<PersistGroupParametersInitialSnapshot>()
         val content = byteArrayOf(1, 2, 3)
         whenever(
-            keyValuePairListDeserializer.deserialize(content)
+            deserializer.deserialize(content)
         ).doReturn(
             KeyValuePairList(
                 listOf(
@@ -146,8 +151,11 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             )
         ).doReturn(
             GroupParametersEntity(
-                1,
-                content,
+                epoch = 1,
+                parameters = content,
+                signaturePublicKey = byteArrayOf(0),
+                signatureContent = byteArrayOf(1),
+                signatureContext = serializedSignatureContent,
             )
         )
 
@@ -164,7 +172,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         val request = mock<PersistGroupParametersInitialSnapshot>()
         val content = byteArrayOf(1, 2, 3)
         whenever(
-            keyValuePairListDeserializer.deserialize(content)
+            deserializer.deserialize(content)
         ).doReturn(
             KeyValuePairList(
                 emptyList()
@@ -178,8 +186,11 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             )
         ).doReturn(
             GroupParametersEntity(
-                1,
-                content,
+                epoch = 1,
+                parameters = content,
+                signaturePublicKey = byteArrayOf(0),
+                signatureContent = byteArrayOf(1),
+                signatureContext = serializedSignatureContent,
             )
         )
 

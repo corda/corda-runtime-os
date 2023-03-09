@@ -1,6 +1,5 @@
 package net.corda.membership.impl.synchronisation.dummy
 
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -8,28 +7,28 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.*
-import org.slf4j.LoggerFactory
 
 /**
  * Created for mocking and simplifying membership persistence client functionalities used by the membership services.
  */
 interface TestMembershipPersistenceClient : MembershipPersistenceClient {
-    fun getPersistedGroupParameters(): GroupParameters?
+    fun getPersistedGroupParameters(): SignedGroupParameters?
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -43,7 +42,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
     }
 
-    private var persistedGroupParameters: GroupParameters? = null
+    private var persistedGroupParameters: SignedGroupParameters? = null
 
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()) { event, coordinator ->
@@ -52,7 +51,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
             }
         }
 
-    override fun getPersistedGroupParameters(): GroupParameters? = persistedGroupParameters
+    override fun getPersistedGroupParameters(): SignedGroupParameters? = persistedGroupParameters
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
@@ -74,7 +73,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     }
 
-    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<KeyValuePairList> {
+    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<SignedGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -83,8 +82,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: GroupParameters
-    ): MembershipPersistenceResult<GroupParameters> {
+        groupParameters: SignedGroupParameters
+    ): MembershipPersistenceResult<SignedGroupParameters> {
         persistedGroupParameters = groupParameters
         return MembershipPersistenceResult.Success(groupParameters)
     }
@@ -92,7 +91,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceResult<SignedGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

@@ -8,8 +8,8 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentGroupParameters
-import net.corda.data.membership.SignedGroupParameters
-import net.corda.layeredpropertymap.toAvro
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,8 +21,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
-import net.corda.membership.lib.bytes
-import net.corda.membership.lib.signature
 import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -31,7 +29,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -80,7 +77,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) = impl.put(recordKey, recordValue)
+    override fun put(recordKey: HoldingIdentity, recordValue: SignedGroupParameters) = impl.put(recordKey, recordValue)
 
     override fun remove(recordKey: HoldingIdentity) = impl.remove(recordKey)
 
@@ -100,13 +97,13 @@ class GroupParametersWriterServiceImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerGroupParametersWriterService : AutoCloseable {
-        fun put(recordKey: HoldingIdentity, recordValue: GroupParameters)
+        fun put(recordKey: HoldingIdentity, recordValue: SignedGroupParameters)
 
         fun remove(recordKey: HoldingIdentity)
     }
 
     private object InactiveImpl : InnerGroupParametersWriterService {
-        override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) =
+        override fun put(recordKey: HoldingIdentity, recordValue: SignedGroupParameters) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
         override fun remove(recordKey: HoldingIdentity) =
@@ -117,7 +114,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerGroupParametersWriterService {
-        override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) {
+        override fun put(recordKey: HoldingIdentity, recordValue: SignedGroupParameters) {
             publisher.publish(
                 listOf(
                     Record(
@@ -207,11 +204,11 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         activate(coordinator)
     }
 
-    private fun GroupParameters.toAvro(owner: HoldingIdentity) = PersistentGroupParameters(
+    private fun SignedGroupParameters.toAvro(owner: HoldingIdentity) = PersistentGroupParameters(
         owner.toAvro(),
-        SignedGroupParameters(
-            ByteBuffer.wrap(bytes ?: keyValuePairSerialiser.serialize(toAvro())),
-            signature?.let {
+        AvroGroupParameters(
+            ByteBuffer.wrap(bytes),
+            signature.let {
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
                     ByteBuffer.wrap(it.bytes),

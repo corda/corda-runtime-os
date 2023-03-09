@@ -12,8 +12,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -41,7 +41,7 @@ class MembershipGroupReaderImplTest {
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
     }
-    private val groupParameters: GroupParameters = mock()
+    private val groupParameters: SignedGroupParameters = mock()
     private val groupParametersReaderService: GroupParametersReaderService = mock {
         on { get(eq(aliceIdGroup1)) } doReturn groupParameters
     }

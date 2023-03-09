@@ -11,13 +11,13 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,6 +38,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -49,7 +50,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig
@@ -58,7 +58,6 @@ import net.corda.utilities.minutes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -85,9 +84,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class MemberSynchronisationServiceImplTest {
     private companion object {
@@ -97,6 +97,7 @@ class MemberSynchronisationServiceImplTest {
         val MGM_CONTEXT_BYTES = "3333".toByteArray()
         val GROUP_PARAMETERS_BYTES = "dummy-parameters".toByteArray()
     }
+
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
     }
@@ -189,7 +190,7 @@ class MemberSynchronisationServiceImplTest {
         on { hashCheck } doReturn hash
     }
     private val mgmSignatureGroupParameters = mock<CryptoSignatureWithKey>()
-    private val signedGroupParameters = mock<SignedGroupParameters> {
+    private val signedGroupParameters = mock<AvroGroupParameters> {
         on { mgmSignature } doReturn mgmSignatureGroupParameters
         on { groupParameters } doReturn ByteBuffer.wrap(GROUP_PARAMETERS_BYTES)
     }
@@ -240,12 +241,12 @@ class MemberSynchronisationServiceImplTest {
     private val verifier = mock<Verifier>()
     private val persistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupParameters(any(), any()) } doAnswer {
-            MembershipPersistenceResult.Success(it.getArgument<GroupParameters>(1))
+            MembershipPersistenceResult.Success(it.getArgument<SignedGroupParameters>(1))
         }
     }
-    private val groupParameters = mock<GroupParameters>()
+    private val groupParameters = mock<SignedGroupParameters>()
     private val groupParametersFactory = mock<GroupParametersFactory> {
-        on { create(any<SignedGroupParameters>()) } doReturn groupParameters
+        on { create(any<AvroGroupParameters>()) } doReturn groupParameters
     }
     private val groupParametersWriterService = mock<GroupParametersWriterService>()
     private val synchronisationService = MemberSynchronisationServiceImpl(
@@ -320,7 +321,13 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).thenReturn(
+            listOf(
+                CompletableFuture.completedFuture(
+                    Unit
+                )
+            )
+        )
 
         synchronisationService.processMembershipUpdates(updates)
 
@@ -343,7 +350,7 @@ class MemberSynchronisationServiceImplTest {
     fun `group parameters are successfully persisted on receiving membership package from MGM`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPersistedGroupParameters = argumentCaptor<GroupParameters>()
+        val capturedPersistedGroupParameters = argumentCaptor<SignedGroupParameters>()
         whenever(
             persistenceClient.persistGroupParameters(
                 any(),
@@ -363,7 +370,7 @@ class MemberSynchronisationServiceImplTest {
     fun `group parameters are successfully published to kafka on receiving membership package from MGM`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPersistedGroupParameters = argumentCaptor<GroupParameters>()
+        val capturedPersistedGroupParameters = argumentCaptor<SignedGroupParameters>()
         doNothing().whenever(groupParametersWriterService).put(any(), capturedPersistedGroupParameters.capture())
 
         synchronisationService.processMembershipUpdates(updates)
@@ -398,7 +405,12 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not persist the group parameters`() {
-        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(
+            verifier.verify(
+                eq(mgmSignatureGroupParameters),
+                any()
+            )
+        ).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -409,7 +421,12 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not publish the group parameters to Kafka`() {
-        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(
+            verifier.verify(
+                eq(mgmSignatureGroupParameters),
+                any()
+            )
+        ).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -434,7 +451,13 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(
+            listOf(
+                CompletableFuture.completedFuture(
+                    Unit
+                )
+            )
+        )
         whenever(signedMemberships.hashCheck) doReturn null
 
         synchronisationService.processMembershipUpdates(updates)
@@ -455,7 +478,13 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(
+            listOf(
+                CompletableFuture.completedFuture(
+                    Unit
+                )
+            )
+        )
         whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         synchronisationService.processMembershipUpdates(updates)
@@ -476,7 +505,13 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(
+            listOf(
+                CompletableFuture.completedFuture(
+                    Unit
+                )
+            )
+        )
         whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         synchronisationService.processMembershipUpdates(updates)

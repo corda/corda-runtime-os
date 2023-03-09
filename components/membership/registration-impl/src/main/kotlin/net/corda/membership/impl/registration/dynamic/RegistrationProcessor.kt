@@ -28,7 +28,6 @@ import net.corda.membership.impl.registration.dynamic.handler.mgm.DistributeMemb
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -51,7 +50,6 @@ class RegistrationProcessor(
     merkleTreeProvider: MerkleTreeProvider,
     membershipConfig: SmartConfig,
     groupParametersWriterService: GroupParametersWriterService,
-    groupParametersFactory: GroupParametersFactory,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -81,7 +79,6 @@ class RegistrationProcessor(
             memberTypeChecker,
             membershipGroupReaderProvider,
             groupParametersWriterService,
-            groupParametersFactory,
         ),
         DistributeMembershipPackage::class.java to DistributeMembershipPackageHandler(
             membershipQueryClient,
@@ -140,35 +137,43 @@ class RegistrationProcessor(
                     logger.info("Received start registration command.")
                     handlers[StartRegistration::class.java]?.invoke(state, event)
                 }
+
                 is VerifyMember -> {
                     logger.info("Received verify member during registration command.")
                     handlers[VerifyMember::class.java]?.invoke(state, event)
                 }
+
                 is ProcessMemberVerificationResponse -> {
                     logger.info("Received process member verification response during registration command.")
                     handlers[ProcessMemberVerificationResponse::class.java]?.invoke(state, event)
                 }
+
                 is ApproveRegistration -> {
                     logger.info("Received approve registration command.")
                     handlers[ApproveRegistration::class.java]?.invoke(state, event)
                 }
+
                 is DistributeMembershipPackage -> {
                     logger.info("Received distribute membership package command.")
                     handlers[DistributeMembershipPackage::class.java]?.invoke(state, event)
                 }
+
                 is DeclineRegistration -> {
                     logger.info("Received decline registration command.")
                     logger.warn("Declining registration because: ${command.reason}")
                     handlers[DeclineRegistration::class.java]?.invoke(state, event)
                 }
+
                 is ProcessMemberVerificationRequest -> {
                     logger.info("Received process member verification request during registration command.")
                     handlers[ProcessMemberVerificationRequest::class.java]?.invoke(state, event)
                 }
+
                 is PersistMemberRegistrationState -> {
                     logger.info("Received persist member registration state command.")
                     handlers[PersistMemberRegistrationState::class.java]?.invoke(state, event)
                 }
+
                 else -> {
                     logger.warn("Unhandled registration command received.")
                     createEmptyResult(state)

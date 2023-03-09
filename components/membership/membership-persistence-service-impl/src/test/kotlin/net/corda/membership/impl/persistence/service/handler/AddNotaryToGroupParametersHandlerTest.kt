@@ -10,7 +10,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
-import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
@@ -64,6 +63,7 @@ class AddNotaryToGroupParametersHandlerTest {
         const val KNOWN_NOTARY_SERVICE = "O=NotaryA, L=LDN, C=GB"
         const val KNOWN_NOTARY_PLUGIN = "net.corda.notary.MyNotaryService"
     }
+
     private val knownIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
     private val context = byteArrayOf(1, 2, 3)
     private val serializeCaptor = argumentCaptor<KeyValuePairList>()
@@ -94,7 +94,13 @@ class AddNotaryToGroupParametersHandlerTest {
     }
     private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
         on { resultList } doReturn resultList
-        on { singleResult } doReturn GroupParametersEntity(EPOCH, "test".toByteArray(), null, null, null)
+        on { singleResult } doReturn GroupParametersEntity(
+            epoch = EPOCH,
+            parameters = "test".toByteArray(),
+            signaturePublicKey = byteArrayOf(0),
+            signatureContent = byteArrayOf(1),
+            signatureContext = byteArrayOf(2)
+        )
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
         on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
@@ -133,6 +139,7 @@ class AddNotaryToGroupParametersHandlerTest {
     private val clock = TestClock(Instant.ofEpochMilli(10))
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsString(any()) } doReturn "test-key"
+        on { encodeAsByteArray(any()) } doReturn "test-key".toByteArray()
     }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
@@ -184,31 +191,30 @@ class AddNotaryToGroupParametersHandlerTest {
             KeyValuePairList(mutableListOf(KeyValuePair(EPOCH_KEY, EPOCH.toString())))
         )
 
-        val result = handler.invoke(requestContext, request)
+        handler.invoke(requestContext, request)
         verify(entityManagerFactory).createEntityManager()
         verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
+
+        verify(keyValuePairListSerializer).serialize(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                    KeyValuePair("corda.notary.service.0.keys.0", "test-key"),
+                    KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
+                    KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
+                )
+            )
+        )
         with(argumentCaptor<Any>()) {
             verify(entityManager).persist(capture())
             assertThat(firstValue).isInstanceOf(GroupParametersEntity::class.java)
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
-            assertThat(entity.signatureContent).isNull()
-            assertThat(entity.signatureContext).isNull()
-            assertThat(entity.signaturePublicKey).isNull()
-            val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(5)
-            assertThat(persistedParameters.items.containsAll(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, "2"),
-                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                    KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
-                    KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
-                    KeyValuePair("corda.notary.service.0.keys.0", "test-key"),
-                )
-            ))
-            assertThat(result).isEqualTo(PersistGroupParametersResponse(persistedParameters))
+            assertThat(entity.signaturePublicKey).isEqualTo("test-key".toByteArray())
+            assertThat(entity.signatureContent).isEqualTo(byteArrayOf(1))
         }
     }
 
@@ -249,40 +255,41 @@ class AddNotaryToGroupParametersHandlerTest {
             on { notary } doReturn persistentNotary
         }
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
-            KeyValuePairList(mutableListOf(
-                KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-                KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
-            ))
+            KeyValuePairList(
+                mutableListOf(
+                    KeyValuePair(EPOCH_KEY, EPOCH.toString()),
+                    KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                    KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
+                )
+            )
         )
 
-        val result = handler.invoke(requestContext, request)
+        handler.invoke(requestContext, request)
         verify(entityManagerFactory).createEntityManager()
         verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
+
+        verify(keyValuePairListSerializer).serialize(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                    KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                    KeyValuePair("corda.notary.service.5.keys.1", "test-key"),
+                )
+            )
+        )
         with(argumentCaptor<Any>()) {
             verify(entityManager).persist(capture())
             assertThat(firstValue).isInstanceOf(GroupParametersEntity::class.java)
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
-            assertThat(entity.signatureContent).isNull()
-            assertThat(entity.signatureContext).isNull()
-            assertThat(entity.signaturePublicKey).isNull()
-            val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(6)
-            assertThat(persistedParameters.items.containsAll(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, "2"),
-                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                    KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                    KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-                    KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
-                    KeyValuePair("corda.notary.service.5.keys.1", "test-key"),
-                )
-            ))
-            assertThat(result).isEqualTo(PersistGroupParametersResponse(persistedParameters))
+            assertThat(entity.signaturePublicKey).isEqualTo("test-key".toByteArray())
+            assertThat(entity.signatureContent).isEqualTo(byteArrayOf(1))
         }
     }
 
@@ -322,21 +329,22 @@ class AddNotaryToGroupParametersHandlerTest {
         val request = mock<AddNotaryToGroupParameters> {
             on { notary } doReturn persistentNotary
         }
-        val mockGroupParameters = KeyValuePairList(mutableListOf(
-            KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-            KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-            KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-            KeyValuePair("corda.notary.service.5.keys.0", "test-key")
-        ))
+        val mockGroupParameters = KeyValuePairList(
+            mutableListOf(
+                KeyValuePair(EPOCH_KEY, EPOCH.toString()),
+                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                KeyValuePair("corda.notary.service.5.keys.0", "test-key")
+            )
+        )
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(mockGroupParameters)
 
-        val result = handler.invoke(requestContext, request)
+        handler.invoke(requestContext, request)
         verify(entityManagerFactory).createEntityManager()
         verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())
-        assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
     }
 
     @Test
@@ -419,11 +427,13 @@ class AddNotaryToGroupParametersHandlerTest {
             on { notary } doReturn persistentNotary
         }
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
-            KeyValuePairList(mutableListOf(
-                KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-            ))
+            KeyValuePairList(
+                mutableListOf(
+                    KeyValuePair(EPOCH_KEY, EPOCH.toString()),
+                    KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                    KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                )
+            )
         )
 
         val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }

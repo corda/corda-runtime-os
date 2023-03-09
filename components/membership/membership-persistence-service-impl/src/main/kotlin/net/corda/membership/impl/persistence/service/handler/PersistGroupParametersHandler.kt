@@ -11,6 +11,7 @@ import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class PersistGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -26,19 +27,13 @@ internal class PersistGroupParametersHandler(
         )
     }
 
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
                 logger.error("Failed to deserialize key value pair list.")
             },
             KeyValuePairList::class.java
         )
-
-    private fun deserialize(content: ByteArray): KeyValuePairList {
-        return keyValuePairListDeserializer.deserialize(content) ?: throw MembershipPersistenceException(
-            "Failed to deserialize key value pair list."
-        )
-    }
 
     override fun invoke(
         context: MembershipRequestContext,
@@ -48,7 +43,7 @@ internal class PersistGroupParametersHandler(
 
             // Find the current parameters
             val serialisedGroupParameters = request.groupParameters.groupParameters.array()
-            val groupParameters = deserialize(serialisedGroupParameters)
+            val groupParameters = deserializer.deserializeKeyValuePairList(serialisedGroupParameters)
             val epochFromRequest = groupParameters.toMap()[EPOCH_KEY]?.toInt()
                 ?: throw MembershipPersistenceException("Cannot persist group parameters - epoch not found.")
             val currentEntity = em.find(
@@ -57,7 +52,7 @@ internal class PersistGroupParametersHandler(
                 LockModeType.PESSIMISTIC_WRITE,
             )
             if (currentEntity != null) {
-                val currentParameters = deserialize(currentEntity.parameters).toMap()
+                val currentParameters = deserializer.deserializeKeyValuePairList(currentEntity.parameters).toMap()
                 if (groupParameters.toMap() != currentParameters) {
                     throw MembershipPersistenceException(
                         "Group parameters with epoch=$epochFromRequest already exist with different parameters."
@@ -67,9 +62,9 @@ internal class PersistGroupParametersHandler(
                 val entity = GroupParametersEntity(
                     epoch = epochFromRequest,
                     parameters = serialisedGroupParameters,
-                    signaturePublicKey = request.groupParameters.mgmSignature?.publicKey?.array(),
-                    signatureContext = request.groupParameters.mgmSignature?.context?.let { serialize(it) },
-                    signatureContent = request.groupParameters.mgmSignature?.bytes?.array()
+                    signaturePublicKey = request.groupParameters.mgmSignature.publicKey.array(),
+                    signatureContent = request.groupParameters.mgmSignature.bytes.array(),
+                    signatureContext = serialize(request.groupParameters.mgmSignature.context)
                 )
                 em.persist(entity)
             }
@@ -81,13 +76,12 @@ internal class PersistGroupParametersHandler(
             val query = queryBuilder
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
-            val latestGroupParameters = em
-                .createQuery(query)
+            em.createQuery(query)
                 .setMaxResults(1)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .resultList
                 .first()
-            deserialize(latestGroupParameters.parameters)
+                .toSignedParameters(deserializer)
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)

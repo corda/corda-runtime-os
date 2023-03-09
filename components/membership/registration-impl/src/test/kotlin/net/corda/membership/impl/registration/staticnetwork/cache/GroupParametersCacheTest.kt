@@ -1,8 +1,12 @@
 package net.corda.membership.impl.registration.staticnetwork.cache
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.staticgroup.StaticGroupDefinition
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.EPOCH_KEY
@@ -13,9 +17,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
-import net.corda.membership.lib.toMap
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -28,6 +32,8 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -40,47 +46,100 @@ class GroupParametersCacheTest {
         const val KNOWN_NOTARY_PLUGIN = "net.corda.notary.MyNotaryService"
     }
 
+    private val clock = TestClock(Instant.ofEpochSecond(500))
+
     private val knownGroupId = UUID.randomUUID().toString()
     private val knownIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), knownGroupId)
     private val platformInfoProvider: PlatformInfoProvider = mock {
         on { activePlatformVersion } doReturn MPV
     }
+    private val pubKeyBytes = "test-key".toByteArray()
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsString(any()) } doReturn "test-key"
+        on { encodeAsByteArray(any()) } doReturn pubKeyBytes
     }
     private val publishCaptor = argumentCaptor<List<Record<*, *>>>()
     private val publisher: Publisher = mock {
         on { publish(publishCaptor.capture()) } doReturn listOf(CompletableFuture.completedFuture(Unit))
     }
 
+
+    private val paramCaptor = argumentCaptor<KeyValuePairList>()
+    private val serializedParams = "group-params".toByteArray()
+    private val deserializedParams = KeyValuePairList(
+        mutableListOf(
+            KeyValuePair(EPOCH_KEY, "1"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+        )
+    )
+    private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(paramCaptor.capture()) } doReturn serializedParams
+    }
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
+        on { deserialize(serializedParams) } doReturn deserializedParams
+    }
+
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+    }
+
+    private val signedGroupParameters = mock<SignedGroupParameters> {
+        on { groupParameters } doReturn ByteBuffer.wrap(serializedParams)
+    }
+
     @Test
     fun `group parameters are added to cache when set is called`() {
-        val groupParameters = KeyValuePairList(mutableListOf(
-            KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-            KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-            KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-            KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
-        ))
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParameters = KeyValuePairList(
+            mutableListOf(
+                KeyValuePair(EPOCH_KEY, EPOCH.toString()),
+                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
+            )
+        )
+        whenever(deserializer.deserialize(serializedParams)).doReturn(groupParameters)
+        val groupParametersCache = GroupParametersCache(
+            platformInfoProvider,
+            publisher,
+            keyEncodingService,
+            cordaAvroSerializationFactory,
+            clock
+        )
 
-        groupParametersCache.set(knownGroupId, groupParameters)
+        groupParametersCache.set(knownGroupId, signedGroupParameters)
 
-        assertThat(groupParametersCache.getOrCreateGroupParameters(knownIdentity)).isEqualTo(groupParameters)
+        assertThat(groupParametersCache.getOrCreateGroupParameters(knownIdentity)).isEqualTo(signedGroupParameters)
     }
 
     @Test
     fun `when cache is empty, getOrCreateGroupParameters publishes snapshot`() {
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(
+            platformInfoProvider,
+            publisher,
+            keyEncodingService,
+            cordaAvroSerializationFactory,
+            clock
+        )
 
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
+        with(paramCaptor.firstValue) {
+            assertThat(items).containsExactlyElementsOf(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, "1"),
+                    KeyValuePair(MPV_KEY, "5000"),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                )
+            )
+        }
         with(publishCaptor.firstValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
+            assertThat(value).isInstanceOf(StaticGroupDefinition::class.java)
+
             with(value as StaticGroupDefinition) {
-                val params = this.groupParameters.toMap()
-                assertThat(params[EPOCH_KEY]).isEqualTo("1")
-                assertThat(params[MPV_KEY]).isEqualTo("5000")
-                assertThat(Instant.parse(params[MODIFIED_TIME_KEY])).isBeforeOrEqualTo(Instant.now())
+                assertThat(groupParameters.groupParameters).isEqualTo(ByteBuffer.wrap(serializedParams))
             }
         }
     }
@@ -107,23 +166,40 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(
+            platformInfoProvider,
+            publisher,
+            keyEncodingService,
+            cordaAvroSerializationFactory,
+            clock
+        )
+//        whenever(serializer.serialize(paramCaptor.capture())).doAnswer {
+//            println("test")
+//            serializedParams
+//        }
+
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
         groupParametersCache.addNotary(notary)
 
+        with(paramCaptor.secondValue) {
+            assertThat(items).containsExactlyInAnyOrderElementsOf(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MPV_KEY, MPV.toString()),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                    KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
+                    KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair("corda.notary.service.0.keys.0", "test-key")
+                )
+            )
+        }
         with(publishCaptor.firstValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
+            assertThat(value).isInstanceOf(StaticGroupDefinition::class.java)
+
             with(value as StaticGroupDefinition) {
-                assertThat(this.groupParameters.items.containsAll(
-                    listOf(
-                        KeyValuePair(EPOCH_KEY, "2"),
-                        KeyValuePair(MPV_KEY, MPV.toString()),
-                        KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
-                        KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
-                        KeyValuePair("corda.notary.service.0.keys.0", "test-key"),
-                    )
-                ))
+                assertThat(groupParameters.groupParameters).isEqualTo(ByteBuffer.wrap(serializedParams))
             }
         }
     }
@@ -150,31 +226,47 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
-        val existingGroupParameters = KeyValuePairList(mutableListOf(
-            KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-            KeyValuePair(MPV_KEY, MPV.toString()),
-            KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-            KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-            KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
-        ))
-        groupParametersCache.set(knownGroupId, existingGroupParameters)
+        val groupParametersCache = GroupParametersCache(
+            platformInfoProvider,
+            publisher,
+            keyEncodingService,
+            cordaAvroSerializationFactory,
+            clock
+        )
+        val existingGroupParameters = KeyValuePairList(
+            mutableListOf(
+                KeyValuePair(EPOCH_KEY, EPOCH.toString()),
+                KeyValuePair(MPV_KEY, MPV.toString()),
+                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
+            )
+        )
+        whenever(deserializer.deserialize(serializedParams)).doReturn(existingGroupParameters)
+
+        groupParametersCache.set(knownGroupId, signedGroupParameters)
 
         groupParametersCache.addNotary(notary)
 
+        with(paramCaptor.firstValue) {
+            assertThat(items).containsExactlyInAnyOrderElementsOf(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MPV_KEY, MPV.toString()),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                    KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
+                    KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
+                    KeyValuePair("corda.notary.service.5.keys.1", "test-key")
+                )
+            )
+        }
         with(publishCaptor.firstValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
+            assertThat(value).isInstanceOf(StaticGroupDefinition::class.java)
+
             with(value as StaticGroupDefinition) {
-                assertThat(this.groupParameters.items.containsAll(
-                    listOf(
-                        KeyValuePair(EPOCH_KEY, "2"),
-                        KeyValuePair(MPV_KEY, MPV.toString()),
-                        KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                        KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-                        KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
-                        KeyValuePair("corda.notary.service.5.keys.1", "test-key"),
-                    )
-                ))
+                assertThat(groupParameters.groupParameters).isEqualTo(ByteBuffer.wrap(serializedParams))
             }
         }
     }

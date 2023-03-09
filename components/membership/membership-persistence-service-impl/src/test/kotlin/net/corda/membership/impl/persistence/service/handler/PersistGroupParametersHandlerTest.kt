@@ -10,6 +10,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupParameters
+import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
@@ -50,29 +51,42 @@ import javax.persistence.criteria.Root
 import kotlin.test.assertFailsWith
 
 class PersistGroupParametersHandlerTest {
-    private val serializedParams = "group-parameters".toByteArray()
+    private val serializedParams = "group-parameters-1".toByteArray()
+    private val deserializedParams = KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, "1")))
+
+    private val serializedNewParams = "group-parameters-2".toByteArray()
+    private val deserializedNewParams = KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, "2")))
+
+    private val sigPubKey = "public-key".toByteArray()
+    private val sigContent = "signature-bytes".toByteArray()
+
+    private val deserializedSigContext = KeyValuePairList(emptyList())
+    private val serializedSigContext = "signature-context".toByteArray()
+
     private val signature = CryptoSignatureWithKey(
-        ByteBuffer.wrap("public-key".toByteArray()),
-        ByteBuffer.wrap("signature-bytes".toByteArray()),
-        KeyValuePairList(emptyList())
+        ByteBuffer.wrap(sigPubKey),
+        ByteBuffer.wrap(sigContent),
+        deserializedSigContext
     )
-    private val mockSignedGroupParameters = SignedGroupParameters(
-        ByteBuffer.wrap(serializedParams),
+
+    private val newSignedParams = SignedGroupParameters(
+        ByteBuffer.wrap(serializedNewParams),
         signature
     )
-    private val sigContext = byteArrayOf(4, 5, 6)
-    private val mockGroupParameters = KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, "5")))
-    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(any()) } doReturn sigContext
+
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(deserializedSigContext) } doReturn serializedSigContext
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-        on { deserialize(serializedParams) } doReturn mockGroupParameters
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(serializedParams) } doReturn deserializedParams
+        on { deserialize(serializedNewParams) } doReturn deserializedNewParams
+        on { deserialize(serializedSigContext) } doReturn deserializedSigContext
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
-        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
+
     private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
     private val vaultDmlConnectionId = UUID(1, 2)
     private val nodeInfo = mock<VirtualNodeInfo> {
@@ -87,16 +101,24 @@ class PersistGroupParametersHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val transaction = mock<EntityTransaction>()
-    private val currentEntity = GroupParametersEntity(1, "test".toByteArray(), null, null, null)
-    private val resultList = listOf(
-        currentEntity
+    private val currentEntity = GroupParametersEntity(
+        epoch = 1,
+        parameters = serializedParams,
+        signaturePublicKey = sigPubKey,
+        signatureContent = sigContent,
+        signatureContext = serializedSigContext
     )
-    private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
+    private val resultList = listOf(currentEntity)
+    private val currentEntry: TypedQuery<GroupParametersEntity> = mock {
         on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
         on { resultList } doReturn resultList
     }
+
+    private fun mockCurrentEntity(entity: GroupParametersEntity) {
+        whenever(currentEntry.resultList).doReturn(listOf(entity))
+    }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-        on { setMaxResults(1) } doReturn previousEntry
+        on { setMaxResults(1) } doReturn currentEntry
     }
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
@@ -112,7 +134,9 @@ class PersistGroupParametersHandlerTest {
         on { desc(any()) } doReturn order
     }
     private val entityManager = mock<EntityManager> {
-        on { persist(any<GroupParametersEntity>()) } doAnswer {}
+        on { persist(any<GroupParametersEntity>()) } doAnswer {
+            mockCurrentEntity(it.arguments[0] as GroupParametersEntity)
+        }
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(eq(query)) } doReturn groupParametersQuery
         on { transaction } doReturn transaction
@@ -149,24 +173,19 @@ class PersistGroupParametersHandlerTest {
         on { holdingIdentity } doReturn identity.toAvro()
     }
     private val request = mock<PersistGroupParameters> {
-        on { groupParameters } doReturn mockSignedGroupParameters
+        on { groupParameters } doReturn newSignedParams
     }
 
     @Test
-    fun `invoke is successful`() {
-        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(mockGroupParameters)
-
-        val result = assertDoesNotThrow { handler.invoke(requestContext, request) }
-        assertThat(result).isInstanceOf(Unit::class.java)
-
-        verify(serializationFactory).createAvroDeserializer(any(), eq(KeyValuePairList::class.java))
-        verify(keyValuePairListDeserializer).deserialize(serializedParams)
-        verify(entityManager).persist(any())
+    fun `invoke return the correct version`() {
+        val result = assertDoesNotThrow {
+            handler.invoke(requestContext, request)
+        }
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(newSignedParams))
     }
 
     @Test
     fun `persisting group parameters is successful when there was nothing persisted previously`() {
-        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(mockGroupParameters)
         whenever(
             entityManager.find(
                 GroupParametersEntity::class.java,
@@ -175,14 +194,14 @@ class PersistGroupParametersHandlerTest {
             )
         ).doReturn(null)
 
-        val result = assertDoesNotThrow { handler.invoke(requestContext, request) }
+        val result = handler.invoke(requestContext, request)
 
-        assertThat(result).isInstanceOf(Unit::class.java)
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(newSignedParams))
     }
 
     @Test
     fun `invoke throws exception when there is no epoch defined in request`() {
-        whenever(keyValuePairListDeserializer.deserialize(serializedParams)).doReturn(KeyValuePairList(emptyList()))
+        whenever(deserializer.deserialize(serializedNewParams)).doReturn(KeyValuePairList(emptyList()))
 
         val ex = assertFailsWith<MembershipPersistenceException> {
             handler.invoke(requestContext, request)
@@ -192,15 +211,7 @@ class PersistGroupParametersHandlerTest {
 
     @Test
     fun `invoke with same parameters should not persist anything`() {
-        val parameters = KeyValuePairList(
-            listOf(
-                KeyValuePair(EPOCH_KEY, "1"),
-            )
-        )
-        val request = PersistGroupParameters(
-            parameters
-        )
-        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(parameters)
+        whenever(deserializer.deserialize(serializedNewParams)).doReturn(deserializedParams)
 
         handler.invoke(requestContext, request)
 
@@ -209,22 +220,19 @@ class PersistGroupParametersHandlerTest {
 
     @Test
     fun `invoke with different parameters should throw an exception`() {
-        val requestParameters = KeyValuePairList(
-            listOf(
-                KeyValuePair(EPOCH_KEY, "1")
-            )
-        )
-        val persistedParameters = KeyValuePairList(
+        val newParams = KeyValuePairList(
             listOf(
                 KeyValuePair(EPOCH_KEY, "1"),
                 KeyValuePair("key", "value")
             )
         )
-        val request = PersistGroupParameters(
-            requestParameters
+        val serializedNewParams = "group-parameters-3".toByteArray()
+        val newSignedParams = SignedGroupParameters(
+            ByteBuffer.wrap(serializedNewParams),
+            signature
         )
-        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray()))
-            .doReturn(persistedParameters)
+        whenever(deserializer.deserialize(serializedNewParams)).doReturn(newParams)
+        whenever(request.groupParameters).doReturn(newSignedParams)
 
         val exception = assertThrows<MembershipPersistenceException> {
             handler.invoke(requestContext, request)

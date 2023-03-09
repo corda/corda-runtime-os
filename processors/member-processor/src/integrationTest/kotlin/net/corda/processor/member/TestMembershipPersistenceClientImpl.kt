@@ -1,6 +1,5 @@
 package net.corda.processor.member
 
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -10,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
@@ -19,7 +19,6 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -46,17 +45,17 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     ) = MembershipPersistenceResult.Success(1)
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity) =
-        MembershipPersistenceResult.Success(KeyValuePairList())
+        throw NotImplementedError("Not implemented for test service")
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: GroupParameters,
+        groupParameters: SignedGroupParameters,
     ) = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-    ) = MembershipPersistenceResult.Success(KeyValuePairList())
+    ) = throw NotImplementedError("Not implemented for test service")
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -167,9 +166,10 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> =
         MembershipQueryResult.Failure("Unsupported")
 
-    override fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>> = MembershipQueryResult.Success(
-        emptyList()
-    )
+    override fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>> =
+        MembershipQueryResult.Success(
+            emptyList()
+        )
 
     override fun queryPreAuthTokens(
         mgmHoldingIdentity: HoldingIdentity,

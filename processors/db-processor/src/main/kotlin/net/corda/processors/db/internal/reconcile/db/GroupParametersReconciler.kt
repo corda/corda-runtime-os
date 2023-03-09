@@ -3,13 +3,13 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.datamodel.getCurrentGroupParameters
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
@@ -19,7 +19,6 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
@@ -27,6 +26,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
 import kotlin.concurrent.withLock
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 /**
  * Reconciler for handling reconciliation between each vnode vault database on the cluster
@@ -41,8 +41,8 @@ class GroupParametersReconciler(
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val groupParametersFactory: GroupParametersFactory,
     private val reconcilerFactory: ReconcilerFactory,
-    private val kafkaReconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters>,
-    private val kafkaReconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters>,
+    private val kafkaReconcilerWriter: ReconcilerWriter<HoldingIdentity, SignedGroupParameters>,
+    private val kafkaReconcilerReader: ReconcilerReader<HoldingIdentity, SignedGroupParameters>,
 ) : ReconcilerWrapper {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -67,7 +67,8 @@ class GroupParametersReconciler(
             )
 
     @VisibleForTesting
-    internal var dbReconcilerReader: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
+    internal var dbReconcilerReader: DbReconcilerReader<HoldingIdentity, SignedGroupParameters>? = null
+
     @VisibleForTesting
     internal var reconciler: Reconciler? = null
 
@@ -88,7 +89,7 @@ class GroupParametersReconciler(
                 dbReconcilerReader = DbReconcilerReader(
                     coordinatorFactory,
                     HoldingIdentity::class.java,
-                    GroupParameters::class.java,
+                    SignedGroupParameters::class.java,
                     dependencies,
                     reconciliationContextFactory,
                     ::getAllGroupParametersDBVersionedRecords
@@ -103,7 +104,7 @@ class GroupParametersReconciler(
                     kafkaReader = kafkaReconcilerReader,
                     writer = kafkaReconcilerWriter,
                     keyClass = HoldingIdentity::class.java,
-                    valueClass = GroupParameters::class.java,
+                    valueClass = SignedGroupParameters::class.java,
                     reconciliationIntervalMs = intervalMillis
                 ).also { it.start() }
             } else {
@@ -120,23 +121,21 @@ class GroupParametersReconciler(
     }
 
     private fun getAllGroupParametersDBVersionedRecords(context: ReconciliationContext):
-            Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
+            Stream<VersionedRecord<HoldingIdentity, SignedGroupParameters>> {
         require(context is VirtualNodeReconciliationContext) {
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
         return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
-            val signature = if(entity.signaturePublicKey != null && entity.signatureContent != null) {
-                CryptoSignatureWithKey(
-                    entity.signaturePublicKey!!.buffer,
-                    entity.signatureContent!!.buffer,
-                    entity.signatureContext?.let { cordaAvroDeserializer.deserialize(it) }
-                )
-            } else null
-            val signedGroupParameters = SignedGroupParameters(entity.parameters.buffer, signature)
+            val signature = CryptoSignatureWithKey(
+                entity.signaturePublicKey.buffer,
+                entity.signatureContent.buffer,
+                cordaAvroDeserializer.deserialize(entity.signatureContext)
+            )
+            val signedGroupParameters = AvroGroupParameters(entity.parameters.buffer, signature)
             val params = groupParametersFactory.create(signedGroupParameters)
 
             Stream.of(
-                object : VersionedRecord<HoldingIdentity, GroupParameters> {
+                object : VersionedRecord<HoldingIdentity, SignedGroupParameters> {
                     override val version = entity.epoch
                     override val isDeleted = false
                     override val key = context.virtualNodeInfo.holdingIdentity

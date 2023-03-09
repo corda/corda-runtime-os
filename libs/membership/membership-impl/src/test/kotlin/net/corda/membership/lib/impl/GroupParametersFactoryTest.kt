@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -11,14 +12,13 @@ import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.toMap
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.GroupParameters
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -33,20 +33,21 @@ class GroupParametersFactoryTest {
         const val EPOCH = "1"
     }
 
-    private val groupParametersCaptor = argumentCaptor<Map<String, String>>()
+    private val clock = TestClock(Instant.ofEpochSecond(100))
+
     private val groupParametersValues = mapOf(
         EPOCH_KEY to EPOCH,
         MPV_KEY to MPV,
-        MODIFIED_TIME_KEY to Instant.now().toString()
+        MODIFIED_TIME_KEY to clock.instant().toString()
     )
     private val mockLayeredPropertyMap: LayeredPropertyMap = mock {
         on { it.parse(EPOCH_KEY, Int::class.java) } doReturn EPOCH.toInt()
         on { it.parse(MPV_KEY, Int::class.java) } doReturn MPV.toInt()
-        on { it.parse(MODIFIED_TIME_KEY, Instant::class.java) } doReturn Instant.now()
+        on { it.parse(MODIFIED_TIME_KEY, Instant::class.java) } doReturn clock.instant()
         on { entries } doReturn groupParametersValues.entries
     }
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock {
-        on { createMap(groupParametersCaptor.capture()) } doReturn mockLayeredPropertyMap
+        on { createMap(any()) } doReturn mockLayeredPropertyMap
     }
 
     private val deserialisedGroupParameters = mock<KeyValuePairList> {
@@ -61,8 +62,12 @@ class GroupParametersFactoryTest {
     private val cordaAvroDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
         on { deserialize(serialisedGroupParameters) } doReturn deserialisedGroupParameters
     }
+    private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn serialisedGroupParameters
+    }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn cordaAvroDeserializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
     }
 
     private val groupParametersFactory = GroupParametersFactoryImpl(
@@ -75,36 +80,11 @@ class GroupParametersFactoryTest {
     inner class FromKeyValuePairListTest {
         @Test
         fun `factory creating GroupParameters`() {
-            val entries = KeyValuePairList(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, EPOCH),
-                    KeyValuePair(MPV_KEY, MPV),
-                    KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString())
-                )
+            val params = groupParametersFactory.create(
+                KeyValuePairList(groupParametersValues.entries.map { KeyValuePair(it.key, it.value) })
             )
-
-            groupParametersFactory.create(entries)
-
-            assertThat(groupParametersCaptor.firstValue).isEqualTo(entries.toMap())
-        }
-
-        @Test
-        fun `factory successfully creates and returns GroupParameters`() {
-            val entries = KeyValuePairList(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, EPOCH),
-                    KeyValuePair(MPV_KEY, MPV),
-                    KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString())
-                )
-            )
-
-            val groupParameters = groupParametersFactory.create(entries)
-
-            with(groupParameters) {
-                assertThat(epoch).isEqualTo(EPOCH.toInt())
-                assertThat(minimumPlatformVersion).isEqualTo(MPV.toInt())
-                assertThat(modifiedTime).isBeforeOrEqualTo(Instant.now())
-            }
+            assertThat(params.entries)
+                .containsExactlyElementsOf(groupParametersValues.entries)
         }
     }
 
@@ -112,20 +92,7 @@ class GroupParametersFactoryTest {
     inner class FromSignedGroupParametersTest {
 
         @Test
-        fun `if the avro group parameters does not have signature information, the factory returns a group parameters instance`() {
-            val avro = mock<AvroGroupParameters> {
-                on { mgmSignature } doReturn null
-                on { groupParameters } doReturn serialisedGroupParameters.buffer
-            }
-            val groupParameters = groupParametersFactory.create(avro)
-
-            assertThat(groupParameters).isInstanceOf(GroupParameters::class.java)
-            assertThat(groupParameters).isNotInstanceOf(SignedGroupParameters::class.java)
-            assertThat(groupParameters.entries).containsExactlyElementsOf(groupParametersValues.entries)
-        }
-
-        @Test
-        fun `if the avro group parameters have signature information, the factory returns a signed group parameters instance`() {
+        fun `if the avro group parameters are submitted, the factory returns a signed group parameters instance`() {
             val sigBytes = "sig-bytes".toByteArray()
             val sigContext = mapOf("sig-context-key" to "sig-context-value")
             val sig = mock<CryptoSignatureWithKey> {
@@ -139,10 +106,12 @@ class GroupParametersFactoryTest {
             }
             val groupParameters = groupParametersFactory.create(avro)
 
+
             assertThat(groupParameters).isInstanceOf(GroupParameters::class.java)
             assertThat(groupParameters).isInstanceOf(SignedGroupParameters::class.java)
-            assertThat(groupParametersCaptor.firstValue.entries).containsExactlyElementsOf(groupParametersValues.entries)
-            assertThat((groupParameters as SignedGroupParameters).bytes).isEqualTo(serialisedGroupParameters)
+            assertThat(groupParameters.entries)
+                .containsExactlyElementsOf(groupParametersValues.entries)
+            assertThat(groupParameters.bytes).isEqualTo(serialisedGroupParameters)
             assertThat(groupParameters.signature.context).isEqualTo(sigContext)
             assertThat(groupParameters.signature.by).isEqualTo(pubKey)
             assertThat(groupParameters.signature.bytes).isEqualTo(sigBytes)
