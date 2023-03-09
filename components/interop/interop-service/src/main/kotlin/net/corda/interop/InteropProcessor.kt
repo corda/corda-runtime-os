@@ -9,6 +9,7 @@ import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropAliasTranslator
 import net.corda.interop.service.impl.InteropAliasTranslatorImpl
+import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,8 +21,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
-import java.lang.NumberFormatException
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
@@ -34,8 +36,8 @@ class InteropProcessor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val config: SmartConfig
-) :
-    DurableProcessor<String, AppMessage> {
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
+) : DurableProcessor<String, AppMessage> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -92,6 +94,14 @@ class InteropProcessor(
 
         val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
         logger.info("Converted interop message to facade request : $facadeRequest")
+
+        val flowName = facadeToFlowMapperService.getFlowName(
+            HoldingIdentity(
+                MemberX500Name.parse(header.destination.x500Name),
+                header.destination.groupId
+            ), facadeRequest.facadeId.toString(), facadeRequest.methodName
+        )
+        logger.info("Flow name associated with facade request : $flowName")
 
         val message: InteropMessage = InteropMessageTransformer.getInteropMessage(
                 interopMessage.messageId.incrementOrUuid(), facadeRequest)
@@ -154,8 +164,12 @@ class InteropProcessor(
             null
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
-    data class CommonHeader(val source: net.corda.data.identity.HoldingIdentity,
-                            val destination: net.corda.data.identity.HoldingIdentity,
-                            val ttl: Instant? = null, val messageId: String,
-                            val traceId: String? = null, val subsystem: String = SUBSYSTEM)
-    }
+    data class CommonHeader(
+        val source: net.corda.data.identity.HoldingIdentity,
+        val destination: net.corda.data.identity.HoldingIdentity,
+        val ttl: Instant? = null,
+        val messageId: String,
+        val traceId: String? = null,
+        val subsystem: String = SUBSYSTEM
+    )
+}

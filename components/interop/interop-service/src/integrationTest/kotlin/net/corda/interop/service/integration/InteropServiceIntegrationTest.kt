@@ -99,23 +99,24 @@ class InteropServiceIntegrationTest {
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
-        val testId = "test1"
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+        val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(aliceX500Name), bootConfig)
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
 
         // Test config updates don't break Interop Service
         republishConfig(publisher)
 
-        val identity = HoldingIdentity(testId, testId)
+        val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
         val header = UnauthenticatedMessageHeader(identity, identity, "interop" , "1")
         val version = listOf(1)
         val sessionEvent = SessionEvent(
-            MessageDirection.INBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
-                testId,
+            MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
+                aliceX500Name,
                 version,
-                testId,
+                aliceX500Name,
                 null,
                 KeyValuePairList(emptyList()),
                 KeyValuePairList(emptyList()),
@@ -125,7 +126,7 @@ class InteropServiceIntegrationTest {
         val interopMessage = InteropMessage("InteropMessageID-01", payload)
 
         val interopRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(
+            P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 UnauthenticatedMessage(
                     header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
                 )
@@ -134,7 +135,7 @@ class InteropServiceIntegrationTest {
 
         val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
         val nonInteropSessionRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(
+            P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 AuthenticatedMessage(
                     nonInteropFlowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
                 )
@@ -145,9 +146,9 @@ class InteropServiceIntegrationTest {
 
         val expectedOutputMessages = 2
         val mapperLatch = CountDownLatch(expectedOutputMessages)
-        val testProcessor = P2POutMessageCounter(testId, mapperLatch, expectedOutputMessages)
+        val testProcessor = P2POutMessageCounter(aliceX500Name, mapperLatch, expectedOutputMessages)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            SubscriptionConfig("$aliceX500Name-p2p-out", P2P_OUT_TOPIC),
             testProcessor,
             bootConfig,
             null
@@ -183,7 +184,7 @@ class InteropServiceIntegrationTest {
         clearHostedIdsSub.close()
 
         interopService.start()
-        val memberExpectedOutputMessages = 4
+        val memberExpectedOutputMessages = 5
         val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
         val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
         val memberOutSub = subscriptionFactory.createDurableSubscription(
@@ -198,7 +199,7 @@ class InteropServiceIntegrationTest {
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
 
-        val hostedIdsExpected = 2
+        val hostedIdsExpected = 3
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
