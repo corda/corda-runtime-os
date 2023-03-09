@@ -2,7 +2,7 @@ package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.data.virtualnode.VirtualNodeState
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
@@ -115,7 +115,7 @@ class FlowRestResourceImpl @Activate constructor(
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
-        if (vNode.flowStartOperationalStatus == VirtualNodeState.INACTIVE) {
+        if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
             throw OperationNotAllowedException("Flow start capabilities of virtual node $holdingIdentityShortHash are not operational.")
         }
 

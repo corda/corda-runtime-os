@@ -1,6 +1,6 @@
 package net.corda.virtualnode
 
-import net.corda.data.virtualnode.VirtualNodeState
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.time.Instant
 import java.util.UUID
@@ -108,18 +108,18 @@ enum class OperationalStatus {
     INACTIVE;
 
     companion object {
-        fun fromAvro(status: VirtualNodeState): OperationalStatus {
+        fun fromAvro(status: VirtualNodeOperationalState): OperationalStatus {
             return when (status) {
-                VirtualNodeState.ACTIVE -> ACTIVE
-                VirtualNodeState.INACTIVE -> INACTIVE
+                VirtualNodeOperationalState.ACTIVE -> ACTIVE
+                VirtualNodeOperationalState.INACTIVE -> INACTIVE
             }
         }
     }
 
-    fun toAvro(): VirtualNodeState {
+    fun toAvro(): VirtualNodeOperationalState {
         return when (this) {
-            ACTIVE -> VirtualNodeState.ACTIVE
-            INACTIVE -> VirtualNodeState.INACTIVE
+            ACTIVE -> VirtualNodeOperationalState.ACTIVE
+            INACTIVE -> VirtualNodeOperationalState.INACTIVE
         }
     }
 }

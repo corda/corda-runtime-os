@@ -11,7 +11,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
-import net.corda.data.virtualnode.VirtualNodeState
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -415,7 +415,7 @@ internal class VirtualNodeWriterProcessor(
                 }
 
                 val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
-                if (stateChangeRequest.newState == VirtualNodeState.ACTIVE) {
+                if (stateChangeRequest.newState == VirtualNodeOperationalState.ACTIVE) {
                     val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
                         stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
                     )

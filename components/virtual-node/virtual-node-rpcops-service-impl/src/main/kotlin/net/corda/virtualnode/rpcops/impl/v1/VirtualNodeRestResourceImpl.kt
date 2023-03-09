@@ -13,7 +13,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
-import net.corda.data.virtualnode.VirtualNodeState
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
@@ -393,8 +393,8 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
         val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)) {
-            VirtualNodeStateTransitions.ACTIVE -> VirtualNodeState.ACTIVE
-            VirtualNodeStateTransitions.MAINTENANCE -> VirtualNodeState.INACTIVE
+            VirtualNodeStateTransitions.ACTIVE -> VirtualNodeOperationalState.ACTIVE
+            VirtualNodeStateTransitions.MAINTENANCE -> VirtualNodeOperationalState.INACTIVE
         }
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
