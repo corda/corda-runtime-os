@@ -9,13 +9,12 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuild
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -86,11 +85,7 @@ class SendTransactonBuilderDiffFlowTest {
 
     @Test
     fun `called with old notary and a different new notary sends back a builder without notary`() {
-        val alternativeNotary = Party(
-            MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
-            anotherPublicKeyExample
-        )
-        whenever(originalTransactionalBuilder.getNotary()).thenReturn(alternativeNotary)
+        whenever(originalTransactionalBuilder.getNotary()).thenReturn(anotherUtxoNotaryExample)
         whenever(currentTransactionBuilder.notary).thenReturn(utxoNotaryExample)
 
         callSendFlow()

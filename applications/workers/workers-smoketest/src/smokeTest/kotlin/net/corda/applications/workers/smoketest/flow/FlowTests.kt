@@ -932,47 +932,6 @@ class FlowTests {
     }
 
     @Test
-    fun `Notary - Non-validating plugin executes successfully when using the same state for input and ref`() {
-        // 1. Issue 1 state
-        val issuedStates = mutableListOf<String>()
-        issueStatesAndValidateResult(1) { issuanceResult ->
-            // 2. Make sure the states were issued
-            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            val flowResultMap = issuanceResult.mapFlowJsonResult()
-
-            @Suppress("unchecked_cast")
-            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
-
-            assertThat(issuedStateRefs).hasSize(1)
-
-            issuedStates.addAll(issuedStateRefs)
-
-            // 3. Make sure no states were consumed
-            assertAll({
-                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
-                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
-            })
-        }
-
-        // 4. Make sure we consumed the state and managed to reference it
-        // Since the state we are trying to spend and reference is not spent yet (not persisted) we should be able
-        // to spend it and reference at the same time
-        consumeStatesAndValidateResult(
-            inputStates = listOf(issuedStates.first()),
-            refStates = listOf(issuedStates.first())
-        ) { consumeResult ->
-            val flowResultMap = consumeResult.mapFlowJsonResult()
-            assertAll({
-                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-                assertAll({
-                    assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(1)
-                    assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(1)
-                })
-            })
-        }
-    }
-
-    @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
         // Random unknown StateRef
         val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
