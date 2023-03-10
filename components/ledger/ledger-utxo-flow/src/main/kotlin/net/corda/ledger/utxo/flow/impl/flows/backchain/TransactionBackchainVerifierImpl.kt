@@ -50,7 +50,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
             } catch (e: Exception) {
                 // TODO revisit what exceptions get caught
                 log.warn(
-                    "Backchain resolution of $initialTransactionIds - Verified of transaction $transactionId failed, message: " +
+                    "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
                             "${e.message}"
                 )
                 return false

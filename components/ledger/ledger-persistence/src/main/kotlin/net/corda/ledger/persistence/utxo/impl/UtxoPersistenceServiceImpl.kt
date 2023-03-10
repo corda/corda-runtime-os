@@ -188,13 +188,13 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
-        return entityManagerFactory.transaction { em ->
+        entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
             val status = repository.findTransactionStatus(em, transactionIdString)
 
             if (status != null) {
-                return@transaction status to emptyList()
+                return status to emptyList()
             }
 
             val cpkDetails = persistTransaction(em, transaction)
