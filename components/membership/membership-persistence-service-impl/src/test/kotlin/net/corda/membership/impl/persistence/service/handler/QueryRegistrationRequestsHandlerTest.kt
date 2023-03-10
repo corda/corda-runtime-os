@@ -171,7 +171,7 @@ class QueryRegistrationRequestsHandlerTest {
     }
 
     @Test
-    fun `invoke returns the sublist of the result result when limit is specified in request`() {
+    fun `invoke returns the sublist of the result when limit is specified in request`() {
         val ids = (1..4).map {
             "id-$it"
         }
