@@ -42,9 +42,9 @@ class VaultNamedQueryBuilderFactoryImplTest {
         VaultNamedQueryBuilderFactoryImpl(mockRegistry)
             .create(DUMMY_QUERY_NAME)
             .whereJson(DUMMY_WHERE_CLAUSE)
-            .collect(mockCollector)
             .map(mockMapper)
             .filter(mockFilter)
+            .collect(mockCollector)
             .register()
 
         assertThat(storedQueries).hasSize(1)
