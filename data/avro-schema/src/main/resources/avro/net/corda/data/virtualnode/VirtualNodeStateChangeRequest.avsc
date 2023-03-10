@@ -9,7 +9,7 @@
     },
     {
       "name": "newState",
-      "type": "string"
+      "type": "VirtualNodeOperationalState"
     },
     {
       "name": "updateActor",
