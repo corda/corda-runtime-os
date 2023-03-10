@@ -17,6 +17,7 @@ class ConvertersTest {
             Assertions.assertEquals(cpkMetadata1.type, cpkMetadata2.type)
             Assertions.assertEquals(cpkMetadata1.fileChecksum, cpkMetadata2.fileChecksum)
             Assertions.assertEquals(cpkMetadata1.cordappCertificates, cpkMetadata2.cordappCertificates)
+            Assertions.assertEquals(cpkMetadata1.externalChannelsConfig, cpkMetadata2.externalChannelsConfig)
         }
 
         fun assertCordappManifestEquals(m1 : CordappManifest, m2 : CordappManifest) {

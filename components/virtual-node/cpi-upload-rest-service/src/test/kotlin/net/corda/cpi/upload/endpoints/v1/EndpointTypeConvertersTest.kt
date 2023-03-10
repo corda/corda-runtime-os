@@ -24,7 +24,8 @@ internal class EndpointTypeConvertersTest {
             type = CpkType.CORDA_API,
             fileChecksum = SecureHash.parse("DONT_CARE:1234"),
             cordappCertificates = emptySet(),
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            externalChannelsConfig = null
         )
     }
 

@@ -7,6 +7,8 @@ import net.corda.libs.packaging.testutils.TestUtils.toBase64
 import net.corda.test.util.InMemoryZipFile
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
+import net.corda.libs.packaging.PackagingConstants
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader.Companion.EXTERNAL_CHANNELS_CONFIG_FILE_NAME
 
 const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
 const val CPK_BUNDLE_VERSION_ATTRIBUTE = "Bundle-Version"
@@ -46,6 +48,10 @@ class TestCpkV2Builder {
             for (i in 1..3) addFile("package/Cpk$i.class")
             addFile("migration/schema-v1.changelog-master.xml")
             addFile("migration/schema.changelog-init.xml")
+            addFile(
+                "${PackagingConstants.CPK_CONFIG_FOLDER}/$EXTERNAL_CHANNELS_CONFIG_FILE_NAME",
+                content = TestUtils.EXTERNAL_CHANNELS_CONFIG_FILE_CONTENT
+            )
         }.signedBy(signers = signers)
 
     private fun cpkV2Manifest() =

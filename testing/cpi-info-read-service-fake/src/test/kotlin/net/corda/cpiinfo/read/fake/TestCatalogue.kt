@@ -40,7 +40,8 @@ object TestCatalogue {
                         CpkType.UNKNOWN,
                         SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
                         setOf(),
-                        timestamp
+                        timestamp,
+                        null
                     )
                 ),
                 "",

@@ -39,7 +39,8 @@ object Helpers {
             CpkType.CORDA_API,
             fileChecksum,
             emptySet(),
-            Instant.now()
+            Instant.now(),
+            null
         )
     }
 

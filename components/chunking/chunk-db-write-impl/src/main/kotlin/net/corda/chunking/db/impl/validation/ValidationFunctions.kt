@@ -222,3 +222,8 @@ fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
  */
 fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLog> =
     LiquibaseScriptExtractor().extract(this)
+
+fun Cpi.validateExternalChannelsConfig(validator: ExternalChannelsConfigValidator) =
+    metadata.cpksMetadata.forEach {
+        validator.validate(it.cpkId, it.externalChannelsConfig)
+    }
