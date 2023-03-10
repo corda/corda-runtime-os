@@ -34,11 +34,11 @@ internal class QueryGroupPolicyHandler(
             if(result.isEmpty()) {
                 logger.warn("There was no persisted group policy found for identity ${context.holdingIdentity}. " +
                         "Returning empty properties.")
-                GroupPolicyQueryResponse(KeyValuePairList(emptyList<KeyValuePair>()))
+                GroupPolicyQueryResponse(KeyValuePairList(emptyList<KeyValuePair>()), 0)
             } else {
                 logger.info("Persisted group policy was found for identity ${context.holdingIdentity}. " +
                         "Returning properties.")
-                GroupPolicyQueryResponse(keyValuePairListDeserializer.deserialize(result.first().properties))
+                GroupPolicyQueryResponse(keyValuePairListDeserializer.deserialize(result.first().properties), result.first().version)
             }
         }
     }

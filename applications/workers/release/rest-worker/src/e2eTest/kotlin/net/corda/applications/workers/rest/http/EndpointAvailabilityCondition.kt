@@ -1,5 +1,7 @@
 package net.corda.applications.workers.rest.http
 
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition
@@ -18,7 +20,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val testToolkit by TestToolkitProperty()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
 
     override fun evaluateExecutionCondition(context: ExtensionContext): ConditionEvaluationResult {
 
@@ -60,7 +62,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
      */
     private fun checkEndpoint(): Boolean {
         return try {
-            testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
+            cordaCluster.clusterHttpClientFor(UserEndpoint::class.java).use { client ->
                 val proxy = client.start().proxy
                 proxy.protocolVersion > 0
             }

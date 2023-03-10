@@ -100,7 +100,7 @@ interface CryptoService {
      * the wrapping key in such cases the implementation should do nothing (note that REQUIRE_WRAPPING_KEY should not
      * be listed for such implementations).
      *
-     * @param masterKeyAlias the alias of the key to be used as a wrapping key.
+     * @param wrappingKeyAlias the alias of the key to be used as a wrapping key.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
      * the provided alias or return normally without overriding the key.
      * @param context the optional key/value operation context.
@@ -110,7 +110,7 @@ interface CryptoService {
      * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun createWrappingKey(
-        masterKeyAlias: String,
+        wrappingKeyAlias: String,
         failIfExists: Boolean,
         context: Map<String, String>
     )

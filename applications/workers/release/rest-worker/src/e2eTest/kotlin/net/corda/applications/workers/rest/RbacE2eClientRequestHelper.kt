@@ -1,7 +1,7 @@
 package net.corda.applications.workers.rest
 
 import java.time.Instant
-import net.corda.applications.workers.rest.http.TestToolkit
+import net.corda.applications.workers.rest.utils.E2eCluster
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -19,12 +19,12 @@ import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.assertDoesNotThrow
 
 class RbacE2eClientRequestHelper(
-    private val testToolkit: TestToolkit,
+    private val cluster: E2eCluster,
     private val requestUserName: String,
     private val requestUserPassword: String,
 ) {
     fun createUser(newUserName: String, newUserPassword: String, newUserPasswordExpiry: Instant) {
-        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
         val createUserType = CreateUserType(newUserName, newUserName, true, newUserPassword, newUserPasswordExpiry, null)
@@ -53,7 +53,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun createRole(roleName: String): String {
-        val client = testToolkit.httpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
         val createRoleType = CreateRoleType(roleName, null)
@@ -83,14 +83,14 @@ class RbacE2eClientRequestHelper(
     }
 
     fun createPermission(permissionType: PermissionType, permissionString: String, verify: Boolean = true): String {
-        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
         return proxy.createPermission(permissionType, permissionString, verify)
     }
 
     fun addPermissionsToRole(roleId: String, vararg permissionIds: String) {
-        val client = testToolkit.httpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         for(permissionId in permissionIds) {
             with(proxy.addPermission(roleId, permissionId)) {
@@ -104,7 +104,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun addRoleToUser(userName: String, roleId: String) {
-        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         with(proxy.addRole(userName, roleId)) {
             SoftAssertions.assertSoftly {
@@ -116,7 +116,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun removeRoleFromUser(userName: String, roleId: String) {
-        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         with(proxy.removeRole(userName, roleId)) {
             SoftAssertions.assertSoftly {
@@ -128,7 +128,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun getUser(userLogin: String): UserResponseType {
-        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         return with(proxy.getUser(userLogin)) {
             SoftAssertions.assertSoftly {
@@ -139,7 +139,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun getRole(roleId: String): RoleResponseType {
-        val client = testToolkit.httpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         return with(proxy.getRole(roleId)) {
             SoftAssertions.assertSoftly {
@@ -150,7 +150,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun getPermission(permissionId: String): PermissionResponseType {
-        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         return with(proxy.getPermission(permissionId)) {
             SoftAssertions.assertSoftly {
@@ -161,7 +161,7 @@ class RbacE2eClientRequestHelper(
     }
 
     fun getPermissionSummary(userLogin: String): UserPermissionSummaryResponseType {
-        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         return with(proxy.getPermissionSummary(userLogin)) {
             SoftAssertions.assertSoftly {
@@ -175,7 +175,7 @@ class RbacE2eClientRequestHelper(
         permissionsToCreate: Set<Pair<PermissionType, String>>,
         roleIds: Set<String>
     ): Set<String> {
-        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
+        val client = cluster.clusterHttpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
         val permissionsToCreateDto: Set<CreatePermissionType> =
