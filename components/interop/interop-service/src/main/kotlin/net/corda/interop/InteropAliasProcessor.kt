@@ -10,13 +10,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 //Based on FlowP2PFilter
 @Suppress("LongParameterList", "Unused")
-class InteropAliasProcessor: CompactedProcessor<String, HostedIdentityEntry> {
+class InteropAliasProcessor : CompactedProcessor<String, HostedIdentityEntry> {
     override val keyClass = String::class.java
     override val valueClass = HostedIdentityEntry::class.java
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SUBSYSTEM = "interop"
+
         @JvmStatic
         var identityMappingCache = ConcurrentHashMap<String, HoldingIdentity>()
 
@@ -45,6 +46,7 @@ class InteropAliasProcessor: CompactedProcessor<String, HostedIdentityEntry> {
             addEntry(it)
         }
     }
+
     private fun addEntry(entry: HostedIdentityEntry) {
         val info = entry.toHoldingIdentity()
         identityMappingCache[entry.holdingIdentity.x500Name.toString()] = info
