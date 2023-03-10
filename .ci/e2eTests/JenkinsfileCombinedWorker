@@ -28,7 +28,7 @@ def checkConnection(){
 pipeline {
     agent {
         docker {
-            image 'build-zulu-openjdk:11'
+            image 'build-zulu-openjdk:17'
             label 'docker'
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
