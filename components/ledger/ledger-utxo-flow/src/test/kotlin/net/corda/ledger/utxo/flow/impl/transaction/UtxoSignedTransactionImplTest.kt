@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
@@ -20,7 +21,9 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     private lateinit var signedTransaction: UtxoSignedTransactionInternal
 
     private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("EC").apply { initialize(ECGenParameterSpec("secp256r1")) }
-    private val notaryKey = kpg.generateKeyPair().public
+    private val notaryNode1PublicKey = kpg.generateKeyPair().public
+    private val notaryNode2PublicKey = kpg.generateKeyPair().public
+    private val notaryKey = CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1)
     private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
     private val notary = Party(notaryX500Name, notaryKey)
 
@@ -42,13 +45,13 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     fun `verifyNotarySignatureAttached throws on unnotarized transaction`() {
         Assertions.assertThatThrownBy { signedTransaction.verifyNotarySignatureAttached() }.isInstanceOf(
             TransactionSignatureException::class.java)
-            .hasMessageContainingAll("There are no notary signatures attached to the transaction.")
+            .hasMessageContaining("There are no notary")
 
     }
 
     @Test
     fun `verifyNotarySignatureAttached does not throw on notarized transaction`() {
-        signedTransaction = signedTransaction.addSignature(getSignatureWithMetadataExample(notaryKey))
+        signedTransaction = signedTransaction.addSignature(getSignatureWithMetadataExample(notaryNode1PublicKey))
         assertDoesNotThrow {
             signedTransaction.verifyNotarySignatureAttached()
         }
