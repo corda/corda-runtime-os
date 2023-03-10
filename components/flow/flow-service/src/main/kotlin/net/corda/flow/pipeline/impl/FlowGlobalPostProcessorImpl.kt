@@ -128,7 +128,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun postProcessPendingPlatformError(context: FlowEventContext<Any>) {
-        /**s
+        /**
          * If a platform error was previously reported to the user the error should now be cleared. If we have reached
          * the post-processing step we can assume the pending error has been processed.
          */
