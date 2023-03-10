@@ -30,7 +30,6 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
