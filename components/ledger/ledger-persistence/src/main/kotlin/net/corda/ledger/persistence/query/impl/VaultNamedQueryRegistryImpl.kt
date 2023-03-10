@@ -2,8 +2,6 @@ package net.corda.ledger.persistence.query.impl
 
 import net.corda.ledger.persistence.query.VaultNamedQueryRegistry
 import net.corda.sandbox.type.UsedByPersistence
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.query.VaultNamedQuery
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
@@ -25,17 +23,14 @@ class VaultNamedQueryRegistryImpl @Activate constructor(): VaultNamedQueryRegist
     }
     private val queryStorage = ConcurrentHashMap<String, VaultNamedQuery>()
 
-    @Suspendable
     override fun getQuery(name: String): VaultNamedQuery? {
         return queryStorage[name]
     }
 
-    @Suspendable
     override fun registerQuery(query: VaultNamedQuery) {
-        require(queryStorage[query.name] == null) {
-            // TODO should we just overwrite or ignore?
-            "A query with name ${query.name} is already stored."
+        if (queryStorage.putIfAbsent(query.name, query) != null) {
+            logger.warn("A query with name ${query.name} is already registered.")
+            throw IllegalArgumentException("A query with name ${query.name} is already registered.")
         }
-        queryStorage[query.name] = query
     }
 }

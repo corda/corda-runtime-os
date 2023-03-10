@@ -1,8 +1,8 @@
 package net.corda.ledger.persistence.query
 
+import net.corda.ledger.persistence.query.impl.VaultNamedQuery
 import net.corda.ledger.persistence.query.impl.VaultNamedQueryBuilderFactoryImpl
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.query.VaultNamedQuery
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
