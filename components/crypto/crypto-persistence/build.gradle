@@ -7,7 +7,8 @@ description 'Crypto persistence internal API'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
-
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     api 'javax.persistence:javax.persistence-api'
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -20,6 +21,7 @@ dependencies {
 
     api project(':libs:crypto:cipher-suite')
 
+    implementation project(":components:db:db-connection-manager")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-config-impl")
@@ -30,6 +32,8 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
+
 }
 
 

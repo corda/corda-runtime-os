@@ -1,16 +1,17 @@
-package net.corda.crypto.persistence.v50ga
+package net.corda.crypto.persistence.v50beta2
 
 import net.corda.crypto.persistence.CryptoRepository
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.v50ga.WrappingKeyEntity
+import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import java.time.Instant
 import javax.persistence.EntityManagerFactory
 
-class CryptoRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : CryptoRepository {
-    fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
+class V50Beta2CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManagerFactory) : CryptoRepository {
+    override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
         entityManagerFactory().transaction { em ->
             em.persist(
-                WrappingKeyEntity(
+                V50Beta2WrappingKeyEntity(
                     alias = alias,
                     created = Instant.now(),
                     encodingVersion = key.encodingVersion,
@@ -21,8 +22,8 @@ class CryptoRepositoryImpl(private val entityManagerFactory: EntityManagerFactor
         }
     }
 
-    fun findWrappingKey(alias: String): WrappingKeyInfo? = entityManagerFactory().use { em ->
-        em.find(WrappingKeyEntity::class.java, alias)?.let { rec ->
+    override fun findWrappingKey(alias: String): WrappingKeyInfo? = entityManagerFactory().use { em ->
+        em.find(V50Beta2WrappingKeyEntity::class.java, alias)?.let { rec ->
             WrappingKeyInfo(
                 encodingVersion = rec.encodingVersion,
                 algorithmName = rec.algorithmName,
@@ -30,5 +31,4 @@ class CryptoRepositoryImpl(private val entityManagerFactory: EntityManagerFactor
             )
         }
     }
-
 }
