@@ -11,14 +11,15 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
-import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
@@ -362,14 +363,17 @@ internal class VirtualNodeRestResourceImpl(
         val actor = restContextProvider.principal
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
 
-        validateStateChange(virtualNodeShortId, newState)
-
+        val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)
+) {
+            VirtualNodeStateTransitions.ACTIVE -> VirtualNodeOperationalState.ACTIVE
+            VirtualNodeStateTransitions.MAINTENANCE -> VirtualNodeOperationalState.INACTIVE
+        }
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
             VirtualNodeStateChangeRequest(
                 virtualNodeShortId,
-                newState,
+                virtualNodeState,
                 actor
             )
         )
@@ -390,13 +394,14 @@ internal class VirtualNodeRestResourceImpl(
         }
     }
 
-    private fun validateStateChange(virtualNodeShortId: String, newState: String) {
-        try {
+    private fun validateStateChange(virtualNodeShortId: String, newState: String): VirtualNodeStateTransitions {
+        val state = try {
             VirtualNodeStateTransitions.valueOf(newState.uppercase())
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
         getVirtualNode(virtualNodeShortId)
+        return state
     }
 
     private fun handleFailure(exception: ExceptionEnvelope?): java.lang.Exception {
