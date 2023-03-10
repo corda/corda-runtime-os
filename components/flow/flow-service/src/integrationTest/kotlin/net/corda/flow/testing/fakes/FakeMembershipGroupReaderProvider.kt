@@ -52,9 +52,6 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         override val groupParameters: GroupParameters
             get() = TODO("Not yet implemented")
 
-        private val memberList: List<MemberInfo>
-            get() = emptyList()
-
         override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
             TODO("Not yet implemented")
         }
