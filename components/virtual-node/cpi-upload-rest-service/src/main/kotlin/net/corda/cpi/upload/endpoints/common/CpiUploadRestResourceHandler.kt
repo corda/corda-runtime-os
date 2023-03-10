@@ -1,6 +1,6 @@
 package net.corda.cpi.upload.endpoints.common
 
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,12 +14,13 @@ import net.corda.lifecycle.StopEvent
 import net.corda.utilities.VisibleForTesting
 
 /**
- * Monitors the status of [CpiUploadRPCOpsService] so that it can know when [CpiUploadRPCOpsImpl.cpiUploadManager] is ready for use.
+ * Monitors the status of [CpiUploadService] so that it can know when
+ * [net.corda.cpi.upload.endpoints.v1.CpiUploadRestResourceImpl.cpiUploadManager] is ready for use.
  */
-internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
+internal class CpiUploadRestResourceHandler : LifecycleEventHandler {
 
     @VisibleForTesting
-    internal var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
+    internal var registrationHandle: RegistrationHandle? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -30,9 +31,9 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        cpiUploadRPCOpsServiceRegistrationHandle = coordinator.followStatusChangesByName(
+        registrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>(),
+                LifecycleCoordinatorName.forComponent<CpiUploadService>(),
                 LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )
@@ -54,7 +55,7 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
     }
 
     private fun closeResources() {
-        cpiUploadRPCOpsServiceRegistrationHandle?.close()
-        cpiUploadRPCOpsServiceRegistrationHandle = null
+        registrationHandle?.close()
+        registrationHandle = null
     }
 }

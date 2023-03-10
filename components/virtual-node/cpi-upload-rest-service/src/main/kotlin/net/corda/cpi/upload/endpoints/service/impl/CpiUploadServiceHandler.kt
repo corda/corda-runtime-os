@@ -18,21 +18,22 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
  * Registers to [ConfigurationReadService] for config updates, and on new config updates creates a new [CpiUploadManager]
  * which also exposes.
  */
-class CpiUploadRPCOpsServiceHandler(
+class CpiUploadServiceHandler(
     private val cpiUploadManagerFactory: CpiUploadManagerFactory,
     private val configReadService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     private val subscriptionFactory: SubscriptionFactory,
 ) : LifecycleEventHandler {
 
-    companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @VisibleForTesting
@@ -70,7 +71,7 @@ class CpiUploadRPCOpsServiceHandler(
         coordinator: LifecycleCoordinator
     ) {
         if (event.status == LifecycleStatus.UP) {
-            log.info("Registering to ConfigurationReadService to receive RPC configuration")
+            log.info("Registering to ConfigurationReadService")
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
@@ -90,7 +91,7 @@ class CpiUploadRPCOpsServiceHandler(
         event: ConfigChangedEvent,
         coordinator: LifecycleCoordinator
     ) {
-        log.info("CPI Upload RPCOpsServiceHandler event - config changed")
+        log.info("CPI Upload Service Handler event - config changed")
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         cpiUploadManager?.close()
         cpiUploadManager = cpiUploadManagerFactory.create(

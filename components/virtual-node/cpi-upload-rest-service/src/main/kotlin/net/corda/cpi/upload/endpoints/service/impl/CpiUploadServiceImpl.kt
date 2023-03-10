@@ -1,7 +1,7 @@
 package net.corda.cpi.upload.endpoints.service.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,10 +14,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * This service is used for creating a new [CpiUploadManager] on new configuration through [CpiUploadRPCOpsServiceHandler].
+ * This service is used for creating a new [CpiUploadManager] on new configuration through [CpiUploadServiceHandler].
  */
-@Component(service = [CpiUploadRPCOpsService::class])
-class CpiUploadRPCOpsServiceImpl @Activate constructor(
+@Component(service = [CpiUploadService::class])
+class CpiUploadServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -28,16 +28,16 @@ class CpiUploadRPCOpsServiceImpl @Activate constructor(
     cpiUploadManagerFactory: CpiUploadManagerFactory,
     @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory
-) : CpiUploadRPCOpsService {
+) : CpiUploadService {
 
-    private val handler = CpiUploadRPCOpsServiceHandler(
+    private val handler = CpiUploadServiceHandler(
         cpiUploadManagerFactory,
         configReadService,
         publisherFactory,
         subscriptionFactory
     )
 
-    private val coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOpsService>(
+    private val coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<CpiUploadService>(
         handler
     )
 
