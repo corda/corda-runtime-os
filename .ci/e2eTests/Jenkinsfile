@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
+@Library('corda-shared-build-pipeline-steps@java-17-poc') _ //todo swap back to 5.0.1 this is a quick fix to use of J17 on e2e test 
 
 endToEndPipeline(
     assembleAndCompile: false,
@@ -6,6 +6,5 @@ endToEndPipeline(
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
-    workerBaseImageTag: '17.0.4.1',
-    javaVersion: '17',
+    workerBaseImageTag: '17.0.4.1'
 )
