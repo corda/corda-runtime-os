@@ -128,7 +128,6 @@ class InteropService @Activate constructor(
             ).also {
                 it.start()
             }
-
         }
 
         logger.info("Publishing seed message")
