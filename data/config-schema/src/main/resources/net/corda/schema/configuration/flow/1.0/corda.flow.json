@@ -61,7 +61,14 @@
           "maximum": 2147483647,
           "default": 3600000
         },
-        "p2pTTL": {
+        "missingCounterpartyTimeout": {
+          "description": "Length of time to wait when the counterparty can't be found in a member lookup before causing the session to error, in milliseconds",
+          "type": "integer",
+          "minimum": 30000,
+          "maximum": 2147483647,
+          "default": 300000
+        },
+          "p2pTTL": {
           "description": "TTL set in milliseconds, which is added to the current time, and set on messages passed to the P2P layer to be sent to a counterparty.",
           "type": "integer",
           "minimum": 10000,

@@ -8,6 +8,7 @@ public final class FlowConfig {
     public static final String EXTERNAL_EVENT_MAX_RETRIES = "event.maxRetries";
     public static final String SESSION_MESSAGE_RESEND_WINDOW = "session.messageResendWindow";
     public static final String SESSION_HEARTBEAT_TIMEOUT_WINDOW = "session.heartbeatTimeout";
+    public static final String SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW = "session.missingCounterpartyTimeout";
     public static final String SESSION_P2P_TTL = "session.p2pTTL";
     public static final String SESSION_FLOW_CLEANUP_TIME = "session.cleanupTime";
     public static final String PROCESSING_MAX_RETRY_ATTEMPTS = "processing.maxRetryAttempts";
