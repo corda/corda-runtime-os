@@ -18,6 +18,7 @@ dependencies {
     implementation project(":components:link-manager")
     implementation project(':components:domino-logic')
     implementation project(':components:membership:membership-group-read')
+    implementation project(":libs:membership:membership-impl")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
@@ -47,4 +48,5 @@ dependencies {
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
 }

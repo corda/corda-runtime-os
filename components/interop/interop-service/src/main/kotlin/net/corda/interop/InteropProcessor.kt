@@ -7,8 +7,6 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.interop.service.InteropAliasTranslator
-import net.corda.interop.service.impl.InteropAliasTranslatorImpl
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.libs.configuration.SmartConfig
@@ -46,8 +44,6 @@ class InteropProcessor(
     private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
         cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
     private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
-    private val interopAliasTranslator: InteropAliasTranslator =
-        InteropAliasTranslatorImpl(lifecycleCoordinatorFactory, subscriptionFactory, config)
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
@@ -64,7 +60,7 @@ class InteropProcessor(
         val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
         logger.info(
             "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
-                interopAliasTranslator.getRealHoldingIdentity(
+                InteropAliasProcessor.getRealHoldingIdentity(
                     getRealHoldingIdentityFromAliasMapping(unAuthMessage.header.destination.toCorda())
                 )}"
         )

@@ -47,6 +47,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
     companion object {
         private val ALICE_ALTER_EGO_X500_ALIAS = MemberX500Name.parse("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
         private val ALICE_X500_ALIAS = MemberX500Name.parse("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB")
+        private val ALICE_X500_REAL = MemberX500Name.parse("O=Alice,L=London,C=GB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         private const val NON_EXISTING_GROUP_ID = "non-existing-group"
         private const val SUBSYSTEM = "interop"
@@ -71,7 +72,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
     override fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>> =
-        createDummyHostedIdentity(membersOfInteropGroup) + createDummyHostedIdentity(listOf(membersOfNonExistingGroup[0]))
+        createDummyHostedIdentity(membersOfInteropGroup) + createDummyHostedIdentity(listOf(membersOfNonExistingGroup[0])) +
+                createDummyHostedIdentity(listOf(HoldingIdentity(ALICE_X500_REAL, INTEROP_GROUP_ID)))
 
     private fun createDummyMemberInfo(identities : List<HoldingIdentity>, groupId: String): List<Record<String, PersistentMemberInfo>> {
         val memberInfoList = mutableListOf<Record<String, PersistentMemberInfo>>()

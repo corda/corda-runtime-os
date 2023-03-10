@@ -14,19 +14,19 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
-import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.interop.InteropService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
@@ -37,7 +37,6 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -78,7 +77,7 @@ class InteropServiceIntegrationTest {
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
     @InjectService(timeout = 4000)
-    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProviderFake
+    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
     @InjectService(timeout = 4000)
     lateinit var interopService: InteropService
@@ -100,8 +99,6 @@ class InteropServiceIntegrationTest {
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
-        //val testId = "test1"
-        //val testName = MemberX500Name.parse("O=Alice,C=GB,L=London").toString()
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
@@ -111,9 +108,10 @@ class InteropServiceIntegrationTest {
 
         // Test config updates don't break Interop Service
         republishConfig(publisher)
-
+        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
+        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
         val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
-        val header = UnauthenticatedMessageHeader(identity, identity, "interop" , "1")
+        val header = UnauthenticatedMessageHeader(destinationIdentity, sourceIdentity, "interop" , "1")
         val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
@@ -224,6 +222,7 @@ class InteropServiceIntegrationTest {
         publishConfig(publisher)
         configService.start()
         configService.bootstrapConfig(bootConfig)
+        membershipGroupReaderProvider.start()
     }
 
     private fun publishConfig(publisher: Publisher) {
