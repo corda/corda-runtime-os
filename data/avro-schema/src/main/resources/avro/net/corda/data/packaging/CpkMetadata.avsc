@@ -42,6 +42,11 @@
         "logicalType": "timestamp-millis"
       },
       "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
+    },
+    {
+      "name": "externalChannelsConfig",
+      "type": ["null", "string"],
+      "default": null
     }
   ]
 }
