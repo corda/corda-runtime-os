@@ -129,6 +129,7 @@ class UtxoTransactionBuilderSendingResponderFlow : ResponderFlow {
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)
+            log.info("transaction builder: $transactionBuilder")
             utxoLedgerService.sendUpdatedTransactionBuilder(transactionBuilder, session)
             log.info("receiveFinality")
             val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
