@@ -315,14 +315,11 @@ class HostedIdentitiesMessageCounter(
     var recordCount = 0
     override fun onNext(events: List<Record<String, HostedIdentityEntry>>): List<Record<*, *>> {
         for (event in events) {
-//            println("Hosted Identity : $event")
+            println("Hosted Identity : $event")
             recordCount++
             if (recordCount > expectedRecordCount) {
                 fail("Expected record count exceeded in events processed for this key")
             }
-            println("******************************************")
-            println("Hosted Identity recordCount : $recordCount")
-            println("******************************************")
             latch.countDown()
         }
         return emptyList()
