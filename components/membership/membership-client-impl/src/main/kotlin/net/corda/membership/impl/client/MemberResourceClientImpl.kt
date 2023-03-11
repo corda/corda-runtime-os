@@ -270,8 +270,7 @@ class MemberResourceClientImpl @Activate constructor(
                         ByteBuffer.wrap(context),
                         CryptoSignatureWithKey(
                             ByteBuffer.wrap(byteArrayOf()),
-                            ByteBuffer.wrap(byteArrayOf()),
-                            KeyValuePairList(emptyList())
+                            ByteBuffer.wrap(byteArrayOf())
                         ),
                         true
                     )

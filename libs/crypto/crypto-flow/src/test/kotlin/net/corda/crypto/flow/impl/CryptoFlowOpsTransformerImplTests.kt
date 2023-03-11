@@ -501,12 +501,7 @@ class CryptoFlowOpsTransformerImplTests {
         val response = createResponse(
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(signature),
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair("key1", "value1")
-                    )
-                )
+                ByteBuffer.wrap(signature)
             ),
             SignFlowCommand::class.java
         )
@@ -514,8 +509,6 @@ class CryptoFlowOpsTransformerImplTests {
         assertThat(result).isInstanceOf(DigitalSignature.WithKey::class.java)
         val resultSignature = result as DigitalSignature.WithKey
         assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
-        assertThat(result.context).hasSize(1)
-        assertThat(result.context).containsEntry("key1", "value1")
         assertArrayEquals(signature, resultSignature.bytes)
     }
 
@@ -526,8 +519,7 @@ class CryptoFlowOpsTransformerImplTests {
         val response = createResponse(
             response = CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(signature),
-                KeyValuePairList()
+                ByteBuffer.wrap(signature)
             ),
             requestType = SignFlowCommand::class.java,
             error = null,

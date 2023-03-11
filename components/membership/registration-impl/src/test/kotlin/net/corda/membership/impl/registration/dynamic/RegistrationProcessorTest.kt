@@ -69,8 +69,7 @@ class  RegistrationProcessorTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value")))
         val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap("456".toByteArray()),
-            ByteBuffer.wrap("789".toByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap("789".toByteArray())
         )
         val registrationRequest = MembershipRegistrationRequest(
             registrationId, memberContext.toByteBuffer(), signature, true

@@ -305,8 +305,7 @@ class MembershipP2PIntegrationTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)))
         val fakeSigWithKey = CryptoSignatureWithKey(
             ByteBuffer.wrap(fakeKey.encodeToByteArray()),
-            ByteBuffer.wrap(fakeSig.encodeToByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(fakeSig.encodeToByteArray())
         )
         val messageHeader = UnauthenticatedMessageHeader(
             destination.toAvro(),
