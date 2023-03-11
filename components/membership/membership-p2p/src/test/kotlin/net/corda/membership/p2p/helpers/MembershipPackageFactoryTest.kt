@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -176,15 +177,20 @@ class MembershipPackageFactoryTest {
                 ByteBuffer.wrap("pk-O=name-$index, L=London, C=GB".toByteArray()),
                 ByteBuffer.wrap("sig-O=name-$index, L=London, C=GB".toByteArray())
             )
+            val memberSignatureSpec = CryptoSignatureSpec("dummySignatureName", null, null)
             val mgmSignature = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-O=name-$index, L=London, C=GB".toByteArray()),
                 ByteBuffer.wrap("bytes-O=name-$index, L=London, C=GB".toByteArray())
             )
+            val mgmSignatureSpec = CryptoSignatureSpec("dummySignatureName", null, null)
+
             SignedMemberInfo(
                 ByteBuffer.wrap("memberContext-name-$index".toByteArray()),
                 ByteBuffer.wrap("mgmContext-name-$index".toByteArray()),
                 memberSignature,
-                mgmSignature
+                memberSignatureSpec,
+                mgmSignature,
+                mgmSignatureSpec
             )
         }
         assertThat(memberships)

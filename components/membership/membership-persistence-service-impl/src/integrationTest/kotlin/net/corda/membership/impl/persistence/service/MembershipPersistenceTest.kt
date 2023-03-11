@@ -11,6 +11,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -498,9 +499,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec.newBuilder().build(),
                 true
             )
         )
@@ -1026,15 +1027,13 @@ class MembershipPersistenceTest {
                     ),
                     CryptoSignatureWithKey(
                         publicKey,
-                        signature,
-                        signatureContext,
+                        signature
                     ),
+                    CryptoSignatureSpec.newBuilder().build(),
                     true
                 )
             ).getOrThrow()
-            val cryptoSignatureWithKey = CryptoSignatureWithKey(
-                publicKey, signature, signatureContext
-            )
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
             holdingId to cryptoSignatureWithKey
         }
 
@@ -1079,9 +1078,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec.newBuilder().build(),
                 true
             )
         )
@@ -1351,9 +1350,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec.newBuilder().build(),
                 true
             )
         )

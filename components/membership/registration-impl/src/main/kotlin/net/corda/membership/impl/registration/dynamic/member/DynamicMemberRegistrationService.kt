@@ -17,6 +17,7 @@ import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
@@ -70,7 +71,6 @@ import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
-import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -286,13 +286,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                     member.shortHash.value,
                     publicKey,
                     SignatureSpec(signatureSpec),
-                    serializedMemberContext,
-                    mapOf(SIGNATURE_SPEC to signatureSpec),
+                    serializedMemberContext
                 ).let {
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
-                        ByteBuffer.wrap(it.bytes),
-                        it.context.toWire()
+                        ByteBuffer.wrap(it.bytes)
                     )
                 }
                 val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
@@ -302,6 +300,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature,
+                    CryptoSignatureSpec(signatureSpec, null, null),
                     true
                 )
 
@@ -350,6 +349,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
+                        signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
                         isPending = true
                     )
                 ).getOrThrow()

@@ -5,6 +5,7 @@ import net.corda.crypto.core.toAvro
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -18,6 +19,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -40,6 +42,11 @@ class MembershipPackageFactory(
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))
             .setPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.by)))
+            .build()
+
+    private fun SignatureSpec.toAvro() =
+        CryptoSignatureSpec.newBuilder()
+            .setSignatureName(this.signatureName)
             .build()
 
     private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
@@ -70,7 +77,8 @@ class MembershipPackageFactory(
         val wireGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
             WireGroupParameters(
                 ByteBuffer.wrap(it),
-                mgmSigner.sign(it).toAvro()
+                mgmSigner.sign(it).toAvro(),
+                mgmSigner.signatureSpec.toAvro()
             )
         } ?: throw CordaRuntimeException("Failed to serialize group parameters.")
         val membership = SignedMemberships.newBuilder()

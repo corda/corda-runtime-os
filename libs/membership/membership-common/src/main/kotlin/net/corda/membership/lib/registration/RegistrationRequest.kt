@@ -1,5 +1,6 @@
 package net.corda.membership.lib.registration
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.virtualnode.HoldingIdentity
@@ -14,5 +15,6 @@ data class RegistrationRequest(
     val requester: HoldingIdentity,
     val memberContext: ByteBuffer,
     val signature: CryptoSignatureWithKey,
+    val signatureSpec: CryptoSignatureSpec,
     val isPending: Boolean = false,
 )

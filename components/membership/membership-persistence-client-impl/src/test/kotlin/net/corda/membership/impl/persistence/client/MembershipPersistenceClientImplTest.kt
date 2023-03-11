@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -142,12 +143,8 @@ class MembershipPersistenceClientImplTest {
         CryptoSignatureWithKey(
             ByteBuffer.wrap("456".toByteArray()),
             ByteBuffer.wrap("789".toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("key", "value")
-                )
-            ),
         ),
+        CryptoSignatureSpec(null, null, null)
     )
 
     private val memberInfoFactory = mock<MemberInfoFactory>()

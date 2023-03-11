@@ -2,6 +2,7 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SignatureSpec
@@ -10,22 +11,17 @@ class Verifier(
     private val signatureVerificationService: SignatureVerificationService,
     private val keyEncodingService: KeyEncodingService,
 ) {
-    companion object {
-        const val SIGNATURE_SPEC = "corda.membership.signature.spec"
-    }
-    fun verify(signature: CryptoSignatureWithKey, data: ByteArray) {
+    fun verify(signature: CryptoSignatureWithKey, signatureSpecAvro: CryptoSignatureSpec, data: ByteArray) {
         val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
-        val spec = signature.context
-            .items
-            .firstOrNull {
-                it.key == SIGNATURE_SPEC
-            }?.value
-            ?: throw CordaRuntimeException("Can not find signature spec")
+        val signatureSpec = signatureSpecAvro.signatureName?.let {
+            // Maybe use `SignatureSpecService` here to check signature spec should be one of compatible ones
+            SignatureSpec(it)
+        } ?: throw CordaRuntimeException("Can not find signature spec")
         signatureVerificationService.verify(
             data,
             signature.bytes.array(),
             publicKey,
-            SignatureSpec(spec)
+            signatureSpec
         )
     }
 }

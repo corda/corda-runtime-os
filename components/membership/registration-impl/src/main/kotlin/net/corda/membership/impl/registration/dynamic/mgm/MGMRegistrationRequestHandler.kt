@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -50,9 +51,9 @@ internal class MGMRegistrationRequestHandler (
                 memberContext = ByteBuffer.wrap(serializedMemberContext),
                 signature = CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList())
-                )
+                    ByteBuffer.wrap(byteArrayOf())
+                ),
+                signatureSpec = CryptoSignatureSpec.newBuilder().build()
             )
         )
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
