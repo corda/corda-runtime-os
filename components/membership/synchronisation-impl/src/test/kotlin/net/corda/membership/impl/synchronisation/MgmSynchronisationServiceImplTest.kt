@@ -318,12 +318,7 @@ class MgmSynchronisationServiceImplTest {
         val name = it.name.toString()
         it.holdingIdentity to CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
-            ByteBuffer.wrap("sig-$name".toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("name", name)
-                )
-            )
+            ByteBuffer.wrap("sig-$name".toByteArray())
         )
     }
 

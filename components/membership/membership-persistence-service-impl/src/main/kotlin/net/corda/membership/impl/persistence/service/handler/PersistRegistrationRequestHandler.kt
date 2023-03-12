@@ -51,7 +51,7 @@ internal class PersistRegistrationRequestHandler(
                     groupId = request.registeringHoldingIdentity.groupId,
                     memberX500Name = request.registeringHoldingIdentity.x500Name,
                     publicKey = request.registrationRequest.memberSignature.publicKey.array(),
-                    context = keyValuePairListSerializer.serialize(request.registrationRequest.memberSignature.context) ?: byteArrayOf(),
+                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
                     content = request.registrationRequest.memberSignature.bytes.array(),
                     isPending = request.registrationRequest.isPending
                 )

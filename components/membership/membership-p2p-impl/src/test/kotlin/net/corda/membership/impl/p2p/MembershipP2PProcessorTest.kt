@@ -5,6 +5,7 @@ import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -75,11 +76,13 @@ class MembershipP2PProcessorTest {
     private val memberContext = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
     private val testSig =
         CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer())
+    private val testSigSpec = CryptoSignatureSpec("", null, null)
     private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
         memberContext,
         testSig,
+        testSigSpec,
         true
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()

@@ -77,6 +77,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -99,7 +100,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -113,8 +113,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
-import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
@@ -501,7 +499,7 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf())
                 ),
-                CryptoSignatureSpec.newBuilder().build(),
+                CryptoSignatureSpec("", null, null),
                 true
             )
         )
@@ -1008,11 +1006,6 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
-            val signatureContext = KeyValuePairList(
-                listOf(
-                    KeyValuePair("key", "value")
-                )
-            )
             persistMember(holdingId.x500Name)
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
@@ -1029,7 +1022,7 @@ class MembershipPersistenceTest {
                         publicKey,
                         signature
                     ),
-                    CryptoSignatureSpec.newBuilder().build(),
+                    CryptoSignatureSpec("", null, null),
                     true
                 )
             ).getOrThrow()
@@ -1080,7 +1073,7 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf())
                 ),
-                CryptoSignatureSpec.newBuilder().build(),
+                CryptoSignatureSpec("", null, null),
                 true
             )
         )
@@ -1352,7 +1345,7 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf())
                 ),
-                CryptoSignatureSpec.newBuilder().build(),
+                CryptoSignatureSpec("", null, null),
                 true
             )
         )

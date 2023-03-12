@@ -136,14 +136,14 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     private val signatureContentBytes = byteArrayOf(1, 5)
-    private val signatureContextBytes = byteArrayOf(1, 5)
+    private val signatureSpec = "dummySignatureSpec"
     private val publicKey = byteArrayOf(1, 2)
     private val memberSignatureEntity = mock<MemberSignatureEntity> {
         on { groupId } doReturn member.groupId
         on { memberX500Name } doReturn member.x500Name
         on { publicKey } doReturn publicKey
         on { content } doReturn signatureContentBytes
-        on { context } doReturn signatureContextBytes
+        on { signatureSpec } doReturn signatureSpec
     }
 
     private val requestId = "requestId"
@@ -275,7 +275,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             assertThat(this.memberX500Name).isEqualTo(member.x500Name)
             assertThat(this.groupId).isEqualTo(member.groupId)
             assertThat(this.content).isEqualTo(content)
-            assertThat(this.context).isEqualTo(context)
+            assertThat(this.signatureSpec).isEqualTo(signatureSpec)
         }
     }
 

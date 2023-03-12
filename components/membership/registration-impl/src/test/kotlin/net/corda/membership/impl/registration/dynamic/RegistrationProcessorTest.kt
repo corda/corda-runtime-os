@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -71,9 +72,14 @@ class  RegistrationProcessorTest {
             ByteBuffer.wrap("456".toByteArray()),
             ByteBuffer.wrap("789".toByteArray())
         )
-        val registrationRequest = MembershipRegistrationRequest(
-            registrationId, memberContext.toByteBuffer(), signature, true
-        )
+        val registrationRequest =
+            MembershipRegistrationRequest(
+                registrationId,
+                memberContext.toByteBuffer(),
+                signature,
+                CryptoSignatureSpec("", null, null),
+                true
+            )
 
         val startRegistrationCommand = RegistrationCommand(
             StartRegistration(

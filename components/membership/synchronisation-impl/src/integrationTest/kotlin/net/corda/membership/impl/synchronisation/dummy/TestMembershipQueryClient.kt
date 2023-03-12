@@ -96,12 +96,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
             holdingsIdentities.associateWith {
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
-                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair("name", it.x500Name.toString())
-                        )
-                    )
+                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray())
                 )
             }
         )

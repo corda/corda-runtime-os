@@ -5,6 +5,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
@@ -129,9 +130,9 @@ class PersistRegistrationRequestHandlerTest {
             ByteBuffer.wrap("89".toByteArray()),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("123".toByteArray()),
-                ByteBuffer.wrap("456".toByteArray()),
-                KeyValuePairList(emptyList())
+                ByteBuffer.wrap("456".toByteArray())
             ),
+            CryptoSignatureSpec("", null, null),
             true
         )
     )
@@ -172,7 +173,7 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(entity.memberX500Name).isEqualTo(ourHoldingIdentity.x500Name.toString())
             assertThat(entity.publicKey).isEqualTo("123".toByteArray())
             assertThat(entity.content).isEqualTo("456".toByteArray())
-            assertThat(entity.context).isEqualTo(byteArrayOf(1, 3, 4))
+            assertThat(entity.signatureSpec).isEqualTo(byteArrayOf(1, 3, 4))
         }
     }
 

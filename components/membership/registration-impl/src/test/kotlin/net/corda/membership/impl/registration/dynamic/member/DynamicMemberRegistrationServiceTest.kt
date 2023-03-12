@@ -65,7 +65,6 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.lib.toMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
@@ -210,12 +209,7 @@ class DynamicMemberRegistrationServiceTest {
                 any(),
                 any(),
                 any<SignatureSpec>(),
-                any(),
-                eq(
-                    mapOf(
-                        Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA512.signatureName
-                    )
-                ),
+                any()
             )
         }.doReturn(mockSignature)
     }

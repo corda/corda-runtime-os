@@ -273,7 +273,7 @@ class MemberResourceClientImpl @Activate constructor(
                             ByteBuffer.wrap(byteArrayOf()),
                             ByteBuffer.wrap(byteArrayOf())
                         ),
-                        CryptoSignatureSpec.newBuilder().build(),
+                        CryptoSignatureSpec("", null, null),
                         true
                     )
                 ).getOrThrow()

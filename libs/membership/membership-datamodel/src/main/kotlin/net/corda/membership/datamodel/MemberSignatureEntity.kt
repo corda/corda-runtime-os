@@ -32,8 +32,10 @@ class MemberSignatureEntity(
     @Column(name = "public_key", nullable = false, updatable = false, columnDefinition = "BLOB")
     val publicKey: ByteArray,
 
-    @Column(name = "context", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val context: ByteArray,
+    // TODO Are we going to be storing `ParameterizedSignatureSpec` here?
+    //  If so need to consider saving extra signature spec parameters.
+    @Column(name = "signature_spec", nullable = false, updatable = false)
+    val signatureSpec: String,
 
     @Column(name = "content", nullable = false, updatable = false, columnDefinition = "BLOB")
     val content: ByteArray,

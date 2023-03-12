@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberSignature
@@ -16,14 +17,6 @@ import java.nio.ByteBuffer
 internal class QueryMemberSignatureHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryMemberSignature, MemberSignatureQueryResponse>(persistenceHandlerServices) {
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
-        cordaAvroSerializationFactory.createAvroDeserializer(
-            {
-                logger.error("Failed to deserialize key value pair list.")
-            },
-            KeyValuePairList::class.java
-        )
-    }
 
     override fun invoke(
         context: MembershipRequestContext,
@@ -40,18 +33,19 @@ internal class QueryMemberSignatureHandler(
                             false
                         )
                     ) ?: throw MembershipPersistenceException("Could not find signature for $holdingIdentity")
-                    val signatureContext = if (signatureEntity.context.isEmpty()) {
-                        KeyValuePairList(emptyList())
+                    val signatureSpec = if (signatureEntity.signatureSpec.isEmpty()) {
+                        CryptoSignatureSpec("", null, null)
                     } else {
-                        keyValuePairListDeserializer.deserialize(signatureEntity.context)
+                        CryptoSignatureSpec(signatureEntity.signatureSpec, null, null)
                     }
                     val signature = CryptoSignatureWithKey(
                         ByteBuffer.wrap(signatureEntity.publicKey),
-                        ByteBuffer.wrap(signatureEntity.content),
-                        signatureContext,
+                        ByteBuffer.wrap(signatureEntity.content)
                     )
                     MemberSignature(
-                        holdingIdentity, signature
+                        holdingIdentity,
+                        signature,
+                        signatureSpec
                     )
                 }
             )

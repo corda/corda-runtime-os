@@ -378,7 +378,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed member signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(memberSignature), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(memberSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -389,7 +389,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(mgmSignature), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -400,7 +400,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not persist the group parameters`() {
-        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -411,7 +411,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not publish the group parameters to Kafka`() {
-        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -427,8 +427,8 @@ class MemberSynchronisationServiceImplTest {
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(verifier).verify(memberSignature, MEMBER_CONTEXT_BYTES)
-        verify(verifier).verify(mgmSignature, byteArrayOf(1, 2, 3))
+        verify(verifier).verify(memberSignature, any(), MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmSignature, any(), byteArrayOf(1, 2, 3))
     }
 
     @Test

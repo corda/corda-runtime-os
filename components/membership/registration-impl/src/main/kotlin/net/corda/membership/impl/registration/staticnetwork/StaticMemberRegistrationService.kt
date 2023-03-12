@@ -289,7 +289,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf())
                 ),
-                signatureSpec = CryptoSignatureSpec.newBuilder().build()
+                signatureSpec = CryptoSignatureSpec("", null, null)
             )
         ).getOrThrow()
     }

@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -483,28 +484,24 @@ class MembershipQueryClientImplTest {
         }
 
         @Test
-        fun `it will returns the correct data in case of successful result`() {
+        fun `it will return the correct data in case of successful result`() {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             val holdingId1 = createTestHoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
             val signature1 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk1".toByteArray()),
-                ByteBuffer.wrap("ct1".toByteArray()),
-                KeyValuePairList(emptyList()),
+                ByteBuffer.wrap("ct1".toByteArray())
             )
+            val signatureSpec1 = CryptoSignatureSpec("", null, null)
             val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
-                ByteBuffer.wrap("ct2".toByteArray()),
-                KeyValuePairList(emptyList()),
+                ByteBuffer.wrap("ct2".toByteArray())
             )
+            val signatureSpec2 = CryptoSignatureSpec("", null, null)
             val signatures = listOf(
-                MemberSignature(
-                    holdingId1.toAvro(), signature1
-                ),
-                MemberSignature(
-                    holdingId2.toAvro(), signature2
-                ),
+                MemberSignature(holdingId1.toAvro(), signature1, signatureSpec1),
+                MemberSignature(holdingId2.toAvro(), signature2, signatureSpec2),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
