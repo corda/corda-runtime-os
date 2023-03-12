@@ -166,7 +166,7 @@ class QueryMemberSignatureHandlerTest {
                         ByteBuffer.wrap("pk-${member.x500Name}".toByteArray()),
                         ByteBuffer.wrap("sig-${member.x500Name}".toByteArray())
                     ),
-                    CryptoSignatureSpec("", null, null)
+                    CryptoSignatureSpec("dummySignatureSpec", null, null)
                 )
             }
         )
@@ -207,7 +207,7 @@ class QueryMemberSignatureHandlerTest {
                         ByteBuffer.wrap("pk-${member.x500Name}".toByteArray()),
                         ByteBuffer.wrap("sig-${member.x500Name}".toByteArray()),
                     ),
-                    CryptoSignatureSpec("", null, null)
+                    CryptoSignatureSpec("dummySignatureSpec", null, null)
                 )
             }
         )

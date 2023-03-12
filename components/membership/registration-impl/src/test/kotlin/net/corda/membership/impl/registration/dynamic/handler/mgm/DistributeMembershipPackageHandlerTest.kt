@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
@@ -75,10 +76,10 @@ class DistributeMembershipPackageHandlerTest {
     private val activeMembersWithoutMgm = allActiveMembers - mgm
     private val signatures = activeMembersWithoutMgm.associate {
         val name = it.name.toString()
-        it.holdingIdentity to CryptoSignatureWithKey(
+        it.holdingIdentity to (CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
             ByteBuffer.wrap("sig-$name".toByteArray())
-        )
+        ) to CryptoSignatureSpec("dummy", null, null))
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allActiveMembers + inactiveMember)

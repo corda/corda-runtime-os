@@ -492,13 +492,13 @@ class MembershipQueryClientImplTest {
                 ByteBuffer.wrap("pk1".toByteArray()),
                 ByteBuffer.wrap("ct1".toByteArray())
             )
-            val signatureSpec1 = CryptoSignatureSpec("", null, null)
+            val signatureSpec1 = CryptoSignatureSpec("dummy", null, null)
             val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
                 ByteBuffer.wrap("ct2".toByteArray())
             )
-            val signatureSpec2 = CryptoSignatureSpec("", null, null)
+            val signatureSpec2 = CryptoSignatureSpec("dummy", null, null)
             val signatures = listOf(
                 MemberSignature(holdingId1.toAvro(), signature1, signatureSpec1),
                 MemberSignature(holdingId2.toAvro(), signature2, signatureSpec2),
@@ -520,14 +520,15 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
+            val result =
+                membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
 
             assertThat(result.getOrThrow())
                 .containsEntry(
-                    holdingId1, signature1
+                    holdingId1, signature1 to signatureSpec1
                 )
                 .containsEntry(
-                    holdingId2, signature2
+                    holdingId2, signature2 to signatureSpec2
                 )
         }
 

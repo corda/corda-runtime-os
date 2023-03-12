@@ -1027,7 +1027,9 @@ class MembershipPersistenceTest {
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
-            holdingId to cryptoSignatureWithKey
+            holdingId to (
+                    cryptoSignatureWithKey to CryptoSignatureSpec("", null, null)
+            )
         }
 
         // before approval only non-pending information is available

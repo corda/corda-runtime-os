@@ -1,7 +1,6 @@
 package net.corda.membership.impl.synchronisation.dummy
 
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -91,13 +90,14 @@ class TestMembershipQueryClientImpl @Activate constructor(
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> {
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
         return MembershipQueryResult.Success(
             holdingsIdentities.associateWith {
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
                     ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray())
-                )
+                ) to
+                        CryptoSignatureSpec("", null, null)
             }
         )
     }

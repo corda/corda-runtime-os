@@ -45,9 +45,7 @@ class MembershipPackageFactory(
             .build()
 
     private fun SignatureSpec.toAvro() =
-        CryptoSignatureSpec.newBuilder()
-            .setSignatureName(this.signatureName)
-            .build()
+        CryptoSignatureSpec(this.signatureName, null, null)
 
     private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
@@ -57,7 +55,7 @@ class MembershipPackageFactory(
 
     fun createMembershipPackage(
         mgmSigner: Signer,
-        membersSignatures: Map<HoldingIdentity, CryptoSignatureWithKey>,
+        membersSignatures: Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>,
         membersToSend: Collection<MemberInfo>,
         hashCheck: SecureHash,
         groupParameters: GroupParameters,
@@ -65,13 +63,20 @@ class MembershipPackageFactory(
         val signedMembers = membersToSend.map {
             val memberTree = merkleTreeGenerator.generateTree(listOf(it))
             val mgmSignature = mgmSigner.sign(memberTree.root.bytes).toAvro()
-            val memberSignature = membersSignatures[it.holdingIdentity]
-                ?: throw CordaRuntimeException("Could not find member signature for ${it.name}")
+            val mgmSignatureSpec =
+                CryptoSignatureSpec(mgmSigner.signatureSpec.signatureName, null, null)
+            val (memberSignature, memberSignatureSpec) =
+                membersSignatures[it.holdingIdentity]?.let { signatureAndSpec ->
+                    signatureAndSpec.first to signatureAndSpec.second
+                } ?: throw CordaRuntimeException("Could not find member signature and signature spec for ${it.name}")
+
             SignedMemberInfo.newBuilder()
                 .setMemberContext(ByteBuffer.wrap(serializer.serialize(it.memberProvidedContext.toAvro())))
                 .setMgmContext(ByteBuffer.wrap(serializer.serialize(it.mgmProvidedContext.toAvro())))
                 .setMemberSignature(memberSignature)
+                .setMemberSignatureSpec(memberSignatureSpec)
                 .setMgmSignature(mgmSignature)
+                .setMgmSignatureSpec(mgmSignatureSpec)
                 .build()
         }
         val wireGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {

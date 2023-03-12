@@ -8,6 +8,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
@@ -316,10 +317,10 @@ class MgmSynchronisationServiceImplTest {
 
     private fun createSignatures(members: List<MemberInfo>) = members.associate {
         val name = it.name.toString()
-        it.holdingIdentity to CryptoSignatureWithKey(
+        it.holdingIdentity to (CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
             ByteBuffer.wrap("sig-$name".toByteArray())
-        )
+        ) to CryptoSignatureSpec("dummy", null, null))
     }
 
     private fun postStartEvent() {

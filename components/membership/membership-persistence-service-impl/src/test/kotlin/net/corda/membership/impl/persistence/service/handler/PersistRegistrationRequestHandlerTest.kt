@@ -132,7 +132,7 @@ class PersistRegistrationRequestHandlerTest {
                 ByteBuffer.wrap("123".toByteArray()),
                 ByteBuffer.wrap("456".toByteArray())
             ),
-            CryptoSignatureSpec("", null, null),
+            CryptoSignatureSpec("dummySignature", null, null),
             true
         )
     )
@@ -173,7 +173,7 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(entity.memberX500Name).isEqualTo(ourHoldingIdentity.x500Name.toString())
             assertThat(entity.publicKey).isEqualTo("123".toByteArray())
             assertThat(entity.content).isEqualTo("456".toByteArray())
-            assertThat(entity.signatureSpec).isEqualTo(byteArrayOf(1, 3, 4))
+            assertThat(entity.signatureSpec).isEqualTo("dummySignature")
         }
     }
 
