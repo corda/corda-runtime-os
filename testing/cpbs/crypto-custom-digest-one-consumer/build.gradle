@@ -8,7 +8,7 @@ description 'Corda Crypto Custom Digest Consumer One'
 group 'com.example.crypto.consumer'
 
 cordapp {
-    targetPlatformVersion 999 as Integer
+    targetPlatformVersion = 999
     workflow {
         name 'Custom Crypto Digest One Consumer CPK'
         versionId 1
@@ -19,7 +19,6 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"
-    cordaProvided 'org.jetbrains:annotations'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-crypto'
