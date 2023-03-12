@@ -480,10 +480,11 @@ class SynchronisationIntegrationTest {
         val members: List<MemberInfo> = mutableListOf(participantInfo)
         val signedMembers = members.map {
             val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val memberSignatureSpec = SignatureSpec.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
-                SignatureSpec.ECDSA_SHA256,
+                memberSignatureSpec,
                 memberInfo!!
             ).let { withKey ->
                 CryptoSignatureWithKey(
@@ -491,10 +492,11 @@ class SynchronisationIntegrationTest {
                     ByteBuffer.wrap(withKey.bytes)
                 )
             }
+            val mgmSignatureSpec = SignatureSpec.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
-                SignatureSpec.ECDSA_SHA256,
+                mgmSignatureSpec,
                 merkleTreeGenerator.generateTree(listOf(it)).root.bytes
             ).let { withKey ->
                 CryptoSignatureWithKey(
@@ -506,7 +508,13 @@ class SynchronisationIntegrationTest {
                 .setMemberContext(ByteBuffer.wrap(memberInfo))
                 .setMgmContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())))
                 .setMemberSignature(memberSignature)
+                .setMemberSignatureSpec(
+                    CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                )
                 .setMgmSignature(mgmSignature)
+                .setMgmSignatureSpec(
+                    CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                )
                 .build()
         }
         val hash = merkleTreeGenerator.generateTree(members).root
