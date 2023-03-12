@@ -1,12 +1,10 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.crypto.core.toCorda
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -16,6 +14,8 @@ import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfig
@@ -55,8 +55,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -84,7 +82,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 

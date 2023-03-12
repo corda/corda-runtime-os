@@ -8,7 +8,6 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
