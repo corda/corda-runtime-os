@@ -31,7 +31,7 @@ import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
 
 @Suppress("unused", "TooManyFunctions")
-@InitiatingFlow(protocol = "smoke-test-protocol", version = [2,3,4])
+@InitiatingFlow(protocol = "smoke-test-protocol")
 class RpcSmokeTestFlow : ClientStartableFlow {
 
     private companion object {
@@ -96,7 +96,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        flowEngine.flowContextProperties
         val request = requestBody.getRequestBodyAs(jsonMarshallingService, RpcSmokeTestInput::class.java)
         return jsonMarshallingService.format(execute(request))
     }
