@@ -5,9 +5,10 @@ import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import java.time.Instant
-import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityManager
 
-class V50Beta2CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManagerFactory) : CryptoRepository {
+class V50Beta2CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManager) :
+    CryptoRepository {
     override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
         entityManagerFactory().transaction { em ->
             em.persist(
