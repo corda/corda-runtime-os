@@ -1,10 +1,10 @@
 package net.corda.crypto.core
 
-import net.corda.crypto.core.SecureHashImpl.Companion.DELIMITER
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.ByteArrays
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SecureHash.DELIMITER
 import java.nio.ByteBuffer
 
 @CordaSerializable
@@ -12,10 +12,6 @@ class SecureHashImpl(
     private val algorithm: String,
     bytes: ByteArray
 ) : SecureHash, OpaqueBytes(bytes) {
-
-    companion object {
-        const val DELIMITER = ':'
-    }
 
     override fun getAlgorithm() = algorithm
 
