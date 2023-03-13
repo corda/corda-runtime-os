@@ -2,9 +2,7 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
