@@ -158,7 +158,7 @@ class P2PLayerEndToEndTest {
             10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
-            true,
+            false,
             RSA_TEMPLATE,
         ).use { hostA ->
             Host(
@@ -167,7 +167,7 @@ class P2PLayerEndToEndTest {
                 10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
-                true,
+                false,
                 RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
@@ -261,7 +261,7 @@ class P2PLayerEndToEndTest {
             10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
-            true,
+            false,
             RSA_TEMPLATE,
         ).use { host ->
             host.startWith()
@@ -295,7 +295,7 @@ class P2PLayerEndToEndTest {
             10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
-            true,
+            false,
             RSA_TEMPLATE,
         ).use { hostA ->
             Host(
@@ -304,7 +304,7 @@ class P2PLayerEndToEndTest {
                 10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
-                true,
+                false,
                 RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
