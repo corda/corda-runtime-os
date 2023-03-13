@@ -1261,11 +1261,10 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
-        // optimistic force increment + calling merge on this entity has incremented by 2
-        assertThat(persistedEntity.serialNumber).isEqualTo(3L)
+        assertThat(persistedEntity.serialNumber).isEqualTo(2L)
         with(suspended.mgmContext.toMap()) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
-            assertThat(this[SERIAL]).isEqualTo("3")
+            assertThat(this[SERIAL]).isEqualTo("2")
         }
     }
 
@@ -1287,11 +1286,10 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-        // optimistic force increment + calling merge on this entity has incremented by 2
-        assertThat(persistedEntity.serialNumber).isEqualTo(3L)
+        assertThat(persistedEntity.serialNumber).isEqualTo(2L)
         with(suspended.mgmContext.toMap()) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
-            assertThat(this[SERIAL]).isEqualTo("3")
+            assertThat(this[SERIAL]).isEqualTo("2")
         }
     }
 

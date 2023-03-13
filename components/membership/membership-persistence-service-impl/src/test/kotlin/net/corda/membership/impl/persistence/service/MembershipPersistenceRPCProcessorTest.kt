@@ -222,7 +222,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { createQuery(preAuthTokenQuery) } doReturn typedPreAuthTokenQuery
         on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
         on { createQuery(registrationRequestsQuery) } doReturn registrationRequestQuery
-        on { find(eq(MemberInfoEntity::class.java), any(), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT)) } doReturn memberEntity
+        on { find(eq(MemberInfoEntity::class.java), any(), eq(LockModeType.PESSIMISTIC_WRITE)) } doReturn memberEntity
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager

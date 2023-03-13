@@ -124,7 +124,7 @@ class ActivateMemberHandlerTest {
             on { status } doReturn memberStatus
         }
         whenever(
-            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
         ).doReturn(mockEntity)
     }
 

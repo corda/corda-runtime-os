@@ -45,7 +45,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
             val member = em.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(context.holdingIdentity.groupId, memberName, false),
-                LockModeType.OPTIMISTIC_FORCE_INCREMENT
+                LockModeType.PESSIMISTIC_WRITE
             ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
             memberSerial?.let {
                 require(member.serialNumber == it) {
@@ -63,9 +63,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
                 when (it.key) {
                     STATUS -> KeyValuePair(it.key, newStatus)
                     MODIFIED_TIME -> KeyValuePair(it.key, now.toString())
-                    // Optimistic force increment + calling merge on MemberInfoEntity will increment serialNumber
-                    // by 2. To match this, incrementing serial number in MGM-provided context by 2 as well.
-                    SERIAL -> KeyValuePair(it.key, (member.serialNumber + 2).toString())
+                    SERIAL -> KeyValuePair(it.key, (member.serialNumber + 1).toString())
                     else -> it
                 }
             })

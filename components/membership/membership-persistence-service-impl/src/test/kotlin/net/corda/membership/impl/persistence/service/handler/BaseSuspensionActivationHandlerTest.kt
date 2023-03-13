@@ -161,7 +161,7 @@ class BaseSuspensionActivationHandlerTest {
             on { status } doReturn memberStatus
         }
         whenever(
-            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
         ).doReturn(mockEntity)
     }
 
@@ -243,14 +243,14 @@ class BaseSuspensionActivationHandlerTest {
         Assertions.assertThat(mgmContextCapture.firstValue.items).contains(
             KeyValuePair(MemberInfoExtension.STATUS, MEMBER_STATUS_ACTIVE),
             KeyValuePair(MemberInfoExtension.MODIFIED_TIME, clock.instant().toString()),
-            KeyValuePair(MemberInfoExtension.SERIAL, (SERIAL_NUMBER + 2).toString())
+            KeyValuePair(MemberInfoExtension.SERIAL, (SERIAL_NUMBER + 1).toString())
         )
     }
 
     @Test
     fun `changeMemberStatus throws exception if member cannot be found`() {
         whenever(
-            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
         ).doReturn(null)
 
         invokeTestFunctionWithError(::invokeSuspend, "does not exist")
