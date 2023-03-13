@@ -1,51 +1,50 @@
 package net.corda.chunking.db.impl.validation
 
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 
 class ExternalChannelsConfigValidatorTest {
 
     private val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl()
 
     @Test
-    fun `throws exception when string is not null because the method is not implemented`() {
-        assertThrows<NotImplementedError> {
-            externalChannelsConfigValidator.validate(
-                cpkIdentifier = CpkIdentifier(
-                    "name",
-                    "1.0",
-                    SecureHash("SHA-256", "abc".toByteArray())
-                ),
-                ""
-            )
-        }
+    fun `throws exception when string is not null because the method is not implemented - non-empty string`() {
+        val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( "{}") }
+        val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
+        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
 
         assertThrows<NotImplementedError> {
-            externalChannelsConfigValidator.validate(
-                cpkIdentifier = CpkIdentifier(
-                    "name",
-                    "1.0",
-                    SecureHash("SHA-256", "abc".toByteArray())
-                ),
-                "invalid configuration"
-            )
+            externalChannelsConfigValidator.validate(cpi)
+        }
+    }
+
+    @Test
+    fun `throws exception when string is not null because the method is not implemented - empty string`() {
+        val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( "") }
+        val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
+        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
+
+        assertThrows<NotImplementedError> {
+            externalChannelsConfigValidator.validate(cpi)
         }
     }
 
     @Test
     fun `does not throw exception when string is null`() {
+        val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( null) }
+        val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
+        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
+
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(
-                cpkIdentifier = CpkIdentifier(
-                    "name",
-                    "1.0",
-                    SecureHash("SHA-256", "abc".toByteArray())
-                ),
-                null
-            )
+            externalChannelsConfigValidator.validate(cpi)
         }
     }
 }
