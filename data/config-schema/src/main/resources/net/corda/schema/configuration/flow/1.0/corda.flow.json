@@ -19,14 +19,14 @@
           "default": 5
         },
         "maxRetryDelay": {
-          "description": "The maximum delay in milliseconds before a retry is scheduled.",
+          "description": "The maximum delay in milliseconds before Corda schedules a retry.",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 16000
         },
         "maxFlowSleepDuration": {
-          "description": "The maximum delay in milliseconds before a periodic WakeUp is scheduled.",
+          "description": "The maximum delay in milliseconds before Corda schedules a periodic WakeUp.",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
