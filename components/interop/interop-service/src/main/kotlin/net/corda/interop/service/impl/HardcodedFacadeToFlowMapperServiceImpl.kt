@@ -23,7 +23,6 @@ class HardcodedFacadeToFlowMapperServiceImpl @Activate constructor() : InteropFa
     ): String? {
         logger.info("Fetching flow name for holding identity : ${destinationIdentity.x500Name} " +
                     "facade id : $facadeId facade name : $facadeName")
-
         val facadeFlowMapping = readFacadeToFlowMapping(destinationIdentity, facadeId, facadeName)
         checkNotNull(facadeFlowMapping) { "Failed to find the facade to flow mapping " +
                 "for holding identity : ${destinationIdentity.x500Name} facade id : $facadeId facade name : $facadeName" }
