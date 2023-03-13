@@ -71,7 +71,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
     @Suspendable
     override fun toSignedTransaction(): UtxoSignedTransaction {
         throw UnsupportedOperationException(
-            "Transaction builder proposals are supposed to be returned to their originator. Their signing is not supported."
+            "Transaction builder proposals are supposed to be returned to their originator. Signing them is not supported."
         )
     }
 
@@ -199,7 +199,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
     override fun copy(): UtxoTransactionBuilderContainer =
         currentTransactionBuilder.copy()
 
-    override fun append(other: UtxoTransactionBuilderContainer) =
+    override fun append(other: UtxoTransactionBuilderData) =
         currentTransactionBuilder.append(other)
 
     override fun getEncumbranceGroup(tag: String) = currentTransactionBuilder.getEncumbranceGroup(tag)

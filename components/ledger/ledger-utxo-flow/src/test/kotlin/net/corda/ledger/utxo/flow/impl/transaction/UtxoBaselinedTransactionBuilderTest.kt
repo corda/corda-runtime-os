@@ -1,11 +1,9 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
+import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -39,12 +37,7 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
         assertThatThrownBy {
             utxoBaselinedTransactionBuilder
-                .setNotary(
-                    Party(
-                        MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
-                        anotherPublicKeyExample
-                    )
-                )
+                .setNotary(anotherUtxoNotaryExample)
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
@@ -69,6 +62,16 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
     }
 
     @Test
+    fun `Overwriting a time window between to a time window until throws`() {
+        utxoBaselinedTransactionBuilder
+            .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+        assertThatThrownBy {
+            utxoBaselinedTransactionBuilder
+                .setTimeWindowUntil(utxoTimeWindowExample.from)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
     fun `Overwriting to the same time window until does not throw`() {
         utxoBaselinedTransactionBuilder
             .setTimeWindowUntil(utxoTimeWindowExample.until)
@@ -85,6 +88,16 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
         assertThatThrownBy {
             utxoBaselinedTransactionBuilder
                 .setTimeWindowUntil(Instant.now())
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Overwriting a time window until to a time window between throws`() {
+        utxoBaselinedTransactionBuilder
+            .setTimeWindowUntil(utxoTimeWindowExample.from)
+        assertThatThrownBy {
+            utxoBaselinedTransactionBuilder
+                .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
 

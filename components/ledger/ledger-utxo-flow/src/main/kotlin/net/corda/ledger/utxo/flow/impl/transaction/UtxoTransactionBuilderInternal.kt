@@ -12,10 +12,14 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
 
     /**
      * Appends transaction builder components to a transaction builder.
-     * It only appends the new components.
      * Also, notary and time window of the original takes precedence.
-     * Those will not be overwritten regardless of if there are new values.
-     *
+     * Those will not be overwritten regardless of there are new values.
+     * It de-duplicates the
+     *  - attachments
+     *  - signatories
+     *  - inputStateRefs
+     *  - referenceStateRefs
+     * But keeps potential duplications in user-defined types. (commands and output states)
      */
-    fun append(other: UtxoTransactionBuilderContainer): UtxoTransactionBuilderInternal
+    fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderInternal
 }

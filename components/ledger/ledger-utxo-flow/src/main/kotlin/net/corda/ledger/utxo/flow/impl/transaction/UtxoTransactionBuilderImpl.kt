@@ -245,7 +245,7 @@ class UtxoTransactionBuilderImpl(
      *  - referenceStateRefs
      * But keeps potential duplications in user-defined types. (commands and output states)
      */
-    override fun append(other: UtxoTransactionBuilderContainer): UtxoTransactionBuilderImpl {
+    override fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderImpl {
         return UtxoTransactionBuilderImpl(
             this.utxoSignedTransactionFactory,
             this.notary ?: other.getNotary(),
