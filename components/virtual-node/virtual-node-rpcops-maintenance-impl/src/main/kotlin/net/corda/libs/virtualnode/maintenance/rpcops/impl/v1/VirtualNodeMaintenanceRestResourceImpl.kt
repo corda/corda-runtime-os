@@ -2,7 +2,7 @@ package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.PropertyKeys
 import net.corda.data.virtualnode.VirtualNodeDBResetRequest
@@ -33,8 +33,8 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.rpcops.common.VirtualNodeSender
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rest.common.VirtualNodeSender
+import net.corda.virtualnode.rest.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,8 +48,8 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
-    @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = CpiUploadService::class)
+    private val cpiUploadService: CpiUploadService,
     @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
 ) : VirtualNodeMaintenanceRestResource, PluggableRestResource<VirtualNodeMaintenanceRestResource>, Lifecycle {
@@ -69,7 +69,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
 
     private val clock = UTCClock()
     private val dependentComponents = DependentComponents.of(
-        ::cpiUploadRPCOpsService
+        ::cpiUploadService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
@@ -132,7 +132,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
         val cpiUploadRequestId = tryWithExceptionHandling(logger,"Force CPI upload") {
-            cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
+            cpiUploadService.cpiUploadManager.uploadCpi(
                 upload.fileName, upload.content,
                 mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
             )

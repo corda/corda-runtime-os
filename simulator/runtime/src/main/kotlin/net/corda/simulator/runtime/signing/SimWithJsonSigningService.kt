@@ -22,11 +22,11 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
     }
 
     /**
-     * Wraps the clear data with JSON containing the encoded key, identifying parameters and the signature spec.
+     * Wraps the original data with JSON containing the encoded key, identifying parameters and the signature spec.
      *
      * @param bytes The data to "sign".
      * @param publicKey The public key to include in the wrapper.
-     * @param signatureSpec The signature spec to incldue in the wrapper.
+     * @param signatureSpec The signature spec to include in the wrapper.
      *
      * @return A digital signature object containing a JSON string wrapping the "signed" data, with the parameters
      * with which the data was "signed".

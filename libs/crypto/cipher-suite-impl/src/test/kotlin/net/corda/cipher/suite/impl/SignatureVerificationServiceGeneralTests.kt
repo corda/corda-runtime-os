@@ -31,10 +31,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.verify(
-                publicKey = publicKey,
-                digest = DigestAlgorithmName.SHA2_256,
+                originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
-                clearData = UUID.randomUUID().toString().toByteArray()
+                publicKey = publicKey,
+                digest = DigestAlgorithmName.SHA2_256
             )
         }
     }
@@ -51,10 +51,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.verify(
-                publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256,
+                originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
-                clearData = UUID.randomUUID().toString().toByteArray()
+                publicKey = publicKey,
+                signatureSpec = SignatureSpec.ECDSA_SHA256
             )
         }
     }
@@ -71,10 +71,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.verify(
-                publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256,
+                originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = ByteArray(0),
-                clearData = UUID.randomUUID().toString().toByteArray()
+                publicKey = publicKey,
+                signatureSpec = SignatureSpec.ECDSA_SHA256
             )
         }
     }
@@ -91,10 +91,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.verify(
-                publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256,
+                originalData = ByteArray(0),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
-                clearData = ByteArray(0)
+                publicKey = publicKey,
+                signatureSpec = SignatureSpec.ECDSA_SHA256
             )
         }
     }
@@ -111,10 +111,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.isValid(
-                publicKey = publicKey,
-                digest = DigestAlgorithmName.SHA2_256,
+                originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
-                clearData = UUID.randomUUID().toString().toByteArray()
+                publicKey = publicKey,
+                digest = DigestAlgorithmName.SHA2_256
             )
         }
     }
@@ -130,10 +130,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.isValid(
-                publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256,
+                originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
-                clearData = UUID.randomUUID().toString().toByteArray()
+                publicKey = publicKey,
+                signatureSpec = SignatureSpec.ECDSA_SHA256
             )
         }
     }
@@ -150,10 +150,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.isValid(
-                publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256,
+                originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = ByteArray(0),
-                clearData = UUID.randomUUID().toString().toByteArray()
+                publicKey = publicKey,
+                signatureSpec = SignatureSpec.ECDSA_SHA256
             )
         }
     }
@@ -170,10 +170,10 @@ class SignatureVerificationServiceGeneralTests {
         )
         assertThrows<IllegalArgumentException> {
             service.isValid(
-                publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256,
+                originalData = ByteArray(0),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
-                clearData = ByteArray(0)
+                publicKey = publicKey,
+                signatureSpec = SignatureSpec.ECDSA_SHA256
             )
         }
     }

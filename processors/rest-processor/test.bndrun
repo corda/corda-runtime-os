@@ -13,7 +13,7 @@
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='net.corda.rest-processor',\
-    bnd.identity;id='net.corda.virtual-node-rpcops-service-impl',\
+    bnd.identity;id='net.corda.virtual-node-rest-service-impl',\
     bnd.identity;id='net.corda.virtual-node-rpcops-maintenance-impl',\
     bnd.identity;id='net.corda.permission-rest-resource-impl',\
     bnd.identity;id='net.corda.membership-rest-impl',\

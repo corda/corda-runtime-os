@@ -55,12 +55,12 @@ class VerifierTest {
         verifier.verify(signature, data)
 
         verify(signatureVerificationService).verify(
+            eq(data),
+            eq(rawSignature),
             same(publicKey),
             argThat<SignatureSpec> {
                 this.signatureName == SPEC
             },
-            eq(rawSignature),
-            eq(data),
         )
     }
 
@@ -83,10 +83,10 @@ class VerifierTest {
         val data = byteArrayOf(44, 1)
         whenever(
             signatureVerificationService.verify(
-                same(publicKey),
-                argThat<SignatureSpec> { this.signatureName == SPEC },
+                eq(data),
                 eq(rawSignature),
-                eq(data)
+                same(publicKey),
+                argThat<SignatureSpec> { this.signatureName == SPEC }
             )
         ).doThrow(CryptoSignatureException("Not verified"))
 

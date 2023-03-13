@@ -25,7 +25,8 @@ interface E2eCluster {
      */
     fun <I : RestResource> clusterHttpClientFor(
         restResourceClass: Class<I>,
-        userName: String = AdminPasswordUtil.adminUser
+        userName: String = AdminPasswordUtil.adminUser,
+        restPassword: String = clusterConfig.restPassword
     ): RestClient<I>
 }
 
@@ -64,6 +65,7 @@ private class E2eClusterImpl(
 
     override fun <I : RestResource> clusterHttpClientFor(
         restResourceClass: Class<I>,
-        userName: String
-    ): RestClient<I> = testToolkit.httpClientFor(restResourceClass, userName, clusterConfig.restPassword)
+        userName: String,
+        restPassword: String
+    ): RestClient<I> = testToolkit.httpClientFor(restResourceClass, userName, restPassword)
 }
