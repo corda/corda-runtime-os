@@ -12,12 +12,14 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 
 class TestCryptoRepositoryFactoryImpl {
     @Test
-    fun `different DML for Crypto tenant`() {
+    fun `DML to Corda crypto DB for Crypto tenant`() {
         val dbConnectionManager = mock<DbConnectionManager>()
         val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, mock(), mock(), mock())
         val repo = cut.create(CryptoTenants.CRYPTO)
         assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+        verifyNoMoreInteractions(dbConnectionManager)
+        cut.create(CryptoTenants.P2P)
         verifyNoMoreInteractions(dbConnectionManager)
     }
 }
