@@ -3,12 +3,14 @@ package net.corda.crypto.persistence
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.persistence.v1schema.V1CryptoRepositoryImpl
 import net.corda.db.connection.manager.DbConnectionManager
 
 import net.corda.db.schema.CordaDb
 import net.corda.orm.JpaEntitiesRegistry
 import org.osgi.service.component.annotations.Reference
 
+//
 //class CryptoRepositoryFactoryImpl(
 //    @Reference(service = DbConnectionManager::class)
 //    dbConnectionManager: DbConnectionManager,
@@ -44,10 +46,11 @@ import org.osgi.service.component.annotations.Reference
 //                }
 //            }
 //        }
-//        // somehow figure out which version we want for  
-//        when (tenantId) {
-//            REST -> net.corda.crypto.persistence.v50ga.CryptoRepositoryImpl(entityManagerFactory)
-//            else -> net.corda.crypto.persistence.v50beta2.CryptoRepositoryImpl(entityManagerFactory)
-//        }
+//        return V1CryptoRepositoryImpl(entityManagerFactory)
+////        // somehow figure out which version we want for  
+////        when (tenantId) {
+////            REST -> net.corda.crypto.persistence.v1schema.CryptoRepositoryImpl(entityManagerFactory)
+////            else -> net.corda.crypto.persistence.v2schema.CryptoRepositoryImpl(entityManagerFactory)
+////        }
 //    }
 //}

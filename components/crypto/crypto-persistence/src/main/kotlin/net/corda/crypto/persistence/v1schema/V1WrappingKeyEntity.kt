@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.v50beta2
+package net.corda.crypto.persistence.v1schema
 
 import net.corda.db.schema.DbSchema
 import java.time.Instant
@@ -15,7 +15,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
-class V50Beta2WrappingKeyEntity(
+class V1WrappingKeyEntity(
     /**
      * Key alias must be unique across all tenants. The key can be reused by different tenants.
      */
@@ -42,8 +42,10 @@ class V50Beta2WrappingKeyEntity(
     var algorithmName: String,
 
     /**
-     * Key material for the wrapping key. It's encrypted by by another key which is obtained through the configuration.
+     * Key material for the wrapping key. It's encrypted by another key which is obtained through the configuration.
      */
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition = "BLOB")
     var keyMaterial: ByteArray
-)
+) {
+    override fun equals(other: Any?) = other != null && other is V1WrappingKeyEntity && other.alias.equals(alias)
+}

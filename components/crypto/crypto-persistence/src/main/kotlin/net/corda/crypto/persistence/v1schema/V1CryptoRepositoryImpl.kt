@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.v50beta2
+package net.corda.crypto.persistence.v1schema
 
 import net.corda.crypto.persistence.CryptoRepository
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -7,12 +7,12 @@ import net.corda.orm.utils.use
 import java.time.Instant
 import javax.persistence.EntityManager
 
-class V50Beta2CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManager) :
+class V1CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManager) :
     CryptoRepository {
     override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
         entityManagerFactory().transaction { em ->
             em.persist(
-                V50Beta2WrappingKeyEntity(
+                V1WrappingKeyEntity(
                     alias = alias,
                     created = Instant.now(),
                     encodingVersion = key.encodingVersion,
@@ -24,7 +24,7 @@ class V50Beta2CryptoRepositoryImpl(private val entityManagerFactory: () -> Entit
     }
 
     override fun findWrappingKey(alias: String): WrappingKeyInfo? = entityManagerFactory().use { em ->
-        em.find(V50Beta2WrappingKeyEntity::class.java, alias)?.let { rec ->
+        em.find(V1WrappingKeyEntity::class.java, alias)?.let { rec ->
             WrappingKeyInfo(
                 encodingVersion = rec.encodingVersion,
                 algorithmName = rec.algorithmName,

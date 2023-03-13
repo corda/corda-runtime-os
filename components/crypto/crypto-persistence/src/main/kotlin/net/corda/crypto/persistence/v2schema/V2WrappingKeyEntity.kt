@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.v50ga
+package net.corda.crypto.persistence.v2schema
 
 import net.corda.db.schema.DbSchema
 import java.time.Instant
@@ -16,7 +16,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
-class V50GAWrappingKeyEntity(
+class V2WrappingKeyEntity(
     /**
      * Key alias must be unique across all tenants. The key can be reused by different tenants.
      */
