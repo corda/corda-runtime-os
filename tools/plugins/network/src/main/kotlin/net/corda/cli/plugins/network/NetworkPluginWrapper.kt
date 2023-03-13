@@ -5,7 +5,7 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
-import org.pf4j.ExtensionPoint
+import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
 import org.slf4j.Logger
@@ -26,12 +26,13 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         logger.debug("Network plugin stopped.")
     }
 
+    @Extension
     @CommandLine.Command(
         name = "network",
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
-    class NetworkPlugin : RestCommand(), CordaCliPlugin, ExtensionPoint {
+    class NetworkPlugin : RestCommand(), CordaCliPlugin {
 
         @Suppress("LongParameterList")
         @CommandLine.Command(

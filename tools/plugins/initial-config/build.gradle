@@ -17,7 +17,7 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
-    implementation "info.picocli:picocli:$picocliVersion"
+    compileOnly "info.picocli:picocli:$picocliVersion"
     annotationProcessor "info.picocli:picocli-codegen:$picocliVersion"
 
     implementation 'net.corda:corda-config-schema'

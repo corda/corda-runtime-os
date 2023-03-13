@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.dbconfig
 
 import net.corda.cli.api.CordaCliPlugin
-import org.pf4j.ExtensionPoint
+import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
 import org.slf4j.Logger
@@ -23,6 +23,7 @@ class DatabaseBootstrapAndUpgrade(wrapper: PluginWrapper) : Plugin(wrapper) {
         logger.info("Bootstrap plugin stopped.")
     }
 
+    @Extension
     @CommandLine.Command(name = "database", subcommands = [Spec::class], description = ["Does Database bootstrapping and upgrade"])
-    class PluginEntryPoint : CordaCliPlugin, ExtensionPoint
+    class PluginEntryPoint : CordaCliPlugin
 }

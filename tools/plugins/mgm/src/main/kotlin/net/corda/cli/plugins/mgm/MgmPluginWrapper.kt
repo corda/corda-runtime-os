@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.mgm
 
 import net.corda.cli.api.CordaCliPlugin
-import org.pf4j.ExtensionPoint
+import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
 import org.slf4j.Logger
@@ -22,6 +22,7 @@ class MgmPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         logger.debug("MGM plugin stopped.")
     }
 
+    @Extension
     @CommandLine.Command(
         name = "mgm",
         subcommands = [
@@ -30,5 +31,5 @@ class MgmPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         ],
         description = ["Plugin for membership operations."]
     )
-    class MgmPlugin : CordaCliPlugin, ExtensionPoint
+    class MgmPlugin : CordaCliPlugin
 }

@@ -2,7 +2,7 @@ package net.corda.cli.plugins.topicconfig
 
 import net.corda.cli.api.CordaCliPlugin
 import org.apache.kafka.clients.admin.AdminClientConfig
-import org.pf4j.ExtensionPoint
+import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
 import org.slf4j.Logger
@@ -26,8 +26,9 @@ class TopicPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         logger.info("Topic plugin stopped.")
     }
 
+    @Extension
     @CommandLine.Command(name = "topic", subcommands = [Create::class, Delete::class], description = ["Plugin for Kafka topic operations."])
-    class Topic : CordaCliPlugin, ExtensionPoint {
+    class Topic : CordaCliPlugin {
 
         @CommandLine.Option(
             names = ["-n", "--name-prefix"],
