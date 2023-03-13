@@ -294,7 +294,6 @@ class GatewayIntegrationTest : TestBase() {
 
         @Test
         @Timeout(30)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `http client to gateway`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
@@ -351,7 +350,6 @@ class GatewayIntegrationTest : TestBase() {
 
         @Test
         @Timeout(30)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `requests with extremely large payloads are rejected`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
@@ -395,7 +393,6 @@ class GatewayIntegrationTest : TestBase() {
 
         @Test
         @Timeout(30)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `http client to gateway with ip address`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
@@ -462,7 +459,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class ReconfigurationTests {
         @Test
         @Timeout(100)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `gateway reconfiguration`() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
@@ -583,7 +579,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class MultipleClientsToGatewayTests {
         @Test
         @Timeout(60)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `multiple clients to gateway`() {
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
@@ -647,7 +642,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class GatewayToMultipleServersTest {
         @Test
         @Timeout(60)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `gateway to multiple servers`() {
             val messageCount = 100
             val serversCount = 4
@@ -742,7 +736,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class DualStreamTests {
         @Test
         @Timeout(60)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `gateway to gateway - dual stream`() {
             val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
@@ -811,7 +804,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             "/",
-                            chipSslConfig,
+                            aliceSslConfig,
                             MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
@@ -829,7 +822,7 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             "/",
-                            daleSslConfig,
+                            bobSslConfig,
                             MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory
@@ -902,7 +895,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class BadConfigurationTests {
         @Test
         @Timeout(120)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
@@ -1027,7 +1019,6 @@ class GatewayIntegrationTest : TestBase() {
 
         @Test
         @Timeout(120)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `key store can change dynamically`() {
             val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
@@ -1181,7 +1172,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class MutualTls {
         @Test
         @Timeout(60)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `gateway to gateway - mutual TLS`() {
             val aliceGatewayAddress = URI.create("https://127.0.0.1:${getOpenPort()}")
             val bobGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
@@ -1252,7 +1242,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             "/",
-                            chipSslConfig.copy(tlsType = TlsType.MUTUAL),
+                            aliceSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
@@ -1270,7 +1260,7 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             "/",
-                            daleSslConfig.copy(tlsType = TlsType.MUTUAL),
+                            bobSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory

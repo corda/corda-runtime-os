@@ -61,7 +61,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `simple client POST request`() {
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
@@ -85,7 +84,7 @@ class HttpTest : TestBase() {
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
-                chipSslConfig,
+                bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
@@ -99,7 +98,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `multiple clients multiple requests`() {
         val requestNo = 10
         val threadNo = 2
@@ -131,7 +129,7 @@ class HttpTest : TestBase() {
                 val t = thread {
                     val httpClient = HttpClient(
                         DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore, null),
-                        chipSslConfig,
+                        bobSslConfig,
                         threadPool,
                         threadPool,
                         ConnectionConfiguration(),
@@ -163,7 +161,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `large payload`() {
         val hugePayload = (1..0xA00_000)
             .map {
@@ -208,7 +205,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
@@ -246,7 +242,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake succeeds - revocation checking disabled C4`() {
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
@@ -284,7 +279,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server identity check fails C4`() {
         MitmServer(serverAddress.host, serverAddress.port, c4sslKeyStore).use { server ->
             server.start()
@@ -319,13 +313,12 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server identity check fails C5`() {
         MitmServer(serverAddress.host, serverAddress.port, chipKeyStore).use { server ->
             server.start()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
-                daleSslConfig,
+                bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
@@ -350,7 +343,6 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - requested SNI is not recognized`() {
 
         HttpServer(
@@ -372,7 +364,7 @@ class HttpTest : TestBase() {
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
-                chipSslConfig,
+                bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
