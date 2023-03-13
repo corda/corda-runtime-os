@@ -71,11 +71,12 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-        val session = createInteropFlowSession(memberName)
-        val request = FacadeInvocation(memberName, facadeName, methodName, payload)
-        val response = session.sendAndReceive(FacadeInvocationResult::class.java, request)
-        session.close()
-        return response.result
+        //val session = createInteropFlowSession(memberName)
+        //val request = FacadeInvocation(memberName, facadeName, methodName, payload)
+        //val response = session.sendAndReceive(FacadeInvocationResult::class.java, request)
+        //session.close()
+        //return response.result
+        return payload
     }
 
     @Suspendable

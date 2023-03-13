@@ -1,0 +1,25 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Facade call demo app"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-ledger-consensual'
+
+    cordapp project(':testing:cpbs:ledger-consensual-demo-contract')
+
+    testImplementation project(":libs:application:application-impl")
+    testImplementation project(":libs:sandbox-types")
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
