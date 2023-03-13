@@ -16,6 +16,11 @@
         "type": "array",
         "items": "net.corda.data.membership.common.RegistrationStatus"
       }
+    },
+    {
+      "name": "limit",
+      "doc": "Optional. Limit the number of results.",
+      "type": ["int", "null"]
     }
   ]
 }
