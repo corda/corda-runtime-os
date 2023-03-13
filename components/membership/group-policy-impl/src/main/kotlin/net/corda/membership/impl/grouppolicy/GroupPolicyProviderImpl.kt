@@ -277,7 +277,7 @@ class GroupPolicyProviderImpl @Activate constructor(
             return null
         }
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
-            membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
+            membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow().first
         } catch (e: MembershipQueryResult.QueryException) {
             logger.warn("Failed to retrieve persisted group policy properties.", e)
             null

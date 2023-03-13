@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -225,8 +226,10 @@ class MembershipPersistenceRPCProcessorTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
@@ -540,7 +543,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `query registration requests returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL))
+            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null)
         )
 
         processor.onNext(rq, responseFuture)

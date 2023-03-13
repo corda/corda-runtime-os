@@ -231,7 +231,7 @@ class VirtualNodeRepositoryTest {
 
         entityManagerFactory.createEntityManager().use {
             VirtualNodeRepositoryImpl().updateVirtualNodeState(
-                it, vnode.holdingIdentity.holdingIdentityShortHash, "maintenance")
+                it, vnode.holdingIdentity.holdingIdentityShortHash, OperationalStatus.INACTIVE)
         }
 
         val changedEntity = entityManagerFactory.createEntityManager().use {
