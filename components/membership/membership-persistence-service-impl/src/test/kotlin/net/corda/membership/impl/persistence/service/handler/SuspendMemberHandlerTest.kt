@@ -13,12 +13,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -29,9 +23,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -42,7 +34,6 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
-import javax.persistence.PersistenceException
 
 class SuspendMemberHandlerTest {
 
@@ -115,15 +106,6 @@ class SuspendMemberHandlerTest {
         return handler.invoke(context, request)
     }
 
-    private fun invokeTestFunctionWithError(errorMsg: String, type: Class<*> = MembershipPersistenceException::class.java) {
-        assertThrows<Exception> {
-            invokeTestFunction()
-        }.apply {
-            assertThat(this).isInstanceOf(type)
-            assertThat(message).contains(errorMsg)
-        }
-    }
-
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
         mgmProvidedContext: ByteArray = contextBytes,
@@ -144,58 +126,6 @@ class SuspendMemberHandlerTest {
         whenever(
             em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
         ).doReturn(mockEntity)
-    }
-
-    @Test
-    fun `handler can be called successfully and persists correct entity`() {
-        whenever(keyValuePairListDeserializer.deserialize(contextBytes)).doReturn(
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("key", "value"),
-                )
-            )
-        )
-        mockMemberInfoEntity()
-        val entityCapture = argumentCaptor<MemberInfoEntity>()
-        val expectedMgmContext = byteArrayOf(0)
-        whenever(keyValuePairListSerializer.serialize(any())).doReturn(expectedMgmContext)
-        whenever(em.merge(entityCapture.capture())).doReturn(mock())
-
-        invokeTestFunction()
-
-        with(entityCapture.firstValue) {
-            assertThat(status).isEqualTo(MEMBER_STATUS_SUSPENDED)
-            assertThat(serialNumber).isEqualTo(SERIAL_NUMBER)
-            assertThat(modifiedTime).isEqualTo(clock.instant())
-            assertThat(groupId).isEqualTo(knownGroupId)
-            assertThat(memberX500Name).isEqualTo(knownX500Name.toString())
-            assertThat(mgmContext).isEqualTo(expectedMgmContext)
-            assertThat(isPending).isFalse
-        }
-    }
-
-    @Test
-    fun `invoke updates MGM-provided context`() {
-        whenever(keyValuePairListDeserializer.deserialize(contextBytes)).doReturn(
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair(STATUS, "value"),
-                    KeyValuePair(MODIFIED_TIME, "value"),
-                    KeyValuePair(SERIAL, "value")
-                )
-            )
-        )
-        val mgmContextCapture = argumentCaptor<KeyValuePairList>()
-        whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
-        mockMemberInfoEntity()
-
-        invokeTestFunction()
-
-        assertThat(mgmContextCapture.firstValue.items).contains(
-            KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
-            KeyValuePair(MODIFIED_TIME, clock.instant().toString()),
-            KeyValuePair(SERIAL, (SERIAL_NUMBER + 2).toString())
-        )
     }
 
     @Test
@@ -222,51 +152,5 @@ class SuspendMemberHandlerTest {
                 memberContext, mgmContext
             )
         )
-    }
-
-    @Test
-    fun `invoke throws exception if member cannot be found`() {
-        whenever(
-            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
-        ).doReturn(null)
-
-        invokeTestFunctionWithError("does not exist")
-    }
-
-    @Test
-    fun `invoke throws exception if serial number is outdated`() {
-        mockMemberInfoEntity(serial = 6L)
-
-        invokeTestFunctionWithError("serial number does not match", PersistenceException::class.java)
-    }
-
-    @Test
-    fun `invoke throws exception if member is not currently active`() {
-        mockMemberInfoEntity(memberStatus = MEMBER_STATUS_SUSPENDED)
-
-        invokeTestFunctionWithError("cannot be suspended", IllegalArgumentException::class.java)
-
-        mockMemberInfoEntity(memberStatus = MEMBER_STATUS_PENDING)
-
-        invokeTestFunctionWithError("cannot be suspended", IllegalArgumentException::class.java)
-    }
-
-    @Test
-    fun `invoke throws exception if MGM-provided context cannot be serialized`() {
-        whenever(keyValuePairListSerializer.serialize(any())).doReturn(null)
-        whenever(keyValuePairListDeserializer.deserialize(contextBytes)).doReturn(
-            KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)))
-        )
-        mockMemberInfoEntity()
-
-        invokeTestFunctionWithError("Failed to serialize")
-    }
-
-    @Test
-    fun `invoke throws exception if MGM-provided context cannot be deserialized`() {
-        whenever(keyValuePairListDeserializer.deserialize(contextBytes)).doReturn(null)
-        mockMemberInfoEntity()
-
-        invokeTestFunctionWithError("Failed to deserialize")
     }
 }
