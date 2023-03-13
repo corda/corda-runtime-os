@@ -663,10 +663,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                signatureSpec = spec,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                signatureSpec = spec
             )
         }
     }
@@ -707,10 +707,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                digest = digest,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                digest = digest
             )
         }
     }
@@ -734,10 +734,10 @@ class CryptoProcessorTests {
         assertEquals(publicKey, signature.by)
         assertTrue(signature.bytes.isNotEmpty())
         verifier.verify(
-            publicKey = publicKey,
-            signatureSpec = signatureSpec,
+            originalData = data,
             signatureData = signature.bytes,
-            clearData = data
+            publicKey = publicKey,
+            signatureSpec = signatureSpec
         )
     }
 
@@ -778,10 +778,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                signatureSpec = spec,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                signatureSpec = spec
             )
         }
     }
@@ -824,10 +824,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                digest = digest,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                digest = digest
             )
         }
     }
