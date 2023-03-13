@@ -17,7 +17,7 @@ class ExternalChannelsConfigValidatorImpl: ExternalChannelsConfigValidator {
     }
 
     private fun validate(cpkIdentifier: CpkIdentifier, externalChannelsConfig: String?) {
-        if (externalChannelsConfig==null) {
+        if (externalChannelsConfig == null) {
             log.debug("Skipping null external channel configuration string for $cpkIdentifier")
             return
         }
