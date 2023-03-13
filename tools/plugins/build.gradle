@@ -14,6 +14,16 @@ configurations {
     cliHostDist
 }
 
+subprojects {
+    pluginManager.withPlugin('org.jetbrains.kotlin.kapt') {
+        kapt {
+            arguments {
+                arg("project", "${project.group}/${project.name}")
+            }
+        }
+    }
+}
+
 dependencies {
     cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }

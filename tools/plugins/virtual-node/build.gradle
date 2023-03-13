@@ -1,6 +1,7 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
     id 'corda.cli-plugin-packager'
     id 'corda.common-publishing'
 }
@@ -23,6 +24,9 @@ dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+
+    implementation "info.picocli:picocli:$picocliVersion"
+    annotationProcessor "info.picocli:picocli-codegen:$picocliVersion"
 
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
