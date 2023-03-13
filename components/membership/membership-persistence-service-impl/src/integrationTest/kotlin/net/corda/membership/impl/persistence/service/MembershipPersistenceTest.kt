@@ -410,10 +410,10 @@ class MembershipPersistenceTest {
             cordaAvroDeserializer =
                 cordaAvroSerializationFactory.createAvroDeserializer({ }, KeyValuePairList::class.java)
             val dbInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            vnodeEmf = dbInstaller.setupDatabase(vnodeDbInfo, "vnode-vault", MembershipEntities.classes)
+            vnodeEmf = dbInstaller.setupDatabase(vnodeDbInfo, "vnode-vault", MembershipEntities.vnodeClasses)
             dbInstaller.setupClusterDatabase(clusterDbInfo, "config", ConfigurationEntities.classes).close()
 
-            entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, MembershipEntities.classes)
+            entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, MembershipEntities.vnodeClasses)
 
             setupConfig()
             dbConnectionManager.startAndWait()

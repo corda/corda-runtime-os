@@ -127,12 +127,13 @@ class DBProcessorImpl @Activate constructor(
                     + ChunkingEntities.classes
                     + CpiEntities.classes
                     + CertificateEntities.clusterClasses
+                    + MembershipEntities.clusterClasses
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
         entitiesRegistry.register(
             CordaDb.Vault.persistenceUnitName,
             CertificateEntities.vnodeClasses
-                    + MembershipEntities.classes
+                    + MembershipEntities.vnodeClasses
         )
     }
 
