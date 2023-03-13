@@ -125,4 +125,62 @@ public interface UtxoLedgerService {
             @NotNull FlowSession session,
             @NotNull UtxoTransactionValidator validator
     );
+
+    /**
+     * Sends a transaction builder to another session, then it waits for other side to propose transaction builder components,
+     * then applies the proposed components to a copy of the original builder and returns that new builder.
+     * <p>
+     * It supports similar workflows:
+     * Initiator:
+     * <p>
+     * val updatedTxBuilder = utxoLedgerService.sendAndReceiveTransactionBuilder(txBuilder, session)
+     * <p>
+     * The notary and time window from the proposal will get discarded and the original will be kept if both the original and
+     * the proposal have these components set. Also, all duplications will be discarded.
+     * <p>
+     * Receiver:
+     * <p>
+     * val proposedTxBuilder = utxoLedgerService.receiveTransactionBuilder(session)
+     * proposedTxBuilder.add...(...)
+     * proposedTxBuilder.add...(...)
+     * proposedTxBuilder.add...(...)
+     * utxoLedgerService.replyTransactionBuilderProposal(proposedTxBuilder, session)
+     *
+     * @param transactionBuilder The {@link UtxoTransactionBuilder} to send.
+     * @param session The receiver {@link FlowSession]}.
+     *
+     * @return A new merged builder of the original and proposed components.
+     */
+    @NotNull
+    @Suspendable
+    UtxoTransactionBuilder sendAndReceiveTransactionBuilder(
+            @NotNull UtxoTransactionBuilder transactionBuilder,
+            @NotNull FlowSession session
+    );
+
+    /**
+     * Receives a transaction builder from another session.
+     *
+     * @param session The {@link FlowSession] to receive the {@link UtxoTransactionBuilder} from.
+     */
+    @NotNull
+    @Suspendable
+    UtxoTransactionBuilder receiveTransactionBuilder(
+            @NotNull FlowSession session
+    );
+
+    /**
+     * Sends the differences of transaction builders to another session with all dependent back chains.
+     * It works only with {@link UtxoTransactionBuilder}s created from {@link #receiveTransactionBuilder(FlowSession)}
+     * which track the differences internally.
+     * If it is called with anything else, it throws [InvalidParameterException].
+     * <p>
+     * @param transactionBuilder The {@link UtxoTransactionBuilder} to send.
+     * @param session The receiver {@link FlowSession}.
+     */
+    @Suspendable
+    void sendUpdatedTransactionBuilder(
+            @NotNull UtxoTransactionBuilder transactionBuilder,
+            @NotNull FlowSession session
+    );
 }
