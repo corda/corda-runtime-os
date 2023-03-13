@@ -92,7 +92,7 @@ class UpsertCpiTests {
     @AfterEach
     fun afterEach() = fs.close()
 
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
+    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, mock())
 
     private fun String.writeToPath(): Path {
         val path = fs.getPath(UUID.randomUUID().toString())

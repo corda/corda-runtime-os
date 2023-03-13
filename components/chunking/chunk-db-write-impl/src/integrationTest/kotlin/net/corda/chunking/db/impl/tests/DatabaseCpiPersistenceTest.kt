@@ -66,7 +66,7 @@ internal class DatabaseCpiPersistenceTest {
         ChunkingEntities.classes.toList() + CpiEntities.classes.toList(),
         emConfig
     )
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
+    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, mock())
     private val mockCpkContent = """
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor 
             condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem 
