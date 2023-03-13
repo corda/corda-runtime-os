@@ -7,11 +7,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.utilities.VisibleForTesting
 
 /**
  * Monitors the status of [CpiUploadService] so that it can know when
@@ -19,8 +17,9 @@ import net.corda.utilities.VisibleForTesting
  */
 internal class CpiUploadRestResourceHandler : LifecycleEventHandler {
 
-    @VisibleForTesting
-    internal var registrationHandle: RegistrationHandle? = null
+    private companion object {
+        const val FOLLOW_STATUS_NAME = "CpiUploadRestResourceHandler_FOLLOW_STATUS_NAME"
+    }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -31,12 +30,14 @@ internal class CpiUploadRestResourceHandler : LifecycleEventHandler {
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        registrationHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<CpiUploadService>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+        coordinator.createManagedResource(FOLLOW_STATUS_NAME) {
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<CpiUploadService>(),
+                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+                )
             )
-        )
+        }
     }
 
     private fun onRegistrationStatusChangeEvent(
@@ -44,18 +45,13 @@ internal class CpiUploadRestResourceHandler : LifecycleEventHandler {
         coordinator: LifecycleCoordinator
     ) {
         if (event.status == LifecycleStatus.ERROR) {
-            closeResources()
+            coordinator.closeManagedResources(setOf(FOLLOW_STATUS_NAME))
         }
         coordinator.updateStatus(event.status)
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        closeResources()
+        coordinator.closeManagedResources(setOf(FOLLOW_STATUS_NAME))
         coordinator.updateStatus(LifecycleStatus.DOWN)
-    }
-
-    private fun closeResources() {
-        registrationHandle?.close()
-        registrationHandle = null
     }
 }
