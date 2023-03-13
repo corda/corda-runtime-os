@@ -79,5 +79,82 @@
                                   referencedColumnNames="id"
                                   referencedTableName="crypto_hsm_association"
                                   constraintName="crypto_hsm_category_association_fk1"/>
+        <!--
+        For now, the crypto_signing_key table schema must be identical between here and the 
+        virtual node schema (in ../../crypto/migration/crypto-creation-v1.0.xml)
+        since the crypto processor uses the same code irrespective of where the table resides.
+       
+        We could just include the same changeset files in both cases, but that might confuse readers
+        and liquibase, so instead we have to keep the content in sync.  
+        -->
+        <createTable tableName="crypto_signing_key">
+            <column name="tenant_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key_id" type="CHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_key_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scheme_code_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key_material" type="VARBINARY(1048576)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="encoding_version" type="INT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="master_key_alias" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="alias" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="hsm_alias" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="external_id" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="hsm_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey constraintName="crypto_signing_key_pk"
+                       tableName="crypto_signing_key"
+                       columnNames="tenant_id, key_id"/>
+        <createIndex indexName="crypto_signing_key_full_key_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+            <column name="full_key_id"/>
+        </createIndex>
+        <createIndex indexName="crypto_signing_key_tenant_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex indexName="crypto_signing_key_tenant_category_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+            <column name="category"/>
+        </createIndex>
+        <createIndex indexName="crypto_signing_key_tenant_alias_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+            <column name="alias"/>
+        </createIndex>
     </changeSet>
 </databaseChangeLog>

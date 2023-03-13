@@ -3,8 +3,12 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
     <!--
-    Note that some table definitions are defined in 'vnode_crypto' package
+    For now, the crypto_signing_key table that must be identical between the cluster schema (i.e.
+    that specified by this file) and the virtual node schema (specified by ../vnode-crypto/db.changelog-master.xml),
+    since the crypto processor uses the same code irrespective of where the table resides.
+    
+    We could just include the same changeset files in both cases, but that might confuse readers
+    and liquibase, so instead we have to keep the content in sync.  
     -->
     <include file="net/corda/db/schema/crypto/migration/crypto-creation-v1.0.xml"/>
-    <include file="net/corda/db/schema/vnode-crypto/migration/vnode-crypto-creation-v1.0.xml"/>
 </databaseChangeLog>
