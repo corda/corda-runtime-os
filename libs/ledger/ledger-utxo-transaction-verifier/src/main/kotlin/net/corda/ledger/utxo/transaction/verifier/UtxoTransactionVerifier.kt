@@ -23,16 +23,6 @@ abstract class UtxoTransactionVerifier {
         }
     }
 
-    protected fun verifyInputsAndReferencesDoNotOverlap(
-        inputStateRefs: List<StateRef>,
-        referenceStateRefs: List<StateRef>
-    ) {
-        val intersect = inputStateRefs.intersect(referenceStateRefs.toSet())
-        check(intersect.isEmpty()) {
-            "The same StateRefs ($intersect) cannot be both input and reference for a transaction. ($subjectClass)"
-        }
-    }
-
     protected fun verifyCommands(commands: List<Command>) {
         check(commands.isNotEmpty()) {
             "At least one command must be applied to the current $subjectClass."

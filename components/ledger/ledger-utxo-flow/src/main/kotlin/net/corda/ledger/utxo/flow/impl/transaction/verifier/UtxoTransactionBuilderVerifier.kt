@@ -27,7 +27,6 @@ class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransac
          */
         verifySignatories(transactionBuilder.signatories)
         verifyInputsAndOutputs(transactionBuilder.inputStateRefs, transactionBuilder.outputStates)
-        verifyInputsAndReferencesDoNotOverlap(transactionBuilder.inputStateRefs, transactionBuilder.referenceStateRefs)
         verifyCommands(transactionBuilder.commands)
         verifyNotaryIsWhitelisted()
     }
