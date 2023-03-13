@@ -1,6 +1,6 @@
 package net.corda.libs.cpiupload.impl
 
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.publisher.Publisher

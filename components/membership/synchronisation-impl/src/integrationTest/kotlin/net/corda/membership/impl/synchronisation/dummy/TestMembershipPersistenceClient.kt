@@ -66,8 +66,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
-        groupPolicy: LayeredPropertyMap
-    ): MembershipPersistenceResult<Int> {
+        groupPolicy: LayeredPropertyMap,
+        version: Long
+    ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -114,17 +115,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         approvedMember: HoldingIdentity,
         registrationRequestId: String
     ): MembershipPersistenceResult<MemberInfo> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String
-    ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

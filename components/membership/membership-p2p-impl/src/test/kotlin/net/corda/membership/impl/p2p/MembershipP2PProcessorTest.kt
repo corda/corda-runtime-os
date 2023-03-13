@@ -30,6 +30,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -45,6 +46,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -77,7 +79,8 @@ class MembershipP2PProcessorTest {
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
         memberContext,
-        testSig
+        testSig,
+        true
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
     private val memberKey: PublicKey = mock()
@@ -147,7 +150,7 @@ class MembershipP2PProcessorTest {
         on { encodeAsByteArray(eq(mgmKey)) } doReturn KEY_BYTES
     }
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup(eq(mgm.toCorda().x500Name)) } doReturn mgmInfo
+        on { lookup(eq(mgm.toCorda().x500Name), any()) } doReturn mgmInfo
     }
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(eq(mgm.toCorda())) } doReturn groupReader
@@ -388,7 +391,8 @@ class MembershipP2PProcessorTest {
                     clock.instant().plusMillis(300000L),
                     "mid",
                     null,
-                    MEMBERSHIP_P2P_SUBSYSTEM
+                    MEMBERSHIP_P2P_SUBSYSTEM,
+                    MembershipStatusFilter.ACTIVE
                 ),
                 this
             )

@@ -36,6 +36,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
@@ -63,6 +64,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindGroupInfo
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindSessionInformation
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembersMapWarning
@@ -121,16 +123,11 @@ internal class SessionManagerImpl(
 ) : SessionManager {
 
     companion object {
-        fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties {
-            val peer = message.header.destination
-            val us = message.header.source
-            return SessionCounterparties(us.toCorda(), peer.toCorda())
-        }
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
-    private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionCounterparties, Session>>()
+    private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, Session>>()
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
 
@@ -239,23 +236,40 @@ internal class SessionManagerImpl(
         )
     }
 
+    private fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties? {
+        val peer = message.header.destination
+        val us = message.header.source
+        val status = message.header.statusFilter
+        val info = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
+        if (info == null) {
+            logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, message.header.messageId)
+            return null
+        }
+        return SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
+    }
+
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
                 val counterparties = getSessionCounterpartiesFromMessage(message.message)
+                    ?: return@read SessionState.CannotEstablishSession
 
                 return@read when (val status = outboundSessionPool.getNextSession(counterparties)) {
-                    is OutboundSessionPool.SessionPoolStatus.SessionActive -> SessionState.SessionEstablished(status.session)
+                    is OutboundSessionPool.SessionPoolStatus.SessionActive ->
+                        SessionState.SessionEstablished(status.session, counterparties)
                     is OutboundSessionPool.SessionPoolStatus.SessionPending -> {
-                        SessionState.SessionAlreadyPending
+                        SessionState.SessionAlreadyPending(counterparties)
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
                         val initMessages = genSessionInitMessages(counterparties, config.get().sessionsPerCounterparties)
                         if (initMessages.isEmpty()) return@read SessionState.CannotEstablishSession
                         outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
-                        val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
-                            ?: return@read SessionState.CannotEstablishSession
-                        SessionState.NewSessionsNeeded(messages)
+                        val messages = linkOutMessagesFromSessionInitMessages(
+                            counterparties,
+                            initMessages,
+                            message.message.header.statusFilter
+                        ) ?: return@read SessionState.CannotEstablishSession
+                        SessionState.NewSessionsNeeded(messages, counterparties)
                     }
                 }
             }
@@ -270,7 +284,13 @@ internal class SessionManagerImpl(
             }
             val outboundSession = outboundSessionPool.getSession(uuid)
             return@withLifecycleLock if (outboundSession is OutboundSessionPool.SessionType.ActiveSession) {
-                SessionManager.SessionDirection.Outbound(outboundSession.sessionCounterparties, outboundSession.session)
+                SessionManager.SessionDirection.Outbound(
+                    SessionManager.Counterparties(
+                        outboundSession.sessionCounterparties.ourId,
+                        outboundSession.sessionCounterparties.counterpartyId
+                    ),
+                    outboundSession.session
+                )
             } else {
                 SessionManager.SessionDirection.NoSession
             }
@@ -311,12 +331,14 @@ internal class SessionManagerImpl(
     override fun recordsForSessionEstablished(
         session: Session,
         messageAndKey: AuthenticatedMessageAndKey,
+        serial: Long,
     ): List<Record<String, *>> {
         return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
             messageAndKey,
             session,
             groupPolicyProvider,
             membershipGroupReaderProvider,
+            serial
         )?.let { message ->
             val key = LinkManager.generateKey()
             val messageRecord = Record(LINK_OUT_TOPIC, key, message)
@@ -340,22 +362,24 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun refreshOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
+    private fun refreshOutboundSession(sessionCounterparties: SessionCounterparties, sessionId: String) {
         sessionNegotiationLock.write {
-            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
-            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
-            val sessionInitMessage = genSessionInitMessages(counterparties, 1)
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), sessionCounterparties)
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), sessionCounterparties)
+            val sessionInitMessage = genSessionInitMessages(sessionCounterparties, 1)
             if(sessionInitMessage.isEmpty()) {
-                outboundSessionPool.removeSessions(counterparties)
+                outboundSessionPool.removeSessions(sessionCounterparties)
                 return
             }
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 // If the session was not replaced do not send a initiatorHello
                 return
             }
-            val records = linkOutMessagesFromSessionInitMessages(counterparties, sessionInitMessage) ?.let {
+            val records = linkOutMessagesFromSessionInitMessages(
+                sessionCounterparties, sessionInitMessage, sessionCounterparties.status
+            ) ?.let {
                 OutboundMessageProcessor.recordsForNewSessions(
-                    SessionState.NewSessionsNeeded(it),
+                    SessionState.NewSessionsNeeded(it, sessionCounterparties),
                     inboundAssignmentListener,
                     logger
                 ) + listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null))
@@ -440,13 +464,14 @@ internal class SessionManagerImpl(
     }
 
     private fun linkOutMessagesFromSessionInitMessages(
-        counterparties: SessionCounterparties,
-        messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>
+        sessionCounterparties: SessionCounterparties,
+        messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>,
+        filter: MembershipStatusFilter
     ): List<Pair<String, LinkOutMessage>>? {
         val sessionIds = messages.map { it.first.sessionId }
         logger.info(
-            "Local identity (${counterparties.ourId}) initiating new sessions with Ids $sessionIds with remote identity " +
-                "${counterparties.counterpartyId}"
+            "Local identity (${sessionCounterparties.ourId}) initiating new sessions with Ids $sessionIds with remote identity " +
+                "${sessionCounterparties.counterpartyId}"
         )
 
         for (message in messages) {
@@ -455,25 +480,28 @@ internal class SessionManagerImpl(
                 InMemorySessionReplayer.SessionMessageReplay(
                     message.second,
                     message.first.sessionId,
-                    counterparties.ourId,
-                    counterparties.counterpartyId,
+                    sessionCounterparties,
                     heartbeatManager::sessionMessageSent
                 ),
-                counterparties
+                sessionCounterparties
             )
         }
 
-        val responderMemberInfo = membershipGroupReaderProvider.lookup(counterparties.ourId, counterparties.counterpartyId)
+        val responderMemberInfo = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId,
+            sessionCounterparties.counterpartyId,
+            filter
+        )
         if (responderMemberInfo == null) {
-            logger.warn("Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in " +
-                "${counterparties.ourId}'s members map. The sessionInit message was not sent.")
+            logger.warn("Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is not in " +
+                "${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit message was not sent.")
             return null
         }
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(counterparties.ourId)
+        val groupPolicy = groupPolicyProvider.getGroupPolicy(sessionCounterparties.ourId)
         if (groupPolicy == null) {
             logger.warn(
-                "Could not find the group information in the GroupPolicyProvider for ${counterparties.ourId}." +
+                "Could not find the group information in the GroupPolicyProvider for ${sessionCounterparties.ourId}." +
                     " The sessionInit message was not sent."
             )
             return emptyList()
@@ -481,11 +509,11 @@ internal class SessionManagerImpl(
 
         val linkOutMessages = mutableListOf<Pair<String, LinkOutMessage>>()
         for (message in messages) {
-            heartbeatManager.sessionMessageSent(counterparties, message.first.sessionId)
+            heartbeatManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
             linkOutMessages.add(
                 Pair(
                     message.first.sessionId,
-                    createLinkOutMessage(message.second, counterparties.ourId, responderMemberInfo, groupPolicy.networkType)
+                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, groupPolicy.networkType)
                 )
             )
         }
@@ -525,7 +553,7 @@ internal class SessionManagerImpl(
         }
 
         val responderMemberInfo = membershipGroupReaderProvider
-            .lookup(sessionInfo.ourId, sessionInfo.counterpartyId)
+            .lookup(sessionInfo.ourId, sessionInfo.counterpartyId, sessionInfo.status)
         if (responderMemberInfo == null) {
             logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
@@ -563,8 +591,7 @@ internal class SessionManagerImpl(
             InMemorySessionReplayer.SessionMessageReplay(
                 payload,
                 message.header.sessionId,
-                sessionInfo.ourId,
-                sessionInfo.counterpartyId,
+                sessionInfo,
                 heartbeatManager::sessionMessageSent
             ),
             sessionInfo
@@ -576,7 +603,7 @@ internal class SessionManagerImpl(
             return null
         }
         heartbeatManager.sessionMessageSent(
-            SessionCounterparties(ourIdentityInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
+            sessionInfo,
             message.header.sessionId,
         )
 
@@ -600,8 +627,9 @@ internal class SessionManagerImpl(
             }
         }
 
-        val memberInfo = membershipGroupReaderProvider
-            .lookup(sessionCounterparties.ourId, sessionCounterparties.counterpartyId)
+        val memberInfo = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId, sessionCounterparties.counterpartyId, sessionCounterparties.status
+        )
         if (memberInfo == null) {
             logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
@@ -662,7 +690,11 @@ internal class SessionManagerImpl(
         val (hostedIdentityInSameGroup, peer) = hostedIdentitiesInSameGroup
             .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
                 val member = membershipGroupReaderProvider
-                    .lookupByKey(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
+                    .lookupByKey(
+                        hostedIdentityInSameGroup,
+                        message.source.initiatorPublicKeyHash.array(),
+                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                    )
                 if (member == null) {
                     null
                 } else {
@@ -720,7 +752,11 @@ internal class SessionManagerImpl(
         val peer = hostedIdentitiesInSameGroup
             .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
                 membershipGroupReaderProvider
-                    .lookupByKey(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+                    .lookupByKey(
+                        hostedIdentityInSameGroup,
+                        initiatorIdentityData.initiatorPublicKeyHash.array(),
+                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                    )
             }
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
@@ -772,7 +808,7 @@ internal class SessionManagerImpl(
         }
 
         activeInboundSessions[message.header.sessionId] = Pair(
-            SessionCounterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
+            SessionManager.Counterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
         logger.info(
@@ -1049,6 +1085,8 @@ internal class SessionManagerImpl(
                     counterparties.ourId,
                     counterparties.counterpartyId,
                     session,
+                    counterparties.status,
+                    counterparties.serial
                 )
                 executorService.schedule(
                     { sendHeartbeat(counterparties, session) },
@@ -1064,7 +1102,13 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun sendHeartbeatMessage(source: HoldingIdentity, dest: HoldingIdentity, session: Session) {
+        private fun sendHeartbeatMessage(
+            source: HoldingIdentity,
+            dest: HoldingIdentity,
+            session: Session,
+            filter: MembershipStatusFilter,
+            serial: Long
+        ) {
             val heartbeatMessage = HeartbeatMessage()
             val message = MessageConverter.linkOutMessageFromHeartbeat(
                 source,
@@ -1072,7 +1116,9 @@ internal class SessionManagerImpl(
                 heartbeatMessage,
                 session,
                 groupPolicyProvider,
-                membershipGroupReaderProvider
+                membershipGroupReaderProvider,
+                filter,
+                serial
             )
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")

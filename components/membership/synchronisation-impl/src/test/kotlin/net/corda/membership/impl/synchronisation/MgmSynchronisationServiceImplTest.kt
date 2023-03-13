@@ -1,7 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -55,6 +55,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -166,10 +167,10 @@ class MgmSynchronisationServiceImplTest {
     private val groupParameters: GroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
-        on { lookup(eq(MemberX500Name.parse(mgmName))) } doReturn mgmInfo
-        on { lookup(eq(MemberX500Name.parse(aliceName))) } doReturn aliceInfo
-        on { lookup(eq(MemberX500Name.parse(bobName))) } doReturn bobInfo
-        on { lookup(eq(MemberX500Name.parse(daisyName))) } doReturn daisyInfo
+        on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
+        on { lookup(eq(MemberX500Name.parse(aliceName)), any()) } doReturn aliceInfo
+        on { lookup(eq(MemberX500Name.parse(bobName)), any()) } doReturn bobInfo
+        on { lookup(eq(MemberX500Name.parse(daisyName)), any()) } doReturn daisyInfo
         on { groupParameters } doReturn groupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -251,6 +252,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage1),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record1
         on {
@@ -260,6 +262,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage2),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record2
     }

@@ -1,8 +1,9 @@
 package net.corda.applications.workers.rest
 
-import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.rest.exception.ResourceAlreadyExistsException
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CreateRoleE2eTest {
 
-    private val testToolkit by TestToolkitProperty()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
 
     companion object {
         private var sharedRoleId: String? = null
@@ -38,8 +39,8 @@ class CreateRoleE2eTest {
     @Test
     @Order(1)
     fun `test getRole and createRole HTTP APIs including validation`() {
-        testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
-            val name = testToolkit.uniqueName
+        cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { client ->
+            val name = cordaCluster.uniqueName
             val proxy = client.start().proxy
 
             // Check the role does not exist yet
@@ -77,7 +78,7 @@ class CreateRoleE2eTest {
             }
 
             val groupName = "non-existing-group"
-            val name2 = testToolkit.uniqueName
+            val name2 = cordaCluster.uniqueName
 
             // Try to create a role with a group that does not exist
             assertThatThrownBy { proxy.createRole(CreateRoleType(name2, groupName)) }
@@ -94,11 +95,11 @@ class CreateRoleE2eTest {
         val roleId = requireNotNull(sharedRoleId)
 
         // Create permission
-        val permission = testToolkit.httpClientFor(PermissionEndpoint::class.java).use { client ->
+        val permission = cordaCluster.clusterHttpClientFor(PermissionEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
 
             // Create permission
-            val setPermString = testToolkit.uniqueName + "-PermissionString"
+            val setPermString = cordaCluster.uniqueName + "-PermissionString"
             val createPermType = CreatePermissionType(PermissionType.ALLOW, setPermString, null, null)
 
             val perm = proxy.createPermission(createPermType)
@@ -117,7 +118,7 @@ class CreateRoleE2eTest {
         val permTs = permission.responseBody.updateTimestamp
 
         // Test adding/removing permission to a role
-        testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+        cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
 
             // Try to remove association when it does not exist
@@ -157,12 +158,12 @@ class CreateRoleE2eTest {
     @Test
     @Order(3)
     fun `test unable to un-associate protected role`() {
-        val protectedRole = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+        val protectedRole = cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
             proxy.getRoles().first { it.roleName == DEFAULT_SYSTEM_ADMIN_ROLE }
         }
 
-        testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
+        cordaCluster.clusterHttpClientFor(UserEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
 
             assertThatThrownBy {
@@ -175,7 +176,7 @@ class CreateRoleE2eTest {
     @Test
     @Order(4)
     fun `test cannot change protected role`() {
-        testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+        cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
             val protectedRole = proxy.getRoles().first { it.roleName == DEFAULT_SYSTEM_ADMIN_ROLE }
             assertThatThrownBy {

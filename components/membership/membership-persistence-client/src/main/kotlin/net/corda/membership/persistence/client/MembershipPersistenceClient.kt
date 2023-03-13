@@ -42,6 +42,7 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param groupPolicy The group policy.
+     * @param version The version of the group policy to persist.
      *
      * @return membership persistence result to indicate the result of the persistence operation.
      *  In the case of success the payload will include the newly created version number.
@@ -49,7 +50,8 @@ interface MembershipPersistenceClient : Lifecycle {
     fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ): MembershipPersistenceResult<Int>
+        version: Long
+    ): MembershipPersistenceResult<Unit>
 
     /**
      * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist
@@ -137,22 +139,6 @@ interface MembershipPersistenceClient : Lifecycle {
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
     ): MembershipPersistenceResult<MemberInfo>
-
-    /**
-     * Set a member and registration request as declined
-     *
-     * @param viewOwningIdentity The holding identity of the owner of the view of data.
-     * @param declinedMember The member that had been declined
-     * @param registrationRequestId The ID of the registration request
-     *
-     * @return membership persistence result with the persisted member information to indicate the result of the
-     * persistence operation. No payload is returned in case of success.
-     */
-    fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit>
 
     /**
      * Set the status of an existing registration request.

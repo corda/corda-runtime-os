@@ -102,7 +102,7 @@ class MemberOpsServiceProcessorTest {
     }
 
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
+        on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
     }
 
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -125,7 +125,7 @@ class MemberOpsServiceProcessorTest {
 
     private val testPersistedGroupPolicyEntries: LayeredPropertyMap =
         LayeredPropertyMapMocks.create<LayeredContextImpl>(testProperties)
-    private val membershipQueryResult = MembershipQueryResult.Success(testPersistedGroupPolicyEntries)
+    private val membershipQueryResult = MembershipQueryResult.Success(testPersistedGroupPolicyEntries to 1L)
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
     }
@@ -214,7 +214,7 @@ class MemberOpsServiceProcessorTest {
             LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
         whenever(
             membershipQueryClient.queryGroupPolicy(eq(mgmHoldingIdentity))
-        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries))
+        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries to 1L))
         val requestTimestamp = now
         val requestContext = MembershipRpcRequestContext(
             UUID.randomUUID().toString(),

@@ -2,7 +2,7 @@ package net.corda.cpk.read.impl.services.persistence
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.cpk.read.impl.Helpers
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkDirName
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkFileName

@@ -24,13 +24,11 @@ import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
-import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -452,16 +450,14 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `persistGroupPolicy return the correct version`() {
+    fun `persistGroupPolicy return success on success`() {
         val groupPolicy = mock<LayeredPropertyMap>()
         postConfigChangedEvent()
-        mockPersistenceResponse(
-            PersistGroupPolicyResponse(103),
-        )
+        mockPersistenceResponse()
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
-        assertThat(result).isEqualTo(MembershipPersistenceResult.Success(103))
+        assertThat(result).isEqualTo(MembershipPersistenceResult.success())
     }
 
     @Test
@@ -472,22 +468,9 @@ class MembershipPersistenceClientImplTest {
             PersistenceFailedResponse("Placeholder error"),
         )
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
-    }
-
-    @Test
-    fun `persistGroupPolicy return failure for unexpected result`() {
-        val groupPolicy = mock<LayeredPropertyMap>()
-        postConfigChangedEvent()
-        mockPersistenceResponse(
-            null,
-        )
-
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
-
-        assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
     }
 
     @Test
@@ -501,7 +484,7 @@ class MembershipPersistenceClientImplTest {
         val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
         whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
-        membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         val properties = (argument.firstValue.request as? PersistGroupPolicy)?.properties?.items
         assertThat(properties).containsExactly(
@@ -869,71 +852,6 @@ class MembershipPersistenceClientImplTest {
             mockPersistenceResponse(payload = "This should not be a string!")
 
             val result = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
-                ourHoldingIdentity,
-                bob,
-                registrationRequestId,
-            )
-
-            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-        }
-    }
-
-    @Nested
-    inner class SetMemberAndRegistrationRequestAsDeclinedTests {
-        @Test
-        fun `request to set member and request as declined is as expected`() {
-            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
-            val registrationRequestId = "registrationRequestId"
-
-            postConfigChangedEvent()
-            mockPersistenceResponse()
-
-            membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
-                ourHoldingIdentity,
-                bob,
-                registrationRequestId
-            )
-
-            with(argumentCaptor<MembershipPersistenceRequest>()) {
-                verify(rpcSender).sendRequest(capture())
-
-                assertThat(firstValue.context.requestTimestamp).isBeforeOrEqualTo(clock.instant())
-                assertThat(firstValue.context.holdingIdentity)
-                    .isEqualTo(ourHoldingIdentity.toAvro())
-
-                assertThat(firstValue.request).isInstanceOf(UpdateMemberAndRegistrationRequestToDeclined::class.java)
-                with (firstValue.request as UpdateMemberAndRegistrationRequestToDeclined) {
-                    assertThat(member).isEqualTo(bob.toAvro())
-                    assertThat(registrationId).isEqualTo(registrationRequestId)
-                }
-
-            }
-        }
-
-        @Test
-        fun `it returns error when there was an issue`() {
-            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
-            val registrationRequestId = "registrationRequestId"
-            postConfigChangedEvent()
-            mockPersistenceResponse(PersistenceFailedResponse("error-msg"))
-
-            val result = membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
-                ourHoldingIdentity,
-                bob,
-                registrationRequestId,
-            )
-
-            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-        }
-
-        @Test
-        fun `it returns error when the return data has the wrong type`() {
-            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
-            val registrationRequestId = "registrationRequestId"
-            postConfigChangedEvent()
-            mockPersistenceResponse(payload = "This should not be a string!")
-
-            val result = membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
                 ourHoldingIdentity,
                 bob,
                 registrationRequestId,

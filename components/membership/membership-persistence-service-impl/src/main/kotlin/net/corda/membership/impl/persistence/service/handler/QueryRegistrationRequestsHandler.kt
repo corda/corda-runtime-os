@@ -48,12 +48,13 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
                 .select(root)
                 .where(*predicates.toTypedArray())
                 .orderBy(criteriaBuilder.asc(root.get<Instant>("created")))
-            val details =
-                em.createQuery(query)
-                    .resultList
-                    .map {
-                        it.toDetails()
-                    }
+            val details = with(em.createQuery(query).resultList) {
+                if (request.limit != null && isNotEmpty()) {
+                    subList(0, request.limit)
+                } else {
+                    this
+                }.map { it.toDetails() }
+            }
             RegistrationRequestsQueryResponse(details)
         }
     }

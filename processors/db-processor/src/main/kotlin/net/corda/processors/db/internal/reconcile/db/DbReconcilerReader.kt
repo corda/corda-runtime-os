@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -33,6 +32,10 @@ class DbReconcilerReader<K : Any, V : Any>(
     private val doGetAllVersionedRecords: (ReconciliationContext) -> Stream<VersionedRecord<K, V>>
 ) : ReconcilerReader<K, V>, Lifecycle {
 
+    companion object {
+        private const val REGISTRATION = "REGISTRATION"
+    }
+
     internal val name = "${DbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>"
 
     private val logger = LoggerFactory.getLogger(name)
@@ -44,36 +47,23 @@ class DbReconcilerReader<K : Any, V : Any>(
         ::processEvent
     )
 
-    private var dependencyRegistration: RegistrationHandle? = null
-
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is GetRecordsErrorEvent -> onGetRecordsErrorEvent(event, coordinator)
-            is StopEvent -> onStopEvent()
         }
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        dependencyRegistration?.close()
-        dependencyRegistration = coordinator.followStatusChangesByName(dependencies)
-    }
-
-    private fun onStopEvent() {
-        closeResources()
+         coordinator.createManagedResource(REGISTRATION) { coordinator.followStatusChangesByName(dependencies) }
     }
 
     private fun onRegistrationStatusChangeEvent(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        if (event.status == LifecycleStatus.UP) {
-            coordinator.updateStatus(LifecycleStatus.UP)
-        } else {
-            coordinator.updateStatus(event.status)
-            closeResources()
-        }
+        coordinator.updateStatus(event.status)
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -122,11 +112,6 @@ class DbReconcilerReader<K : Any, V : Any>(
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    private fun closeResources() {
-        dependencyRegistration?.close()
-        dependencyRegistration = null
     }
 
     internal class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
