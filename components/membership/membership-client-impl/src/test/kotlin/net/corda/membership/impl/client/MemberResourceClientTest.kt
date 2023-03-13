@@ -327,7 +327,7 @@ class MemberResourceClientTest {
                 ),
             )
         whenever(membershipQueryClient.queryRegistrationRequestsStatus(
-            any(), eq(null), eq(RegistrationStatus.values().toList()))
+            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
         ).doReturn(MembershipQueryResult.Success(response))
 
         memberOpsClient.start()
@@ -391,7 +391,7 @@ class MemberResourceClientTest {
     @Test
     fun `checkRegistrationProgress throw exception if the request fails`() {
         whenever(membershipQueryClient.queryRegistrationRequestsStatus(
-            any(), eq(null), eq(RegistrationStatus.values().toList()))
+            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
         ).doReturn(MembershipQueryResult.Failure("oops"))
 
         memberOpsClient.start()

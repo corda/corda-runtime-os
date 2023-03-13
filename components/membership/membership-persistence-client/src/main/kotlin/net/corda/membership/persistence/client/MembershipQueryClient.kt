@@ -58,13 +58,15 @@ interface MembershipQueryClient : Lifecycle {
      * @param viewOwningIdentity The holding identity whose view is being requested.
      * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
      * @param statuses Requests in the specified statuses will be included in the query result.
+     * @param limit Limit the number of results returned.
      *
      * @return a query result with a matching registration request if the query executed successfully.
      */
     fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name? = null,
-        statuses: List<RegistrationStatus> = RegistrationStatus.values().toList()
+        statuses: List<RegistrationStatus> = RegistrationStatus.values().toList(),
+        limit: Int? = null
     ): MembershipQueryResult<List<RegistrationRequestStatus>>
 
     /**

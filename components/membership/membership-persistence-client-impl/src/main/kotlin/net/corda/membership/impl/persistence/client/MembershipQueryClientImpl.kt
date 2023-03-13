@@ -164,11 +164,12 @@ class MembershipQueryClientImpl(
     override fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
-        statuses: List<RegistrationStatus>
+        statuses: List<RegistrationStatus>,
+        limit: Int?
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
