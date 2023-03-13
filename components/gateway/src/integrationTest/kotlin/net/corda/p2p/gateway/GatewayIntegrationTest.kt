@@ -243,7 +243,6 @@ class GatewayIntegrationTest : TestBase() {
     inner class ClientToGatewayTests {
         @Test
         @Timeout(30)
-        @Disabled("Disabling temporarily until CORE-11411 is completed.")
         fun `gateway response to invalid request`() {
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
@@ -674,7 +673,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, "/", chipSslConfig, MAX_REQUEST_SIZE),
+                    GatewayConfiguration(serverUri.host, serverUri.port, "/", bobSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
                     null,
                 ).also {
