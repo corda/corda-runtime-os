@@ -57,7 +57,10 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-        TODO("Not yet implemented")
+        val session = createInteropFlowSession(memberName)
+        val response = session.sendAndReceive(String::class.java, payload)
+        session.close()
+        return response
     }
 
     @Suspendable
@@ -122,6 +125,13 @@ class FlowMessagingImpl @Activate constructor(
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
+    }
+
+    @Suspendable
+    private fun createInteropFlowSession(x500Name: MemberX500Name): FlowSession {
+        val sessionId = "${UUID.randomUUID()}-INTEROP"
+        addSessionIdToFlowStackItem(sessionId)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, null)
     }
 
     private fun checkFlowCanBeInitiated() {
