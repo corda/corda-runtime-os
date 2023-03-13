@@ -1,5 +1,7 @@
 package net.cordapp.testing.smoketests.flow
 
+import java.time.Instant
+import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -27,11 +29,9 @@ import net.cordapp.testing.smoketests.flow.messages.JsonSerializationOutput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
-import java.time.Instant
-import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
-@InitiatingFlow(protocol = "smoke-test-protocol")
+@InitiatingFlow(protocol = "smoke-test-protocol", version = [2,3,4])
 class RpcSmokeTestFlow : ClientStartableFlow {
 
     private companion object {
@@ -96,6 +96,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
+        flowEngine.flowContextProperties
         val request = requestBody.getRequestBodyAs(jsonMarshallingService, RpcSmokeTestInput::class.java)
         return jsonMarshallingService.format(execute(request))
     }
