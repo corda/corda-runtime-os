@@ -46,4 +46,5 @@ class WrappingKeyEntity(
      */
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition="BLOB")
     var keyMaterial: ByteArray
+
 )
