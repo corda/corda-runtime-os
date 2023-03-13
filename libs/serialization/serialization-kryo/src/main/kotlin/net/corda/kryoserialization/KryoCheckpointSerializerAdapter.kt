@@ -61,7 +61,7 @@ class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : Checkpoint
             checkpointSerializer.write(adaptedOutput, obj)
         }
 
-        override fun read(kryo: Kryo?, input: Input?, type: Class<OBJ>?): OBJ {
+        override fun read(kryo: Kryo?, input: Input?, type: Class<out OBJ>?): OBJ {
             val adaptedInput = KryoCheckpointInput(kryo!!, input!!)
             return checkpointSerializer.read(adaptedInput, type!!)
         }

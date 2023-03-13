@@ -4,11 +4,10 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
+import com.esotericsoftware.kryo.SerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
-import com.esotericsoftware.kryo.serializers.FieldSerializer
-import de.javakaffee.kryoserializers.ArraysAsListSerializer
-import de.javakaffee.kryoserializers.BitSetSerializer
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
@@ -36,8 +35,6 @@ import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
-import java.util.Arrays
-import java.util.BitSet
 
 class DefaultKryoCustomizer {
 
@@ -60,13 +57,25 @@ class DefaultKryoCustomizer {
                     isAccessible = true
                 }.set(this, classResolver)
 
+                isRegistrationRequired = false
+                references = true
+
+                val defaultFactory = SerializerFactory.FieldSerializerFactory()
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
-                fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
+                defaultFactory.config.extendedFieldNames = true
                 // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
                 // their parents after deserialization.
-                fieldSerializerConfig.isIgnoreSyntheticFields = false
+                defaultFactory.config.ignoreSyntheticFields = false
+                kryo.setDefaultSerializer(defaultFactory)
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
+
+                // Default serializers added below will be searched in a reverse order
+
+                // Add external serializers
+                for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
+                    addDefaultSerializer(clazz, serializer)
+                }
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
@@ -77,22 +86,24 @@ class DefaultKryoCustomizer {
                 )
                 addDefaultSerializer(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
                 addDefaultSerializer(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
-                addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
 
-                addDefaultSerializer(BitSet::class.java, BitSetSerializer())
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
-                addDefaultSerializer(Iterator::class.java) { kryo, type ->
-                    IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
-                }
-                addDefaultSerializer(Throwable::class.java) { kryo, type ->
-                    ThrowableSerializer(kryo, type)
-                }
+                addDefaultSerializer(Iterator::class.java, object: SerializerFactory<IteratorSerializer> {
+                    override fun newSerializer(kryo: Kryo, type: Class<*>) =
+                        IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
+                    override fun isSupported(type: Class<*>) = type == Iterator::class.java
+                })
+
+                addDefaultSerializer(Throwable::class.java, object: SerializerFactory<ThrowableSerializer<*>> {
+                    override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
+                    override fun isSupported(type: Class<*>) = type == Throwable::class.java
+                })
 
                 //register loggers using an int ID to reduce information saved in kryo
                 //ensures Kryo does not write the name of the concrete logging impl class into the serialized stream
@@ -102,16 +113,29 @@ class DefaultKryoCustomizer {
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerializer)
-                addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
 
                 // Register a serializer to reject the serialization of Avro generated classes
                 addDefaultSerializer(SpecificRecord::class.java, AvroRecordRejectSerializer)
 
-                //Add external serializers
-                for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
-                    addDefaultSerializer(clazz, serializer)
-                }
+                addDefaultSerializerAsFirst(NonSerializable::class.java, NonSerializableSerializer)
             }
+        }
+
+        private val defaultSerializerEntryCtor =
+            Class.forName("com.esotericsoftware.kryo.Kryo\$DefaultSerializerEntry")
+                .getDeclaredConstructor(Class::class.java, SerializerFactory::class.java)
+                .apply { isAccessible = true }
+
+        private val defaultSerializersField =
+            Kryo::class.java.getDeclaredField("defaultSerializers")
+                .apply { isAccessible = true }
+
+        @Suppress("unchecked_cast")
+        private fun Kryo.addDefaultSerializerAsFirst(type: Class<*>, serializer: Serializer<*>) {
+            val serializerFactory = SerializerFactory.SingletonSerializerFactory(serializer)
+            val entry = defaultSerializerEntryCtor.newInstance(type, serializerFactory)
+            val defaultSerializers = defaultSerializersField.get(this) as ArrayList<Any>
+            defaultSerializers.add(0, entry)
         }
     }
 
@@ -120,7 +144,7 @@ class DefaultKryoCustomizer {
 
         // Use this to allow construction of objects using a JVM backdoor that skips invoking the constructors, if there
         // is no no-arg constructor available.
-        private val defaultStrategy = Kryo.DefaultInstantiatorStrategy(fallbackStrategy)
+        private val defaultStrategy = DefaultInstantiatorStrategy(fallbackStrategy)
 
         override fun <T> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {
             // However, this doesn't work for non-public classes in the java. namespace

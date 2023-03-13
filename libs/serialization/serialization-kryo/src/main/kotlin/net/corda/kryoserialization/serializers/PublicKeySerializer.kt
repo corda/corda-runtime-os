@@ -16,7 +16,7 @@ class PublicKeySerializer(
         output.writeBytesWithLength(keyEncodingService.encodeAsByteArray(obj))
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<PublicKey>): PublicKey {
+    override fun read(kryo: Kryo, input: Input, type: Class<out PublicKey>): PublicKey {
         return keyEncodingService.decodePublicKey(input.readBytesWithLength())
     }
 }

@@ -13,6 +13,6 @@ internal object AvroRecordRejectSerializer : Serializer<SpecificRecord>() {
         throw UnsupportedOperationException(message)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<SpecificRecord>) =
+    override fun read(kryo: Kryo, input: Input, type: Class<out SpecificRecord>) =
         throw IllegalStateException("Should not reach here!")
 }

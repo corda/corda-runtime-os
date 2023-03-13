@@ -17,6 +17,8 @@ import java.util.concurrent.Executors
 
 internal class KryoCheckpointSerializerTest {
 
+    private fun createKryo() = Kryo().apply { isRegistrationRequired = false }
+
     @Test
     fun `serialization of a simple object back a forth`() {
         val serializer = createCheckpointSerializer(
@@ -51,7 +53,7 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(FlowStackItem::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(),
+                createKryo(),
                 emptyMap(),
                 CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
@@ -91,7 +93,7 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(),
+                createKryo(),
                 emptyMap(),
                 CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
