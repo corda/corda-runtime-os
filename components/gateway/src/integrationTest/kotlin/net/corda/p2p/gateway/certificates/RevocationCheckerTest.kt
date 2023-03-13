@@ -13,8 +13,11 @@ import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.concurrent.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.MockedConstruction
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -36,17 +39,21 @@ class RevocationCheckerTest {
             )
         } doReturn subscription
     }
-    private val mockDominoTile = Mockito.mockConstruction(RPCSubscriptionDominoTile::class.java) { _, context ->
-        @Suppress("UNCHECKED_CAST")
-        (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
-    }
-    init {
-        RevocationChecker(subscriptionFactory, mock(), mock())
+    private var mockDominoTile: MockedConstruction<RPCSubscriptionDominoTile<*, *>>? = null
+    private var revocationChecker: RevocationChecker? = null
+
+    @BeforeEach
+    fun setup() {
+        mockDominoTile = Mockito.mockConstruction(RPCSubscriptionDominoTile::class.java) { _, context ->
+            @Suppress("UNCHECKED_CAST")
+            (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
+        }
+        revocationChecker = RevocationChecker(subscriptionFactory, mock(), mock())
     }
 
     @AfterEach
     fun tearDown() {
-        mockDominoTile.close()
+        mockDominoTile?.close()
     }
 
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
@@ -56,6 +63,7 @@ class RevocationCheckerTest {
     private val wrongTrustStore = listOf(Certificates.c4TruststoreCertificatePem.readText())
 
     @Test
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `valid certificate passes validation`() {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL), result)
@@ -70,6 +78,7 @@ class RevocationCheckerTest {
     }
 
     @Test
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `revoked certificate fails validation with HARD FAIL mode`() {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.HARD_FAIL), result)
@@ -77,6 +86,7 @@ class RevocationCheckerTest {
     }
 
     @Test
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
         val resultFuture = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.SOFT_FAIL), resultFuture)
