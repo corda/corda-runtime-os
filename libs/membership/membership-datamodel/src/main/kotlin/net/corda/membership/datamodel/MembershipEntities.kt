@@ -9,6 +9,7 @@ object MembershipEntities {
         GroupParametersEntity::class.java,
         MutualTlsAllowedClientCertificateEntity::class.java,
         PreAuthTokenEntity::class.java,
-        ApprovalRulesEntity::class.java
+        ApprovalRulesEntity::class.java,
+        StaticNetworkInfoEntity::class.java
     )
 }
