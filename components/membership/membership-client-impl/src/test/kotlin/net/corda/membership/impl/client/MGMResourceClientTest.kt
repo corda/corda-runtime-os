@@ -49,6 +49,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -59,6 +60,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -71,6 +73,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -1432,6 +1435,24 @@ class MGMResourceClientTest {
         }
 
         @Test
+        fun `suspendMember should ignore failure to publish`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            val mockFuture = mock<CompletableFuture<Unit>> {
+                on { getOrThrow() } doThrow CordaMessageAPIIntermittentException("fail")
+            }
+            whenever(publisher.publish(any())).doReturn(listOf(mockFuture))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(MembershipPersistenceResult.Success(mockMemberInfo))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertDoesNotThrow { mgmResourceClient.suspendMember(shortHash, memberName, SERIAL, REASON) }
+
+            mgmResourceClient.stop()
+        }
+
+        @Test
         fun `suspendMember should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
@@ -1545,6 +1566,24 @@ class MGMResourceClientTest {
                     )
                 )
             )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `activateMember should ignore failure to publish`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            val mockFuture = mock<CompletableFuture<Unit>> {
+                on { getOrThrow() } doThrow CordaMessageAPIIntermittentException("fail")
+            }
+            whenever(publisher.publish(any())).doReturn(listOf(mockFuture))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(MembershipPersistenceResult.Success(mockMemberInfo))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertDoesNotThrow { mgmResourceClient.activateMember(shortHash, memberName, SERIAL, REASON) }
+
             mgmResourceClient.stop()
         }
 

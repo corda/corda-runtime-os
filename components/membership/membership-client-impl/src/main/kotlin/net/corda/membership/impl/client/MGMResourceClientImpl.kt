@@ -38,6 +38,7 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -541,48 +542,51 @@ class MGMResourceClientImpl @Activate constructor(
         override fun suspendMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) {
-            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
-            val memberShortHash = membershipGroupReaderProvider.getGroupReader(mgm).lookup(memberX500Name)?.let {
-                require(!it.isMgm) { "MGM may not suspend itself." }
-                it.id
-            } ?: throw NoSuchElementException("Member '$memberX500Name' not found.")
-
+            val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
             val updatedMemberInfo = membershipPersistenceClient.suspendMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
 
-            // As long as the database update was successful, ignore any failures while publishing to Kafka.
             publishMemberInfo(updatedMemberInfo, holdingIdentityShortHash.value, memberShortHash)
         }
 
         override fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) {
-            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
-            val memberShortHash = membershipGroupReaderProvider.getGroupReader(mgm)
-                .lookup(memberX500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.let {
-                    require(!it.isMgm) { "MGM may not activate itself." }
-                    it.id
-                } ?: throw NoSuchElementException("Member '$memberX500Name' not found.")
-
+            val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
             val updatedMemberInfo = membershipPersistenceClient.activateMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
 
-            // As long as the database update was successful, ignore any failures while publishing to Kafka.
             publishMemberInfo(updatedMemberInfo, holdingIdentityShortHash.value, memberShortHash)
         }
 
+        private fun validateSuspensionActivationRequest(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name
+        ): Pair<HoldingIdentity, String> {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+            val memberShortHash = membershipGroupReaderProvider.getGroupReader(mgm)
+                .lookup(memberX500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.let {
+                    require(!it.isMgm) { "This action may not be performed on the MGM." }
+                    it.id
+                } ?: throw NoSuchElementException("Member '$memberX500Name' not found.")
+            return mgm to memberShortHash
+        }
+
         private fun publishMemberInfo(memberInfo: PersistentMemberInfo, mgm: String, member: String) {
-            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
-                listOf(
-                    Record(
-                        topic = MEMBER_LIST_TOPIC,
-                        key = "${mgm}-${member}",
-                        value = memberInfo,
+            try {
+                coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
+                    listOf(
+                        Record(
+                            topic = MEMBER_LIST_TOPIC,
+                            key = "${mgm}-${member}",
+                            value = memberInfo,
+                        )
                     )
                 )
-            )
+            } catch (e: CordaMessageAPIIntermittentException) {
+                // As long as the database update was successful, ignore any failures while publishing to Kafka.
+            }
         }
 
         private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {

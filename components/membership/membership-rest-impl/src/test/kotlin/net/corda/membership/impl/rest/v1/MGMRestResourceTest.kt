@@ -49,7 +49,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import javax.persistence.OptimisticLockException
+import javax.persistence.PersistenceException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -1209,6 +1209,21 @@ class MGMRestResourceTest {
         }
 
         @Test
+        fun `suspendMember throws bad request if member is not currently active`() {
+            val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=SuspendedMember"), "group")
+            whenever(mgmResourceClient.suspendMember(
+                mgm.shortHash, mgm.x500Name, SERIAL, REASON
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.suspendMember(
+                    mgm.shortHash.value,
+                    SuspensionActivationParameters(mgm.x500Name.toString(), SERIAL, REASON)
+                )
+            }
+        }
+
+        @Test
         fun `suspendMember throws resource not found if member to be suspended is not found`() {
             val missingMember = MemberX500Name.parse("C=GB,L=London,O=MissingMember")
             whenever(mgmResourceClient.suspendMember(
@@ -1224,7 +1239,7 @@ class MGMRestResourceTest {
         fun `suspendMember throws invalid state change in case of concurrent update attempt`() {
             whenever(mgmResourceClient.suspendMember(
                 ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
-            )).doThrow(mock<OptimisticLockException>())
+            )).doThrow(mock<PersistenceException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
@@ -1297,6 +1312,21 @@ class MGMRestResourceTest {
         }
 
         @Test
+        fun `activateMember throws bad request if member is not currently suspended`() {
+            val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=ActiveMember"), "group")
+            whenever(mgmResourceClient.activateMember(
+                mgm.shortHash, mgm.x500Name, SERIAL, REASON
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.activateMember(
+                    mgm.shortHash.value,
+                    SuspensionActivationParameters(mgm.x500Name.toString(), SERIAL, REASON)
+                )
+            }
+        }
+
+        @Test
         fun `activateMember throws resource not found if member to be activated is not found`() {
             val missingMember = MemberX500Name.parse("C=GB,L=London,O=MissingMember")
             whenever(mgmResourceClient.activateMember(
@@ -1312,7 +1342,7 @@ class MGMRestResourceTest {
         fun `activateMember throws invalid state change in case of concurrent update attempt`() {
             whenever(mgmResourceClient.activateMember(
                 ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
-            )).doThrow(mock<OptimisticLockException>())
+            )).doThrow(mock<PersistenceException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))

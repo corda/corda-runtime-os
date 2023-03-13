@@ -14,6 +14,7 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
@@ -39,6 +40,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
+import javax.persistence.PersistenceException
 
 class ActivateMemberHandlerTest {
 
@@ -55,14 +57,6 @@ class ActivateMemberHandlerTest {
         false
     )
     private val contextBytes = byteArrayOf(1, 10)
-    private val memberInfoEntity = mock<MemberInfoEntity> {
-        on { mgmContext } doReturn contextBytes
-        on { memberContext } doReturn contextBytes
-        on { groupId } doReturn knownGroupId
-        on { memberX500Name } doReturn knownX500Name.toString()
-        on { serialNumber } doReturn SERIAL_NUMBER
-        on { status } doReturn MEMBER_STATUS_SUSPENDED
-    }
     private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
     private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
         on { vaultDmlConnectionId } doReturn UUID(0, 1)
@@ -119,29 +113,27 @@ class ActivateMemberHandlerTest {
         return handler.invoke(context, request)
     }
 
-    private fun invokeTestFunctionWithError(errorMsg: String) {
-        assertThrows<MembershipPersistenceException> {
+    private fun invokeTestFunctionWithError(errorMsg: String, type: Class<*> = MembershipPersistenceException::class.java) {
+        assertThrows<Exception> {
             invokeTestFunction()
         }.apply {
+            assertThat(this).isInstanceOf(type)
             assertThat(message).contains(errorMsg)
         }
     }
 
-    private fun mockMemberInfoEntity(entity: MemberInfoEntity? = memberInfoEntity) {
-        whenever(
-            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
-        ).doReturn(entity)
-    }
-
+    @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
+        mgmProvidedContext: ByteArray = contextBytes,
+        memberProvidedContext: ByteArray = contextBytes,
         group: String? = knownGroupId,
         name: MemberX500Name? = knownX500Name,
         serial: Long? = SERIAL_NUMBER,
         memberStatus: String = MEMBER_STATUS_SUSPENDED
     ) {
         val mockEntity = mock<MemberInfoEntity> {
-            on { mgmContext } doReturn contextBytes
-            on { memberContext } doReturn contextBytes
+            on { mgmContext } doReturn mgmProvidedContext
+            on { memberContext } doReturn memberProvidedContext
             on { groupId } doReturn group!!
             on { memberX500Name } doReturn name.toString()
             on { serialNumber } doReturn serial!!
@@ -206,16 +198,7 @@ class ActivateMemberHandlerTest {
 
     @Test
     fun `invoke returns the correct data`() {
-        val memberInfoEntity = mock<MemberInfoEntity> {
-            on { memberContext } doReturn byteArrayOf(1)
-            on { mgmContext } doReturn byteArrayOf(2)
-            on { serialNumber } doReturn SERIAL_NUMBER
-            on { status } doReturn MEMBER_STATUS_SUSPENDED
-            on { groupId } doReturn knownGroupId
-            on { memberX500Name } doReturn knownX500Name.toString()
-            on { isPending } doReturn false
-        }
-        mockMemberInfoEntity(memberInfoEntity)
+        mockMemberInfoEntity(mgmProvidedContext = byteArrayOf(1), memberProvidedContext = byteArrayOf(2))
         val mgmContext = KeyValuePairList(
             listOf(
                 KeyValuePair("one", "1")
@@ -226,8 +209,8 @@ class ActivateMemberHandlerTest {
                 KeyValuePair("two", "2")
             )
         )
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(memberContext)
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(mgmContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(mgmContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(memberContext)
 
         val result = invokeTestFunction()
 
@@ -241,7 +224,9 @@ class ActivateMemberHandlerTest {
 
     @Test
     fun `invoke throws exception if member cannot be found`() {
-        mockMemberInfoEntity(entity = null)
+        whenever(
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.OPTIMISTIC_FORCE_INCREMENT))
+        ).doReturn(null)
 
         invokeTestFunctionWithError("does not exist")
     }
@@ -250,14 +235,18 @@ class ActivateMemberHandlerTest {
     fun `invoke throws exception if serial number is outdated`() {
         mockMemberInfoEntity(serial = 6L)
 
-        invokeTestFunctionWithError("serial number does not match")
+        invokeTestFunctionWithError("serial number does not match", PersistenceException::class.java)
     }
 
     @Test
     fun `invoke throws exception if member is not currently suspended`() {
         mockMemberInfoEntity(memberStatus = MEMBER_STATUS_ACTIVE)
 
-        invokeTestFunctionWithError("cannot be activated")
+        invokeTestFunctionWithError("cannot be activated", IllegalArgumentException::class.java)
+
+        mockMemberInfoEntity(memberStatus = MEMBER_STATUS_PENDING)
+
+        invokeTestFunctionWithError("cannot be activated", IllegalArgumentException::class.java)
     }
 
     @Test
@@ -276,6 +265,6 @@ class ActivateMemberHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(contextBytes)).doReturn(null)
         mockMemberInfoEntity()
 
-        invokeTestFunctionWithError("Failed to extract")
+        invokeTestFunctionWithError("Failed to deserialize")
     }
 }

@@ -185,6 +185,7 @@ interface MGMResourceClient : Lifecycle {
      * @param reason Optional. Reason for suspension.
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the member to be suspended is the MGM itself.
      * @throws [NoSuchElementException] If the member to be suspended is not found.
      */

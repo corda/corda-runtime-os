@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
-import javax.persistence.OptimisticLockException
+import javax.persistence.PersistenceException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
@@ -569,7 +569,7 @@ class MGMRestResourceImpl internal constructor(
                 throw BadRequestException("${e.message}")
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
-            } catch (e: OptimisticLockException) {
+            } catch (e: PersistenceException) {
                 throw InvalidStateChangeException("${e.message}")
             }
         }
@@ -592,7 +592,7 @@ class MGMRestResourceImpl internal constructor(
                 throw BadRequestException("${e.message}")
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
-            } catch (e: OptimisticLockException) {
+            } catch (e: PersistenceException) {
                 throw InvalidStateChangeException("${e.message}")
             }
         }

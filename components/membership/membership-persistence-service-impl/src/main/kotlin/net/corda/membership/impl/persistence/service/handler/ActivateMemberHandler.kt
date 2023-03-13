@@ -18,6 +18,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
+import javax.persistence.PersistenceException
 
 internal class ActivateMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -48,16 +49,15 @@ internal class ActivateMemberHandler(
             ) ?: throw MembershipPersistenceException("Member '$activatedMember' does not exist.")
             request.serialNumber?.let {
                 require(member.serialNumber == it) {
-                    throw MembershipPersistenceException("The provided serial number does not match to the current " +
+                    throw PersistenceException("The provided serial number does not match the current " +
                             "version of MemberInfo for member '$activatedMember'.")
                 }
             }
             require(member.status == MEMBER_STATUS_SUSPENDED) {
-                throw MembershipPersistenceException("Member '$activatedMember' cannot be activated because" +
-                        " it has status '${member.status}'.")
+                "Member '$activatedMember' cannot be activated because it has status '${member.status}'."
             }
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
-                ?: throw MembershipPersistenceException("Failed to extract the MGM-provided context.")
+                ?: throw MembershipPersistenceException("Failed to deserialize the MGM-provided context.")
             val mgmContext = KeyValuePairList(
                 currentMgmContext.items.map {
                     when (it.key) {
