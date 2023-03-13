@@ -2,6 +2,7 @@ package net.corda.crypto.client.impl.v50beta2
 
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.v50beta2.V50Beta2CryptoRepositoryImpl
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -12,7 +13,7 @@ import javax.persistence.EntityManager
 
 class TestV50Beta2CryptoRepositoryImpl {
     @Test
-    fun `go`() {
+    fun `save a wrapping key`() {
         val em: EntityManager = mock {
             on { persist(any()) } doAnswer {}
             on { transaction } doReturn mock()
@@ -21,7 +22,10 @@ class TestV50Beta2CryptoRepositoryImpl {
         val repo = V50Beta2CryptoRepositoryImpl(mock {
             on(mock()) doReturn em
         })
-        repo.saveWrappingKey("a", WrappingKeyInfo(1, "caesar", byteArrayOf()))
+        val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf())
+        repo.saveWrappingKey("a", wrappingKeyInfo)
+        val retrievedWrappingKeyInfo = repo.findWrappingKey("a")
+        assertThat(wrappingKeyInfo).isEqualTo(retrievedWrappingKeyInfo)
     }
-
+    
 }
