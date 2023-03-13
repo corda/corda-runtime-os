@@ -54,24 +54,24 @@ class VirtualNodeRestResourceImplTest {
 
     @Test
     fun `verify coordinator is started on start`() {
-        val vnodeRpcOps = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
-        vnodeRpcOps.start()
+        val restResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+        restResource.start()
 
         verify(mockCoordinator).start()
     }
 
     @Test
     fun `verify coordinator is stopped on stop`() {
-        val vnodeRpcOps = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
-        vnodeRpcOps.stop()
+        val restResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+        restResource.stop()
 
         verify(mockCoordinator).stop()
     }
 
     @Test
     fun `verify coordinator isRunning defers to the coordinator`() {
-        val vnodeRpcOps = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
-        vnodeRpcOps.isRunning
+        val restResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+        restResource.isRunning
 
         verify(mockCoordinator).isRunning
     }

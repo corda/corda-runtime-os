@@ -122,7 +122,7 @@ internal class VirtualNodeRestResourceImpl(
         private const val VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_ASYNC_OPERATION_CLIENT"
     }
 
-    // Http RPC values
+    // RestResource values
     override val targetInterface: Class<VirtualNodeRestResource> = VirtualNodeRestResource::class.java
     override val protocolVersion = 1
 
@@ -156,7 +156,7 @@ internal class VirtualNodeRestResourceImpl(
                         coordinator.postEvent(StopEvent(errored = true))
                     }
                     LifecycleStatus.UP -> {
-                        // Receive updates to the RPC and Messaging config
+                        // Receive updates to the REST and Messaging config
                         coordinator.createManagedResource(CONFIG_HANDLE) {
                             configurationReadService.registerComponentForUpdates(
                                 coordinator,
@@ -170,9 +170,9 @@ internal class VirtualNodeRestResourceImpl(
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
-                    val rpcConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
+                    val restConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration = Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
@@ -359,7 +359,7 @@ internal class VirtualNodeRestResourceImpl(
         newState: String
     ): ChangeVirtualNodeStateResponse {
         val instant = clock.instant()
-        // Lookup actor to keep track of which RPC user triggered an update
+        // Lookup actor to keep track of which REST user triggered an update
         val actor = restContextProvider.principal
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
 
