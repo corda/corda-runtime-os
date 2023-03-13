@@ -5,7 +5,6 @@ import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities

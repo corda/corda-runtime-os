@@ -1,8 +1,6 @@
-package net.corda.crypto.client.impl.v50beta2
+package net.corda.crypto.persistence.v1schema
 
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.v1schema.V1CryptoRepositoryImpl
-import net.corda.crypto.persistence.v1schema.V1WrappingKeyEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
