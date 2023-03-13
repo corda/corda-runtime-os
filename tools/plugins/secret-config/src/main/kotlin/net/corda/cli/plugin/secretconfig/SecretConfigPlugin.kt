@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
-import org.pf4j.Extension
+import org.pf4j.ExtensionPoint
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
 import picocli.CommandLine
@@ -14,12 +14,11 @@ import picocli.CommandLine.ParameterException
 import picocli.CommandLine.Parameters
 
 class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
-    @Extension
     @Command(
         name = "secret-config",
         description = ["Handle secret config values given the value, a passphrase and a salt"]
     )
-    class PluginEntryPoint : CordaCliPlugin {
+    class PluginEntryPoint : CordaCliPlugin, ExtensionPoint {
         @Parameters(index = "0", description = ["The value to secure for configuration"])
         lateinit var value: String
 

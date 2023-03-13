@@ -1,5 +1,5 @@
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
-import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 import static org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
 
 buildscript {
@@ -33,8 +33,7 @@ tasks.named("wrapper") {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def targetJavaVersion = 11
-def testJavaVersion = 17
+def javaVersion = 17
 
 snyk {
     api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
@@ -49,7 +48,7 @@ allprojects {
     pluginManager.withPlugin('java') {
         java {
             toolchain {
-                languageVersion = of(targetJavaVersion)
+                languageVersion = of(javaVersion)
             }
 
             withSourcesJar()
@@ -68,7 +67,7 @@ allprojects {
             allWarningsAsErrors = true
             languageVersion = KOTLIN_1_8
             apiVersion = KOTLIN_1_8
-            jvmTarget = JVM_11
+            jvmTarget = JVM_17
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs.addAll([
                 "-Xjvm-default=all"
@@ -87,10 +86,6 @@ allprojects {
             excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
         }
 
-        javaLauncher = javaToolchains.launcherFor {
-            languageVersion = of(testJavaVersion)
-        }
-
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
         }
@@ -99,7 +94,7 @@ allprojects {
     pluginManager.withPlugin('biz.aQute.bnd.builder') {
         tasks.withType(aQute.bnd.gradle.TestOSGi).configureEach {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = of(testJavaVersion)
+                languageVersion = of(javaVersion)
             }
         }
     }

@@ -1,7 +1,6 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
     id 'corda.cli-plugin-packager'
 }
 
@@ -17,8 +16,6 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli:$picocliVersion"
 
     implementation 'net.corda:corda-config-schema'
 

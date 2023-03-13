@@ -1,7 +1,6 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
     id 'corda.cli-plugin-packager'
 }
 
@@ -16,8 +15,6 @@ dependencies {
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli:$picocliVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-rbac-schema'
