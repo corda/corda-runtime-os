@@ -47,5 +47,6 @@ class V1WrappingKeyEntity(
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition = "BLOB")
     var keyMaterial: ByteArray
 ) {
+    override fun hashCode() = alias.hashCode()
     override fun equals(other: Any?) = other != null && other is V1WrappingKeyEntity && other.alias.equals(alias)
 }

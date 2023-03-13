@@ -14,6 +14,8 @@ import javax.persistence.Table
  *
  * The records are immutable.
  */
+
+@Suppress("LongParameterList")
 @Entity
 @Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
 class V2WrappingKeyEntity(
