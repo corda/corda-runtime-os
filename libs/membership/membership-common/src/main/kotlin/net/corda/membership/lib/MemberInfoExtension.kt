@@ -226,18 +226,19 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.notaryDetails: MemberNotaryDetails?
-            get() = if (
-                memberProvidedContext
-                    .entries
-                    .filter {
-                        it.key.startsWith(ROLES_PREFIX)
-                    }.any {
-                        it.value == NOTARY_ROLE
-                    }
-            ) {
+            get() = if (isNotary()) {
                 memberProvidedContext.parse("corda.notary")
             } else {
                 null
+            }
+
+        @JvmStatic
+        fun MemberInfo.isNotary(): Boolean = memberProvidedContext
+            .entries
+            .filter {
+                it.key.startsWith(ROLES_PREFIX)
+            }.any {
+                it.value == NOTARY_ROLE
             }
 
         /** Return the key used for hybrid encryption. Only MGMs should have a value set for ecdh key. */

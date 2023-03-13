@@ -19,6 +19,7 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
@@ -27,6 +28,7 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
@@ -54,9 +56,11 @@ import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatur
 import net.corda.membership.impl.persistence.service.handler.QueryPreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsHandler
+import net.corda.membership.impl.persistence.service.handler.QueryStaticNetworkInfoHandler
 import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
+import net.corda.membership.impl.persistence.service.handler.UpdateStaticNetworkInfoHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
@@ -121,6 +125,8 @@ internal class MembershipPersistenceRPCProcessor(
         PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
         DeleteApprovalRule::class.java to { DeleteApprovalRuleHandler(persistenceHandlerServices) },
         QueryApprovalRules::class.java to { QueryApprovalRulesHandler(persistenceHandlerServices) },
+        QueryStaticNetworkInfo::class.java to { QueryStaticNetworkInfoHandler(persistenceHandlerServices) },
+        UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
     )
 
     override fun onNext(

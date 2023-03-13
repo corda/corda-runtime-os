@@ -13,6 +13,7 @@ dependencies {
     api 'net.corda:corda-membership'
 
     api project(':libs:virtual-node:virtual-node-info')
+    api project(':libs:membership:static-network')
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-common')

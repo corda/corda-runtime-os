@@ -1,6 +1,9 @@
 package net.corda.processor.member
 
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -9,8 +12,10 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
@@ -18,6 +23,9 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
+import net.corda.membership.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -26,6 +34,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.UUID
 
@@ -35,6 +45,16 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : MembershipPersistenceClient, MembershipQueryClient {
+
+    private val clock = UTCClock()
+    private var groupParameters = KeyValuePairList(
+        listOf(
+            KeyValuePair(EPOCH_KEY, "1"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+        )
+    )
+
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>,
@@ -118,6 +138,10 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         ruleType: ApprovalRuleType
     ) = MembershipPersistenceResult.success()
 
+    override fun updateStaticNetworkInfo(info: StaticNetworkInfo): MembershipPersistenceResult<StaticNetworkInfo> {
+        return MembershipPersistenceResult.Success(info)
+    }
+
     private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()
@@ -179,6 +203,21 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType,
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>> = MembershipQueryResult.Success(emptyList())
+
+    override fun queryStaticNetworkInfo(groupId: String): MembershipQueryResult<StaticNetworkInfo> {
+        val (public, private) = KeyPairGenerator.getInstance(
+            mgmSigningKeyAlgorithm, mgmSigningKeyProvider
+        ).genKeyPair().let { it.public.encoded to it.private.encoded }
+        return MembershipQueryResult.Success(
+            StaticNetworkInfo(
+                groupId,
+                groupParameters,
+                ByteBuffer.wrap(public),
+                ByteBuffer.wrap(private),
+                1,
+            )
+        )
+    }
 
     override val isRunning = true
 

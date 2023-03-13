@@ -109,7 +109,7 @@ class CpiValidatorImpl(
             cpi.metadata.cpiId,
             fileInfo.checksum,
             cpi.cpks.map { it.metadata },
-            cpi.metadata.groupPolicy,
+            cpiMetadataEntity.groupPolicy,
             version = cpiMetadataEntity.entityVersion,
             timestamp = clock.instant()
         )

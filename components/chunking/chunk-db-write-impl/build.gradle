@@ -42,6 +42,7 @@ dependencies {
     implementation project(":libs:packaging:packaging-verify")
     implementation project(":libs:utilities")
     implementation project(':libs:membership:certificates-common')
+    implementation project(':libs:membership:static-network')
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
 

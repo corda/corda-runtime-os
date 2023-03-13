@@ -39,7 +39,7 @@ class UpsertValidationTest {
         val hash = SecureHash("SHA-256", "1234567890".toByteArray())
         val groupId = "ABC"
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(emptyList()))
+        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(emptyList()), mock())
 
         assertDoesNotThrow {
             p.validateCanUpsertCpi(requiredName, hash, requiredVersion, groupId, false, "id")
@@ -58,7 +58,7 @@ class UpsertValidationTest {
             on { it.groupId }.doReturn(groupId)
         }
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
+        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)), mock())
 
         assertDoesNotThrow {
             p.validateCanUpsertCpi(requiredName, hash, requiredVersion, groupId, true, "id")
@@ -77,7 +77,7 @@ class UpsertValidationTest {
             on { it.groupId }.doReturn("foo")
         }
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
+        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)), mock())
 
         assertThrows<ValidationException> {
             p.validateCanUpsertCpi(requiredName, hash, requiredVersion, groupId, true, "id")
@@ -95,7 +95,7 @@ class UpsertValidationTest {
             on { version }.doReturn("2.0")
         }
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
+        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)), mock())
 
         assertThrows<ValidationException> {
             p.validateCanUpsertCpi(requiredName, hash, requiredVersion, groupId, true, "id")
@@ -113,7 +113,7 @@ class UpsertValidationTest {
             on { version }.doReturn("2.0")
         }
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
+        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)), mock())
 
         assertDoesNotThrow {
             p.validateCanUpsertCpi(requiredName, hash, requiredVersion, groupId, false, "id")
@@ -131,7 +131,7 @@ class UpsertValidationTest {
             on { version }.doReturn(requiredVersion)
         }
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
+        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)), mock())
 
         assertThrows<DuplicateCpiUploadException> {
             p.validateCanUpsertCpi(requiredName, hash, requiredVersion, groupId, false, "id")

@@ -19,6 +19,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -63,6 +64,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
@@ -82,12 +84,10 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.membership.staticnetwork.StaticNetworkUtils
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -119,6 +119,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -175,18 +177,6 @@ class StaticMemberRegistrationServiceTest {
 
     private val publisherFactory: PublisherFactory = mock {
         on { createPublisher(any(), any()) } doReturn mockPublisher
-    }
-
-    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock()
-
-    private val subscriptionFactory: SubscriptionFactory = mock {
-        on {
-            createCompactedSubscription(
-                any(),
-                any<CompactedProcessor<String, KeyValuePairList>>(),
-                any()
-            )
-        } doReturn mockSubscription
     }
 
     private val keyEncodingService: KeyEncodingService = mock {
@@ -301,9 +291,24 @@ class StaticMemberRegistrationServiceTest {
     private val mockSignedGroupParameters: SignedGroupParameters = mock {
         on { bytes } doReturn serializedGroupParameters
     }
+    private val mockUnsignedGroupParameters: UnsignedGroupParameters = mock {
+        on { bytes } doReturn serializedGroupParameters
+    }
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(any<AvroGroupParameters>()) } doReturn mockSignedGroupParameters
+        on { create(any<KeyValuePairList>()) } doReturn mockUnsignedGroupParameters
     }
+    private val staticNetworkMgmKeyPair = KeyPairGenerator
+        .getInstance(StaticNetworkUtils.mgmSigningKeyAlgorithm, StaticNetworkUtils.mgmSigningKeyProvider)
+        .genKeyPair()
+    private val currentStaticNetworkInfo = mock<StaticNetworkInfo> {
+        on { groupParameters } doReturn KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, "1")))
+        on { groupId } doReturn DUMMY_GROUP_ID
+        on { version } doReturn 1
+        on { mgmPublicSigningKey } doReturn ByteBuffer.wrap(staticNetworkMgmKeyPair.public.encoded)
+        on { mgmPrivateSigningKey } doReturn ByteBuffer.wrap(staticNetworkMgmKeyPair.private.encoded)
+    }
+
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
             queryRegistrationRequestsStatus(
@@ -313,6 +318,8 @@ class StaticMemberRegistrationServiceTest {
                 anyOrNull(),
             )
         } doReturn MembershipQueryResult.Success(emptyList())
+
+        on { queryStaticNetworkInfo(any()) } doReturn MembershipQueryResult.Success(currentStaticNetworkInfo)
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val groupReader: MembershipGroupReader = mock()
@@ -323,7 +330,6 @@ class StaticMemberRegistrationServiceTest {
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
-        subscriptionFactory,
         keyEncodingService,
         cryptoOpsClient,
         configurationReadService,
@@ -358,7 +364,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             registrationService.register(registrationId, alice, mockContext)
-            verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
+            verify(mockPublisher).publish(capturedPublishedList.capture())
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
 

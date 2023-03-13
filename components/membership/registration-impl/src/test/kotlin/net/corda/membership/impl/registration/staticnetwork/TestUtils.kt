@@ -36,10 +36,11 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
 import org.apache.commons.text.StringEscapeUtils
 import org.mockito.kotlin.mock
+import java.util.UUID
 
 class TestUtils {
     companion object {
-        const val DUMMY_GROUP_ID = "dummy_group"
+        val DUMMY_GROUP_ID = UUID(0, 1).toString()
 
         private const val TEST_ENDPOINT_PROTOCOL = "1"
         private const val TEST_ENDPOINT_URL = "https://dummyurl.corda5.r3.com:10000"

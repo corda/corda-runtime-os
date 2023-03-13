@@ -25,12 +25,16 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.staticnetwork.StaticNetworkInfoWriter
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated
  * metadata.
  */
-class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFactory) : CpiPersistence {
+class DatabaseCpiPersistence(
+    private val entityManagerFactory: EntityManagerFactory,
+    private val staticNetworkInfoWriter: StaticNetworkInfoWriter
+) : CpiPersistence {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -77,6 +81,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             persistNewCpkFileEntities(em, cpi.metadata.fileChecksum, cpi.cpks)
 
             persistNewChangelogs(em, changelogsExtractedFromCpi)
+
+            staticNetworkInfoWriter.parseAndPersistStaticNetworkInfo(em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }

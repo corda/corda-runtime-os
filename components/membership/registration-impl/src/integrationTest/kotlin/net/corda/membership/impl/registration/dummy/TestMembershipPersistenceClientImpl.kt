@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dummy
 
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -109,6 +110,10 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleId: String,
         ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
+
+    override fun updateStaticNetworkInfo(
+        info: StaticNetworkInfo
+    ): MembershipPersistenceResult<StaticNetworkInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
     override val isRunning = true
 

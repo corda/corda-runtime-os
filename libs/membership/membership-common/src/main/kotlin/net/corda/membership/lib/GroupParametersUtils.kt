@@ -24,7 +24,7 @@ const val MPV_KEY = "corda.minimumPlatformVersion"
 const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 const val NOTARIES_KEY = "corda.notary.service"
 
-private val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
+val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
 
 @Suppress("LongParameterList")
 fun updateExistingNotaryService(

@@ -1,6 +1,7 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -131,5 +132,16 @@ interface MembershipQueryClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>>
+
+    /**
+     * Query for the current static network configuration for a group.
+     *
+     * @param groupId The group ID to retrieve the configuration for.
+     *
+     * @return The static network configuration.
+     */
+    fun queryStaticNetworkInfo(
+        groupId: String
+    ): MembershipQueryResult<StaticNetworkInfo>
 }
 

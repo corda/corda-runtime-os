@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Static network management components.'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    api 'javax.persistence:javax.persistence-api'
+
+    api project(":libs:membership:membership-common")
+    api project(":libs:membership:membership-datamodel")
+    api project(":libs:packaging:packaging")
+
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:platform-info")
+    implementation project(":libs:utilities")
+}

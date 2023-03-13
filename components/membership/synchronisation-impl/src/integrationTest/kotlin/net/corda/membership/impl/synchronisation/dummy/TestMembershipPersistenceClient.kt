@@ -1,5 +1,6 @@
 package net.corda.membership.impl.synchronisation.dummy
 
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -145,6 +146,13 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity, ruleId: String, ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun updateStaticNetworkInfo(info: StaticNetworkInfo): MembershipPersistenceResult<StaticNetworkInfo> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

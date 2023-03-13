@@ -12,6 +12,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.toAvro
@@ -26,6 +27,8 @@ import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
+import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.addNotary
+import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.signGroupParameters
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
@@ -47,6 +50,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -65,11 +69,12 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.versioning.Version
@@ -88,45 +93,26 @@ import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
-class StaticMemberRegistrationService @Activate constructor(
-    @Reference(service = GroupPolicyProvider::class)
+class StaticMemberRegistrationService(
     private val groupPolicyProvider: GroupPolicyProvider,
-    @Reference(service = PublisherFactory::class)
     internal val publisherFactory: PublisherFactory,
-    @Reference(service = SubscriptionFactory::class)
-    internal val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = KeyEncodingService::class)
     internal val keyEncodingService: KeyEncodingService,
-    @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
-    @Reference(service = MemberInfoFactory::class)
     private val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = MembershipPersistenceClient::class)
     private val persistenceClient: MembershipPersistenceClient,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = MembershipSchemaValidatorFactory::class)
-    val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
-    @Reference(service = EndpointInfoFactory::class)
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val endpointInfoFactory: EndpointInfoFactory,
-    @Reference(service = PlatformInfoProvider::class)
     internal val platformInfoProvider: PlatformInfoProvider,
-    @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
-    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
-    @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    private val clock: Clock
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -138,6 +124,66 @@ class StaticMemberRegistrationService @Activate constructor(
         private val DUMMY_PUBLIC_SESSION_KEY =
             this::class.java.getResource("/static_network_dummy_session_key.pem")!!.readText()
     }
+
+    @Activate
+    constructor(
+        @Reference(service = GroupPolicyProvider::class)
+        groupPolicyProvider: GroupPolicyProvider,
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory,
+        @Reference(service = KeyEncodingService::class)
+        keyEncodingService: KeyEncodingService,
+        @Reference(service = CryptoOpsClient::class)
+        cryptoOpsClient: CryptoOpsClient,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = HSMRegistrationClient::class)
+        hsmRegistrationClient: HSMRegistrationClient,
+        @Reference(service = MemberInfoFactory::class)
+        memberInfoFactory: MemberInfoFactory,
+        @Reference(service = MembershipPersistenceClient::class)
+        persistenceClient: MembershipPersistenceClient,
+        @Reference(service = CordaAvroSerializationFactory::class)
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        @Reference(service = MembershipSchemaValidatorFactory::class)
+        membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+        @Reference(service = EndpointInfoFactory::class)
+        endpointInfoFactory: EndpointInfoFactory,
+        @Reference(service = PlatformInfoProvider::class)
+        platformInfoProvider: PlatformInfoProvider,
+        @Reference(service = GroupParametersFactory::class)
+        groupParametersFactory: GroupParametersFactory,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        @Reference(service = GroupParametersWriterService::class)
+        groupParametersWriterService: GroupParametersWriterService,
+        @Reference(service = MembershipGroupReaderProvider::class)
+        membershipGroupReaderProvider: MembershipGroupReaderProvider,
+        @Reference(service = MembershipQueryClient::class)
+        membershipQueryClient: MembershipQueryClient,
+    ) : this(
+        groupPolicyProvider,
+        publisherFactory,
+        keyEncodingService,
+        cryptoOpsClient,
+        configurationReadService,
+        coordinatorFactory,
+        hsmRegistrationClient,
+        memberInfoFactory,
+        persistenceClient,
+        cordaAvroSerializationFactory,
+        membershipSchemaValidatorFactory,
+        endpointInfoFactory,
+        platformInfoProvider,
+        groupParametersFactory,
+        virtualNodeInfoReadService,
+        groupParametersWriterService,
+        membershipGroupReaderProvider,
+        membershipQueryClient,
+        UTCClock()
+    )
 
     // Handler for lifecycle events
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
@@ -242,23 +288,48 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
-        val cache = lifecycleHandler.groupParametersCache
-        val holdingIdentity = memberInfo.holdingIdentity
-        val updateGroupParameters = cache.getOrCreateGroupParameters(holdingIdentity).run {
-            memberInfo.notaryDetails?.let {
-                cache.addNotary(memberInfo)
-            } ?: this
-        }
-        val groupParameters = groupParametersFactory.create(updateGroupParameters)
+    private fun persistGroupParameters(
+        memberInfo: MemberInfo,
+        staticMemberList: List<StaticMember>
+    ) {
+        val currentStaticNetworkInfo = membershipQueryClient
+            .queryStaticNetworkInfo(memberInfo.groupId)
+            .getOrThrow()
 
+        val currentAvroGroupParameters = currentStaticNetworkInfo.groupParameters
+
+        // If the current member is a notary then the group parameters need to be updated
+        val newStaticNetworkInfo = StaticNetworkInfo(
+            currentStaticNetworkInfo.groupId,
+            if (memberInfo.isNotary()) {
+                currentAvroGroupParameters.addNotary(
+                    memberInfo,
+                    keyEncodingService,
+                    clock
+                )
+            } else {
+                currentAvroGroupParameters
+            },
+            currentStaticNetworkInfo.mgmPublicSigningKey,
+            currentStaticNetworkInfo.mgmPrivateSigningKey,
+            currentStaticNetworkInfo.version
+        )
+
+        val avroSignedGroupParameters = newStaticNetworkInfo.signGroupParameters(
+            keyValuePairListSerializer,
+            keyEncodingService,
+            groupParametersFactory
+        )
+        val signedGroupParameters = groupParametersFactory.create(avroSignedGroupParameters)
+
+        val holdingIdentity = memberInfo.holdingIdentity
         // Persist group parameters for this member, and publish to Kafka.
-        persistenceClient.persistGroupParameters(holdingIdentity, groupParameters).getOrThrow()
-        groupParametersWriterService.put(holdingIdentity, groupParameters)
+        persistenceClient.persistGroupParameters(holdingIdentity, signedGroupParameters).getOrThrow()
+        groupParametersWriterService.put(holdingIdentity, signedGroupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
         // Also publish to Kafka.
-        if (memberInfo.notaryDetails != null) {
+        if (memberInfo.isNotary()) {
             SecManagerForkJoinPool.pool.submit {
                 staticMemberList
                     .parallelStream()
@@ -267,8 +338,8 @@ class StaticMemberRegistrationService @Activate constructor(
                     .map { HoldingIdentity(it, memberInfo.groupId) }
                     .filter { virtualNodeInfoReadService.get(it) != null }
                     .forEach {
-                        persistenceClient.persistGroupParameters(it, groupParameters).getOrThrow()
-                        groupParametersWriterService.put(it, groupParameters)
+                        persistenceClient.persistGroupParameters(it, signedGroupParameters).getOrThrow()
+                        groupParametersWriterService.put(it, signedGroupParameters)
                     }
             }.join()
         }
@@ -356,14 +427,14 @@ class StaticMemberRegistrationService @Activate constructor(
         val notaryInfo = roles.toMemberInfo(::configureNotaryKey)
         // validate if provided notary details are correct to fail-fast,
         // before assigning more HSMs, generating other keys for member
-        if(notaryInfo.isNotEmpty()) {
+        if (notaryInfo.isNotEmpty()) {
             validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo, membershipGroupReader)
         }
 
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
         val ledgerKey = keysFactory.getOrGenerateKeyPair(LEDGER)
 
-        val sessionKey = when(groupPolicy.protocolParameters.sessionKeyPolicy) {
+        val sessionKey = when (groupPolicy.protocolParameters.sessionKeyPolicy) {
             SessionKeyPolicy.DISTINCT -> {
                 hsmRegistrationClient.assignSoftHSM(memberId, SESSION_INIT)
                 keysFactory.getOrGenerateKeyPair(SESSION_INIT)

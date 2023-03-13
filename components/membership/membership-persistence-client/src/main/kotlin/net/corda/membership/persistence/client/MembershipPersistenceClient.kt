@@ -1,5 +1,6 @@
 package net.corda.membership.persistence.client
 
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -265,4 +266,17 @@ interface MembershipPersistenceClient : Lifecycle {
         ruleId: String,
         ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Update an existing static network info configuration in the cluster DB. The initial snapshot for a static
+     * network should have been created when a CPI containing a static network group policy was uploaded. The provided
+     * static network info is used to update the persisted info.
+     *
+     * If the version has changed in the database then persistence will fail and need to be retried.
+     *
+     * @param info The modified [StaticNetworkInfo] to update in the cluster DB.
+     */
+    fun updateStaticNetworkInfo(
+        info: StaticNetworkInfo
+    ): MembershipPersistenceResult<StaticNetworkInfo>
 }

@@ -12,6 +12,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -338,6 +339,12 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.deleteApprovalRule(
                     viewOwningIdentity, ruleId, ruleType
                 )
+            }
+
+            override fun updateStaticNetworkInfo(
+                info: StaticNetworkInfo
+            ) = safeCall {
+                membershipPersistenceClient.updateStaticNetworkInfo(info)
             }
 
             fun <T> safeCall(func: () -> T): T {

@@ -8,7 +8,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.createCoordinator
@@ -17,13 +16,11 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -35,7 +32,6 @@ import org.mockito.kotlin.mock
 
 class RegistrationServiceLifecycleHandlerTest {
     private val componentHandle: RegistrationHandle = mock()
-    private val subRegistrationHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
 
     private val groupPolicyProvider: GroupPolicyProvider = mock()
@@ -50,25 +46,8 @@ class RegistrationServiceLifecycleHandlerTest {
         on { createPublisher(any(), any()) } doReturn publisher
     }
 
-    private val subName = LifecycleCoordinatorName("COMPACTED_SUBSCRIPTION")
-
-    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock {
-        on { subscriptionName } doReturn subName
-    }
-
-    private val subscriptionFactory: SubscriptionFactory = mock {
-        on {
-            createCompactedSubscription(
-                any(),
-                any<CompactedProcessor<String, KeyValuePairList>>(),
-                any()
-            )
-        } doReturn mockSubscription
-    }
-
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn componentHandle
-        on { followStatusChangesByName(setOf(mockSubscription.subscriptionName)) } doReturn subRegistrationHandle
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
@@ -93,7 +72,6 @@ class RegistrationServiceLifecycleHandlerTest {
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
-        subscriptionFactory,
         mock(),
         mock(),
         configurationReadService,
@@ -134,7 +112,6 @@ class RegistrationServiceLifecycleHandlerTest {
 
             verifyIsUp<TestRegistrationComponent>()
             assertNotNull(testClass.registrationServiceLifecycleHandler.publisher)
-            assertNotNull(testClass.registrationServiceLifecycleHandler.groupParametersCache)
         }
     }
 
@@ -203,23 +180,6 @@ class RegistrationServiceLifecycleHandlerTest {
     }
 
     @Test
-    fun `component goes DOWN and comes back UP if subscription goes DOWN then UP`() {
-        getTestContext().run {
-            testClass.start()
-            bringDependenciesUp()
-            sendConfigUpdate<TestRegistrationComponent>(configs)
-
-            verifyIsUp<TestRegistrationComponent>()
-
-            toggleDependency(subName, {
-                verifyIsDown<TestRegistrationComponent>()
-            }, {
-                verifyIsUp<TestRegistrationComponent>()
-            })
-        }
-    }
-
-    @Test
     fun `component goes DOWN and comes back UP if a dependent component errors and comes back`() {
         getTestContext().run {
             testClass.start()
@@ -233,22 +193,6 @@ class RegistrationServiceLifecycleHandlerTest {
 
             // Model a config update coming back due to us re-registering with the config read service.
             sendConfigUpdate<TestRegistrationComponent>(configs)
-            verifyIsUp<TestRegistrationComponent>()
-        }
-    }
-
-    @Test
-    fun `component handles a subscription error and restart`() {
-        getTestContext().run {
-            testClass.start()
-            bringDependenciesUp()
-            sendConfigUpdate<TestRegistrationComponent>(configs)
-
-            verifyIsUp<TestRegistrationComponent>()
-
-            setDependencyToError(subName)
-            verifyIsDown<TestRegistrationComponent>()
-            bringDependencyUp(subName)
             verifyIsUp<TestRegistrationComponent>()
         }
     }
@@ -278,12 +222,11 @@ class RegistrationServiceLifecycleHandlerTest {
             addDependency<ConfigurationReadService>()
             addDependency<HSMRegistrationClient>()
             addDependency<MembershipQueryClient>()
-            addDependency(subName)
+            addDependency<MembershipPersistenceClient>()
 
             val staticMemberRegistrationService = StaticMemberRegistrationService(
                 groupPolicyProvider,
                 publisherFactory,
-                subscriptionFactory,
                 mock(),
                 mock(),
                 configReadService,

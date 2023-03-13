@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -15,6 +16,7 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
@@ -24,6 +26,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -294,6 +297,19 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
             else -> MembershipQueryResult.Failure("Failed to retrieve approval rules.")
+        }
+    }
+
+    override fun queryStaticNetworkInfo(
+        groupId: String
+    ): MembershipQueryResult<StaticNetworkInfo> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(),
+            QueryStaticNetworkInfo(groupId)
+        ).execute()
+        return when (val payload = result.payload) {
+            is StaticNetworkInfoQueryResponse -> MembershipQueryResult.Success(payload.info)
+            else -> MembershipQueryResult.Failure("Failed to retrieve static network configuration.")
         }
     }
 }
