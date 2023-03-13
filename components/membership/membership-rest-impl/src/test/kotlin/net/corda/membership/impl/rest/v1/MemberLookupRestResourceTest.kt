@@ -32,9 +32,12 @@ import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.rest.exception.BadRequestException
 import net.corda.crypto.core.ShortHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -56,11 +59,12 @@ import java.time.Instant
 import java.util.UUID
 
 class MemberLookupRestResourceTest {
-    companion object {
-        private const val KNOWN_KEY = "12345"
-        private val HOLDING_IDENTITY_STRING = "1234567890ab"
-        private val BAD_HOLDING_IDENTITY = ShortHash.of("deaddeaddead")
-        private val clock = TestClock(Instant.ofEpochSecond(100))
+    private companion object {
+        const val KNOWN_KEY = "12345"
+        const val HOLDING_IDENTITY_STRING = "1234567890ab"
+        const val MGM_HOLDING_IDENTITY_STRING = "1234567890cd"
+        val BAD_HOLDING_IDENTITY = ShortHash.of("deaddeaddead")
+        val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private var coordinatorIsRunning = false
@@ -91,6 +95,8 @@ class MemberLookupRestResourceTest {
     )
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
+    private val mgmName = "O=MGM, L=London, C=GB"
+    private val mgmHoldingIdentity  = createTestHoldingIdentity(mgmName, "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
@@ -107,27 +113,23 @@ class MemberLookupRestResourceTest {
 
     private val alice = createMemberInfo("CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
     private val bob = createMemberInfo("CN=Bob,O=Bob,OU=Unit2,L=Dublin,ST=State2,C=IE")
-    private val memberInfoList = listOf(alice, bob)
+    private val charlie = createMemberInfo("CN=Charlie,O=Charlie,OU=Unit2,L=Dublin,ST=State2,C=IE", MEMBER_STATUS_SUSPENDED)
+    private val mgm = createMemberInfo(mgmName, isMgm = true)
+    private val memberInfoList = listOf(alice, bob, charlie)
 
-    private val aliceRestResult = RestMemberInfoList(
-        listOf(
-            RestMemberInfo(
-                alice.memberProvidedContext.entries.associate { it.key to it.value },
-                alice.mgmProvidedContext.entries.associate { it.key to it.value }
-            )
-        )
-    )
-    private val bobRestResult = RestMemberInfoList(
-        listOf(
-            RestMemberInfo(
-                bob.memberProvidedContext.entries.associate { it.key to it.value },
-                bob.mgmProvidedContext.entries.associate { it.key to it.value }
-            )
-        )
-    )
+    private val aliceRestResult = RestMemberInfoList(alice.toRestMemberInfoList())
+    private val bobRestResult = RestMemberInfoList(bob.toRestMemberInfoList())
+    private val mgmRestMemberInfo = mgm.toRestMemberInfoList()
+    private val activeMembers = aliceRestResult.members + bobRestResult.members
+    private val suspendedMembers = charlie.toRestMemberInfoList()
+    private val activeAndSuspendedMembers = activeMembers + suspendedMembers
 
     @Suppress("SpreadOperator")
-    private fun createMemberInfo(name: String): MemberInfo = memberInfoFactory.create(
+    private fun createMemberInfo(
+        name: String,
+        memberStatus: String = MEMBER_STATUS_ACTIVE,
+        isMgm: Boolean = false,
+    ): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
             PARTY_NAME to name,
             PARTY_SESSION_KEY to KNOWN_KEY,
@@ -138,9 +140,17 @@ class MemberLookupRestResourceTest {
             PLATFORM_VERSION to "5000",
         ),
         sortedMapOf(
-            STATUS to MEMBER_STATUS_ACTIVE,
+            STATUS to memberStatus,
             MODIFIED_TIME to clock.instant().toString(),
             SERIAL to "1",
+            IS_MGM to isMgm.toString()
+        )
+    )
+
+    private fun MemberInfo.toRestMemberInfoList() = listOf(
+        RestMemberInfo(
+            memberProvidedContext.entries.associate { it.key to it.value },
+            mgmProvidedContext.entries.associate { it.key to it.value },
         )
     )
 
@@ -180,7 +190,9 @@ class MemberLookupRestResourceTest {
         on { entries } doReturn testEntries.entries
     }
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup() } doReturn memberInfoList
+        on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn memberInfoList
+        on { lookup(holdingIdentity.x500Name) } doReturn alice
+        on { lookup(mgmHoldingIdentity.x500Name) } doReturn mgm
         on { groupParameters } doReturn mockGroupParameters
     }
 
@@ -191,6 +203,17 @@ class MemberLookupRestResourceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
+            CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            timestamp = Instant.now()
+        )
+        on { getByHoldingIdentityShortHash(ShortHash.of(MGM_HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
+            mgmHoldingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null,
             UUID.randomUUID(),
@@ -244,12 +267,20 @@ class MemberLookupRestResourceTest {
 
         @Test
         fun `unfiltered lookup returns a list of all active members and their contexts`() {
-            val result = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING)
-            assertThat(result.members.size).isEqualTo(2)
-            assertThat(result).isEqualTo(RestMemberInfoList(memberInfoList.map {
-                RestMemberInfo(it.memberProvidedContext.entries.associate { it.key to it.value },
-                    it.mgmProvidedContext.entries.associate { it.key to it.value })
-            }))
+            val result = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING).members
+
+            assertThat(result.size).isEqualTo(2)
+            assertThat(result).containsAll(activeMembers)
+
+            whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+                .doReturn(listOf(mgm, alice, bob, charlie))
+
+            val result2 = memberLookupRestResource.lookup(
+                MGM_HOLDING_IDENTITY_STRING,
+            ).members
+
+            assertThat(result2.size).isEqualTo(3)
+            assertThat(result2).containsAll(activeMembers + mgmRestMemberInfo)
         }
 
         @Test
@@ -336,6 +367,84 @@ class MemberLookupRestResourceTest {
             )
             assertThat(result2.members.size).isEqualTo(1)
             assertThat(result2).isEqualTo(bobRestResult)
+        }
+
+        @Test
+        fun `lookup by member filtered by statuses returns active members but not suspended members`() {
+            val result1 = memberLookupRestResource.lookup(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE)
+            ).members
+
+            assertThat(result1.size).isEqualTo(2)
+            assertThat(result1).containsAll(activeMembers)
+
+            val result2 = memberLookupRestResource.lookup(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_SUSPENDED)
+            ).members
+
+            assertThat(result2).isEmpty()
+
+            val result3 = memberLookupRestResource.lookup(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
+            ).members
+
+            assertThat(result3.size).isEqualTo(2)
+            assertThat(result3).containsAll(activeMembers)
+        }
+
+        @Test
+        fun `lookup by MGM filtered by statuses returns a list of members and their contexts`() {
+            whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+                .doReturn(listOf(mgm, alice, bob, charlie))
+
+            val result1 = memberLookupRestResource.lookup(
+                MGM_HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE)
+            ).members
+
+            assertThat(result1.size).isEqualTo(3)
+            assertThat(result1).containsAll(activeMembers + mgmRestMemberInfo)
+
+            val result2 = memberLookupRestResource.lookup(
+                MGM_HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_SUSPENDED)
+            ).members
+
+            assertThat(result2.size).isEqualTo(1)
+            assertThat(result2).containsAll(suspendedMembers)
+
+            val result3 = memberLookupRestResource.lookup(
+                MGM_HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
+            ).members
+
+            assertThat(result3.size).isEqualTo(4)
+            assertThat(result3).containsAll(activeAndSuspendedMembers + mgmRestMemberInfo)
+        }
+
+        @Test
+        fun `lookup filtered by statuses is case-insensitive`() {
+            val result1 = memberLookupRestResource.lookup(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE.lowercase())
+            ).members
+
+            assertThat(result1.size).isEqualTo(2)
+            assertThat(result1).containsAll(activeMembers)
+        }
+
+        @Test
+        fun `lookup should fail when invalid statuses are used`() {
+            val exception = assertThrows<ResourceNotFoundException> {
+                memberLookupRestResource.lookup(
+                    HOLDING_IDENTITY_STRING,
+                    statuses = listOf("invalid-status")
+                )
+            }
+            assertThat(exception).hasMessageContaining("Invalid status")
         }
 
         @Test

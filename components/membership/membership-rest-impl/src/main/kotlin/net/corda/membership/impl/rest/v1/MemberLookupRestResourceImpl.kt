@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -12,8 +13,14 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.membership.GroupParameters
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
@@ -45,7 +52,8 @@ class MemberLookupRestResourceImpl @Activate constructor(
             organizationUnit: String?,
             locality: String?,
             state: String?,
-            country: String?
+            country: String?,
+            statuses: List<String>?,
         ): RestMemberInfoList
 
         fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
@@ -92,7 +100,8 @@ class MemberLookupRestResourceImpl @Activate constructor(
         organizationUnit: String?,
         locality: String?,
         state: String?,
-        country: String?
+        country: String?,
+        statuses: List<String>?,
     ) = impl.lookup(
         ShortHash.parseOrThrow(holdingIdentityShortHash),
         commonName,
@@ -100,7 +109,8 @@ class MemberLookupRestResourceImpl @Activate constructor(
         organizationUnit,
         locality,
         state,
-        country
+        country,
+        statuses,
     )
 
     override fun viewGroupParameters(holdingIdentityShortHash: String): Map<String, String> =
@@ -124,7 +134,8 @@ class MemberLookupRestResourceImpl @Activate constructor(
             organizationUnit: String?,
             locality: String?,
             state: String?,
-            country: String?
+            country: String?,
+            statuses: List<String>?,
         ) = throw ServiceUnavailableException(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
@@ -144,21 +155,24 @@ class MemberLookupRestResourceImpl @Activate constructor(
             organizationUnit: String?,
             locality: String?,
             state: String?,
-            country: String?
+            country: String?,
+            statuses: List<String>?,
         ): RestMemberInfoList {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-            val filteredMembers = reader.lookup().filter { member ->
+            val statusFilter = statuses?.getStatusFilter(reader.isMgm(holdingIdentity)) ?: listOf(MEMBER_STATUS_ACTIVE)
+            val filteredMembers = reader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED).filter { member ->
                 val memberName = member.name
                 commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
                 organization?.let { memberName.organization.equals(it, true) } ?: true &&
                 organizationUnit?.let { memberName.organizationUnit.equals(it, true) } ?: true &&
                 locality?.let { memberName.locality.equals(it, true) } ?: true &&
                 state?.let { memberName.state.equals(it, true) } ?: true &&
-                country?.let { memberName.country.equals(it, true) } ?: true
+                country?.let { memberName.country.equals(it, true) } ?: true &&
+                statusFilter.contains(member.status)
             }
 
             return RestMemberInfoList(
@@ -184,5 +198,24 @@ class MemberLookupRestResourceImpl @Activate constructor(
         }
 
         private fun GroupParameters.toMap() = entries.associate { it.key to it.value }
+
+        private fun List<String>.getStatusFilter(isMgm: Boolean): List<String> {
+            val filter = this.map {
+                val status = it.uppercase()
+                if (!listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED).contains(status)) {
+                    throw ResourceNotFoundException("Invalid status: $it")
+                }
+                status
+            }.distinct()
+            return when(filter) {
+                listOf(MEMBER_STATUS_ACTIVE) -> filter
+                emptyList<String>() -> listOf(MEMBER_STATUS_ACTIVE)
+                else -> { if (isMgm) filter else filter - MEMBER_STATUS_SUSPENDED }
+            }
+        }
+
+        private fun MembershipGroupReader.isMgm(holdingIdentity: HoldingIdentity): Boolean =
+            lookup(holdingIdentity.x500Name)?.isMgm
+                ?: throw ResourceNotFoundException("Holding Identity", holdingIdentity.shortHash.value)
     }
 }
