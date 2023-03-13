@@ -7,7 +7,7 @@ import java.security.PublicKey
 
 private class MockTransactionSignatureService: TransactionSignatureService {
     override fun sign(transaction: TransactionWithMetadata, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> =
-        listOf(getSignatureWithMetadataExample())
+        publicKeys.map { getSignatureWithMetadataExample(it) }
     override fun signBatch(
         transactions: List<TransactionWithMetadata>,
         publicKeys: Iterable<PublicKey>
