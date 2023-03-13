@@ -101,7 +101,7 @@ class CpiValidatorImpl(
         publisher.update(requestId, "Extracting Liquibase scripts from CPKs in CPI")
         val liquibaseScripts = cpi.extractLiquibaseScripts()
 
-        // Todos: Call publisher.update(requestId, "Validating configuration for external channels") ?
+        publisher.update(requestId, "Validating configuration for external channels")
         cpi.validateExternalChannelsConfig(externalChannelsConfigValidator)
 
         publisher.update(requestId, "Persisting CPI")

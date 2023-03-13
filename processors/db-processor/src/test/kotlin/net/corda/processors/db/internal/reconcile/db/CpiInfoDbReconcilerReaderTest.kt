@@ -67,7 +67,7 @@ class CpiInfoDbReconcilerReaderTest {
                         "type" : "send-receive"
                     }
                 }
-            """
+            """.trimIndent()
     )
 
     private val dummyCpk =

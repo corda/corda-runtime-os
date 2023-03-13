@@ -145,7 +145,7 @@ class UpsertCpiTests {
                         "type" : "send-receive"
                     }
                 }
-            """
+            """.trimIndent()
         )
         whenever(cpk.path).thenReturn(getRandomString(1024).writeToPath())
         whenever(cpk.originalFileName).thenReturn(name)
