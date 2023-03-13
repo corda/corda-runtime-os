@@ -1,7 +1,7 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.chunking.ChunkWriter
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.cpiupload.CpiUploadManager
@@ -23,10 +23,10 @@ import net.corda.rest.HttpFileUpload
 import net.corda.rest.exception.InvalidInputDataException
 import org.junit.jupiter.api.assertThrows
 
-class CpiUploadRPCOpsImplTest {
-    private lateinit var cpiUploadRPCOpsImpl: CpiUploadRestResourceImpl
+class CpiUploadRestResourceImplTest {
+    private lateinit var cpiUploadRestResourceImpl: CpiUploadRestResourceImpl
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var cpiUploadRPCOpsService: CpiUploadRPCOpsService
+    private lateinit var cpiUploadService: CpiUploadService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var cpiUploadManager: CpiUploadManager
 
@@ -44,15 +44,15 @@ class CpiUploadRPCOpsImplTest {
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
         }
-        cpiUploadRPCOpsService = mock()
+        cpiUploadService = mock()
         cpiInfoReadService = mock()
-        cpiUploadRPCOpsImpl = CpiUploadRestResourceImpl(coordinatorFactory, cpiUploadRPCOpsService, cpiInfoReadService)
+        cpiUploadRestResourceImpl = CpiUploadRestResourceImpl(coordinatorFactory, cpiUploadService, cpiInfoReadService)
         cpiUploadManager = mock()
         val mockStatus = mock<UploadStatus>()
         whenever(mockStatus.message).thenReturn(EXPECTED_MESSAGE)
         whenever(cpiUploadManager.status(any())).thenReturn(mockStatus)
         whenever(cpiUploadManager.status(UNKNOWN_REQUEST)).thenReturn(null)
-        whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
+        whenever(cpiUploadService.cpiUploadManager).thenReturn(cpiUploadManager)
     }
 
     @Test
@@ -64,22 +64,22 @@ class CpiUploadRPCOpsImplTest {
 
         whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
 
-        val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
+        val httpResponse = cpiUploadRestResourceImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)
         assertEquals(cpiUploadRequestId.requestId, httpResponse.id)
     }
 
     @Test
     fun `getAllCpis calls CpiInfoReadService to retrieve all CPIs`() {
-        cpiUploadRPCOpsImpl.getAllCpis()
+        cpiUploadRestResourceImpl.getAllCpis()
         verify(cpiInfoReadService).getAll()
     }
 
     @Test
     fun `status returns 400 if invalid id is passed`() {
-        cpiUploadRPCOpsImpl.status("not unknown")
+        cpiUploadRestResourceImpl.status("not unknown")
         assertThrows<InvalidInputDataException> {
-            cpiUploadRPCOpsImpl.status(UNKNOWN_REQUEST)
+            cpiUploadRestResourceImpl.status(UNKNOWN_REQUEST)
         }
     }
 }

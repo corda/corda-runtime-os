@@ -2,7 +2,7 @@ package net.corda.cpi.upload.endpoints.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpi.upload.endpoints.service.impl.CpiUploadRPCOpsServiceHandler
+import net.corda.cpi.upload.endpoints.service.impl.CpiUploadServiceHandler
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.libs.configuration.SmartConfig
@@ -34,8 +34,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class CpiUploadRPCOpsServiceHandlerTest {
-    private lateinit var cpiUploadRPCOpsServiceHandler: CpiUploadRPCOpsServiceHandler
+class CpiUploadServiceHandlerTest {
+    private lateinit var cpiUploadServiceHandler: CpiUploadServiceHandler
     private lateinit var cpiUploadManagerFactory: CpiUploadManagerFactory
     private lateinit var configReadService: ConfigurationReadService
     private lateinit var publisherFactory: PublisherFactory
@@ -49,8 +49,8 @@ class CpiUploadRPCOpsServiceHandlerTest {
         configReadService = mock()
         publisherFactory = mock()
         subscriptionFactory = mock()
-        cpiUploadRPCOpsServiceHandler =
-            CpiUploadRPCOpsServiceHandler(
+        cpiUploadServiceHandler =
+            CpiUploadServiceHandler(
                 cpiUploadManagerFactory,
                 configReadService,
                 publisherFactory,
@@ -71,15 +71,15 @@ class CpiUploadRPCOpsServiceHandlerTest {
             )
         ).thenReturn(registrationHandle)
 
-        assertNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
-        cpiUploadRPCOpsServiceHandler.processEvent(StartEvent(), coordinator)
-        assertNotNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
+        assertNull(cpiUploadServiceHandler.configReadServiceRegistrationHandle)
+        cpiUploadServiceHandler.processEvent(StartEvent(), coordinator)
+        assertNotNull(cpiUploadServiceHandler.configReadServiceRegistrationHandle)
     }
 
     @Test
-    fun `on RegistrationStatusChangeEvent UP event registers to ConfigurationReadService for RPC config updates`() {
+    fun `on RegistrationStatusChangeEvent UP event registers to ConfigurationReadService for config updates`() {
         val event = RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP)
-        cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
+        cpiUploadServiceHandler.processEvent(event, coordinator)
         verify(configReadService).registerComponentForUpdates(
             coordinator,
             setOf(
@@ -99,12 +99,12 @@ class CpiUploadRPCOpsServiceHandlerTest {
 
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
-        cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle
-        cpiUploadRPCOpsServiceHandler.cpiUploadManager = cpiUploadManager
-        cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
+        cpiUploadServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle
+        cpiUploadServiceHandler.cpiUploadManager = cpiUploadManager
+        cpiUploadServiceHandler.processEvent(event, coordinator)
         verify(configReadServiceRegistrationHandle).close()
-        assertNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
-        assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
+        assertNull(cpiUploadServiceHandler.configReadServiceRegistrationHandle)
+        assertNull(cpiUploadServiceHandler.cpiUploadManager)
         verify(coordinator).updateStatus(LifecycleStatus.ERROR)
     }
 
@@ -133,8 +133,8 @@ class CpiUploadRPCOpsServiceHandlerTest {
             )
         )
 
-        assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
-        cpiUploadRPCOpsServiceHandler.processEvent(ConfigChangedEvent(mock(), config), coordinator)
+        assertNull(cpiUploadServiceHandler.cpiUploadManager)
+        cpiUploadServiceHandler.processEvent(ConfigChangedEvent(mock(), config), coordinator)
 
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
@@ -148,14 +148,14 @@ class CpiUploadRPCOpsServiceHandlerTest {
         val subscription: Subscription<UploadStatusKey, UploadStatus> = mock()
         val cpiUploadManager = CpiUploadManagerImpl("some topic", publisher, subscription, ackProcessor, 500)
 
-        cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle
-        cpiUploadRPCOpsServiceHandler.cpiUploadManager = cpiUploadManager
-        cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
+        cpiUploadServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle
+        cpiUploadServiceHandler.cpiUploadManager = cpiUploadManager
+        cpiUploadServiceHandler.processEvent(event, coordinator)
         verify(configReadServiceRegistrationHandle).close()
         verify(publisher).close()
         verify(subscription).close()
-        assertNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
-        assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
+        assertNull(cpiUploadServiceHandler.configReadServiceRegistrationHandle)
+        assertNull(cpiUploadServiceHandler.cpiUploadManager)
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 

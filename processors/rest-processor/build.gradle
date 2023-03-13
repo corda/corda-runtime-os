@@ -22,7 +22,7 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-persistence-client")
-    implementation project(':components:virtual-node:cpi-upload-rpcops-service')
+    implementation project(':components:virtual-node:cpi-upload-rest-service')
     implementation project(':components:flow:flow-rest-resource-service')
     implementation project(':components:rest-gateway-comp')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
@@ -65,7 +65,7 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-validation-cache-impl')
 
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
-    runtimeOnly project(':components:virtual-node:cpi-upload-rpcops-service')
+    runtimeOnly project(':components:virtual-node:cpi-upload-rest-service')
 
     integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"

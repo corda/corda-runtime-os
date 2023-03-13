@@ -1,8 +1,8 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.crypto.core.toCorda
-import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.common.CpiUploadRestResourceHandler
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.chunking.UploadStatus
 import net.corda.rest.HttpFileUpload
@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory
 class CpiUploadRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = CpiUploadService::class)
+    private val cpiUploadService: CpiUploadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService
 ) : CpiUploadRestResource, PluggableRestResource<CpiUploadRestResource>, Lifecycle {
@@ -40,10 +40,10 @@ class CpiUploadRestResourceImpl @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRestResource>(
-        CpiUploadRPCOpsHandler()
+        CpiUploadRestResourceHandler()
     )
 
-    private val cpiUploadManager get() = cpiUploadRPCOpsService.cpiUploadManager
+    private val cpiUploadManager get() = cpiUploadService.cpiUploadManager
 
     override val protocolVersion: Int = 1
 

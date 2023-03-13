@@ -543,7 +543,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `query registration requests returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL))
+            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null)
         )
 
         processor.onNext(rq, responseFuture)

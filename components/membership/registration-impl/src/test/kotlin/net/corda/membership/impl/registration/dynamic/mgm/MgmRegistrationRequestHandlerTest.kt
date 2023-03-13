@@ -88,7 +88,7 @@ class MgmRegistrationRequestHandlerTest {
         )
         mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
         verify(membershipQueryClient).queryRegistrationRequestsStatus(
-            eq(holdingIdentity), eq(null), eq(RegistrationStatus.values().toList())
+            eq(holdingIdentity), eq(null), eq(RegistrationStatus.values().toList()), eq(null)
         )
     }
 

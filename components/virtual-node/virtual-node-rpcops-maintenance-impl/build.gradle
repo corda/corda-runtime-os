@@ -11,7 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:virtual-node:cpi-upload-rpcops-service')
+    implementation project(':components:virtual-node:cpi-upload-rest-service')
     implementation project(':components:virtual-node:virtual-node-management-sender')
 
     implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')

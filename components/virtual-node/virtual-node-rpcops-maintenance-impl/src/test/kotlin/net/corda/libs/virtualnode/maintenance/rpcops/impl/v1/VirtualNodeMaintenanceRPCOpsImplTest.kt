@@ -1,7 +1,7 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.chunking.ChunkWriter
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
@@ -104,17 +104,17 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         private val mockCpiUploadManager = mock<CpiUploadManager>().apply {
             whenever(uploadCpi(any(), any(), any())) doReturn mockCpiResponse
         }
-        private val mockCpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>().apply {
+        private val mockCpiUploadService = mock<CpiUploadService>().apply {
             whenever(cpiUploadManager) doReturn mockCpiUploadManager
         }
 
         @Test
         fun `verify forceCpiUpload performs call to uploadCpi on cpiUploadManager`() {
             val vnodeRpcOps =
-                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mockCpiUploadRPCOpsService, mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mockCpiUploadService, mock())
             vnodeRpcOps.forceCpiUpload(mockUpload)
 
-            verify(mockCpiUploadRPCOpsService.cpiUploadManager)
+            verify(mockCpiUploadService.cpiUploadManager)
                 .uploadCpi(
                     any(),
                     any(),
