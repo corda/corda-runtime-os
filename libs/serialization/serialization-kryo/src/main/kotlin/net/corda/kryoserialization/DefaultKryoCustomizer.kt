@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.SerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.ArraysAsListSerializer
 import de.javakaffee.kryoserializers.BitSetSerializer
@@ -66,9 +67,9 @@ class DefaultKryoCustomizer {
 
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
                 //fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
+
                 // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
                 // their parents after deserialization.
-
                 //fieldSerializerConfig.isIgnoreSyntheticFields = false
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
@@ -93,8 +94,17 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
                 addDefaultSerializer(Iterator::class.java, object : SerializerFactory<IteratorSerializer> {
+                    private val compatibleFieldSerializerConfig = CompatibleFieldSerializerConfig().apply {
+                        // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
+                        // their parents after deserialization.
+                        ignoreSyntheticFields = false
+
+                        // Take the safest route here and allow subclasses to have fields named the same as super classes.
+                        extendedFieldNames = true
+                    }
+
                     override fun newSerializer(kryo: Kryo?, type: Class<*>): IteratorSerializer {
-                        return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
+                        return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type, compatibleFieldSerializerConfig))
                     }
 
                     override fun isSupported(type: Class<*>): Boolean {
