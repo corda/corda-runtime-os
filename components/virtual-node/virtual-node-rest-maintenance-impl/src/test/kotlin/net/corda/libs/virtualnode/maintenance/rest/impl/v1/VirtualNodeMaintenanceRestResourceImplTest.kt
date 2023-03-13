@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
+package net.corda.libs.virtualnode.maintenance.rest.impl.v1
 
 import net.corda.chunking.ChunkWriter
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
@@ -21,8 +21,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.InputStream
 
-/** Tests of [VirtualNodeRPCOpsImpl]. */
-class VirtualNodeMaintenanceRPCOpsImplTest {
+/** Tests of [VirtualNodeMaintenanceRestResourceImpl]. */
+class VirtualNodeMaintenanceRestResourceImplTest {
     companion object {
         private const val actor = "test_principal"
 
@@ -54,38 +54,38 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         }
         @Test
         fun `verify coordinator is started on start`() {
-            val vnodeMaintenanceRpcOps =
+            val restResource =
                 VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
-            vnodeMaintenanceRpcOps.start()
+            restResource.start()
 
             verify(mockCoordinator).start()
         }
 
         @Test
         fun `verify coordinator is stopped on stop`() {
-            val vnodeMaintenanceRpcOps =
+            val restResource =
                 VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
-            vnodeMaintenanceRpcOps.stop()
+            restResource.stop()
 
             verify(mockCoordinator).stop()
         }
 
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
-            val vnodeMaintenanceRpcOps =
+            val restResource =
                 VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
-            vnodeMaintenanceRpcOps.isRunning
+            restResource.isRunning
 
             verify(mockCoordinator).isRunning
-            Assertions.assertTrue(vnodeMaintenanceRpcOps.isRunning)
+            Assertions.assertTrue(restResource.isRunning)
         }
 
         @Test
         fun `verify exception throw if forceCpiUpload is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps =
+            val restResource =
                 VirtualNodeMaintenanceRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
             assertThrows<IllegalStateException> {
-                vnodeMaintenanceRpcOps.forceCpiUpload(mock())
+                restResource.forceCpiUpload(mock())
             }
 
             verify(mockDownCoordinator).isRunning
@@ -94,7 +94,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
     @Nested
     inner class ServiceAPITests {
-        val mockUpload = mock<HttpFileUpload>().apply {
+        private val mockUpload = mock<HttpFileUpload>().apply {
             whenever(fileName) doReturn "test"
             whenever(content) doReturn InputStream.nullInputStream()
         }
@@ -110,9 +110,9 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
         @Test
         fun `verify forceCpiUpload performs call to uploadCpi on cpiUploadManager`() {
-            val vnodeRpcOps =
+            val restResource =
                 VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mockCpiUploadService, mock())
-            vnodeRpcOps.forceCpiUpload(mockUpload)
+            restResource.forceCpiUpload(mockUpload)
 
             verify(mockCpiUploadService.cpiUploadManager)
                 .uploadCpi(

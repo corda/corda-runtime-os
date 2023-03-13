@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
+package net.corda.libs.virtualnode.maintenance.rest.impl.v1
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -96,7 +96,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                         coordinator.postEvent(StopEvent(errored = true))
                     }
                     LifecycleStatus.UP -> {
-                        // Receive updates to the RPC and Messaging config
+                        // Receive updates to the REST and Messaging config
                         coordinator.createManagedResource(CONFIG_HANDLE) {
                             configurationReadService.registerComponentForUpdates(
                                 coordinator,
@@ -110,14 +110,16 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
-                    val rpcConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
+                    val restConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration = Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(
-                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID)
+                            duration, messagingConfig, PublisherConfig(
+                                VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID
+                            )
                         )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
