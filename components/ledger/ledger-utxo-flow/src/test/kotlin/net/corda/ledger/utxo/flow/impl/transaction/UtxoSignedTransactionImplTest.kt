@@ -8,7 +8,6 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import org.assertj.core.api.Assertions

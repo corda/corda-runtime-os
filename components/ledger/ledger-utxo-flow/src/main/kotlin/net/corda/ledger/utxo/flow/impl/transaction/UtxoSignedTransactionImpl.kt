@@ -152,7 +152,7 @@ data class UtxoSignedTransactionImpl(
         if (!KeyUtils.isKeyInSet(notary.owningKey, signatures.map { it.by })) {
             throw TransactionSignatureException(
                 id,
-                "There are no notary (${notary.owningKey} signatures attached to the transaction. (signatories: ${signatures.map { it.by }}",
+                "There are no notary signatures attached to the transaction.",
                 null
             )
         }
