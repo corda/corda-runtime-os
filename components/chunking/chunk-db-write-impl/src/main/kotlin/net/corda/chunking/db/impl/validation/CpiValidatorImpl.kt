@@ -102,7 +102,7 @@ class CpiValidatorImpl(
         val liquibaseScripts = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Validating configuration for external channels")
-        cpi.validateExternalChannelsConfig(externalChannelsConfigValidator)
+        externalChannelsConfigValidator.validate(cpi)
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =

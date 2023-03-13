@@ -1,7 +1,7 @@
 package net.corda.chunking.db.impl.validation
 
-import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.Cpi
 
 interface ExternalChannelsConfigValidator {
-    fun validate(cpkIdentifier: CpkIdentifier, externalChannelsConfig: String?)
+    fun validate(cpi: Cpi)
 }
