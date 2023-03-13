@@ -136,16 +136,7 @@ class UpsertCpiTests {
             fileChecksum = fileChecksum,
             cordappCertificates = emptySet(),
             timestamp = Instant.now(),
-            externalChannelsConfig = """
-                {
-                    "channel 1" : {
-                        "type" : "send"
-                    },
-                    "channel 2" :{
-                        "type" : "send-receive"
-                    }
-                }
-            """.trimIndent()
+            externalChannelsConfig = "{}"
         )
         whenever(cpk.path).thenReturn(getRandomString(1024).writeToPath())
         whenever(cpk.originalFileName).thenReturn(name)

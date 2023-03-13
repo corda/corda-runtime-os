@@ -58,16 +58,7 @@ class CpiInfoDbReconcilerReaderTest {
         SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
         emptySet(),
         Instant.now().truncatedTo(ChronoUnit.MILLIS),
-        externalChannelsConfig = """
-                {
-                    "channel 1" : {
-                        "type" : "send"
-                    },
-                    "channel 2" :{
-                        "type" : "send-receive"
-                    }
-                }
-            """.trimIndent()
+        externalChannelsConfig = "{}"
     )
 
     private val dummyCpk =

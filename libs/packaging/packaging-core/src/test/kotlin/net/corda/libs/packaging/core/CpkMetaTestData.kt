@@ -45,16 +45,7 @@ object CpkMetaTestData {
         ),
     )
 
-    private const val externalChannelsConfig = """
-                {
-                    "channel 1" : {
-                        "type" : "send"
-                    },
-                    "channel 2" :{
-                        "type" : "send-receive"
-                    }
-                }
-            """
+    private const val externalChannelsConfig = "{}"
 
     fun create(): CpkMetadata {
         return CpkMetadata(
