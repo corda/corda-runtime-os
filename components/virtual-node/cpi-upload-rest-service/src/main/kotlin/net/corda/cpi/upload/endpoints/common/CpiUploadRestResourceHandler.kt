@@ -51,7 +51,6 @@ internal class CpiUploadRestResourceHandler : LifecycleEventHandler {
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        coordinator.closeManagedResources(setOf(FOLLOW_STATUS_NAME))
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 }
