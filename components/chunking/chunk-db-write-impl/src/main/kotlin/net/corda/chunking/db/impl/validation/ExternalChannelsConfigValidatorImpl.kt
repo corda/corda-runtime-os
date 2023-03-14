@@ -7,13 +7,9 @@ import org.slf4j.LoggerFactory
 
 class ExternalChannelsConfigValidatorImpl: ExternalChannelsConfigValidator {
 
-    companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     override fun validate(cpi: Cpi) {
         cpi.metadata.cpksMetadata.forEach {
-            validate(it.cpkId, it.externalChannelsConfig)
+            validate(it.externalChannelsConfig)
         }
     }
 
@@ -23,3 +19,5 @@ class ExternalChannelsConfigValidatorImpl: ExternalChannelsConfigValidator {
         }
     }
 }
+
+class SchemaValidationError(message: String): Exception(message)
