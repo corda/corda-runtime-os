@@ -18,7 +18,7 @@ constructor(
     private val dbConnectionManager: DbConnectionManager,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val connectionsCache: Cache<String, EntityManagerFactory>
+    private val connectionsCache: Cache<String, EntityManagerFactory>,
 ) : CryptoRepositoryFactory {
     override fun create(tenantId: String): CryptoRepository {
         val onCluster = CryptoTenants.isClusterTenant(tenantId)

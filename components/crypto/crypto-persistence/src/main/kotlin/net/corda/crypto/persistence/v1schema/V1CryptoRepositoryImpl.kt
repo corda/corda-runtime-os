@@ -17,7 +17,7 @@ class V1CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManag
                     created = Instant.now(),
                     encodingVersion = key.encodingVersion,
                     algorithmName = key.algorithmName,
-                    keyMaterial = key.keyMaterial
+                    keyMaterial = key.keyMaterial,
                 )
             )
         }
@@ -28,7 +28,7 @@ class V1CryptoRepositoryImpl(private val entityManagerFactory: () -> EntityManag
             WrappingKeyInfo(
                 encodingVersion = rec.encodingVersion,
                 algorithmName = rec.algorithmName,
-                keyMaterial = rec.keyMaterial
+                keyMaterial = rec.keyMaterial,
             )
         }
     }

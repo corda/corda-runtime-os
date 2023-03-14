@@ -51,5 +51,5 @@ class V2WrappingKeyEntity(
     var keyMaterial: ByteArray,
 
     @Column(name = "rotation_date", nullable = true, updatable = true, columnDefinition = "DATE")
-    var rotationDate: LocalDateTime
+    var rotationDate: LocalDateTime,
 )

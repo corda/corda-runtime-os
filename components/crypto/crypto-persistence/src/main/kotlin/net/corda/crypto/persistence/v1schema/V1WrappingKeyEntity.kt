@@ -45,7 +45,7 @@ class V1WrappingKeyEntity(
      * Key material for the wrapping key. It's encrypted by another key which is obtained through the configuration.
      */
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition = "BLOB")
-    var keyMaterial: ByteArray
+    var keyMaterial: ByteArray,
 ) {
     override fun hashCode() = alias.hashCode()
     override fun equals(other: Any?) = other != null && other is V1WrappingKeyEntity && other.alias.equals(alias)
