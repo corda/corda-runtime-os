@@ -38,8 +38,8 @@ class SessionConfirmProcessorReceive(
             }
 
             logger.trace {
-                "Received SessionConfirm on key $key with receivedSequenceNum ${sessionEvent.receivedSequenceNum} and outOfOrderSequenceNums " +
-                        "${sessionEvent.outOfOrderSequenceNums} for session state: $sessionState"
+                "Received SessionConfirm on key $key with receivedSequenceNum ${sessionEvent.receivedSequenceNum} " +
+                        "and outOfOrderSequenceNums ${sessionEvent.outOfOrderSequenceNums} for session state: $sessionState"
             }
 
             return sessionState

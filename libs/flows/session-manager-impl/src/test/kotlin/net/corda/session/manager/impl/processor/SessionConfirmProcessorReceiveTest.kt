@@ -27,7 +27,8 @@ class SessionConfirmProcessorReceiveTest {
         )
 
         val event = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionConfirm(sessionProps), 1)
-        val sessionConfirmProcessorReceived = SessionConfirmProcessorReceive("key", inputState, event, SessionConfirm(sessionProps), Instant.now())
+        val sessionConfirmProcessorReceived =
+            SessionConfirmProcessorReceive("key", inputState, event, SessionConfirm(sessionProps), Instant.now())
         val sessionState = sessionConfirmProcessorReceived.execute()
 
         val messagesToSend = sessionState.receivedEventsState.undeliveredMessages
