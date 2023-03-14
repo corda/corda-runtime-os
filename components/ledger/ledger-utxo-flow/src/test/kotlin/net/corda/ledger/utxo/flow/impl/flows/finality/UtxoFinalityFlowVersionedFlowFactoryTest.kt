@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -13,7 +12,7 @@ import org.mockito.kotlin.whenever
 class UtxoFinalityFlowVersionedFlowFactoryTest {
 
     private val transaction = mock<UtxoSignedTransactionInternal>().apply {
-        whenever(this.id).thenReturn(SecureHash("alg", byteArrayOf(1)))
+        whenever(this.id).thenReturn(mock())
     }
     private val factory = UtxoFinalityFlowVersionedFlowFactory(transaction, PluggableNotaryClientFlow::class.java)
 

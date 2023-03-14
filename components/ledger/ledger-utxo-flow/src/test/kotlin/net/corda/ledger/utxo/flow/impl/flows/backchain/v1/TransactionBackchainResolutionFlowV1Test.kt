@@ -4,6 +4,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainVerifier
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
@@ -143,9 +144,9 @@ class TransactionBackchainResolutionFlowV1Test {
 
     private fun callTransactionBackchainResolutionFlow() {
         TransactionBackchainResolutionFlowV1(transaction.dependencies, session).apply {
-            flowEngine = this@TransactionBackchainResolutionFlowTest.flowEngine
-            transactionBackchainVerifier = this@TransactionBackchainResolutionFlowTest.transactionBackchainVerifier
-            utxoLedgerPersistenceService = this@TransactionBackchainResolutionFlowTest.utxoLedgerPersistenceService
+            flowEngine = this@TransactionBackchainResolutionFlowV1Test.flowEngine
+            transactionBackchainVerifier = this@TransactionBackchainResolutionFlowV1Test.transactionBackchainVerifier
+            utxoLedgerPersistenceService = this@TransactionBackchainResolutionFlowV1Test.utxoLedgerPersistenceService
         }.call()
     }
 }

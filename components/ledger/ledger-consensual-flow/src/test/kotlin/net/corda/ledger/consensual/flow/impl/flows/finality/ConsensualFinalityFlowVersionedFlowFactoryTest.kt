@@ -2,7 +2,6 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.consensual.flow.impl.flows.finality.v1.ConsensualFinalityFlowV1
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -12,7 +11,7 @@ import org.mockito.kotlin.whenever
 class ConsensualFinalityFlowVersionedFlowFactoryTest {
 
     private val transaction = mock<ConsensualSignedTransactionInternal>().apply {
-        whenever(this.id).thenReturn(SecureHash("alg", byteArrayOf(1)))
+        whenever(this.id).thenReturn(mock())
     }
     private val factory = ConsensualFinalityFlowVersionedFlowFactory(transaction)
 
