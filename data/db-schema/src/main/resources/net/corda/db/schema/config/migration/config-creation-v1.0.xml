@@ -113,6 +113,17 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
+        <insert tableName="config">
+            <column name="section" value="corda.sandbox"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
         <createTable tableName="config_audit">
             <column name="change_number" type="SERIAL">
                 <constraints nullable="false"/>

@@ -5,16 +5,63 @@
   "description": "Configuration schema for the sandbox subsection.",
   "type": "object",
   "properties": {
-    "cache": {
-      "description": "Settings for sandbox caching",
+    "flow": {
+      "description": "Settings for flow sandbox",
       "type": "object",
       "default": {},
       "properties": {
-        "size": {
-          "description": "The maximum number cached sandboxes.",
-          "type": "integer",
-          "minimum": 0,
-          "default": 2
+        "cache": {
+          "description": "Settings for flow sandbox caching",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "size": {
+              "description": "The maximum number cached flow sandboxes.",
+              "type": "integer",
+              "minimum": 0,
+              "default": 10
+            }
+          }
+        }
+      }
+    },
+    "persistence": {
+      "description": "Settings for db sandbox",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "cache": {
+          "description": "Settings for db sandbox caching",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "size": {
+              "description": "The maximum number cached db sandboxes.",
+              "type": "integer",
+              "minimum": 0,
+              "default": 10
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "description": "Settings for verification sandbox",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "cache": {
+          "description": "Settings for verification sandbox caching",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "size": {
+              "description": "The maximum number cached verification sandboxes.",
+              "type": "integer",
+              "minimum": 0,
+              "default": 10
+            }
+          }
         }
       }
     }
