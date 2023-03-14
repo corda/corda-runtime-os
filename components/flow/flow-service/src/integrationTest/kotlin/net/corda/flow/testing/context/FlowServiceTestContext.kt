@@ -247,13 +247,12 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionInit.newBuilder()
-                .setProtocol(protocol)
-                .setVersions(listOf(1))
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
+                .setContextSessionProperties(emptyKeyValuePairList())
                 .build(),
             sequenceNum = 0,
             receivedSequenceNum = 1,

@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
+import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -195,8 +196,9 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
             return initiatorForProtocol[protocolName] ?: throw IllegalArgumentException("No initiator configured for $protocolName")
         }
 
-        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): String {
-            return responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
+        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): FlowAndProtocolVersion {
+            val flowClass = responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
+            return FlowAndProtocolVersion("", 1, flowClass)
         }
 
         override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
