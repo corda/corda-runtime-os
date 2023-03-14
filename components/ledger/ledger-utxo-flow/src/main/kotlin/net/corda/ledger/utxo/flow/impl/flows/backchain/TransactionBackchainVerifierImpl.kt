@@ -35,28 +35,28 @@ class TransactionBackchainVerifierImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun verify(resolvingTransactionId: SecureHash, topologicalSort: TopologicalSort): Boolean {
+    override fun verify(initialTransactionIds: Set<SecureHash>, topologicalSort: TopologicalSort): Boolean {
         val sortedTransactions = topologicalSort.complete().iterator()
 
         for (transactionId in sortedTransactions) {
             val transaction = utxoLedgerPersistenceService.find(transactionId, UNVERIFIED) as UtxoSignedTransactionInternal?
                 ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
             try {
-                log.trace { "Backchain resolution of $resolvingTransactionId - Verifying transaction $transactionId" }
+                log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
                 transaction.verifySignatures()
                 transaction.verifyNotarySignatureAttached()
                 utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
-                log.trace { "Backchain resolution of $resolvingTransactionId - Verified transaction $transactionId" }
+                log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
             } catch (e: Exception) {
                 // TODO revisit what exceptions get caught
                 log.warn(
-                    "Backchain resolution of $resolvingTransactionId - Verified of transaction $transactionId failed, message: " +
+                    "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
                             "${e.message}"
                 )
                 return false
             }
             utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
-            log.trace { "Backchain resolution of $resolvingTransactionId - Updated status of transaction $transactionId to verified" }
+            log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId to verified" }
             sortedTransactions.remove()
         }
 

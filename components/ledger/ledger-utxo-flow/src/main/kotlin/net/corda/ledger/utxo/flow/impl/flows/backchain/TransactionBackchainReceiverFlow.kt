@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class TransactionBackchainReceiverFlow(
-    private val resolvingTransactionId: SecureHash,
+    private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
     private val session: FlowSession
 ) : SubFlow<TopologicalSort> {
@@ -41,7 +41,7 @@ class TransactionBackchainReceiverFlow(
             val batch = setOf(transactionsToRetrieve.first())
 
             log.trace {
-                "Backchain resolution of $resolvingTransactionId - Requesting the content of transactions $batch from transaction backchain"
+                "Backchain resolution of $initialTransactionIds - Requesting the content of transactions $batch from transaction backchain"
             }
 
             @Suppress("unchecked_cast")
@@ -50,14 +50,14 @@ class TransactionBackchainReceiverFlow(
                 TransactionBackchainRequest.Get(batch)
             ) as List<UtxoSignedTransaction>
 
-            log.trace { "Backchain resolution of $resolvingTransactionId - Received content for transactions $batch" }
+            log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }
 
             for (retrievedTransaction in retrievedTransactions) {
 
                 val retrievedTransactionId = retrievedTransaction.id
 
                 require(retrievedTransactionId in batch) {
-                    "Backchain resolution of $resolvingTransactionId - Received transaction $retrievedTransactionId which was not " +
+                    "Backchain resolution of $initialTransactionIds - Received transaction $retrievedTransactionId which was not " +
                             "requested in the last batch $batch"
                 }
 
@@ -67,15 +67,15 @@ class TransactionBackchainReceiverFlow(
 
                 when (status) {
                     TransactionExistenceStatus.DOES_NOT_EXIST -> log.trace {
-                        "Backchain resolution of $resolvingTransactionId - Persisted transaction $retrievedTransactionId as " +
+                        "Backchain resolution of $initialTransactionIds - Persisted transaction $retrievedTransactionId as " +
                                 "unverified"
                     }
                     TransactionExistenceStatus.UNVERIFIED -> log.trace {
-                        "Backchain resolution of $resolvingTransactionId - Transaction $retrievedTransactionId already exists as " +
+                        "Backchain resolution of $initialTransactionIds - Transaction $retrievedTransactionId already exists as " +
                                 "unverified"
                     }
                     TransactionExistenceStatus.VERIFIED -> log.trace {
-                        "Backchain resolution of $resolvingTransactionId - Transaction $retrievedTransactionId already exists as " +
+                        "Backchain resolution of $initialTransactionIds - Transaction $retrievedTransactionId already exists as " +
                                 "verified"
                     }
                 }
@@ -102,7 +102,7 @@ class TransactionBackchainReceiverFlow(
             retrievedTransaction.dependencies.let { dependencies ->
                 val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
                 log.trace {
-                    "Backchain resolution of $resolvingTransactionId - Adding dependencies for transaction ${retrievedTransaction.id} " +
+                    "Backchain resolution of $initialTransactionIds - Adding dependencies for transaction ${retrievedTransaction.id} " +
                             "dependencies: $unseenDependencies to transactions to retrieve"
                 }
                 sortedTransactionIds.add(retrievedTransaction.id, unseenDependencies)
@@ -117,7 +117,7 @@ class TransactionBackchainReceiverFlow(
 
         other as TransactionBackchainReceiverFlow
 
-        if (resolvingTransactionId != other.resolvingTransactionId) return false
+        if (initialTransactionIds != other.initialTransactionIds) return false
         if (originalTransactionsToRetrieve != other.originalTransactionsToRetrieve) return false
         if (session != other.session) return false
 
@@ -125,7 +125,7 @@ class TransactionBackchainReceiverFlow(
     }
 
     override fun hashCode(): Int {
-        var result = resolvingTransactionId.hashCode()
+        var result = initialTransactionIds.hashCode()
         result = 31 * result + originalTransactionsToRetrieve.hashCode()
         result = 31 * result + session.hashCode()
         return result
