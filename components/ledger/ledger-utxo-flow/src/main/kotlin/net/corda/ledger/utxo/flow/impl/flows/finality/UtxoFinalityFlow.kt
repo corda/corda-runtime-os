@@ -18,13 +18,12 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
-import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 import kotlin.reflect.full.primaryConstructor
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class UtxoFinalityFlow(
@@ -168,7 +167,7 @@ class UtxoFinalityFlow(
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
-                it !in signatures                                   // These came from that party
+                        it !in signatures                                   // These came from that party
             }
         }.toMap()
         log.trace { "Sending updated signatures to counterparties for transaction $transactionId" }
@@ -261,7 +260,7 @@ class UtxoFinalityFlow(
     @VisibleForTesting
     internal fun newPluggableNotaryClientFlowInstance(
         transaction: UtxoSignedTransactionInternal
-    ) : PluggableNotaryClientFlow {
+    ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
             pluggableNotaryClientFlow.kotlin.primaryConstructor!!.call(
                 transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notary)
