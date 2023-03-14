@@ -1,10 +1,8 @@
 package net.corda.v5.ledger.utxo;
 
+import net.corda.v5.base.annotations.Suspendable;
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction;
 import org.jetbrains.annotations.NotNull;
-import net.corda.v5.crypto.KeyUtils;
-import java.security.PublicKey;
-import java.util.Set;
 
 /**
  * Defines a mechanism for implementing contracts, which perform transaction verification.
@@ -16,14 +14,18 @@ import java.util.Set;
 public interface Contract {
 
     /**
-     * TODO : Still in discussion - what do we call this, and where does it live?
-     * Determines whether a given state is relevant to a node, given the node's public keys.
+     * Determines whether the specified state is visible to a node observing, or recording the associated transaction.
      * <p>
-     * With default implementation, a state is relevant if any of the participants key matching one of this node's
-     * public keys.
+     * The default implementation determines that a state should be visible to its participants.
+     * </p>
+     *
+     * @param state The {@link ContractState} for which to determine visibility.
+     * @param checker Provides a mechanism to determine visibility of the specified {@link ContractState}.
+     * @return Returns true if the specified state is visible to the current node; otherwise, false.
      */
-    default boolean isRelevant(@NotNull ContractState state, @NotNull Set<PublicKey> myKeys) {
-        return state.getParticipants().stream().anyMatch( field -> KeyUtils.isKeyInSet(field, myKeys));
+    @Suspendable
+    default boolean isVisible(@NotNull ContractState state, @NotNull VisibilityChecker checker) {
+        return checker.containsMySigningKeys(state.getParticipants());
     }
 
     /**
