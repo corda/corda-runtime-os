@@ -15,12 +15,15 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 class TestCryptoRepositoryFactoryImpl {
     @Test
     fun `DML to Corda crypto DB for Crypto tenant and P2P`() {
+        val entityManagerFactory = mock<EntityManagerFactory>()
         val dbConnectionManager = mock<DbConnectionManager> {
-            on { getOrCreateEntityManagerFactory(any(), any()) } doReturn mock()
+            on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
         val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, mock(), mock())
         val repo = cut.create(CryptoTenants.CRYPTO)
@@ -30,16 +33,20 @@ class TestCryptoRepositoryFactoryImpl {
         cut.create(CryptoTenants.P2P)
         verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
+        repo.close()
+        verify(entityManagerFactory, times(0)).close()
     }
 
     @Test
     fun `Fresh database connections for virtual node and P2P`() {
+        val sharedEntityManagerFactory = mock<EntityManagerFactory>()
+        val ownedEntityManagerFactory = mock<EntityManagerFactory>()
         val virtualNodeInfo = mock<VirtualNodeInfo> {
             on { cryptoDmlConnectionId } doReturn mock()
         }
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn mock()
-            on { createEntityManagerFactory(any(), any()) } doReturn mock()
+            on { createEntityManagerFactory(any(), any()) } doReturn ownedEntityManagerFactory
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
             on { getByHoldingIdentityShortHash(any()) } doReturn virtualNodeInfo
@@ -49,11 +56,17 @@ class TestCryptoRepositoryFactoryImpl {
         }
         val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create(CryptoTenants.P2P)
+        cut.create(CryptoTenants.P2P).use {
+            verify(sharedEntityManagerFactory, times(0)).close()
+        }
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create("123456789012") // try shorter, ShortHash bombs
+        cut.create("123456789012").use {
+            verify(ownedEntityManagerFactory, times(0)).close()
+        } // try shorter, ShortHash bombs
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verifyNoMoreInteractions(dbConnectionManager)
+        verify(sharedEntityManagerFactory, times(0)).close()
+        verify(ownedEntityManagerFactory, times(1)).close()
     }
 }

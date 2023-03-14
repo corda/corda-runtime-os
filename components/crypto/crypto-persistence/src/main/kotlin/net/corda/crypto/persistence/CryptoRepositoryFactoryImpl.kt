@@ -8,6 +8,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import javax.persistence.EntityManagerFactory
 
 
 class CryptoRepositoryFactoryImpl
@@ -19,8 +20,14 @@ constructor(
     override fun create(tenantId: String): CryptoRepository {
         val onCluster = CryptoTenants.isClusterTenant(tenantId)
         val entityManagerFactory = if (onCluster) {
-            // tenantID is crypto, P2P or REST; let's obtain connect to our cluster Crypto database 
-            dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+            // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database 
+            val baseEMF = dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+            object : EntityManagerFactory by baseEMF {
+                override fun close() {
+                    // ignored; we should never close this since dbConnectionManager owns it
+                    // TODO maybe move this logic to never close to DbConnectionManager
+                }
+            }
         } else {
             // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
             dbConnectionManager.createEntityManagerFactory(
