@@ -206,12 +206,13 @@ class MemberLookupRestResourceImpl @Activate constructor(
                     throw ResourceNotFoundException("Invalid status: $it")
                 }
                 status
-            }.distinct()
-            return when(filter) {
-                listOf(MEMBER_STATUS_ACTIVE) -> filter
-                emptyList<String>() -> listOf(MEMBER_STATUS_ACTIVE)
-                else -> { if (isMgm) filter else filter - MEMBER_STATUS_SUSPENDED }
             }
+
+            if (filter.isEmpty()) {
+                return listOf(MEMBER_STATUS_ACTIVE)
+            }
+
+            return filter.filter { if (!isMgm) (it in setOf(MEMBER_STATUS_ACTIVE)) else true }.distinct()
         }
 
         private fun MembershipGroupReader.isMgm(holdingIdentity: HoldingIdentity): Boolean =
