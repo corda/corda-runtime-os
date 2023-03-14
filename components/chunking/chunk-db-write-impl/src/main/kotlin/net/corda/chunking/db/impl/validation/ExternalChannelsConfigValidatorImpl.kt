@@ -1,9 +1,6 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.core.CpkIdentifier
-import net.corda.utilities.debug
-import org.slf4j.LoggerFactory
 
 class ExternalChannelsConfigValidatorImpl: ExternalChannelsConfigValidator {
 
