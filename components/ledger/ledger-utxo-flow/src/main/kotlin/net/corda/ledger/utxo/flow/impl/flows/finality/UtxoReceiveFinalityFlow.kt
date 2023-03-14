@@ -30,9 +30,6 @@ class UtxoReceiveFinalityFlow(
         private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlow::class.java)
     }
 
-    @CordaInject
-    lateinit var visibilityChecker: VisibilityChecker
-
     override val log: Logger = UtxoReceiveFinalityFlow.log
 
     @Suspendable

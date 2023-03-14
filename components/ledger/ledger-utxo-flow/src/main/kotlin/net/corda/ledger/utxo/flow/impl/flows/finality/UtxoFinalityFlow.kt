@@ -47,9 +47,6 @@ class UtxoFinalityFlow(
     @CordaInject
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
-    @CordaInject
-    lateinit var visibilityChecker: VisibilityChecker
-
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         log.trace("Starting finality flow for transaction: $transactionId")
