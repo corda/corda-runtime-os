@@ -7,7 +7,6 @@ import net.corda.libs.packaging.testutils.TestUtils.toBase64
 import net.corda.test.util.InMemoryZipFile
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
-import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader.Companion.EXTERNAL_CHANNELS_CONFIG_FILE_PATH
 
 const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
