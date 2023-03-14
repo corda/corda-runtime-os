@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.filtered
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
@@ -83,7 +84,7 @@ class FilteredTransactionImpl(
                 topLevelMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
             val componentLeafHash =
-                SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
+                SecureHashImpl(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
             val providerToVerifyWith = when (filteredComponentGroup.merkleProof.proofType) {
                 MerkleProofType.AUDIT -> componentGroupAuditProofProvider

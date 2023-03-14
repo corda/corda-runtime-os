@@ -1,9 +1,9 @@
 package net.corda.cpiinfo.read
 
 import net.corda.cpiinfo.read.impl.CpiInfoMap
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,7 +15,7 @@ import java.util.UUID
 class CpiInfoMapTest {
     private lateinit var map: CpiInfoMap
 
-    private val secureHash = SecureHash("algorithm", "1234".toByteArray())
+    private val secureHash = SecureHashImpl("algorithm", "1234".toByteArray())
 
     private val currentTimestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 

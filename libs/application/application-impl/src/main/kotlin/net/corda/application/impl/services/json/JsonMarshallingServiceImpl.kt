@@ -15,6 +15,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.SerializationCustomizer
+import net.corda.crypto.core.parseSecureHash
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -143,6 +144,6 @@ internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerial
 
 internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
-        return SecureHash.parse(parser.text)
+        return parseSecureHash(parser.text)
     }
 }

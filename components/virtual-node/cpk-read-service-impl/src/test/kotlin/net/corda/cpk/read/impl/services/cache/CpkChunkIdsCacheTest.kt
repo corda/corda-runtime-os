@@ -1,8 +1,8 @@
 package net.corda.cpk.read.impl.services.cache
 
 import net.corda.cpk.read.impl.Helpers
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.chunking.Chunk
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -25,7 +25,7 @@ class CpkChunkIdsCacheTest {
 
     @Test
     fun `on non zero CPK chunk adds its chunk Id it to cache`() {
-        val checksum = SecureHash.parse(DUMMY_HASH)
+        val checksum = parseSecureHash(DUMMY_HASH)
 
         val (cpkChunkId0, chunk0) =
             Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
@@ -41,7 +41,7 @@ class CpkChunkIdsCacheTest {
 
     @Test
     fun `on zero CPK chunk sets expected chunks count`() {
-        val checksum = SecureHash.parse(DUMMY_HASH)
+        val checksum = parseSecureHash(DUMMY_HASH)
 
         val (cpkChunkId0, chunk0) =
             Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))

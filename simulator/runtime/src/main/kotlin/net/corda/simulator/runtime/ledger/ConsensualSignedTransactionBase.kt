@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.entities.ConsensualTransactionSignatureEntity
@@ -54,7 +55,8 @@ class ConsensualSignedTransactionBase(
     internal fun toEntity(): ConsensualTransactionEntity {
         val serializer = BaseSerializationService()
         val transactionEntity = ConsensualTransactionEntity(
-            String(id.bytes),
+            // TODO consider adding `SecureHash.getBytes()`
+            String((id as SecureHashImpl).bytes),
             serializer.serialize(ledgerTransaction.states).bytes,
             ledgerTransaction.timestamp
         )
@@ -83,7 +85,7 @@ class ConsensualSignedTransactionBase(
 
         override fun getId(): SecureHash {
             val digest = MessageDigest.getInstance("SHA-256")
-            return SecureHash(digest.algorithm, digest.digest(bytes))
+            return SecureHashImpl(digest.algorithm, digest.digest(bytes))
         }
 
         override fun getRequiredSignatories(): Set<PublicKey> {

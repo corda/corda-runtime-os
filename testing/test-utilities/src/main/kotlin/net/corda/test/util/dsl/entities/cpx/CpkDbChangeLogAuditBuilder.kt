@@ -1,10 +1,11 @@
 package net.corda.test.util.dsl.entities.cpx
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.v5.crypto.SecureHash
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 
 fun cpkDbChangeLogAudit(init: CpkDbChangeLogAuditBuilder.() -> Unit): CpkDbChangeLogAudit {
     val builder = CpkDbChangeLogAuditBuilder()
@@ -47,7 +48,7 @@ class CpkDbChangeLogAuditBuilder(
             id ?: "id_$randomUUID",
             CpkDbChangeLog(
                 CpkDbChangeLogIdentifier(
-                    fileChecksumSupplier.invoke() ?: SecureHash(
+                    fileChecksumSupplier.invoke() ?: SecureHashImpl(
                         "SHA-256",
                         "file_checksum_$randomUUID".toByteArray()),
                     filePath ?: "file_path_$randomUUID"

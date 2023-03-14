@@ -6,6 +6,7 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
@@ -52,6 +53,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
 
+    @CordaInject
+    private lateinit var digestService: DigestService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
@@ -62,13 +66,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
         memberLookup: MemberLookup,
-        transactionSignatureService: TransactionSignatureService
+        transactionSignatureService: TransactionSignatureService,
+        digestService: DigestService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
         this.transactionSignatureService = transactionSignatureService
+        this.digestService = digestService
     }
 
     /**
@@ -106,7 +112,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 otherParty,
                 serializationService,
                 signatureVerifier,
-                requestPayload.requestSignature
+                requestPayload.requestSignature,
+                digestService
             )
 
             verifyTransaction(requestPayload)

@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.chunking.Chunk
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
@@ -55,7 +56,7 @@ class CpkWriteServiceImplTest {
         fun secureHash(bytes: ByteArray): SecureHash {
             val algorithm = "SHA-256"
             val messageDigest = MessageDigest.getInstance(algorithm)
-            return SecureHash(algorithm, messageDigest.digest(bytes))
+            return SecureHashImpl(algorithm, messageDigest.digest(bytes))
         }
     }
 

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -23,7 +24,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
@@ -52,7 +52,7 @@ class UtxoReceiveFinalityFlowTest {
 
     private companion object {
         val MEMBER = MemberX500Name("Alice", "London", "GB")
-        val ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
     }
 
     private val memberLookup = mock<MemberLookup>()

@@ -1,5 +1,6 @@
 package net.corda.rest.ssl.impl
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.rest.ssl.KeyStoreInfo
 import net.corda.rest.ssl.SslCertReadService
 import net.corda.utilities.VisibleForTesting
@@ -8,7 +9,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
-class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslCertReadService {
+class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertReadService {
 
     constructor() : this(createDirectory = { Files.createTempDirectory("rest-ssl") })
 
@@ -30,7 +31,6 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
     private var _isRunning = true
 
     override fun start() {
-        // Stub implementation so ignore starting the service
     }
 
     override fun stop() {
@@ -45,7 +45,7 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
         }
     }
 
-    override fun getOrCreateKeyStore(): KeyStoreInfo {
+    override fun getOrCreateKeyStoreInfo(config: SmartConfig): KeyStoreInfo {
         if (keyStoreInfo == null) {
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)

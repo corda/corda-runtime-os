@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
@@ -23,9 +24,9 @@ import org.mockito.kotlin.whenever
 class TransactionBackchainReceiverFlowTest {
 
     private companion object {
-        val TX_ID_1 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
-        val TX_ID_2 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
-        val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
+        val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
+        val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+        val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
         val TX_3_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
         val TX_3_INPUT_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)
 
@@ -182,7 +183,7 @@ class TransactionBackchainReceiverFlowTest {
 
     private fun callTransactionBackchainReceiverFlow(originalTransactionsToRetrieve: Set<SecureHash>): TopologicalSort {
         return TransactionBackchainReceiverFlow(
-            setOf(SecureHash("SHA", byteArrayOf(1, 1, 1, 1))),
+            setOf(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))),
             originalTransactionsToRetrieve, session
         ).apply { utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowTest.utxoLedgerPersistenceService }
             .call()
