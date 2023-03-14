@@ -1,7 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
 import net.corda.crypto.core.ShortHash
-import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
@@ -17,6 +16,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
@@ -137,24 +137,19 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     override fun updateVirtualNodeState(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        newState: String
+        newState: OperationalStatus
     ): VirtualNodeInfo {
         entityManager.transaction {
             // Lookup virtual node and grab the latest one based on the cpi Version.
             val latestVirtualNodeInstance = findEntity(entityManager, holdingIdentityShortHash)
                 ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
-            var operationalStatus = OperationalStatus.ACTIVE
-            if (newState == "maintenance") {
-                operationalStatus = OperationalStatus.INACTIVE
-            }
-
             val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
                 update(
-                    operationalStatus,
-                    operationalStatus,
-                    operationalStatus,
-                    operationalStatus
+                    flowP2pOperationalStatus = newState,
+                    flowStartOperationalStatus = newState,
+                    flowOperationalStatus = newState,
+                    vaultDbOperationalStatus = newState
                 )
             }
             return it.merge(updatedVirtualNodeInstance).toVirtualNodeInfo()
@@ -184,7 +179,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         return updatedVirtualNode.toVirtualNodeInfo()
     }
 
-    override fun completeOperation(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeInfo {
+    override fun completedOperation(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeInfo {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
@@ -199,50 +194,42 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .toVirtualNodeInfo()
     }
 
-    override fun rejectedOperation(
+    override fun failedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
         serializedRequest: String,
         requestTimestamp: Instant,
         reason: String,
-        operationType: VirtualNodeOperationType
-    ) {
-        entityManager.persist(
-            VirtualNodeOperationEntity(
-                UUID.randomUUID().toString(),
-                requestId,
-                serializedRequest,
-                VirtualNodeOperationState.VALIDATION_FAILED,
-                OperationType.from(operationType),
-                requestTimestamp,
-                errors = reason
-            )
-        )
-    }
-
-    override fun failedMigrationsOperation(
-        entityManager: EntityManager,
-        holdingIdentityShortHash: String,
-        requestId: String,
-        serializedRequest: String,
-        requestTimestamp: Instant,
-        reason: String,
-        operationType: VirtualNodeOperationType
-    ) {
+        operationType: VirtualNodeOperationType,
+        state: VirtualNodeOperationStateDto
+    ): VirtualNodeInfo {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
-        val failedOperation = virtualNode.operationInProgress
-            ?: throw IllegalArgumentException("When failing migrations on a virtual node, there should be a current operation in progress")
+        if(virtualNode.operationInProgress == null) {
+            entityManager.persist(
+                VirtualNodeOperationEntity(
+                    UUID.randomUUID().toString(),
+                    requestId,
+                    serializedRequest,
+                    VirtualNodeOperationState.fromDto(state),
+                    OperationType.from(operationType),
+                    requestTimestamp,
+                    errors = reason
+                )
+            )
+            return virtualNode.toVirtualNodeInfo()
+        }
 
-        failedOperation.latestUpdateTimestamp = Instant.now()
-        failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
-        failedOperation.errors = reason
+        val existingOperation = virtualNode.operationInProgress!!
+        existingOperation.latestUpdateTimestamp = Instant.now()
+        existingOperation.state = VirtualNodeOperationState.fromDto(state)
+        existingOperation.errors = reason
+        entityManager.merge(existingOperation)
+
         virtualNode.operationInProgress = null
-
-        entityManager.merge(failedOperation)
-        entityManager.merge(virtualNode)
+        return entityManager.merge(virtualNode).toVirtualNodeInfo()
     }
 
     private fun findEntity(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity? {

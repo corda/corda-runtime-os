@@ -22,10 +22,12 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
@@ -107,7 +109,8 @@ class StartRegistrationHandlerTest {
                             ByteBuffer.wrap("456".toByteArray()),
                             ByteBuffer.wrap("789".toByteArray()),
                             KeyValuePairList(emptyList())
-                        )
+                        ),
+                        true
                     )
                 )
             )
@@ -135,6 +138,7 @@ class StartRegistrationHandlerTest {
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
+        on { status } doReturn MEMBER_STATUS_PENDING
     }
     private val declinedMember: MemberInfo = mock {
         on { isActive } doReturn false
@@ -502,6 +506,23 @@ class StartRegistrationHandlerTest {
         val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if registering member's name is the same as an existing notary's service name`() {
+        val notaryDetails = MemberNotaryDetails(
+            notaryX500Name,
+            "pluginType",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val notaryResult = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        notaryResult.assertRegistrationStarted()
+
+        val memberStartRegistrationCommand = getStartRegistrationCommand(HoldingIdentity(notaryX500Name.toString(), groupId), memberContext)
+        val memberResult = handler.invoke(null, Record(testTopic, testTopicKey, memberStartRegistrationCommand))
+        memberResult.assertDeclinedRegistration()
     }
 
     @Test

@@ -14,6 +14,7 @@ import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro
@@ -59,6 +60,7 @@ class ProcessMemberVerificationRequestHandlerTest {
                 response.capture(),
                 isNull(),
                 anyOrNull(),
+                eq(MembershipStatusFilter.ACTIVE)
             )
         } doReturn p2pMessage
     }

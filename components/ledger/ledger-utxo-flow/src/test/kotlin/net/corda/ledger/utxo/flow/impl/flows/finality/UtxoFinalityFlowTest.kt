@@ -12,8 +12,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -160,7 +160,7 @@ class UtxoFinalityFlowTest {
         )
 
         whenever(ledgerTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 11)))
-        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
+        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(getUtxoStateExample()))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
@@ -891,8 +891,8 @@ class UtxoFinalityFlowTest {
 
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionAlice))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionBob))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
@@ -910,7 +910,6 @@ class UtxoFinalityFlowTest {
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
         flow.transactionVerificationService = transactionVerificationService
-        flow.flowEngine = flowEngine
         flow.virtualNodeSelectorService = virtualNodeSelectorService
         flow.call()
     }

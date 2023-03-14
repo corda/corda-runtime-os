@@ -5,9 +5,9 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
+import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
@@ -37,13 +37,13 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
 
     @Test
     fun `serialize and deserialize with encumbrance`() {
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateAndRef = getExampleStateAndRefImpl()
         val inputStateRef = inputStateAndRef.ref
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateAndRef = getExampleStateAndRefImpl(2)
         val referenceStateRef = referenceStateAndRef.ref
 
         whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
-            .thenReturn(listOf(inputStateAndRef))
+            .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val signedTx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)
@@ -53,7 +53,7 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
                 UtxoStateClassExample("test 1", listOf(publicKeyExample)),
                 UtxoStateClassExample("test 2", listOf(publicKeyExample))
             )
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))

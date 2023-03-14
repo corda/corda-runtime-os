@@ -25,6 +25,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -147,7 +148,8 @@ internal class StartRegistrationHandler(
                 .build()
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
-                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}",
+                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
+                        "-${pendingMemberInfo.status}",
                 value = persistentMemberInfo,
             )
             val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -229,6 +231,7 @@ internal class StartRegistrationHandler(
             source.toCorda(),
             memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature,
+            true
         )
     }
 
@@ -256,6 +259,9 @@ internal class StartRegistrationHandler(
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
             membershipGroupReaderProvider.getGroupReader(mgmHoldingId).groupParameters?.let { groupParameters ->
+                validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
+                    "Registering member's name '${member.name}' is already in use as a notary service name."
+                }
                 validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
                     "Notary service '${notary.serviceName}' already exists."
                 }

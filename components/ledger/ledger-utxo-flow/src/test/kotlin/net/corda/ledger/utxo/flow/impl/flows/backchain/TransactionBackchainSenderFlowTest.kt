@@ -15,6 +15,7 @@ import org.mockito.kotlin.whenever
 class TransactionBackchainSenderFlowTest {
 
     private companion object {
+        val TX_ID_0 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_1 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
         val TX_ID_2 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
         val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
@@ -32,13 +33,13 @@ class TransactionBackchainSenderFlowTest {
     private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
     private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
 
-    private val flow = TransactionBackchainSenderFlow(transactionBackchainIsRequestedFor, session)
+    private val flow = TransactionBackchainSenderFlow(TX_ID_0, session)
 
     @BeforeEach
     fun beforeEach() {
         flow.utxoLedgerPersistenceService = utxoLedgerPersistenceService
 
-        whenever(transactionBackchainIsRequestedFor.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))
+        whenever(transactionBackchainIsRequestedFor.id).thenReturn(TX_ID_0)
 
         whenever(utxoLedgerPersistenceService.find(TX_ID_1)).thenReturn(transaction1)
         whenever(utxoLedgerPersistenceService.find(TX_ID_2)).thenReturn(transaction2)

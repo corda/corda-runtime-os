@@ -8,6 +8,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -163,7 +164,8 @@ class Sender(private val publisherFactory: PublisherFactory,
             ttl,
             messageId,
             messageId,
-            APP_SIMULATOR_SUBSYSTEM
+            APP_SIMULATOR_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val randomData = ByteArray(messageSize).apply {
             random.nextBytes(this)

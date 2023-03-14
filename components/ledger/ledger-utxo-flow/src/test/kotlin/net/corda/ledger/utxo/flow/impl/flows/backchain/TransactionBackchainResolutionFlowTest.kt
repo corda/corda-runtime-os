@@ -105,10 +105,10 @@ class TransactionBackchainResolutionFlowTest {
 
         callTransactionBackchainResolutionFlow()
 
-        verify(flowEngine).subFlow(TransactionBackchainReceiverFlow(TX_ID_1, setOf(TX_ID_3), session))
+        verify(flowEngine).subFlow(TransactionBackchainReceiverFlow(setOf(TX_ID_3), setOf(TX_ID_3), session))
         verifyNoMoreInteractions(flowEngine)
 
-        verify(transactionBackchainVerifier).verify(eq(TX_ID_1), any())
+        verify(transactionBackchainVerifier).verify(eq(setOf(TX_ID_3)), any())
     }
 
     @Test
@@ -129,18 +129,18 @@ class TransactionBackchainResolutionFlowTest {
 
         whenever(utxoLedgerPersistenceService.find(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
         whenever(utxoLedgerPersistenceService.find(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
-        whenever(transactionBackchainVerifier.verify(eq(TX_ID_1), any())).thenReturn(false)
+        whenever(transactionBackchainVerifier.verify(eq(setOf(TX_ID_3)), any())).thenReturn(false)
 
         whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlow>())).thenReturn(TopologicalSort())
 
         assertThatThrownBy { callTransactionBackchainResolutionFlow() }.isExactlyInstanceOf(CordaRuntimeException::class.java)
 
-        verify(flowEngine).subFlow(TransactionBackchainReceiverFlow(TX_ID_1, setOf(TX_ID_3), session))
+        verify(flowEngine).subFlow(TransactionBackchainReceiverFlow(setOf(TX_ID_3), setOf(TX_ID_3), session))
         verifyNoMoreInteractions(flowEngine)
     }
 
     private fun callTransactionBackchainResolutionFlow() {
-        TransactionBackchainResolutionFlow(transaction, session).apply {
+        TransactionBackchainResolutionFlow(transaction.dependencies, session).apply {
             flowEngine = this@TransactionBackchainResolutionFlowTest.flowEngine
             transactionBackchainVerifier = this@TransactionBackchainResolutionFlowTest.transactionBackchainVerifier
             utxoLedgerPersistenceService = this@TransactionBackchainResolutionFlowTest.utxoLedgerPersistenceService

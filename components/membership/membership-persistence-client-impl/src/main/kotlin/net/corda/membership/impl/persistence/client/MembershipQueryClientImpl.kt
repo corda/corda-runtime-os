@@ -164,11 +164,12 @@ class MembershipQueryClientImpl(
     override fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
-        statuses: List<RegistrationStatus>
+        statuses: List<RegistrationStatus>,
+        limit: Int?
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -217,7 +218,7 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()
@@ -225,7 +226,7 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is GroupPolicyQueryResponse -> {
                 MembershipQueryResult.Success(
-                    layeredPropertyMapFactory.createMap(payload.properties.toMap())
+                    layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
                 )
             }
             else -> {

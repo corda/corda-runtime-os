@@ -52,10 +52,10 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
 
     try {
         signatureVerifier.verify(
-            digitalSignature.by,
-            SignatureSpec.ECDSA_SHA256, // TODO This shouldn't be hardcoded?
+            expectedSignedBytes,
             digitalSignature.bytes,
-            expectedSignedBytes
+            digitalSignature.by,
+            SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
         )
     } catch (e: Exception) {
         throw IllegalStateException("Error while verifying request signature.", e)

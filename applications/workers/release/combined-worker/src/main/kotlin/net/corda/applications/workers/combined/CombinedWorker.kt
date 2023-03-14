@@ -37,6 +37,12 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
+
+// We use a different port for the combined worker since it is often run on Macs, which 
+// sometimes have our chosen container health port of 7000 used.
+
+const val COMBINED_WORKER_MONITOR_PORT = 7004
+
 /** A worker that starts all processors. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
@@ -176,7 +182,7 @@ class CombinedWorker @Activate constructor(
 /** Additional parameters for the combined worker are added here. */
 private class CombinedWorkerParams {
     @Mixin
-    var defaultParams = DefaultWorkerParams()
+    var defaultParams = DefaultWorkerParams(COMBINED_WORKER_MONITOR_PORT)
 
     @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
