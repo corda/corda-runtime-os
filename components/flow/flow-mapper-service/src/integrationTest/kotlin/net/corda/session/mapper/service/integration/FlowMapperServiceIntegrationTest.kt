@@ -100,7 +100,6 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testSessionInitOutAndDataInbound() {
         val testId = "test1"
-        val versions = listOf(1)
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate
@@ -244,7 +243,6 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun `flow mapper still works after config update`() {
         val testId = "test4"
-        val versions = listOf(1)
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate

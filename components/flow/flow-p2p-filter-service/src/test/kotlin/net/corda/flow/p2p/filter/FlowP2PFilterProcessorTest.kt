@@ -44,7 +44,6 @@ class FlowP2PFilterProcessorTest {
             AuthenticatedMessageHeader(
                 identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession", MembershipStatusFilter.ACTIVE
             )
-        val version = listOf(1)
         val flowEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(),
