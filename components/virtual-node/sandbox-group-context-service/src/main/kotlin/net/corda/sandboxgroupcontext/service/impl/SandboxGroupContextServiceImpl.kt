@@ -116,8 +116,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         }
 
         private val DUMMY_CACHE = object : SandboxGroupContextCache {
-            override val capacity: Long
-                get() = 0
+            override val capacities: Map<SandboxGroupType, Long>
+                get() = SandboxGroupType.values().associateWith { 0 }
 
             override fun remove(virtualNodeContext: VirtualNodeContext)
                 = throw IllegalStateException("remove: SandboxGroupContextService is not ready.")
@@ -127,8 +127,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
             ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
 
-            override fun resize(newCapacity: Long): SandboxGroupContextCache {
-                return SandboxGroupContextCacheImpl(newCapacity)
+            override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache {
+                val newCapacities = capacities.toMutableMap()
+                newCapacities[sandboxGroupType] = newCapacity
+                return SandboxGroupContextCacheImpl(newCapacities)
             }
 
             override fun waitFor(completion: CompletableFuture<*>, duration: Duration) = true
@@ -139,12 +141,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
     private var cache: SandboxGroupContextCache = DUMMY_CACHE
 
-    override fun initCache(capacity: Long) {
-        if (capacity != cache.capacity) {
+    override fun initCache(type: SandboxGroupType, capacity: Long) {
+        if (capacity != cache.capacities[type]) {
             val oldCache = cache
-            cache = oldCache.resize(capacity)
+            cache = oldCache.resize(type, capacity)
             oldCache.close()
-            logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacity, capacity)
+            logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacities, capacity)
         }
     }
 

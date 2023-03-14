@@ -29,6 +29,7 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
@@ -59,6 +60,7 @@ class UtxoReceiveFinalityFlowTest {
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
+    private val visibilityChecker = mock<VisibilityChecker>()
 
     private val session = mock<FlowSession>()
 
@@ -435,6 +437,7 @@ class UtxoReceiveFinalityFlowTest {
         flow.transactionSignatureService = transactionSignatureService
         flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
+        flow.visibilityChecker = visibilityChecker
         flow.call()
     }
 
