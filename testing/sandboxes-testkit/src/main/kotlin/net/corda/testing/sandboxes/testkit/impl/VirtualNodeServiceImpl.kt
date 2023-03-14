@@ -36,7 +36,7 @@ class VirtualNodeServiceImpl @Activate constructor(
     }
 
     init {
-        sandboxGroupContextComponent.initCache(1)
+        sandboxGroupContextComponent.initCaches(1)
     }
 
     override fun loadVirtualNode(resourceName: String): VirtualNodeInfo {

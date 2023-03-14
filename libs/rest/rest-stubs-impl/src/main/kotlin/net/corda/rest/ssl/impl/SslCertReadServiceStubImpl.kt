@@ -20,11 +20,13 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
         const val KEYSTORE_NAME = "https.keystore"
     }
 
+    @Volatile
     private var keyStoreInfo: KeyStoreInfo? = null
 
     override val isRunning: Boolean
         get() = _isRunning
 
+    @Volatile
     private var _isRunning = true
 
     override fun start() {
@@ -37,6 +39,7 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
                 if (isRunning) {
                     keyStoreInfo?.run { File(path.toFile().parent).deleteRecursively() }
                     _isRunning = false
+                    keyStoreInfo = null
                 }
             }
         }

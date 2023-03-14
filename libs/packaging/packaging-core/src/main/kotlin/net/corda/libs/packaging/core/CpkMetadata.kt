@@ -73,21 +73,24 @@ data class CpkMetadata(
 
     // TODO - should we do these conversions back/forth or could this just be a proxy to the AVRO object itself?
     fun toAvro(): CpkMetadataAvro {
-        return CpkMetadataAvro(
-            cpkId.toAvro(),
-            manifest.toAvro(),
-            mainBundle,
-            libraries,
-            cordappManifest.toAvro(),
-            type.toAvro(),
-            AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
-            cordappCertificates.stream()
-                .map(Certificate::getEncoded)
-                .map(ByteBuffer::wrap)
-                .collect(
-                    Collectors.toUnmodifiableList()),
-            timestamp
-        )
+        return CpkMetadataAvro.newBuilder()
+                .setId(cpkId.toAvro())
+                .setManifest(manifest.toAvro())
+                .setMainBundle(mainBundle)
+                .setLibraries(libraries)
+                .setCorDappManifest(cordappManifest.toAvro())
+                .setType(type.toAvro())
+                .setHash(AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)))
+                .setCorDappCertificates(
+                    cordappCertificates.stream()
+                        .map(Certificate::getEncoded)
+                        .map(ByteBuffer::wrap)
+                        .collect(
+                            Collectors.toUnmodifiableList()
+                        )
+                )
+                .setTimestamp(timestamp)
+                .build()
     }
 
     fun toJsonAvro(): String {
