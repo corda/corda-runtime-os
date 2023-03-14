@@ -216,7 +216,6 @@ class MemberLookupRestResourceImpl @Activate constructor(
         }
 
         private fun MembershipGroupReader.isMgm(holdingIdentity: HoldingIdentity): Boolean =
-            lookup(holdingIdentity.x500Name)?.isMgm
-                ?: throw ResourceNotFoundException("Holding Identity", holdingIdentity.shortHash.value)
+            lookup(holdingIdentity.x500Name)?.isMgm ?: false
     }
 }
