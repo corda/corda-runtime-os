@@ -130,13 +130,12 @@ class FlowRestResourceImpl @Activate constructor(
 
         val flowClassName = startFlow.flowClassName
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
-        val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-        val cpiVersion = cpiMeta?.cpiId?.version.toString()
         if (!startableFlows.contains(flowClassName)) {
+        val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
             val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
             val details = mapOf(
                 "CPI-name" to cpiMeta?.cpiId?.name.toString(),
-                "CPI-version" to cpiVersion,
+                "CPI-version" to cpiMeta?.cpiId?.version.toString(),
                 "CPI-signer-summary-hash" to cpiMeta?.cpiId?.signerSummaryHash.toString(),
                 "virtual-node" to vNode.holdingIdentity.x500Name,
                 "group-id" to vNode.holdingIdentity.groupId,

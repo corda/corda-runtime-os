@@ -1,5 +1,9 @@
 package net.corda.flow.pipeline.handlers.events
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.stream.Stream
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -20,11 +24,15 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.impl.FlowProtocol
 import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.SessionManager
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -43,9 +51,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SessionEventHandlerTest {
@@ -74,6 +79,7 @@ class SessionEventHandlerTest {
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowSandboxService = mock<FlowSandboxService>()
     private val sessionManager = mock<SessionManager>()
+    private val flowSessionManager = mock<FlowSessionManager>()
 
     private val holdingIdentity = ALICE_X500_HOLDING_IDENTITY
     private val waitingFor = WaitingFor(WaitingForSessionInit(SESSION_ID))
@@ -86,7 +92,7 @@ class SessionEventHandlerTest {
     )
 
     private val sessionEventHandler =
-        SessionEventHandler(flowSandboxService, sessionManager, fakeCheckpointInitializerService)
+        SessionEventHandler(flowSandboxService, sessionManager, fakeCheckpointInitializerService, flowSessionManager)
 
     @Suppress("Unused")
     @BeforeEach
@@ -170,18 +176,23 @@ class SessionEventHandlerTest {
 
     private fun createSessionInit(): SessionEvent {
         val payload = SessionInit.newBuilder()
-            .setProtocol(PROTOCOL.protocol)
-            .setVersions(listOf(1))
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(emptyKeyValuePairList())
             .setContextUserProperties(emptyKeyValuePairList())
+            .setContextSessionProperties(sessionContextProperties())
             .build()
 
         return createSessionEvent(payload)
     }
 
+    private fun sessionContextProperties() :KeyValuePairList {
+        return KeyValueStore().apply {
+            put(FLOW_PROTOCOL, PROTOCOL.protocol)
+            put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
+        }.avro
+    }
     private fun createSessionEvent(payload: Any): SessionEvent {
         return SessionEvent.newBuilder()
             .setSessionId(SESSION_ID)

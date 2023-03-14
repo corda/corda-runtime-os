@@ -10,7 +10,6 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.utilities.debug
 import net.corda.utilities.trace
-import org.graalvm.compiler.core.common.util.Util.uncheckedCast
 import org.slf4j.LoggerFactory
 
 /**
@@ -53,7 +52,7 @@ class SessionInitProcessorReceive(
             }
         } else {
             val sessionId = sessionEvent.sessionId
-            val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
+            val sessionInit: SessionInit = sessionEvent.payload as SessionInit
             val seqNum = sessionEvent.sequenceNum
             val newSessionState = SessionState.newBuilder()
                 .setSessionId(sessionId)

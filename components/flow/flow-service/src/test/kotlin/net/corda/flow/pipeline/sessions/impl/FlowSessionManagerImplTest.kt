@@ -25,6 +25,8 @@ import net.corda.flow.state.FlowStack
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.messaging.api.records.Record
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -187,15 +189,18 @@ class FlowSessionManagerImplTest {
         val platformContext = KeyValueStore().apply {
             this["platform"] = "platform"
         }
+        val sessionContext = KeyValueStore().apply {
+            this[FLOW_PROTOCOL] = PROTOCOL
+            this[FLOW_PROTOCOL_VERSIONS_SUPPORTED] = "1"
+        }
 
         val expectedSessionInit = SessionInit.newBuilder()
-            .setProtocol(PROTOCOL)
-            .setVersions(listOf(1))
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(platformContext.avro)
             .setContextUserProperties(userContext.avro)
+            .setContextSessionProperties(sessionContext.avro)
             .build()
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -211,8 +216,6 @@ class FlowSessionManagerImplTest {
             checkpoint,
             SESSION_ID,
             X500_NAME,
-            PROTOCOL,
-            listOf(1),
             userContext.avro,
             platformContext.avro,
             instant

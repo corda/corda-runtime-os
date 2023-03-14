@@ -39,8 +39,6 @@ class InitiateFlowRequestServiceTest {
                 eq(testContext.flowCheckpoint),
                 eq(sessionId1),
                 eq(ALICE_X500_NAME),
-                eq("protocol"),
-                eq(listOf(1)),
                 any(),
                 any(),
                 any()
