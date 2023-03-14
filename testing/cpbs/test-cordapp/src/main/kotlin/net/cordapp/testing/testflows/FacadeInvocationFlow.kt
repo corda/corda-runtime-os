@@ -1,4 +1,4 @@
-package net.cordapp.testing.smoketests.flow
+package net.cordapp.testing.testflows
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
