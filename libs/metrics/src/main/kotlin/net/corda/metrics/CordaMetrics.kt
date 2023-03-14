@@ -21,7 +21,7 @@ object CordaMetrics {
             return MeterBuilder(this.metricsName, this.meter)
         }
 
-        // NOTE: please ensure the metric names adhere to the convensions described on https://micrometer.io/docs/concepts#_naming_meters
+        // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
 
         /**
          * Number of HTTP Requests.
