@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -63,7 +64,7 @@ class UtxoReceiveFinalityFlow(
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
         val initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
         log.debug { "Beginning receive finality for transaction: ${initialTransaction.id}" }
-        flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction, session))
+        flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction.dependencies, session))
         return initialTransaction
     }
 
