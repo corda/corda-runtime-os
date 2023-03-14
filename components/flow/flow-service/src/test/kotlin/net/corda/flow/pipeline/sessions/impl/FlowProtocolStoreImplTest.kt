@@ -46,11 +46,11 @@ class FlowProtocolStoreImplTest {
             FlowProtocol(PROTOCOL_2, 1) to RESPONDER_FLOW_C
         )
         val protocolStore = FlowProtocolStoreImpl(mapOf(), mapOf(), protocolsToResponders)
-        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1), mock()))
-        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2), mock()))
-        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3), mock()))
-        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3, 4), mock()))
-        assertEquals(RESPONDER_FLOW_C, protocolStore.responderForProtocol(PROTOCOL_2, listOf(1), mock()))
+        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1), mock()).flowClassName)
+        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2), mock()).flowClassName)
+        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3), mock()).flowClassName)
+        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3, 4), mock()).flowClassName)
+        assertEquals(RESPONDER_FLOW_C, protocolStore.responderForProtocol(PROTOCOL_2, listOf(1), mock()).flowClassName)
     }
 
     @Test
