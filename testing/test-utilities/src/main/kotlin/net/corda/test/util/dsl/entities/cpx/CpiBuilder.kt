@@ -1,9 +1,10 @@
 package net.corda.test.util.dsl.entities.cpx
 
-import java.util.UUID
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import net.corda.v5.crypto.SecureHash
+import java.util.UUID
 
 fun cpi(init: CpiBuilder.() -> Unit): CpiMetadataEntity {
     val cpi = CpiBuilder()
@@ -112,7 +113,7 @@ class CpiBuilder(private val randomId: UUID = UUID.randomUUID()) {
         val randomCpkId = "${randomId}_${UUID.randomUUID()}"
         if (name == null) name = "name_$randomCpkId"
         if (version == null) version = "version_$randomCpkId"
-        if (signerSummaryHash == null) signerSummaryHash = SecureHash("SHA-256","signerSummaryHash_$randomCpkId".toByteArray())
+        if (signerSummaryHash == null) signerSummaryHash = SecureHashImpl("SHA-256","signerSummaryHash_$randomCpkId".toByteArray())
         if (fileChecksum == null) fileChecksum = "file_checksum_$randomCpkId"
         return CpiMetadataEntity(
             name!!,

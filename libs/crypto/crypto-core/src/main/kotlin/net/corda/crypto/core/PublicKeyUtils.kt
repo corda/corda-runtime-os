@@ -1,9 +1,9 @@
 package net.corda.crypto.core
 
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.security.PublicKey
@@ -31,7 +31,7 @@ fun PublicKey.fullIdHash(keyEncodingService: KeyEncodingService, digestService: 
 
 // TODO Remove the followings, only adding now for convenience
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray): String =
-    SecureHash(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()).toString()
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()).toString()
 
 fun PublicKey.fullId(): String =
     fullPublicKeyIdFromBytes(this.encoded)

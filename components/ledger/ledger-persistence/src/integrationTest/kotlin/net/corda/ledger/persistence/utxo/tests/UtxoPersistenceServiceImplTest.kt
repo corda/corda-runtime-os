@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -103,7 +104,7 @@ class UtxoPersistenceServiceImplTest {
                 it.initialize(512)
             }.genKeyPair().public
         private val notaryExample = Party(notaryX500Name, publicKeyExample)
-        private val transactionInputs = listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
+        private val transactionInputs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
         private val transactionOutputs = listOf(TestContractState1(), TestContractState2())
     }
 
@@ -571,7 +572,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         override fun getConsumedStateRefs(): List<StateRef> {
-            return listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
+            return listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
         }
 
         private inline fun <reified C : Contract> stateAndRef(
@@ -630,7 +631,7 @@ class UtxoPersistenceServiceImplTest {
     private fun UtxoOutputInfoComponent.toBytes() = serializationService.serialize(this).bytes
 
     private fun digest(algorithm: String, data: ByteArray) =
-        SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(data))
+        SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(data))
 
     private fun nextTime() = testClock.peekTime()
 }

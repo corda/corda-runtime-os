@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
@@ -171,9 +172,8 @@ class TestSigningKeyStore(
 
 }
 
-
 fun fullKeyIdFromBytes(publicKey: ByteArray): SecureHash =
-    SecureHash(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
 
 fun keyIdFromBytes(publicKey: ByteArray): ShortHash =
     ShortHash.of(fullKeyIdFromBytes(publicKey))

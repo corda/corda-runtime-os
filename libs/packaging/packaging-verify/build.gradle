@@ -15,6 +15,7 @@ dependencies {
     api 'net.corda:corda-crypto'
     api project(':libs:crypto:cipher-suite')
 
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:packaging:packaging')
     implementation project(':libs:packaging:packaging-core')
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"

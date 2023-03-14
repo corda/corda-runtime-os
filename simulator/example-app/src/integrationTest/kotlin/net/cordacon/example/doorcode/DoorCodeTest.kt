@@ -1,14 +1,13 @@
 package net.cordacon.example.doorcode
 
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.factories.JsonMarshallingServiceFactory
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
-import net.corda.v5.application.marshalling.json.JsonSerializer
-import net.corda.v5.application.marshalling.json.JsonWriter
 import net.corda.v5.crypto.SecureHash
 import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert.assertThat
@@ -70,6 +69,6 @@ class DoorCodeTest {
 
 internal object SecureHashDeserializer : JsonDeserializer<SecureHash> {
     override fun deserialize(jsonRoot: JsonNodeReader): SecureHash {
-        return SecureHash.parse(jsonRoot.asText())
+        return parseSecureHash(jsonRoot.asText())
     }
 }

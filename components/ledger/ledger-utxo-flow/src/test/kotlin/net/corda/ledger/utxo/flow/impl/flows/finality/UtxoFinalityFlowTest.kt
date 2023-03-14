@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -64,7 +65,7 @@ import java.time.Instant
 class UtxoFinalityFlowTest {
 
     private companion object {
-        val TX_ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val TX_ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
         val ALICE = MemberX500Name("Alice", "London", "GB")
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
@@ -161,7 +162,7 @@ class UtxoFinalityFlowTest {
             notarizedTx
         )
 
-        whenever(ledgerTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 11)))
+        whenever(ledgerTransaction.id).thenReturn(SecureHashImpl("algo", byteArrayOf(1, 2, 11)))
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(getUtxoStateExample()))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))

@@ -1,9 +1,9 @@
 package net.corda.virtualnode.read.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -23,7 +23,7 @@ class VirtualNodeInfoProcessorTest {
     private lateinit var processor: VirtualNodeInfoProcessor
     private lateinit var listener: ListenerForTest
 
-    private val secureHash = SecureHash("algorithm", "1234".toByteArray())
+    private val secureHash = SecureHashImpl("algorithm", "1234".toByteArray())
 
     @BeforeEach
     fun beforeEach() {

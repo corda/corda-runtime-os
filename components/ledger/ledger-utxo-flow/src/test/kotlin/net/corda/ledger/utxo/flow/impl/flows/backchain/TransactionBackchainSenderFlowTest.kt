@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.junit.jupiter.api.BeforeEach
@@ -15,10 +15,10 @@ import org.mockito.kotlin.whenever
 class TransactionBackchainSenderFlowTest {
 
     private companion object {
-        val TX_ID_0 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-        val TX_ID_1 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
-        val TX_ID_2 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
-        val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
+        val TX_ID_0 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
+        val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+        val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
     }
 
     private val session = mock<FlowSession>()
