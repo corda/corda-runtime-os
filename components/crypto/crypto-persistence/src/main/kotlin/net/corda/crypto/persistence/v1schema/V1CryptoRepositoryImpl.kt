@@ -5,7 +5,6 @@ import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import java.time.Instant
-import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 class V1CryptoRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) :
