@@ -92,6 +92,7 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
         .setSendEventsState(SessionProcessState(0, listOf()))
         .setStatus(SessionStateType.ERROR)
         .setHasScheduledCleanup(false)
+        .setCounterpartySessionProperties(null)
         .build()
 
     val errorEvent = generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)

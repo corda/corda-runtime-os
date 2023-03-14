@@ -23,6 +23,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
@@ -46,6 +47,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -841,7 +843,6 @@ class FlowSessionManagerImplTest {
             }
         }
 
-
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
             SESSION_ID,
@@ -875,4 +876,23 @@ class FlowSessionManagerImplTest {
         assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
     }
 
+    @Test
+    fun `send confirm message`() {
+        val confirmedSessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(
+                buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 2, SessionClose()),
+            ),
+            0,
+            mutableListOf(),
+            sessionId = SESSION_ID,
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
+
+        flowSessionManager.sendConfirmMessage(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
+        verify(sessionManager, times(1)).processMessageToSend(any(), any(), any(), any(), any())
+    }
 }

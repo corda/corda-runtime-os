@@ -4,8 +4,6 @@ import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.state.session.SessionState
-import net.corda.flow.utils.KeyValueStore
-import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.utilities.trace
@@ -43,12 +41,12 @@ class SessionConfirmProcessorSend(
             timestamp = instant
         }
 
-        val contextSessionPropertiesToSend = KeyValueStore(sessionConfirm.contextSessionProperties)
-        val contextSessionProperties = KeyValueStore(sessionState.counterpartySessionProperties)
-        contextSessionPropertiesToSend[FLOW_PROTOCOL_VERSION_USED]?.let { contextSessionProperties[FLOW_PROTOCOL_VERSION_USED] = it }
-
+        //always the first message sent by the initiated side.
         sessionState.apply {
-            counterpartySessionProperties = contextSessionProperties.avro
+            sendEventsState.apply {
+                undeliveredMessages = undeliveredMessages.plus(sessionEvent)
+                lastProcessedSequenceNum = seqNum
+            }
         }
 
         logger.trace { "Sending SessionConfirm to session with id $newSessionId. sessionState: $sessionState" }

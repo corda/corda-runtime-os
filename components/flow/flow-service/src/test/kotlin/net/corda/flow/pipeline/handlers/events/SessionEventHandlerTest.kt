@@ -131,6 +131,8 @@ class SessionEventHandlerTest {
         whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
 
         sessionEventHandler.preProcess(inputContext)
+
+        verify(flowSessionManager.sendConfirmMessage(any(), any(), any(), any()))
     }
 
     @Test

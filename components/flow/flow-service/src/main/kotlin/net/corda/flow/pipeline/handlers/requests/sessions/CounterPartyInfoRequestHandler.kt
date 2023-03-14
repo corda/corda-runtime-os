@@ -1,12 +1,10 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.CounterPartyFlowInfo
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
-import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
 import net.corda.flow.pipeline.handlers.waiting.sessions.PROTOCOL_MISMATCH_HINT
@@ -22,11 +20,11 @@ import org.osgi.service.component.annotations.Reference
  * Sets the checkpoint as waiting for [CounterPartyFlowInfo].
  * If the session has not been initiated yet (i.e no SessionInit sent yet to counterparty) then call the [InitiateFlowRequestService] to
  * trigger SessionInitiation. This will allow us to receive flow information from the counterparty.
+ * If the session was already initiated then the sessiom data would already be present in the checkpoint and would have been accessed by
+ * the flow fiber from the flow checkpoint.
  */
 @Component(service = [FlowRequestHandler::class])
 class CounterPartyInfoRequestHandler @Activate constructor(
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = InitiateFlowRequestService::class)
     private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.CounterPartyFlowInfo> {
@@ -38,15 +36,12 @@ class CounterPartyInfoRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CounterPartyFlowInfo): FlowEventContext<Any> {
-        val checkpoint = context.checkpoint
-
         try {
             initiateFlowRequestService.initiateFlowsNotInitiated(context, setOf(request.sessionInfo))
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
-        val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-        return context.copy(outputRecords = context.outputRecords + wakeup)
+        return context.copy(outputRecords = context.outputRecords)
     }
 }

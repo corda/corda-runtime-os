@@ -19,7 +19,7 @@ import org.osgi.service.component.annotations.Component
   * [SessionState]
   */
  @Component(service = [FlowWaitingForHandler::class])
-class CounterPartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterPartyFlowInfo> {
+class CounterpartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterPartyFlowInfo> {
 
     override val type = CounterPartyFlowInfo::class.java
 
