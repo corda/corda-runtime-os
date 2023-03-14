@@ -1,5 +1,6 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
@@ -53,6 +54,9 @@ class FindTransactionFlow : ClientStartableFlow {
     @CordaInject
     lateinit var marshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Utxo find transaction flow starting...")
@@ -60,7 +64,7 @@ class FindTransactionFlow : ClientStartableFlow {
             requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId
 
         log.info("Utxo finding transaction $txId")
-        val result = ledgerService.findLedgerTransaction(SecureHash.parse(txId))
+        val result = ledgerService.findLedgerTransaction(digestService.parseSecureHash(txId))
             ?.let { FindTransactionResponse(it.toResult(), null) }
             ?: FindTransactionResponse(null, "Failed to find transaction with id $txId.")
 

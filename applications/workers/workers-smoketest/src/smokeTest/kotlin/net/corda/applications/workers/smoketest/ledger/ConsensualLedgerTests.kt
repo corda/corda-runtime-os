@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.crypto.core.parseSecureHash
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
@@ -149,6 +150,6 @@ internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerial
 
 internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
-        return SecureHash.parse(parser.text)
+        return parseSecureHash(parser.text)
     }
 }

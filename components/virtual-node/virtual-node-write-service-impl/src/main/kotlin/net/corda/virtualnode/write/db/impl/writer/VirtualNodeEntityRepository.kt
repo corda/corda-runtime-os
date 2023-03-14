@@ -1,11 +1,11 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -45,9 +45,9 @@ internal class VirtualNodeEntityRepository(
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
 
-        val signerSummaryHash = SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
+        val signerSummaryHash = parseSecureHash(cpiMetadataEntity.signerSummaryHash)
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum)
+        val fileChecksum = parseSecureHash(cpiMetadataEntity.fileChecksum)
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
@@ -67,9 +67,9 @@ internal class VirtualNodeEntityRepository(
             }
         }
 
-        val signerSummaryHash = SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
+        val signerSummaryHash = parseSecureHash(cpiMetadataEntity.signerSummaryHash)
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum)
+        val fileChecksum = parseSecureHash(cpiMetadataEntity.fileChecksum)
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
@@ -81,8 +81,8 @@ internal class VirtualNodeEntityRepository(
         CpiMetadataEntityKey(name, version, signerSummaryHash.toString())
 
     private fun CpiMetadataEntity.toLite(): CpiMetadataLite {
-        val cpiId = CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
-        val fileChecksum = SecureHash.parse(fileChecksum)
+        val cpiId = CpiIdentifier(name, version, parseSecureHash(signerSummaryHash))
+        val fileChecksum = parseSecureHash(fileChecksum)
         return CpiMetadataLite(cpiId, fileChecksum, groupId, groupPolicy)
     }
 }

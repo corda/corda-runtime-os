@@ -1,7 +1,7 @@
 package net.corda.libs.packaging.internal
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.CpkReader
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -39,7 +39,7 @@ class ZipTweakerTest {
                 it.name to let {
                     val md = MessageDigest.getInstance(algo)
                     DigestInputStream(zipInputStream, md).copyTo(OutputStream.nullOutputStream())
-                    SecureHash(algo, md.digest())
+                    SecureHashImpl(algo, md.digest())
                 }
             }.filter {
                 !it.first.uppercase().endsWith(".SF")
@@ -64,7 +64,7 @@ class ZipTweakerTest {
                     it.name to let {
                         val md = MessageDigest.getInstance(algo)
                         DigestInputStream(zipInputStream, md).copyTo(OutputStream.nullOutputStream())
-                        SecureHash(algo, md.digest())
+                        SecureHashImpl(algo, md.digest())
                     }
                 }.filter {
                     !it.first.uppercase().endsWith(".SF")

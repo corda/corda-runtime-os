@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
@@ -40,7 +41,7 @@ class UtxoLedgerTransactionVerifierTest {
         whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
         whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
 
-        whenever(transaction.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))
+        whenever(transaction.id).thenReturn(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)))
         whenever(transaction.signatories).thenReturn(listOf(signatory))
         whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef))
         whenever(transaction.outputContractStates).thenReturn(listOf(state))
@@ -131,7 +132,7 @@ class UtxoLedgerTransactionVerifierTest {
     @Test
     fun `catches exceptions from contract verification and outputs them as failure reasons`() {
         val validContractAState = stateAndRef<MyInvalidContractA>(
-            SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0
+            SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0
         )
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(emptyList())

@@ -93,6 +93,7 @@ dependencies {
     smokeTestImplementation project(':testing:e2e-test-utilities')
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
+    smokeTestImplementation project(':libs:crypto:crypto-core')
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"

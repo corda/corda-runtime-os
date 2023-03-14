@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
@@ -52,8 +53,8 @@ class VirtualNodeDbChangeLogImplementationTest  {
             }
         val lbm = LiquibaseSchemaMigratorImpl()
         val primaryContent = primaryTemplate.replace("_INCLUDETARGET_", includeElement)
-        val primary = CpkDbChangeLog(CpkDbChangeLogIdentifier(SecureHash("SHA-256","abc".toByteArray()),"migration/db.changelog-master.xml"), primaryContent)
-        val secondary = CpkDbChangeLog(CpkDbChangeLogIdentifier(SecureHash("SHA-256","abc".toByteArray()),"migration/dogs-migration-v1.0.xml"), secondaryContent)
+        val primary = CpkDbChangeLog(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()),"migration/db.changelog-master.xml"), primaryContent)
+        val secondary = CpkDbChangeLog(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()),"migration/dogs-migration-v1.0.xml"), secondaryContent)
         val cl = VirtualNodeDbChangeLog(listOf(primary, secondary))
         assertThat(cl.masterChangeLogFiles.size).isEqualTo(1)
         if (failureText != null) {

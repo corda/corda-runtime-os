@@ -2,8 +2,8 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -72,7 +72,7 @@ class DigestServiceImplTest {
         val hash1 = digestServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
         val hashLength = digestServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
 
-        val expectedDummySecureHash = SecureHash(DUMMY_DIGEST, DUMMY_BYTES)
+        val expectedDummySecureHash = SecureHashImpl(DUMMY_DIGEST, DUMMY_BYTES)
         assertEquals(expectedDummySecureHash, hash0)
         assertEquals(expectedDummySecureHash, hash1)
         assertEquals(DUMMY_DIGEST_LENGTH, hashLength)

@@ -1,15 +1,18 @@
 package net.corda.sandboxgroupcontext.impl
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
+import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions
 import org.mockito.Mockito
@@ -19,19 +22,18 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.Random
-import net.corda.v5.crypto.DigestAlgorithmName
 
 object Helpers {
     private fun mockCpkMetadata(
         mainBundle: String,
         name: String,
         version: String,
-        fileChecksum: SecureHash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray()),
+        fileChecksum: SecureHash = SecureHashImpl("ALGO", "1234567890ABCDEF".toByteArray()),
     ): CpkMetadata {
         val cordappManifest = CordappManifest(name, version, 1, 1,
             CordappType.WORKFLOW, "", "", 0, "", mock())
         return CpkMetadata(
-            CpkIdentifier(mainBundle, version, SecureHash.parse("SHA-256:0000000000000000")),
+            CpkIdentifier(mainBundle, version, parseSecureHash("SHA-256:0000000000000000")),
             CpkManifest(CpkFormatVersion(1, 0)),
             mainBundle,
             emptyList(),
@@ -45,7 +47,7 @@ object Helpers {
 
     private val random = Random(0)
     private fun newRandomSecureHash(): SecureHash {
-        return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
     fun mockTrivialCpk(mainBundle: String, name: String, version: String, fileChecksum: SecureHash = newRandomSecureHash()) =
