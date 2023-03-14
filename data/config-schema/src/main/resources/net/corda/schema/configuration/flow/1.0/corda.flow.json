@@ -2,38 +2,38 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://corda.r3.com/net/corda/schema/configuration/flow/1.0/corda.flow.json",
   "title": "Corda Flow Configuration Schema",
-  "description": "Configuration schema for the flow subsection.",
+  "description": "Configuration schema for the flow section.",
   "type": "object",
   "default": {},
   "properties": {
     "processing": {
-      "description": "Settings for flow pipeline processing",
+      "description": "Settings for flow pipeline processing.",
       "type": "object",
       "default": {},
       "properties": {
         "maxRetryAttempts": {
-          "description": "The maximum number of retry attempts a transient error will be retried before failing the flow. A value of zero disables retries.",
+          "description": "The maximum number of times Corda retries a transient error before failing the flow. A value of zero disables retries.",
           "type": "integer",
           "minimum": 0,
           "maximum": 1000,
           "default": 5
         },
         "maxRetryDelay": {
-          "description": "The maximum delay before a retry is scheduled, in milliseconds",
+          "description": "The maximum delay in milliseconds before Corda schedules a retry.",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 16000
         },
         "maxFlowSleepDuration": {
-          "description": "The maximum delay before a periodic WakeUp is scheduled, in milliseconds",
+          "description": "The maximum delay in milliseconds before Corda schedules a periodic wake-up.",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 60000
         },
         "cleanupTime": {
-          "description": "The length of time in milliseconds the flow mapper should hold onto its state for a flow that has finished.",
+          "description": "The length of time in milliseconds that the flow mapper holds onto its state for a flow that has finished.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
@@ -43,33 +43,33 @@
       "additionalProperties": false
     },
     "session": {
-      "description": "Settings for flow sessions",
+      "description": "Settings for flow sessions.",
       "type": "object",
       "default": {},
       "properties": {
         "messageResendWindow": {
-          "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",
+          "description": "The length of time in milliseconds that Corda waits before resending unacknowledged flow session messages.",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 120000
         },
         "heartbeatTimeout": {
-          "description": "Length of time to wait when no message has been received from a counterparty before causing the session to error, in milliseconds",
+          "description": "The length of time in milliseconds that Corda waits when no message has been received from a counterparty before causing the session to error.",
           "type": "integer",
           "minimum": 600000,
           "maximum": 2147483647,
           "default": 3600000
         },
         "p2pTTL": {
-          "description": "TTL set in milliseconds, which is added to the current time, and set on messages passed to the P2P layer to be sent to a counterparty.",
+          "description": "The TTL set in milliseconds. This is added to the current time and set on messages passed to the P2P layer to send to a counterparty.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
           "default": 240000
         },
         "cleanupTime": {
-          "description": "The length of time in milliseconds the flow mapper should hold onto its state for a session after the session has finished.",
+          "description": "The length of time in milliseconds that the flow mapper holds onto its state for a session after the session has finished.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
@@ -79,19 +79,19 @@
       "additionalProperties": false
     },
     "event": {
-      "description": "Settings for external events within a flow",
+      "description": "Settings for external events within a flow.",
       "type": "object",
       "default": {},
       "properties": {
         "messageResendWindow": {
-          "description": "Length of time to wait before resending unprocessed external events, in milliseconds",
+          "description": "The length of time in milliseconds that Corda waits before resending unprocessed external events.",
           "type": "integer",
           "minimum": 100,
           "maximum": 2147483647,
           "default": 5000
         },
         "maxRetries": {
-          "description": "The maximum amount of times to retry a request before returning an exception to the user code.",
+          "description": "The maximum number of times Corda retries a request before returning an exception.",
           "type": "integer",
           "minimum": 0,
           "maximum": 2147483647,
