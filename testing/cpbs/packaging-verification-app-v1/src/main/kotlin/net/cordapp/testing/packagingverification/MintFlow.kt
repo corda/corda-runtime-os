@@ -7,17 +7,14 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.NotaryInfo
+import net.cordapp.testing.packagingverification.contract.ISSUER
 import net.cordapp.testing.packagingverification.contract.SimpleCommand
 import net.cordapp.testing.packagingverification.contract.SimpleState
 import org.slf4j.LoggerFactory
-import java.security.MessageDigest
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
@@ -40,14 +37,14 @@ class MintFlow : ClientStartableFlow {
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
 
-    val issuer = MemberX500Name.parse("C=GB, L=London, O=Bob")
-
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
+        log.info("Minting states")
+
         val myInfo = memberLookup.myInfo()
 
-        if (myInfo.name != issuer) {
-            throw CordaRuntimeException("Mint flow must be executed by ${issuer.commonName}")
+        if (myInfo.name != ISSUER) {
+            throw CordaRuntimeException("Mint flow must be executed by ${ISSUER.commonName}")
         }
         val mintRequest = requestBody.getRequestBodyAs(jsonMarshallingService, MintRequest::class.java)
         if (mintRequest.stateValues.isEmpty()) {
@@ -62,12 +59,13 @@ class MintFlow : ClientStartableFlow {
             mintState(stateValue, myPublicKey, notary)
         }
 
+        log.info("Finished minting ${mintRequest.stateValues.size} states")
         return ""
     }
 
     @Suspendable
     fun mintState(value: Long, publicKey: PublicKey, notary: NotaryInfo) {
-        val state = SimpleState(value, issuer.toSecureHash(), listOf(publicKey))
+        val state = SimpleState(value, listOf(publicKey))
 
         val signedTransaction = utxoLedgerService.transactionBuilder
             .setNotary(Party(notary.name, notary.publicKey))
@@ -81,10 +79,5 @@ class MintFlow : ClientStartableFlow {
             signedTransaction,
             emptyList() // minting coins, no counterparty
         )
-    }
-
-    private fun MemberX500Name.toSecureHash(): SecureHash {
-        val algorithm = DigestAlgorithmName.SHA2_256.name
-        return SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(toString().toByteArray()))
     }
 }

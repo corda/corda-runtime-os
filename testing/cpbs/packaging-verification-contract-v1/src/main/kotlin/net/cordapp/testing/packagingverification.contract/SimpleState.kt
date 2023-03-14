@@ -6,6 +6,6 @@ import net.corda.v5.ledger.utxo.ContractState
 import java.security.PublicKey
 
 @BelongsToContract(SimpleContract::class)
-class SimpleState(val value: Long, val issuer: SecureHash, private val participants: List<PublicKey>) : ContractState {
+class SimpleState(val value: Long, private val participants: List<PublicKey>) : ContractState {
     override fun getParticipants() = participants
 }
