@@ -5,9 +5,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
@@ -75,10 +72,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
-    private val registrationId = UUID(0, 1)
-    private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
-        on { serialize(any()) } doReturn "".toByteArray()
-    }
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
@@ -108,9 +101,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         get() = assertDoesNotThrow { mgmContextCaptor.firstValue }
 
     private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
-    }
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
             lookupKeysByIds(
@@ -187,7 +177,6 @@ class MGMRegistrationMemberInfoHandlerTest {
 
     private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
         clock,
-        cordaAvroSerializationFactory,
         cryptoOpsClient,
         keyEncodingService,
         memberInfoFactory,
@@ -219,8 +208,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `MGM info is returned if all is processed successfully`() {
         val result = assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -230,18 +218,15 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
-    fun `Expected services are called`() {
+    fun `Expected services are called by buildAndPersistMgmMemberInfo`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
         }
 
-        verify(membershipPersistenceClient).persistRegistrationRequest(any(), any())
         verify(membershipPersistenceClient).persistMemberInfo(any(), any())
-        verify(cordaAvroSerializer).serialize(any())
         verify(memberInfoFactory).create(any(), any<SortedMap<String, String?>>())
         verify(platformInfoProvider).activePlatformVersion
         verify(platformInfoProvider).localWorkerSoftwareVersion
@@ -254,8 +239,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `Member context filters out group policy properties`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -267,8 +251,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `Member context is built as expected`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -293,8 +276,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `MGM context is built as expected`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -314,8 +296,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         ).doReturn(null)
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -334,8 +315,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doReturn(emptyList())
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -355,8 +335,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doThrow(RuntimeException::class)
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -375,8 +354,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -388,46 +366,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
-    fun `expected exception thrown if registration request persistence fails`() {
-        whenever(
-            operation.execute()
-        ).doReturn(MembershipPersistenceResult.Failure(""))
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(membershipPersistenceClient).persistRegistrationRequest(
-            eq(holdingIdentity),
-            any()
-        )
-    }
-
-    @Test
-    fun `expected exception thrown if serializing the registration request fails`() {
-        whenever(
-            cordaAvroSerializer.serialize(
-                any()
-            )
-        ).doReturn(null)
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(cordaAvroSerializer).serialize(any())
-    }
-
-    @Test
     fun `non EC algorithm ECDH key will cause an exception`() {
         val encryptedPublicKey = byteArrayOf(1, 2, 4)
-        val ecdhPublicKey = mock<PublicKey>() {
+        val ecdhPublicKey = mock<PublicKey> {
             on { encoded } doReturn EMPTY_STRING.toByteArray()
             on { algorithm } doReturn "RSA"
         }
@@ -458,8 +399,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         whenever(keyEncodingService.decodePublicKey(encryptedPublicKey)).doReturn(ecdhPublicKey)
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -494,8 +434,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -530,8 +469,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )

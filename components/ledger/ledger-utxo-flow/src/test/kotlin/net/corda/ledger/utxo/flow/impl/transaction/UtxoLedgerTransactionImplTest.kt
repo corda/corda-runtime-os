@@ -4,9 +4,9 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
+import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
@@ -15,14 +15,15 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
 
-internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
-    private val inputStateAndRef = getUtxoInvalidStateAndRef()
+internal class UtxoLedgerTransactionImplTest : UtxoLedgerTest() {
+    private val inputStateAndRef = getExampleStateAndRefImpl()
     private val inputStateRef = inputStateAndRef.ref
-    private val referenceStateAndRef = getUtxoInvalidStateAndRef()
+    private val referenceStateAndRef = getExampleStateAndRefImpl(2)
     private val referenceStateRef = referenceStateAndRef.ref
 
     private val command = UtxoCommandExample()
@@ -32,17 +33,15 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(listOf(inputStateRef)))
-            .thenReturn(listOf(inputStateAndRef))
-        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(listOf(referenceStateRef)))
-            .thenReturn(listOf(referenceStateAndRef))
+        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
+            .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val signedTransaction = UtxoTransactionBuilderImpl(
             utxoSignedTransactionFactory
         )
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
@@ -71,7 +70,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     fun `ledger transaction have the same outputContractStates it was created with`() {
         assertIs<List<ContractState>>(ledgerTransaction.outputContractStates)
         assertEquals(1, ledgerTransaction.outputContractStates.size)
-        assertEquals(utxoStateExample, ledgerTransaction.outputContractStates.first())
+        assertEquals(getUtxoStateExample(), ledgerTransaction.outputContractStates.first())
         assertIs<UtxoStateClassExample>(ledgerTransaction.outputContractStates.first())
     }
 
@@ -118,7 +117,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun canCastOutputStateAndRefsToItself() {
         assertEquals(
-            listOf(utxoStateExample),
+            listOf(getUtxoStateExample()),
             ledgerTransaction.getOutputStateAndRefs(UtxoStateClassExample::class.java).map { it.state.contractState }
         )
     }
@@ -142,7 +141,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun canCastOutputStateAndRefsToContractState() {
         assertEquals(
-            listOf(utxoStateExample),
+            listOf(getUtxoStateExample()),
             ledgerTransaction.getOutputStateAndRefs(ContractState::class.java).map { it.state.contractState }
         )
     }

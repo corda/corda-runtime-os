@@ -45,7 +45,8 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ) : MembershipPersistenceOperation<Int> = Operation(MembershipPersistenceResult.Success(1))
+        version: Long,
+    ) : MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity)
      : MembershipPersistenceOperation<KeyValuePairList> =
@@ -154,6 +155,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
+        limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestStatus>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMembersSignatures(
@@ -161,7 +163,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         holdingsIdentities: Collection<HoldingIdentity>,
     ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> = MembershipQueryResult.Success(emptyMap())
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> =
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> =
         MembershipQueryResult.Failure("Unsupported")
 
     override fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>> = MembershipQueryResult.Success(

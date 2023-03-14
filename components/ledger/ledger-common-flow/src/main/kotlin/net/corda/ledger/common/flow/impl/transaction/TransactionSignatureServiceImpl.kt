@@ -151,10 +151,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val signedData = SignableData(signedHash, signatureWithMetadata.metadata)
 
         return digitalSignatureVerificationService.verify(
-            signatureWithMetadata.by,
-            signatureSpec,
+            serializationService.serialize(signedData).bytes,
             signatureWithMetadata.signature.bytes,
-            serializationService.serialize(signedData).bytes
+            signatureWithMetadata.by,
+            signatureSpec
         )
     }
 

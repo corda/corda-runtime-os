@@ -36,6 +36,9 @@ import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
 class MtlsMgmClientCertificateKeeperTest {
+    private companion object {
+        const val CURRENT_GROUP_POLICY_VERSION = 11L
+    }
     private val mgmHoldingIdentity = HoldingIdentity(
         MemberX500Name.parse("C=GB, CN=Mgm, O=Mgm, L=LDN"),
         "group"
@@ -53,20 +56,23 @@ class MtlsMgmClientCertificateKeeperTest {
         on { getGroupReader(mgmHoldingIdentity) } doReturn groupReader
     }
     private val createdPropertyMap = mock<LayeredPropertyMap>()
-    private val operation = mock<MembershipPersistenceOperation<Int>> {
-        on { execute() } doReturn MembershipPersistenceResult.Success(2)
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupPolicy(
-            mgmHoldingIdentity,
-            createdPropertyMap,
+            eq(mgmHoldingIdentity),
+            eq(createdPropertyMap),
+            any(),
         ) } doReturn operation
     }
     private val savedGroupPolicy = mock<LayeredPropertyMap> {
         on { entries } doReturn mapOf("hello" to "world").entries
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryGroupPolicy(mgmHoldingIdentity) } doReturn MembershipQueryResult.Success(savedGroupPolicy)
+        on { queryGroupPolicy(mgmHoldingIdentity) } doReturn MembershipQueryResult.Success(
+            savedGroupPolicy to CURRENT_GROUP_POLICY_VERSION
+        )
     }
     private val newlyCreatedMap = argumentCaptor<Map<String, String?>>()
     private val layeredPropertyMapFactory = mock<LayeredPropertyMapFactory> {
@@ -118,6 +124,7 @@ class MtlsMgmClientCertificateKeeperTest {
             .persistGroupPolicy(
                 mgmHoldingIdentity,
                 createdPropertyMap,
+                CURRENT_GROUP_POLICY_VERSION + 1
             )
     }
 
@@ -203,7 +210,7 @@ class MtlsMgmClientCertificateKeeperTest {
             "certificate",
         )
 
-        verify(membershipPersistenceClient, never()).persistGroupPolicy(any(), any())
+        verify(membershipPersistenceClient, never()).persistGroupPolicy(any(), any(), any())
     }
 
     @Test
@@ -216,6 +223,6 @@ class MtlsMgmClientCertificateKeeperTest {
             "certificate",
         )
 
-        verify(membershipPersistenceClient, never()).persistGroupPolicy(any(), any())
+        verify(membershipPersistenceClient, never()).persistGroupPolicy(any(), any(), any())
     }
 }

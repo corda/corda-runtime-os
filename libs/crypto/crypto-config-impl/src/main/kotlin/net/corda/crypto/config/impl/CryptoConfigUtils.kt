@@ -152,7 +152,9 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
  */
 
 private const val HSM_ID = "hsmId"
-private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
+const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
+const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
+const val MAXIMUM_SIZE = "maximumSize"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_SERVICE_OBJ = "hsmService"
 private const val HSM_MAP = "hsmMap"

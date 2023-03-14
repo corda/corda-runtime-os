@@ -149,7 +149,7 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun verifyNotarySignatureAttached() {
-        if (!KeyUtils.isKeyFulfilledBy(notary.owningKey, signatures.map { it.by })) {
+        if (!KeyUtils.isKeyInSet(notary.owningKey, signatures.map { it.by })) {
             throw TransactionSignatureException(
                 id,
                 "There are no notary signatures attached to the transaction.",

@@ -42,6 +42,7 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param groupPolicy The group policy.
+     * @param version The version of the group policy to persist.
      *
      * @return membership persistence operation.
      *  In the case of success the payload will include the newly created version number.
@@ -49,7 +50,8 @@ interface MembershipPersistenceClient : Lifecycle {
     fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ): MembershipPersistenceOperation<Int>
+        version: Long
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist

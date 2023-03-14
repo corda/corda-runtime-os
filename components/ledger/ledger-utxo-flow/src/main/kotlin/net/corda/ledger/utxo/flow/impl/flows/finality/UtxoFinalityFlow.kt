@@ -77,7 +77,7 @@ class UtxoFinalityFlow(
     private fun sendTransactionAndBackchainToCounterparties() {
         sessions.forEach {
             it.send(initialTransaction)
-            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction, it))
+            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
         }
     }
 

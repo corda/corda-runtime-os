@@ -40,8 +40,8 @@ class TruancyResponderFlow : ResponderFlow {
         val record = session.receive(TruancyRecord::class.java)
 
         verificationService.verify(
-            record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
-            serializationService.serialize(record.absentees).bytes
+            serializationService.serialize(record.absentees).bytes,
+            record.signature.bytes, record.signature.by, SignatureSpec.ECDSA_SHA256
         )
         log.info("Records verified; persisting records")
 

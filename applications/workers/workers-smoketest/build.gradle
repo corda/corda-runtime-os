@@ -162,7 +162,7 @@ tasks.register('smokeTest', Test) {
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
     def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker",false)
-    systemProperty "rpcHost", project.getProperties().getOrDefault("rpcHost","https://localhost:8888/")
+    systemProperty "restEndpointUrl", project.getProperties().getOrDefault("restEndpointUrl","https://localhost:8888/")
 
     // Note these port values have to match what is setup as part of port forwarding at cluster bootstrap time.
     // E.g. during Jenkins pipeline setup.
@@ -176,7 +176,7 @@ tasks.register('smokeTest', Test) {
             project.getProperties().getOrDefault("dbWorkerHealthHttp",combinedWorker ? null : "http://localhost:7004/")
 
     systemProperty "combinedWorkerHealthHttp",
-            project.getProperties().getOrDefault("combinedWorkerHealthHttp",combinedWorker ? "http://localhost:7000/" : null)
+            project.getProperties().getOrDefault("combinedWorkerHealthHttp", combinedWorker ? "http://localhost:7004/" : null)
 }
 
 

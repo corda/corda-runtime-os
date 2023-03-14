@@ -219,7 +219,7 @@ in a readable JSON wrapper, using the key, alias, HSM category and signature sch
 }
 ```
 
-The equivalent `DigitalVerificationService` simply looks to see if the clear data, signature spec and key are a match.
+The equivalent `DigitalVerificationService` simply looks to see if the clear/original data, signature spec and key are a match.
 
 Note that as with real Corda, all public keys are accessible through `MemberInfo`, and that even though Simulator does 
 not perform any actual crypto, a member cannot use another member's key in signing.

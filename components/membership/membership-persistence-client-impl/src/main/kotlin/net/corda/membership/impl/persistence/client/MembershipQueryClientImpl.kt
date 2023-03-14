@@ -122,7 +122,7 @@ class MembershipQueryClientImpl(
         }
     }
 
-    private fun RegistrationStatusDetails.toStatus() : RegistrationRequestStatus {
+    private fun RegistrationStatusDetails.toStatus(): RegistrationRequestStatus {
         return RegistrationRequestStatus(
             status = this.registrationStatus,
             registrationId = this.registrationId,
@@ -164,11 +164,12 @@ class MembershipQueryClientImpl(
     override fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
-        statuses: List<RegistrationStatus>
+        statuses: List<RegistrationStatus>,
+        limit: Int?
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
         ).execute()
         return when (payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -217,7 +218,7 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         val payload = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()
@@ -225,7 +226,7 @@ class MembershipQueryClientImpl(
         return when (payload) {
             is GroupPolicyQueryResponse -> {
                 MembershipQueryResult.Success(
-                    layeredPropertyMapFactory.createMap(payload.properties.toMap())
+                    layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
                 )
             }
             else -> {

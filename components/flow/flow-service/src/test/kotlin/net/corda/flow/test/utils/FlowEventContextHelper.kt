@@ -28,6 +28,7 @@ fun <T> buildFlowEventContext(
     val configWithRequired = config.withFallback(SmartConfigImpl.empty()
         .withValue(FlowConfig.SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
         .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
+        .withValue(FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(10000))
     )
 
     return FlowEventContext(

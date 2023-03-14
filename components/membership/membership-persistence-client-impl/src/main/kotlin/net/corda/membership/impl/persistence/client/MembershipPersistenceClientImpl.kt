@@ -25,7 +25,6 @@ import net.corda.data.membership.db.request.command.UpdateRegistrationRequestSta
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -126,19 +125,16 @@ class MembershipPersistenceClientImpl(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ): MembershipPersistenceOperation<Int> {
+        version: Long,
+    ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting group policy.")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
-            PersistGroupPolicy(groupPolicy.toAvro())
+            PersistGroupPolicy(groupPolicy.toAvro(), version),
         )
 
-        return request.operation { payload ->
-            dataToResultConvertor<PersistGroupPolicyResponse, Int>(payload) {
-                it.version
-            }
-        }
+        return request.operation(::nullToUnitConvertor)
     }
 
     override fun persistGroupParameters(

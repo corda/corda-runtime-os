@@ -19,6 +19,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    api 'net.corda:corda-notary-plugin'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
     implementation project(':components:ledger:ledger-common-flow-api')
@@ -36,7 +37,6 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(':components:virtual-node:sandbox-notary')
     implementation project(':notary-plugins:notary-plugin-common')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

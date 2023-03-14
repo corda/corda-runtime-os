@@ -4,8 +4,8 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.utilities.serialization.deserialize
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -19,7 +19,7 @@ class TransactionStateSerializerTest {
     @Test
     fun `Should serialize and then deserialize transaction state`() {
         val transactionState = TransactionStateImpl(
-            utxoStateExample,
+            getUtxoStateExample(),
             utxoNotaryExample,
             null
         )
@@ -31,7 +31,7 @@ class TransactionStateSerializerTest {
     @Test
     fun `Should serialize and then deserialize transaction state with encumbrance`() {
         val transactionState = TransactionStateImpl(
-            utxoStateExample,
+            getUtxoStateExample(),
             utxoNotaryExample,
             EncumbranceGroupImpl(5, "tag")
         )

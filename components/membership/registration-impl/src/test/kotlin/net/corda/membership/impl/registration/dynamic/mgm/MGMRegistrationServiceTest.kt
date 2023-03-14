@@ -66,6 +66,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.records.Record
@@ -88,6 +90,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -192,6 +195,9 @@ class MGMRegistrationServiceTest {
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryRegistrationRequestsStatus(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
+    }
     private class Operation<T>(
         private val value: MembershipPersistenceResult<T>
     ) : MembershipPersistenceOperation<T> {
@@ -202,8 +208,8 @@ class MGMRegistrationServiceTest {
         }
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistMemberInfo(any(), any()) } doReturn Operation(MembershipPersistenceResult.Success(Unit))
-        on { persistGroupPolicy(any(), any()) } doReturn Operation(MembershipPersistenceResult.Success(2))
+        on { persistMemberInfo(any(), any()) } doReturn Operation(MembershipPersistenceResult.success())
+        on { persistGroupPolicy(any(), any(), any()) } doReturn Operation(MembershipPersistenceResult.success())
         on {
             persistRegistrationRequest(
                 eq(mgm),
@@ -238,6 +244,7 @@ class MGMRegistrationServiceTest {
         keyEncodingService,
         memberInfoFactory,
         membershipPersistenceClient,
+        membershipQueryClient,
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
@@ -380,8 +387,9 @@ class MGMRegistrationServiceTest {
                     .persistGroupPolicy(
                         eq(mgm),
                         groupProperties.capture(),
+                        eq(1)
                     )
-            ).thenReturn(Operation(MembershipPersistenceResult.Success(3)))
+            ).thenReturn(Operation(MembershipPersistenceResult.success()))
 
             registrationService.register(registrationRequest, mgm, properties)
 

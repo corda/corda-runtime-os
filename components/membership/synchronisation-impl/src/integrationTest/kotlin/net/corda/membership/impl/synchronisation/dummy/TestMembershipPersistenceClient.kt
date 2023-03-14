@@ -68,8 +68,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
-        groupPolicy: LayeredPropertyMap
-    ): MembershipPersistenceOperation<Int> {
+        groupPolicy: LayeredPropertyMap,
+        version: Long
+    ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
