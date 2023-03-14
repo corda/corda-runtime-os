@@ -56,7 +56,8 @@ class DigestServiceImpl @Activate constructor(
                 } ?: throw e
         }
 
-    override fun parseSecureHash(hexString: String) = net.corda.crypto.core.parseSecureHash(hexString)
+    override fun parseSecureHash(algoNameAndHexString: String) =
+        net.corda.crypto.core.parseSecureHash(algoNameAndHexString)
 
     override fun digestLength(digestName: DigestAlgorithmName): Int =
         try {

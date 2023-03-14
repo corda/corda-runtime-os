@@ -17,10 +17,6 @@ class SecureHashImpl(
 
     override fun toHexString() = ByteArrays.toHexString(bytes)
 
-    override fun prefixChars(prefixLen: Int) = toHexString().substring(0, prefixLen)
-
-    override fun prefixChars() = prefixChars(6)
-
     override fun equals(other: Any?): Boolean {
         return when {
             this === other -> true

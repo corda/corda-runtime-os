@@ -32,15 +32,6 @@ class SecureHashImplTests {
     }
 
     @Test
-    fun `prefixChars should output request first N characters of HEX representation of digest`() {
-        val data = "def".toByteArray()
-        val algorithm = DigestAlgorithmName.SHA2_384.name
-        val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHashImpl(algorithm, digest)
-        assertEquals("180C325CCC", cut.prefixChars(10))
-    }
-
-    @Test
     fun `Should create instance out of proper formatted string with algorithm, delimiter and HEX representation of digest`() {
         val str = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         val expectedBytes = byteArrayOf(
