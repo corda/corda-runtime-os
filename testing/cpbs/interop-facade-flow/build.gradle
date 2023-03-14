@@ -14,9 +14,8 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
-    cordaProvided 'net.corda:corda-ledger-consensual'
 
-    cordapp project(':testing:cpbs:ledger-consensual-demo-contract')
+    cordapp project(':testing:cpbs:extendable-cpb')
 
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:sandbox-types")
