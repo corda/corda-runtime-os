@@ -53,7 +53,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?,
-            statuses: List<String>?,
+            statuses: List<String>,
         ): RestMemberInfoList
 
         fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
@@ -101,7 +101,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         locality: String?,
         state: String?,
         country: String?,
-        statuses: List<String>?,
+        statuses: List<String>,
     ) = impl.lookup(
         ShortHash.parseOrThrow(holdingIdentityShortHash),
         commonName,
@@ -135,7 +135,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?,
-            statuses: List<String>?,
+            statuses: List<String>,
         ) = throw ServiceUnavailableException(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
@@ -156,14 +156,14 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?,
-            statuses: List<String>?,
+            statuses: List<String>,
         ): RestMemberInfoList {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-            val statusFilter = statuses?.getStatusFilter(reader.isMgm(holdingIdentity)) ?: listOf(MEMBER_STATUS_ACTIVE)
+            val statusFilter = statuses.getStatusFilter(reader.isMgm(holdingIdentity))
             val filteredMembers = reader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED).filter { member ->
                 val memberName = member.name
                 commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
@@ -216,6 +216,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         }
 
         private fun MembershipGroupReader.isMgm(holdingIdentity: HoldingIdentity): Boolean =
+            // Uses member lookup with defaulting behaviour until CORE-11660.
             lookup(holdingIdentity.x500Name)?.isMgm ?: false
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.membership.rest.v1
 
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.RestPathParameter
@@ -21,8 +22,7 @@ interface MemberLookupRestResource : RestResource {
      * The [lookup] method enables you to retrieve a list of all members in the membership group that
      * are visible to the member represented by [holdingIdentityShortHash]. The list can be optionally filtered by
      * X.500 name attributes or member statuses. This method returns an empty list if no members matching the criteria
-     * are
-     * found.
+     * are found.
      *
      * Example usage:
      * ```
@@ -39,8 +39,8 @@ interface MemberLookupRestResource : RestResource {
      * @param locality Optional. Locality (L) attribute of the X.500 name to filter members by.
      * @param state Optional. State (ST) attribute of the X.500 name to filter members by.
      * @param country Optional. Country (C) attribute of the X.500 name to filter members by.
-     * @param statuses Optional. List of statuses ("ACTIVE", "SUSPENDED") to filter members by. Only the
-     * MGM can view suspended members.
+     * @param statuses Optional. List of statuses ("ACTIVE", "SUSPENDED") to filter members by. Only an MGM can view
+     * suspended members.
      *
      * @return List of active and pending members matching the criteria as [RestMemberInfoList].
      */
@@ -90,12 +90,11 @@ interface MemberLookupRestResource : RestResource {
         )
         country: String? = null,
         @RestQueryParameter(
-            description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only the " +
+            description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only an " +
                     "MGM can view suspended members.",
             required = false,
-            default = "null"
         )
-        statuses: List<String>? = null,
+        statuses: List<String> = listOf(MemberInfoExtension.MEMBER_STATUS_ACTIVE),
     ): RestMemberInfoList
 
     /**

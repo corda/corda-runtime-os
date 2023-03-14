@@ -8,7 +8,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
-import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -117,12 +116,10 @@ class MemberLookupRestResourceTest {
     private val mgm = createMemberInfo(mgmName, isMgm = true)
     private val memberInfoList = listOf(alice, bob, charlie)
 
-    private val aliceRestResult = RestMemberInfoList(alice.toRestMemberInfoList())
-    private val bobRestResult = RestMemberInfoList(bob.toRestMemberInfoList())
-    private val mgmRestMemberInfo = mgm.toRestMemberInfoList()
-    private val activeMembers = aliceRestResult.members + bobRestResult.members
-    private val suspendedMembers = charlie.toRestMemberInfoList()
-    private val activeAndSuspendedMembers = activeMembers + suspendedMembers
+    private val aliceResult = alice.toRestMemberInfo()
+    private val bobResult = bob.toRestMemberInfo()
+    private val mgmResult = mgm.toRestMemberInfo()
+    private val charlieResult = charlie.toRestMemberInfo()
 
     @Suppress("SpreadOperator")
     private fun createMemberInfo(
@@ -147,11 +144,9 @@ class MemberLookupRestResourceTest {
         )
     )
 
-    private fun MemberInfo.toRestMemberInfoList() = listOf(
-        RestMemberInfo(
-            memberProvidedContext.entries.associate { it.key to it.value },
-            mgmProvidedContext.entries.associate { it.key to it.value },
-        )
+    private fun MemberInfo.toRestMemberInfo() = RestMemberInfo(
+        memberProvidedContext.entries.associate { it.key to it.value },
+        mgmProvidedContext.entries.associate { it.key to it.value },
     )
 
     private fun convertPublicKeys(): List<Pair<String, String>> =
@@ -269,8 +264,7 @@ class MemberLookupRestResourceTest {
         fun `unfiltered lookup returns a list of all active members and their contexts`() {
             val result = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING).members
 
-            assertThat(result.size).isEqualTo(2)
-            assertThat(result).containsAll(activeMembers)
+            assertThat(result).containsExactlyInAnyOrder(aliceResult, bobResult)
 
             whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
                 .doReturn(listOf(mgm, alice, bob, charlie))
@@ -279,68 +273,73 @@ class MemberLookupRestResourceTest {
                 MGM_HOLDING_IDENTITY_STRING,
             ).members
 
-            assertThat(result2.size).isEqualTo(3)
-            assertThat(result2).containsAll(activeMembers + mgmRestMemberInfo)
+            assertThat(result2).containsExactlyInAnyOrder(aliceResult, bobResult, mgmResult)
         }
 
         @Test
         fun `lookup filtered by common name (CN) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "bob")
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(bobRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "BOB")
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(bobRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
         }
 
         @Test
         fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(aliceRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult)
+
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(aliceRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(aliceResult)
         }
 
         @Test
         fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(bobRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(bobRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
         }
 
         @Test
         fun `lookup filtered by locality (L) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "london")
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(aliceRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult)
+
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "LONDON")
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(aliceRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(aliceResult)
         }
 
         @Test
         fun `lookup filtered by state (ST) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(bobRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(bobRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
         }
 
         @Test
         fun `lookup filtered by country (C) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "gb")
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(aliceRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult)
+
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "GB")
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(aliceRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(aliceResult)
         }
 
         @Test
@@ -354,8 +353,9 @@ class MemberLookupRestResourceTest {
                 "state2",
                 "ie"
             )
-            assertThat(result1.members.size).isEqualTo(1)
-            assertThat(result1).isEqualTo(bobRestResult)
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
             val result2 = memberLookupRestResource.lookup(
                 HOLDING_IDENTITY_STRING,
                 "BOB",
@@ -365,8 +365,8 @@ class MemberLookupRestResourceTest {
                 "STATE2",
                 "IE"
             )
-            assertThat(result2.members.size).isEqualTo(1)
-            assertThat(result2).isEqualTo(bobRestResult)
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
         }
 
         @Test
@@ -374,25 +374,23 @@ class MemberLookupRestResourceTest {
             val result1 = memberLookupRestResource.lookup(
                 HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_ACTIVE)
-            ).members
+            )
 
-            assertThat(result1.size).isEqualTo(2)
-            assertThat(result1).containsAll(activeMembers)
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult, bobResult)
 
             val result2 = memberLookupRestResource.lookup(
                 HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_SUSPENDED)
-            ).members
+            )
 
-            assertThat(result2).isEmpty()
+            assertThat(result2.members).isEmpty()
 
             val result3 = memberLookupRestResource.lookup(
                 HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
-            ).members
+            )
 
-            assertThat(result3.size).isEqualTo(2)
-            assertThat(result3).containsAll(activeMembers)
+            assertThat(result3.members).containsExactlyInAnyOrder(aliceResult, bobResult)
         }
 
         @Test
@@ -403,26 +401,23 @@ class MemberLookupRestResourceTest {
             val result1 = memberLookupRestResource.lookup(
                 MGM_HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_ACTIVE)
-            ).members
+            )
 
-            assertThat(result1.size).isEqualTo(3)
-            assertThat(result1).containsAll(activeMembers + mgmRestMemberInfo)
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult, bobResult, mgmResult)
 
             val result2 = memberLookupRestResource.lookup(
                 MGM_HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_SUSPENDED)
-            ).members
+            )
 
-            assertThat(result2.size).isEqualTo(1)
-            assertThat(result2).containsAll(suspendedMembers)
+            assertThat(result2.members).containsExactlyInAnyOrder(charlieResult)
 
             val result3 = memberLookupRestResource.lookup(
                 MGM_HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
-            ).members
+            )
 
-            assertThat(result3.size).isEqualTo(4)
-            assertThat(result3).containsAll(activeAndSuspendedMembers + mgmRestMemberInfo)
+            assertThat(result3.members).containsExactlyInAnyOrder(aliceResult, bobResult, charlieResult, mgmResult)
         }
 
         @Test
@@ -430,10 +425,9 @@ class MemberLookupRestResourceTest {
             val result1 = memberLookupRestResource.lookup(
                 HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_ACTIVE.lowercase())
-            ).members
+            )
 
-            assertThat(result1.size).isEqualTo(2)
-            assertThat(result1).containsAll(activeMembers)
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult, bobResult)
         }
 
         @Test
