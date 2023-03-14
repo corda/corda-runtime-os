@@ -1775,12 +1775,12 @@
         }, {
           "name" : "statuses",
           "in" : "query",
-          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only the MGM can view suspended members.",
+          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only an MGM can view suspended members.",
           "required" : false,
           "schema" : {
             "uniqueItems" : false,
             "type" : "array",
-            "nullable" : true,
+            "nullable" : false,
             "items" : {
               "type" : "string",
               "example" : "string"
