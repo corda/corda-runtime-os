@@ -5,12 +5,14 @@ import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
@@ -421,12 +423,18 @@ class NonValidatingNotaryServerFlowImplTest {
             on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
         }
 
+        val mockDigestService = mock<DigestService> {
+            on { hash(any<ByteArray>(), any()) } doReturn
+                    SecureHashImpl("dummy", byteArrayOf(0x01, 0x02, 0x03, 0x04))
+        }
+
         val server = NonValidatingNotaryServerFlowImpl(
             clientService,
             mockSerializationService,
             sigVerifier,
             mockMemberLookup,
-            mockTransactionSignatureService
+            mockTransactionSignatureService,
+            mockDigestService
         )
 
         server.call(paramOrDefaultSession)

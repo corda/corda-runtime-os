@@ -1,13 +1,14 @@
 package net.corda.sandbox.internal
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -158,7 +159,8 @@ class SandboxServiceImplTests {
         val cpkAndContentsOne = CpkAndContents(
             mainBundleClass = String::class.java,
             libraryClass = Boolean::class.java,
-            cpkChecksum = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH)))
+            cpkChecksum = SecureHashImpl(HASH_ALGORITHM, nextBytes(HASH_LENGTH))
+        )
 
         val mockBundleUtils = mockBundleUtils(
             setOf(cpkAndContentsOne)
@@ -571,7 +573,7 @@ private data class CpkAndContents(
             },
             type = CpkType.UNKNOWN,
             fileChecksum = cpkChecksum ?:
-                SecureHash(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
+                SecureHashImpl(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
             cordappCertificates = emptySet(),
             timestamp = Instant.now())
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -12,7 +13,6 @@ import net.corda.ledger.utxo.testkit.getExampleInvalidStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -32,10 +32,10 @@ import java.security.PublicKey
 class TransactionBackchainVerifierImplTest {
 
     private companion object {
-        val RESOLVING_TX_ID = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-        val TX_ID_1 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
-        val TX_ID_2 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
-        val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
+        val RESOLVING_TX_ID = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
+        val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+        val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
         val VERIFICATION_EXCEPTION = TransactionVerificationException(mock(), TransactionVerificationStatus.INVALID)
     }
 

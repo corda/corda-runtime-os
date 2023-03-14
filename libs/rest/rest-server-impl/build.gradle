@@ -68,6 +68,6 @@ dependencies {
 
     integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
-    integrationTestImplementation project(':libs:rest:rest-stubs-impl')
+    integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
     integrationTestImplementation project(":testing:test-utilities")
 }

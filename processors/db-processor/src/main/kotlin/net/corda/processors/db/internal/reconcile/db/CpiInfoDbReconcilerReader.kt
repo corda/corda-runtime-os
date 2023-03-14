@@ -1,11 +1,11 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.reconciliation.VersionedRecord
-import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 import java.util.stream.Stream
 
@@ -18,7 +18,7 @@ val getAllCpiInfoDBVersionedRecords
         val cpiId = CpiIdentifier(
             cpiMetadataEntity.name,
             cpiMetadataEntity.version,
-            SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
+            parseSecureHash(cpiMetadataEntity.signerSummaryHash)
         )
         object : VersionedRecord<CpiIdentifier, CpiMetadata> {
             override val version = cpiMetadataEntity.entityVersion
@@ -27,7 +27,7 @@ val getAllCpiInfoDBVersionedRecords
             override val value by lazy {
                 CpiMetadata(
                     cpiId = cpiId,
-                    fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum),
+                    fileChecksum = parseSecureHash(cpiMetadataEntity.fileChecksum),
                     cpksMetadata = cpiMetadataEntity.cpks.map {
                         CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata)
                     },

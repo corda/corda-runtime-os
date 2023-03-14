@@ -41,6 +41,7 @@ import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.VisibleForTesting
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.function.Supplier
 
@@ -56,7 +57,7 @@ internal class RestGatewayEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val MULTI_PART_DIR = "multipart"
 
@@ -191,7 +192,7 @@ internal class RestGatewayEventHandler(
         val keyStoreInfo = sslCertReadServiceFactory.create().let {
             this.sslCertReadService = it
             it.start()
-            it.getOrCreateKeyStore()
+            it.getOrCreateKeyStoreInfo(config)
         }
 
         val restServerSettings = RestServerSettings(

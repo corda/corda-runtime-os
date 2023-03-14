@@ -1,5 +1,7 @@
 package net.corda.test.util.dsl.entities.cpx
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import java.util.UUID
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
@@ -34,14 +36,14 @@ class CpiCpkBuilder(
         cpiVersionSupplier: () -> String? = { null },
         cpiSignerSummaryHashSupplier: () -> SecureHash? = { null },
     ) : this(
-        { SecureHash.parse(cpk.cpkFileChecksum) },
+        { parseSecureHash(cpk.cpkFileChecksum) },
         cpiNameSupplier,
         cpiVersionSupplier,
         cpiSignerSummaryHashSupplier
     ) {
         cpkName = cpk.cpkName
         cpkVersion = cpk.cpkVersion
-        cpkSignerSummaryHash = SecureHash.parse(cpk.cpkSignerSummaryHash)
+        cpkSignerSummaryHash = parseSecureHash(cpk.cpkSignerSummaryHash)
         formatVersion = cpk.formatVersion
         serializedMetadata = cpk.serializedMetadata
         metadataEntity = cpk
@@ -126,13 +128,13 @@ class CpiCpkBuilder(
     @Suppress("ThrowsCount")
     fun build(): CpiCpkEntity {
         if (cpkFileChecksumSupplier.invoke() == null) cpkFileChecksumSupplier =
-            { SecureHash("SHA-256", "cpk_file_checksum_$randomId".toByteArray()) }
+            { SecureHashImpl("SHA-256", "cpk_file_checksum_$randomId".toByteArray()) }
         val cpk: CpkMetadataEntity = metadataEntity
             ?: metadata?.build() ?: CpkMetadataBuilder(cpkFileChecksumSupplier, randomId)
                 .cpkName(cpkName ?: "cpkName_$randomId")
                 .cpkVersion(cpkVersion ?: "cpkVersion_$randomId")
                 .cpkSignerSummaryHash(
-                    cpkSignerSummaryHash ?: SecureHash(
+                    cpkSignerSummaryHash ?: SecureHashImpl(
                         "SHA-256",
                         "cpkSignerSummaryHash_$randomId".toByteArray()
                     )

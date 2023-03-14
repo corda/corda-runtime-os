@@ -1,15 +1,16 @@
 package net.corda.libs.packaging
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.base.types.MemberX500Name
-import java.security.MessageDigest
-import java.security.cert.X509Certificate
-import javax.security.auth.x500.X500Principal
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.MessageDigest
+import java.security.cert.X509Certificate
+import javax.security.auth.x500.X500Principal
 
 class UtilsTest {
     private companion object {
@@ -42,7 +43,7 @@ class UtilsTest {
             .forEach {
                 md.update(it)
             }
-        val expectedCertSummaryHash = SecureHash(algoName, md.digest())
+        val expectedCertSummaryHash = SecureHashImpl(algoName, md.digest())
 
         // Check X500 names hashes getting sorted before they get hashed
         val outOfOrderCerts = sequenceOf(bobCert, aliceCert)

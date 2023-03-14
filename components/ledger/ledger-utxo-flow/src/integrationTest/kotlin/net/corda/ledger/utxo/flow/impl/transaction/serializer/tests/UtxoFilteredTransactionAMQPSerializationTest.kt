@@ -1,12 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.tests
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.createExample
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
 
     private companion object {
-        val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
+        val inputHash = parseSecureHash("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
             encumbranceGroupSize = null,

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -40,6 +41,7 @@ import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -63,7 +65,7 @@ import java.time.Instant
 class UtxoFinalityFlowTest {
 
     private companion object {
-        val TX_ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val TX_ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
         val ALICE = MemberX500Name("Alice", "London", "GB")
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
@@ -75,6 +77,7 @@ class UtxoFinalityFlowTest {
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
     private val virtualNodeSelectorService = mock<NotaryVirtualNodeSelectorService>()
+    private val visibilityChecker = mock<VisibilityChecker>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -159,7 +162,7 @@ class UtxoFinalityFlowTest {
             notarizedTx
         )
 
-        whenever(ledgerTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 11)))
+        whenever(ledgerTransaction.id).thenReturn(SecureHashImpl("algo", byteArrayOf(1, 2, 11)))
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(getUtxoStateExample()))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
@@ -244,6 +247,9 @@ class UtxoFinalityFlowTest {
         whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
 
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
@@ -911,6 +917,7 @@ class UtxoFinalityFlowTest {
         flow.persistenceService = persistenceService
         flow.transactionVerificationService = transactionVerificationService
         flow.virtualNodeSelectorService = virtualNodeSelectorService
+        flow.visibilityChecker = visibilityChecker
         flow.call()
     }
 

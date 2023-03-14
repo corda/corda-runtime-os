@@ -1,5 +1,6 @@
 package net.corda.libs.cpiupload.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
@@ -7,12 +8,11 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.schema.Schemas
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import java.io.ByteArrayInputStream
@@ -44,7 +44,7 @@ class CpiUploadManagerImplTest {
     @Test
     fun `upload manager returns CPI requestId on upload request`() {
         var chunkCount = 0
-        val checksum = SecureHash("SHA-256", ByteArray(12))
+        val checksum = SecureHashImpl("SHA-256", ByteArray(12))
         `when`(publisher.publish(anyOrNull())).thenAnswer { invocation ->
             val chunks = invocation.arguments[0] as List<*>
             chunkCount = chunks.size
@@ -66,7 +66,7 @@ class CpiUploadManagerImplTest {
 
     @Test
     fun `upload manager returns success on status request`() {
-        val checksum = SecureHash("SHA-256", ByteArray(12))
+        val checksum = SecureHashImpl("SHA-256", ByteArray(12))
         `when`(publisher.publish(anyOrNull())).thenAnswer { invocation ->
             val chunks = invocation.arguments[0] as List<*>
             chunks.mapIndexed { index, _ ->
