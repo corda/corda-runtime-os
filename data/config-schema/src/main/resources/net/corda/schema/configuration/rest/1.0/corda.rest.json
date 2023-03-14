@@ -2,46 +2,46 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://corda.r3.com/net/corda/schema/configuration/rest/1.0/corda.rest.json",
   "title": "Corda REST Configuration Schema",
-  "description": "Configuration schema for the REST subsection.",
+  "description": "Configuration schema for the REST section.",
   "type": "object",
   "default": {},
   "properties": {
     "address": {
-      "description": "",
+      "description": "The address at which the REST API is exposed.",
       "type": "string",
       "default": "0.0.0.0:8888"
     },
     "context": {
-      "description": "",
+      "description": "Settings for the context of the API.",
       "type": "object",
       "default": {},
       "properties": {
         "description": {
-          "description": "",
+          "description": "The description of the API.",
           "type": "string",
-          "default": "Exposing REST interfaces as OpenAPI WebServices"
+          "default": "Exposing REST interfaces as OpenAPI WebServices."
         },
         "title": {
-          "description": "",
+          "description": "The title of the API.",
           "type": "string",
           "default": "REST"
         }
       }
     },
     "maxContentLength": {
-      "description": "Maximum length in bytes that can be sent over HTTP transport.",
+      "description": "The maximum length in bytes that can be sent over HTTP.",
       "type": "integer",
       "minimum": 1024,
       "maximum": 2147483647,
       "default": 200000000
     },
     "endpoint": {
-      "description": "",
+      "description": "Settings for endpoints.",
       "type": "object",
       "default": {},
       "properties": {
         "timeoutMs": {
-          "description": "Amount of time in milliseconds to wait for response on backend message bus for a remote operation before timing out the REST call.",
+          "description": "The length of time in milliseconds that the backend message bus waits for a response to a remote operation before timing out the REST call.",
           "type": "integer",
           "minimum": 100,
           "maximum": 2147483647,
@@ -50,12 +50,12 @@
       }
     },
     "websocket": {
-      "description": "Configuration settings for WebSockets.",
+      "description": "Settings for WebSockets.",
       "type": "object",
       "default": {},
       "properties": {
         "idleTimeoutMs": {
-          "description": "Amount of time in milliseconds for a websocket connection to be idle (i.e. no messages are either sent or received) before timing out and closing the connection. Value of 0 means such idle check will be disabled.",
+          "description": "The length of time in milliseconds that a websocket connection can be idle (no messages are either sent or received) before timing out and closing the connection. A value of 0 means such idle checks are disabled.",
           "type": "integer",
           "minimum": 0,
           "maximum": 2147483647,
