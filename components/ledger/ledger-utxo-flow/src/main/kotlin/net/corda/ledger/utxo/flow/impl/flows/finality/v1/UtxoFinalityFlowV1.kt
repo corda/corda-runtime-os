@@ -5,8 +5,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
-import net.corda.ledger.utxo.flow.impl.flows.finality.getMyLedgerKeys
-import net.corda.ledger.utxo.flow.impl.flows.finality.getRelevantStatesIndexes
+import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
@@ -79,7 +78,7 @@ class UtxoFinalityFlowV1(
     private fun sendTransactionAndBackchainToCounterparties() {
         sessions.forEach {
             it.send(initialTransaction)
-            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction, it))
+            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
         }
     }
 
@@ -169,7 +168,7 @@ class UtxoFinalityFlowV1(
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
-                it !in signatures                                   // These came from that party
+                        it !in signatures                                   // These came from that party
             }
         }.toMap()
         log.trace { "Sending updated signatures to counterparties for transaction $transactionId" }
@@ -262,7 +261,7 @@ class UtxoFinalityFlowV1(
     @VisibleForTesting
     internal fun newPluggableNotaryClientFlowInstance(
         transaction: UtxoSignedTransactionInternal
-    ) : PluggableNotaryClientFlow {
+    ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
             pluggableNotaryClientFlow.kotlin.primaryConstructor!!.call(
                 transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notary)
@@ -272,7 +271,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+        val relevantStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
         persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded notarized transaction $transactionId" }
     }

@@ -8,12 +8,13 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
 class TransactionBackchainResolutionFlow(
-    private val transaction: UtxoSignedTransaction,
-    private val session: FlowSession
+    private val initialTransactionIds: Set<SecureHash>,
+    private val session: FlowSession,
 ) : SubFlow<Unit> {
 
     @CordaInject
@@ -22,7 +23,7 @@ class TransactionBackchainResolutionFlow(
     @Suspendable
     override fun call() {
         return versioningService.versionedSubFlow(
-            TransactionBackchainResolutionFlowVersionedFlowFactory(transaction),
+            TransactionBackchainResolutionFlowVersionedFlowFactory(initialTransactionIds),
             session
         )
     }
@@ -33,28 +34,28 @@ class TransactionBackchainResolutionFlow(
 
         other as TransactionBackchainResolutionFlow
 
-        if (transaction != other.transaction) return false
+        if (initialTransactionIds != other.initialTransactionIds) return false
         if (session != other.session) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = transaction.hashCode()
+        var result = initialTransactionIds.hashCode()
         result = 31 * result + session.hashCode()
         return result
     }
 }
 
 class TransactionBackchainResolutionFlowVersionedFlowFactory(
-    private val transaction: UtxoSignedTransaction,
+    private val initialTransactionIds: Set<SecureHash>
 ) : VersionedReceiveFlowFactory<Unit> {
 
     override val versionedInstanceOf: Class<TransactionBackchainResolutionFlow> = TransactionBackchainResolutionFlow::class.java
 
     override fun create(version: Int, session: FlowSession): SubFlow<Unit> {
         return when {
-            version >= 1 -> TransactionBackchainResolutionFlowV1(transaction, session)
+            version >= 1 -> TransactionBackchainResolutionFlowV1(initialTransactionIds, session)
             else -> throw IllegalArgumentException()
         }
     }

@@ -8,15 +8,17 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.utilities.trace
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainSenderFlowV1(private val transaction: UtxoSignedTransaction, private val session: FlowSession) : SubFlow<Unit> {
+class TransactionBackchainSenderFlowV1(private val headTransactionIds: Set<SecureHash>, private val session: FlowSession) : SubFlow<Unit> {
+
+    constructor (headTransactionId: SecureHash, session: FlowSession) : this(setOf(headTransactionId), session)
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlowV1::class.java)
+        val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlowV1::class.java)
     }
 
     @CordaInject
@@ -25,7 +27,7 @@ class TransactionBackchainSenderFlowV1(private val transaction: UtxoSignedTransa
     @Suspendable
     override fun call() {
         log.trace {
-            "Backchain resolution of ${transaction.id} - Waiting to be told what transactions to send to ${session.counterparty} " +
+            "Backchain resolution of $headTransactionIds - Waiting to be told what transactions to send to ${session.counterparty} " +
                     "so that the backchain can be resolved"
         }
         while (true) {
@@ -36,16 +38,17 @@ class TransactionBackchainSenderFlowV1(private val transaction: UtxoSignedTransa
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                     }
                     // sending in batches of 1
+                    // TODO Switch to [FlowMessaging.sendAll]
                     transactions.map { session.send(listOf(it)) }
                     log.trace {
-                        "Backchain resolution of ${transaction.id} - Sent backchain transactions ${transactions.map { it.id }} to " +
+                        "Backchain resolution of $headTransactionIds - Sent backchain transactions ${transactions.map { it.id }} to " +
                                 session.counterparty
                     }
                 }
 
                 is TransactionBackchainRequestV1.Stop -> {
                     log.trace {
-                        "Backchain resolution of ${transaction.id} - Received stop, finishing sending of backchain transaction to " +
+                        "Backchain resolution of $headTransactionIds - Received stop, finishing sending of backchain transaction to " +
                                 session.counterparty
                     }
                     return
@@ -61,6 +64,7 @@ class TransactionBackchainSenderFlowV1(private val transaction: UtxoSignedTransa
         other as TransactionBackchainSenderFlowV1
 
         if (session != other.session) return false
+        if (headTransactionIds != other.headTransactionIds) return false
 
         return true
     }

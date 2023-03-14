@@ -8,13 +8,13 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
-class TransactionBackchainSenderFlow(
-    private val transaction: UtxoSignedTransaction,
-    private val session: FlowSession
-) : SubFlow<Unit> {
+class TransactionBackchainSenderFlow(private val headTransactionIds: Set<SecureHash>, private val session: FlowSession) : SubFlow<Unit> {
+
+    constructor (headTransactionId: SecureHash, session: FlowSession) : this(setOf(headTransactionId), session)
 
     @CordaInject
     lateinit var versioningService: VersioningService
@@ -22,7 +22,7 @@ class TransactionBackchainSenderFlow(
     @Suspendable
     override fun call() {
         return versioningService.versionedSubFlow(
-            TransactionBackchainSenderFlowVersionedFlowFactory(transaction),
+            TransactionBackchainSenderFlowVersionedFlowFactory(headTransactionIds),
             listOf(session)
         )
     }
@@ -33,28 +33,28 @@ class TransactionBackchainSenderFlow(
 
         other as TransactionBackchainSenderFlow
 
-        if (transaction != other.transaction) return false
+        if (headTransactionIds != other.headTransactionIds) return false
         if (session != other.session) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = transaction.hashCode()
+        var result = headTransactionIds.hashCode()
         result = 31 * result + session.hashCode()
         return result
     }
 }
 
 class TransactionBackchainSenderFlowVersionedFlowFactory(
-    private val transaction: UtxoSignedTransaction,
+    private val headTransactionIds: Set<SecureHash>
 ) : VersionedSendFlowFactory<Unit> {
 
     override val versionedInstanceOf: Class<TransactionBackchainSenderFlow> = TransactionBackchainSenderFlow::class.java
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= 1 -> TransactionBackchainSenderFlowV1(transaction, sessions.single())
+            version >= 1 -> TransactionBackchainSenderFlowV1(headTransactionIds, sessions.single())
             else -> throw IllegalArgumentException()
         }
     }
