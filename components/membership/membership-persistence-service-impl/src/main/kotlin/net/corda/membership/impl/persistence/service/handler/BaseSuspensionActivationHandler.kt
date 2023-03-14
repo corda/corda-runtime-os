@@ -15,7 +15,6 @@ import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
-import javax.persistence.PersistenceException
 
 internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<REQUEST, RESPONSE>(persistenceHandlerServices) {
@@ -34,6 +33,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
         }
     }
 
+    @Suppress("ThrowsCount")
     fun changeMemberStatus(
         context: MembershipRequestContext,
         memberName: String,
@@ -80,7 +80,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
                     now,
                     member.memberContext,
                     serializedMgmContext,
-                    member.serialNumber
+                    member.serialNumber + 1
                 )
             )
 

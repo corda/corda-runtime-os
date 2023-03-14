@@ -50,7 +50,6 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import javax.persistence.PersistenceException
 import javax.persistence.PessimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

@@ -48,7 +48,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
-import javax.persistence.PersistenceException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus

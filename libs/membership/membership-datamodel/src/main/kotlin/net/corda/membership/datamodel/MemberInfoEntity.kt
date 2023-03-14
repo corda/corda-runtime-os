@@ -10,7 +10,6 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
-import javax.persistence.Version
 
 /**
  * An entity representing a member info as visible by the current VNode.
@@ -44,7 +43,6 @@ class MemberInfoEntity(
     @Column(name = "mgm_context", nullable = false)
     var mgmContext: ByteArray,
 
-    @Version
     @Column(name = "serial_number", nullable = false)
     val serialNumber: Long,
 ) {

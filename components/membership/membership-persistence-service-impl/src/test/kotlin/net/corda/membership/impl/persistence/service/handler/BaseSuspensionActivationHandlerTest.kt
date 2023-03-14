@@ -214,7 +214,7 @@ class BaseSuspensionActivationHandlerTest {
 
         with(entityCapture.firstValue) {
             Assertions.assertThat(status).isEqualTo(MEMBER_STATUS_ACTIVE)
-            Assertions.assertThat(serialNumber).isEqualTo(SERIAL_NUMBER)
+            Assertions.assertThat(serialNumber).isEqualTo(SERIAL_NUMBER + 1)
             Assertions.assertThat(modifiedTime).isEqualTo(clock.instant())
             Assertions.assertThat(groupId).isEqualTo(knownGroupId)
             Assertions.assertThat(memberX500Name).isEqualTo(knownX500Name.toString())
