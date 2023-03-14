@@ -65,12 +65,15 @@ class DefaultKryoCustomizer {
                     isAccessible = true
                 }.set(this, classResolver)
 
-                // Take the safest route here and allow subclasses to have fields named the same as super classes.
-                //fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
+                val defaultSerializer = SerializerFactory.FieldSerializerFactory().apply {
+                    // Take the safest route here and allow subclasses to have fields named the same as super classes.
+                    config.extendedFieldNames = true
 
-                // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
-                // their parents after deserialization.
-                //fieldSerializerConfig.isIgnoreSyntheticFields = false
+                    // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
+                    // their parents after deserialization.
+                    config.ignoreSyntheticFields = false
+                }
+                setDefaultSerializer(defaultSerializer)
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
