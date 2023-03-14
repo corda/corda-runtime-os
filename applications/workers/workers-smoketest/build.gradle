@@ -134,6 +134,8 @@ tasks.register('smokeTest', Test) {
     description = "Runs smoke tests."
     group = "verification"
 
+    dependsOn smokeTestResources
+
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
@@ -153,9 +155,6 @@ tasks.register('smokeTest', Test) {
 
     systemProperty "combinedWorkerHealthHttp",
             project.getProperties().getOrDefault("combinedWorkerHealthHttp",combinedWorker ? "http://localhost:7000/" : null)
-}
 
-
-tasks.named('smokeTest', Test) {
-    dependsOn smokeTestResources
+    jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
 }
