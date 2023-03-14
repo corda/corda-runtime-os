@@ -38,8 +38,14 @@ data class UtxoRelevantTransactionStateEntity(
     @Column(name = "consumed", nullable = false)
     val isConsumed: Boolean,
 
+    @Column(name = "custom", nullable = false, columnDefinition = "jsonb")
+    val custom: String,
+
     @Column(name = "created", nullable = false)
-    val created: Instant
+    val created: Instant,
+
+    @Column(name = "consumed_timestamp", nullable = true)
+    val consumedTimestamp: Instant?
 )
 
 @Embeddable

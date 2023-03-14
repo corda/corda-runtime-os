@@ -14,10 +14,11 @@ import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
+import net.corda.ledger.persistence.utxo.StateCustomJson
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
+import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
-import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -88,6 +89,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var digestService: DigestService
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
+    private lateinit var repository: UtxoRepository
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
@@ -128,7 +130,7 @@ class UtxoPersistenceServiceImplTest {
             digestService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            val repository = UtxoRepositoryImpl(digestService, serializationService, wireTransactionFactory)
+            repository = ctx.getSandboxSingletonService()
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
                 repository,
@@ -175,32 +177,38 @@ class UtxoPersistenceServiceImplTest {
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_relevant_transaction_state").executeUpdate()
 
-            val transaction1Entity = createTransactionEntity(entityFactory, transaction1, status = VERIFIED)
-                .also { em.persist(it) }
-            val transaction2Entity = createTransactionEntity(entityFactory, transaction2, status = VERIFIED)
-                .also { em.persist(it) }
+            createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
+            createTransactionEntity(entityFactory, transaction2, status = VERIFIED).also { em.persist(it) }
 
-            entityFactory.createUtxoRelevantTransactionStateEntity(
-                transaction1Entity,
+            repository.persistTransactionRelevantStates(
+                em,
+                transaction1.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 1,
                 false,
+                StateCustomJson("{}"),
                 createdTs
-            ).also { em.persist(it) }
-            entityFactory.createUtxoRelevantTransactionStateEntity(
-                transaction2Entity,
+            )
+
+            repository.persistTransactionRelevantStates(
+                em,
+                transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 0,
                 false,
+                StateCustomJson("{}"),
                 createdTs
-            ).also { em.persist(it) }
-            entityFactory.createUtxoRelevantTransactionStateEntity(
-                transaction2Entity,
+            )
+
+            repository.persistTransactionRelevantStates(
+                em,
+                transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 1,
                 true,
+                StateCustomJson("{}"),
                 createdTs
-            ).also { em.persist(it) }
+            )
         }
 
         val stateClass = TestContractState2::class.java
@@ -389,6 +397,8 @@ class UtxoPersistenceServiceImplTest {
                 .forEach { (dbRelevancy, relevantStateIndex) ->
                     assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(relevantStateIndex)
+                    assertThat(dbRelevancy.field<String>("custom")).isEqualTo("{\"temp\": \"value\"}")
+                    assertThat(dbRelevancy.field<Instant>("consumedTimestamp")).isNull()
                 }
 
             val signatures = signedTransaction.signatures

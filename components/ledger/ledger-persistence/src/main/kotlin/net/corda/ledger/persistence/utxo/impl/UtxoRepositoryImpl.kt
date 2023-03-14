@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
+import net.corda.ledger.persistence.utxo.StateCustomJson
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -202,15 +203,17 @@ class UtxoRepositoryImpl @Activate constructor(
 
     override fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        stateRefs: List<StateRef>
+        stateRefs: List<StateRef>,
+        timestamp: Instant
     ) {
         entityManager.createNativeQuery(
         """
             UPDATE {h-schema}utxo_relevant_transaction_state
-            SET consumed = true
+            SET consumed = true, consumed_timestamp = :consumedTimestamp
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
         )
+            .setParameter("consumedTimestamp", timestamp)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
@@ -331,21 +334,32 @@ class UtxoRepositoryImpl @Activate constructor(
         groupIndex: Int,
         leafIndex: Int,
         consumed: Boolean,
+        stateCustomJson: StateCustomJson,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_relevant_transaction_state(
-                transaction_id, group_idx, leaf_idx, consumed, created)
+                transaction_id, group_idx, leaf_idx, consumed, custom, created, consumed_timestamp
+            )
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :consumed, :createdAt)
+                :transactionId, 
+                :groupIndex, 
+                :leafIndex, 
+                :consumed, 
+                CAST(:custom as JSONB), 
+                :createdAt, 
+                ${if (consumed) ":consumedTimestamp" else "null"}
+            )
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("consumed", consumed)
+            .setParameter("custom", stateCustomJson.value)
             .setParameter("createdAt", timestamp)
+            .run { if (consumed) setParameter("consumedTimestamp", timestamp) else this }
             .executeUpdate()
             .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
     }
