@@ -4,7 +4,7 @@ import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.server.config.models.RestSSLSettings
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.RestServerImpl
-import net.corda.rest.ssl.impl.SslCertReadServiceStubImpl
+import net.corda.rest.ssl.impl.SslCertReadServiceImpl
 import net.corda.rest.test.CustomSerializationAPI
 import net.corda.rest.test.CustomSerializationAPIImpl
 import net.corda.rest.test.CustomString
@@ -23,7 +23,7 @@ import java.nio.file.Files
 internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     companion object {
 
-        private val sslService = SslCertReadServiceStubImpl {
+        private val sslService = SslCertReadServiceImpl {
             Files.createTempDirectory("RestSSLClientIntegrationTest")
         }
 

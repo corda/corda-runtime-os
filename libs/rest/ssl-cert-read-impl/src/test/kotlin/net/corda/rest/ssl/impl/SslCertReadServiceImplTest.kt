@@ -1,6 +1,5 @@
-package net.corda.libs.config.net.corda.rest.ssl.impl
+package net.corda.rest.ssl.impl
 
-import net.corda.rest.ssl.impl.SslCertReadServiceStubImpl
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -8,11 +7,11 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
-class SslCertReadServiceStubImplTest {
+class SslCertReadServiceImplTest {
 
     private lateinit var tempDirectoryPath: Path
 
-    private val service = SslCertReadServiceStubImpl(
+    private val service = SslCertReadServiceImpl(
         createDirectory = {
             Files.createTempDirectory("rest-ssl").also {
                 this.tempDirectoryPath = it
@@ -30,7 +29,7 @@ class SslCertReadServiceStubImplTest {
         service.getOrCreateKeyStore()
         Assertions.assertTrue(
             File(
-                Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME).toUri()
+                Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME).toUri()
             ).exists()
         )
     }
@@ -39,10 +38,10 @@ class SslCertReadServiceStubImplTest {
     fun `create returns path and password of keystore`() {
         val keyStoreInfo = service.getOrCreateKeyStore()
         Assertions.assertEquals(
-            Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME),
+            Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME),
             keyStoreInfo.path
         )
-        Assertions.assertEquals(SslCertReadServiceStubImpl.PASSWORD, keyStoreInfo.password)
+        Assertions.assertEquals(SslCertReadServiceImpl.PASSWORD, keyStoreInfo.password)
     }
 
     @Test
@@ -50,13 +49,13 @@ class SslCertReadServiceStubImplTest {
         service.getOrCreateKeyStore()
         Assertions.assertTrue(
             File(
-                Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME).toUri()
+                Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME).toUri()
             ).exists()
         )
         service.stop()
         Assertions.assertFalse(
             File(
-                Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME).toUri()
+                Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME).toUri()
             ).exists()
         )
     }

@@ -7,9 +7,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(service = [SslCertReadServiceFactory::class], scope = ServiceScope.SINGLETON)
-class SslCertReadServiceFactoryStubImpl @Activate constructor() : SslCertReadServiceFactory {
+class SslCertReadServiceFactoryImpl @Activate constructor() : SslCertReadServiceFactory {
 
     override fun create(): SslCertReadService {
-        return SslCertReadServiceStubImpl()
+        return SslCertReadServiceImpl()
     }
 }
