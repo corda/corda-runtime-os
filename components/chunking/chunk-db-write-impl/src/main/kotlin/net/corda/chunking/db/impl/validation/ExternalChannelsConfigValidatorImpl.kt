@@ -17,12 +17,9 @@ class ExternalChannelsConfigValidatorImpl: ExternalChannelsConfigValidator {
         }
     }
 
-    private fun validate(cpkIdentifier: CpkIdentifier, externalChannelsConfig: String?) {
-        if (externalChannelsConfig == null) {
-            log.debug { "Skipping null external channel configuration string for $cpkIdentifier" }
-            return
+    private fun validate(externalChannelsConfig: String?) {
+        if(externalChannelsConfig!=null){
+            throw SchemaValidationError("The external channels configuration '$externalChannelsConfig' is invalid")
         }
-
-        throw NotImplementedError("Failed to validate configuration. Method not implemented")
     }
 }
