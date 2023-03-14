@@ -1,4 +1,4 @@
-package org.example.interop
+package net.cordapp.testing.testflows
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -9,7 +9,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 
-@InitiatingFlow("facade-invocation-flow")
+@InitiatingFlow(protocol = "facade_invocation_flow")
 class FacadeInvocationFlow : ClientStartableFlow {
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
