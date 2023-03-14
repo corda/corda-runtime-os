@@ -57,7 +57,7 @@ internal class RestGatewayEventHandlerTest {
         val keyStoreInfo = mock<KeyStoreInfo>()
         whenever(keyStoreInfo.path).thenReturn(mock())
         whenever(keyStoreInfo.password).thenReturn("testPassword")
-        whenever(sslCertReadService.getOrCreateKeyStore()).thenReturn(keyStoreInfo)
+        whenever(sslCertReadService.getOrCreateKeyStoreInfo(mock())).thenReturn(keyStoreInfo)
         whenever(it.create()).thenReturn(sslCertReadService)
     }
 

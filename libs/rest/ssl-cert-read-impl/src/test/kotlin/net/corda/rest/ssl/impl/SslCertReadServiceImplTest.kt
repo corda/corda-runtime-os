@@ -3,6 +3,7 @@ package net.corda.rest.ssl.impl
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -26,7 +27,7 @@ class SslCertReadServiceImplTest {
 
     @Test
     fun `creates a keystore in tmp directory`() {
-        service.getOrCreateKeyStore()
+        service.getOrCreateKeyStoreInfo(mock())
         Assertions.assertTrue(
             File(
                 Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME).toUri()
@@ -36,7 +37,7 @@ class SslCertReadServiceImplTest {
 
     @Test
     fun `create returns path and password of keystore`() {
-        val keyStoreInfo = service.getOrCreateKeyStore()
+        val keyStoreInfo = service.getOrCreateKeyStoreInfo(mock())
         Assertions.assertEquals(
             Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME),
             keyStoreInfo.path
@@ -46,7 +47,7 @@ class SslCertReadServiceImplTest {
 
     @Test
     fun `deletes keystore when stopped`() {
-        service.getOrCreateKeyStore()
+        service.getOrCreateKeyStoreInfo(mock())
         Assertions.assertTrue(
             File(
                 Path.of(tempDirectoryPath.toString(), SslCertReadServiceImpl.KEYSTORE_NAME).toUri()

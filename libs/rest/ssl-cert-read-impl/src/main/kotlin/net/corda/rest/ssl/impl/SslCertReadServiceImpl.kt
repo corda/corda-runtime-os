@@ -1,5 +1,6 @@
 package net.corda.rest.ssl.impl
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.rest.ssl.KeyStoreInfo
 import net.corda.rest.ssl.SslCertReadService
 import net.corda.utilities.VisibleForTesting
@@ -44,7 +45,7 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
         }
     }
 
-    override fun getOrCreateKeyStore(): KeyStoreInfo {
+    override fun getOrCreateKeyStoreInfo(config: SmartConfig): KeyStoreInfo {
         if (keyStoreInfo == null) {
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)

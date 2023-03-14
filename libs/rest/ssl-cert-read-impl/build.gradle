@@ -15,4 +15,6 @@ dependencies {
     api project(":libs:rest:ssl-cert-read")
     implementation project(":libs:rest:rest-security-read")
     implementation project(":libs:utilities")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -13,6 +13,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.mockito.kotlin.mock
 import java.nio.file.Files
 
 class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
@@ -31,7 +32,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         @Suppress("unused")
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
-            val keyStoreInfo = sslService.getOrCreateKeyStore()
+            val keyStoreInfo = sslService.getOrCreateKeyStoreInfo(mock())
             val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
 
             restServerSettings = RestServerSettings(

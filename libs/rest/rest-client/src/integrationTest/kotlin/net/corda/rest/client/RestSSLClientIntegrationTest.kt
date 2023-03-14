@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.Mockito.mock
 import java.nio.file.Files
 
 internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
@@ -32,7 +33,7 @@ internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
         @Suppress("unused")
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
-            val keyStoreInfo = sslService.getOrCreateKeyStore()
+            val keyStoreInfo = sslService.getOrCreateKeyStoreInfo(mock())
             val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
             val restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
