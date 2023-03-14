@@ -134,7 +134,7 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
+        logger.debug("Processing outbound message ${message.header.messageId} to ${message.header.destination}.")
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
