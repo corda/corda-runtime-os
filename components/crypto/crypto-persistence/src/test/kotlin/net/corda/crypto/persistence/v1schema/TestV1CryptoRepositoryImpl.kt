@@ -35,7 +35,7 @@ class TestV1CryptoRepositoryImpl {
             on { transaction } doReturn mock()
         }
         val repo = V1CryptoRepositoryImpl(mock {
-            on(mock()) doReturn em
+            on { createEntityManager() } doReturn em
         })
         val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf())
         repo.saveWrappingKey("a", wrappingKeyInfo)
