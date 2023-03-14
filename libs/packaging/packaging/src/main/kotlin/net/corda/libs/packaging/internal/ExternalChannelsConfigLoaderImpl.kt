@@ -14,10 +14,6 @@ class ExternalChannelsConfigLoaderImpl : ExternalChannelsConfigLoader {
             }
                 .map { String(it.bytes) }
 
-        require(externalChannelsConfigLoader.size <= 1) {
-            throw IllegalArgumentException("More than one configuration file was found for the external channels")
-        }
-
         return externalChannelsConfigLoader.singleOrNull()
     }
 }
