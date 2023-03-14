@@ -1,10 +1,9 @@
 package net.corda.libs.packaging.verify.internal.cpb
 
-import net.corda.libs.packaging.verify.JarReader
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
-import net.corda.test.util.InMemoryZipFile
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
 import net.corda.libs.packaging.testutils.TestUtils.BOB
@@ -14,7 +13,8 @@ import net.corda.libs.packaging.testutils.TestUtils.base64ToBytes
 import net.corda.libs.packaging.testutils.TestUtils.signedBy
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
-import net.corda.v5.crypto.SecureHash
+import net.corda.libs.packaging.verify.JarReader
+import net.corda.test.util.InMemoryZipFile
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -255,7 +255,7 @@ class CpbV2VerifierTest {
                         TestUtils.Dependency(
                             "dependency.cpk",
                             "1.0.0.0",
-                            SecureHash("SHA-256", base64ToBytes("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="))
+                            SecureHashImpl("SHA-256", base64ToBytes("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="))
                         )),
                 TestCpkV2Builder()
                     .name("dependency-1.0.0.0.jar")
@@ -284,7 +284,7 @@ class CpbV2VerifierTest {
             DigestInputStream(ByteArrayInputStream(dependencyCpk), digest).use {
                 it.readAllBytes()
             }
-            SecureHash("SHA-256", digest.digest())
+            SecureHashImpl("SHA-256", digest.digest())
         }
 
         val cpb = TestCpbV2Builder()

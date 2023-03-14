@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
@@ -485,7 +486,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private fun getSecureHash(): SecureHash {
-        return SecureHash("ALG", byteArrayOf(0, 0, 0, 0))
+        return SecureHashImpl("ALG", byteArrayOf(0, 0, 0, 0))
     }
 
     private fun addTestRun(eventRecord: Record<String, FlowEvent>): FlowIoRequestSetup {

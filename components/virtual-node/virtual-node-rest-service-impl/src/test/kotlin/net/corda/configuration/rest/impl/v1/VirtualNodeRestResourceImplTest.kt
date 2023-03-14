@@ -1,15 +1,15 @@
 package net.corda.configuration.rest.impl.v1
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.rest.security.RestContextProvider
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
@@ -133,7 +133,7 @@ class VirtualNodeRestResourceImplTest {
     private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo? {
         return VirtualNodeInfo(
             HoldingIdentity(MemberX500Name("test","IE","IE"), "group"),
-            CpiIdentifier("cpi","1", SecureHash.parse("SHA-256:1234567890")),
+            CpiIdentifier("cpi","1", parseSecureHash("SHA-256:1234567890")),
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),

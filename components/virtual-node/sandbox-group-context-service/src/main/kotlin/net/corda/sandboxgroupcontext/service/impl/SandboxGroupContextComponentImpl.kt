@@ -1,20 +1,22 @@
 package net.corda.sandboxgroupcontext.service.impl
 
+import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -37,7 +39,7 @@ import java.util.concurrent.CompletableFuture
  * that has a lifecycle.
  */
 @Suppress("Unused", "LongParameterList")
-@Component(service = [ SandboxGroupContextComponent::class ])
+@Component(service = [SandboxGroupContextComponent::class])
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
@@ -84,11 +86,12 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         //  and changed to a sensible default, while keeping 2 as a default for our test environments.
         //  2 is good for a test environment as it is likely to validate both caching and eviction.
         const val SANDBOX_CACHE_SIZE_DEFAULT = 2L
+
+        private const val REGISTRATION = "REGISTRATION"
+        private const val CONFIG = "CONFIG"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupContextComponent>(::eventHandler)
-    private var registrationHandle: RegistrationHandle? = null
-    private var configHandle: AutoCloseable? = null
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -115,57 +118,49 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        //Hack:this can be put back after CORE-3780 as we would always get the config key with the default value
-        // if(event.keys.contains(ConfigKeys.SANDBOX_CONFIG)) {
+        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
 
-            // Hack: Can be removed when default handling is part of CORE-3780
-            val cacheSize = if(
-                event.keys.contains(ConfigKeys.SANDBOX_CONFIG)
-                && event.config[ConfigKeys.SANDBOX_CONFIG]!!.hasPath(ConfigKeys.SANDBOX_CACHE_SIZE)) {
-                event.config[ConfigKeys.SANDBOX_CONFIG]!!.getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
-            } else {
+        SandboxGroupType.values().forEach {
+            val cacheSize = try {
+                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
+            } catch (e: ConfigException.Missing) {
                 SANDBOX_CACHE_SIZE_DEFAULT
             }
 
-            logger.info("Re-creating Sandbox cache with size: {}", cacheSize)
-            resizeCache(cacheSize)
+            logger.info("Re-creating Sandbox ${it.name} cache with size: {}", cacheSize)
+            resizeCache(it, cacheSize)
+        }
 
-            coordinator.updateStatus(LifecycleStatus.UP)
-        // }
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun onRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
-            configHandle = configurationReadService.registerComponentForUpdates(
-                coordinator,
-                //Hack: Needs to be reviewed as part of CORE-3780
-                //  This will wait for all keys and without the default handling, this may never happen
-                //  (unless you specifically configure it)
-                setOf(ConfigKeys.BOOT_CONFIG /*, ConfigKeys.SANDBOX_CONFIG */)
-            )
-        } else {
-            configHandle?.close()
+            coordinator.createManagedResource(CONFIG) {
+                configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.SANDBOX_CONFIG)
+                )
+            }
         }
     }
 
     private fun onStart(coordinator: LifecycleCoordinator) {
         logger.debug { "${javaClass.name} starting" }
         initialiseSandboxContext(bundleContext.bundles)
-        registrationHandle?.close()
-        registrationHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                LifecycleCoordinatorName.forComponent<CpkReadService>()
+        coordinator.createManagedResource(REGISTRATION) {
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<CpkReadService>()
+                )
             )
-        )
+        }
     }
 
     private fun onStop() {
         logger.debug { "${javaClass.name} stopping" }
         sandboxGroupContextService.close()
-        registrationHandle?.close()
-        registrationHandle = null
-        coordinator.stop()
     }
 
     private fun initialiseSandboxContext(allBundles: Array<Bundle>) {
@@ -191,13 +186,13 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             ?: throw IllegalStateException("Sandbox could not be removed from cache")).remove(virtualNodeContext)
     }
 
-    override fun initCache(capacity: Long) {
+    override fun initCache(type: SandboxGroupType, capacity: Long) {
         logger.info("Initialising Sandbox cache with capacity: {}", capacity)
-        resizeCache(capacity)
+        resizeCache(type, capacity)
     }
 
-    private fun resizeCache(capacity: Long) {
+    private fun resizeCache(type: SandboxGroupType, capacity: Long) {
         (sandboxGroupContextService as? CacheControl
-            ?: throw IllegalStateException("Sandbox cache could not be resized to $capacity")).initCache(capacity)
+            ?: throw IllegalStateException("Sandbox $type cache could not be resized to $capacity")).initCache(type, capacity)
     }
 }

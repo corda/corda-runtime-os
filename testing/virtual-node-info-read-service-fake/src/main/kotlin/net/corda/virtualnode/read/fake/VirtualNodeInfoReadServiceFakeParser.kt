@@ -9,8 +9,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.v5.crypto.SecureHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import java.io.File
 import java.io.Reader
@@ -36,7 +37,7 @@ internal object VirtualNodeInfoReadServiceFakeParser {
         })
         memberX500NameModule.addDeserializer(SecureHash::class.java, object: JsonDeserializer<SecureHash>() {
             override fun deserialize(p: JsonParser?, ctxt: DeserializationContext?): SecureHash {
-                return SecureHash.parse(p!!.valueAsString)
+                return parseSecureHash(p!!.valueAsString)
             }
         })
 

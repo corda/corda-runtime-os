@@ -8,6 +8,7 @@ import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
@@ -94,9 +95,9 @@ class SigningKeyStoreUnitTest {
     @Test
     fun `lookupByKeyIds returns requested keys from cache if all requested keys are in cache`() {
         // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
-        val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
+        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
@@ -118,9 +119,9 @@ class SigningKeyStoreUnitTest {
 
     @Test
     fun `lookupByKeyIds returns requested keys from cache and from database if they are not cached`() {
-        val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
+        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
@@ -151,9 +152,9 @@ class SigningKeyStoreUnitTest {
     @Test
     fun `lookupByFullKeyIds returns requested keys from cache if all requested keys are in cache`() {
         // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
-        val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
+        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
@@ -177,9 +178,9 @@ class SigningKeyStoreUnitTest {
 
     @Test
     fun `lookupByFullKeyIds returns requested keys from cache and from database if they are not cached`() {
-        val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
+        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
@@ -213,9 +214,9 @@ class SigningKeyStoreUnitTest {
 
     @Test
     fun `lookupByFullKeyIds will not return clashed keys on short key id`() {
-        val fullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId = ShortHash.of(fullKeyId)
-        val requestedFullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111112")
+        val requestedFullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111112")
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey = mock<SigningCachedKey>().also {
@@ -246,7 +247,7 @@ class SigningKeyStoreUnitTest {
 
     @Test
     fun `lookupByFullKeyId returns requested key from cache if cached`() {
-        val fullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId = ShortHash.of(fullKeyId)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
@@ -270,9 +271,9 @@ class SigningKeyStoreUnitTest {
 
     @Test
     fun `lookupByFullKeyId will not return clashed keys on short key id`() {
-        val fullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111111")
+        val fullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId = ShortHash.of(fullKeyId)
-        val requestedFullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111112")
+        val requestedFullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111112")
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey = mock<SigningCachedKey>().also {

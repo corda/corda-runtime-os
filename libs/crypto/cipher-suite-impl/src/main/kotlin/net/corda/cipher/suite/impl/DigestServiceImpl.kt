@@ -2,6 +2,7 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -40,7 +41,7 @@ class DigestServiceImpl @Activate constructor(
             lookForCustomAlgorithm(digestName)
                 ?.digest(inputStream)
                 ?.let {
-                    SecureHash(digestName.name, it)
+                    SecureHashImpl(digestName.name, it)
                 } ?: throw e
         }
 
@@ -51,9 +52,12 @@ class DigestServiceImpl @Activate constructor(
             lookForCustomAlgorithm(digestName)
                 ?.digest(bytes)
                 ?.let {
-                    SecureHash(digestName.name, it)
+                    SecureHashImpl(digestName.name, it)
                 } ?: throw e
         }
+
+    override fun parseSecureHash(algoNameAndHexString: String) =
+        net.corda.crypto.core.parseSecureHash(algoNameAndHexString)
 
     override fun digestLength(digestName: DigestAlgorithmName): Int =
         try {

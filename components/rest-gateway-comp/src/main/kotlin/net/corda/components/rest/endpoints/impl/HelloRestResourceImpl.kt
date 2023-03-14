@@ -1,4 +1,4 @@
-package net.corda.rest.endpoints.impl
+package net.corda.components.rest.endpoints.impl
 
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.PluggableRestResource

@@ -1,12 +1,12 @@
 package net.corda.libs.cpi.datamodel.repository
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManager
 
 class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
@@ -86,6 +86,6 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
      * Converts an entity to a data transport object.
      */
     private fun CpkDbChangeLogKey.toDto() =
-        CpkDbChangeLogIdentifier(SecureHash.parse(cpkFileChecksum), filePath)
+        CpkDbChangeLogIdentifier(parseSecureHash(cpkFileChecksum), filePath)
 
 }

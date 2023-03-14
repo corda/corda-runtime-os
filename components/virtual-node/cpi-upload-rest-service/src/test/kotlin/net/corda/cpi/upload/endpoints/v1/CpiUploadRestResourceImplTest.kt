@@ -3,15 +3,18 @@ package net.corda.cpi.upload.endpoints.v1
 import net.corda.chunking.ChunkWriter
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.v5.crypto.SecureHash
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.exception.InvalidInputDataException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -19,9 +22,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.util.UUID
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.exception.InvalidInputDataException
-import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRestResourceImplTest {
     private lateinit var cpiUploadRestResourceImpl: CpiUploadRestResourceImpl
@@ -60,7 +60,8 @@ class CpiUploadRestResourceImplTest {
         val cpiBytes = "dummyCPI".toByteArray()
         val cpiContent = ByteArrayInputStream(cpiBytes)
         val cpiUploadRequestId = ChunkWriter.Request(UUID.randomUUID().toString(),
-            SecureHash.parse("FOO:123456789012"))
+            parseSecureHash("FOO:123456789012")
+        )
 
         whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
 

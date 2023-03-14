@@ -9,11 +9,7 @@ import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
-import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.*
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
@@ -68,7 +64,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         return cpkChecksums.any { availableCpk.contains(it) }
     }
 
-    override fun initCache(capacity: Long) {
+    override fun initCache(type: SandboxGroupType, capacity: Long) {
         TODO("Not yet implemented")
     }
 

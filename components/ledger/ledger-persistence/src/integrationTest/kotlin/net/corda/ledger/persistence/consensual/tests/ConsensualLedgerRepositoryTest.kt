@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -402,5 +403,5 @@ class ConsensualLedgerRepositoryTest {
     }
 
     private fun digest(algorithm: String, data: ByteArray) =
-        SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(data))
+        SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(data))
 }

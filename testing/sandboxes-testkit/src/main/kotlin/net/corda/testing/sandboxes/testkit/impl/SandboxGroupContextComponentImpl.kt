@@ -1,6 +1,7 @@
 package net.corda.testing.sandboxes.testkit.impl
 
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -24,9 +25,9 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override val isRunning: Boolean = true
 
-    override fun initCache(capacity: Long) {
+    override fun initCache(type: SandboxGroupType, capacity: Long) {
         (sandboxGroupContextService as? CacheControl
-            ?: throw IllegalStateException("Cannot initialize sandbox cache")).initCache(capacity)
+            ?: throw IllegalStateException("Cannot initialize sandbox cache")).initCache(type, capacity)
     }
 
     override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {

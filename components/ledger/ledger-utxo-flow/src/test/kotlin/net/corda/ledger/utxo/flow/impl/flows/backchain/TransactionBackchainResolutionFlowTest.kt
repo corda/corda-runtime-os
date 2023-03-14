@@ -1,11 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,9 +22,9 @@ import org.mockito.kotlin.whenever
 class TransactionBackchainResolutionFlowTest {
 
     private companion object {
-        val TX_ID_1 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
-        val TX_ID_2 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
-        val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
+        val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
+        val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+        val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
         val TX_2_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
         val TX_3_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
         val TX_3_INPUT_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)

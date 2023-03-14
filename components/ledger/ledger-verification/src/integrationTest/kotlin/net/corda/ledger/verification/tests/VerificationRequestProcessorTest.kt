@@ -2,6 +2,7 @@ package net.corda.ledger.verification.tests
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -37,7 +38,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
@@ -239,7 +239,7 @@ class VerificationRequestProcessorTest {
         val signatory = ctx.getSerializationService().serialize(publicKeyExample).bytes
 
         val input = ctx.getSerializationService().serialize(
-            StateRef(SecureHash.parse("SHA-256:1111111111111111"), 0)
+            StateRef(parseSecureHash("SHA-256:1111111111111111"), 0)
         ).bytes
 
         val outputState = ctx.getSerializationService().serialize(

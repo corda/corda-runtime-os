@@ -1,10 +1,10 @@
 package net.corda.cpiinfo.read
 
 import net.corda.cpiinfo.read.impl.CpiInfoReaderProcessor
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -20,7 +20,7 @@ import java.util.UUID
 class CpiInfoProcessorTest {
     private lateinit var processor: CpiInfoReaderProcessor
 
-    private val secureHash = SecureHash("algorithm", "1234".toByteArray())
+    private val secureHash = SecureHashImpl("algorithm", "1234".toByteArray())
 
     private val currentTimestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 

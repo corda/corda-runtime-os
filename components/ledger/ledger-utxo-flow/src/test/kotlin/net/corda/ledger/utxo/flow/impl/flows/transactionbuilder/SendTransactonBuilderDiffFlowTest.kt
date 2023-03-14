@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
@@ -14,7 +15,6 @@ import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,12 +30,12 @@ class SendTransactonBuilderDiffFlowTest {
     private val currentTransactionBuilder = mock<UtxoTransactionBuilderInternal>()
     private val originalTransactionalBuilder = mock<UtxoTransactionBuilderContainer>()
     private val session = mock<FlowSession>()
-    private val hash1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-    private val hash2 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
+    private val hash1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+    private val hash2 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
     private val command1 = UtxoCommandExample("command 1")
     private val command2 = UtxoCommandExample("command 2")
-    private val stateRef1 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)
-    private val stateRef2 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 2)), 0)
+    private val stateRef1 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0)
+    private val stateRef2 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 2)), 0)
     private val state1 = mock<ContractStateAndEncumbranceTag>()
     private val state2 = mock<ContractStateAndEncumbranceTag>()
 

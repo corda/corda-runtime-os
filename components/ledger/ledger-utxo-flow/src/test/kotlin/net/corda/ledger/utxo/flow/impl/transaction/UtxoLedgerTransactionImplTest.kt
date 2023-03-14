@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
@@ -27,7 +28,7 @@ internal class UtxoLedgerTransactionImplTest : UtxoLedgerTest() {
     private val referenceStateRef = referenceStateAndRef.ref
 
     private val command = UtxoCommandExample()
-    private val attachment = SecureHash("SHA-256", ByteArray(12))
+    private val attachment = SecureHashImpl("SHA-256", ByteArray(12))
 
     private lateinit var ledgerTransaction: UtxoLedgerTransaction
 

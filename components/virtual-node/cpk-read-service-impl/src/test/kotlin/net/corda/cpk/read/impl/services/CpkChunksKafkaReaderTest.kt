@@ -3,7 +3,7 @@ package net.corda.cpk.read.impl.services
 import net.corda.cpk.read.impl.Helpers
 import net.corda.cpk.read.impl.services.persistence.CpkChunkFileLookUp
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManager
-import net.corda.v5.crypto.SecureHash
+import net.corda.crypto.core.parseSecureHash
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -31,7 +31,7 @@ class CpkChunksKafkaReaderTest {
 
     @Test
     fun `on writing CPK chunks writes them to disk cache`() {
-        val checksum = SecureHash.parse(DUMMY_HASH)
+        val checksum = parseSecureHash(DUMMY_HASH)
         val cpkChunksKafkaReader = CpkChunksKafkaReader(mock(), cpkChunksFileManager, mock())
 
         val (cpkChunkId0, chunk0) =
@@ -50,7 +50,7 @@ class CpkChunksKafkaReaderTest {
 
     @Test
     fun `on receiving all CPK chunks assembles CPK and clears received chunks cache for that CPK`() {
-        val checksum = SecureHash.parse(DUMMY_HASH)
+        val checksum = parseSecureHash(DUMMY_HASH)
         val cpkChunksKafkaReader = CpkChunksKafkaReader(mock(), cpkChunksFileManager, mock())
 
         val (cpkChunkId0, chunk0) =
