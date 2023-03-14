@@ -11,9 +11,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "net.corda:corda-base"
-    api project(":libs:rest:ssl-cert-read")
-    implementation project(":libs:rest:rest-security-read")
+    implementation 'net.corda:corda-base'
+    api project(':libs:rest:ssl-cert-read')
     implementation project(":libs:utilities")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
