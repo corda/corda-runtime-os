@@ -71,3 +71,7 @@ dependencies {
     integrationTestImplementation project(':libs:rest:rest-stubs-impl')
     integrationTestImplementation project(":testing:test-utilities")
 }
+
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-opens', 'java.base/java.net=ALL-UNNAMED'
+}
