@@ -1245,49 +1245,95 @@ class MembershipPersistenceTest {
 
     @Test
     fun `suspendMember can persist suspended member info over RPC topic`() {
-        val member = MemberX500Name.parse("O=Suspend, C=GB, L=London")
-        val memberPersistenceResult = persistMember(member, MEMBER_STATUS_ACTIVE)
-        assertThat(memberPersistenceResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val member1 = MemberX500Name.parse("O=Suspend1, C=GB, L=London")
+        val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_ACTIVE)
+        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val suspended = membershipPersistenceClientWrapper.suspendMember(
-            viewOwningHoldingIdentity, member, 1L, "test-reason"
+        val suspended1 = membershipPersistenceClientWrapper.suspendMember(
+            viewOwningHoldingIdentity, member1, 1L, "test-reason"
         ).getOrThrow()
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity1 = vnodeEmf.use {
             it.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member.toString(), false)
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
             )
         }
-        assertThat(persistedEntity).isNotNull
-        assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
-        assertThat(persistedEntity.serialNumber).isEqualTo(2L)
-        with(suspended.mgmContext.toMap()) {
+        assertThat(persistedEntity1).isNotNull
+        assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
+        assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
+        with(suspended1.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+
+        val member2 = MemberX500Name.parse("O=Suspend2, C=GB, L=London")
+        val memberPersistenceResult2 = persistMember(member2, MEMBER_STATUS_ACTIVE)
+        assertThat(memberPersistenceResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        // Test without specifying serial number
+        val suspended2 = membershipPersistenceClientWrapper.suspendMember(
+            viewOwningHoldingIdentity, member2, null, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity2 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
+            )
+        }
+        assertThat(persistedEntity2).isNotNull
+        assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
+        assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
+        with(suspended2.mgmContext.toMap()) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
             assertThat(this[SERIAL]).isEqualTo("2")
         }
     }
 
     @Test
-    fun `activateMember can persist suspended member info over RPC topic`() {
-        val member = MemberX500Name.parse("O=Activate, C=GB, L=London")
-        val memberPersistenceResult = persistMember(member, MEMBER_STATUS_SUSPENDED)
-        assertThat(memberPersistenceResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+    fun `activateMember can persist activated member info over RPC topic`() {
+        val member1 = MemberX500Name.parse("O=Activate1, C=GB, L=London")
+        val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_SUSPENDED)
+        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val suspended = membershipPersistenceClientWrapper.activateMember(
-            viewOwningHoldingIdentity, member, 1L, "test-reason"
+        val suspended1 = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, member1, 1L, "test-reason"
         ).getOrThrow()
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity1 = vnodeEmf.use {
             it.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member.toString(), false)
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
             )
         }
-        assertThat(persistedEntity).isNotNull
-        assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-        assertThat(persistedEntity.serialNumber).isEqualTo(2L)
-        with(suspended.mgmContext.toMap()) {
+        assertThat(persistedEntity1).isNotNull
+        assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
+        with(suspended1.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+
+        // Test without specifying serial number
+        val member2 = MemberX500Name.parse("O=Activate2, C=GB, L=London")
+        val memberPersistenceResult2 = persistMember(member2, MEMBER_STATUS_SUSPENDED)
+        assertThat(memberPersistenceResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended2 = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, member2, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity2 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
+            )
+        }
+        assertThat(persistedEntity2).isNotNull
+        assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
+        with(suspended2.mgmContext.toMap()) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
             assertThat(this[SERIAL]).isEqualTo("2")
         }

@@ -20,6 +20,7 @@ import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.rest.exception.InvalidStateChangeException
@@ -50,6 +51,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.persistence.PersistenceException
+import javax.persistence.PessimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -1239,7 +1241,18 @@ class MGMRestResourceTest {
         fun `suspendMember throws invalid state change in case of concurrent update attempt`() {
             whenever(mgmResourceClient.suspendMember(
                 ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
-            )).doThrow(mock<PersistenceException>())
+            )).doThrow(mock<PessimisticLockException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+
+        @Test
+        fun `suspendMember throws invalid state change in case of failed serial number check`() {
+            whenever(mgmResourceClient.suspendMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
+            )).doThrow(mock<InvalidEntityUpdateException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
@@ -1342,7 +1355,18 @@ class MGMRestResourceTest {
         fun `activateMember throws invalid state change in case of concurrent update attempt`() {
             whenever(mgmResourceClient.activateMember(
                 ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
-            )).doThrow(mock<PersistenceException>())
+            )).doThrow(mock<PessimisticLockException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+
+        @Test
+        fun `activateMember throws invalid state change in case of failed serial number check`() {
+            whenever(mgmResourceClient.activateMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
+            )).doThrow(mock<InvalidEntityUpdateException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))

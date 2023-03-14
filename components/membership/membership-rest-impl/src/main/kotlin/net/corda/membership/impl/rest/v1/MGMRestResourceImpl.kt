@@ -31,6 +31,7 @@ import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.utilities.time.Clock
@@ -48,6 +49,7 @@ import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PersistenceException
+import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
@@ -569,7 +571,9 @@ class MGMRestResourceImpl internal constructor(
                 throw BadRequestException("${e.message}")
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
-            } catch (e: PersistenceException) {
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            } catch (e: InvalidEntityUpdateException) {
                 throw InvalidStateChangeException("${e.message}")
             }
         }
@@ -592,7 +596,9 @@ class MGMRestResourceImpl internal constructor(
                 throw BadRequestException("${e.message}")
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
-            } catch (e: PersistenceException) {
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            } catch (e: InvalidEntityUpdateException) {
                 throw InvalidStateChangeException("${e.message}")
             }
         }

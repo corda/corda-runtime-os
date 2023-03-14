@@ -13,6 +13,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
@@ -37,7 +38,6 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
-import javax.persistence.PersistenceException
 
 class BaseSuspensionActivationHandlerTest {
 
@@ -260,18 +260,18 @@ class BaseSuspensionActivationHandlerTest {
     fun `changeMemberStatus throws exception if serial number is outdated`() {
         mockMemberInfoEntity(serial = 6L)
 
-        invokeTestFunctionWithError(::invokeSuspend, "serial number does not match", PersistenceException::class.java)
+        invokeTestFunctionWithError(::invokeSuspend, "serial number does not match", InvalidEntityUpdateException::class.java)
     }
 
     @Test
     fun `changeMemberStatus throws exception if member is not currently suspended`() {
         mockMemberInfoEntity(memberStatus = MEMBER_STATUS_ACTIVE)
 
-        invokeTestFunctionWithError(::invokeActivate, "cannot be activated", IllegalArgumentException::class.java)
+        invokeTestFunctionWithError(::invokeActivate, "cannot be performed", IllegalArgumentException::class.java)
 
         mockMemberInfoEntity(memberStatus = MemberInfoExtension.MEMBER_STATUS_PENDING)
 
-        invokeTestFunctionWithError(::invokeSuspend, "cannot be activated", IllegalArgumentException::class.java)
+        invokeTestFunctionWithError(::invokeSuspend, "cannot be performed", IllegalArgumentException::class.java)
     }
 
     @Test

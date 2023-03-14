@@ -11,6 +11,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -49,13 +50,13 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
             ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
             memberSerial?.let {
                 require(member.serialNumber == it) {
-                    throw PersistenceException(
+                    throw InvalidEntityUpdateException(
                         "The provided serial number does not match the current version of MemberInfo for member '$memberName'."
                     )
                 }
             }
             require(member.status == currentStatus) {
-                "Member '$memberName' cannot be activated because it has status '${member.status}'."
+                "This action cannot be performed on member '$memberName' because it has status '${member.status}'."
             }
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
                 ?: throw MembershipPersistenceException("Failed to deserialize the MGM-provided context.")
