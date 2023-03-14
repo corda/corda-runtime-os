@@ -28,6 +28,9 @@ class BaseNotaryLookupFactory: NotaryLookupFactory {
     }
 }
 
+/**
+ * Holds the notary info for simulated notary
+ */
 data class BaseNotaryInfo(
     private val name: MemberX500Name,
     private val pluginClass: String,

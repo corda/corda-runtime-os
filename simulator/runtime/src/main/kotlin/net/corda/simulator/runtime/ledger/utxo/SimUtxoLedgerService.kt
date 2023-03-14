@@ -67,23 +67,21 @@ class SimUtxoLedgerService(
             .fromEntity(entity, signingService, serializationService, persistenceService, configuration)
     }
 
-
-//    override fun <T : ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
-//
-//    }
-
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
         return UtxoFilteredTransactionBuilderBase(signedTransaction as UtxoSignedTransactionBase)
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
+        // Fetch unconsumed states using named query
         val result = persistenceService.query("UtxoTransactionOutputEntity.findUnconsumedStatesByType",
             UtxoTransactionOutputEntity::class.java)
             .setParameter("type", type.canonicalName)
             .execute()
         val notaryInfo = fiber.getNotary()
         val notary = Party(notaryInfo.name, notaryInfo.publicKey)
+
+        // For each entity fetched, convert it to StateAndRef
         val stateAndRefs = result.map { utxoTransactionOutputEntity ->
             val stateRef = StateRef(SecureHash.parse(utxoTransactionOutputEntity.transactionId),
                 utxoTransactionOutputEntity.index)
@@ -114,12 +112,14 @@ class SimUtxoLedgerService(
         notary: Party,
         serializer: BaseSerializationService
     ): StateAndRef<T> {
+        //Fetch output state based in txid
         val entity = persistenceService.find(
             UtxoTransactionOutputEntity::class.java,
             UtxoTransactionOutputEntityId(stateRef.transactionId.toString(), stateRef.index)
         ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
                     String(stateRef.transactionId.bytes))
 
+        //Convert entity to StateAndRef
         val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)
         val encumbrance = serializer
             .deserialize(entity.encumbranceData, List::class.java).firstOrNull()

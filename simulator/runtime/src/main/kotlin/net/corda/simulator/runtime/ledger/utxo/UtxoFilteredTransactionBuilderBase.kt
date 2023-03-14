@@ -125,6 +125,8 @@ data class UtxoFilteredTransactionBuilderBase(
     }
 
     override fun build(): UtxoFilteredTransaction {
+        // Builds a filtered tx from the filters provided which is captured in the map passes to the
+        // UtxoFilteredTransactionBase's constructor
         return UtxoFilteredTransactionBase(
             signedTransaction,
             this,
@@ -139,12 +141,18 @@ data class UtxoFilteredTransactionBuilderBase(
     }
 }
 
+/**
+ * Data class to capture filters to be applied on the transaction
+ */
 data class FilterParams (
     val filterType: FilterType,
     val predicate: Predicate<*>? = null,
     val classType: Class<*>? = null
 )
 
+/**
+ * Type of filter to apply, size indicates the number of elements and audit indicated actual data
+ */
 enum class FilterType {
     AUDIT, SIZE
 }

@@ -9,7 +9,7 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
 
 /**
- * Data class to store Utxo Ledger data
+ * Data class to store Utxo Ledger components
  */
 @CordaSerializable
 data class UtxoStateLedgerInfo(

@@ -25,6 +25,10 @@ data class UtxoLedgerTransactionBase(
     private val referenceStateAndRefs: List<StateAndRef<*>>,
 ) : UtxoLedgerTransaction {
 
+    /**
+     *  This is created by concatenating the serialized bytes of individual utxo ledger components.
+     *  This is later used to derive the txId
+     */
     val bytes: ByteArray by lazy {
         val serializer = BaseSerializationService()
         serializer.serialize(ledgerInfo.commands).bytes
@@ -84,8 +88,11 @@ data class UtxoLedgerTransactionBase(
     }
 
     override fun getOutputStateAndRefs(): List<StateAndRef<*>> {
+        // Calculate encumbrance group size for each encumbrance tag
         val encumbranceGroupSizes =
             ledgerInfo.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
+
+        //Convert output contract states to StateAndRef
         return ledgerInfo.outputStates.mapIndexed { index, contractStateAndTag ->
             val stateRef = StateRef(id, index)
             val transactionState = contractStateAndTag.toTransactionState(notary,

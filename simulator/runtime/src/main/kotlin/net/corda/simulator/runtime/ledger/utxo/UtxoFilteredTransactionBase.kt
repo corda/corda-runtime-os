@@ -63,29 +63,37 @@ class UtxoFilteredTransactionBase(
     }
 
     override fun verify() {
-
+        // Verification is always considered as successful in Simulator
     }
 
+    /**
+     * Returns [UtxoFilteredData] based on the filter to be applied on the component
+     */
     @Suppress( "UNCHECKED_CAST")
     private inline fun <reified T : Any> getFilteredData(
         utxoComponent: UtxoComponentGroup,
         component: List<T>
     ): UtxoFilteredData<T> {
+        //If component filter is absent, the component should be removed
         val filterParam = filterParams[utxoComponent] ?: return  FilteredDataRemovedImpl()
+
+        // If filter type is size, return the size of the component i.e. number of elements present in the list
         if(filterParam.filterType == FilterType.SIZE){
             return FilteredDataSizeImpl(component.size)
         }else{
 
+            // Apply predicate if present
             val filteredComponents = component.mapIndexed { index, comp -> index to comp }
                 .filter {
                     requireNotNull(filterParam.predicate)
                     (filterParam.predicate as Predicate<Any>).test(it.second)
                 }
-
             if (filteredComponents.isEmpty()) {
                 if (component.isEmpty()) {
+                    // If component is empty, return empty audit proof
                     return FilteredDataAuditImpl(0, emptyMap())
                 } else {
+                    // If all components are filtered out, return size proof
                     return FilteredDataSizeImpl(0)
                 }
             } else {

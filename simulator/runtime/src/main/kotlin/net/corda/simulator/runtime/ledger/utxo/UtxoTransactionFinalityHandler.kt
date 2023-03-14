@@ -9,7 +9,6 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeyUtils
@@ -30,12 +29,17 @@ class UtxoTransactionFinalityHandler(
      private val backchainHandler: TransactionBackchainHandler
 ) {
 
+    /**
+     * Handles finality flow in Simulator
+     */
     @Suppress( "UNCHECKED_CAST")
     fun finalizeTransaction(signedTransaction: UtxoSignedTransaction,
                             sessions: List<FlowSession>): UtxoSignedTransaction {
         val ledgerTx = signedTransaction.toLedgerTransaction()
         runContractVerification(ledgerTx)
 
+        // For each session, send the transaction (and backchain if required) to counterparties, and
+        // receive signature from them.
         val finalSignedTransaction = sessions.fold(signedTransaction) {
                 tx, sess ->
             sess.send(signedTransaction)
@@ -44,6 +48,7 @@ class UtxoTransactionFinalityHandler(
             (tx as UtxoSignedTransactionBase).addSignatureAndMetadata(signature)
         }
 
+        // Verify received signature, notarise and persist
         verifySignatures(finalSignedTransaction)
         val notarizedTx = notarize(finalSignedTransaction)
         sessions.forEach {
@@ -52,11 +57,17 @@ class UtxoTransactionFinalityHandler(
         return persist(notarizedTx)
     }
 
+    /**
+     * Handles receive finality flow in Simulator
+     */
     fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
         val signedTransaction = session.receive(UtxoSignedTransactionBase::class.java)
         backchainHandler.receiveBackChain(signedTransaction, session)
+
+        // Run Transaction validator
         validator.checkTransaction(signedTransaction.toLedgerTransaction())
 
+        // Sign Transaction, send signature, receive finalized tx and persist
         val keysToSignWith = memberLookup.myInfo().ledgerKeys.filter {
             signedTransaction.toLedgerTransaction().signatories.contains(it)
         }
@@ -73,6 +84,9 @@ class UtxoTransactionFinalityHandler(
         return notarizedTx
     }
 
+    /**
+     * Mark transaction inputs as consumed.
+     */
     private fun consumeInputs(signedTransaction: UtxoSignedTransaction){
         val updatedEntities = signedTransaction.inputStateRefs.map {
             val entity = persistenceService.find(UtxoTransactionOutputEntity::class.java,
@@ -101,6 +115,9 @@ class UtxoTransactionFinalityHandler(
         }
     }
 
+    /**
+     * Simulator doesn't check for double spending, it signs transaction irrespective
+     */
     private fun notarize(finalTransaction: UtxoSignedTransaction): UtxoSignedTransactionBase{
         val notaryX500 = MemberX500Name.parse("CN=SimulatorNotaryService, OU=Simulator, O=R3, L=London, C=GB")
         val notaryKey = memberLookup.lookup(notaryX500)!!.ledgerKeys.first()
@@ -120,6 +137,9 @@ class UtxoTransactionFinalityHandler(
         return signatures
     }
 
+    /**
+     * Runs the contract verification associated with the transaction. Also handles encumbrance checks
+     */
     private fun runContractVerification(ledgerTransaction: UtxoLedgerTransaction){
         val failureReasons = ArrayList<String>()
         failureReasons.addAll(verifyEncumberedInput(ledgerTransaction.inputStateAndRefs))
@@ -194,12 +214,6 @@ class UtxoTransactionFinalityHandler(
                 null
         }
     }
-}
-
-@CordaSerializable
-sealed interface TransactionBackchainRequest {
-    data class Get(val transactionIds: Set<SecureHash>): TransactionBackchainRequest
-    object Stop: TransactionBackchainRequest
 }
 
 private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)

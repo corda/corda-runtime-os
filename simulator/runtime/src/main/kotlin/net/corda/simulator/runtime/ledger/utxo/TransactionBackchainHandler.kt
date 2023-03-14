@@ -7,10 +7,14 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
+/***
+ * This class is used to send backchain of an asset from one party to another
+ */
 class TransactionBackchainHandlerBase(
     val persistenceService: PersistenceService,
     val signingService: SigningService,
@@ -20,13 +24,16 @@ class TransactionBackchainHandlerBase(
 
     override fun sendBackChain(session: FlowSession) {
         val serializationService = BaseSerializationService()
+        // Runs till all missing transaction have been requested
         while (true) {
             when (val request = session.receive(TransactionBackchainRequest::class.java)) {
                 is TransactionBackchainRequest.Get -> {
+                    // Find missing transaction entity. Used .map since corda does this to allow batching later
                     val transactions = request.transactionIds.map { id ->
                         persistenceService.find(UtxoTransactionEntity::class.java, String(id.bytes))
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                     }
+                    // Converts transaction entity to signed transaction and send to requesting party
                     transactions.map { session.send(listOf(
                         UtxoSignedTransactionBase.fromEntity(it,
                             signingService, serializationService, persistenceService, configuration)
@@ -84,6 +91,9 @@ class TransactionBackchainHandlerBase(
         }
     }
 
+    /**
+     * Finds all dependent transaction of the provided transaction
+     */
     private fun getTxDependencies(transaction: UtxoSignedTransaction) : Set<SecureHash> {
         return transaction.let { it.inputStateRefs.asSequence() + it.referenceStateRefs.asSequence() }
             .map { it.transactionId }
@@ -94,4 +104,10 @@ class TransactionBackchainHandlerBase(
 interface TransactionBackchainHandler{
     fun sendBackChain(session: FlowSession)
     fun receiveBackChain(transaction: UtxoSignedTransaction, session: FlowSession)
+}
+
+@CordaSerializable
+sealed interface TransactionBackchainRequest {
+    data class Get(val transactionIds: Set<SecureHash>): TransactionBackchainRequest
+    object Stop: TransactionBackchainRequest
 }
