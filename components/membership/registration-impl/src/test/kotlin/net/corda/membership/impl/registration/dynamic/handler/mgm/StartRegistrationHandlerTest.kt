@@ -148,7 +148,7 @@ class StartRegistrationHandlerTest {
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any())
+            createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
         } doReturn authenticatedMessageRecord
     }
 
@@ -258,6 +258,7 @@ class StartRegistrationHandlerTest {
                 RegistrationStatus.RECEIVED_BY_MGM,
             )),
             eq(5),
+            any(),
             any(),
         )
     }
