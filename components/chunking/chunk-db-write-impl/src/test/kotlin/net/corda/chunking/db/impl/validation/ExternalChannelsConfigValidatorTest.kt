@@ -1,6 +1,5 @@
 package net.corda.chunking.db.impl.validation
 
-import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import org.junit.jupiter.api.Disabled
