@@ -7,8 +7,6 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
-import net.corda.utilities.debug
-import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -37,10 +35,14 @@ class UtxoReceiveFinalityFlow(
         verifyExistingSignatures(initialTransaction, session)
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
-            log.trace { "Successfully validated transaction: $transactionId" }
+            if (log.isTraceEnabled) {
+                log.trace( "Successfully validated transaction: $transactionId")
+            }
             val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-            log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
+            if (log.isDebugEnabled) {
+                log.debug( "Recorded transaction with the initial and our signatures: $transactionId")
+            }
             session.send(payload)
             transaction
         } else {
@@ -63,7 +65,9 @@ class UtxoReceiveFinalityFlow(
     @Suspendable
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
         val initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
-        log.debug { "Beginning receive finality for transaction: ${initialTransaction.id}" }
+        if (log.isDebugEnabled) {
+            log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
+        }
         flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction.dependencies, session))
         return initialTransaction
     }
@@ -77,7 +81,9 @@ class UtxoReceiveFinalityFlow(
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
             // Means contracts can't use [check] or [require] unless we provide our own functions for this.
             if (e is IllegalStateException || e is IllegalArgumentException || e is CordaRuntimeException) {
-                log.debug { "Transaction ${signedTransaction.id} failed verification. Message: ${e.message}" }
+                if (log.isDebugEnabled) {
+                    log.debug( "Transaction ${signedTransaction.id} failed verification. Message: ${e.message}")
+                }
                 false
             } else {
                 throw e
@@ -89,15 +95,21 @@ class UtxoReceiveFinalityFlow(
     private fun signTransaction(
         initialTransaction: UtxoSignedTransactionInternal,
     ): Pair<UtxoSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
-        log.debug { "Signing transaction: ${initialTransaction.id} with our available required keys." }
+        if (log.isDebugEnabled) {
+            log.debug( "Signing transaction: ${initialTransaction.id} with our available required keys.")
+        }
         val (transaction, mySignatures) = initialTransaction.addMissingSignatures()
-        log.debug { "Signing transaction: ${initialTransaction.id} resulted (${mySignatures.size}) signatures." }
+        if (log.isDebugEnabled) {
+            log.debug( "Signing transaction: ${initialTransaction.id} resulted (${mySignatures.size}) signatures.")
+        }
         return transaction to Payload.Success(mySignatures)
     }
 
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
-        log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
+        if (log.isDebugEnabled) {
+            log.debug("Waiting for other parties' signatures for transaction: ${transaction.id}")
+        }
         @Suppress("unchecked_cast")
         val otherPartiesSignatures = session.receive(List::class.java) as List<DigitalSignatureAndMetadata>
         var signedTransaction = transaction
@@ -112,7 +124,9 @@ class UtxoReceiveFinalityFlow(
 
     @Suspendable
     private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal) {
-        log.debug { "Verifying signatures of transaction: ${transaction.id}" }
+        if (log.isDebugEnabled) {
+            log.debug("Verifying signatures of transaction: ${transaction.id}")
+        }
         try {
             transaction.verifySignatures()
         } catch (e: Exception) {
@@ -123,19 +137,25 @@ class UtxoReceiveFinalityFlow(
 
     @Suspendable
     private fun receiveNotarySignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
-        log.debug { "Waiting for Notary's signature for transaction: ${transaction.id}" }
+        if (log.isDebugEnabled) {
+            log.debug("Waiting for Notary's signature for transaction: ${transaction.id}")
+        }
         @Suppress("unchecked_cast")
         val notarySignaturesPayload = session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
 
-        val notarySignatures = notarySignaturesPayload.getOrThrow { failure ->
-            val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
-                    "${transaction.id} with message: ${failure.message}"
-            log.warn(message)
-            val reason = failure.reason
-            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
-                persistInvalidTransaction(transaction)
+        val notarySignatures = when (notarySignaturesPayload){
+            is Payload.Success -> notarySignaturesPayload.getOrThrow()
+            is Payload.Failure ->
+            {
+                val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
+                        "${transaction.id} with message: ${notarySignaturesPayload.message}"
+                log.warn(message)
+                val reason = notarySignaturesPayload.reason
+                if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
+                    persistInvalidTransaction(transaction)
+                }
+                throw CordaRuntimeException(message)
             }
-            CordaRuntimeException(message)
         }
 
         if (notarySignatures.isEmpty()) {
@@ -145,7 +165,9 @@ class UtxoReceiveFinalityFlow(
             throw CordaRuntimeException(message)
 
         }
-        log.debug { "Verifying and adding notary signatures for transaction: ${transaction.id}" }
+        if (log.isDebugEnabled) {
+            log.debug("Verifying and adding notary signatures for transaction: ${transaction.id}")
+        }
 
         var notarizedTransaction = transaction
         notarySignatures.forEach {
@@ -159,6 +181,8 @@ class UtxoReceiveFinalityFlow(
     private fun persistNotarizedTransaction(notarizedTransaction: UtxoSignedTransactionInternal) {
         val relevantStatesIndexes = notarizedTransaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
         persistenceService.persist(notarizedTransaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
-        log.debug { "Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}" }
+        if (log.isDebugEnabled) {
+            log.debug("Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}")
+        }
     }
 }
