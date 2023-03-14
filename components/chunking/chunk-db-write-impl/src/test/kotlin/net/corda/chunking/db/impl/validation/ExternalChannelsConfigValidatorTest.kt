@@ -19,10 +19,9 @@ class ExternalChannelsConfigValidatorTest {
     fun `does not throw exception when the configuration is valid`() {
         val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( "{ }" ) }
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
-        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
 
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(cpi)
+            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -30,10 +29,9 @@ class ExternalChannelsConfigValidatorTest {
     fun `does not throw exception when the configuration is null`() {
         val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( null ) }
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
-        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
 
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(cpi)
+            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -41,10 +39,9 @@ class ExternalChannelsConfigValidatorTest {
     fun `throws exception when the configuration is invalid`() {
         val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( "invalid schema") }
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
-        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
 
         assertThrows<NotImplementedError> {
-            externalChannelsConfigValidator.validate(cpi)
+            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -52,10 +49,9 @@ class ExternalChannelsConfigValidatorTest {
     fun `throws exception when the configuration string is empty`() {
         val mockCpkMetadata = mock<CpkMetadata> { on { externalChannelsConfig }.doReturn( "" ) }
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata) ) }
-        val cpi = mock<Cpi> { on { metadata }.doReturn(mockCpiMetadata) }
 
         assertThrows<NotImplementedError> {
-            externalChannelsConfigValidator.validate(cpi)
+            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 }
