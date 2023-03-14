@@ -43,16 +43,16 @@ class SignatureVerificationServiceImpl @Activate constructor(
     private val signatureInstances = SignatureInstances(schemeMetadata.providers)
 
     override fun verify(
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec
     ) {
         logger.debug {
             "verify(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
         }
         val result = try {
-            !isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+            !isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Throwable) {
@@ -64,10 +64,10 @@ class SignatureVerificationServiceImpl @Activate constructor(
     }
 
     override fun verify(
-        publicKey: PublicKey,
-        digest: DigestAlgorithmName,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        digest: DigestAlgorithmName
     ) {
         logger.debug {
             "verify(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
@@ -78,7 +78,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         val result = try {
-            !isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+            !isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Throwable) {
@@ -90,22 +90,22 @@ class SignatureVerificationServiceImpl @Activate constructor(
     }
 
     override fun isValid(
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec
     ): Boolean {
         logger.debug {
             "isValid(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
         }
-        return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+        return isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
     }
 
     override fun isValid(
-        publicKey: PublicKey,
-        digest: DigestAlgorithmName,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        digest: DigestAlgorithmName
     ): Boolean {
         logger.debug {
             "isValid(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
@@ -115,15 +115,15 @@ class SignatureVerificationServiceImpl @Activate constructor(
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
-        return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+        return isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
     }
 
     private fun isValid(
+        originalData: ByteArray,
+        signatureData: ByteArray,
         publicKey: PublicKey,
         scheme: KeyScheme,
-        signatureSpec: SignatureSpec,
-        signatureData: ByteArray,
-        clearData: ByteArray
+        signatureSpec: SignatureSpec
     ): Boolean {
         require(schemeMetadata.schemes.contains(scheme)) {
             "Unsupported key/algorithm for codeName: ${scheme.codeName}"
@@ -131,10 +131,10 @@ class SignatureVerificationServiceImpl @Activate constructor(
         require(signatureData.isNotEmpty()) {
             "Signature data is empty!"
         }
-        require(clearData.isNotEmpty()) {
+        require(originalData.isNotEmpty()) {
             "Clear data is empty, nothing to verify!"
         }
-        val signingData = signatureSpec.getSigningData(hashingService, clearData)
+        val signingData = signatureSpec.getSigningData(hashingService, originalData)
         return if (signatureSpec is CustomSignatureSpec && scheme.algorithmName == "RSA") {
             val cipher = Cipher.getInstance(
                 signatureSpec.signatureName,

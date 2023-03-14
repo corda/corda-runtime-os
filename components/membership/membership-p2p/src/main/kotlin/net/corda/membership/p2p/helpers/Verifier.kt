@@ -22,10 +22,10 @@ class Verifier(
             }?.value
             ?: throw CordaRuntimeException("Can not find signature spec")
         signatureVerificationService.verify(
-            publicKey,
-            SignatureSpec(spec),
+            data,
             signature.bytes.array(),
-            data
+            publicKey,
+            SignatureSpec(spec)
         )
     }
 }

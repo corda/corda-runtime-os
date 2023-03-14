@@ -18,6 +18,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
@@ -605,16 +606,16 @@ class PersistenceTests {
 
     @Test
     fun `Should save and then retrieve wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
         val alias2 = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo1 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key1.algorithm,
             keyMaterial = masterKey.wrap(key1)
         )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key2.algorithm,
@@ -628,15 +629,15 @@ class PersistenceTests {
 
     @Test
     fun `Should fail override existing wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo1 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key1.algorithm,
             keyMaterial = masterKey.wrap(key1)
         )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key2.algorithm,

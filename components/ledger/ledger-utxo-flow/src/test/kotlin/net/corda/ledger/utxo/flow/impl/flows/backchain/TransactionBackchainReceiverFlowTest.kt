@@ -182,7 +182,7 @@ class TransactionBackchainReceiverFlowTest {
 
     private fun callTransactionBackchainReceiverFlow(originalTransactionsToRetrieve: Set<SecureHash>): TopologicalSort {
         return TransactionBackchainReceiverFlow(
-            SecureHash("SHA", byteArrayOf(1, 1, 1, 1)),
+            setOf(SecureHash("SHA", byteArrayOf(1, 1, 1, 1))),
             originalTransactionsToRetrieve, session
         ).apply { utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowTest.utxoLedgerPersistenceService }
             .call()

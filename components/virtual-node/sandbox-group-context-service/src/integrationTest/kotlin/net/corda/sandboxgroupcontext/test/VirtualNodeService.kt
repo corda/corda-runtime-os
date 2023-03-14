@@ -7,7 +7,6 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
-import net.corda.sandboxgroupcontext.service.registerNotaryPluginProviders
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
@@ -45,7 +44,7 @@ class VirtualNodeService @Activate constructor(
     }
     init {
         // setting cache size to 2 as some tests require 2 concurrent sandboxes for validating they don't overlap
-        sandboxGroupContextComponent.initCache(2)
+        sandboxGroupContextComponent.initCaches(2)
     }
 
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
@@ -72,8 +71,7 @@ class VirtualNodeService @Activate constructor(
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             val closeables = listOf(
                 sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext),
-                sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext),
-                sandboxGroupContextComponent.registerNotaryPluginProviders(sandboxGroupContext)
+                sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext)
             )
             sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
             AutoCloseable {

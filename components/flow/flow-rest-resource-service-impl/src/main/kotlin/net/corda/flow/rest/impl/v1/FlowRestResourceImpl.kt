@@ -1,8 +1,8 @@
 package net.corda.flow.rest.impl.v1
 
-import java.util.concurrent.TimeUnit
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
@@ -38,7 +38,6 @@ import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -47,6 +46,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
+import net.corda.rest.exception.OperationNotAllowedException
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRestResource::class, PluggableRestResource::class], immediate = true)
@@ -115,7 +116,7 @@ class FlowRestResourceImpl @Activate constructor(
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
-        if (vNode.flowStartOperationalStatus == OperationalStatus.INACTIVE.name) {
+        if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
             throw OperationNotAllowedException("Flow start capabilities of virtual node $holdingIdentityShortHash are not operational.")
         }
 
@@ -131,7 +132,7 @@ class FlowRestResourceImpl @Activate constructor(
         val flowClassName = startFlow.flowClassName
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
         if (!startableFlows.contains(flowClassName)) {
-        val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
+            val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
             val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
             val details = mapOf(
                 "CPI-name" to cpiMeta?.cpiId?.name.toString(),
