@@ -10,9 +10,4 @@ import java.io.Closeable
 interface CryptoRepository : Closeable {
     fun saveWrappingKey(alias: String, key: WrappingKeyInfo)
     fun findWrappingKey(alias: String): WrappingKeyInfo?
-
-    /**
-     * Close and release underyling database resources.
-     */
-    override fun close()
 }
