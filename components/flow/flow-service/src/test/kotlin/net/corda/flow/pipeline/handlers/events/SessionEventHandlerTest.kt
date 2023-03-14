@@ -49,6 +49,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -132,7 +133,7 @@ class SessionEventHandlerTest {
 
         sessionEventHandler.preProcess(inputContext)
 
-        verify(flowSessionManager.sendConfirmMessage(any(), any(), any(), any()))
+        verify(flowSessionManager, times(1)).sendConfirmMessage(any(), any(), anyOrNull(), any())
     }
 
     @Test

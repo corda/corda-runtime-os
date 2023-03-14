@@ -47,7 +47,7 @@ class FlowProtocolStoreFactoryImplTest {
         val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
         assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
-        assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
+        assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()).flowClassName)
         assertEquals(Pair(PROTOCOL2, listOf(1)), protocolStore.protocolsForInitiator(RPC_FLOW, mock()))
     }
 
@@ -64,9 +64,9 @@ class FlowProtocolStoreFactoryImplTest {
         assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1, 2)))
         assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
         assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(2)))
-        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1, 2), mock()))
-        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
-        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(2), mock()))
+        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1, 2), mock()).flowClassName)
+        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()).flowClassName)
+        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(2), mock()).flowClassName)
     }
 
     @Test
@@ -85,9 +85,9 @@ class FlowProtocolStoreFactoryImplTest {
         assertEquals(INITIATING_FLOW_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1, 2)))
         assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
         assertEquals(INITIATING_FLOW_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(2)))
-        assertEquals(INITIATED_FLOW_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1, 2), mock()))
-        assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
-        assertEquals(INITIATED_FLOW_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(2), mock()))
+        assertEquals(INITIATED_FLOW_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1, 2), mock()).flowClassName)
+        assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()).flowClassName)
+        assertEquals(INITIATED_FLOW_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(2), mock()).flowClassName)
     }
 
     @Test
@@ -152,7 +152,7 @@ class FlowProtocolStoreFactoryImplTest {
         val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
         assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
-        assertEquals(INITIATED_INHERITED_RESPONDER, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
+        assertEquals(INITIATED_INHERITED_RESPONDER, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()).flowClassName)
     }
 
     private fun makeMockCPKMetadata(flows: CpkFlowClassNameLists): CpkMetadata {

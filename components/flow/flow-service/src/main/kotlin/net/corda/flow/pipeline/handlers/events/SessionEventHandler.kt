@@ -99,9 +99,9 @@ class SessionEventHandler @Activate constructor(
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
         val holdingIdentity = initiatedIdentity.toCorda()
-        val sessionProperties = sessionInit.contextSessionProperties
-        val requestedProtocolName = sessionProperties.get(FLOW_PROTOCOL).toString()
-        val initiatorVersionsSupported = sessionProperties.get(FLOW_PROTOCOL_VERSIONS_SUPPORTED).toString().split(",").map { it.toInt() }
+        val sessionProperties = KeyValueStore(sessionInit.contextSessionProperties)
+        val requestedProtocolName = sessionProperties[FLOW_PROTOCOL].toString()
+        val initiatorVersionsSupported = sessionProperties[FLOW_PROTOCOL_VERSIONS_SUPPORTED].toString().split(",").map { it.toInt() }
 
         var initiatedFlowNameAndProtocol: FlowAndProtocolVersion? = null
         checkpointInitializer.initialize(
