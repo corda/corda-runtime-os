@@ -1,10 +1,8 @@
-# Rest Stub Implementations
+# SSL Certificate Read Implementation
 
-Contains stub implementations of the Rest APIs for APIs that cannot currently have their read implementations created.
+Contains implementation of SSL Certificate Read service.
 
-This module will be deleted once the real implementations are added.
-
-## Generating the Stub HTTPS Keystore
+## Generating the self-signed HTTPS Keystore
 
 The following command was used to create the `https.keystore` in this module's `resources` directory:
 
