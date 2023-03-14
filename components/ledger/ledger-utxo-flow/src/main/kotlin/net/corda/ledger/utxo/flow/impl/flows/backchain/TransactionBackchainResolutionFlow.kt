@@ -9,7 +9,6 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
 class TransactionBackchainResolutionFlow(
