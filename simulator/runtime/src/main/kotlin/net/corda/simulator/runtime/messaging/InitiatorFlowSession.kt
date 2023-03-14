@@ -1,12 +1,13 @@
 package net.corda.simulator.runtime.messaging
 
-import net.corda.simulator.exceptions.ResponderFlowException
-import net.corda.v5.application.messaging.FlowSession
-import org.slf4j.LoggerFactory
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import net.corda.simulator.exceptions.ResponderFlowException
+import net.corda.v5.application.messaging.FlowInfo
+import net.corda.v5.application.messaging.FlowSession
+import org.slf4j.LoggerFactory
 
 interface InitiatorFlowSession : FlowSession {
     /**
@@ -70,6 +71,10 @@ class BaseInitiatorFlowSession(
         runningLock.withLock {
             runningCondition.signalAll()
         }
+    }
+
+    override fun getCounterpartyFlowInfo(): FlowInfo {
+        TODO("Not yet implemented")
     }
 
     override fun close() {
