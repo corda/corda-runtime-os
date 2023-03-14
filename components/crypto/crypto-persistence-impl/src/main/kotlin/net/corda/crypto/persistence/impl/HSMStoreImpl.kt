@@ -14,12 +14,13 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Instant
 import java.util.UUID
+import javax.persistence.EntityManager
 import javax.persistence.Tuple
 
 @Component(service = [HSMStore::class])
@@ -94,38 +95,42 @@ class HSMStoreImpl @Activate constructor(
             category: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
-        ): HSMAssociationInfo {
-            val association = findHSMAssociationEntity(tenantId, hsmId)
-                ?: createAndPersistAssociation(tenantId, hsmId, masterKeyPolicy)
-            val categoryAssociation = HSMCategoryAssociationEntity(
-                id = UUID.randomUUID().toString(),
-                tenantId = tenantId,
-                category = category,
-                timestamp = Instant.now(),
-                hsmAssociation = association,
-                deprecatedAt = 0
-            )
-            entityManagerFactory().transaction {
-                it.persist(categoryAssociation)
+        ): HSMAssociationInfo = entityManagerFactory().use {
+            it.transaction { em ->
+                val association =
+                    findHSMAssociationEntity(em, tenantId, hsmId)
+                        ?: createAndPersistAssociation(em, tenantId, hsmId, masterKeyPolicy)
+
+                val categoryAssociation = HSMCategoryAssociationEntity(
+                    id = UUID.randomUUID().toString(),
+                    tenantId = tenantId,
+                    category = category,
+                    timestamp = Instant.now(),
+                    hsmAssociation = association,
+                    deprecatedAt = 0
+                )
+
+                em.persist(categoryAssociation)
+                categoryAssociation.toHSMAssociation()
             }
-            return categoryAssociation.toHSMAssociation()
         }
 
         private fun findHSMAssociationEntity(
+            entityManager: EntityManager,
             tenantId: String,
             hsmId: String
-        ) = entityManagerFactory().use {
-            it.createQuery(
-            """
+        ) =
+            entityManager.createQuery(
+                """
             SELECT a 
             FROM HSMAssociationEntity a
             WHERE a.tenantId = :tenantId AND a.hsmId = :hsmId
             """.trimIndent(),
                 HSMAssociationEntity::class.java
             ).setParameter("tenantId", tenantId).setParameter("hsmId", hsmId).resultList.singleOrNull()
-        }
 
         private fun createAndPersistAssociation(
+            entityManager: EntityManager,
             tenantId: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
@@ -141,14 +146,13 @@ class HSMStoreImpl @Activate constructor(
                     null
                 }
             )
-            entityManagerFactory().transaction {
-                it.persist(association)
-            }
+
+            entityManager.persist(association)
             return association
         }
 
         private fun generateRandomShortAlias() =
-            UUID.randomUUID().toString().toByteArray().toHex().take(12)
+            toHex(UUID.randomUUID().toString().toByteArray()).take(12)
 
         private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
             id,

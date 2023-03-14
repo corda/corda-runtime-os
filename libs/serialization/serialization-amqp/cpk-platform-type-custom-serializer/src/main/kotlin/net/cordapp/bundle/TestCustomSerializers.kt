@@ -1,5 +1,6 @@
 package net.cordapp.bundle
 
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.serialization.SerializationCustomSerializer
 
@@ -17,6 +18,16 @@ class VersionSerializer : SerializationCustomSerializer<Version, VersionProxy> {
     }
 }
 class VersionProxy(val major: Int, val minor: Int)
+
+class MemberX500NameSerializer : SerializationCustomSerializer<MemberX500Name, String> {
+    override fun toProxy(obj: MemberX500Name): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun fromProxy(proxy: String): MemberX500Name {
+        TODO("Not yet implemented")
+    }
+}
 
 // Custom Serializer for JDK type should be denied.
 class ThreadSerializer : SerializationCustomSerializer<Thread, TestThreadProxy> {

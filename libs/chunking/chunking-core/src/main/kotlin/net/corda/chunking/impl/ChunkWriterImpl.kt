@@ -1,18 +1,19 @@
 package net.corda.chunking.impl
 
-import java.io.InputStream
-import java.nio.ByteBuffer
-import java.security.DigestInputStream
-import java.util.UUID
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
-import net.corda.chunking.Constants.Companion.CORDA_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import java.io.InputStream
+import java.nio.ByteBuffer
+import java.security.DigestInputStream
+import java.util.UUID
 
 
 /**
@@ -35,7 +36,8 @@ internal class ChunkWriterImpl(
     var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    val chunkSize = maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD
+    //add extra overhead to avoid message bus level chunking
+    val chunkSize = maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 
     override fun write(fileName: String, inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
@@ -75,7 +77,7 @@ internal class ChunkWriterImpl(
             offset += actualBytesRead
         }
 
-        val finalChecksum = SecureHash(Checksum.ALGORITHM, messageDigest.digest())
+        val finalChecksum = SecureHashImpl(Checksum.ALGORITHM, messageDigest.digest())
 
         // We always send a zero sized chunk as a marker to indicate that we've sent
         // every chunk.  It also includes the checksum of the file, and the final offset

@@ -54,7 +54,7 @@ interface ConfigurationValidator {
      * @return The config returned as a SmartConfig. If [applyDefaults] is set to true, the returned config will have any empty fields set
      * to the defaults defined in the schema for this config [key]
      */
-    fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean = false)
+    fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean = false) : SmartConfig
 
     /**
      * Retrieves default values from configuration schema.

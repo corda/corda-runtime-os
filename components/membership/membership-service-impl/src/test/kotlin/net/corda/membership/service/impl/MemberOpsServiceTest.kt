@@ -2,6 +2,7 @@ package net.corda.membership.service.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.async.request.MembershipAsyncRequest
+import net.corda.data.membership.async.request.MembershipAsyncRequestState
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
@@ -12,14 +13,14 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -29,8 +30,11 @@ class MemberOpsServiceTest {
     private val rpcSubscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse> = mock {
         on { subscriptionName } doReturn rpcSubName
     }
+    private val publisherFactory = mock<PublisherFactory> {
+        on { createPublisher(any(), any()) } doReturn mock()
+    }
     private val asyncSubName = LifecycleCoordinatorName("ASYNC_SUBSCRIPTION")
-    private val asyncSubscription: Subscription<String, MembershipAsyncRequest> = mock {
+    private val asyncSubscription: StateAndEventSubscription<String, MembershipAsyncRequestState, MembershipAsyncRequest> = mock {
         on { subscriptionName } doReturn asyncSubName
     }
     private val subscriptionFactory: SubscriptionFactory = mock {
@@ -39,11 +43,11 @@ class MemberOpsServiceTest {
             )
         } doReturn rpcSubscription
         on {
-            createDurableSubscription(
+            createStateAndEventSubscription(
                 any(),
                 any<MemberOpsAsyncProcessor>(),
                 any(),
-                anyOrNull(),
+                any<CommandsRetryManager>(),
             )
         } doReturn asyncSubscription
     }
@@ -168,6 +172,7 @@ class MemberOpsServiceTest {
             MemberOpsServiceImpl(
                 coordinatorFactory,
                 subscriptionFactory,
+                publisherFactory,
                 configReadService,
                 registrationProxy,
                 virtualNodeInfoReadService,

@@ -19,7 +19,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -110,11 +110,6 @@ class CryptoFlowOpsBusProcessor(
                     tenantId = context.tenantId,
                     candidateKeys = request.keys
                 )
-            is ByIdsFlowQuery ->
-                cryptoOpsClient.lookUpForKeysByIdsProxy(
-                    tenantId = context.tenantId,
-                    candidateKeys = request.keyIds
-                )
             is SignFlowCommand ->
                 cryptoOpsClient.signProxy(
                     tenantId = context.tenantId,
@@ -123,6 +118,8 @@ class CryptoFlowOpsBusProcessor(
                     data = request.bytes,
                     context = request.context
                 )
+            is ByIdsFlowQuery ->
+                cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }

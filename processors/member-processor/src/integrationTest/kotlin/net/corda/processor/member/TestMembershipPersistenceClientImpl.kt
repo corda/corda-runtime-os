@@ -25,10 +25,12 @@ import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
 import java.util.UUID
 
-@Component(service = [MembershipPersistenceClient::class])
+@ServiceRanking(Int.MAX_VALUE)
+@Component(service = [MembershipPersistenceClient::class, MembershipQueryClient::class])
 internal class TestMembershipPersistenceClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -41,7 +43,8 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ) = MembershipPersistenceResult.Success(1)
+        version: Long
+    ) = MembershipPersistenceResult.success()
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity) =
         MembershipPersistenceResult.Success(KeyValuePairList())
@@ -49,7 +52,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ) = MembershipPersistenceResult.Success(KeyValuePairList())
+    ) = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
@@ -67,16 +70,11 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         registrationRequestId: String,
     ) = MembershipPersistenceResult.Failure<MemberInfo>("Unsupported!")
 
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ) = MembershipPersistenceResult.success()
-
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
+        reason: String?,
     ) = MembershipPersistenceResult.success()
 
     override fun mutualTlsAddCertificateToAllowedList(
@@ -120,9 +118,17 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         ruleType: ApprovalRuleType
     ) = MembershipPersistenceResult.success()
 
-    private val coordinator =
+    private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()
+        ) { event, coordinator ->
+            if (event is StartEvent) {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+        }
+    private val queryCoordinator =
+        coordinatorFactory.createCoordinator(
+            LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
         ) { event, coordinator ->
             if (event is StartEvent) {
                 coordinator.updateStatus(LifecycleStatus.UP)
@@ -142,17 +148,19 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         registrationId: String,
     ): MembershipQueryResult<RegistrationRequestStatus?> = MembershipQueryResult.Success(null)
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<List<RegistrationRequestStatus>> =
-        MembershipQueryResult.Success(
-            emptyList()
-        )
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>,
+        limit: Int?,
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,
     ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> = MembershipQueryResult.Success(emptyMap())
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> =
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> =
         MembershipQueryResult.Failure("Unsupported")
 
     override fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>> = MembershipQueryResult.Success(
@@ -174,10 +182,12 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override val isRunning = true
 
     override fun start() {
-        coordinator.start()
+        persistenceCoordinator.start()
+        queryCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        persistenceCoordinator.stop()
+        queryCoordinator.stop()
     }
 }

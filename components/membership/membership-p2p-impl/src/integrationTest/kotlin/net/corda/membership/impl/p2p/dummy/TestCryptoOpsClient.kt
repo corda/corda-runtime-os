@@ -2,6 +2,7 @@ package net.corda.membership.impl.p2p.dummy
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -10,6 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -48,7 +50,11 @@ internal class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    override fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingFullIds: Boolean
+    ): Collection<PublicKey> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -144,11 +150,15 @@ internal class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
+    }
+
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+        throw UnsupportedOperationException()
     }
 
     override fun createWrappingKey(

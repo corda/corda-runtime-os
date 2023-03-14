@@ -3,9 +3,9 @@ package net.corda.layeredpropertymap.tests
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.tests.converters.IntegrationDummyEndpointInfo
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

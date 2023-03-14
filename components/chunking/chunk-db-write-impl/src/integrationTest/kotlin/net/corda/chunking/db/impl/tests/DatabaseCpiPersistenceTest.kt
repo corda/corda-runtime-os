@@ -3,21 +3,23 @@ package net.corda.chunking.db.impl.tests
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
-import net.corda.libs.cpi.datamodel.CpkFileEntity
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
-import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -31,6 +33,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -50,7 +53,7 @@ import java.time.Instant
 import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
-import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkFile
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -96,6 +99,10 @@ internal class DatabaseCpiPersistenceTest {
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
     }
+
+    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
+    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
+    private val cpkFileRepository = CpkFileRepositoryImpl()
 
     @Suppress("Unused")
     @AfterAll
@@ -163,7 +170,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun mockCpi(
         vararg cpks: Cpk,
-        signerSummaryHash: SecureHash = SecureHash("SHA-256", ByteArray(12)),
+        signerSummaryHash: SecureHash = SecureHashImpl("SHA-256", ByteArray(12)),
         name: String = UUID.randomUUID().toString(),
         version: String = "1.0",
         fileChecksum: SecureHash? = newRandomSecureHash()
@@ -207,8 +214,10 @@ internal class DatabaseCpiPersistenceTest {
         val cpi = mockCpi(mockCpk())
         cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
 
-        val cpkDataEntities: List<CpkFileEntity> = query("fileChecksum", cpi.cpks.first().fileChecksum)
-        assertThat(cpkDataEntities.first().data).isEqualTo(mockCpkContent.toByteArray())
+        entityManagerFactory.createEntityManager().transaction {
+            val cpkFile: CpkFile = cpkFileRepository.findById(it, cpi.cpks.first().metadata.fileChecksum)
+            assertThat(cpkFile.data).isEqualTo(mockCpkContent.toByteArray())
+        }
     }
 
     @Test
@@ -261,7 +270,7 @@ internal class DatabaseCpiPersistenceTest {
             groupId,
             listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.fileChecksum)
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 }
             )
@@ -287,11 +296,11 @@ internal class DatabaseCpiPersistenceTest {
             groupId,
             listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.fileChecksum)
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 },
                 cpkDbChangeLog {
-                    fileChecksum(cpk2.fileChecksum)
+                    fileChecksum(cpk2.metadata.fileChecksum)
                     filePath(cpk2.path.toString())
                 }
             )
@@ -303,10 +312,10 @@ internal class DatabaseCpiPersistenceTest {
         assertThat(forceUploadedCpi.entityVersion).isEqualTo(3)
         assertThat(forceUploadedCpi.cpks.size).isEqualTo(2)
         // cpk1 has incremented because we called merge on the CPI with this entity already existing in the set.
-        val forceUploadedCpk1 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk1.fileChecksum }
+        val forceUploadedCpk1 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk1.metadata.fileChecksum.toString() }
         assertThat(forceUploadedCpk1.entityVersion).isEqualTo(0)
         assertThat(forceUploadedCpk1.metadata.entityVersion).isEqualTo(0)
-        val forceUploadedCpk2 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk2.fileChecksum }
+        val forceUploadedCpk2 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk2.metadata.fileChecksum.toString() }
         assertThat(forceUploadedCpk2.entityVersion).isEqualTo(0)
         assertThat(forceUploadedCpk2.metadata.entityVersion).isEqualTo(0)
 
@@ -315,15 +324,26 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun assertChangeLogPersistedWithCpi(cpk: Cpk) {
-        val cpkFileChecksum = cpk.metadata.fileChecksum.toString()
-        val dbChangeLogAsList = loadCpkDbChangeLog(cpkFileChecksum, cpk.path.toString())
+        val dbChangeLogAsList = loadCpkDbChangeLog(CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, cpk.path.toString()))
         assertThat(dbChangeLogAsList).isNotNull
-        assertThat(dbChangeLogAsList.id.cpkFileChecksum).isEqualTo(cpkFileChecksum)
+        assertThat(dbChangeLogAsList.id.cpkFileChecksum).isEqualTo(cpk.metadata.fileChecksum)
     }
 
-    private fun loadCpkDbChangeLog(cpkFileChecksum: String, filePath: String): CpkDbChangeLogEntity {
+    private fun loadCpkDbChangeLog(fileChecksum: SecureHash): List<CpkDbChangeLog> {
         return entityManagerFactory.createEntityManager().transaction { em ->
-            em.find(CpkDbChangeLogEntity::class.java, CpkDbChangeLogKey(cpkFileChecksum, filePath))
+            cpkDbChangeLogRepository.findByFileChecksum(em, setOf(fileChecksum.toString()))
+        }
+    }
+
+    private fun loadCpkDbChangeLog(changeLogIdentifier: CpkDbChangeLogIdentifier): CpkDbChangeLog {
+        return entityManagerFactory.createEntityManager().transaction { em ->
+            cpkDbChangeLogRepository.findById(em, changeLogIdentifier)
+        }
+    }
+
+    private fun loadCpkDbChangeLog(content: String): List<CpkDbChangeLog> {
+        return entityManagerFactory.createEntityManager().transaction { em ->
+            cpkDbChangeLogRepository.findByContent(em, content)
         }
     }
 
@@ -395,7 +415,7 @@ internal class DatabaseCpiPersistenceTest {
         assertCpkIsNotAssociatedWithCpi(cpi, cpk)
         findAndAssertCpks(
             listOf(Pair(cpi, updatedCpk)),
-            expectedCpkFileChecksum = newChecksum.toString()
+            expectedCpkFileChecksum = newChecksum
         )
     }
 
@@ -416,11 +436,11 @@ internal class DatabaseCpiPersistenceTest {
 
         findAndAssertCpks(
             listOf(Pair(cpi, cpk1)),
-            expectedCpkFileChecksum = cpkFileChecksum1.toString()
+            expectedCpkFileChecksum = cpkFileChecksum1
         )
         findAndAssertCpks(
             listOf(Pair(cpi, cpk2)),
-            expectedCpkFileChecksum = cpkFileChecksum2.toString()
+            expectedCpkFileChecksum = cpkFileChecksum2
         )
     }
 
@@ -441,7 +461,7 @@ internal class DatabaseCpiPersistenceTest {
         assertCpkIsNotAssociatedWithCpi(cpi, cpk1)
         findAndAssertCpks(
             listOf(Pair(cpi, updatedCpk)),
-            expectedCpkFileChecksum = updatedCpk.fileChecksum,
+            expectedCpkFileChecksum = updatedCpk.metadata.fileChecksum
         )
 
         // a new cpi object, with a new cpk file checksum
@@ -454,19 +474,16 @@ internal class DatabaseCpiPersistenceTest {
         assertCpkIsNotAssociatedWithCpi(cpi, updatedCpk)
         findAndAssertCpks(
             listOf(Pair(cpi, anotherUpdatedCpk)),
-            expectedCpkFileChecksum = thirdChecksum.toString(),
+            expectedCpkFileChecksum = thirdChecksum,
         )
     }
 
     @Test
     fun `persist changelog writes data and can be read back`() {
         val cpi = mockCpi(mockCpk())
-        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLogEntities = makeChangeLogs(arrayOf(cpi.cpks.first())))
+        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(arrayOf(cpi.cpks.first())))
 
-        val changeLogsRetrieved = query<CpkDbChangeLogEntity, String>(
-            "cpk_file_checksum",
-            cpi.cpks.first().metadata.fileChecksum.toString()
-        )
+        val changeLogsRetrieved = loadCpkDbChangeLog(cpi.cpks.first().metadata.fileChecksum)
 
         assertThat(changeLogsRetrieved.size).isGreaterThanOrEqualTo(1)
         assertThat(changeLogsRetrieved.first().content).isEqualTo(mockChangeLogContent)
@@ -475,9 +492,9 @@ internal class DatabaseCpiPersistenceTest {
     @Test
     fun `persist multiple changelogs writes data and can be read back`() {
         val cpi = mockCpi(mockCpk(), mockCpk(), mockCpk(), mockCpk(), mockCpk())
-        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLogEntities = makeChangeLogs(cpi.cpks.toTypedArray()))
+        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(cpi.cpks.toTypedArray()))
 
-        val changeLogsRetrieved = query<CpkDbChangeLogEntity, String>("content", mockChangeLogContent)
+        val changeLogsRetrieved = loadCpkDbChangeLog(mockChangeLogContent)
 
         assertThat(changeLogsRetrieved.size).isGreaterThanOrEqualTo(5)
         assertThat(changeLogsRetrieved.first().content).isEqualTo(mockChangeLogContent)
@@ -490,9 +507,9 @@ internal class DatabaseCpiPersistenceTest {
 
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpiWithChangelogs,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.fileChecksum)
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 }
             )
@@ -533,16 +550,16 @@ internal class DatabaseCpiPersistenceTest {
         val filePath = "path_1_$rand1.xml"
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.metadata.fileChecksum.toString())
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(filePath)
                 }
             )
         )
 
         val changelogs = findChangelogs(cpiEntity)
-        val changelogAudits = findAuditLogs(listOf(cpk1.fileChecksum))
+        val changelogAudits = findAuditLogs(listOf(cpk1.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
         assertThat(changelogAudits.size).isEqualTo(1)
 
@@ -551,19 +568,19 @@ internal class DatabaseCpiPersistenceTest {
 
         val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
-                    fileChecksum(cpk1.metadata.fileChecksum.toString())
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(filePath)
                 },
                 cpkDbChangeLog {
-                    fileChecksum(cpk2.metadata.fileChecksum.toString())
+                    fileChecksum(cpk2.metadata.fileChecksum)
                     filePath(filePath)
                 }
             )
         )
         val updatedChangelogs = findChangelogs(updateCpiEntity)
-        val updatedChangelogAudits = findAuditLogs(listOf(cpk1.fileChecksum, cpk2.fileChecksum))
+        val updatedChangelogAudits = findAuditLogs(listOf(cpk1.metadata.fileChecksum, cpk2.metadata.fileChecksum))
 
         assertThat(updatedChangelogs.size)
             .withFailMessage("Expecting 2 changelogs, one for each CPK with unique file path associated")
@@ -577,10 +594,10 @@ internal class DatabaseCpiPersistenceTest {
     fun `force upload adds multiple changelog audit entry for multiple changesets with different filePaths`() {
         val cpk = mockCpk()
         val cpi = mockCpi(cpk)
-        val cpk1FileChecksum = cpk.metadata.fileChecksum.toString()
+        val cpk1FileChecksum = cpk.metadata.fileChecksum
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk1FileChecksum)
                 }
@@ -588,17 +605,17 @@ internal class DatabaseCpiPersistenceTest {
         )
 
         val changelogs = findChangelogs(cpiEntity)
-        val changelogAudits = findAuditLogs(listOf(cpk.fileChecksum))
+        val changelogAudits = findAuditLogs(listOf(cpk.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
         assertThat(changelogAudits.size).isEqualTo(1)
 
         val cpk2 = mockCpk()
         val updatedCpi = mockCpiWithId(listOf(cpk2), cpi.metadata.cpiId)
-        val cpk2FileChecksum = cpk2.metadata.fileChecksum.toString()
+        val cpk2FileChecksum = cpk2.metadata.fileChecksum
 
         val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk2FileChecksum)
                     // (randomized file paths)
@@ -617,13 +634,11 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
-        findCurrentCpkChangeLogsForCpi(it, cpiEntity.name, cpiEntity.version, cpiEntity.signerSummaryHash)
+        cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, parseSecureHash(cpiEntity.signerSummaryHash)))
     }
 
-    private fun findAuditLogs(cpkFileChecksums: List<String>) = entityManagerFactory.createEntityManager().transaction {
-        it.createQuery("FROM ${CpkDbChangeLogAuditEntity::class.java.simpleName} where cpkFileChecksum IN :checksums")
-            .setParameter("checksums", cpkFileChecksums)
-            .resultList
+    private fun findAuditLogs(cpkFileChecksums: Collection<SecureHash>) = entityManagerFactory.createEntityManager().transaction {
+        cpkDbChangeLogAuditRepository.findByFileChecksums(it, cpkFileChecksums)
     }
 
     private fun assertCpkIsNotAssociatedWithCpi(cpi: Cpi, cpk: Cpk) {
@@ -635,7 +650,7 @@ internal class DatabaseCpiPersistenceTest {
                         cpi.metadata.cpiId.name,
                         cpi.metadata.cpiId.version,
                         cpi.metadata.cpiId.signerSummaryHash.toString(),
-                        cpk.fileChecksum
+                        cpk.metadata.fileChecksum.toString()
                     )
                 )
             ).isNull()
@@ -653,16 +668,16 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun newRandomSecureHash(): SecureHash {
         val random = Random()
-        return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
-    private fun makeChangeLogs(
+    private fun genChangeLogs(
         cpks: Array<Cpk>,
         changeLogs: List<String> = listOf(mockChangeLogContent)
-    ): List<CpkDbChangeLogEntity> = cpks.flatMap { cpk ->
+    ): List<CpkDbChangeLog> = cpks.flatMap { cpk ->
         changeLogs.map { changeLog ->
-            CpkDbChangeLogEntity(
-                CpkDbChangeLogKey(cpk.metadata.fileChecksum.toString(), "resources/$changeLog"),
+            CpkDbChangeLog(
+                CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, "resources/$changeLog"),
                 changeLog
             )
         }
@@ -681,7 +696,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun findAndAssertCpks(
         combos: List<Pair<Cpi, Cpk>>,
-        expectedCpkFileChecksum: String? = null,
+        expectedCpkFileChecksum: SecureHash? = null,
         expectedMetadataEntityVersion: Int = 0,
         expectedFileEntityVersion: Int = 0,
         expectedCpiCpkEntityVersion: Int = 0
@@ -694,21 +709,21 @@ internal class DatabaseCpiPersistenceTest {
                     cpi.metadata.cpiId.signerSummaryHash.toString(),
                     cpk.metadata.fileChecksum.toString()
                 )
-                val cpkKey = cpk.metadata.fileChecksum.toString()
+                val cpkKey = cpk.metadata.fileChecksum
                 val cpiCpk = it.find(CpiCpkEntity::class.java, cpiCpkKey)
-                val cpkMetadata = it.find(CpkMetadataEntity::class.java, cpkKey)
-                val cpkFile = it.find(CpkFileEntity::class.java, cpkKey)
+                val cpkMetadata = it.find(CpkMetadataEntity::class.java, cpkKey.toString())
+                val cpkFile = cpkFileRepository.findById(it, cpkKey)
                 Triple(cpkMetadata, cpkFile, cpiCpk)
             }
 
-            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.fileChecksum)
-            assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.fileChecksum)
+            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum?.toString() ?: cpk.metadata.fileChecksum.toString())
+            assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
 
             assertThat(cpkMetadata.entityVersion)
                 .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")
                 .isEqualTo(expectedMetadataEntityVersion)
-            assertThat(cpkFile.entityVersion)
-                .withFailMessage("CpkFileEntity.entityVersion expected $expectedFileEntityVersion but was ${cpkFile.entityVersion}.")
+            assertThat(cpkFile.version)
+                .withFailMessage("CpkFileEntity.entityVersion expected $expectedFileEntityVersion but was ${cpkFile.version}.")
                 .isEqualTo(expectedFileEntityVersion)
             assertThat(cpiCpk.entityVersion)
                 .withFailMessage("CpiCpkEntity.entityVersion expected $expectedCpiCpkEntityVersion but was ${cpiCpk.entityVersion}.")

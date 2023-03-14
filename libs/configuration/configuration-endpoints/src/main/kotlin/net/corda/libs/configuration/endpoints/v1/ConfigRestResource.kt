@@ -1,13 +1,13 @@
 package net.corda.libs.configuration.endpoints.v1
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -40,7 +40,7 @@ interface ConfigRestResource : RestResource {
                 for which no configuration has yet been stored."""
     )
     fun updateConfig(
-        @RestRequestBodyParameter(description = """
+        @ClientRequestBodyParameter(description = """
             Details of the updated configuration. Includes:
             - `section`: the section of the configuration to be updated.
             - `config`: the updated configuration in JSON or HOCON format.

@@ -7,6 +7,7 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -35,7 +36,7 @@ class PendingSessionMessageQueuesImplTest {
     }
     private val recordForSessionEstablished = Record("topic", "key", mock<LinkOutMessage>())
     private val sessionManager = mock<SessionManager> {
-        on { recordsForSessionEstablished(any(), any()) } doReturn listOf(recordForSessionEstablished)
+        on { recordsForSessionEstablished(any(), any(), any()) } doReturn listOf(recordForSessionEstablished)
     }
     private val publisherWithDominoLogic = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
@@ -47,9 +48,12 @@ class PendingSessionMessageQueuesImplTest {
         whenever(mock.dominoTile).doReturn(dominoTile)
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
     }
+    private val serial = 1L
     private val sessionCounterparties = SessionManager.SessionCounterparties(
         createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
-        createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1")
+        createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
+        MembershipStatusFilter.ACTIVE,
+        serial
     )
 
     private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
@@ -68,12 +72,13 @@ class PendingSessionMessageQueuesImplTest {
                 null,
                 "msg-$it",
                 "",
-                "system-1"
+                "system-1",
+                MembershipStatusFilter.ACTIVE
             )
             val data = ByteBuffer.wrap("$it".toByteArray())
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
         }.onEach {
-            queue.queueMessage(it)
+            queue.queueMessage(it, sessionCounterparties)
         }
 
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
@@ -93,19 +98,20 @@ class PendingSessionMessageQueuesImplTest {
                 null,
                 "msg-$it",
                 "",
-                "system-1"
+                "system-1",
+                MembershipStatusFilter.ACTIVE
             )
             val data = ByteBuffer.wrap("$it".toByteArray())
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
         }
         messages.onEach {
-            queue.queueMessage(it)
+            queue.queueMessage(it, sessionCounterparties)
         }
 
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
 
         messages.forEach {
-            verify(sessionManager).recordsForSessionEstablished(session, it)
+            verify(sessionManager).recordsForSessionEstablished(session, it, serial)
         }
     }
 
@@ -118,17 +124,20 @@ class PendingSessionMessageQueuesImplTest {
                 null,
                 "msg-$it",
                 "",
-                "system-1"
+                "system-1",
+                MembershipStatusFilter.ACTIVE
             )
             val data = ByteBuffer.wrap("$it".toByteArray())
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
         }.onEach {
-            queue.queueMessage(it)
+            queue.queueMessage(it, sessionCounterparties)
         }
 
         val anotherSessionCounterparties = SessionManager.SessionCounterparties(
             createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
-            createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1")
+            createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
+            MembershipStatusFilter.ACTIVE,
+            serial
         )
         queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session)
 

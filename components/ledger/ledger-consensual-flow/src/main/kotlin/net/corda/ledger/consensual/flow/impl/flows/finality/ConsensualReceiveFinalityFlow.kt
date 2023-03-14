@@ -4,13 +4,12 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import org.slf4j.Logger
@@ -23,12 +22,14 @@ class ConsensualReceiveFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(ConsensualReceiveFinalityFlow::class.java)
     }
+
+    override val log: Logger = ConsensualReceiveFinalityFlow.log
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
-        val initialTransaction = session.receive<ConsensualSignedTransactionInternal>()
+        val initialTransaction = session.receive(ConsensualSignedTransactionInternal::class.java)
         val transactionId = initialTransaction.id
 
         verifyExistingSignatures(initialTransaction, session)
@@ -94,7 +95,8 @@ class ConsensualReceiveFinalityFlow(
         transaction: ConsensualSignedTransactionInternal
     ): ConsensualSignedTransactionInternal {
         log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
-        val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        @Suppress("unchecked_cast")
+        val otherPartiesSignatures = session.receive(List::class.java) as List<DigitalSignatureAndMetadata>
         var signedTransaction = transaction
         otherPartiesSignatures
             .filter { it !in transaction.signatures }

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.impl.token.selection.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -18,10 +19,7 @@ val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500_NAME, "g1")
 
 fun String.toSecureHash(): SecureHash {
     val algorithm = DigestAlgorithmName.SHA2_256.name
-    return SecureHash(
-        algorithm = algorithm,
-        bytes = MessageDigest.getInstance(algorithm).digest(this.toByteArray())
-    )
+    return SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(this.toByteArray()))
 }
 
 fun String.toStateRef(): StateRef {

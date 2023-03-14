@@ -32,7 +32,7 @@ import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
-import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import org.assertj.core.api.Assertions.assertThat

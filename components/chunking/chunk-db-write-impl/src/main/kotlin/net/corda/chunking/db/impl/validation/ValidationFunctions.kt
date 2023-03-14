@@ -2,12 +2,11 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
-import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -97,7 +96,7 @@ fun CpiPersistence.persistCpiToDatabase(
     groupId: String,
     fileInfo: FileInfo,
     requestId: RequestId,
-    changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>,
+    changelogsExtractedFromCpi: List<CpkDbChangeLog>,
     log: Logger
 ): CpiMetadataEntity {
     // Cannot compare the CPI.metadata.hash to our checksum above
@@ -105,11 +104,7 @@ fun CpiPersistence.persistCpiToDatabase(
     // We'll publish to the database using the de-chunking checksum.
 
     try {
-        val cpiExists = this.cpiExists(
-            cpi.metadata.cpiId.name,
-            cpi.metadata.cpiId.version,
-            cpi.metadata.cpiId.signerSummaryHashForDbQuery
-        )
+        val cpiExists = this.cpiExists(cpi.metadata.cpiId)
 
         return if (cpiExists && fileInfo.forceUpload) {
             log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
@@ -133,16 +128,30 @@ fun CpiPersistence.persistCpiToDatabase(
             )
         } else {
             throw UnsupportedOperationException(
-                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHashForDbQuery} " +
+                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHash} " +
                         "already exists and cannot be replaced."
             )
         }
     } catch (ex: Exception) {
         log.info("Unexpected error when persisting CPI to the database", ex)
         when (ex) {
-            is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
-            is CordaRuntimeException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
-            else -> throw ValidationException("Unexpected error when trying to persist CPI and CPK to database", requestId, ex)
+            is PersistenceException -> throw ValidationException(
+                "Could not persist CPI and CPK to database",
+                requestId,
+                ex
+            )
+
+            is CordaRuntimeException -> throw ValidationException(
+                "Could not persist CPI and CPK to database",
+                requestId,
+                ex
+            )
+
+            else -> throw ValidationException(
+                "Unexpected error when trying to persist CPI and CPK to database",
+                requestId,
+                ex
+            )
         }
     }
 }
@@ -153,7 +162,10 @@ fun CpiPersistence.persistCpiToDatabase(
  * @throws ValidationException if there is no group policy json.
  */
 private fun Cpi.validateHasGroupPolicy(requestId: String? = null) {
-    if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file", requestId)
+    if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException(
+        "CPI is missing a group policy file",
+        requestId
+    )
 }
 
 /**
@@ -171,9 +183,9 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
     val groupId = try {
         getGroupIdFromJson(this.metadata.groupPolicy!!)
         // catch specific exceptions, and wrap them up so as to capture the request ID
-        // This exception will end up going over Kafka and being picked up by the RPC worker,
+        // This exception will end up going over Kafka and being picked up by the REST worker,
         // which then matches by class name,  so we cannot use subtypes of ValidationException without
-        // introducing knowledge of specific failure modes into the RPC worker
+        // introducing knowledge of specific failure modes into the REST worker
     } catch (e: GroupPolicyIdNotFoundException) {
         throw ValidationException("Unable to upload CPI due to group ID not found", requestId)
     } catch (e: GroupPolicyParseException) {
@@ -195,7 +207,11 @@ fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
     return try {
         GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
     } catch (e: Exception) {
-        throw ValidationException("Group policy file in the CPI is invalid. Could not get file format version. ${e.message}", null, e)
+        throw ValidationException(
+            "Group policy file in the CPI is invalid. Could not get file format version. ${e.message}",
+            null,
+            e
+        )
     }
 }
 
@@ -204,5 +220,5 @@ fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
  *
  * @return list of entities containing liquibase scripts ready for insertion into database
  */
-fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLogEntity> =
-    LiquibaseExtractor().extractLiquibaseEntitiesFromCpi(this)
+fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLog> =
+    LiquibaseScriptExtractor().extract(this)

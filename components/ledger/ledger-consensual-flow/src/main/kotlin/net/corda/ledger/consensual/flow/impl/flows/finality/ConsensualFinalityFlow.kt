@@ -5,15 +5,14 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.debug
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -25,8 +24,10 @@ class ConsensualFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(ConsensualFinalityFlow::class.java)
     }
+
+    override val log: Logger = ConsensualFinalityFlow.log
 
     private val transactionId = initialTransaction.id
 
@@ -71,7 +72,8 @@ class ConsensualFinalityFlow(
             try {
                 log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
                 session.send(initialTransaction)
-                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+                @Suppress("unchecked_cast")
+                session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
             } catch (e: CordaRuntimeException) {
                 log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
                 persistInvalidTransaction(initialTransaction)

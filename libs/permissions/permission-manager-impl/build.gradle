@@ -24,6 +24,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:utilities")
     implementation project(":libs:cache:cache-caffeine")
+    implementation project(":libs:crypto:crypto-core")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

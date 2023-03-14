@@ -10,6 +10,7 @@ dependencies {
 
     implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-ledger-common'
     implementation 'net.corda:corda-ledger-utxo'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -20,11 +21,11 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
-    runtimeOnly project(':components:virtual-node:sandbox-notary-impl')
 
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

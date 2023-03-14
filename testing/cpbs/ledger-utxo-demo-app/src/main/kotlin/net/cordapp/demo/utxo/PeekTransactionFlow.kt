@@ -1,11 +1,11 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.cordapp.demo.utxo.contract.TestUtxoState
@@ -32,8 +32,11 @@ class PeekTransactionFlow : ClientStartableFlow {
     @CordaInject
     lateinit var marshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Utxo peek transaction flow starting...")
         val requestObject =
             requestBody.getRequestBodyAs(marshallingService, PeekTransactionParameters::class.java)
@@ -41,7 +44,7 @@ class PeekTransactionFlow : ClientStartableFlow {
         val txId = requestObject.transactionId
 
         log.info("Utxo finding transaction $txId for taking a peek")
-        val ledgerTransaction = ledgerService.findLedgerTransaction(SecureHash.parse(txId))
+        val ledgerTransaction = ledgerService.findLedgerTransaction(digestService.parseSecureHash(txId))
 
 
         val resultString = marshallingService.format(extractStates(ledgerTransaction))

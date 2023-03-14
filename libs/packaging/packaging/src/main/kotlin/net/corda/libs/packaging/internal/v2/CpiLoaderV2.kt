@@ -1,21 +1,21 @@
 package net.corda.libs.packaging.internal.v2
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader
 import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpiImpl
 import net.corda.libs.packaging.internal.CpiLoader
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -68,7 +68,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                             ?: throw PackagingException("CPI version missing from manifest"),
                         groupPolicy.entry.certificates.asSequence().signerSummaryHash()
                     ),
-                    fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
+                    fileChecksum = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, hash),
                     cpksMetadata = cpks.map { it.metadata },
                     groupPolicy = String(groupPolicy.bytes),
                     timestamp = clock.instant()

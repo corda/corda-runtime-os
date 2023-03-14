@@ -9,8 +9,8 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -32,7 +32,7 @@ class MerkleTreeGeneratorTest {
         on {
             createHashDigestProvider(
                 eq(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME),
-                eq(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME),
+                eq(DigestAlgorithmName.SHA2_256),
                 argThat {
                     this[HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION] is ByteArray &&
                         this[HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION] is ByteArray

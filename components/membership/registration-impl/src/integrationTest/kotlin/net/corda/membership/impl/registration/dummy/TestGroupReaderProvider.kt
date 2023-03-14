@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.dummy
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
+import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -18,8 +20,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -97,7 +98,7 @@ class TestGroupReader @Activate constructor(
     private val group = "dummy_group"
     private val id = HoldingIdentity(name, group).shortHash.value
 
-    override fun lookup(): Collection<MemberInfo> {
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
         val ecdhKey = cryptoOpsClient.generateKeyPair(
             id,
             PRE_AUTH,
@@ -122,21 +123,21 @@ class TestGroupReader @Activate constructor(
         )
     }
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookup(name: MemberX500Name): MemberInfo? {
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

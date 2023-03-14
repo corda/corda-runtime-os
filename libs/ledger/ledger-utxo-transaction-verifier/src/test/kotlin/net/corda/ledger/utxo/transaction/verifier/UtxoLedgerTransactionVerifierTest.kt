@@ -1,6 +1,8 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
@@ -32,11 +34,14 @@ class UtxoLedgerTransactionVerifierTest {
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
 
-    private val verifier = UtxoLedgerTransactionVerifier(transaction)
+    private val verifier = UtxoLedgerTransactionVerifier( { transaction } )
 
     @BeforeEach
     fun beforeEach() {
-        whenever(transaction.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))
+        whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
+        whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
+
+        whenever(transaction.id).thenReturn(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)))
         whenever(transaction.signatories).thenReturn(listOf(signatory))
         whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef))
         whenever(transaction.outputContractStates).thenReturn(listOf(state))
@@ -101,7 +106,7 @@ class UtxoLedgerTransactionVerifierTest {
 
     @Test
     fun `throws an exception when input and reference states don't have the same notary`() {
-        val anotherNotary = utxoNotaryExample.copy(owningKey = mock())
+        val anotherNotary = Party(utxoNotaryExample.name, mock())
         whenever(inputTransactionState.notary).thenReturn(anotherNotary)
         whenever(referenceTransactionState.notary).thenReturn(utxoNotaryExample)
         assertThatThrownBy { verifier.verify() }
@@ -111,7 +116,7 @@ class UtxoLedgerTransactionVerifierTest {
 
     @Test
     fun `throws an exception when input and reference states don't have the same notary passed into the verification`() {
-        val anotherNotary = utxoNotaryExample.copy(owningKey = mock())
+        val anotherNotary = Party(utxoNotaryExample.name, mock())
         whenever(inputTransactionState.notary).thenReturn(anotherNotary)
         whenever(referenceTransactionState.notary).thenReturn(anotherNotary)
         assertThatThrownBy { verifier.verify() }
@@ -127,7 +132,7 @@ class UtxoLedgerTransactionVerifierTest {
     @Test
     fun `catches exceptions from contract verification and outputs them as failure reasons`() {
         val validContractAState = stateAndRef<MyInvalidContractA>(
-            SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0
+            SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0
         )
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(emptyList())
@@ -143,11 +148,25 @@ class UtxoLedgerTransactionVerifierTest {
         val state = UtxoLedgerTransactionContractVerifierTest.MyState()
         return StateAndRefImpl(
             object : TransactionState<UtxoLedgerTransactionContractVerifierTest.MyState> {
-                override val contractState: UtxoLedgerTransactionContractVerifierTest.MyState = state
-                override val contractStateType: Class<out UtxoLedgerTransactionContractVerifierTest.MyState> = state::class.java
-                override val contractType: Class<out Contract> = C::class.java
-                override val notary: Party = utxoNotaryExample
-                override val encumbrance: EncumbranceGroup? = null
+                override fun getContractState(): UtxoLedgerTransactionContractVerifierTest.MyState {
+                    return state
+                }
+
+                override fun getContractStateType(): Class<UtxoLedgerTransactionContractVerifierTest.MyState> {
+                    return state.javaClass
+                }
+
+                override fun getContractType(): Class<out Contract> {
+                    return C::class.java
+                }
+
+                override fun getNotary(): Party {
+                    return utxoNotaryExample
+                }
+
+                override fun getEncumbranceGroup(): EncumbranceGroup? {
+                    return null
+                }
             },
             StateRef(transactionId, index)
         )

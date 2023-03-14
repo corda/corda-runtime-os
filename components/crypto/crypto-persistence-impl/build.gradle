@@ -32,11 +32,13 @@ dependencies {
     implementation project(":libs:db:db-orm")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":components:crypto:crypto-component-test-utils")

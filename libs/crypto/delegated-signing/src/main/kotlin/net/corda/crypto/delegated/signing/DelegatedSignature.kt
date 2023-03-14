@@ -32,10 +32,7 @@ internal class DelegatedSignature(
 
     override fun engineSign(): ByteArray? {
         val spec = if (parameterSpec != null) {
-            ParameterizedSignatureSpec(
-                signatureName = signatureName,
-                params = parameterSpec!!
-            )
+            ParameterizedSignatureSpec(signatureName, parameterSpec!!)
         } else {
             SignatureSpec(signatureName)
         }

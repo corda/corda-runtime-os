@@ -1,8 +1,11 @@
 package net.corda.p2p.linkmanager.common
 
+import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
@@ -113,10 +116,40 @@ class MessageConverterTest {
             peer,
             ByteBuffer.wrap("DATA".toByteArray())
         )
-        assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members)).isNull()
+        val serial = 1L
+        assertThat(
+            MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members, serial)
+        ).isNull()
         loggingInterceptor.assertSingleWarning(
-            "Attempted to send message to peer $peer which is not in the network map." +
-                " The message was discarded."
+            "Attempted to send message to peer $peer with filter ACTIVE which is not in the network map. " +
+                    "The message was discarded."
+        )
+    }
+
+    @Test
+    fun `createLinkOutMessageFromFlowMessage returns null if the destination does not have the expected serial`() {
+        val mac = mock<AuthenticationResult> {
+            on { header } doReturn mockHeader
+            on { mac } doReturn byteArrayOf()
+        }
+        val session = mock<AuthenticatedSession> {
+            on { createMac(any()) } doReturn mac
+        }
+        val groupId = "group-1"
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
+        val members = mockMembers(listOf(peer))
+        val flowMessage = authenticatedMessageAndKey(
+            createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId),
+            peer,
+            ByteBuffer.wrap("DATA".toByteArray())
+        )
+        val serial = 2L
+        assertThat(
+            MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members, serial)
+        ).isNull()
+        loggingInterceptor.assertSingleWarning(
+            "Attempted to send message to peer $peer with serial $serial which is not in the network map." +
+                    " The message was discarded."
         )
     }
 
@@ -135,10 +168,32 @@ class MessageConverterTest {
         val members = mockMembers(listOf(us, peer))
         val groups = mockGroups(emptyList())
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, groups, members)).isNull()
+        assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, groups, members, 1)).isNull()
         loggingInterceptor.assertSingleWarning(
             "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
                 " The message was discarded."
+        )
+    }
+
+    @Test
+    fun `createLinkOutMessage does not validate serial when it's not provided`(){
+        val mac = mock<AuthenticationResult> {
+            on { header } doReturn mockHeader
+            on { mac } doReturn byteArrayOf()
+        }
+        val session = mock<AuthenticatedSession> {
+            on { createMac(any()) } doReturn mac
+        }
+        val message = MessageAck(AuthenticatedMessageAck("messageId"))
+        val groupId = "group-1"
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
+        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+        val members = mockMembers(listOf(us, peer))
+        val groups = mockGroups(emptyList())
+        assertThat(MessageConverter.linkOutMessageFromAck(message, us, peer, session, groups, members)).isNull()
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
+                    " The message was discarded."
         )
     }
 
@@ -148,7 +203,9 @@ class MessageConverterTest {
         data: ByteBuffer,
         messageId: String = ""
     ): AuthenticatedMessageAndKey {
-        val header = AuthenticatedMessageHeader(dest.toAvro(), source.toAvro(), null, messageId, "", "system-1")
+        val header = AuthenticatedMessageHeader(
+            dest.toAvro(), source.toAvro(), null, messageId, "", "system-1", MembershipStatusFilter.ACTIVE
+        )
         return AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
     }
 }

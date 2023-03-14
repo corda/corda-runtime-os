@@ -1,17 +1,17 @@
 package net.corda.layeredpropertymap
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.test.util.createTestCase
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
+import net.corda.utilities.parseOrNull
+import net.corda.utilities.parseSet
 import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.types.toHexString
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
-import net.corda.v5.base.util.parseOrNull
-import net.corda.v5.base.util.parseSet
-import net.corda.v5.crypto.PublicKeyHash
-import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -74,10 +74,10 @@ class LayeredPropertyMapTest {
                 "corda.endpoints.1.protocolVersion" to "2",
                 "listWithNull.0" to "42",
                 "listWithNull.1" to null,
-                "singlePublicKeyHash" to "single".toByteArray().sha256Bytes().toHexString(),
-                "setPublicKeyHash.0" to "set0".toByteArray().sha256Bytes().toHexString(),
-                "setPublicKeyHash.1" to "set1".toByteArray().sha256Bytes().toHexString(),
-                "setPublicKeyHash.2" to "set2".toByteArray().sha256Bytes().toHexString(),
+                "singlePublicKeyHash" to toHexString("single".toByteArray().sha256Bytes()),
+                "setPublicKeyHash.0" to toHexString("set0".toByteArray().sha256Bytes()),
+                "setPublicKeyHash.1" to toHexString("set1".toByteArray().sha256Bytes()),
+                "setPublicKeyHash.2" to toHexString("set2".toByteArray().sha256Bytes()),
             ),
             PropertyConverter(
                 mapOf(
@@ -95,13 +95,13 @@ class LayeredPropertyMapTest {
         val single1 = propertyMap.parse<PublicKeyHash>("singlePublicKeyHash")
         val single2 = propertyMap.parseOrNull<PublicKeyHash>("singlePublicKeyHash")
         assertEquals(single1, single2)
-        assertEquals("single".toByteArray().sha256Bytes().toHexString(), single1.value)
+        assertEquals(toHexString("single".toByteArray().sha256Bytes()), single1.toString())
         val set = propertyMap.parseSet<PublicKeyHash>("setPublicKeyHash")
         assertEquals(3, set.size)
         val setContents = set.map { it.value }
-        assertTrue(setContents.contains("set0".toByteArray().sha256Bytes().toHexString()))
-        assertTrue(setContents.contains("set1".toByteArray().sha256Bytes().toHexString()))
-        assertTrue(setContents.contains("set2".toByteArray().sha256Bytes().toHexString()))
+        assertTrue(setContents.contains(toHexString("set0".toByteArray().sha256Bytes())))
+        assertTrue(setContents.contains(toHexString("set1".toByteArray().sha256Bytes())))
+        assertTrue(setContents.contains(toHexString("set2".toByteArray().sha256Bytes())))
     }
 
     @Test

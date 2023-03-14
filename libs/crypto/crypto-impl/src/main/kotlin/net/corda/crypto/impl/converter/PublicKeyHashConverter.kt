@@ -1,8 +1,8 @@
 package net.corda.crypto.impl.converter
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.v5.crypto.PublicKeyHash
 import org.osgi.service.component.annotations.Component
 
 /**

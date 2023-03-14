@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonNodeReaderType
-import net.corda.v5.application.marshalling.json.parse
-import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -93,7 +91,7 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
                 }
             }
             val expectedParsedObject = DefaultDeserializable("v-contents1", "v-contents2")
-            assertEquals(expectedParsedObject, jsonRoot.getField("object1")!!.parse<DefaultDeserializable>())
+            assertEquals(expectedParsedObject, jsonRoot.getField("object1")!!.parse(DefaultDeserializable::class.java))
 
             // Arrays
             assertTrue(jsonRoot.hasField("array1"))
@@ -253,7 +251,8 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
         // cannot track types except those that the clazz represents, which is always the specific type we want
         // deserializing.
         val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer, type)
-        module.addDeserializer(uncheckedCast(jsonDeserializerAdaptor.deserializingType), jsonDeserializerAdaptor)
+        @Suppress("unchecked_cast")
+        module.addDeserializer(jsonDeserializerAdaptor.deserializingType as Class<Any>, jsonDeserializerAdaptor)
         mapper.registerModule(module)
         mapper.readValue(JSON_TO_PARSE, TestClass::class.java)
     }

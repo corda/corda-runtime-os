@@ -1,12 +1,12 @@
 package net.corda.processors.rest.internal
 
-import net.corda.components.rpc.RestGateway
+import net.corda.components.rest.RestGateway
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
-import net.corda.flow.rpcops.FlowRPCOpsService
+import net.corda.flow.rest.FlowRestResourceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.DependentComponents
@@ -18,8 +18,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
-import net.corda.membership.client.MGMOpsClient
-import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.MGMResourceClient
+import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -27,7 +27,7 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rest.RestProcessor
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -46,16 +46,16 @@ class RestProcessorImpl @Activate constructor(
     private val restGateway: RestGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = FlowRPCOpsService::class)
-    private val flowRPCOpsService: FlowRPCOpsService,
-    @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = FlowRestResourceService::class)
+    private val flowRestResourceService: FlowRestResourceService,
+    @Reference(service = CpiUploadService::class)
+    private val cpiUploadService: CpiUploadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = MemberOpsClient::class)
-    private val memberOpsClient: MemberOpsClient,
-    @Reference(service = MGMOpsClient::class)
-    private val mgmOpsClient: MGMOpsClient,
+    @Reference(service = MemberResourceClient::class)
+    private val memberResourceClient: MemberResourceClient,
+    @Reference(service = MGMResourceClient::class)
+    private val mgmResourceClient: MGMResourceClient,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -87,11 +87,11 @@ class RestProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
         ::restGateway,
-        ::flowRPCOpsService,
-        ::cpiUploadRPCOpsService,
+        ::flowRestResourceService,
+        ::cpiUploadService,
         ::cpiInfoReadService,
-        ::memberOpsClient,
-        ::mgmOpsClient,
+        ::memberResourceClient,
+        ::mgmResourceClient,
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,

@@ -25,6 +25,14 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    upgradeTestingCpiV3 {
+        canBeConsumed = false
+        transitive = false
+    }
+    upgradeTestingCpiV4 {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 sourceSets {
@@ -72,16 +80,20 @@ dependencies {
     cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:mgm', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
     cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
+    upgradeTestingCpiV3 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v3', configuration: 'cordaCPB')
+    upgradeTestingCpiV4 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v4', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(':testing:e2e-test-utilities')
 
-    smokeTestImplementation project(':components:flow:flow-rpcops-service')
+    smokeTestImplementation project(':components:flow:flow-rest-resource-service')
+    smokeTestImplementation project(':libs:crypto:crypto-core')
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
@@ -127,6 +139,20 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
         into upgradeTestingCpiV2Dir
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
     }
+    // Put the test cordapp for upgrade testing (v3) into a folder
+    def upgradeTestingCpiV3 = configurations.upgradeTestingCpiV3
+    def upgradeTestingCpiV3Dir = "META-INF" + File.separator + "upgrade-testing-v3"
+    from(upgradeTestingCpiV3) {
+        into upgradeTestingCpiV3Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
+    }
+    // Put the test cordapp for upgrade testing (v4) into a folder
+    def upgradeTestingCpiV4 = configurations.upgradeTestingCpiV4
+    def upgradeTestingCpiV4Dir = "META-INF" + File.separator + "upgrade-testing-v4"
+    from(upgradeTestingCpiV4) {
+        into upgradeTestingCpiV4Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
+    }
 }
 
 tasks.register('smokeTest', Test) {
@@ -137,21 +163,21 @@ tasks.register('smokeTest', Test) {
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
     def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker",false)
-    systemProperty "rpcHost", project.getProperties().getOrDefault("rpcHost","https://localhost:8888/")
+    systemProperty "restEndpointUrl", project.getProperties().getOrDefault("restEndpointUrl","https://localhost:8888/")
 
     // Note these port values have to match what is setup as part of port forwarding at cluster bootstrap time.
     // E.g. during Jenkins pipeline setup.
     systemProperty "cryptoWorkerHealthHttp",
             project.getProperties().getOrDefault("cryptoWorkerHealthHttp",combinedWorker ? null : "http://localhost:7001/")
-    systemProperty "rpcWorkerHealthHttp",
-            project.getProperties().getOrDefault("rpcWorkerHealthHttp",combinedWorker ? null : "http://localhost:7002/")
+    systemProperty "restWorkerHealthHttp",
+            project.getProperties().getOrDefault("restWorkerHealthHttp",combinedWorker ? null : "http://localhost:7002/")
     systemProperty "flowWorkerHealthHttp",
             project.getProperties().getOrDefault("flowWorkerHealthHttp",combinedWorker ? null : "http://localhost:7003/")
     systemProperty "dbWorkerHealthHttp",
             project.getProperties().getOrDefault("dbWorkerHealthHttp",combinedWorker ? null : "http://localhost:7004/")
 
     systemProperty "combinedWorkerHealthHttp",
-            project.getProperties().getOrDefault("combinedWorkerHealthHttp",combinedWorker ? "http://localhost:7000/" : null)
+            project.getProperties().getOrDefault("combinedWorkerHealthHttp", combinedWorker ? "http://localhost:7004/" : null)
 }
 
 

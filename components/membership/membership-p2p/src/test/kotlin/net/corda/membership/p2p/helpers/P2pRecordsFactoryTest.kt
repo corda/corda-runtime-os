@@ -8,7 +8,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -56,7 +57,7 @@ class P2pRecordsFactoryTest {
     }
 
     @Test
-    fun `createRecords create the correct record`() {
+    fun `createRecords create the correct record with default filter`() {
         val data = mock<KeyValuePairList>()
         whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
 
@@ -79,6 +80,26 @@ class P2pRecordsFactoryTest {
             it.assertThat(header?.subsystem).isEqualTo(
                 MEMBERSHIP_P2P_SUBSYSTEM
             )
+            it.assertThat(header?.statusFilter).isEqualTo(MembershipStatusFilter.ACTIVE)
+        }
+    }
+
+    @Test
+    fun `createRecords create the correct record with pending filter`() {
+        val data = mock<KeyValuePairList>()
+        whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
+
+        val record = factory.createAuthenticatedMessageRecord(
+            source = holdingIdentity1,
+            destination = holdingIdentity2,
+            content = data,
+            minutesToWait = 3,
+            filter = MembershipStatusFilter.PENDING
+        )
+
+        assertSoftly {
+            val value = record.value?.message as? AuthenticatedMessage
+            it.assertThat(value?.header?.statusFilter).isEqualTo(MembershipStatusFilter.PENDING)
         }
     }
 

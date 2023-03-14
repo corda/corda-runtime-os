@@ -1,14 +1,15 @@
 package net.corda.simulator.runtime.ledger
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.entities.ConsensualTransactionSignatureEntity
 import net.corda.simulator.runtime.serialization.BaseSerializationService
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -21,10 +22,10 @@ import java.time.Instant
 import java.util.Objects
 
 class ConsensualSignedTransactionBase(
-    override val signatures: List<DigitalSignatureAndMetadata>,
+    private val signatures: List<DigitalSignatureAndMetadata>,
     private val ledgerTransactionInfo: ConsensualStateLedgerInfo,
     private val signingService: SigningService,
-    private val config : SimulatorConfiguration
+    private val config: SimulatorConfiguration
 ) : ConsensualSignedTransaction {
 
     companion object {
@@ -54,7 +55,8 @@ class ConsensualSignedTransactionBase(
     internal fun toEntity(): ConsensualTransactionEntity {
         val serializer = BaseSerializationService()
         val transactionEntity = ConsensualTransactionEntity(
-            String(id.bytes),
+            // TODO consider adding `SecureHash.getBytes()`
+            String((id as SecureHashImpl).bytes),
             serializer.serialize(ledgerTransaction.states).bytes,
             ledgerTransaction.timestamp
         )
@@ -73,7 +75,7 @@ class ConsensualSignedTransactionBase(
 
     private data class ConsensualLedgerTransactionBase(
         val ledgerTransactionInfo: ConsensualStateLedgerInfo,
-        override val timestamp: Instant
+        private val timestamp: Instant
     ) : ConsensualLedgerTransaction {
 
         val bytes: ByteArray by lazy {
@@ -81,26 +83,28 @@ class ConsensualSignedTransactionBase(
             serializer.serialize(ledgerTransactionInfo).bytes
         }
 
-        override val id: SecureHash by lazy {
+        override fun getId(): SecureHash {
             val digest = MessageDigest.getInstance("SHA-256")
-            SecureHash(digest.algorithm, digest.digest(bytes))
+            return SecureHashImpl(digest.algorithm, digest.digest(bytes))
         }
 
-        override val requiredSignatories: Set<PublicKey> = ledgerTransactionInfo.requiredSigningKeys
-        override val states: List<ConsensualState> = ledgerTransactionInfo.states
+        override fun getRequiredSignatories(): Set<PublicKey> {
+            return ledgerTransactionInfo.requiredSigningKeys
+        }
+
+        override fun getTimestamp(): Instant {
+            return timestamp
+        }
+
+        override fun getStates(): List<ConsensualState> {
+            return ledgerTransactionInfo.states
+        }
     }
 
-    private val ledgerTransaction =
-        ConsensualLedgerTransactionBase(
-            ledgerTransactionInfo,
-            ledgerTransactionInfo.timestamp
-        )
-
-    override val id = ledgerTransaction.id
-    override val metadata: TransactionMetadata
-        get() {
-            TODO("Not yet implemented")
-        }
+    private val ledgerTransaction = ConsensualLedgerTransactionBase(
+        ledgerTransactionInfo,
+        ledgerTransactionInfo.timestamp
+    )
 
     internal fun addSignature(
         publicKey: PublicKey,
@@ -121,7 +125,7 @@ class ConsensualSignedTransactionBase(
 
     override fun toLedgerTransaction(): ConsensualLedgerTransaction = ledgerTransaction
 
-    private fun signWithMetadata(key: PublicKey, timestamp: Instant) : DigitalSignatureAndMetadata {
+    private fun signWithMetadata(key: PublicKey, timestamp: Instant): DigitalSignatureAndMetadata {
         val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpec.ECDSA_SHA256)
         return DigitalSignatureAndMetadata(
             signature,
@@ -130,7 +134,7 @@ class ConsensualSignedTransactionBase(
     }
 
     override fun equals(other: Any?): Boolean {
-        if(this === other) return true
+        if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as ConsensualSignedTransactionBase
@@ -142,5 +146,17 @@ class ConsensualSignedTransactionBase(
 
     override fun hashCode(): Int {
         return Objects.hash(signatures, ledgerTransactionInfo, config)
+    }
+
+    override fun getId(): SecureHash {
+        return ledgerTransaction.id
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        TODO("Not yet implemented")
+    }
+
+    override fun getSignatures(): List<DigitalSignatureAndMetadata> {
+        return signatures
     }
 }

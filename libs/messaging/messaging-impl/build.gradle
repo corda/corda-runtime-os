@@ -10,12 +10,15 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":libs:chunking:chunking-core")
+    implementation project(":libs:crypto:cipher-suite")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:metrics")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"

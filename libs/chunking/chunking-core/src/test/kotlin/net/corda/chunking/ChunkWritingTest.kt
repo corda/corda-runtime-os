@@ -7,7 +7,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
-import net.corda.chunking.Constants.Companion.CORDA_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.KB
 import net.corda.chunking.Constants.Companion.MB
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
@@ -102,7 +102,7 @@ class ChunkWritingTest {
     fun `ensure chunks are trimmed to minimum size`() {
         val chunkSize = 32 * KB
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize + CORDA_MESSAGE_OVERHEAD, chunkBuilderService).apply {
+        val writer = ChunkWriterImpl(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService).apply {
             onChunk { chunks.add(it) }
         }
 

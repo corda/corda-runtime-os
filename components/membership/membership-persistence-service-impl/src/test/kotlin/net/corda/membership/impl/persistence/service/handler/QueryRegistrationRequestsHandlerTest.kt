@@ -4,6 +4,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.db.connection.manager.DbConnectionManager
@@ -17,9 +18,11 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
@@ -42,18 +45,22 @@ class QueryRegistrationRequestsHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val entityTransaction = mock<EntityTransaction>()
+    private val inStatus = mock<CriteriaBuilder.In<String>>()
+    private val statusPath = mock<Path<String>>()
     private val holdingIdentityShortHashPath = mock<Path<String>>()
     private val createdPath = mock<Path<Instant>>()
     private val root = mock<Root<RegistrationRequestEntity>> {
         on { get<String>("holdingIdentityShortHash") } doReturn holdingIdentityShortHashPath
         on { get<Instant>("created") } doReturn createdPath
+        on { get<String>("status") } doReturn statusPath
     }
     private val predicate = mock<Predicate>()
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<RegistrationRequestEntity>> {
         on { from(RegistrationRequestEntity::class.java) } doReturn root
         on { select(root) } doReturn mock
-        on { where(predicate) } doReturn mock
+        on { where() } doReturn mock
+        on { where(any()) } doReturn mock
         on { orderBy(order) } doReturn mock
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
@@ -67,6 +74,7 @@ class QueryRegistrationRequestsHandlerTest {
         on { createQuery(RegistrationRequestEntity::class.java) } doReturn query
         on { equal(holdingIdentityShortHashPath, shortHash.value) } doReturn predicate
         on { asc(createdPath) } doReturn order
+        on { `in`(statusPath) } doReturn inStatus
     }
     private val actualQuery = mock<TypedQuery<RegistrationRequestEntity>>()
     private val entityManager = mock<EntityManager> {
@@ -95,7 +103,6 @@ class QueryRegistrationRequestsHandlerTest {
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn holdingIdentity
     }
-    val request = QueryRegistrationRequests()
 
     private val handler = QueryRegistrationRequestsHandler(service)
 
@@ -112,14 +119,79 @@ class QueryRegistrationRequestsHandlerTest {
                     "SENT_TO_MGM",
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
+                    byteArrayOf(1, 2, 3),
+                    "test reason"
+                )
+            }
+        )
+
+        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), null))
+
+        assertThat(result.registrationRequests.map { it.registrationId })
+            .containsAll(ids)
+    }
+
+    @Test
+    fun `invoke queries with correct predicates as per statuses specified in request`() {
+        whenever(actualQuery.resultList).doReturn(emptyList())
+        val captor = argumentCaptor<Predicate>()
+        whenever(query.where(captor.capture())).thenReturn(query)
+
+        handler.invoke(
+            context,
+            QueryRegistrationRequests(
+                null,
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED),
+                null
+            )
+        )
+
+        verify(query).select(root)
+        assertThat(captor.allValues.single()).isEqualTo(inStatus)
+        verify(inStatus).value(RegistrationStatus.PENDING_MANUAL_APPROVAL.toString())
+        verify(inStatus).value(RegistrationStatus.APPROVED.toString())
+        verify(inStatus).value(RegistrationStatus.DECLINED.toString())
+    }
+
+    @Test
+    fun `invoke queries with correct predicates if X500 name specified in request`() {
+        whenever(actualQuery.resultList).doReturn(emptyList())
+        val captor = argumentCaptor<Predicate>()
+        whenever(query.where(captor.capture())).thenReturn(query)
+
+        handler.invoke(
+            context,
+            QueryRegistrationRequests(
+                holdingIdentity.x500Name, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null
+            )
+        )
+
+        verify(query).select(root)
+        assertThat(captor.allValues).contains(predicate)
+    }
+
+    @Test
+    fun `invoke returns the sublist of the result when limit is specified in request`() {
+        val ids = (1..4).map {
+            "id-$it"
+        }
+        whenever(actualQuery.resultList).doReturn(
+            ids.map {
+                RegistrationRequestEntity(
+                    it,
+                    shortHash.value,
+                    "SENT_TO_MGM",
+                    Instant.ofEpochSecond(500),
+                    Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3)
                 )
             }
         )
 
-        val result = handler.invoke(context, request)
+        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), 2))
 
         assertThat(result.registrationRequests.map { it.registrationId })
-            .containsAll(ids)
+            .containsAll(ids.subList(0, 2))
+        assertThat(result.registrationRequests).hasSize(2)
     }
 }

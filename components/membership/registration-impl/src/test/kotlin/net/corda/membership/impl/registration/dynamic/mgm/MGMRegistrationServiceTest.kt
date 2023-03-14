@@ -8,6 +8,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
@@ -68,14 +69,16 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -95,6 +98,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -115,9 +119,9 @@ import java.util.concurrent.CompletableFuture
 class MGMRegistrationServiceTest {
     private companion object {
         const val SESSION_KEY_STRING = "1234"
-        const val SESSION_KEY_ID = "1"
+        const val SESSION_KEY_ID = "ABC123456789"
         const val ECDH_KEY_STRING = "5678"
-        const val ECDH_KEY_ID = "2"
+        const val ECDH_KEY_ID = "BBC123456789"
         const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
     }
 
@@ -156,8 +160,8 @@ class MGMRegistrationServiceTest {
         on { encodeAsString(ecdhKey) } doReturn ECDH_KEY_STRING
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookup(mgmId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookup(mgmId.value, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
+        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(ECDH_KEY_ID))) } doReturn listOf(ecdhCryptoSigningKey)
     }
     private val gatewayConfiguration = mock<SmartConfig> {
         on { getConfig("sslConfig") } doReturn mock
@@ -211,9 +215,12 @@ class MGMRegistrationServiceTest {
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val mockGroupParametersList: KeyValuePairList = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryRegistrationRequestsStatus(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
-        on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
+        on { persistGroupPolicy(any(), any(), any()) } doReturn MembershipPersistenceResult.success()
         on {
             persistRegistrationRequest(
                 eq(mgm),
@@ -250,6 +257,7 @@ class MGMRegistrationServiceTest {
         keyEncodingService,
         memberInfoFactory,
         membershipPersistenceClient,
+        membershipQueryClient,
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
@@ -407,8 +415,9 @@ class MGMRegistrationServiceTest {
                     .persistGroupPolicy(
                         eq(mgm),
                         groupProperties.capture(),
+                        eq(1)
                     )
-            ).thenReturn(MembershipPersistenceResult.Success(3))
+            ).thenReturn(MembershipPersistenceResult.success())
 
             registrationService.register(registrationRequest, mgm, properties)
 

@@ -3,17 +3,13 @@ package net.corda.flow.testing.fakes
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
-import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.*
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
@@ -68,7 +64,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         return cpkChecksums.any { availableCpk.contains(it) }
     }
 
-    override fun initCache(capacity: Long) {
+    override fun initCache(type: SandboxGroupType, capacity: Long) {
         TODO("Not yet implemented")
     }
 
@@ -118,10 +114,13 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
             val initiatingMap = initiatingToInitiatedFlowsMap.map {
                 Pair(it.value.first, Pair(it.key, listOf(1)))
             }.toMap()
+            val initiatorMap = initiatingToInitiatedFlowsMap.map {
+                Pair(it.key, it.value.first)
+            }.toMap()
             val responderMap = initiatingToInitiatedFlowsMap.map {
                 Pair(it.key, it.value.second)
             }.toMap()
-            return FakeFlowProtocolStore(initiatingMap, responderMap)
+            return FakeFlowProtocolStore(initiatingMap, initiatorMap, responderMap)
         }
     }
 
@@ -189,8 +188,13 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     class FakeFlowProtocolStore(
         private val protocolForInitiator: Map<String, Pair<String, List<Int>>>,
+        private val initiatorForProtocol: Map<String, String>,
         private val responderForProtocol: Map<String, String>
     ) : FlowProtocolStore {
+        override fun initiatorForProtocol(protocolName: String, supportedVersions: Collection<Int>): String {
+            return initiatorForProtocol[protocolName] ?: throw IllegalArgumentException("No initiator configured for $protocolName")
+        }
+
         override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): String {
             return responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
         }

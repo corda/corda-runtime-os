@@ -1,5 +1,6 @@
 package net.corda.flow.state.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.PipelineState
@@ -7,6 +8,8 @@ import net.corda.data.flow.state.checkpoint.RetryState
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
+import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
 import java.time.Instant
 import kotlin.math.min
 import kotlin.math.pow
@@ -31,6 +34,9 @@ class PipelineStateManager(
         // Reset the max sleep time
         state.maxFlowSleepDuration = config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION)
     }
+
+    val cpkFileHashes: Set<SecureHash>
+        get() = state.cpkFileHashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }.toSet()
 
     val retryState: RetryState?
         get() = state.retryState
@@ -65,6 +71,18 @@ class PipelineStateManager(
         state.retryState = null
     }
 
+    fun populateCpkFileHashes(cpkFileHashes: Set<SecureHash>) {
+        if (state.cpkFileHashes.isNullOrEmpty()) {
+            state.cpkFileHashes = cpkFileHashes.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
+        } else {
+            throw IllegalStateException("cpk file hash list ${state.cpkFileHashes} cannot be updated to $cpkFileHashes once set")
+        }
+    }
+
+    fun clearCpkFileHashes() {
+        state.cpkFileHashes = emptyList()
+    }
+
     fun setPendingPlatformError(type: String, message: String) {
         state.pendingPlatformError = ExceptionEnvelope().apply {
             errorType = type
@@ -87,7 +105,7 @@ class PipelineStateManager(
     private fun createAvroExceptionEnvelope(exception: Exception): ExceptionEnvelope {
         return ExceptionEnvelope().apply {
             errorType = FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
-            errorMessage = exception.message
+            errorMessage = exception.message ?: "No exception message provided."
         }
     }
 }

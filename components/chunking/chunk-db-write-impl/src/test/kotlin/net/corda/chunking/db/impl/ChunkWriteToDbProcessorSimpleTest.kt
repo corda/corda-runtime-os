@@ -3,11 +3,12 @@ package net.corda.chunking.db.impl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
@@ -20,7 +21,7 @@ class ChunkWriteToDbProcessorSimpleTest {
     companion object {
         private const val topic = "unused"
         private const val fileName = "unused.txt"
-        val validator = { _: RequestId -> SecureHash.parse("SHA-256:1234567890") }
+        val validator = { _: RequestId -> parseSecureHash("SHA-256:1234567890") }
     }
 
     @Test
@@ -33,7 +34,7 @@ class ChunkWriteToDbProcessorSimpleTest {
         val chunk = Chunk(
             requestId,
             fileName,
-            SecureHash("foo", ByteArray(12)).toAvro(),
+            SecureHashImpl("foo", ByteArray(12)).toAvro(),
             0,
             0,
             ByteBuffer.wrap("12345678".toByteArray()),
@@ -58,7 +59,7 @@ class ChunkWriteToDbProcessorSimpleTest {
         val chunk = Chunk(
             requestId,
             fileName,
-            SecureHash("foo", ByteArray(12)).toAvro(),
+            SecureHashImpl("foo", ByteArray(12)).toAvro(),
             0,
             0,
             ByteBuffer.wrap("12345678".toByteArray()),

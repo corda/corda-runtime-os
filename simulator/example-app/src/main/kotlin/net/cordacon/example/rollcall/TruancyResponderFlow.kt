@@ -17,7 +17,7 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
 
-@InitiatedBy("truancy-record")
+@InitiatedBy(protocol = "truancy-record")
 class TruancyResponderFlow : ResponderFlow {
 
     private companion object {
@@ -40,8 +40,8 @@ class TruancyResponderFlow : ResponderFlow {
         val record = session.receive(TruancyRecord::class.java)
 
         verificationService.verify(
-            record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
-            serializationService.serialize(record.absentees).bytes
+            serializationService.serialize(record.absentees).bytes,
+            record.signature.bytes, record.signature.by, SignatureSpec.ECDSA_SHA256
         )
         log.info("Records verified; persisting records")
 

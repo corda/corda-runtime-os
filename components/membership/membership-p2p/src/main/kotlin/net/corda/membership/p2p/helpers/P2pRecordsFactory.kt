@@ -7,7 +7,8 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -49,12 +50,14 @@ class P2pRecordsFactory(
      *
      * @return The ready-to-send authenticated message record.
      */
+    @Suppress("LongParameterList")
     fun <T : Any> createAuthenticatedMessageRecord(
         source: HoldingIdentity,
         destination: HoldingIdentity,
         content: T,
         minutesToWait: Long? = null,
         id: String = UUID.randomUUID().toString(),
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
     ): Record<String, AppMessage> {
         val data = cordaAvroSerializationFactory.createAvroSerializer<T> {
             logger.warn("Serialization failed")
@@ -67,6 +70,7 @@ class P2pRecordsFactory(
             .setMessageId(id)
             .setTraceId(null)
             .setSubsystem(MEMBERSHIP_P2P_SUBSYSTEM)
+            .setStatusFilter(filter)
             .build()
         val message = AuthenticatedMessage.newBuilder()
             .setHeader(header)

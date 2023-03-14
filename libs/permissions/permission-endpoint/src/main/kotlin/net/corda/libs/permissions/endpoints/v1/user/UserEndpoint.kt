@@ -1,15 +1,15 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
@@ -47,7 +47,7 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account""")
     fun createUser(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = """
                 Details of the user to be created with the following parameters:
                 enabled: If true, the user account is enabled; false, the account is disabled

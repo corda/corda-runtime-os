@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.testutils
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.test.util.InMemoryZipFile
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -32,10 +33,10 @@ object TestUtils {
     /**
      * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
      */
-    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME) : SecureHash {
+    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
         val md = MessageDigest.getInstance(algo.name)
         md.update(this)
-        return SecureHash(algo.name, md.digest())
+        return SecureHashImpl(algo.name, md.digest())
     }
 
     private fun resourceInputStream(fileName: String): InputStream =

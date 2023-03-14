@@ -1,7 +1,7 @@
 package net.corda.membership.certificate.client
 
+import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
-import net.corda.virtualnode.ShortHash
 
 /**
  * A client that handles certificates requests.
@@ -25,7 +25,7 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionKeyId: String?,
+        sessionKeyId: ShortHash?,
         sessionCertificateChainAlias: String?,
     )
 }

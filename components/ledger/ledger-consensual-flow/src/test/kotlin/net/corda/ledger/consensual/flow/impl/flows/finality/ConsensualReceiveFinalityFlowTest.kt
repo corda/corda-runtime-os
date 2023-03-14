@@ -1,12 +1,12 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
@@ -17,11 +17,11 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -41,7 +41,7 @@ class ConsensualReceiveFinalityFlowTest {
 
     private companion object {
         val MEMBER = MemberX500Name("Alice", "London", "GB")
-        val ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
     }
 
     private val memberLookup = mock<MemberLookup>()
@@ -76,6 +76,7 @@ class ConsensualReceiveFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(transactionMetadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.name)
         whenever(signedTransaction.wireTransaction).thenReturn(wireTransaction)
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf(signature1, signature2))
@@ -133,7 +134,7 @@ class ConsensualReceiveFinalityFlowTest {
             publicKeyExample))))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
@@ -216,11 +217,11 @@ class ConsensualReceiveFinalityFlowTest {
 
     @Test
     fun `receiving a transaction to record that is not fully signed throws an exception`() {
-        whenever(signedTransaction.verifySignatures()).thenThrow(TransactionVerificationException(ID, "There are missing signatures", null))
+        whenever(signedTransaction.verifySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(TransactionSignatureException::class.java)
             .hasMessageContaining("There are missing signatures")
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)

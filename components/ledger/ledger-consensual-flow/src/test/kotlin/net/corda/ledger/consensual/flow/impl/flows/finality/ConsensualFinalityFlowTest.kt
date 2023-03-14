@@ -1,11 +1,12 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
@@ -18,11 +19,10 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -40,7 +40,7 @@ import java.time.Instant
 class ConsensualFinalityFlowTest {
 
     private companion object {
-        val TX_ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val TX_ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
         val ALICE = MemberX500Name("Alice", "London", "GB")
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
@@ -93,6 +93,7 @@ class ConsensualFinalityFlowTest {
         whenever(updatedSignedTransaction.id).thenReturn(TX_ID)
         whenever(updatedSignedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(transactionMetadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.name)
 
         whenever(ledgerTransaction.id).thenReturn(TX_ID)
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
@@ -165,7 +166,7 @@ class ConsensualFinalityFlowTest {
         )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
@@ -269,7 +270,13 @@ class ConsensualFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(TransactionMissingSignaturesException(TX_ID, setOf(), "failed"))
+        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(
+            TransactionMissingSignaturesException(
+                TX_ID,
+                setOf(),
+                "failed"
+            )
+        )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionMissingSignaturesException::class.java)

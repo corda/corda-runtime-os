@@ -10,12 +10,14 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.NoResultException
 import javax.persistence.NonUniqueResultException
 import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -142,7 +144,7 @@ internal class DatabaseChunkPersistenceTest {
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(mockCpkContent.length)
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize + 10240).apply {
+        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
@@ -299,7 +301,7 @@ internal class DatabaseChunkPersistenceTest {
         assertThat(chunks.isEmpty()).isFalse
         val requestId = chunks.first().requestId
 
-        chunks.last().checksum = SecureHash("rubbish", "1234567890".toByteArray()).toAvro()
+        chunks.last().checksum = SecureHashImpl("rubbish", "1234567890".toByteArray()).toAvro()
         chunks.forEach { chunkPersistence.persistChunk(it) }
 
         assertThat(chunkPersistence.checksumIsValid(requestId)).isFalse

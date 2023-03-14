@@ -2,7 +2,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import kong.unirest.UnirestException
-import net.corda.httprpc.ResponseCode.OK
+import net.corda.rest.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
@@ -74,7 +74,7 @@ fun updateConfig(config: String, section: String) {
 }
 
 /**
- * Wait for the REST API on the rpc-worker to respond with an updated config value.
+ * Wait for the REST API on the rest-worker to respond with an updated config value.
  * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
 fun waitForConfigurationChange(

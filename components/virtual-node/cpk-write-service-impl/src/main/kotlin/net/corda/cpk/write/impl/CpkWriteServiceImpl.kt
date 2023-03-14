@@ -1,11 +1,10 @@
 package net.corda.cpk.write.impl
 
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.db.impl.DBCpkStorage
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
@@ -16,13 +15,13 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -39,10 +38,10 @@ import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.debug
+import net.corda.utilities.seconds
+import net.corda.utilities.trace
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -72,14 +71,11 @@ class CpkWriteServiceImpl @Activate constructor(
 
         const val CPK_WRITE_GROUP = "cpk.writer"
         const val CPK_WRITE_CLIENT = "$CPK_WRITE_GROUP.client"
+        const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        const val REGISTRATION = "REGISTRATION"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
-
-    @VisibleForTesting
-    internal var configReadServiceRegistration: RegistrationHandle? = null
-    @VisibleForTesting
-    internal var configSubscription: AutoCloseable? = null
 
     @VisibleForTesting
     internal var timeout: Duration? = null
@@ -105,7 +101,7 @@ class CpkWriteServiceImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is ReconcileCpkEvent -> onReconcileCpkEvent(coordinator)
-            is StopEvent -> onStopEvent(coordinator)
+            is StopEvent -> onStopEvent()
         }
     }
 
@@ -114,14 +110,14 @@ class CpkWriteServiceImpl @Activate constructor(
      * to tell us when it is ready so we can register ourselves to handle config updates.
      */
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        configReadServiceRegistration?.close()
-        configReadServiceRegistration =
+        coordinator.createManagedResource(REGISTRATION) {
             coordinator.followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<DbConnectionManager>()
                 )
             )
+        }
     }
 
     /**
@@ -133,19 +129,20 @@ class CpkWriteServiceImpl @Activate constructor(
         coordinator: LifecycleCoordinator
     ) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription = configReadService.registerComponentForUpdates(
-                coordinator,
-                setOf(
-                    BOOT_CONFIG,
-                    MESSAGING_CONFIG,
-                    RECONCILIATION_CONFIG,
+            coordinator.createManagedResource(CONFIG_HANDLE) {
+                configReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(
+                        BOOT_CONFIG,
+                        MESSAGING_CONFIG,
+                        RECONCILIATION_CONFIG,
+                    )
                 )
-            )
+            }
+            coordinator.updateStatus(LifecycleStatus.UP)
+            scheduleNextReconciliationTask(coordinator)
         } else {
-            logger.warn(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
-                        " Component ${this::class.java.simpleName} is not started"
-            )
+            coordinator.updateStatus(LifecycleStatus.DOWN)
             closeResources()
         }
     }
@@ -173,8 +170,8 @@ class CpkWriteServiceImpl @Activate constructor(
         createCpkChecksumsCache(messagingConfig)
         createCpkStorage()
 
-        scheduleNextReconciliationTask(coordinator)
         coordinator.updateStatus(LifecycleStatus.UP)
+        scheduleNextReconciliationTask(coordinator)
     }
 
     private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
@@ -187,18 +184,19 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
-        logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
-        coordinator.setTimer(
-            timerKey,
-            timerEventIntervalMs!!
-        ) { ReconcileCpkEvent(it) }
+        timerEventIntervalMs?.let { timerEventIntervalMs ->
+            logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
+            coordinator.setTimer(
+                timerKey,
+                timerEventIntervalMs
+            ) { ReconcileCpkEvent(it) }
+        }
     }
 
     /**
      * Close the registration.
      */
-    private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        coordinator.cancelTimer(timerKey)
+    private fun onStopEvent() {
         closeResources()
     }
 
@@ -211,7 +209,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
         val cpkStorage =
             this.cpkStorage ?: throw CordaRuntimeException("CPK Storage Service is not set")
-        val missingCpkIdsOnKafka = cpkStorage.getCpkIdsNotIn(cachedCpkIds)
+        val missingCpkIdsOnKafka = cpkStorage.getAllCpkFileIds(fileChecksumsToExclude = cachedCpkIds)
 
         // Make sure we use the same CPK publisher for all CPK publishing.
         this.cpkChunksPublisher?.let {
@@ -219,16 +217,16 @@ class CpkWriteServiceImpl @Activate constructor(
                 .forEach { cpkChecksum ->
                     // TODO probably replace the following logging with debug
                     logger.info("Putting missing CPK to Kafka: $cpkChecksum")
-                    val cpkChecksumData = cpkStorage.getCpkDataByCpkId(cpkChecksum)
-                    it.chunkAndPublishCpk(cpkChecksumData)
+                    val cpkFile = cpkStorage.getCpkFileById(cpkChecksum)
+                    it.chunkAndPublishCpk(cpkFile)
                 }
         } ?: throw CordaRuntimeException("CPK Chunks Publisher service is not set")
     }
 
-    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
-        logger.debug { "Publishing CPK ${cpkChecksumToData.checksum}" }
-        val cpkChecksum = cpkChecksumToData.checksum
-        val cpkData = cpkChecksumToData.data
+    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkFile: CpkFile) {
+        logger.debug { "Publishing CPK ${cpkFile.fileChecksum}" }
+        val cpkChecksum = cpkFile.fileChecksum
+        val cpkData = cpkFile.data
         val chunkWriter = maxAllowedKafkaMsgSize?.let {
             ChunkWriterFactory.create(it)
         } ?: throw CordaRuntimeException("maxAllowedKafkaMsgSize is not set")
@@ -255,10 +253,7 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun closeResources() {
-        configReadServiceRegistration?.close()
-        configReadServiceRegistration = null
-        configSubscription?.close()
-        configSubscription = null
+        coordinator.cancelTimer(timerKey)
         cpkChecksumsCache?.close()
         cpkChecksumsCache = null
         cpkChunksPublisher?.close()

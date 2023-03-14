@@ -1,8 +1,8 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.virtualnode.ShortHash
+import net.corda.crypto.core.ShortHash
 
 /**
  * Utility for running migrations.
@@ -24,15 +24,22 @@ internal interface MigrationUtility {
      */
     fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationChangeLogs: List<CpkDbChangeLogEntity>,
+        migrationChangeLogs: List<CpkDbChangeLog>,
         vaultDdlConnectionId: UUID
     )
 
     /**
-     * Checks if the vault for the given connection ID requires migrations to be run to be in sync with the given list of CPK change logs.
+     * Checks if the [cpkChangelogs] have been successfully deployed on the virtual node's vault identified by [vaultDmlConnectionId].
      *
-     * @param cpkChangelogs the changelogs with which to compare
+     * @param virtualNodeShortHash the virtual node identifier of which to perform diff function
+     * @param cpkChangelogs the list of changesets to check if are deployed
      * @param vaultDmlConnectionId the DML connection ID of the vault to be compared
+     *
+     * @return Boolean indicating if the list of changelogs have been successfully executed on this vault schema
      */
-    fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean
+    fun areChangesetsDeployedOnVault(
+        virtualNodeShortHash: String,
+        cpkChangelogs: List<CpkDbChangeLog>,
+        vaultDmlConnectionId: UUID
+    ): Boolean
 }

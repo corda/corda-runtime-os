@@ -1,9 +1,9 @@
 package net.corda.virtualnode.read.impl
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -20,7 +20,7 @@ import java.util.UUID
 class VirtualNodeInfoMapTest {
     private lateinit var map: VirtualNodeInfoMap
 
-    private val secureHash = SecureHash("algorithm", "1234".toByteArray())
+    private val secureHash = SecureHashImpl("algorithm", "1234".toByteArray())
     private val fakeShortHash = ShortHash.of("BEEFDEADBEEF")
     private val otherShortHash = ShortHash.of("F0000000000D")
     private val cpiIdentifier = CpiIdentifier("ghi", "hjk", secureHash)

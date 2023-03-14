@@ -1,11 +1,12 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.NotarisationRequest
-import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryErrorGeneralImpl
-import com.r3.corda.notary.plugin.common.toNotarisationResponse
+import com.r3.corda.notary.plugin.common.NotarizationRequest
+import com.r3.corda.notary.plugin.common.NotarizationResponse
+import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
-import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
+import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
@@ -16,8 +17,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -32,12 +31,11 @@ import org.slf4j.LoggerFactory
  * The server-side implementation of the non-validating notary logic.
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
-// TODO CORE-7292 What is the best way to define the protocol
-@InitiatedBy(protocol = "non-validating-notary")
+@InitiatedBy(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -55,6 +53,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
 
+    @CordaInject
+    private lateinit var digestService: DigestService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
@@ -65,13 +66,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
         memberLookup: MemberLookup,
-        transactionSignatureService: TransactionSignatureService
+        transactionSignatureService: TransactionSignatureService,
+        digestService: DigestService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
         this.transactionSignatureService = transactionSignatureService
+        this.digestService = digestService
     }
 
     /**
@@ -82,20 +85,22 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * 2. Run initial validation (signature etc.)
      * 3. Run verification
      * 4. Request uniqueness checking using the [LedgerUniquenessCheckerClientService]
-     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.NotarisationResponse]
+     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.NotarizationResponse]
      * back to the client including the specific
-     * [NotaryError][net.corda.v5.ledger.notary.plugin.core.NotaryError] if applicable
+     * [NotaryException][net.corda.v5.ledger.notary.plugin.core.NotaryException] if applicable
      */
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val requestPayload = session.receive(NonValidatingNotarisationPayload::class.java)
+            val requestPayload = session.receive(NonValidatingNotarizationPayload::class.java)
 
             val txDetails = validateRequest(requestPayload)
 
-            val request = NotarisationRequest(txDetails.inputs, txDetails.id)
+            val request = NotarizationRequest(txDetails.inputs, txDetails.id)
 
-            logger.trace { "Received notarization request for transaction ${request.transactionId}" }
+            if (logger.isTraceEnabled) {
+                logger.trace("Received notarization request for transaction {}", request.transactionId)
+            }
 
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
@@ -107,12 +112,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 otherParty,
                 serializationService,
                 signatureVerifier,
-                requestPayload.requestSignature
+                requestPayload.requestSignature,
+                digestService
             )
 
             verifyTransaction(requestPayload)
 
-            logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
+            if (logger.isTraceEnabled) {
+                logger.trace("Requesting uniqueness check for transaction {}", txDetails.id)
+            }
 
             val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
@@ -123,22 +131,23 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 txDetails.timeWindow.until
             )
 
-            logger.debug {
-                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResult}. Sending response " +
-                        "to ${session.counterparty}"
+            if (logger.isDebugEnabled) {
+                logger.debug("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
+                    txDetails.id, uniquenessResult, session.counterparty)
             }
 
             val signature = if (uniquenessResult is UniquenessCheckResultSuccess) {
                 transactionSignatureService.signBatch(listOf(txDetails), listOf(requestPayload.notaryKey)).first().first()
             } else null
 
-            session.send(uniquenessResult.toNotarisationResponse(signature))
+            session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
             session.send(
-                NotarisationResponse(
+                NotarizationResponse(
                     emptyList(),
-                    NotaryErrorGeneralImpl("Error while processing request from client.", e)
+                    NotaryExceptionGeneral("Error while processing request from client. " +
+                            "Please contact notary operator for further details.")
                 )
             )
         }
@@ -151,7 +160,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    private fun validateRequest(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
+    private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val transactionParts = try {
             extractParts(requestPayload)
         } catch (e: Exception) {
@@ -168,7 +177,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * A helper function that constructs an instance of [NonValidatingNotaryTransactionDetails] from the given transaction.
      */
     @Suspendable
-    private fun extractParts(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
+    private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
         // The notary component is not needed by us but we validate that it is present just in case
         requireNotNull(filteredTx.notary) {
@@ -213,7 +222,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "ThrowsCount",)
-    private fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {
+    private fun verifyTransaction(requestPayload: NonValidatingNotarizationPayload) {
         try {
             (requestPayload.transaction as UtxoFilteredTransaction).verify()
         } catch (e: Exception) {

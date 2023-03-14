@@ -1,12 +1,12 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.chunking.toAvro
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.v5.base.util.seconds
-import net.corda.v5.crypto.SecureHash
+import net.corda.utilities.seconds
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -23,7 +23,7 @@ class KafkaCpkChunksPublisherTest {
         fun secureHash(bytes: ByteArray): net.corda.data.crypto.SecureHash {
             val algorithm = "SHA-256"
             val messageDigest = MessageDigest.getInstance(algorithm)
-            return SecureHash(algorithm, messageDigest.digest(bytes)).toAvro()
+            return SecureHashImpl(algorithm, messageDigest.digest(bytes)).toAvro()
         }
     }
 
