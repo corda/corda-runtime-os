@@ -110,7 +110,7 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         consumed: Boolean,
-        stateCustomJson: StateCustomJson,
+        customRepresentation: CustomRepresentation,
         timestamp: Instant
     )
 

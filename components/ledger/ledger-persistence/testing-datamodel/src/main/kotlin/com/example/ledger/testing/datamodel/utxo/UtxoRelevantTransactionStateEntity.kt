@@ -38,8 +38,8 @@ data class UtxoRelevantTransactionStateEntity(
     @Column(name = "consumed", nullable = false)
     val isConsumed: Boolean,
 
-    @Column(name = "custom", nullable = false, columnDefinition = "jsonb")
-    val custom: String,
+    @Column(name = "custom_representation", nullable = false, columnDefinition = "jsonb")
+    val customRepresentation: String,
 
     @Column(name = "created", nullable = false)
     val created: Instant,

@@ -2,7 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.utxo.StateCustomJson
+import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -148,7 +148,7 @@ class UtxoPersistenceServiceImpl constructor(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 relevantStateIndex,
                 consumed = false,
-                StateCustomJson("{\"temp\": \"value\"}"),
+                CustomRepresentation("{\"temp\": \"value\"}"),
                 nowUtc
             )
         }

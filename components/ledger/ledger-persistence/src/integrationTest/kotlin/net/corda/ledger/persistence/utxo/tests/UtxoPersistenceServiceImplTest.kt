@@ -14,7 +14,7 @@ import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
-import net.corda.ledger.persistence.utxo.StateCustomJson
+import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -186,7 +186,7 @@ class UtxoPersistenceServiceImplTest {
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 1,
                 false,
-                StateCustomJson("{}"),
+                CustomRepresentation("{}"),
                 createdTs
             )
 
@@ -196,7 +196,7 @@ class UtxoPersistenceServiceImplTest {
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 0,
                 false,
-                StateCustomJson("{}"),
+                CustomRepresentation("{}"),
                 createdTs
             )
 
@@ -206,7 +206,7 @@ class UtxoPersistenceServiceImplTest {
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 1,
                 true,
-                StateCustomJson("{}"),
+                CustomRepresentation("{}"),
                 createdTs
             )
         }
@@ -397,7 +397,7 @@ class UtxoPersistenceServiceImplTest {
                 .forEach { (dbRelevancy, relevantStateIndex) ->
                     assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(relevantStateIndex)
-                    assertThat(dbRelevancy.field<String>("custom")).isEqualTo("{\"temp\": \"value\"}")
+                    assertThat(dbRelevancy.field<String>("customRepresentation")).isEqualTo("{\"temp\": \"value\"}")
                     assertThat(dbRelevancy.field<Instant>("consumedTimestamp")).isNull()
                 }
 
