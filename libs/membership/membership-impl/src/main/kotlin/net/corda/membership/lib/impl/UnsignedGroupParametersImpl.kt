@@ -9,55 +9,26 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.NotaryInfo
 import java.time.Instant
 
+/**
+ *
+ * @param bytes the serialized group parameters which is the source of group parameters data.
+ * @param deserializer a deserialization function for extracting the group parameters map from the serialized form.
+ */
 class UnsignedGroupParametersImpl(
     override val bytes: ByteArray,
-    private val deserializer: (serialisedParams: ByteArray) -> LayeredPropertyMap
-) : UnsignedGroupParameters {
-//    init {
-//        require(minimumPlatformVersion > 0) { "Platform version must be at least 1." }
-//        require(epoch > 0) { "Epoch must be at least 1." }
-//    }
+    deserializer: (serialisedParams: ByteArray) -> LayeredPropertyMap
+) : UnsignedGroupParameters, LayeredPropertyMap by deserializer(bytes) {
 
-    private val map: LayeredPropertyMap by lazy {
-        deserializer(bytes)
-    }
-
-    override fun getMinimumPlatformVersion(): Int = map.parse(MPV_KEY, Int::class.java)
-    override fun getModifiedTime(): Instant = map.parse(MODIFIED_TIME_KEY, Instant::class.java)
-    override fun getEpoch(): Int = map.parse(EPOCH_KEY, Int::class.java)
-    override fun getNotaries(): Collection<NotaryInfo> = map.parseList(NOTARIES_KEY, NotaryInfo::class.java)
+    override fun getMinimumPlatformVersion(): Int = parse(MPV_KEY, Int::class.java)
+    override fun getModifiedTime(): Instant = parse(MODIFIED_TIME_KEY, Instant::class.java)
+    override fun getEpoch(): Int = parse(EPOCH_KEY, Int::class.java)
+    override fun getNotaries(): Collection<NotaryInfo> = parseList(NOTARIES_KEY, NotaryInfo::class.java)
 
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is UnsignedGroupParametersImpl) return false
         if (this === other) return true
-        return map == other.map
+        return bytes.contentEquals(other.bytes)
     }
 
-    override fun hashCode(): Int = map.hashCode()
-
-    override fun getEntries(): Set<Map.Entry<String, String>> = map.entries
-
-    override fun get(
-        key: String
-    ): String? = map.get(key)
-
-    override fun <T : Any?> parse(
-        key: String,
-        clazz: Class<out T>
-    ) = map.parse(key, clazz)
-
-    override fun <T : Any?> parseOrNull(
-        key: String,
-        clazz: Class<out T>
-    ): T? = map.parseOrNull(key, clazz)
-
-    override fun <T : Any?> parseList(
-        itemKeyPrefix: String,
-        clazz: Class<out T>
-    ): List<T> = map.parseList(itemKeyPrefix, clazz)
-
-    override fun <T : Any?> parseSet(
-        itemKeyPrefix: String,
-        clazz: Class<out T>
-    ): Set<T> = map.parseSet(itemKeyPrefix, clazz)
+    override fun hashCode(): Int = bytes.hashCode()
 }
