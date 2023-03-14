@@ -19,6 +19,6 @@ class VisibilityCheckerImpl @Activate constructor(
 
     @Suspendable
     override fun containsMySigningKeys(keys: Iterable<PublicKey>): Boolean {
-        return signingService.findMySigningKeys(keys.toSet()).values.isNotEmpty()
+        return signingService.findMySigningKeys(keys.toSet()).values.filterNotNull().isNotEmpty()
     }
 }
