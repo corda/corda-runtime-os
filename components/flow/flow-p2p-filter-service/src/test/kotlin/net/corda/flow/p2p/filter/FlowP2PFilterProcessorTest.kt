@@ -1,5 +1,7 @@
 package net.corda.flow.p2p.filter
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
@@ -7,12 +9,12 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -20,8 +22,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class FlowP2PFilterProcessorTest {
 
@@ -56,9 +56,8 @@ class FlowP2PFilterProcessorTest {
             listOf(),
             SessionInit(
                 testValue,
-                version,
-                testValue,
                 null,
+                emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())

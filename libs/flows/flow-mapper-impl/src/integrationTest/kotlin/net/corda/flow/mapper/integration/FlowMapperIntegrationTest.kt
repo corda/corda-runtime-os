@@ -18,12 +18,12 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -114,9 +114,8 @@ class FlowMapperIntegrationTest {
         val inputKey = "sessionId"
         val sessionInit = SessionInit(
             "flowName",
-            listOf(1),
-            "cpiId",
             "flowId",
+            emptyKeyValuePairList(),
             emptyKeyValuePairList(),
             emptyKeyValuePairList(),
             null
@@ -140,9 +139,8 @@ class FlowMapperIntegrationTest {
         val inputKey = "sessionId-INITIATED"
         val sessionInit = SessionInit(
             "flowName",
-            listOf(1),
-            "cpiId",
             "flow id",
+            emptyKeyValuePairList(),
             emptyKeyValuePairList(),
             emptyKeyValuePairList(),
             null

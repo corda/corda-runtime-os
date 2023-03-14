@@ -108,7 +108,7 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, versions, testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), null
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null
                     )
                 )
             )
@@ -252,7 +252,7 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, versions, testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), null
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null
                     )
                 )
             )
