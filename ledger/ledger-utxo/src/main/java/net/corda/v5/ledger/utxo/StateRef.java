@@ -1,5 +1,6 @@
 package net.corda.v5.ledger.utxo;
 
+import net.corda.v5.application.crypto.DigestService;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.crypto.SecureHash;
 import org.jetbrains.annotations.NotNull;
@@ -67,12 +68,12 @@ public final class StateRef {
      * @return Returns a {@link StateRef} parsed from the specified {@link String} value.
      * @throws IllegalArgumentException if the specified value cannot be parsed.
      */
-    public static StateRef parse(@NotNull final String value) {
+    public static StateRef parse(@NotNull final String value, DigestService digestService) {
         try {
             final int lastIndexOfDelimiter = value.lastIndexOf(DELIMITER);
             final String subStringBeforeDelimiter = value.substring(0, lastIndexOfDelimiter);
             final String subStringAfterDelimiter = value.substring(lastIndexOfDelimiter + 1);
-            final SecureHash transactionId = SecureHash.parse(subStringBeforeDelimiter);
+            final SecureHash transactionId = digestService.parseSecureHash(subStringBeforeDelimiter);
             final int index = Integer.parseInt(subStringAfterDelimiter);
             return new StateRef(transactionId, index);
         } catch (NumberFormatException numberFormatException) {

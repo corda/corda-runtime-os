@@ -16,7 +16,7 @@ class MerkleProofJavaApiTest {
     void verify() {
         when(merkleProof.verify(any(), any())).thenReturn(true);
 
-        final SecureHash hash = new SecureHash("SHA-256", "123".getBytes());
+        final SecureHash hash = mock(SecureHash.class);
         final MerkleTreeHashDigest digest = mock(MerkleTreeHashDigest.class);
         final boolean result = merkleProof.verify(hash, digest);
 
@@ -24,7 +24,7 @@ class MerkleProofJavaApiTest {
     }
     @Test
     void calculateRoot() {
-        final SecureHash rootHash = new SecureHash("SHA-256", "456".getBytes());
+        final SecureHash rootHash = mock(SecureHash.class);
         when(merkleProof.calculateRoot(any())).thenReturn(rootHash);
 
         final MerkleTreeHashDigest digest = mock(MerkleTreeHashDigest.class);

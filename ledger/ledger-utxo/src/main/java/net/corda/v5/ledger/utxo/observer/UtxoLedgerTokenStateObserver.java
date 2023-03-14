@@ -1,5 +1,6 @@
 package net.corda.v5.ledger.utxo.observer;
 
+import net.corda.v5.application.crypto.DigestService;
 import net.corda.v5.ledger.utxo.ContractState;
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection;
 import org.jetbrains.annotations.NotNull;
@@ -82,5 +83,5 @@ public interface UtxoLedgerTokenStateObserver<T extends ContractState> {
      * @return Returns a {@link UtxoToken}.
      */
     @NotNull
-    UtxoToken onCommit(@NotNull T state);
+    UtxoToken onCommit(@NotNull T state, @NotNull DigestService digestService);
 }
