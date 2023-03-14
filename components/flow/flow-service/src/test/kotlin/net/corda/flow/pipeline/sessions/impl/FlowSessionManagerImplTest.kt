@@ -218,6 +218,7 @@ class FlowSessionManagerImplTest {
             X500_NAME,
             userContext.avro,
             platformContext.avro,
+            sessionContext.avro,
             instant
         )
 

@@ -41,6 +41,7 @@ class InitiateFlowRequestServiceTest {
                 eq(ALICE_X500_NAME),
                 any(),
                 any(),
+                any(),
                 any()
             )
         ).thenReturn(sessionState1)
