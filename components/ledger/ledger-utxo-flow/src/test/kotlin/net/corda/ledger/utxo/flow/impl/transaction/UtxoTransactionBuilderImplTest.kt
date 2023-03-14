@@ -24,9 +24,9 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertIs
 
 class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
-    private val stateRef1 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)
-    private val stateRef2 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 2)), 0)
-    private val stateRef3 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 3)), 0)
+    private val stateRef1 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0)
+    private val stateRef2 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 2)), 0)
+    private val stateRef3 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 3)), 0)
     private val state1 = UtxoStateClassExample("test 1", listOf(publicKeyExample))
     private val state2 = UtxoStateClassExample("test 2", listOf(publicKeyExample))
     private val state3 = UtxoStateClassExample("test 3", listOf(publicKeyExample))
@@ -431,7 +431,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating attachments throws`() {
-        val attachmentId = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
+        val attachmentId = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         utxoTransactionBuilder
             .addAttachment(attachmentId)
         assertThatThrownBy {
