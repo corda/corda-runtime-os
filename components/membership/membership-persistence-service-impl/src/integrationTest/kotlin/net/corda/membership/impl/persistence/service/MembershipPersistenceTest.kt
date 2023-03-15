@@ -110,7 +110,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -500,8 +499,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf()),
                     KeyValuePairList(emptyList()),
                 ),
-                true,
                 REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -1015,8 +1014,8 @@ class MembershipPersistenceTest {
                         signature,
                         signatureContext,
                     ),
-                    true,
                     REGISTRATION_SERIAL,
+                    true,
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(
@@ -1069,8 +1068,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf()),
                     KeyValuePairList(emptyList()),
                 ),
-                true,
                 REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -1291,8 +1290,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf()),
                     KeyValuePairList(emptyList()),
                 ),
-                true,
                 REGISTRATION_SERIAL,
+                true,
             )
         )
     }

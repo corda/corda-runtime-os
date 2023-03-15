@@ -274,8 +274,8 @@ class MemberResourceClientImpl @Activate constructor(
                             ByteBuffer.wrap(byteArrayOf()),
                             KeyValuePairList(emptyList())
                         ),
-                        true,
                         memberRegistrationRequest.context[SERIAL]?.toLong(),
+                        true,
                     )
                 ).getOrThrow()
                 return RegistrationRequestProgressDto(

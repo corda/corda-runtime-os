@@ -136,8 +136,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
-    @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -299,11 +297,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                         it.context.toWire()
                     )
                 }
-                val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: membershipQueryClient.queryMemberInfo(member, listOf(member)).getOrThrow().firstOrNull()?.serial
+                    ?: groupReader.lookup(member.x500Name)?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
