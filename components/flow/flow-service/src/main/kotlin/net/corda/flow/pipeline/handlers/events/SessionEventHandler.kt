@@ -64,6 +64,8 @@ class SessionEventHandler @Activate constructor(
             now
         )
 
+        checkpoint.putSessionState(updatedSessionState)
+
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         val nextSessionPayload = nextSessionEvent?.payload
@@ -76,7 +78,6 @@ class SessionEventHandler @Activate constructor(
             }
         }
 
-        checkpoint.putSessionState(updatedSessionState)
 
         return context
     }

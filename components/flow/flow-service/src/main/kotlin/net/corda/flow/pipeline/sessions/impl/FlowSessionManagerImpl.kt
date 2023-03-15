@@ -98,7 +98,6 @@ class FlowSessionManagerImpl @Activate constructor(
         contextSessionProperties: KeyValuePairList,
         instant: Instant,
     ): SessionState {
-        validateSessionStates(checkpoint, listOf(sessionId), Operation.SENDING)
         return sendSessionMessageToExistingSession(
             checkpoint,
             sessionId,
