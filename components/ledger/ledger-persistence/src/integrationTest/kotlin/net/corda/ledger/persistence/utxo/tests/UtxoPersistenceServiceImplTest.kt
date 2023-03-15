@@ -398,7 +398,7 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(relevantStateIndex)
                     assertThat(dbRelevancy.field<String>("customRepresentation")).isEqualTo("{\"temp\": \"value\"}")
-                    assertThat(dbRelevancy.field<Instant>("consumedTimestamp")).isNull()
+                    assertThat(dbRelevancy.field<Instant>("consumed")).isNull()
                 }
 
             val signatures = signedTransaction.signatures

@@ -116,7 +116,7 @@ class UtxoRepositoryImpl @Activate constructor(
                 JOIN {h-schema}utxo_transaction_status AS ts
                     ON ts.transaction_id = tc.transaction_id
                 WHERE tc.group_idx IN (:groupIndices)
-                AND rts.consumed = false
+                AND rts.consumed IS NULL
                 AND ts.status = :verified
                 ORDER BY tc.group_idx, tc.leaf_idx""",
             Tuple::class.java
@@ -209,11 +209,11 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager.createNativeQuery(
         """
             UPDATE {h-schema}utxo_relevant_transaction_state
-            SET consumed = true, consumed_timestamp = :consumedTimestamp
+            SET consumed = :consumed
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
         )
-            .setParameter("consumedTimestamp", timestamp)
+            .setParameter("consumed", timestamp)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
@@ -340,26 +340,24 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_relevant_transaction_state(
-                transaction_id, group_idx, leaf_idx, consumed, custom_representation, created, consumed_timestamp
+                transaction_id, group_idx, leaf_idx, custom_representation, created, consumed
             )
             VALUES(
                 :transactionId, 
                 :groupIndex, 
                 :leafIndex, 
-                :consumed, 
                 CAST(:custom_representation as JSONB), 
                 :createdAt, 
-                ${if (consumed) ":consumedTimestamp" else "null"}
+                ${if (consumed) ":consumedAt" else "null"}
             )
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
-            .setParameter("consumed", consumed)
             .setParameter("custom_representation", customRepresentation.json)
             .setParameter("createdAt", timestamp)
-            .run { if (consumed) setParameter("consumedTimestamp", timestamp) else this }
+            .run { if (consumed) setParameter("consumedAt", timestamp) else this }
             .executeUpdate()
             .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
     }
