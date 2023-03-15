@@ -5,6 +5,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
@@ -73,7 +74,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 Arguments.of(
                     FlowIORequest.Send::class.simpleName,
                     FlowIORequest.Send(
-                        mapOf(FlowIORequest.SessionInfo(SESSION_ID_2, BOB_X500_NAME) to "bytes".toByteArray()),
+                        mapOf(SessionInfo(SESSION_ID_2, BOB_X500_NAME) to "bytes".toByteArray()),
                     )
                 )
             )
@@ -120,12 +121,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Send(mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0)
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
@@ -231,7 +232,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving an out-of-order session close events does not resume the flow and sends a session ack`() {
         given {
             initiateSingleFlow(this, 2)
-                .suspendsWith(FlowIORequest.Receive(setOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
 
         }
 
@@ -251,7 +252,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving an ordered session close event when waiting to receive data errors the flow`() {
         given {
             initiateSingleFlow(this, 2)
-                .suspendsWith(FlowIORequest.Receive(setOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
         }
 
         `when` {
@@ -598,8 +599,8 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         given {
             initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
                 )))
         }
 
