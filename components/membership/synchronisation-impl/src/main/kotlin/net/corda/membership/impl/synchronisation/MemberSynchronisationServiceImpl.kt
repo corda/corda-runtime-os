@@ -10,6 +10,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
@@ -262,7 +263,8 @@ class MemberSynchronisationServiceImpl internal constructor(
                     ?: throw CordaRuntimeException("Failed to deserialize group parameters from received membership package.")
                 verifier.verify(
                     mgmSignature,
-                    groupParametersBytes,
+                    mgmSignatureSpec,
+                    groupParametersBytes
                 )
                 groupParametersFactory.create(parametersList)
             }
@@ -291,10 +293,12 @@ class MemberSynchronisationServiceImpl internal constructor(
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
                     verifier.verify(
                         update.memberSignature,
-                        update.memberContext.array(),
+                        update.memberSignatureSpec,
+                        update.memberContext.array()
                     )
                     verifyMgmSignature(
                         update.mgmSignature,
+                        update.mgmSignatureSpec,
                         update.memberContext.array(),
                         update.mgmContext.array(),
                     )
@@ -367,11 +371,12 @@ class MemberSynchronisationServiceImpl internal constructor(
 
     private fun verifyMgmSignature(
         mgmSignature: CryptoSignatureWithKey,
+        mgmSignatureSpec: CryptoSignatureSpec,
         vararg leaves: ByteArray,
     ) {
         val data = merkleTreeGenerator.createTree(leaves.toList())
             .root.bytes
-        verifier.verify(mgmSignature, data)
+        verifier.verify(mgmSignature, mgmSignatureSpec, data)
     }
 
     private fun createSynchronisationRequestMessage(

@@ -212,6 +212,7 @@ class MembershipPersistenceClientImpl(
                         registrationId,
                         memberContext,
                         signature,
+                        signatureSpec,
                         isPending
                     )
                 }
