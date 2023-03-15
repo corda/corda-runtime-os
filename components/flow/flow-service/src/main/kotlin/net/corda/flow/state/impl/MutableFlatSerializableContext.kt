@@ -24,9 +24,6 @@ class MutableFlatSerializableContext(
 
     override val platformProperties: ContextPlatformProperties = object : ContextPlatformProperties {
         override fun put(key: String, value: String) {
-            require(platformPropertyMap[key] == null) {
-                "'${key}' is already a platform context property, it cannot be overwritten"
-            }
             platformPropertyMap[key] = value
         }
     }

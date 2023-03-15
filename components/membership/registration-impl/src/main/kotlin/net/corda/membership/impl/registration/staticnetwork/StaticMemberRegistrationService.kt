@@ -10,6 +10,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
@@ -357,9 +358,9 @@ class StaticMemberRegistrationService(
                 memberContext = ByteBuffer.wrap(memberContext),
                 signature = CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList())
-                )
+                    ByteBuffer.wrap(byteArrayOf())
+                ),
+                signatureSpec = CryptoSignatureSpec("", null, null)
             )
         ).getOrThrow()
     }

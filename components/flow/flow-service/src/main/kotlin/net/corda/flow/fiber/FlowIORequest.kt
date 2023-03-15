@@ -1,9 +1,9 @@
 package net.corda.flow.fiber
 
+import net.corda.flow.application.sessions.SessionInfo
+import net.corda.flow.external.events.factory.ExternalEventFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.flow.external.events.factory.ExternalEventFactory
-import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
@@ -18,22 +18,6 @@ interface FlowIORequest<out R> {
         val sessionPayloads: Map<SessionInfo, ByteArray>,
     ) : FlowIORequest<Unit> {
         override fun toString() = "Send(payloads=${sessionPayloads.keys.joinToString { it.toString() }})"
-    }
-
-    /**
-     * Information about a session
-     * @property sessionId Id of the session
-     * @property counterparty x500 name of the counterparty
-     * @property contextUserProperties user context properties used in session initiation only
-     * @property contextPlatformProperties platform context properties used in session initiation only
-     */
-    data class SessionInfo(
-        val sessionId: String,
-        val counterparty: MemberX500Name,
-        val contextUserProperties: Map<String, String> = emptyMap(),
-        val contextPlatformProperties: Map<String, String> = emptyMap()
-    ) {
-        override fun toString() = "SessionInfo(sessionId=$sessionId, counterparty=$counterparty) "
     }
 
     /**

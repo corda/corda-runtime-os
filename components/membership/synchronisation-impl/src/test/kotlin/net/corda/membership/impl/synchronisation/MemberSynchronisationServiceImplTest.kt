@@ -9,6 +9,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
@@ -178,12 +179,16 @@ class MemberSynchronisationServiceImplTest {
         on { array() } doReturn MGM_CONTEXT_BYTES
     }
     private val memberSignature = mock<CryptoSignatureWithKey>()
+    private val memberSignatureSpec = mock<CryptoSignatureSpec>()
     private val mgmSignature = mock<CryptoSignatureWithKey>()
+    private val mgmSignatureSpec = mock<CryptoSignatureSpec>()
     private val signedMemberInfo: SignedMemberInfo = mock {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
         on { memberSignature } doReturn memberSignature
+        on { memberSignatureSpec } doReturn memberSignatureSpec
         on { mgmSignature } doReturn mgmSignature
+        on { mgmSignatureSpec } doReturn mgmSignatureSpec
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
@@ -193,6 +198,7 @@ class MemberSynchronisationServiceImplTest {
     private val mgmSignatureGroupParameters = mock<CryptoSignatureWithKey>()
     private val signedGroupParameters = mock<AvroGroupParameters> {
         on { mgmSignature } doReturn mgmSignatureGroupParameters
+        on { mgmSignatureSpec } doReturn mgmSignatureSpec
         on { groupParameters } doReturn ByteBuffer.wrap(GROUP_PARAMETERS_BYTES)
     }
     private val membershipPackage: MembershipPackage = mock {
@@ -385,7 +391,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed member signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(memberSignature), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(memberSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -396,7 +402,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(mgmSignature), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -410,6 +416,7 @@ class MemberSynchronisationServiceImplTest {
         whenever(
             verifier.verify(
                 eq(mgmSignatureGroupParameters),
+                any(),
                 any()
             )
         ).thenThrow(CordaRuntimeException("Mock failure"))
@@ -426,6 +433,7 @@ class MemberSynchronisationServiceImplTest {
         whenever(
             verifier.verify(
                 eq(mgmSignatureGroupParameters),
+                any(),
                 any()
             )
         ).thenThrow(CordaRuntimeException("Mock failure"))
@@ -444,8 +452,8 @@ class MemberSynchronisationServiceImplTest {
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(verifier).verify(memberSignature, MEMBER_CONTEXT_BYTES)
-        verify(verifier).verify(mgmSignature, byteArrayOf(1, 2, 3))
+        verify(verifier).verify(memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
     }
 
     @Test

@@ -11,6 +11,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -505,9 +506,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
                 true
             )
         )
@@ -1036,11 +1037,6 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
-            val signatureContext = KeyValuePairList(
-                listOf(
-                    KeyValuePair("key", "value")
-                )
-            )
             persistMember(holdingId.x500Name)
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
@@ -1055,16 +1051,16 @@ class MembershipPersistenceTest {
                     ),
                     CryptoSignatureWithKey(
                         publicKey,
-                        signature,
-                        signatureContext,
+                        signature
                     ),
+                    CryptoSignatureSpec("", null, null),
                     true
                 )
             ).getOrThrow()
-            val cryptoSignatureWithKey = CryptoSignatureWithKey(
-                publicKey, signature, signatureContext
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
+            holdingId to (
+                    cryptoSignatureWithKey to CryptoSignatureSpec("", null, null)
             )
-            holdingId to cryptoSignatureWithKey
         }
 
         // before approval only non-pending information is available
@@ -1108,9 +1104,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
                 true
             )
         )
@@ -1388,9 +1384,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
                 true
             )
         )
