@@ -20,7 +20,7 @@ class SessionConfirmProcessorReceive(
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
     private val sessionConfirm: SessionConfirm,
-    private val instant: Instant
+    private val instant: Instant,
 ) : SessionEventProcessor {
 
     private companion object {
@@ -36,8 +36,9 @@ class SessionConfirmProcessorReceive(
 
             sessionState.apply {
                 counterpartySessionProperties = sessionConfirm.contextSessionProperties
-                //recalc high water mark but do not add the session confirm to the undelivered messages
-                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(sessionState.receivedEventsState.undeliveredMessages.plus(sessionEvent))
+                //recalc high watermark but do not add the session confirm to the undelivered messages
+                receivedEventsState.lastProcessedSequenceNum =
+                    recalcHighWatermark(sessionState.receivedEventsState.undeliveredMessages.plus(sessionEvent))
             }
 
             logger.trace {
@@ -53,7 +54,7 @@ class SessionConfirmProcessorReceive(
         var highestContiguousSeqNum = 0
         val sortedEvents = receivedEvents.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
         for (undeliveredMessage in sortedEvents) {
-            if (undeliveredMessage.sequenceNum == highestContiguousSeqNum+1) {
+            if (undeliveredMessage.sequenceNum == highestContiguousSeqNum + 1) {
                 highestContiguousSeqNum++
             } else if (undeliveredMessage.sequenceNum < highestContiguousSeqNum) {
                 continue
