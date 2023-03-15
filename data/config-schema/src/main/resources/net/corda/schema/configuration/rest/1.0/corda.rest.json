@@ -12,7 +12,7 @@
       "default": "0.0.0.0:8888"
     },
     "context": {
-      "description": "Settings for the context of the API.",
+      "description": "Context information to be included in Open API definition.",
       "type": "object",
       "default": {},
       "properties": {
