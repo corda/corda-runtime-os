@@ -2,6 +2,7 @@ package net.corda.v5.crypto
 
 import net.corda.v5.crypto.mocks.ECDSA_SECP256K1_SPEC
 import net.corda.v5.crypto.mocks.ECDSA_SECP256R1_SPEC
+import net.corda.v5.crypto.mocks.RSA_SPEC
 import net.corda.v5.crypto.mocks.generateKeyPair
 import net.corda.v5.crypto.mocks.specs
 import org.junit.jupiter.params.ParameterizedTest
@@ -17,6 +18,8 @@ class KeyUtilsTests {
         fun publicKeys(): List<PublicKey> = specs.values.map {
             generateKeyPair(it).public
         }
+
+        val other = generateKeyPair(RSA_SPEC).public
     }
 
     @ParameterizedTest
@@ -44,5 +47,17 @@ class KeyUtilsTests {
     @MethodSource("publicKeys")
     fun `isKeyFulfilledBy overload with collection should return false if the keys are not matching at least one given public key`(key: PublicKey) {
         assertFalse(KeyUtils.isKeyFulfilledBy(key, listOf(generateKeyPair(ECDSA_SECP256R1_SPEC).public)))
+    }
+    
+    @ParameterizedTest
+    @MethodSource("publicKeys") 
+    fun `isKeyInSet claims a key is in a member of single-element set containing that key`(key: PublicKey) {
+        assertTrue(KeyUtils.isKeyInSet(key, listOf(key)))
+    }
+
+    @ParameterizedTest
+    @MethodSource("publicKeys")
+    fun `isKeyInSet claims a key is not a member of single-element set containing another key`(key: PublicKey) {
+        assertFalse(KeyUtils.isKeyInSet(key, listOf(other)))
     }
 }
