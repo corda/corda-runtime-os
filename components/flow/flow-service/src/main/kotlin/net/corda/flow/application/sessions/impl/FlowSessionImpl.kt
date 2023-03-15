@@ -36,6 +36,7 @@ class FlowSessionImpl(
     }
 
     override fun getCounterparty(): MemberX500Name = counterparty
+    @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
         val counterPartyFlowInfo = getCounterpartySessionContext()
         return if (counterPartyFlowInfo != null) {
