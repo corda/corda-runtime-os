@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "common": {
-      "description": "Kafka properties that are common between consumers and producers. For example, connection details.",
+      "description": "Kafka properties that are common to both consumers and producers. For example, connection information such as SSL details.",
       "type": "object"
     }
   }
