@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ActivateMember",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "",
+  "fields": [
+    {
+      "name": "activatedMember",
+      "doc": "X500 name of the member being activated.",
+      "type": "string"
+    },
+    {
+      "name": "serialNumber",
+      "doc": "Serial number of the activated member's MemberInfo.",
+      "type": ["long", "null"]
+    },
+    {
+      "name": "reason",
+      "doc": "Reason for activation.",
+      "type": ["string", "null"]
+    }
+  ]
+}

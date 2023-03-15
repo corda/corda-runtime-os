@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ActivateMemberResponse",
+  "namespace": "net.corda.data.membership.db.response.command",
+  "doc": "Response to an activate member request",
+  "fields": [
+    {
+      "name": "memberInfo",
+      "doc": "The updated MemberInfo after activating the member.",
+      "type": "net.corda.data.membership.PersistentMemberInfo"
+    }
+  ]
+}

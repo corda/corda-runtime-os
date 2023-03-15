@@ -18,6 +18,8 @@
         "net.corda.data.membership.db.response.command.PersistApprovalRuleResponse",
         "net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse",
         "net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse",
+        "net.corda.data.membership.db.response.command.ActivateMemberResponse",
+        "net.corda.data.membership.db.response.command.SuspendMemberResponse",
         "net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse",
         "net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse",
         "net.corda.data.membership.db.response.query.PersistenceFailedResponse",
