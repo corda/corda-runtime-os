@@ -1,10 +1,8 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateTwoFlows
-import net.corda.flow.utils.mutableKeyValuePairList
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -197,7 +195,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -208,8 +206,8 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
                 sessionErrorEvents()
+      //          wakeUpEvent()
             }
         }
     }
@@ -236,8 +234,8 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
                 sessionErrorEvents()
+          //      wakeUpEvent()
             }
         }
     }

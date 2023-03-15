@@ -64,7 +64,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a session init event starts an initiated flow and sends a session ack`() {
+    fun `Receiving a session init event starts an initiated flow and sends a session confirm`() {
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
@@ -80,7 +80,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 flowStatus(FlowStates.RUNNING)
-                sessionAckEvents(INITIATED_SESSION_ID_1)
+                sessionConfirmEvents(INITIATED_SESSION_ID_1)
             }
         }
     }

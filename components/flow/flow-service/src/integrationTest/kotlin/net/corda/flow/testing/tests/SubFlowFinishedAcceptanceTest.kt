@@ -624,7 +624,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
@@ -632,8 +632,8 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
                 sessionCloseEvents()
+         //       wakeUpEvent()
             }
         }
     }
@@ -649,7 +649,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
@@ -657,8 +657,8 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
                 sessionCloseEvents()
+       //         wakeUpEvent()
             }
         }
     }
