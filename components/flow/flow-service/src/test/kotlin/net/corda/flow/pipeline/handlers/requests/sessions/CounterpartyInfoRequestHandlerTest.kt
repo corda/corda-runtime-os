@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.handlers.requests.sessions
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -22,7 +23,7 @@ class CounterpartyInfoRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
 
     private val ioRequest = FlowIORequest.CounterPartyFlowInfo(
-        FlowIORequest.SessionInfo(sessionId1, testContext.counterparty)
+        SessionInfo(sessionId1, testContext.counterparty)
 
     )
     private val handler =
