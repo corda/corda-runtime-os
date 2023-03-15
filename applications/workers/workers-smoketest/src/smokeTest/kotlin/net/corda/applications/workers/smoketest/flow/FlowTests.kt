@@ -1135,8 +1135,8 @@ class FlowTests {
             "payload" to payload
         )
 
-        val requestId = startRpcFlow(aliceHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
-        val result = awaitRpcFlowFinished(aliceHoldingId, requestId)
+        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         val flowResult = result.getRpcFlowResult()
 
