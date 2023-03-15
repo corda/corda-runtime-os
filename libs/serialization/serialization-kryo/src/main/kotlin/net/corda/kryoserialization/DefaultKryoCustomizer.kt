@@ -5,9 +5,11 @@ package net.corda.kryoserialization
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.SerializerFactory
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
@@ -51,15 +53,15 @@ class DefaultKryoCustomizer {
             return kryo.apply {
                 isRegistrationRequired = false
 
-                val defaultSerializer = SerializerFactory.FieldSerializerFactory().apply {
+                val defaultSerializerConfig = FieldSerializerConfig().apply {
                     // Take the safest route here and allow subclasses to have fields named the same as super classes.
-                    config.extendedFieldNames = true
+                    extendedFieldNames = true
 
                     // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
                     // their parents after deserialization.
-                    config.ignoreSyntheticFields = false
+                    ignoreSyntheticFields = false
                 }
-                setDefaultSerializer(defaultSerializer)
+                setDefaultSerializer(FieldSerializerFactory(defaultSerializerConfig))
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
