@@ -98,6 +98,7 @@ topics:
       - membership
     producers:
       - rest
+      - membership
   MembershipAsyncRequestStateTopic:
     name: membership.async.request.state
     consumers:
