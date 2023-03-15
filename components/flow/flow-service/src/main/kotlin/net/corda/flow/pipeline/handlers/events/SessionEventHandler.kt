@@ -7,6 +7,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -64,19 +65,19 @@ class SessionEventHandler @Activate constructor(
             now
         )
 
-        checkpoint.putSessionState(updatedSessionState)
-
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         val nextSessionPayload = nextSessionEvent?.payload
 
         if (!checkpoint.doesExist) {
             if (nextSessionPayload is SessionInit) {
-                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent)
+                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent, updatedSessionState)
             } else {
                 discardSessionEvent(context, sessionEvent)
             }
         }
+
+        checkpoint.putSessionState(updatedSessionState)
 
         return context
     }
@@ -94,6 +95,7 @@ class SessionEventHandler @Activate constructor(
         context: FlowEventContext<*>,
         sessionInit: SessionInit,
         sessionEvent: SessionEvent,
+        initialSessionState: SessionState,
     ) {
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
@@ -134,6 +136,9 @@ class SessionEventHandler @Activate constructor(
                 .setCreatedTimestamp(Instant.now())
                 .build()
         }
+
+        //set initial session state so it can be found when trying to send the confirm message
+        context.checkpoint.putSessionState(initialSessionState)
 
         sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
     }
