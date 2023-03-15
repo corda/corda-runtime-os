@@ -11,6 +11,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -76,6 +77,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -111,7 +113,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
-import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
@@ -498,9 +499,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
                 true,
             )
@@ -1008,11 +1009,6 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
-            val signatureContext = KeyValuePairList(
-                listOf(
-                    KeyValuePair("key", "value")
-                )
-            )
             persistMember(holdingId.x500Name)
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
@@ -1027,17 +1023,17 @@ class MembershipPersistenceTest {
                     ),
                     CryptoSignatureWithKey(
                         publicKey,
-                        signature,
-                        signatureContext,
+                        signature
                     ),
+                    CryptoSignatureSpec("", null, null),
                     REGISTRATION_SERIAL,
                     true,
                 )
             ).getOrThrow()
-            val cryptoSignatureWithKey = CryptoSignatureWithKey(
-                publicKey, signature, signatureContext
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
+            holdingId to (
+                    cryptoSignatureWithKey to CryptoSignatureSpec("", null, null)
             )
-            holdingId to cryptoSignatureWithKey
         }
 
         // before approval only non-pending information is available
@@ -1081,9 +1077,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
                 true,
             )
@@ -1354,9 +1350,9 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
                 true,
             )

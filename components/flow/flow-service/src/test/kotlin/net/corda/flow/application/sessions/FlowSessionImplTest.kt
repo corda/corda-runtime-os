@@ -4,6 +4,7 @@ import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
+import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.base.exceptions.CordaRuntimeException

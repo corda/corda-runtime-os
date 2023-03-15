@@ -11,5 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
+    implementation project(':libs:membership:membership-common')
     implementation project(":libs:rest:rest")
 }

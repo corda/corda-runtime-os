@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -302,9 +303,9 @@ class MembershipPersistenceRPCProcessorTest {
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray()),
-                        KeyValuePairList(emptyList())
+                        ByteBuffer.wrap("456".toByteArray())
                     ),
+                    CryptoSignatureSpec("", null, null),
                     true,
                     SERIAL,
                 )
@@ -399,9 +400,9 @@ class MembershipPersistenceRPCProcessorTest {
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray()),
-                        KeyValuePairList(emptyList())
+                        ByteBuffer.wrap("456".toByteArray())
                     ),
+                    CryptoSignatureSpec("", null, null),
                     false,
                     SERIAL,
                 )
