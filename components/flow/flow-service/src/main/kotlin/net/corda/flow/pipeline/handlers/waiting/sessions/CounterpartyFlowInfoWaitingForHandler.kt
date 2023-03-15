@@ -11,8 +11,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Component
 
  /**
-  * This handler decides whether the flow fiber is allowed to resume after requesting counter party flow info.
-  * If the status is in CREATED it means that this is an initiating flow and the counterparty has no responded yet so the properties will
+  * This handler decides whether the flow fiber is allowed to resume after requesting counterparty flow info.
+  * If the status is in CREATED it means that this is an initiating flow and the counterparty has not responded yet so the properties will
   * not have been received yet.
   * If the status is ERROR then we return an error to the flow fiber as this session should not be interacted with.
   * Any other state means that the SessionInit/SessionConfirm messages have been transmitted so the data can be retrieved from the

@@ -33,7 +33,7 @@ class SessionConfirmProcessorSend(
             return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "sessionConfirm-NullSessionState", instant)
         }
 
-        val newSessionId = sessionEvent.sessionId
+        val sessionId = sessionEvent.sessionId
         val seqNum = 1
 
         sessionEvent.apply {
@@ -49,7 +49,7 @@ class SessionConfirmProcessorSend(
             }
         }
 
-        logger.trace { "Sending SessionConfirm to session with id $newSessionId. sessionState: $sessionState" }
+        logger.trace { "Sending SessionConfirm to session with id $sessionId. sessionState: $sessionState" }
 
         return sessionState
     }
