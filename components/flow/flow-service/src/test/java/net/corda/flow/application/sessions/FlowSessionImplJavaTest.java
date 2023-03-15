@@ -15,6 +15,7 @@ import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext;
+import net.corda.serialization.SerializedBytesImpl;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.types.MemberX500Name;
@@ -110,7 +111,7 @@ public class FlowSessionImplJavaTest {
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{1, 2, 3});
-        when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytesImpl(new byte[]{1, 2, 3}));
         when(serializationService.deserializeAndCheckType(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);

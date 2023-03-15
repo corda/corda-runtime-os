@@ -253,7 +253,7 @@ class SerializationOutputTests {
             this.register(TransformTypes.DESCRIPTOR, TransformTypes)
         }
         EncoderImpl(decoder)
-        DeserializationInput.withDataBytes(bytes, encodingAllowList) {
+        DeserializationInput.withDataBytes(OpaqueBytes(bytes.bytes), encodingAllowList) {
             decoder.byteBuffer = it
             // Check that a vanilla AMQP decoder can deserialize without schema.
             val result = decoder.readObject() as Envelope
@@ -859,7 +859,7 @@ class SerializationOutputTests {
         val factory = testDefaultFactory()
         val data = ByteArray(12345).also { Random(0).nextBytes(it) }.let { it + it }
         val compressed = SerializationOutput(factory).serialize(data, CordaSerializationEncoding.SNAPPY)
-        assertEquals(.5, compressed.size.toDouble() / data.size, .03)
+        assertEquals(.5, OpaqueBytes(compressed.bytes).size.toDouble() / data.size, .03)
 
         val encodingAllowList = mock(EncodingAllowList::class.java)
         doReturn(true).whenever(encodingAllowList).acceptEncoding(CordaSerializationEncoding.SNAPPY)

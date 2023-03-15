@@ -7,9 +7,9 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,7 +26,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-        private val serializedBytes = SerializedBytes<Any>(byteBuffer.array())
+        private val serializedBytes = SerializedBytesImpl<Any>(byteBuffer.array())
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()

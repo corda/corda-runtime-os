@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.ConstructorForDeserialization;
 import net.corda.v5.base.annotations.CordaSerializable;
+import net.corda.v5.base.types.OpaqueBytes;
 import net.corda.v5.serialization.SerializedBytes;
 import org.apache.qpid.proton.codec.DecoderImpl;
 import org.apache.qpid.proton.codec.EncoderImpl;
@@ -204,18 +205,18 @@ public class JavaSerializationOutputTests {
         decoder.register(Metadata.DESCRIPTOR, Metadata.Companion);
 
         new EncoderImpl(decoder);
-        decoder.setByteBuffer(ByteBuffer.wrap(bytes.getBytes(), 8, bytes.getSize() - 8));
+        decoder.setByteBuffer(ByteBuffer.wrap(bytes.getBytes(), 8, new OpaqueBytes(bytes.getBytes()).getSize() - 8));
         Envelope result = (Envelope) decoder.readObject();
         assertNotNull(result);
 
         DeserializationInput des = new DeserializationInput(factory2);
-        Object desObj = des.deserialize(bytes, Object.class, TestSerializationContext.testSerializationContext);
+        Object desObj = des.deserialize(new OpaqueBytes(bytes.getBytes()), Object.class, TestSerializationContext.testSerializationContext);
         assertTrue(Objects.deepEquals(obj, desObj));
 
         // Now repeat with a re-used factory
         SerializationOutput ser2 = new SerializationOutput(factory1);
         DeserializationInput des2 = new DeserializationInput(factory1);
-        Object desObj2 = des2.deserialize(ser2.serialize(obj, TestSerializationContext.testSerializationContext),
+        Object desObj2 = des2.deserialize(new OpaqueBytes(ser2.serialize(obj, TestSerializationContext.testSerializationContext).getBytes()),
                 Object.class, TestSerializationContext.testSerializationContext);
 
         assertTrue(Objects.deepEquals(obj, desObj2));

@@ -5,6 +5,7 @@ import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
 import org.slf4j.LoggerFactory
@@ -86,7 +87,7 @@ open class SerializationOutput constructor(
                 writeMetadata(metadata, this)
             }
         }
-        return SerializedBytes(byteArrayOutput {
+        return SerializedBytesImpl(byteArrayOutput {
             var stream: OutputStream = it
             try {
                 amqpMagic.writeTo(stream)

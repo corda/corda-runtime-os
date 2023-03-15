@@ -2,6 +2,7 @@ package net.corda.serialization
 
 import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import java.sql.Blob
 
@@ -27,7 +28,7 @@ inline fun <reified T : Any> ByteSequence.deserializeWithCompatibleContext(seria
  */
 inline fun <reified T : Any> SerializedBytes<T>.deserialize(serializationFactory: SerializationFactory,
                                                             context: SerializationContext): T {
-    return serializationFactory.deserialize(this, T::class.java, context)
+    return serializationFactory.deserialize(OpaqueBytes(this.bytes), T::class.java, context)
 }
 
 /**

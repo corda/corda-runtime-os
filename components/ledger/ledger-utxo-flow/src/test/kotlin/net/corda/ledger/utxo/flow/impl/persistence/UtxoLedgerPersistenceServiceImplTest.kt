@@ -16,13 +16,13 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -38,7 +38,7 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-        private val serializedBytes = SerializedBytes<Any>(byteBuffer.array())
+        private val serializedBytes = SerializedBytesImpl<Any>(byteBuffer.array())
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()

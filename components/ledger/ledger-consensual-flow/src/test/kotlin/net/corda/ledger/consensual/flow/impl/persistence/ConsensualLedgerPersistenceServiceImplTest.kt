@@ -12,11 +12,11 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTra
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,7 +31,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-        private val serializedBytes = SerializedBytes<Any>(byteBuffer.array())
+        private val serializedBytes = SerializedBytesImpl<Any>(byteBuffer.array())
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()

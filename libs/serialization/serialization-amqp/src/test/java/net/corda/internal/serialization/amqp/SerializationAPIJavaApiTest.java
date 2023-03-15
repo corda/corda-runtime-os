@@ -5,6 +5,7 @@ import net.corda.serialization.ObjectWithCompatibleContext;
 import net.corda.serialization.SerializationContext;
 import net.corda.serialization.SerializationEncoding;
 import net.corda.serialization.SerializationFactory;
+import net.corda.serialization.SerializedBytesImpl;
 import net.corda.v5.base.types.ByteSequence;
 import net.corda.v5.base.types.OpaqueBytesSubSequence;
 import net.corda.v5.serialization.SerializationCustomSerializer;
@@ -35,7 +36,7 @@ public class SerializationAPIJavaApiTest {
     private final int size = bytesArr.length;
     private final OpaqueBytesSubSequence opaqueBytesSubSequence = new OpaqueBytesSubSequence(bytesArr, offset, size);
     private final ObjectWithCompatibleContext<String> objectWithCompatibleContext = new ObjectWithCompatibleContext<>("testObj", serializationContext);
-    private final SerializedBytes<String> serializedBytes = new SerializedBytes<>(bytesArr);
+    private final SerializedBytes<String> serializedBytes = new SerializedBytesImpl<>(bytesArr);
 
     @Nested
     public class SerializationFactoryJavaApiTest {

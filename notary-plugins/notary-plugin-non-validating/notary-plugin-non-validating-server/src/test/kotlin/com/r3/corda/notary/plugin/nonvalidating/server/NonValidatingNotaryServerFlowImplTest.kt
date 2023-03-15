@@ -8,6 +8,7 @@ import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPay
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -33,7 +34,6 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -420,7 +420,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 5. Serialization service has no part in this testing so just returning a dummy
         val mockSerializationService = mock<SerializationService> {
-            on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
+            on { serialize(any<Any>()) } doReturn SerializedBytesImpl("ABC".toByteArray())
         }
 
         val mockDigestService = mock<DigestService> {

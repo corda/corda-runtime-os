@@ -2,9 +2,9 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -63,16 +63,16 @@ class EvolutionSerializerFactoryTests {
         val withNullUrl = javaClass.getResource(withNullResource)
 
         // We can deserialize the evolved instance where the original value of 'b' is null.
-        val withNullTarget = DeserializationInput(strictFactory).deserialize(SerializedBytes<C>(withNullUrl.readBytes()))
+        val withNullTarget = DeserializationInput(strictFactory).deserialize(SerializedBytesImpl<C>(withNullUrl.readBytes()))
         assertEquals(1, withNullTarget.a)
 
         // The non-strict factory will discard the non-null original value of 'b'.
-        val withNonNullTarget = DeserializationInput(nonStrictFactory).deserialize(SerializedBytes<C>(withoutNullUrl.readBytes()))
+        val withNonNullTarget = DeserializationInput(nonStrictFactory).deserialize(SerializedBytesImpl<C>(withoutNullUrl.readBytes()))
         assertEquals(1, withNonNullTarget.a)
 
         // The strict factory cannot deserialize the evolved instance where the original value of 'b' is non-null.
         val e = assertThrows<NotSerializableException> {
-            DeserializationInput(strictFactory).deserialize(SerializedBytes<C>(withoutNullUrl.readBytes()))
+            DeserializationInput(strictFactory).deserialize(SerializedBytesImpl<C>(withoutNullUrl.readBytes()))
         }
         assertTrue(e.message!!.contains("Non-null value 1 provided for property b, which is not supported in this version"))
     }

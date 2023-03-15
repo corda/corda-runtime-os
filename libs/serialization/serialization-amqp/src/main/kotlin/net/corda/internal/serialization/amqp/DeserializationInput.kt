@@ -11,6 +11,7 @@ import net.corda.serialization.SerializationContext
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.trace
 import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.DescribedType
@@ -93,7 +94,7 @@ class DeserializationInput constructor(
         AMQPNoTypeNotSerializableException::class
     )
     inline fun <reified T : Any> deserialize(bytes: SerializedBytes<T>, context: SerializationContext): T =
-        deserialize(bytes, T::class.java, context)
+        deserialize(OpaqueBytes(bytes.bytes), T::class.java, context)
 
     @Throws(
         AMQPNotSerializableException::class,
@@ -136,7 +137,7 @@ class DeserializationInput constructor(
         clazz: Class<T>,
         context: SerializationContext
     ): ObjectAndEnvelope<T> = des {
-        val envelope = getEnvelope(bytes, context.encodingAllowList)
+        val envelope = getEnvelope(OpaqueBytes(bytes.bytes), context.encodingAllowList)
         // Now pick out the obj and schema from the envelope.
         ObjectAndEnvelope(doReadObject(envelope, clazz, context), envelope)
     }

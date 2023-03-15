@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
+import net.corda.serialization.SerializedBytesImpl;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
@@ -79,7 +80,7 @@ public class JavaEvolutionTests {
         */
 
         N1 n2 = new DeserializationInput(factory).deserialize(
-                new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
+                new SerializedBytesImpl<>(AMQPTestUtilsKt.readTestResource(this)),
                 N1.class,
                 TestSerializationContext.testSerializationContext);
         assertThat(n2.getWord()).isEqualTo("potato");
@@ -98,7 +99,7 @@ public class JavaEvolutionTests {
 
         Assertions.assertThrows(NotSerializableException.class, () -> {
             new DeserializationInput(factory).deserialize(
-                    new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
+                    new SerializedBytesImpl<>(AMQPTestUtilsKt.readTestResource(this)),
                     N2.class,
                     TestSerializationContext.testSerializationContext);
         });
@@ -155,7 +156,7 @@ public class JavaEvolutionTests {
         //        n, TestSerializationContext.testSerializationContext));
 
         POJOWithInteger n2 = new DeserializationInput(factory).deserialize(
-                new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
+                new SerializedBytesImpl<>(AMQPTestUtilsKt.readTestResource(this)),
                 POJOWithInteger.class,
                 TestSerializationContext.testSerializationContext);
 

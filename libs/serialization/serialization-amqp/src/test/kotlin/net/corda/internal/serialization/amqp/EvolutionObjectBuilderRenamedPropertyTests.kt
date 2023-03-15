@@ -5,9 +5,10 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
-import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.base.types.OpaqueBytes
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -98,7 +99,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 
         val serializerFactory: SerializerFactory = testDefaultFactory()
         val deserializedObject = DeserializationInput(serializerFactory)
-            .deserialize(SerializedBytes<TemplateState>(bytes))
+            .deserialize(SerializedBytesImpl<TemplateState>(bytes))
 
         Assertions.assertThat(deserializedObject.cordappVersion).isEqualTo(cordappVersionTestValue)
         Assertions.assertThat(deserializedObject.data).isEqualTo(dataTestValue)
@@ -111,5 +112,8 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * Write serialized object to resources folder
      */
     @Suppress("unused")
-    fun <T : Any> saveSerializedObject(obj: T) = writeTestResource(SerializationOutput(testDefaultFactory()).serialize(obj))
+    fun <T : Any> saveSerializedObject(obj: T) {
+        val serializedBytes = SerializationOutput(testDefaultFactory()).serialize(obj)
+        writeTestResource(OpaqueBytes(serializedBytes.bytes))
+    }
 }

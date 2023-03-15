@@ -3,6 +3,7 @@ package com.r3.corda.notary.plugin.nonvalidating.client
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.messaging.FlowMessaging
@@ -18,7 +19,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -142,7 +142,7 @@ class NonValidatingNotaryClientFlowImplTest {
                 on { myInfo() } doReturn mockMemberInfo
             },
             mock {
-                on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
+                on { serialize(any<Any>()) } doReturn SerializedBytesImpl("ABC".toByteArray())
             },
             mock {
                 on { sign(any(), any(), any()) } doReturn mockRequestSignature

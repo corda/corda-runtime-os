@@ -5,9 +5,9 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.utilities.toPath
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import org.assertj.core.api.Assertions.assertThat
@@ -56,7 +56,7 @@ class EnumEvolveTests {
 
         val url = javaClass.getResource(resource)
 
-        val obj = DeserializationInput(sf).deserialize(SerializedBytes<C>(url.readBytes()))
+        val obj = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(url.readBytes()))
 
         assertEquals(DeserializeNewerSetToUnknown.C, obj.e)
     }
@@ -92,12 +92,12 @@ class EnumEvolveTests {
         val url3 = javaClass.getResource("$resource.E")
 
         // C will just work
-        val obj1 = DeserializationInput(sf).deserialize(SerializedBytes<C>(url1.readBytes()))
+        val obj1 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(url1.readBytes()))
         // D will transform directly to C
-        val obj2 = DeserializationInput(sf).deserialize(SerializedBytes<C>(url2.readBytes()))
+        val obj2 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(url2.readBytes()))
         // E will have to transform from E -> D -> C to work, so this should exercise that part
         // of the evolution code
-        val obj3 = DeserializationInput(sf).deserialize(SerializedBytes<C>(url3.readBytes()))
+        val obj3 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(url3.readBytes()))
 
         assertEquals(DeserializeNewerSetToUnknown2.C, obj1.e)
         assertEquals(DeserializeNewerSetToUnknown2.C, obj2.e)
@@ -130,7 +130,7 @@ class EnumEvolveTests {
         val url = EvolvabilityTests::class.java.getResource(resource)
 
         assertThatThrownBy {
-            DeserializationInput(sf).deserialize(SerializedBytes<C>(url.readBytes()))
+            DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(url.readBytes()))
         }.isInstanceOf(NotSerializableException::class.java)
     }
 
@@ -198,9 +198,9 @@ class EnumEvolveTests {
         val path1_B = EvolvabilityTests::class.java.getResource("$resource.1.B")
         val path1_C = EvolvabilityTests::class.java.getResource("$resource.1.C")
 
-        val obj1_AA = DeserializationInput(sf).deserialize(SerializedBytes<C>(path1_AA.readBytes()))
-        val obj1_B = DeserializationInput(sf).deserialize(SerializedBytes<C>(path1_B.readBytes()))
-        val obj1_C = DeserializationInput(sf).deserialize(SerializedBytes<C>(path1_C.readBytes()))
+        val obj1_AA = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path1_AA.readBytes()))
+        val obj1_B = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path1_B.readBytes()))
+        val obj1_C = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path1_C.readBytes()))
 
         assertEquals(DeserializeWithRename.A, obj1_AA.e)
         assertEquals(DeserializeWithRename.B, obj1_B.e)
@@ -213,9 +213,9 @@ class EnumEvolveTests {
         val path2_BB = EvolvabilityTests::class.java.getResource("$resource.2.BB")
         val path2_C = EvolvabilityTests::class.java.getResource("$resource.2.C")
 
-        val obj2_AA = DeserializationInput(sf).deserialize(SerializedBytes<C>(path2_AA.readBytes()))
-        val obj2_BB = DeserializationInput(sf).deserialize(SerializedBytes<C>(path2_BB.readBytes()))
-        val obj2_C = DeserializationInput(sf).deserialize(SerializedBytes<C>(path2_C.readBytes()))
+        val obj2_AA = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path2_AA.readBytes()))
+        val obj2_BB = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path2_BB.readBytes()))
+        val obj2_C = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path2_C.readBytes()))
 
         assertEquals(DeserializeWithRename.A, obj2_AA.e)
         assertEquals(DeserializeWithRename.B, obj2_BB.e)
@@ -228,9 +228,9 @@ class EnumEvolveTests {
         val path3_XX = EvolvabilityTests::class.java.getResource("$resource.3.XX")
         val path3_C = EvolvabilityTests::class.java.getResource("$resource.3.C")
 
-        val obj3_AA = DeserializationInput(sf).deserialize(SerializedBytes<C>(path3_AA.readBytes()))
-        val obj3_XX = DeserializationInput(sf).deserialize(SerializedBytes<C>(path3_XX.readBytes()))
-        val obj3_C = DeserializationInput(sf).deserialize(SerializedBytes<C>(path3_C.readBytes()))
+        val obj3_AA = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path3_AA.readBytes()))
+        val obj3_XX = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path3_XX.readBytes()))
+        val obj3_C = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(path3_C.readBytes()))
 
         assertEquals(DeserializeWithRename.A, obj3_AA.e)
         assertEquals(DeserializeWithRename.B, obj3_XX.e)
@@ -391,7 +391,7 @@ class EnumEvolveTests {
 
             Pair(
                 DeserializationInput(sf).deserialize(
-                    SerializedBytes<C>(
+                    SerializedBytesImpl<C>(
                         EvolvabilityTests::class.java.getResource(it.first).readBytes()
                     )
                 ),
@@ -460,7 +460,7 @@ class EnumEvolveTests {
 
         assertThatThrownBy {
             DeserializationInput(sf).deserialize(
-                SerializedBytes<C>(
+                SerializedBytesImpl<C>(
                     EvolvabilityTests::class.java.getResource(resource).readBytes()
                 )
             )
@@ -495,7 +495,7 @@ class EnumEvolveTests {
 
         val path1 = EvolvabilityTests::class.java.getResource("$resource.A")
 
-        val obj1 = DeserializationInput(sf).deserialize(SerializedBytes<C>(File(path1.toURI()).readBytes()))
+        val obj1 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(File(path1.toURI()).readBytes()))
         assertEquals(ExtendedEnum.A, obj1.e)
     }
 }

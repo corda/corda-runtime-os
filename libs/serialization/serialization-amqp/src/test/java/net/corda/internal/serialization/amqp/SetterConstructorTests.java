@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
+import net.corda.v5.base.types.OpaqueBytes;
 import net.corda.v5.serialization.SerializedBytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -222,7 +223,7 @@ public class SetterConstructorTests {
 
         SerializedBytes bytes = new SerializationOutput(factory1).serialize(cPre1, TestSerializationContext.testSerializationContext);
 
-        C cPost1 = new DeserializationInput(factory1).deserialize(bytes, C.class, TestSerializationContext.testSerializationContext);
+        C cPost1 = new DeserializationInput(factory1).deserialize(new OpaqueBytes(bytes.getBytes()), C.class, TestSerializationContext.testSerializationContext);
 
         assertEquals(a, cPost1.a);
         assertEquals(b, cPost1.b);
@@ -232,7 +233,7 @@ public class SetterConstructorTests {
         cPre2.setA(1);
         cPre2.setB(2);
 
-        C2 cPost2 = new DeserializationInput(factory1).deserialize(new SerializationOutput(factory1).serialize(cPre2, TestSerializationContext.testSerializationContext),
+        C2 cPost2 = new DeserializationInput(factory1).deserialize(new OpaqueBytes(new SerializationOutput(factory1).serialize(cPre2, TestSerializationContext.testSerializationContext).getBytes()),
                 C2.class, TestSerializationContext.testSerializationContext);
 
         assertEquals(a, cPost2.a);
@@ -248,7 +249,7 @@ public class SetterConstructorTests {
         cPre3.setC(3);
 
         C3 cPost3 = new DeserializationInput(factory1).deserialize(
-                new SerializationOutput(factory1).serialize(cPre3, TestSerializationContext.testSerializationContext),
+                new OpaqueBytes(new SerializationOutput(factory1).serialize(cPre3, TestSerializationContext.testSerializationContext).getBytes()),
                 C3.class, TestSerializationContext.testSerializationContext);
 
         assertEquals(a, cPost3.a);
@@ -263,8 +264,8 @@ public class SetterConstructorTests {
         cPre4.setC(3);
 
         C4 cPost4 = new DeserializationInput(factory1).deserialize(
-                new SerializationOutput(factory1).serialize(cPre4,
-                        TestSerializationContext.testSerializationContext),
+                new OpaqueBytes(new SerializationOutput(factory1).serialize(cPre4,
+                        TestSerializationContext.testSerializationContext).getBytes()),
                 C4.class,
                 TestSerializationContext.testSerializationContext);
 
@@ -287,8 +288,8 @@ public class SetterConstructorTests {
         o.setC(i2);
 
         Outer post = new DeserializationInput(factory1).deserialize(
-                new SerializationOutput(factory1).serialize(
-                        o, TestSerializationContext.testSerializationContext),
+                new OpaqueBytes(new SerializationOutput(factory1).serialize(
+                        o, TestSerializationContext.testSerializationContext).getBytes()),
                 Outer.class, TestSerializationContext.testSerializationContext);
 
         assertEquals("Hello", post.a.a);
@@ -340,8 +341,8 @@ public class SetterConstructorTests {
         // if we've got super / sub types on the setter vs the underlying type the wrong way around this will
         // explode. See CORDA-1229 (https://r3-cev.atlassian.net/browse/CORDA-1229)
         new DeserializationInput(factory1).deserialize(
-                new SerializationOutput(factory1).serialize(
-                        cil, TestSerializationContext.testSerializationContext),
+                new OpaqueBytes(new SerializationOutput(factory1).serialize(
+                        cil, TestSerializationContext.testSerializationContext).getBytes()),
                 CIntList.class,
                 TestSerializationContext.testSerializationContext);
     }

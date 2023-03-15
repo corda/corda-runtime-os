@@ -62,6 +62,7 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(':libs:serialization:serialization-internal')
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(':testing:test-utilities')
 

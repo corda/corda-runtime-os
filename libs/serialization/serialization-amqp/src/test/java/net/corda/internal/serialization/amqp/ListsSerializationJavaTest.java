@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
+import net.corda.v5.base.types.OpaqueBytes;
 import net.corda.v5.serialization.SerializedBytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -134,7 +135,7 @@ public class ListsSerializationJavaTest {
         SerializationOutput ser = new SerializationOutput(factory1);
         SerializedBytes<Object> bytes = ser.serialize(container, TestSerializationContext.testSerializationContext);
         DeserializationInput des = new DeserializationInput(factory1);
-        T deserialized = des.deserialize(bytes, clazz, TestSerializationContext.testSerializationContext);
+        T deserialized = des.deserialize(new OpaqueBytes(bytes.getBytes()), clazz, TestSerializationContext.testSerializationContext);
         assertThat(deserialized).isEqualTo(container);
     }
 }

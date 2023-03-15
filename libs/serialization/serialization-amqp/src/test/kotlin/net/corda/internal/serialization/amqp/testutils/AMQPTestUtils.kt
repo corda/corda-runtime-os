@@ -140,7 +140,7 @@ inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
 @Throws(NotSerializableException::class)
 inline fun <reified T : Any> DeserializationInput.deserialize(
     bytes: SerializedBytes<T>
-): T = deserialize(bytes, T::class.java, testSerializationContext)
+): T = deserialize(OpaqueBytes(bytes.bytes), T::class.java, testSerializationContext)
 
 @Throws(NotSerializableException::class)
 fun <T : Any> SerializationOutput.serializeAndReturnSchema(

@@ -170,7 +170,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun receiveTransactionBuilder(session: FlowSession): UtxoTransactionBuilder {
+    fun receiveTransactionBuilder(session: FlowSession): UtxoTransactionBuilder {
         val receivedTransactionBuilder = flowEngine.subFlow(
             ReceiveAndUpdateTransactionBuilderFlow(
                 session,
@@ -183,7 +183,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sendUpdatedTransactionBuilder(
+    fun sendUpdatedTransactionBuilder(
         transactionBuilder: UtxoTransactionBuilder,
         session: FlowSession,
     ) {
@@ -199,7 +199,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sendAndReceiveTransactionBuilder(
+    fun sendAndReceiveTransactionBuilder(
         transactionBuilder: UtxoTransactionBuilder,
         session: FlowSession
     ): UtxoTransactionBuilder {
