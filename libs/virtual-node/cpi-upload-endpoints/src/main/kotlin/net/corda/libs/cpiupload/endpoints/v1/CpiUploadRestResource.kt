@@ -1,12 +1,12 @@
 package net.corda.libs.cpiupload.endpoints.v1
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpRestResource
 
 @HttpRestResource(
     name = "CPI API",
@@ -34,7 +34,7 @@ interface CpiUploadRestResource : RestResource {
         responseDescription = "The ID for the CPI upload request"
     )
     fun cpi(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "The CPI file to be uploaded.",
             required = true
         )

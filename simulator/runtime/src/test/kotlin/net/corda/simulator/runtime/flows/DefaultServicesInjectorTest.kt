@@ -9,11 +9,11 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.ClientRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -225,7 +225,7 @@ class DefaultServicesInjectorTest {
             lateinit var signatureVerificationService: DigitalSignatureVerificationService
 
             @Suspendable
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 return ""
             }
         }

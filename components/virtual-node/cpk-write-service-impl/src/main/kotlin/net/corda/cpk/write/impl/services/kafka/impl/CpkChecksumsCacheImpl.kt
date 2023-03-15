@@ -1,6 +1,6 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl.CacheSynchronizer
 import net.corda.data.chunking.Chunk
@@ -12,7 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer

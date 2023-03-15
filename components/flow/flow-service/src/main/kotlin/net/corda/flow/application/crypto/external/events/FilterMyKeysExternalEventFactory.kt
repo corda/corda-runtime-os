@@ -7,7 +7,6 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,6 +35,7 @@ class FilterMyKeysExternalEventFactory @Activate constructor(
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): List<PublicKey> {
-        return uncheckedCast(cryptoFlowOpsTransformer.transform(response))
+        @Suppress("unchecked_cast")
+        return cryptoFlowOpsTransformer.transform(response) as List<PublicKey>
     }
 }

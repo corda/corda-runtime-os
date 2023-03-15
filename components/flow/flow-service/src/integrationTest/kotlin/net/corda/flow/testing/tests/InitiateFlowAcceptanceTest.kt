@@ -1,6 +1,7 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.flow.output.FlowStates
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
@@ -33,7 +34,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     fun `Initiating a flow with a peer sends a session init event`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         then {
@@ -47,7 +48,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving a session ack resumes the initiating flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         `when` {
@@ -88,7 +89,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving a session error event resumes the flow with an error`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         `when` {
@@ -110,8 +111,8 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.Send(
                         mapOf(
-                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
-                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
+                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
                         ),
                     )
                 )

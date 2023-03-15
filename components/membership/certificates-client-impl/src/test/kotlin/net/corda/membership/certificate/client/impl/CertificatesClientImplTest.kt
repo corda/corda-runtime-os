@@ -3,6 +3,7 @@ package net.corda.membership.certificate.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
@@ -31,7 +32,6 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -101,12 +102,12 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.importCertificates(CertificateUsage.RPC_API_TLS, null, "alias", "certificate")
+            client.importCertificates(CertificateUsage.REST_TLS, null, "alias", "certificate")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        CertificateUsage.RPC_API_TLS,
+                        CertificateUsage.REST_TLS,
                         null,
                         ImportCertificateRpcRequest(
                             "alias",
@@ -157,7 +158,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                "sessionAlias",
+                null,
                 null,
             )
 
@@ -168,7 +169,7 @@ class CertificatesClientImplTest {
                 "Alias",
                 true,
                 null,
-                "sessionAlias",
+                null,
             )
         }
 
@@ -202,7 +203,7 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     true,
-                    "sessionAlias",
+                    null,
                     null
                 )
             }
@@ -222,7 +223,7 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     false,
-                    "sessionAlias",
+                    null,
                     null
                 )
             }
@@ -233,7 +234,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any())
+                    .createIdentityRecord(any(), any(), any(), any(), anyOrNull())
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -245,7 +246,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 false,
-                "sessionAlias",
+                null,
                 "chain",
             )
 

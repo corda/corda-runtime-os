@@ -1,7 +1,9 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -9,9 +11,9 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 /**
  * Process a [SessionData] event received from a counterparty.
@@ -36,7 +38,7 @@ class SessionDataProcessorReceive(
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
-            val errorMessage = "Received SessionData on key $key for session which was null: SessionEvent: $sessionEvent"
+            val errorMessage = "Received SessionData on key $key for session which was null"
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
@@ -92,6 +94,8 @@ class SessionDataProcessorReceive(
                 receivedEventsState = recalcReceivedProcessState(receivedEventsState)
                 sendAck = true
             }
+            logger.trace { "receivedEventsState after update: ${sessionState.receivedEventsState}" }
+            sessionState
         }
     }
 

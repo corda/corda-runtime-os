@@ -22,9 +22,9 @@ dependencies {
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:db:db-connection-manager")
-    implementation project(":components:virtual-node:cpk-service-common")
     implementation project(':libs:chunking:chunking-core')
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:db:db-orm')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
@@ -38,7 +38,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 
-    testImplementation project(":components:virtual-node:cpk-service-common")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
 }

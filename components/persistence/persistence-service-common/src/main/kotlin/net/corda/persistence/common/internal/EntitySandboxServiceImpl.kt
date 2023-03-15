@@ -23,10 +23,10 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -87,6 +87,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     ): AutoCloseable {
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
+        val customQueryFactories = sandboxService.registerLedgerCustomQueryFactories(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
         putTokenStateObservers(ctx, cpks)
 
@@ -113,6 +114,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             emfCloseable.close()
             customSerializers.close()
             customCrypto.close()
+            customQueryFactories.close()
         }
     }
 
@@ -193,7 +195,8 @@ class EntitySandboxServiceImpl @Activate constructor(
         )
 
         return try {
-            uncheckedCast(clazz.getConstructor().newInstance())
+            @Suppress("unchecked_cast")
+            clazz.getConstructor().newInstance() as UtxoLedgerTokenStateObserver<ContractState>
         } catch (e: Exception) {
             logger.error(
                 "The UtxoLedgerTokenStateObserver '${clazz}' must implement a default public constructor.",
@@ -211,4 +214,14 @@ class EntitySandboxServiceImpl @Activate constructor(
             SandboxGroupType.PERSISTENCE,
             null
         )
+
+    private fun SandboxGroupContextComponent.registerLedgerCustomQueryFactories(
+        sandboxGroupContext: SandboxGroupContext
+    ): AutoCloseable {
+        return registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.ledgerCustomQueryClasses },
+            serviceMarkerType = VaultNamedQueryFactory::class.java
+        )
+    }
 }

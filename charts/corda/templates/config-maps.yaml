@@ -1,0 +1,1 @@
+{{- include "corda.log4jConfigMap" . }}

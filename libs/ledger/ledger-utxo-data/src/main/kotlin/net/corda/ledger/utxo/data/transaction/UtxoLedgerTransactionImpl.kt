@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
+import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -13,55 +14,64 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
 
+@Suppress("TooManyFunctions")
 class UtxoLedgerTransactionImpl(
     private val wrappedWireTransaction: WrappedUtxoWireTransaction,
-    override val inputStateAndRefs: List<StateAndRef<*>>,
-    override val referenceStateAndRefs: List<StateAndRef<*>>
+    private val inputStateAndRefs: List<StateAndRef<*>>,
+    private val referenceStateAndRefs: List<StateAndRef<*>>
 ) : UtxoLedgerTransactionInternal {
 
-    override val id: SecureHash
-        get() = wrappedWireTransaction.id
-
-    override val notary: Party
-        get() = wrappedWireTransaction.notary
-
-    override val metadata: TransactionMetadata
-        get() = wrappedWireTransaction.metadata
-
-    override val timeWindow: TimeWindow
-        get() = wrappedWireTransaction.timeWindow
-
-    val attachmentIds: List<SecureHash>
-        get() = wrappedWireTransaction.attachmentIds
-
-    override val attachments: List<Attachment>
-        get() = wrappedWireTransaction.attachments
-
-    override val commands: List<Command>
-        get() = wrappedWireTransaction.commands
-
-    override val signatories: List<PublicKey>
-        get() = wrappedWireTransaction.signatories
-
-    override val inputStateRefs: List<StateRef>
-        get() = wrappedWireTransaction.inputStateRefs
-
-    override val referenceStateRefs: List<StateRef>
-        get() = wrappedWireTransaction.referenceStateRefs
-
-    override val outputStateAndRefs: List<StateAndRef<*>>
-        get() = wrappedWireTransaction.outputStateAndRefs
+    init {
+        verifyMetadata(wireTransaction.metadata)
+    }
 
     override val wireTransaction: WireTransaction
         get() = wrappedWireTransaction.wireTransaction
 
-    override fun getAttachment(id: SecureHash): Attachment {
-        return attachments.singleOrNull { it.id == id }
-            ?: throw IllegalArgumentException("Failed to find a single attachment with id: $id.")
+    override fun getId(): SecureHash {
+        return wrappedWireTransaction.id
     }
 
-    override fun <T : Command> getCommands(type: Class<T>): List<T> {
+    override fun getNotary(): Party {
+        return wrappedWireTransaction.notary
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        return wrappedWireTransaction.metadata
+    }
+
+    override fun getTimeWindow(): TimeWindow {
+        return wrappedWireTransaction.timeWindow
+    }
+
+    override fun getSignatories(): List<PublicKey> {
+        return wrappedWireTransaction.signatories
+    }
+
+    override fun getAttachments(): List<Attachment> {
+        return wrappedWireTransaction.attachments
+    }
+
+    override fun getAttachment(id: SecureHash): Attachment {
+        return requireNotNull(attachments.singleOrNull { it.id == id }) {
+            "Failed to find a single attachment with id: $id."
+        }
+    }
+
+    override fun getCommands(): List<Command> {
+        return wrappedWireTransaction.commands
+    }
+
+    override fun <T : Command?> getCommands(type: Class<T>): List<T> {
         return commands.filterIsInstance(type)
+    }
+
+    override fun getInputStateRefs(): List<StateRef> {
+        return wrappedWireTransaction.inputStateRefs
+    }
+
+    override fun getInputStateAndRefs(): List<StateAndRef<*>> {
+        return inputStateAndRefs
     }
 
     override fun <T : ContractState> getInputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
@@ -72,12 +82,24 @@ class UtxoLedgerTransactionImpl(
         return inputContractStates.filterIsInstance(type)
     }
 
+    override fun getReferenceStateRefs(): List<StateRef> {
+        return wrappedWireTransaction.referenceStateRefs
+    }
+
+    override fun getReferenceStateAndRefs(): List<StateAndRef<*>> {
+        return referenceStateAndRefs
+    }
+
     override fun <T : ContractState> getReferenceStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
         return referenceStateAndRefs.filterIsContractStateInstance(type)
     }
 
     override fun <T : ContractState> getReferenceStates(type: Class<T>): List<T> {
         return referenceContractStates.filterIsInstance(type)
+    }
+
+    override fun getOutputStateAndRefs(): List<StateAndRef<*>> {
+        return wrappedWireTransaction.outputStateAndRefs
     }
 
     override fun <T : ContractState> getOutputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
@@ -89,14 +111,9 @@ class UtxoLedgerTransactionImpl(
     }
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as UtxoLedgerTransactionImpl
-
-        if (wrappedWireTransaction != other.wrappedWireTransaction) return false
-
-        return true
+        return this === other
+                || other is UtxoLedgerTransactionImpl
+                && other.wrappedWireTransaction == wrappedWireTransaction
     }
 
     override fun hashCode(): Int {

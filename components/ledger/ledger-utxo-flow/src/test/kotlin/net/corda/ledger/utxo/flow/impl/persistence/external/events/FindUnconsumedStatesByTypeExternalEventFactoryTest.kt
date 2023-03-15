@@ -20,9 +20,11 @@ import java.time.Instant
 import java.time.ZoneId
 
 class FindUnconsumedStatesByTypeExternalEventFactoryTest {
+
     class TestContractState : ContractState {
-        override val participants: List<PublicKey>
-            get() = emptyList()
+        override fun getParticipants(): List<PublicKey> {
+            return emptyList()
+        }
     }
 
     @Test

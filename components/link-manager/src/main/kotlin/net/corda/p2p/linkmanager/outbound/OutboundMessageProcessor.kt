@@ -25,10 +25,12 @@ import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.Component
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -99,9 +101,11 @@ internal class OutboundMessageProcessor(
         return when (message) {
             is AuthenticatedMessage -> {
                 processAuthenticatedMessage(AuthenticatedMessageAndKey(message, event.key))
+                    .also { recordOutboundMessagesMetric(message) }
             }
             is UnauthenticatedMessage -> {
                 processUnauthenticatedMessage(message)
+                    .also { recordOutboundMessagesMetric(message) }
             }
             else -> {
                 logger.warn("Unknown message type: ${message::class.java}")
@@ -231,7 +235,13 @@ internal class OutboundMessageProcessor(
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else if (membershipGroupReaderProvider.lookup(source, destination) != null) {
+        } else if (
+            membershipGroupReaderProvider.lookup(
+                source,
+                destination,
+                messageAndKey.message.header.statusFilter
+            ) != null
+        ) {
             val markers = if (isReplay) {
                 emptyList()
             } else {
@@ -240,7 +250,8 @@ internal class OutboundMessageProcessor(
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
         } else {
             logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
-                    "but the destination is not part of the network. Message will be retried later.")
+                    "but the destination is not part of the network. Filter was " +
+                    "${messageAndKey.message.header.statusFilter} Message will be retried later.")
             return if (isReplay) {
                 emptyList()
             } else {
@@ -259,7 +270,7 @@ internal class OutboundMessageProcessor(
                     "No existing session with ${messageAndKey.message.header.destination}. " +
                         "Initiating a new one.."
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 recordsForNewSessions(state)
             }
             is SessionManager.SessionState.SessionEstablished -> {
@@ -274,7 +285,7 @@ internal class OutboundMessageProcessor(
                     "Session already pending with ${messageAndKey.message.header.destination}. " +
                         "Message queued until session is established."
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 emptyList()
             }
             is SessionManager.SessionState.CannotEstablishSession -> {
@@ -290,6 +301,7 @@ internal class OutboundMessageProcessor(
         return sessionManager.recordsForSessionEstablished(
             state.session,
             messageAndKey,
+            state.sessionCounterparties.serial
         )
     }
 
@@ -319,6 +331,30 @@ internal class OutboundMessageProcessor(
                                            reason: String): Record<String, AppMessageMarker> {
         val marker = AppMessageMarker(LinkManagerDiscardedMarker(message, reason), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, message.message.header.messageId, marker)
+    }
+
+    private fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
+        message.header.let {
+            recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordOutboundMessagesMetric(message: UnauthenticatedMessage) {
+        message.header.let {
+            recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordOutboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
+        CordaMetrics.Metric.OutboundMessageCount.builder()
+            .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
+            .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
+            .withTag(CordaMetrics.Tag.MembershipGroup, group)
+            .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
+            .withTag(CordaMetrics.Tag.MessageType, messageType)
+            .build().increment()
     }
 
 }

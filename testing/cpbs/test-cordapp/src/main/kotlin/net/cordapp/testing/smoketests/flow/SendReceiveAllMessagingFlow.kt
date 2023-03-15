@@ -1,5 +1,6 @@
 package net.cordapp.testing.smoketests.flow
 
+import java.util.concurrent.ThreadLocalRandom
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
@@ -9,7 +10,6 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -23,6 +23,7 @@ class SendReceiveAllMessagingFlow(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val CHARS_PER_KB = 1000
     }
 
     @CordaInject
@@ -51,7 +52,8 @@ class SendReceiveAllMessagingFlow(
         flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
 
         //additional send via session to help verify init isn't sent again
-        sessionOne.send(MyClass("Serialize me please", 4))
+        val largeString = getLargeString(1100)
+        sessionOne.send(MyClass(largeString, 4))
         sessionTwo.send(MyClass("Serialize me please", 5))
 
         log.info("Sent data to two sessions")
@@ -76,11 +78,11 @@ class SendReceiveAllMessagingFlow(
             log.info("Session received all data: ${it.int} ")
         }
 
-        sessionOne.receive<MyClass>().let {
+        sessionOne.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
 
-        sessionTwo.receive<MyClass>().let {
+        sessionTwo.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
 
@@ -93,6 +95,17 @@ class SendReceiveAllMessagingFlow(
         log.info("Hello world completed.")
 
         return "Completed. Sum:$receivedNumSum"
+    }
+
+    /**
+     * Generate a large string whose size is roughly equal to the given amount of [kiloBytes]
+     */
+    private fun getLargeString(kiloBytes: Int) : String {
+        val stringBuilder = StringBuilder()
+        for (i in 0..CHARS_PER_KB*kiloBytes) {
+            stringBuilder.append(ThreadLocalRandom.current().nextInt(0,9) )
+        }
+        return stringBuilder.toString()
     }
 }
 
@@ -110,7 +123,7 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         log.info("I have been called [${flowEngine.flowId}]")
 
-        val received = session.receive<MyClass>()
+        val received = session.receive(MyClass::class.java)
         log.info("Receive from send map from peer: $received")
         if (received.int == 2) {
             session.send(MyOtherClass( 1, "this is a new object 1", received.int))
@@ -118,13 +131,14 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
             session.send(received.copy(string = "this is a new object 1"))
         }
 
-        val received2 = session.receive<MyClass>()
+        val received2 = session.receive(MyClass::class.java)
         log.info("Receive from send all from peer: $received2")
         session.send(received2.copy(string = "this is a new object 2"))
 
 
-        val received3 = session.receive<MyClass>()
-        log.info("Receive from send from peer: $received3")
+        val received3 = session.receive(MyClass::class.java)
+        //this string is so large it activates chunking so do not log it
+        log.info("Receive from send from peer. Message size: ${received3.string.length}")
         session.send(received3.copy(string = "this is a new object 3"))
         log.info("Closing session")
 

@@ -1,8 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests.sessions.service
 
-import java.time.Instant
-import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.application.sessions.SessionInfo
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
@@ -12,6 +11,7 @@ import net.corda.flow.utils.keyValuePairListOf
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 
 @Component(service = [InitiateFlowRequestService::class])
 class InitiateFlowRequestService @Activate constructor(
@@ -22,15 +22,15 @@ class InitiateFlowRequestService @Activate constructor(
 ) {
     fun getSessionsNotInitiated(
         context: FlowEventContext<Any>,
-        sessionToInfo: Set<FlowIORequest.SessionInfo>
-    ): Set<FlowIORequest.SessionInfo> {
+        sessionToInfo: Set<SessionInfo>
+    ): Set<SessionInfo> {
         val checkpoint = context.checkpoint
         return sessionToInfo.filter { checkpoint.getSessionState(it.sessionId) == null }.toSet()
     }
 
     fun initiateFlowsNotInitiated(
         context: FlowEventContext<Any>,
-        sessionToInfo: Set<FlowIORequest.SessionInfo>,
+        sessionToInfo: Set<SessionInfo>,
     ) {
         val sessionsNotInitiated = getSessionsNotInitiated(context, sessionToInfo)
         if (sessionsNotInitiated.isNotEmpty()) {
@@ -41,17 +41,17 @@ class InitiateFlowRequestService @Activate constructor(
     @Suppress("ThrowsCount")
     private fun initiateFlows(
         context: FlowEventContext<Any>,
-        sessionsNotInitiated: Set<FlowIORequest.SessionInfo>
+        sessionsNotInitiated: Set<SessionInfo>
     ) {
         val checkpoint = context.checkpoint
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
         val protocolStore = try {
-            flowSandboxService.get(checkpoint.holdingIdentity).protocolStore
+            flowSandboxService.get(checkpoint.holdingIdentity, checkpoint.cpkFileHashes).protocolStore
         } catch (e: Exception) {
             throw FlowTransientException(
-                "Failed to get the flow sandbox for identity ${checkpoint.holdingIdentity}: ${e.message}",
-                e
+                "Failed to get the flow sandbox for identity ${checkpoint.holdingIdentity}: " +
+                        (e.message?: "No exception message provided."), e
             )
         }
 

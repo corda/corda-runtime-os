@@ -4,11 +4,11 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.RequestHandlerTestContext
-import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -26,7 +26,7 @@ class InitiateFlowRequestServiceTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val testContext = RequestHandlerTestContext(Any())
 
-    private val sessionInfo = setOf(FlowIORequest.SessionInfo(sessionId1, ALICE_X500_NAME))
+    private val sessionInfo = setOf(SessionInfo(sessionId1, ALICE_X500_NAME))
     private val initiateFlowRequestService = InitiateFlowRequestService(testContext.flowSessionManager, testContext.flowSandboxService)
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val protocolStore = mock<FlowProtocolStore>()
@@ -46,7 +46,7 @@ class InitiateFlowRequestServiceTest {
                 any()
             )
         ).thenReturn(sessionState1)
-        whenever(testContext.flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
+        whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)

@@ -2,10 +2,11 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
+import net.corda.v5.crypto.SignatureSpec.ECDSA_SHA256
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -75,7 +76,7 @@ class SignatureSpecUtilsTests {
 
     class DigestServiceMock : PlatformDigestService {
         override fun hash(bytes: ByteArray, platformDigestName: DigestAlgorithmName): SecureHash =
-            SecureHash(platformDigestName.name, MessageDigest.getInstance(platformDigestName.name).digest(bytes))
+            SecureHashImpl(platformDigestName.name, MessageDigest.getInstance(platformDigestName.name).digest(bytes))
 
         override fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash {
             val messageDigest = MessageDigest.getInstance(platformDigestName.name)
@@ -85,7 +86,7 @@ class SignatureSpecUtilsTests {
                 if(read <= 0) break
                 messageDigest.update(buffer, 0, read)
             }
-            return SecureHash(platformDigestName.name, messageDigest.digest())
+            return SecureHashImpl(platformDigestName.name, messageDigest.digest())
         }
 
         override fun digestLength(platformDigestName: DigestAlgorithmName): Int =

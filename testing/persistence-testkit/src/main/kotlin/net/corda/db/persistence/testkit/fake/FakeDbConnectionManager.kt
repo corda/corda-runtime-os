@@ -71,6 +71,10 @@ class FakeDbConnectionManager(
         logger.info("Fake DbConnectionManager bootstrapped with $config")
     }
 
+    override fun testConnection(): Boolean {
+        return true
+    }
+
     override val isRunning: Boolean
         get() = true
 

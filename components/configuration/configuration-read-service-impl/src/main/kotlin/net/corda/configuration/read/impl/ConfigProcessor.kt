@@ -13,7 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 

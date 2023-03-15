@@ -1,6 +1,6 @@
 package net.corda.chunking.db.impl.cpi
 
-import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.db.admin.LiquibaseXmlConstants
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
@@ -33,25 +33,25 @@ internal class LiquibaseExtractorTest {
     @Test
     fun `test real cpb via validation function`() {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
-        val obj = LiquibaseExtractor()
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
+        val obj = LiquibaseScriptExtractor()
+        assertThat(obj.extract(cpi).isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
+        assertThat(obj.extract(cpi).size).isEqualTo(expectedLiquibaseFileCount)
     }
 
     @Test
     fun `check content`() {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
-        val obj = LiquibaseExtractor()
-        val entities = obj.extractLiquibaseEntitiesFromCpi(cpi)
+        val obj = LiquibaseScriptExtractor()
+        val entities = obj.extract(cpi)
         assertThat(entities.isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
+        val fileChecksums = cpi.cpks.map { it.metadata.fileChecksum }
         assertThat(entities.size).isEqualTo(expectedLiquibaseFileCount)
-
         entities.forEach {
-            assertThat(it.id.cpkFileChecksum.isNotEmpty()).isTrue
+            assertThat(fileChecksums).contains(it.id.cpkFileChecksum)
             assertThat(it.id.filePath.isNotEmpty()).isTrue
             assertThat(it.content.isNotEmpty()).isTrue
 

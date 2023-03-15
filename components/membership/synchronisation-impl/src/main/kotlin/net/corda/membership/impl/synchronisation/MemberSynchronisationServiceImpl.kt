@@ -1,7 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.chunking.toAvro
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -48,15 +48,15 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -345,8 +345,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                 }
 
                 val groupParameters = parseGroupParameters(updates.membershipPackage)
-                membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters)
-                groupParametersWriterService.put(viewOwningMember, groupParameters)
+                val latestGroupParameters =
+                    membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters).getOrThrow()
+                groupParametersWriterService.put(viewOwningMember, latestGroupParameters)
 
                 publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {

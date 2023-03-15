@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.FLOW_ID_1
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -20,13 +20,15 @@ fun <T> buildFlowEventContext(
     config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false
+    sendToDlq: Boolean = false,
+    isRetryEvent: Boolean = false
 ): FlowEventContext<T> {
 
 
     val configWithRequired = config.withFallback(SmartConfigImpl.empty()
         .withValue(FlowConfig.SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
         .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
+        .withValue(FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(10000))
     )
 
     return FlowEventContext(
@@ -34,6 +36,7 @@ fun <T> buildFlowEventContext(
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
         configWithRequired,
+        isRetryEvent,
         outputRecords,
         sendToDlq,
         emptyMap()
@@ -46,13 +49,15 @@ fun <T> buildFlowEventContext(
     config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false
+    sendToDlq: Boolean = false,
+    isRetryEvent: Boolean = false
 ): FlowEventContext<T> {
     return FlowEventContext(
         mock(),
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
         config,
+        isRetryEvent,
         outputRecords,
         sendToDlq,
         emptyMap()

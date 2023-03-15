@@ -21,7 +21,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
-import net.corda.schema.Schemas.P2P.Companion.P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+import net.corda.schema.Schemas.P2P.P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
 import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

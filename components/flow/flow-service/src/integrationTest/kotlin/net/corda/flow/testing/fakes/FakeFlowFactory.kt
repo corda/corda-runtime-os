@@ -19,7 +19,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeFlowFactory : FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        return ClientStartedFlow(FakeFlow(), FakeRestRequestBody())
+        return ClientStartedFlow(FakeFlow(), FakeClientRequestBody())
     }
 
     override fun createInitiatedFlow(
@@ -31,11 +31,11 @@ class FakeFlowFactory : FlowFactory {
     }
 
     private class FakeFlowSession : FlowSession {
-        override val counterparty: MemberX500Name
-            get() = TODO("Not yet implemented")
+        override fun getCounterparty(): MemberX500Name
+            = TODO("Not yet implemented")
 
-        override val contextProperties: FlowContextProperties
-            get() = TODO("Not yet implemented")
+        override fun getContextProperties(): FlowContextProperties
+            = TODO("Not yet implemented")
 
         override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
             TODO("Not yet implemented")

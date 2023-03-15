@@ -12,6 +12,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -45,10 +46,10 @@ class DeclineRegistrationHandlerTest {
 
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
-            setMemberAndRegistrationRequestAsDeclined(
+            setRegistrationRequestStatus(
                 mgm.toCorda(),
-                member.toCorda(),
-                REGISTRATION_ID
+                REGISTRATION_ID,
+                RegistrationStatus.DECLINED
             )
         } doReturn MembershipPersistenceResult.success()
     }
@@ -68,6 +69,7 @@ class DeclineRegistrationHandlerTest {
                 ),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.PENDING),
             )
         } doReturn record
     }
@@ -78,10 +80,10 @@ class DeclineRegistrationHandlerTest {
     fun `handler calls persistence client and returns no output states`() {
         val result = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
-        verify(membershipPersistenceClient, times(1)).setMemberAndRegistrationRequestAsDeclined(
+        verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
             mgm.toCorda(),
-            member.toCorda(),
-            REGISTRATION_ID
+            REGISTRATION_ID,
+            RegistrationStatus.DECLINED
         )
 
         assertThat(result.outputStates)

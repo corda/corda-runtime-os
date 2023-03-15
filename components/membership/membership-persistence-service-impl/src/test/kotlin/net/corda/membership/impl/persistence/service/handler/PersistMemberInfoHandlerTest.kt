@@ -1,8 +1,11 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
+import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
@@ -12,10 +15,13 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
@@ -24,13 +30,13 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -38,14 +44,18 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 
 class PersistMemberInfoHandlerTest {
-
+    private companion object {
+        const val SERIAL_NUMBER = 1L
+    }
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = HoldingIdentity(
@@ -63,7 +73,7 @@ class PersistMemberInfoHandlerTest {
         on { groupId } doReturn ourGroupId
         on { name } doReturn ourX500Name
         on { status } doReturn MEMBER_STATUS_ACTIVE
-        on { serial } doReturn 1
+        on { serial } doReturn SERIAL_NUMBER
     }
     private val vaultDmlConnectionId = UUID(0, 1)
 
@@ -98,8 +108,10 @@ class PersistMemberInfoHandlerTest {
     private val keyValueSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "123".toByteArray()
     }
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValueSerializer
+        on { createAvroDeserializer<KeyValuePairList>(any(), any())} doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
@@ -186,4 +198,137 @@ class PersistMemberInfoHandlerTest {
         }
     }
 
+    @Test
+    fun `invoke does not persist if version already persisted`() {
+        val memberInfo = getPersistentMemberInfo()
+        val requestContext = getMemberRequestContext()
+        val serializedMemberContext = "123".toByteArray()
+        val serializedMgmContext = "456".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(serializedMgmContext)).doReturn(KeyValuePairList(emptyList()))
+        val memberInfoEntity = mock<MemberInfoEntity> {
+            on { serialNumber } doReturn SERIAL_NUMBER
+            on { memberContext } doReturn serializedMemberContext
+            on { mgmContext } doReturn serializedMgmContext
+        }
+        whenever(entityManager.find(
+            eq(MemberInfoEntity::class.java),
+            eq(MemberInfoEntityPrimaryKey(
+                requestContext.holdingIdentity.groupId,
+                requestContext.holdingIdentity.x500Name.toString(),
+                false)
+            ),
+            any<LockModeType>())
+        ).doReturn (memberInfoEntity)
+
+        persistMemberInfoHandler.invoke(
+            requestContext,
+            PersistMemberInfo(listOf(memberInfo))
+        )
+
+        verify(entityManager, never()).merge(any<MemberInfoEntity>())
+    }
+
+    @Test
+    fun `invoke throws if already persisted member context differs`() {
+        val memberInfo = getPersistentMemberInfo()
+        val requestContext = getMemberRequestContext()
+        val serializedMemberContext = "123".toByteArray()
+        val serializedMgmContext = "456".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(eq(serializedMemberContext))).doReturn(
+            KeyValuePairList(mutableListOf(KeyValuePair("100", "b")))
+        )
+        whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(KeyValuePairList(emptyList()))
+        val memberInfoEntity = mock<MemberInfoEntity> {
+            on { serialNumber } doReturn SERIAL_NUMBER
+            on { memberContext } doReturn serializedMemberContext
+            on { mgmContext } doReturn serializedMgmContext
+        }
+        whenever(entityManager.find(
+            eq(MemberInfoEntity::class.java),
+            eq(MemberInfoEntityPrimaryKey(
+                requestContext.holdingIdentity.groupId,
+                requestContext.holdingIdentity.x500Name.toString(),
+                false)
+            ),
+            any<LockModeType>())
+        ).doReturn (memberInfoEntity)
+
+        assertThrows<MembershipPersistenceException> {
+            persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
+        }
+
+        verify(entityManager, never()).merge(any<MemberInfoEntity>())
+    }
+
+    @Test
+    fun `invoke throws if already persisted mgm context differs`() {
+        val memberInfo = getPersistentMemberInfo()
+        val requestContext = getMemberRequestContext()
+        val serializedMemberContext = "123".toByteArray()
+        val serializedMgmContext = "456".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(
+            KeyValuePairList(mutableListOf(KeyValuePair("100", "b")))
+        )
+        val memberInfoEntity = mock<MemberInfoEntity> {
+            on { serialNumber } doReturn SERIAL_NUMBER
+            on { memberContext } doReturn serializedMemberContext
+            on { mgmContext } doReturn serializedMgmContext
+        }
+        whenever(entityManager.find(
+            eq(MemberInfoEntity::class.java),
+            eq(MemberInfoEntityPrimaryKey(
+                requestContext.holdingIdentity.groupId,
+                requestContext.holdingIdentity.x500Name.toString(),
+                false)
+            ),            any<LockModeType>())
+        ).doReturn (memberInfoEntity)
+
+        assertThrows<MembershipPersistenceException> {
+            persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
+        }
+
+        verify(entityManager, never()).merge(any<MemberInfoEntity>())
+    }
+
+    @Test
+    fun `invoke does not persist or throw if persisted mgm context differs only by time`() {
+        val memberInfo = PersistentMemberInfo(
+            ourHoldingIdentity.toAvro(),
+            KeyValuePairList(emptyList()),
+            KeyValuePairList(mutableListOf(
+                KeyValuePair(MemberInfoExtension.CREATION_TIME, "a"),
+                KeyValuePair(MemberInfoExtension.MODIFIED_TIME, "b")
+            ))
+        )
+        val requestContext = getMemberRequestContext()
+        val serializedMemberContext = "123".toByteArray()
+        val serializedMgmContext = "456".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(
+            KeyValuePairList(mutableListOf(
+                KeyValuePair(MemberInfoExtension.CREATION_TIME, "c"),
+                KeyValuePair(MemberInfoExtension.MODIFIED_TIME, "d")
+            ))
+        )
+        val memberInfoEntity = mock<MemberInfoEntity> {
+            on { serialNumber } doReturn SERIAL_NUMBER
+            on { memberContext } doReturn serializedMemberContext
+            on { mgmContext } doReturn serializedMgmContext
+        }
+        whenever(entityManager.find(
+            eq(MemberInfoEntity::class.java),
+            eq(MemberInfoEntityPrimaryKey(
+                requestContext.holdingIdentity.groupId,
+                requestContext.holdingIdentity.x500Name.toString(),
+                false)
+            ),
+            any<LockModeType>())
+        ).doReturn (memberInfoEntity)
+
+        persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
+
+        verify(entityManager, never()).merge(any<MemberInfoEntity>())
+    }
 }

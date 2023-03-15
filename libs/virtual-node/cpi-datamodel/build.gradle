@@ -12,6 +12,7 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-db-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:db:db-core')
     implementation project(':libs:packaging:packaging-core')
 

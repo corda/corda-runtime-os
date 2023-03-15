@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.util.uncheckedCast
 import org.apache.qpid.proton.amqp.DescribedType
 import org.apache.qpid.proton.codec.DescribedTypeConstructor
 import java.io.NotSerializableException
@@ -39,7 +38,8 @@ data class Metadata(val values: MutableMap<String, Any> = mutableMapOf()) : Desc
             if (list.size != 1) {
                 throw AMQPNoTypeNotSerializableException("Malformed list, bad length of ${list.size} (should be 1)")
             }
-            return Metadata(uncheckedCast(list[VALUES_IDX]))
+            @Suppress("unchecked_cast")
+            return Metadata(list[VALUES_IDX] as MutableMap<String, Any>)
         }
     }
 

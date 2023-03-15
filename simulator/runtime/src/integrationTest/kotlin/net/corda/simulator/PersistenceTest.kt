@@ -3,7 +3,7 @@ package net.corda.simulator
 import net.corda.simulator.runtime.persistence.GreetingEntity
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.PersistenceService
@@ -25,7 +25,7 @@ class PersistenceTest {
             private lateinit var jsonMarshallingService: JsonMarshallingService
 
             @Suspendable
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 val greeting = requestBody.getRequestBodyAs(jsonMarshallingService, String::class.java)
                 val entity = GreetingEntity(UUID.randomUUID(), greeting)
                 persistenceService.persist(entity)
@@ -41,7 +41,7 @@ class PersistenceTest {
             private lateinit var jsonMarshallingService: JsonMarshallingService
 
             @Suspendable
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 val uuid = requestBody.getRequestBodyAs(jsonMarshallingService, String::class.java)
                 val id = UUID.fromString(uuid)
                 return persistenceService.find(GreetingEntity::class.java, id)?.greeting ?: "Not found"

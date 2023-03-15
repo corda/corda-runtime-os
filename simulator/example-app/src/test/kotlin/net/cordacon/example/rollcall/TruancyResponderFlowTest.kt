@@ -6,9 +6,9 @@ import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.factories.SerializationServiceFactory
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.crypto.SignatureSpec
@@ -41,7 +41,7 @@ class TruancyResponderFlowTest {
             @CordaInject
             lateinit var memberLookup: MemberLookup
 
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 val session = flowMessaging.initiateFlow(charlie)
 
                 val absentees = listOf(bob)
@@ -83,7 +83,7 @@ class TruancyResponderFlowTest {
             @CordaInject
             lateinit var memberLookup: MemberLookup
 
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 val session = flowMessaging.initiateFlow(charlie)
 
                 session.send(TruancyRecord(listOf(bob), signingService.sign(

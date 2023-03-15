@@ -3,6 +3,29 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import java.io.StringWriter
+import java.net.ConnectException
+import java.net.HttpURLConnection.HTTP_BAD_REQUEST
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.net.URI
+import java.net.http.HttpResponse.BodyHandlers
+import java.nio.ByteBuffer
+import java.security.KeyStore
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+import kotlin.concurrent.thread
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
@@ -54,26 +77,28 @@ import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
-import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+import net.corda.schema.Schemas.P2P.GATEWAY_TLS_TRUSTSTORES
+import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.registry.deserialize
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -81,35 +106,12 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import org.slf4j.LoggerFactory
-import java.io.StringWriter
-import java.net.ConnectException
-import java.net.HttpURLConnection.HTTP_BAD_REQUEST
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.net.URI
-import java.net.http.HttpResponse.BodyHandlers
-import java.nio.ByteBuffer
-import java.security.KeyStore
-import java.security.cert.X509Certificate
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
-import kotlin.concurrent.thread
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 
 class GatewayIntegrationTest : TestBase() {
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val GROUP_ID = "Group - 1"
 
         const val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
@@ -124,6 +126,7 @@ class GatewayIntegrationTest : TestBase() {
 
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.getAndIncrement()))
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
 
     private val avroSchemaRegistry = AvroSchemaRegistryImpl()
 
@@ -351,7 +354,7 @@ class GatewayIntegrationTest : TestBase() {
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
             val bigMessage = ByteArray(10_000_000)
-            val linkInMessage = LinkInMessage(authenticatedP2PMessage(bigMessage.toHex()))
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(toHex(bigMessage)))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
                 createConfigurationServiceFor(
@@ -670,7 +673,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, "/", chipSslConfig, MAX_REQUEST_SIZE),
+                    GatewayConfiguration(serverUri.host, serverUri.port, "/", bobSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
                     null,
                 ).also {
@@ -800,7 +803,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             "/",
-                            chipSslConfig,
+                            aliceSslConfig,
                             MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
@@ -818,7 +821,7 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             "/",
-                            daleSslConfig,
+                            bobSslConfig,
                             MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory
@@ -1169,17 +1172,17 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to gateway - mutual TLS`() {
-            val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
-            val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
+            val aliceGatewayAddress = URI.create("https://127.0.0.1:${getOpenPort()}")
+            val bobGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
             bob.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$bobX500Name-$GROUP_ID", GatewayTruststore(HoldingIdentity(bobX500Name, GROUP_ID), listOf(truststoreCertificatePem))))
-            alice.publishKeyStoreCertificatesAndKeys(chipKeyStore, aliceHoldingIdentity)
-            bob.publishKeyStoreCertificatesAndKeys(daleKeyStore, bobHoldingIdentity)
-            bob.allowCertificates(chipKeyStore)
-            alice.allowCertificates(daleKeyStore)
+            alice.publishKeyStoreCertificatesAndKeys(ipKeyStore, aliceHoldingIdentity)
+            bob.publishKeyStoreCertificatesAndKeys(chipKeyStore, bobHoldingIdentity)
+            bob.allowCertificates(ipKeyStore)
+            alice.allowCertificates(chipKeyStore)
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0
@@ -1238,7 +1241,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             "/",
-                            chipSslConfig.copy(tlsType = TlsType.MUTUAL),
+                            aliceSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
@@ -1256,7 +1259,7 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             "/",
-                            daleSslConfig.copy(tlsType = TlsType.MUTUAL),
+                            bobSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory

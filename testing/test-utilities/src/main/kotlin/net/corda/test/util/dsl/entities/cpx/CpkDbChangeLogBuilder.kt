@@ -1,20 +1,25 @@
 package net.corda.test.util.dsl.entities.cpx
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.v5.crypto.SecureHash
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 
-fun cpkDbChangeLog(init: CpkDbChangeLogBuilder.() -> Unit): CpkDbChangeLogEntity {
+fun cpkDbChangeLog(init: CpkDbChangeLogBuilder.() -> Unit): CpkDbChangeLog {
     val builder = CpkDbChangeLogBuilder()
     init(builder)
     return builder.build()
 }
 
-class CpkDbChangeLogBuilder(private var fileChecksumSupplier: () -> String? = { null }, private val randomUUID: UUID = UUID.randomUUID()) {
+class CpkDbChangeLogBuilder(
+    private var fileChecksumSupplier: () -> SecureHash? = { null },
+    private val randomUUID: UUID = UUID.randomUUID()
+) {
 
     private var filePath: String? = null
 
-    fun fileChecksum(value: String): CpkDbChangeLogBuilder {
+    fun fileChecksum(value: SecureHash): CpkDbChangeLogBuilder {
         fileChecksumSupplier = { value }
         return this
     }
@@ -24,10 +29,10 @@ class CpkDbChangeLogBuilder(private var fileChecksumSupplier: () -> String? = { 
         return this
     }
 
-    fun build(): CpkDbChangeLogEntity {
-        return CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(
-                fileChecksumSupplier.invoke() ?: "file_checksum_$randomUUID",
+    fun build(): CpkDbChangeLog {
+        return CpkDbChangeLog(
+            CpkDbChangeLogIdentifier(
+                fileChecksumSupplier.invoke() ?: SecureHashImpl("SHA-256", "file_checksum_$randomUUID".toByteArray()),
                 filePath ?: "file_path_$randomUUID"
             ),
             "data_$randomUUID"

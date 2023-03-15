@@ -1,6 +1,8 @@
 package net.corda.crypto.persistence
 
+import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
+import net.corda.v5.crypto.SecureHash
 import java.security.PublicKey
 
 interface SigningKeyStore : Lifecycle {
@@ -46,14 +48,22 @@ interface SigningKeyStore : Lifecycle {
     ): Collection<SigningCachedKey>
 
     /**
-     * Returns list of keys for provided key ids.
+     * Looks for keys by key ids.
      *
-     * @param ids The list of the key ids to look up for, the maximum number of items is 20.
-     *
-     * @throws IllegalArgumentException if the number of ids exceeds 20.
+     * @param keyIds Key ids to look keys for.
      */
-    fun lookup(
+    fun lookupByIds(
         tenantId: String,
-        ids: List<String>
+        keyIds: List<ShortHash>
+    ): Collection<SigningCachedKey>
+
+    /**
+     * Looks for keys by full key ids.
+     *
+     * @param fullKeyIds Key ids to look keys for.
+     */
+    fun lookupByFullIds(
+        tenantId: String,
+        fullKeyIds: List<SecureHash>
     ): Collection<SigningCachedKey>
 }

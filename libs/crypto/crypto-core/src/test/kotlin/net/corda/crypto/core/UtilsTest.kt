@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class UtilsTest {
+
     @Test
     fun `Test concat function`() {
         val bytes1 = ByteArray(0)
@@ -19,5 +20,4 @@ class UtilsTest {
         val concat4 = concatByteArrays(bytes2, bytes1, bytes3, bytes2, bytes1)
         assertEquals("TestThingsTest", concat4.toString(Charsets.UTF_8))
     }
-
 }

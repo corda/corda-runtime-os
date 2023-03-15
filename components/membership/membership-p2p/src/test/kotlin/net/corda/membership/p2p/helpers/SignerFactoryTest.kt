@@ -24,7 +24,7 @@ class SignerFactoryTest {
         }
         val mgm = mock<MemberInfo> {
             on { memberProvidedContext } doReturn memberContext
-            on { name } doReturn MemberX500Name.Companion.parse("C=GB,L=London,O=mgm")
+            on { name } doReturn MemberX500Name.parse("C=GB,L=London,O=mgm")
             on { sessionInitiationKey } doReturn publicKey
         }
 

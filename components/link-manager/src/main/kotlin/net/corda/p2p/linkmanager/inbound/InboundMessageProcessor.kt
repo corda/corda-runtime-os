@@ -30,7 +30,9 @@ import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
@@ -71,6 +73,7 @@ internal class InboundMessageProcessor(
                     logger.info( //TODO info level for Interop Team, revert to debug as part of CORE-10683
                         "Processing unauthenticated message ${payload.header.messageId}"
                     )
+                    recordInboundMessagesMetric(payload)
                     listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }
                 else -> {
@@ -161,7 +164,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun checkIdentityBeforeProcessing(
-        counterparties: SessionManager.SessionCounterparties,
+        counterparties: SessionManager.Counterparties,
         innerMessage: AuthenticatedMessageAndKey,
         session: Session,
         messages: MutableList<Record<*, *>>
@@ -176,6 +179,7 @@ internal class InboundMessageProcessor(
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+            recordInboundMessagesMetric(innerMessage.message)
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
         } else if (sessionSource != messageSource.toCorda()) {
@@ -194,7 +198,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun processLinkManagerPayload(
-        counterparties: SessionManager.SessionCounterparties,
+        counterparties: SessionManager.Counterparties,
         session: Session,
         sessionId: String,
         message: AvroSealedClasses.DataMessage
@@ -221,7 +225,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun makeAckMessageForHeartbeatMessage(
-        counterparties: SessionManager.SessionCounterparties,
+        counterparties: SessionManager.Counterparties,
         session: Session
     ): Record<String, LinkOutMessage>? {
         val ackDest = counterparties.counterpartyId
@@ -269,6 +273,30 @@ internal class InboundMessageProcessor(
             message.messageId,
             AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
         )
+    }
+
+    private fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
+        message.header.let {
+            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordInboundMessagesMetric(message: UnauthenticatedMessage) {
+        message.header.let {
+            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordInboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
+        CordaMetrics.Metric.InboundMessageCount.builder()
+            .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
+            .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
+            .withTag(CordaMetrics.Tag.MembershipGroup, group)
+            .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
+            .withTag(CordaMetrics.Tag.MessageType, messageType)
+            .build().increment()
     }
 
     override val keyClass = String::class.java

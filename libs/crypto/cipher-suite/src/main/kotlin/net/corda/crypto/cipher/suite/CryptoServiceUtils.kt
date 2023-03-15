@@ -2,9 +2,9 @@
 
 package net.corda.crypto.cipher.suite
 
-import net.corda.v5.base.types.toHexString
-import net.corda.v5.crypto.HMAC_SHA256_ALGORITHM
-import net.corda.v5.crypto.hmac
+import net.corda.v5.base.types.ByteArrays
+import net.corda.v5.crypto.MessageAuthenticationCode
+import net.corda.crypto.utils.hmac
 
 /**
  * Computes an alias based on the value supplied by the tenant,
@@ -65,7 +65,7 @@ fun computeHSMAlias(
     }
     return (tenantId + alias)
         .encodeToByteArray()
-        .hmac(secret, HMAC_SHA256_ALGORITHM)
-        .toHexString()
+        .hmac(secret, MessageAuthenticationCode.HMAC_SHA256_ALGORITHM)
+        .let(ByteArrays::toHexString)
         .take(take)
 }

@@ -3,12 +3,14 @@ package net.corda.crypto.service.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
@@ -25,11 +27,10 @@ import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -233,20 +234,20 @@ class CryptoOperationsTests {
                 val signature = signingService.sign(tenantId, publicKey, spec, data)
                 assertEquals(publicKey, signature.by)
                 assertTrue(
-                    verifier.isValid(publicKey, digest, signature.bytes, data)
+                    verifier.isValid(data, signature.bytes, publicKey, digest)
                 )
-                verifier.verify(publicKey, digest, signature.bytes, data)
+                verifier.verify(data, signature.bytes, publicKey, digest)
                 assertFalse(
-                    verifier.isValid(publicKey, digest, signature.bytes, badData)
+                    verifier.isValid(badData, signature.bytes, publicKey, digest)
                 )
                 assertThrows<CryptoSignatureException> {
-                    verifier.verify(publicKey, digest, signature.bytes, badData)
+                    verifier.verify(badData, signature.bytes, publicKey, digest)
                 }
                 assertThrows<IllegalArgumentException> {
-                    verifier.verify(publicKey, digest, signature.bytes, ByteArray(0))
+                    verifier.verify(ByteArray(0), signature.bytes, publicKey, digest)
                 }
                 assertThrows<IllegalArgumentException> {
-                    verifier.verify(publicKey, digest, ByteArray(0), data)
+                    verifier.verify(data, ByteArray(0), publicKey, digest)
                 }
             }
         }
@@ -272,21 +273,21 @@ class CryptoOperationsTests {
         ) {
             val badData = UUID.randomUUID().toString().toByteArray()
             assertTrue(
-                verifier.isValid(publicKey, signatureSpec, signature, data),
+                verifier.isValid(data, signature, publicKey, signatureSpec),
                 "Should validate with ${signatureSpec.signatureName}"
             )
-            verifier.verify(publicKey, signatureSpec, signature, data)
+            verifier.verify(data, signature, publicKey, signatureSpec)
             assertFalse(
-                verifier.isValid(publicKey, signatureSpec, signature, badData)
+                verifier.isValid(badData, signature, publicKey, signatureSpec)
             )
             assertThrows<CryptoSignatureException> {
-                verifier.verify(publicKey, signatureSpec, signature, badData)
+                verifier.verify(badData, signature, publicKey, signatureSpec)
             }
             assertThrows<IllegalArgumentException> {
-                verifier.verify(publicKey, signatureSpec, signature, ByteArray(0))
+                verifier.verify(ByteArray(0), signature, publicKey, signatureSpec)
             }
             assertThrows<IllegalArgumentException> {
-                verifier.verify(publicKey, signatureSpec, ByteArray(0), data)
+                verifier.verify(data, ByteArray(0), publicKey, signatureSpec)
             }
         }
 
@@ -350,9 +351,9 @@ class CryptoOperationsTests {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
         val key2 = signingFreshKeys.values.first().publicKey
-        val ourKeys = signingFreshKeys.values.first().signingService.lookup(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
             tenantId,
-            listOf(key1.publicKeyId(), key2.publicKeyId())
+            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
         assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
@@ -366,9 +367,9 @@ class CryptoOperationsTests {
         val key2 = mock<PublicKey> {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
-        val ourKeys = signingFreshKeys.values.first().signingService.lookup(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
             tenantId,
-            listOf(key1.publicKeyId(), key2.publicKeyId())
+            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
         assertThat(ourKeys).isEmpty()
     }
@@ -379,7 +380,8 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.publicKeyId()))
+        val returned =
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
@@ -391,7 +393,8 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingFreshKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.publicKeyId()))
+        val returned =
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, null, info.externalId, scheme)
@@ -403,8 +406,9 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(
-            tenantId, listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))
+        val returned = info.signingService.lookupByIds(
+            tenantId,
+            listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, returned.size)
     }
@@ -455,7 +459,8 @@ class CryptoOperationsTests {
     ) {
         val unknownPublicKey = unknownKeyPairs.getValue(scheme).public
         val info = signingFreshKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(unknownPublicKey.publicKeyId()))
+        val returned =
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(unknownPublicKey.publicKeyId())))
         assertEquals(0, returned.size)
     }
 

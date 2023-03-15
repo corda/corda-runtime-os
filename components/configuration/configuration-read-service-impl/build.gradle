@@ -14,6 +14,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
@@ -34,6 +35,7 @@ dependencies {
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":libs:lifecycle:registry")
 
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

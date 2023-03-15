@@ -1,6 +1,6 @@
 package net.corda.crypto.cipher.suite.schemes
 
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import org.bouncycastle.asn1.sec.SECObjectIdentifiers
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers

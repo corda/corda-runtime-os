@@ -3,8 +3,8 @@ plugins {
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow {
         name "Example calculator"
         versionId 1
@@ -15,4 +15,5 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }

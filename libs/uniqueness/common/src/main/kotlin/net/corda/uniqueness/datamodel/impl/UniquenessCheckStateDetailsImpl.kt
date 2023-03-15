@@ -5,6 +5,9 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 
 data class UniquenessCheckStateDetailsImpl(
-    override val stateRef: UniquenessCheckStateRef,
-    override val consumingTxId: SecureHash?
-) : UniquenessCheckStateDetails
+    private val stateRef: UniquenessCheckStateRef,
+    private val consumingTxId: SecureHash?
+) : UniquenessCheckStateDetails {
+    override fun getStateRef() = stateRef
+    override fun getConsumingTxId() = consumingTxId
+}

@@ -34,9 +34,9 @@ dependencies {
     implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:messaging:messaging')
+    implementation project(":libs:serialization:json-validator")
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":libs:serialization:json-validator")
 
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)

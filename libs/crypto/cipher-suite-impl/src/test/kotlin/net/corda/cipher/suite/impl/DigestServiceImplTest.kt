@@ -2,8 +2,8 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -57,11 +57,11 @@ class DigestServiceImplTest {
     @Test
     fun `looks for custom digest algorithm if not found in platform digest algorithms`() {
         val digestAlgorithmFactory = object : DigestAlgorithmFactory {
-            override val algorithm = DUMMY_DIGEST
+            override fun getAlgorithm() = DUMMY_DIGEST
             override fun getInstance() =
                 object : DigestAlgorithm {
-                    override val algorithm = DUMMY_DIGEST
-                    override val digestLength = DUMMY_DIGEST_LENGTH
+                    override fun getAlgorithm() = DUMMY_DIGEST
+                    override fun getDigestLength() = DUMMY_DIGEST_LENGTH
                     override fun digest(inputStream: InputStream) = DUMMY_BYTES
                     override fun digest(bytes: ByteArray) = DUMMY_BYTES
                 }
@@ -72,7 +72,7 @@ class DigestServiceImplTest {
         val hash1 = digestServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
         val hashLength = digestServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
 
-        val expectedDummySecureHash = SecureHash(DUMMY_DIGEST, DUMMY_BYTES)
+        val expectedDummySecureHash = SecureHashImpl(DUMMY_DIGEST, DUMMY_BYTES)
         assertEquals(expectedDummySecureHash, hash0)
         assertEquals(expectedDummySecureHash, hash1)
         assertEquals(DUMMY_DIGEST_LENGTH, hashLength)

@@ -2,16 +2,17 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 import java.util.Objects
@@ -20,31 +21,27 @@ class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
     override val wireTransaction: WireTransaction,
-    override val signatures: List<DigitalSignatureAndMetadata>
-): ConsensualSignedTransactionInternal
-{
+    private val signatures: List<DigitalSignatureAndMetadata>
+) : ConsensualSignedTransactionInternal {
+
     init {
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
-        // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
+        verifyMetadata(wireTransaction.metadata)
     }
-
-    override val id: SecureHash
-        get() = wireTransaction.id
-
-    override val metadata: TransactionMetadata
-        get() = wireTransaction.metadata
 
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializationService)
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransactionInternal =
-        ConsensualSignedTransactionImpl(serializationService, transactionSignatureService,
-            wireTransaction, signatures + signature)
+        ConsensualSignedTransactionImpl(
+            serializationService, transactionSignatureService,
+            wireTransaction, signatures + signature
+        )
 
     @Suspendable
-    override fun addMissingSignatures(): Pair<ConsensualSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
+    override fun addMissingSignatures(): Pair<ConsensualSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val newSignatures = try {
             transactionSignatureService.sign(this, getMissingSignatories())
         } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
@@ -62,7 +59,7 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.filter{
+        val appliedSignatories = signatures.filter {
             try {
                 transactionSignatureService.verifySignature(this, it)
                 true
@@ -72,18 +69,21 @@ class ConsensualSignedTransactionImpl(
         }.map { it.by }.toSet()
         val requiredSignatories = this.toLedgerTransaction().requiredSignatories
         return requiredSignatories.filter {
-            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
+            !KeyUtils.isKeyFulfilledBy(
+                it,
+                appliedSignatories
+            ) // isFulfilledBy() helps to make this working with CompositeKeys.
         }.toSet()
     }
 
     @Suspendable
     override fun verifySignatures() {
-        val appliedSignatories = signatures.filter{
+        val appliedSignatories = signatures.filter {
             try {
                 transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(
+                throw TransactionSignatureException(
                     id,
                     "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
                     e
@@ -94,7 +94,7 @@ class ConsensualSignedTransactionImpl(
         // isFulfilledBy() helps to make this working with CompositeKeys.
         val missingSignatories = toLedgerTransaction()
             .requiredSignatories
-            .filterNot { it.isFulfilledBy(appliedSignatories) }
+            .filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }
             .toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
@@ -111,7 +111,7 @@ class ConsensualSignedTransactionImpl(
         if (other.wireTransaction != wireTransaction) return false
         if (other.signatures.size != signatures.size) return false
 
-        return other.signatures.withIndex().all{
+        return other.signatures.withIndex().all {
             it.value == signatures[it.index]
         }
     }
@@ -122,5 +122,15 @@ class ConsensualSignedTransactionImpl(
         return "ConsensualSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
     }
 
+    override fun getId(): SecureHash {
+        return wireTransaction.id
+    }
 
+    override fun getMetadata(): TransactionMetadata {
+        return wireTransaction.metadata
+    }
+
+    override fun getSignatures(): List<DigitalSignatureAndMetadata> {
+        return signatures
+    }
 }

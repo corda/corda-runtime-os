@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
@@ -128,7 +129,8 @@ class MembershipQueryClientImpl(
             registrationSent = this.registrationSent,
             registrationLastModified = this.registrationLastModified,
             protocolVersion = this.registrationProtocolVersion,
-            memberContext = this.memberProvidedContext
+            memberContext = this.memberProvidedContext,
+            reason = this.reason,
         )
     }
 
@@ -159,11 +161,15 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity):
-            MembershipQueryResult<List<RegistrationRequestStatus>> {
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>,
+        limit: Int?
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests()
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -212,7 +218,7 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()
@@ -220,7 +226,7 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is GroupPolicyQueryResponse -> {
                 MembershipQueryResult.Success(
-                    layeredPropertyMapFactory.createMap(payload.properties.toMap())
+                    layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
                 )
             }
             else -> {

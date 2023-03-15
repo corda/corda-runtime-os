@@ -18,6 +18,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -180,6 +181,8 @@ class FlowExecutorImplTest {
     }
 
     private fun getMinimalMessagingConfig() : SmartConfig {
-        return SmartConfigImpl.empty().withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(5000))
+        return SmartConfigImpl.empty()
+            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(5000))
+            .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(1000000000))
     }
 }

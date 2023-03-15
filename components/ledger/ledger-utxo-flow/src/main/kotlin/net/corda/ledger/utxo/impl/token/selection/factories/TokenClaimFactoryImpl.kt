@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.impl.token.selection.factories
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
@@ -33,9 +34,9 @@ class TokenClaimFactoryImpl @Activate constructor(
 
     override fun createClaimedToken(poolKey: TokenPoolCacheKey, token: Token): ClaimedToken {
         return ClaimedTokenImpl(
-            StateRef.parse(token.stateRef),
+            parseStateRef(token.stateRef),
             poolKey.tokenType,
-            SecureHash.parse(poolKey.issuerHash),
+            parseSecureHash(poolKey.issuerHash),
             MemberX500Name.parse(poolKey.notaryX500Name),
             poolKey.symbol,
             token.tag,
@@ -46,7 +47,7 @@ class TokenClaimFactoryImpl @Activate constructor(
 
     private fun String?.toNullableSecureHash(): SecureHash? {
         return if (this != null && this.isNotEmpty()) {
-            SecureHash.parse(this)
+            parseSecureHash(this)
         } else {
             null
         }
@@ -63,13 +64,68 @@ class TokenClaimFactoryImpl @Activate constructor(
     }
 
     private data class ClaimedTokenImpl(
-        override val stateRef: StateRef,
-        override val tokenType: String,
-        override val issuerHash: SecureHash,
-        override val notaryX500Name: MemberX500Name,
-        override val symbol: String,
-        override var tag: String?,
-        override var ownerHash: SecureHash?,
-        override val amount: BigDecimal
-    ) : ClaimedToken
+        private val stateRef: StateRef,
+        private val tokenType: String,
+        private val issuerHash: SecureHash,
+        private val notaryX500Name: MemberX500Name,
+        private val symbol: String,
+        private var tag: String?,
+        private var ownerHash: SecureHash?,
+        private val amount: BigDecimal
+    ) : ClaimedToken {
+
+        override fun getStateRef(): StateRef {
+            return stateRef
+        }
+
+        override fun getTokenType(): String {
+            return tokenType
+        }
+
+        override fun getIssuerHash(): SecureHash {
+            return issuerHash
+        }
+
+        override fun getNotaryX500Name(): MemberX500Name {
+            return notaryX500Name
+        }
+
+        override fun getSymbol(): String {
+            return symbol
+        }
+
+        override fun getTag(): String? {
+            return tag
+        }
+
+        override fun getOwnerHash(): SecureHash? {
+            return ownerHash
+        }
+
+        override fun getAmount(): BigDecimal {
+            return amount
+        }
+    }
+}
+
+// Just a copy of public API `StateRef.parse` for internal purposes, i.e.
+//  without using `DigestService` (which is public API) for secure hash parsing,
+//  for to use it outside sandboxes.
+private fun parseStateRef(value: String): StateRef {
+    return try {
+        val transactionHash = parseSecureHash(value.substringBeforeLast(":"))
+        val index = value.substringAfterLast(":").toInt()
+
+        StateRef(transactionHash, index)
+    } catch (ex: NumberFormatException) {
+        throw IllegalArgumentException(
+            "Failed to parse a StateRef from the specified value. The index is malformed: $value.",
+            ex
+        )
+    } catch (ex: IllegalArgumentException) {
+        throw IllegalArgumentException(
+            "Failed to parse a StateRef from the specified value. The transaction id is malformed: $value.",
+            ex
+        )
+    }
 }

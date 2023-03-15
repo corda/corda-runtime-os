@@ -32,7 +32,7 @@ class MerkleTreeProviderJavaApiTest {
 
     @Test
     void createHashDigestProvider() {
-        final DigestAlgorithmName digestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME;
+        final DigestAlgorithmName digestAlgorithmName = DigestAlgorithmName.SHA2_256;
         final MerkleTreeHashDigestProvider hashDigestProvider = mock(MerkleTreeHashDigestProvider.class);
         // TODO: figure out what to do about the default third argument to createHashDigestProvider, not supported in Java
         // by default. According to our coding standards doc, we should either replace this with a manual

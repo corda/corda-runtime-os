@@ -13,8 +13,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
@@ -243,7 +243,7 @@ internal class LifecycleProcessor(
             val errorEvent = ErrorEvent(e)
             logger.info(
                 "$name Lifecycle: An error occurred during the processing of event $event by a lifecycle " +
-                        "coordinator: ${e.message}. Triggering user event handling.",
+                        "coordinator: ${e.message ?: "No exception message provided"}. Triggering user event handling.",
                 e
             )
             try {
@@ -254,7 +254,7 @@ internal class LifecycleProcessor(
             if (!errorEvent.isHandled) {
                 logger.error(
                     "$name Lifecycle: An unhandled error was encountered while processing $event in a lifecycle " +
-                            "coordinator: ${e.message}. This coordinator will now shut down.",
+                            "coordinator: ${e.message ?: "No exception message provided"}. This coordinator will now shut down.",
                     e
                 )
             }
@@ -262,11 +262,12 @@ internal class LifecycleProcessor(
         }
     }
 
-    fun addManagedResource(name: String, generator: () -> Resource) {
-        managedResources.compute(name) { _, old ->
+    @Suppress("UNCHECKED_CAST")
+    fun <T: Resource> addManagedResource(name: String, generator: () -> Resource): T {
+        return managedResources.compute(name) { _, old ->
             old?.close()
             generator.invoke()
-        }
+        } as T
     }
 
     fun getManagedResource(name: String): Resource? {

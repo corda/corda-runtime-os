@@ -1,10 +1,14 @@
 package net.cordacon.example.doorcode
 
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.factories.JsonMarshallingServiceFactory
+import net.corda.v5.application.marshalling.json.JsonDeserializer
+import net.corda.v5.application.marshalling.json.JsonNodeReader
+import net.corda.v5.crypto.SecureHash
 import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -15,7 +19,9 @@ class DoorCodeTest {
     @Test
     fun `should get signatures from everyone who needs to sign`() {
 
-        val jsonService = JsonMarshallingServiceFactory.create()
+        val jsonService = JsonMarshallingServiceFactory.create(
+            customJsonDeserializers = mapOf(SecureHashDeserializer to SecureHash::class.java)
+        )
 
         // Given Alice, Bob and Charlie all live in the house
         val simulator = Simulator()
@@ -58,5 +64,11 @@ class DoorCodeTest {
         )
         assertThat(queryResponse.signatories, `is`(setOf(alice, bob, charlie)))
         assertThat(queryResponse.doorCode, `is`(DoorCode("1234")))
+    }
+}
+
+internal object SecureHashDeserializer : JsonDeserializer<SecureHash> {
+    override fun deserialize(jsonRoot: JsonNodeReader): SecureHash {
+        return parseSecureHash(jsonRoot.asText())
     }
 }

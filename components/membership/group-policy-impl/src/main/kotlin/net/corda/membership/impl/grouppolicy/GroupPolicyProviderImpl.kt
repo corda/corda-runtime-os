@@ -34,11 +34,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.debug
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -285,7 +285,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         }
 
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
-            membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
+            membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow().first
         } catch (e: MembershipQueryResult.QueryException) {
             logger.warn("Failed to retrieve persisted group policy properties.", e)
             null

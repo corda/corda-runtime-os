@@ -2,6 +2,7 @@ package net.corda.crypto.impl.decorators
 
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.CryptoThrottlingException
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
@@ -9,7 +10,6 @@ import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
-import net.corda.v5.crypto.exceptions.CryptoThrottlingException
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -64,9 +64,9 @@ class CryptoServiceThrottlingDecorator(
     override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() =
         cryptoService.supportedSchemes
 
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) =
+    override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) =
         executeWithBackingOff {
-            cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
+            cryptoService.createWrappingKey(wrappingKeyAlias, failIfExists, context)
         }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey =

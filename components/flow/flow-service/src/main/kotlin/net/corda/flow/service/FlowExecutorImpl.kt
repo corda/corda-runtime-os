@@ -17,11 +17,12 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -69,6 +70,7 @@ class FlowExecutorImpl constructor(
             val messagingConfig = toMessagingConfig(config)
             val flowConfig = config.getConfig(FLOW_CONFIG)
                 .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()

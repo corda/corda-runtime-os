@@ -1,10 +1,10 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.CryptoRetryException
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
-import net.corda.v5.crypto.exceptions.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 
 val exceptionFactories = mapOf<String, (String, Throwable) -> Throwable>(

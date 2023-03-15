@@ -2,6 +2,7 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -32,12 +33,12 @@ class PlatformDigestServiceImpl @Activate constructor(
 
     override fun hash(bytes: ByteArray, platformDigestName: DigestAlgorithmName): SecureHash {
         val hashBytes = digestFor(platformDigestName).digest(bytes)
-        return SecureHash(platformDigestName.name, hashBytes)
+        return SecureHashImpl(platformDigestName.name, hashBytes)
     }
 
     override fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash {
         val hashBytes = digestFor(platformDigestName).digest(inputStream)
-        return SecureHash(platformDigestName.name, hashBytes)
+        return SecureHashImpl(platformDigestName.name, hashBytes)
     }
 
     override fun digestLength(platformDigestName: DigestAlgorithmName): Int =
@@ -52,7 +53,7 @@ class PlatformDigestServiceImpl @Activate constructor(
 
     private class SpiDigestAlgorithmFactory(
         schemeMetadata: CipherSchemeMetadata,
-        override val algorithm: String,
+        private val algorithm: String
     ) : DigestAlgorithmFactory {
         companion object {
             const val STREAM_BUFFER_SIZE = DEFAULT_BUFFER_SIZE
@@ -62,6 +63,8 @@ class PlatformDigestServiceImpl @Activate constructor(
             schemeMetadata.digests.firstOrNull { it.algorithmName == algorithm }?.providerName
                 ?: throw IllegalArgumentException("Unknown hash algorithm $algorithm")
         )
+
+        override fun getAlgorithm() = algorithm
 
         override fun getInstance(): DigestAlgorithm {
             try {
@@ -74,9 +77,12 @@ class PlatformDigestServiceImpl @Activate constructor(
 
         private class MessageDigestWrapper(
             val messageDigest: MessageDigest,
-            override val algorithm: String
+            private val algorithm: String
         ) : DigestAlgorithm {
-            override val digestLength = messageDigest.digestLength
+            override fun getAlgorithm() = algorithm
+
+            override fun getDigestLength() = messageDigest.digestLength
+
             override fun digest(bytes: ByteArray): ByteArray = messageDigest.digest(bytes)
             override fun digest(inputStream : InputStream): ByteArray {
                 val buffer = ByteArray(STREAM_BUFFER_SIZE)

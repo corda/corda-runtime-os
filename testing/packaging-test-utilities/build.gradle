@@ -13,6 +13,7 @@ dependencies {
     api 'net.corda:corda-crypto'
     api project(':libs:packaging:packaging-core')
 
+    implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:packaging:packaging")
     implementation project(":testing:test-utilities")
 }

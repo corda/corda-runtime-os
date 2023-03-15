@@ -2,7 +2,7 @@ package net.cordapp.testing.smoketests.virtualnode
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
@@ -26,7 +26,7 @@ class SimplePersistenceCheckFlow : ClientStartableFlow {
     lateinit var persistenceService: PersistenceService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val id = UUID.randomUUID()
         val dog = Dog(id, "Penny", Instant.now(), "Alice")
         try {

@@ -2,6 +2,7 @@ package net.corda.ledger.verification.tests
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -16,6 +17,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
@@ -36,7 +38,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
@@ -130,7 +131,8 @@ class VerificationRequestProcessorTest {
     fun `successfully verifies transaction contracts`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
-        val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
@@ -164,7 +166,8 @@ class VerificationRequestProcessorTest {
     fun `unsuccessfully verifies transaction contracts`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
-        val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
@@ -202,7 +205,8 @@ class VerificationRequestProcessorTest {
     fun `returns error after when CPK not available`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
-        val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
@@ -235,7 +239,7 @@ class VerificationRequestProcessorTest {
         val signatory = ctx.getSerializationService().serialize(publicKeyExample).bytes
 
         val input = ctx.getSerializationService().serialize(
-            StateRef(SecureHash.parse("SHA-256:1111111111111111"), 0)
+            StateRef(parseSecureHash("SHA-256:1111111111111111"), 0)
         ).bytes
 
         val outputState = ctx.getSerializationService().serialize(
@@ -263,7 +267,9 @@ class VerificationRequestProcessorTest {
                 emptyList(),
                 listOf(outputState),
                 listOf(command)
-            )
+            ),
+            ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
+            transactionSubType = "GENERAL"
         )
         val inputStateAndRefs: List<StateAndRef<*>> = listOf()
         val referenceStateAndRefs: List<StateAndRef<*>> = listOf()
@@ -284,12 +290,12 @@ class VerificationRequestProcessorTest {
         transaction: UtxoLedgerTransactionContainer,
         cpksSummaries: List<CordaPackageSummary>
     ) = TransactionVerificationRequest(
-            Instant.now(),
-            holdingIdentity.toAvro(),
-            ctx.serialize(transaction),
-            cpksSummaries,
-            EXTERNAL_EVENT_CONTEXT
-        )
+        Instant.now(),
+        holdingIdentity.toAvro(),
+        ctx.serialize(transaction),
+        cpksSummaries,
+        EXTERNAL_EVENT_CONTEXT
+    )
 
     private fun SandboxGroupContext.serialize(obj: Any) =
         ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
@@ -302,21 +308,22 @@ class VerificationRequestProcessorTest {
             )
 
     @BelongsToContract(TestContract::class)
-    class TestState(
-        val valid: Boolean,
-        override val participants: List<PublicKey>
-    ) : ContractState
+    class TestState(val valid: Boolean, private val participants: List<PublicKey>) : ContractState {
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+    }
 
     class TestContract : Contract {
         override fun verify(transaction: UtxoLedgerTransaction) {
-            require (transaction.inputStateRefs.isNotEmpty()) {
+            require(transaction.inputStateRefs.isNotEmpty()) {
                 "At least one input expected"
             }
-            require (transaction.outputStateAndRefs.isNotEmpty()) {
+            require(transaction.outputStateAndRefs.isNotEmpty()) {
                 "At least one output expected"
             }
             val state = transaction.outputStateAndRefs.first().state.contractState as TestState
-            require (state.valid) {
+            require(state.valid) {
                 VERIFICATION_ERROR_MESSAGE
             }
         }

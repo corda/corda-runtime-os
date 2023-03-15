@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl.tests
 
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
 import net.corda.crypto.persistence.impl.tests.infra.TestCryptoConnectionsFactory
@@ -52,6 +53,7 @@ class SigningKeyStoreTests {
         component = SigningKeyStoreImpl(
             coordinatorFactory,
             configurationReadService,
+            mock(),
             mock(),
             mock(),
             mock()
@@ -126,7 +128,7 @@ class SigningKeyStoreTests {
             )
         }
         assertThrows<IllegalArgumentException> {
-            component.lookup(UUID.randomUUID().toString(), keys)
+            component.lookupByIds(UUID.randomUUID().toString(), keys.map { ShortHash.of(it) })
         }
     }
 }

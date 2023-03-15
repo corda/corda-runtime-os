@@ -10,7 +10,8 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
+import net.corda.utilities.minutes
 import org.slf4j.LoggerFactory
 
 class DbConnectionManagerEventHandler(
@@ -19,6 +20,9 @@ class DbConnectionManagerEventHandler(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private const val dbCheckTimerKey = "CheckDbEvent"
+        private val timeBetweenDbChecks = 1.minutes
     }
 
     private lateinit var bootstrapConfig: SmartConfig
@@ -34,6 +38,7 @@ class DbConnectionManagerEventHandler(
             }
             is StopEvent -> {
                 logger.debug { "DbConnectionManager stopping." }
+                onStop(coordinator)
             }
             is ErrorEvent -> {
                 logger.error(
@@ -41,7 +46,27 @@ class DbConnectionManagerEventHandler(
                     event.cause
                 )
             }
+            is CheckDbEvent -> {
+                checkDb(coordinator)
+            }
         }
+    }
+
+    fun scheduleNextDbCheck(coordinator: LifecycleCoordinator) {
+         coordinator.setTimer(dbCheckTimerKey, timeBetweenDbChecks.toMillis()) { key -> CheckDbEvent(key) }
+    }
+
+    private fun onStop(coordinator: LifecycleCoordinator) {
+        coordinator.cancelTimer(dbCheckTimerKey)
+    }
+
+    private fun checkDb(coordinator: LifecycleCoordinator) {
+        if (dbConnectionManager.testConnection()) {
+            coordinator.updateStatus(LifecycleStatus.UP, "DB check passed")
+        } else {
+            coordinator.updateStatus(LifecycleStatus.DOWN, "DB check failed")
+        }
+        scheduleNextDbCheck(coordinator)
     }
 
     @Synchronized

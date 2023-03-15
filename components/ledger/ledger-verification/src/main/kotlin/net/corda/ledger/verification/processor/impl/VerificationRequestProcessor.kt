@@ -9,8 +9,8 @@ import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.utilities.trace
 import net.corda.utilities.withMDC
-import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException

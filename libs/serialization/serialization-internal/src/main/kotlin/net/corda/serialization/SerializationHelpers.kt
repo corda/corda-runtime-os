@@ -1,7 +1,7 @@
 package net.corda.serialization
 
+import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.base.types.sequence
 import net.corda.v5.serialization.SerializedBytes
 import java.sql.Blob
 
@@ -36,7 +36,7 @@ inline fun <reified T : Any> SerializedBytes<T>.deserialize(serializationFactory
 inline fun <reified T : Any> ByteArray.deserialize(serializationFactory: SerializationFactory,
                                                    context: SerializationContext): T {
     require(isNotEmpty()) { "Empty bytes" }
-    return this.sequence().deserialize(serializationFactory, context)
+    return sequence(this).deserialize(serializationFactory, context)
 }
 
 /**

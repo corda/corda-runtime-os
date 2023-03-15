@@ -1,6 +1,7 @@
 package net.corda.sandboxgroupcontext.impl
 
 import net.corda.cpk.read.CpkReadService
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.Cpk
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -66,7 +67,7 @@ class SandboxGroupContextServiceImplTest {
             scr,
             bundleContext
         )
-        service.initCache(1)
+        service.initCaches(1)
         virtualNodeContext = createVirtualNodeContextForFlow(
             holdingIdentity,
             cpks.mapTo(mutableSetOf()) { it.metadata.fileChecksum }
@@ -146,7 +147,7 @@ class SandboxGroupContextServiceImplTest {
         val cpkService = CpkReadServiceFake(cpks1 + cpks2 + cpks3)
 
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext).apply {
-            initCache(1)
+            initCaches(1)
         }
 
         val dog1 = Dog("Rover", "Woof!")
@@ -196,7 +197,7 @@ class SandboxGroupContextServiceImplTest {
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,
-            cpks1.map { SecureHash.parse("DUMMY:1234567890abcdef") }.toSet()
+            cpks1.map { parseSecureHash("DUMMY:1234567890abcdef") }.toSet()
         )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)

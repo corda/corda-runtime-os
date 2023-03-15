@@ -10,6 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -35,8 +36,8 @@ class MGMRegistrationGroupPolicyHandlerTest {
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
-            persistGroupPolicy(eq(testHoldingIdentity), eq(mockLayeredPropertyMap))
-        } doReturn MembershipPersistenceResult.Success(0)
+            persistGroupPolicy(eq(testHoldingIdentity), eq(mockLayeredPropertyMap), any())
+        } doReturn MembershipPersistenceResult.success()
 
         on {
             persistGroupParametersInitialSnapshot(eq(testHoldingIdentity))
@@ -74,20 +75,21 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
         verify(membershipPersistenceClient).persistGroupPolicy(
             eq(testHoldingIdentity),
-            eq(mockLayeredPropertyMap)
+            eq(mockLayeredPropertyMap),
+            eq(1)
         )
     }
 
     @Test
     fun `Failed group policy persistence is rethrown as group policy handling exception`() {
         whenever (
-            membershipPersistenceClient.persistGroupPolicy(any(), any())
+            membershipPersistenceClient.persistGroupPolicy(any(), any(), anyLong())
         ) doReturn MembershipPersistenceResult.Failure("")
 
         assertThrows<MGMRegistrationGroupPolicyHandlingException> {
             mgmRegistrationGroupPolicyHandler.buildAndPersist(testHoldingIdentity, testContext)
         }
-        verify(membershipPersistenceClient).persistGroupPolicy(any(), any())
+        verify(membershipPersistenceClient).persistGroupPolicy(any(), any(), eq(1))
     }
 
     @Test
