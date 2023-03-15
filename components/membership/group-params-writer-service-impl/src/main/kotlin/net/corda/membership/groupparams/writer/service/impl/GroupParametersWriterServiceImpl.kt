@@ -77,7 +77,6 @@ class GroupParametersWriterServiceImpl @Activate constructor(
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
-
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
     private var _publisher: Publisher? = null
@@ -182,7 +181,6 @@ class GroupParametersWriterServiceImpl @Activate constructor(
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
-
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()

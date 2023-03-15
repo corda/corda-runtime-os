@@ -14,6 +14,7 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -78,13 +79,14 @@ class MembershipPackageFactory(
                 .setMgmSignatureSpec(mgmSignatureSpec)
                 .build()
         }
-        val signedGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
-            SignedGroupParameters(
-                ByteBuffer.wrap(it),
-                mgmSigner.sign(it).toAvro(),
-                mgmSigner.signatureSpec.toAvro()
-            )
-        } ?: throw CordaRuntimeException("Failed to serialize group parameters.")
+        val serialisedParams = (groupParameters as? InternalGroupParameters)?.bytes
+            ?: serializer.serialize(groupParameters.toAvro())
+            ?: throw CordaRuntimeException("Failed to serialize group parameters.")
+        val signedGroupParameters = SignedGroupParameters(
+            ByteBuffer.wrap(serialisedParams),
+            mgmSigner.sign(serialisedParams).toAvro(),
+            mgmSigner.signatureSpec.toAvro()
+        )
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hashCheck.toAvro())

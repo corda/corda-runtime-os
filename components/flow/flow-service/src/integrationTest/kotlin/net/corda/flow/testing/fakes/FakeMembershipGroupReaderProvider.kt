@@ -23,7 +23,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         groupReaders[holdingIdentity] = FakeMembershipGroupReader()
     }
 
-    fun reset() {
+    fun reset(){
         groupReaders.clear()
     }
 
@@ -45,7 +45,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         TODO("Not yet implemented")
     }
 
-    class FakeMembershipGroupReader : MembershipGroupReader {
+    class FakeMembershipGroupReader :MembershipGroupReader{
         override val groupId: String
             get() = ""
         override val owningMember: MemberX500Name

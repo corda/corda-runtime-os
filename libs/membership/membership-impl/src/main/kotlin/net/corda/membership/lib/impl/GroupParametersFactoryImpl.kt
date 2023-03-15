@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.GroupParametersFactory
@@ -13,6 +14,7 @@ import net.corda.membership.lib.exceptions.FailedGroupParametersSerialization
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,12 +57,15 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    private fun AvroGroupParameters.toCorda() = mgmSignature?.let {
-        SignedGroupParametersImpl(
-            groupParameters.array(),
-            it.toCorda(),
-            ::deserializeLayeredPropertyMap
-        )
+    private fun AvroGroupParameters.toCorda() = mgmSignature?.let {signature ->
+        mgmSignatureSpec?.let { spec ->
+            SignedGroupParametersImpl(
+                groupParameters.array(),
+                signature.toCorda(),
+                spec.toCorda(),
+                ::deserializeLayeredPropertyMap
+            )
+        }
     } ?: UnsignedGroupParametersImpl(
         groupParameters.array(),
         ::deserializeLayeredPropertyMap
@@ -68,9 +73,10 @@ class GroupParametersFactoryImpl @Activate constructor(
 
     private fun CryptoSignatureWithKey.toCorda() = DigitalSignature.WithKey(
         keyEncodingService.decodePublicKey(publicKey.array()),
-        bytes.array(),
-        context.toMap()
+        bytes.array()
     )
+
+    private fun CryptoSignatureSpec.toCorda() = SignatureSpec(signatureName)
 
     private fun deserializeLayeredPropertyMap(params: ByteArray): LayeredPropertyMap = avroDeserializer
         .deserialize(params)

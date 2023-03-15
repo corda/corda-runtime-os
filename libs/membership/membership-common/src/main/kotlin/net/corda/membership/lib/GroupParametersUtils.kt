@@ -10,7 +10,6 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 import org.slf4j.Logger
@@ -39,10 +38,8 @@ fun updateExistingNotaryService(
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
     notaryDetails.servicePlugin?.let {
         require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
-            throw MembershipPersistenceException(
-                "Cannot add notary to notary service " +
-                        "'$notaryServiceName' - plugin types do not match."
-            )
+            throw MembershipPersistenceException("Cannot add notary to notary service " +
+                    "'$notaryServiceName' - plugin types do not match.")
         }
     }
     val notaryKeys = currentParameters.entries
@@ -91,10 +88,8 @@ fun addNewNotaryService(
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
     requireNotNull(notaryDetails.servicePlugin) {
-        throw MembershipPersistenceException(
-            "Cannot add notary to group parameters - notary plugin must be" +
-                    " specified to create new notary service '$notaryServiceName'."
-        )
+        throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
+                " specified to create new notary service '$notaryServiceName'.")
     }
     val newNotaryServiceNumber = currentParameters
         .filter { notaryServiceRegex.matches(it.key) }.size
@@ -118,28 +113,6 @@ fun addNewNotaryService(
     }
     return newEpoch to KeyValuePairList(parametersWithUpdatedEpoch + newService)
 }
-
-/**
- * Returns the serialised bytes representing the group parameters. The group parameters are always stored serialised
- * internally to support signing operations.
- */
-val GroupParameters.bytes: ByteArray?
-    get() = when (this) {
-        is InternalGroupParameters -> bytes
-        else -> null
-    }
-
-/**
- * Returns the MGM's signature over group parameters if available. In dynamic networks,
- * this should also be provided to members by the MGM.
- * The MGM's view of group parameters is not signed since it signs on distribution and the parameters
- * in static networks are not signed since there is no MGM.
- */
-val GroupParameters.signature: DigitalSignature.WithKey?
-    get() = when (this) {
-        is SignedGroupParameters -> signature
-        else -> null
-    }
 
 /**
  * Returns the [SecureHash] of the group parameters sorted alphabetically by key.
