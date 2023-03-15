@@ -1,13 +1,14 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.softhsm.CryptoRepositoryFactoryImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -26,7 +27,7 @@ class TestCryptoRepositoryFactoryImpl {
         }
         val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, mock(), mock())
         val repo = cut.create(CryptoTenants.CRYPTO)
-        assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
+        Assertions.assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
         cut.create(CryptoTenants.P2P)

@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.softhsm.CryptoServiceProvider
+import net.corda.crypto.softhsm.CryptoServiceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
@@ -45,7 +45,7 @@ class CryptoServiceFactoryTests {
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmStore,
-            object : CryptoServiceProvider {
+            object : CryptoServiceFactory {
                 override fun getInstance(config: SmartConfig): CryptoService = factory.cryptoService
             }
         )

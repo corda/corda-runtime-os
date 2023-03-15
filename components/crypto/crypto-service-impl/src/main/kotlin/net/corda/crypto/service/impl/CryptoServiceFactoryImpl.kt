@@ -5,8 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.crypto.component.impl.LifecycleNameProvider
-import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.hsm
@@ -16,7 +14,7 @@ import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.softhsm.CryptoServiceProvider
+import net.corda.crypto.softhsm.CryptoServiceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -43,8 +41,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStore::class)
     private val hsmStore: HSMStore,
-    @Reference(service = CryptoServiceProvider::class)
-    private val cryptoServiceProvider: CryptoServiceProvider
+    @Reference(service = CryptoService::class)
+    private val cryptoService: CryptoService,
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
@@ -53,7 +51,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
             LifecycleCoordinatorName.forComponent<HSMStore>()
-        ) + ((cryptoServiceProvider as? LifecycleNameProvider)?.lifecycleNameAsSet() ?: emptySet())
+        )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
 ), CryptoServiceFactory {
@@ -65,7 +63,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
         event = event,
         hsmStore = hsmStore,
-        cryptoServiceProvider = cryptoServiceProvider
+        cryptoService = cryptoService
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
@@ -84,7 +82,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmStore: HSMStore,
-        private val cryptoServiceProvider: CryptoServiceProvider
+        private val cryptoService: CryptoService,
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String

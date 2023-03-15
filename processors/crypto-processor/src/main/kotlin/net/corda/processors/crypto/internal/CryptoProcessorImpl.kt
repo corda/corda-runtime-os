@@ -15,7 +15,6 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -59,8 +58,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
     private val cryptoOspService: CryptoOpsBusService,
-    @Reference(service = SoftCryptoServiceProvider::class)
-    private val softCryptoServiceProvider: SoftCryptoServiceProvider,
     @Reference(service = CryptoFlowOpsBusService::class)
     private val cryptoFlowOpsBusService: CryptoFlowOpsBusService,
     @Reference(service = CryptoOpsClient::class)

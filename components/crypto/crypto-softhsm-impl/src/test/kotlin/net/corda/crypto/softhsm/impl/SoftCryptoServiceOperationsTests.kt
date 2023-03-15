@@ -15,8 +15,8 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
-import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
+import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
+import net.corda.crypto.softhsm.impl.infra.makeCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.v5.base.types.OpaqueBytes
@@ -56,8 +56,7 @@ class SoftCryptoServiceOperationsTests {
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
-        private val wrappingKeyStore = TestWrappingKeyStore(
-            coordinatorFactory,
+        private val wrappingKeyStore = TestCryptoRepository(
             ConcurrentHashMap(
                 listOf(
                     knownWrappingKeyAlias to WrappingKeyInfo(
@@ -69,7 +68,7 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
-        private val cryptoService = makeSoftCryptoService(
+        private val cryptoService = makeCryptoService(
             wrappingKeyStore = wrappingKeyStore,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,

@@ -25,7 +25,7 @@ import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
-import net.corda.crypto.softhsm.CryptoServiceProvider
+import net.corda.crypto.softhsm.CryptoServiceFactory
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -159,8 +159,8 @@ class TestServicesFactory {
         }
     }
 
-    val wrappingKeyStore: TestWrappingKeyStore by lazy {
-        TestWrappingKeyStore(coordinatorFactory).also {
+    val wrappingKeyStore: TestCryptoRepository by lazy {
+        TestCryptoRepository(coordinatorFactory).also {
             it.start()
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
@@ -211,7 +211,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
-                wrappingKeyStore = wrappingKeyStore,
+                repository = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
                 digestService = PlatformDigestServiceImpl(schemeMetadata),
@@ -235,7 +235,7 @@ class TestServicesFactory {
             coordinatorFactory,
             configurationReadService,
             hsmStore,
-            object : CryptoServiceProvider {
+            object : CryptoServiceFactory {
                 override fun getInstance(config: SmartConfig): CryptoService = cryptoService
             }
         ).also {
