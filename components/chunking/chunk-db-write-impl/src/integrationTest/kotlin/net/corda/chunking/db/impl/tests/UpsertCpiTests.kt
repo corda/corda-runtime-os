@@ -24,6 +24,7 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -36,6 +37,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.FileSystem
@@ -60,6 +63,10 @@ class UpsertCpiTests {
     )
 
     private val cpiSignerSummaryHash = SecureHashImpl("SHA-256","signerSummaryHash".toByteArray())
+
+    private val networkInfoWriter: NetworkInfoWriter = mock {
+        on { injectStaticNetworkMgm(any(), any()) } doAnswer { it.getArgument(1) }
+    }
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -93,7 +100,7 @@ class UpsertCpiTests {
     @AfterEach
     fun afterEach() = fs.close()
 
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, mock())
+    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
 
     private fun String.writeToPath(): Path {
         val path = fs.getPath(UUID.randomUUID().toString())

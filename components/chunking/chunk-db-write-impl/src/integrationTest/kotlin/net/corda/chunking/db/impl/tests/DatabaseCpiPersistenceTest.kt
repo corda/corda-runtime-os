@@ -54,6 +54,10 @@ import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
 import net.corda.libs.cpi.datamodel.CpkFile
+import net.corda.membership.network.writer.NetworkInfoWriter
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -68,7 +72,10 @@ internal class DatabaseCpiPersistenceTest {
         ChunkingEntities.classes.toList() + CpiEntities.classes.toList(),
         emConfig
     )
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, mock())
+    private val networkInfoWriter: NetworkInfoWriter = mock {
+        on { injectStaticNetworkMgm(any(), any()) } doAnswer { it.getArgument(1) }
+    }
+    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
     private val mockCpkContent = """
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor 
             condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem 
