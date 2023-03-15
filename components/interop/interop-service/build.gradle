@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
