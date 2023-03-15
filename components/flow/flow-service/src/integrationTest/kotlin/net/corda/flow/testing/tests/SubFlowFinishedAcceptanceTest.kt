@@ -633,7 +633,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionCloseEvents()
-         //       wakeUpEvent()
+                wakeUpEvent()
             }
         }
     }
@@ -658,7 +658,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionCloseEvents()
-       //         wakeUpEvent()
+                wakeUpEvent()
             }
         }
     }

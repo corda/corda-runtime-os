@@ -207,7 +207,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-      //          wakeUpEvent()
+                wakeUpEvent()
             }
         }
     }
@@ -235,7 +235,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-          //      wakeUpEvent()
+                wakeUpEvent()
             }
         }
     }
