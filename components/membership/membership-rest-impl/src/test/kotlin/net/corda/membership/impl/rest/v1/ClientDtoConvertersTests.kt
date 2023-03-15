@@ -35,7 +35,7 @@ class ClientDtoConvertersTests {
                 )
             ),
             REASON,
-            SERIAL
+            SERIAL,
         )
 
         val status = dto.fromDto()
@@ -53,7 +53,7 @@ class ClientDtoConvertersTests {
                     )
                 ),
                 REASON,
-                SERIAL
+                SERIAL,
             )
         )
     }

@@ -297,7 +297,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     )
                 }
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
-                val mgm = groupReader.lookup().find { it.isMgm }
+                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()

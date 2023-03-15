@@ -312,10 +312,10 @@ class MemberRegistrationIntegrationTest {
                 val deserializedContext =
                     deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
 
+                assertThat(deserializedPayload.serial).isEqualTo(12)
                 with(deserializedContext.items) {
                     fun getValue(key: String) = first { pair -> pair.key == key }.value
 
-                    it.assertThat(deserializedPayload.serial).isEqualTo(12)
                     it.assertThat(getValue(URL_KEY)).isEqualTo(URL_VALUE)
                     it.assertThat(getValue(PROTOCOL_KEY)).isEqualTo(PROTOCOL_VALUE)
                     it.assertThat(getValue(PARTY_NAME)).isEqualTo(memberName.toString())

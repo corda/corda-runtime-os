@@ -20,5 +20,5 @@ data class RegistrationRequestStatusDto(
     val registrationStatus: RegistrationStatusDto,
     val memberInfoSubmitted: MemberInfoSubmittedDto,
     val reason: String? = null,
-    val serial: Long?
+    val serial: Long?,
 )

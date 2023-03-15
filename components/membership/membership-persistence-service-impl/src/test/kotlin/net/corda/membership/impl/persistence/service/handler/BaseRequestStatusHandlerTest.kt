@@ -254,7 +254,7 @@ class BaseRequestStatusHandlerTest {
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3),
-            0L
+            SERIAL,
         )
 
         val details = with(handler) {
