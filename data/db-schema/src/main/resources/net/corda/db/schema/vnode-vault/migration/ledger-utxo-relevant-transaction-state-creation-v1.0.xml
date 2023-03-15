@@ -1,0 +1,37 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="ledger-utxo-relevant-transaction-state-creation-postgres-v1.0" dbms="postgresql">
+
+        <createTable tableName="utxo_relevant_transaction_state">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leaf_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="custom_representation" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
+                       constraintName="utxo_relevant_transaction_state_pkey"
+                       tableName="utxo_relevant_transaction_state"/>
+        <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
+                                 baseTableName="utxo_relevant_transaction_state"
+                                 constraintName="fk_utxo_relevant_transaction_state"
+                                 referencedColumnNames="transaction_id,group_idx,leaf_idx"
+                                 referencedTableName="utxo_transaction_component"/>
+    </changeSet>
+</databaseChangeLog>

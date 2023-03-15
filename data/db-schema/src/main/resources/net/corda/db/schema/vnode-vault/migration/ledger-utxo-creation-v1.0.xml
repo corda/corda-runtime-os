@@ -156,32 +156,6 @@
                                  referencedColumnNames="transaction_id,group_idx,leaf_idx"
                                  referencedTableName="utxo_transaction_component"/>
 
-        <createTable tableName="utxo_relevant_transaction_state">
-            <column name="transaction_id" type="VARCHAR(160)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="group_idx" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="leaf_idx" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="consumed" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-        <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
-                       constraintName="utxo_relevant_transaction_state_pkey"
-                       tableName="utxo_relevant_transaction_state"/>
-        <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
-                                 baseTableName="utxo_relevant_transaction_state"
-                                 constraintName="fk_utxo_relevant_transaction_state"
-                                 referencedColumnNames="transaction_id,group_idx,leaf_idx"
-                                 referencedTableName="utxo_transaction_component"/>
-
         <createTable tableName="utxo_cpk">
             <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false" primaryKey="true"/>
@@ -217,4 +191,6 @@
                        constraintName="utxo_transaction_cpk_pkey"
                        tableName="utxo_transaction_cpk"/>
     </changeSet>
+
+    <include file="net/corda/db/schema/vnode-vault/migration/ledger-utxo-relevant-transaction-state-creation-v1.0.xml"/>
 </databaseChangeLog>
