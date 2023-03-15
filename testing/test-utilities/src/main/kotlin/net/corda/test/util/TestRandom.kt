@@ -1,5 +1,6 @@
 package net.corda.test.util
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.v5.crypto.SecureHash
 
 object TestRandom {
@@ -7,5 +8,5 @@ object TestRandom {
 
     fun holdingIdentityShortHash() = hex(12)
 
-    fun secureHash(): SecureHash = SecureHash.parse("foo:${holdingIdentityShortHash()}")
+    fun secureHash(): SecureHash = parseSecureHash("foo:${holdingIdentityShortHash()}")
 }

@@ -1,6 +1,7 @@
 package net.corda.cpiinfo.write.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -12,7 +13,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -89,10 +89,10 @@ internal class CpiInfoWriterComponentImplTest {
         writer.processEvent(event, coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
 
-        val cpiIdentifier = CpiIdentifier("test", "1.0", SecureHash.parse("ALGO:1234567890"))
+        val cpiIdentifier = CpiIdentifier("test", "1.0", parseSecureHash("ALGO:1234567890"))
         val cpiMetadata = CpiMetadata(
             cpiIdentifier,
-            SecureHash.parse("ALGO:0987654321"),
+            parseSecureHash("ALGO:0987654321"),
             emptyList(),
             "",
             0,

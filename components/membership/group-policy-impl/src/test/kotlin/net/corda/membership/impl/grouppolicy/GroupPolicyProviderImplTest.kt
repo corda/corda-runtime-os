@@ -219,7 +219,7 @@ class GroupPolicyProviderImplTest {
     }
 
     private val membershipQueryClient: MembershipQueryClient = mock {
-        on { queryGroupPolicy(any()) }.doReturn(MembershipQueryResult.Success(properties))
+        on { queryGroupPolicy(any()) }.doReturn(MembershipQueryResult.Success(properties to 1L))
     }
 
     private fun postStartEvent() = postEvent(StartEvent())
@@ -685,7 +685,7 @@ class GroupPolicyProviderImplTest {
         val argCap = argumentCaptor<() -> LayeredPropertyMap?>()
 
         whenever(membershipQueryClient.queryGroupPolicy(any()))
-            .doReturn(MembershipQueryResult.Success(properties))
+            .doReturn(MembershipQueryResult.Success(properties to 1L))
         groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         verify(groupPolicyParser).parse(any(), any(), argCap.capture())
         assertThat(argCap.firstValue.invoke()).isEqualTo(properties)

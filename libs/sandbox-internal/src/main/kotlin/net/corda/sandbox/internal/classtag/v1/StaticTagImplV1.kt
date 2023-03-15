@@ -1,5 +1,6 @@
 package net.corda.sandbox.internal.classtag.v1
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
@@ -35,7 +36,7 @@ internal data class StaticTagImplV1(
 
             val cpkFileHashString = classTagEntries[CPK_FILE_HASH_IDX]
             val cpkFileHash = try {
-                SecureHash.parse(cpkFileHashString)
+                parseSecureHash(cpkFileHashString)
             } catch (e: IllegalArgumentException) {
                 throw SandboxException("Couldn't parse hash $cpkFileHashString in serialised static class tag.", e)
             }

@@ -9,6 +9,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
@@ -663,10 +664,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                signatureSpec = spec,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                signatureSpec = spec
             )
         }
     }
@@ -707,10 +708,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                digest = digest,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                digest = digest
             )
         }
     }
@@ -734,10 +735,10 @@ class CryptoProcessorTests {
         assertEquals(publicKey, signature.by)
         assertTrue(signature.bytes.isNotEmpty())
         verifier.verify(
-            publicKey = publicKey,
-            signatureSpec = signatureSpec,
+            originalData = data,
             signatureData = signature.bytes,
-            clearData = data
+            publicKey = publicKey,
+            signatureSpec = signatureSpec
         )
     }
 
@@ -778,10 +779,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                signatureSpec = spec,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                signatureSpec = spec
             )
         }
     }
@@ -824,10 +825,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                digest = digest,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                digest = digest
             )
         }
     }
@@ -926,4 +927,4 @@ private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<B
             }
 
 fun PublicKey.fullId(): SecureHash =
-    SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())

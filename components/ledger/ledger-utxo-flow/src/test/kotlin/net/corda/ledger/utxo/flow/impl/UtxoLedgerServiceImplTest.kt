@@ -1,14 +1,15 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
+import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -46,21 +47,21 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
         val transactionBuilder = utxoLedgerService.getTransactionBuilder()
 
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateAndRef = getExampleStateAndRefImpl(1)
         val inputStateRef = inputStateAndRef.ref
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateAndRef = getExampleStateAndRefImpl(2)
         val referenceStateRef = referenceStateAndRef.ref
 
         whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
-            .thenReturn(listOf(inputStateAndRef))
+            .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val command = UtxoCommandExample()
-        val attachment = SecureHash("SHA-256", ByteArray(12))
+        val attachment = SecureHashImpl("SHA-256", ByteArray(12))
 
         val signedTransaction = transactionBuilder
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-            .addOutputState(utxoStateExample)
+            .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
@@ -79,7 +80,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
         assertIs<List<ContractState>>(ledgerTransaction.outputContractStates)
         Assertions.assertEquals(1, ledgerTransaction.outputContractStates.size)
-        Assertions.assertEquals(utxoStateExample, ledgerTransaction.outputContractStates.first())
+        Assertions.assertEquals(getUtxoStateExample(), ledgerTransaction.outputContractStates.first())
         assertIs<UtxoStateClassExample>(ledgerTransaction.outputContractStates.first())
 
         assertIs<List<PublicKey>>(ledgerTransaction.signatories)

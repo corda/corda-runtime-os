@@ -126,7 +126,7 @@ class QueryRegistrationRequestsHandlerTest {
             }
         )
 
-        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList()))
+        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), null))
 
         assertThat(result.registrationRequests.map { it.registrationId })
             .containsAll(ids)
@@ -142,7 +142,8 @@ class QueryRegistrationRequestsHandlerTest {
             context,
             QueryRegistrationRequests(
                 null,
-                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED),
+                null
             )
         )
 
@@ -159,9 +160,39 @@ class QueryRegistrationRequestsHandlerTest {
         val captor = argumentCaptor<Predicate>()
         whenever(query.where(captor.capture())).thenReturn(query)
 
-        handler.invoke(context, QueryRegistrationRequests(holdingIdentity.x500Name, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)))
+        handler.invoke(
+            context,
+            QueryRegistrationRequests(
+                holdingIdentity.x500Name, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null
+            )
+        )
 
         verify(query).select(root)
         assertThat(captor.allValues).contains(predicate)
+    }
+
+    @Test
+    fun `invoke returns the sublist of the result when limit is specified in request`() {
+        val ids = (1..4).map {
+            "id-$it"
+        }
+        whenever(actualQuery.resultList).doReturn(
+            ids.map {
+                RegistrationRequestEntity(
+                    it,
+                    shortHash.value,
+                    "SENT_TO_MGM",
+                    Instant.ofEpochSecond(500),
+                    Instant.ofEpochSecond(600),
+                    byteArrayOf(1, 2, 3)
+                )
+            }
+        )
+
+        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), 2))
+
+        assertThat(result.registrationRequests.map { it.registrationId })
+            .containsAll(ids.subList(0, 2))
+        assertThat(result.registrationRequests).hasSize(2)
     }
 }

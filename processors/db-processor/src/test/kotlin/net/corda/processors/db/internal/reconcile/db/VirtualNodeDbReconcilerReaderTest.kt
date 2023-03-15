@@ -1,8 +1,8 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -15,7 +15,7 @@ import kotlin.streams.toList
 class VirtualNodeDbReconcilerReaderTest {
     companion object {
         const val x500name = "O=Alice,L=London,C=GB"
-        val cpiSignerSummaryHash = SecureHash.parse("ABC:1234567890ABCDEF")
+        val cpiSignerSummaryHash = parseSecureHash("ABC:1234567890ABCDEF")
         const val cpiName = "test"
         const val cpiVersion = "1.0"
         const val groupId = "123456"

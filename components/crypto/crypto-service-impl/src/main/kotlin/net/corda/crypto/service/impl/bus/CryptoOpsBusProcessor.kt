@@ -7,6 +7,7 @@ import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
@@ -76,7 +77,7 @@ class CryptoOpsBusProcessor(
 
         private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
             secureHashes.hashes.map {
-                SecureHash(it.algorithm, it.bytes.array())
+                SecureHashImpl(it.algorithm, it.bytes.array())
             }
     }
 

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
@@ -88,6 +89,7 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
+        FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW to 300000L,
         FlowConfig.SESSION_FLOW_CLEANUP_TIME to 30000,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
@@ -484,7 +486,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private fun getSecureHash(): SecureHash {
-        return SecureHash("ALG", byteArrayOf(0, 0, 0, 0))
+        return SecureHashImpl("ALG", byteArrayOf(0, 0, 0, 0))
     }
 
     private fun addTestRun(eventRecord: Record<String, FlowEvent>): FlowIoRequestSetup {

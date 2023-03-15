@@ -245,6 +245,9 @@ internal class StartRegistrationHandler(
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
             membershipGroupReaderProvider.getGroupReader(mgmHoldingId).groupParameters?.let { groupParameters ->
+                validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
+                    "Registering member's name '${member.name}' is already in use as a notary service name."
+                }
                 validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
                     "Notary service '${notary.serviceName}' already exists."
                 }

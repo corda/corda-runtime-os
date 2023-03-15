@@ -1,5 +1,6 @@
 package net.corda.uniqueness.datamodel.internal
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.uniqueness.datamodel.common.toStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
@@ -28,7 +29,7 @@ data class UniquenessCheckRequestInternal constructor(
 
             with (externalRequest) {
                 return UniquenessCheckRequestInternal(
-                    SecureHash.parse(txId),
+                    parseSecureHash(txId),
                     txId,
                     inputStates?.map { it.toStateRef() } ?: emptyList(),
                     referenceStates?.map { it.toStateRef() } ?: emptyList(),

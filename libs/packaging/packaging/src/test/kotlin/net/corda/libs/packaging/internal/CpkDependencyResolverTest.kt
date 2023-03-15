@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.internal
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.CpkDependencyResolver
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
@@ -29,7 +30,7 @@ private fun id(name: String,
 private fun ids(vararg ids : CpkIdentifier) = ids.toCollection(TreeSet())
 
 private fun signers(vararg publicKey : String) =
-    publicKey.mapTo(TreeSet(secureHashComparator)) { SecureHash.parse("SHA256:$it") } as NavigableSet<SecureHash>
+    publicKey.mapTo(TreeSet(secureHashComparator)) { parseSecureHash("SHA256:$it") } as NavigableSet<SecureHash>
 
 private fun dependencyMap(vararg pairs : Pair<CpkIdentifier, NavigableSet<CpkIdentifier>>) =
         pairs.associateByTo(TreeMap(),

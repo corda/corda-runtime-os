@@ -1,19 +1,20 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
-import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
+import net.corda.ledger.utxo.testkit.getExampleInvalidStateAndRefImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -23,12 +24,13 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.utxo.VisibilityChecker
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -50,7 +52,7 @@ class UtxoReceiveFinalityFlowTest {
 
     private companion object {
         val MEMBER = MemberX500Name("Alice", "London", "GB")
-        val ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
     }
 
     private val memberLookup = mock<MemberLookup>()
@@ -58,6 +60,7 @@ class UtxoReceiveFinalityFlowTest {
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
+    private val visibilityChecker = mock<VisibilityChecker>()
 
     private val session = mock<FlowSession>()
 
@@ -111,7 +114,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(notarizedTransaction.id).thenReturn(ID)
 
         whenever(ledgerTransaction.id).thenReturn(ID)
-        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
+        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(getUtxoStateExample()))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
@@ -406,12 +409,12 @@ class UtxoReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
-        whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
+        whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
@@ -424,7 +427,7 @@ class UtxoReceiveFinalityFlowTest {
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")
 
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
@@ -434,6 +437,7 @@ class UtxoReceiveFinalityFlowTest {
         flow.transactionSignatureService = transactionSignatureService
         flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
+        flow.visibilityChecker = visibilityChecker
         flow.call()
     }
 
