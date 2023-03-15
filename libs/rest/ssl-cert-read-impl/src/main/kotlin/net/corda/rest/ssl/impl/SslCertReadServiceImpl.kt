@@ -39,7 +39,6 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
         if (isRunning) {
             synchronized(this) {
                 if (isRunning) {
-                    keyStoreInfo?.run { File(path.toFile().parent).deleteRecursively() }
                     _isRunning = false
                     keyStoreInfo = null
                 }
