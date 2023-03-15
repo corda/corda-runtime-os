@@ -34,7 +34,6 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
