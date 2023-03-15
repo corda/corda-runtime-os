@@ -15,6 +15,10 @@ import org.slf4j.LoggerFactory
 class FacadeInvocationFlow : ClientStartableFlow {
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private fun getArgument(args: Map<String, String>, key: String): String {
+            return checkNotNull(args[key]) { "Missing argument '$key'" }
+        }
     }
 
     private val alterEgoX500Name = MemberX500Name(
@@ -36,9 +40,9 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
-        val facadeName = args.getValue("facadeName")
-        val methodName = args.getValue("methodName")
-        val payload = args.getValue("payload")
+        val facadeName = getArgument(args, "facadeName")
+        val methodName = getArgument(args, "methodName")
+        val payload = getArgument(args, "payload")
 
         log.info("Calling facade method '$methodName@$facadeName' with payload '$payload'")
 
