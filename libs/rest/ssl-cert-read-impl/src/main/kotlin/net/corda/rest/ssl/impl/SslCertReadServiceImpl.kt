@@ -3,8 +3,10 @@ package net.corda.rest.ssl.impl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.rest.ssl.KeyStoreInfo
 import net.corda.rest.ssl.SslCertReadService
-import net.corda.utilities.VisibleForTesting
+import net.corda.schema.configuration.BootConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,11 +16,11 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
     constructor() : this(createDirectory = { Files.createTempDirectory("rest-ssl") })
 
     internal companion object {
-        @VisibleForTesting
         const val PASSWORD = "httpsPassword"
 
-        @VisibleForTesting
         const val KEYSTORE_NAME = "https.keystore"
+
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Volatile
@@ -46,13 +48,25 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
     }
 
     override fun getOrCreateKeyStoreInfo(config: SmartConfig): KeyStoreInfo {
-        if (keyStoreInfo == null) {
+        var localKeyStoreInfo = keyStoreInfo
+
+        if (localKeyStoreInfo != null) return localKeyStoreInfo
+
+        val bootKeyStorePath = config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH)
+        localKeyStoreInfo = if (bootKeyStorePath != null) {
+            val keyStorePassword = requireNotNull(config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD))
+            KeyStoreInfo(Path.of(bootKeyStorePath), keyStorePassword)
+        } else {
+            log.warn("Using default self-signed TLS certificate. To stop seeing this message, please use bootstrap " +
+                    "parameters: '${BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH}' and " +
+                    "'${BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD}'.")
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)
             keyStorePath.toFile().writeBytes(loadKeystoreFromResources())
-            keyStoreInfo = KeyStoreInfo(keyStorePath, PASSWORD)
+            KeyStoreInfo(keyStorePath, PASSWORD)
         }
-        return keyStoreInfo!!
+        keyStoreInfo = localKeyStoreInfo
+        return localKeyStoreInfo
     }
 
     private fun loadKeystoreFromResources(): ByteArray {
