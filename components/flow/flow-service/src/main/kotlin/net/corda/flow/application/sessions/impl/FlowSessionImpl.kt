@@ -3,7 +3,6 @@ package net.corda.flow.application.sessions.impl
 import net.corda.data.KeyValuePairList
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
-import net.corda.flow.application.sessions.FlowInfoImpl
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowFiber

@@ -1,4 +1,4 @@
-package net.corda.flow.application.sessions
+package net.corda.flow.application.sessions.impl
 
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.base.annotations.CordaSerializable
