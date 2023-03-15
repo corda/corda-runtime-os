@@ -52,14 +52,16 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
 
         if (localKeyStoreInfo != null) return localKeyStoreInfo
 
-        val bootKeyStorePath = config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH)
-        localKeyStoreInfo = if (bootKeyStorePath != null) {
-            val keyStorePassword = requireNotNull(config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD))
+        localKeyStoreInfo = if (config.hasPath(BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH)) {
+            val bootKeyStorePath = config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH)
+            val keyStorePassword = config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD)
             KeyStoreInfo(Path.of(bootKeyStorePath), keyStorePassword)
         } else {
-            log.warn("Using default self-signed TLS certificate. To stop seeing this message, please use bootstrap " +
-                    "parameters: '${BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH}' and " +
-                    "'${BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD}'.")
+            log.warn(
+                "Using default self-signed TLS certificate. To stop seeing this message, please use bootstrap " +
+                        "parameters: '${BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH}' and " +
+                        "'${BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD}'."
+            )
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)
             keyStorePath.toFile().writeBytes(loadKeystoreFromResources())
