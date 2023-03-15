@@ -396,7 +396,7 @@ class MemberLookupRestResourceTest {
         @Test
         fun `lookup by MGM filtered by statuses returns a list of members and their contexts`() {
             whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
-                .doReturn(listOf(mgm, alice, bob, charlie))
+                .doReturn(setOf(mgm, alice, bob, charlie))
 
             val result1 = memberLookupRestResource.lookup(
                 MGM_HOLDING_IDENTITY_STRING,

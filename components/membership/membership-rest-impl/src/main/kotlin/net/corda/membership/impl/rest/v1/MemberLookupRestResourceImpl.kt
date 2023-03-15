@@ -53,7 +53,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?,
-            statuses: List<String>,
+            statuses: Set<String>,
         ): RestMemberInfoList
 
         fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
@@ -110,7 +110,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         locality,
         state,
         country,
-        statuses,
+        statuses.toSet(),
     )
 
     override fun viewGroupParameters(holdingIdentityShortHash: String): Map<String, String> =
@@ -135,7 +135,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?,
-            statuses: List<String>,
+            statuses: Set<String>,
         ) = throw ServiceUnavailableException(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
@@ -156,7 +156,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?,
-            statuses: List<String>,
+            statuses: Set<String>,
         ): RestMemberInfoList {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
@@ -199,20 +199,20 @@ class MemberLookupRestResourceImpl @Activate constructor(
 
         private fun GroupParameters.toMap() = entries.associate { it.key to it.value }
 
-        private fun List<String>.getStatusFilter(isMgm: Boolean): List<String> {
-            val filter = this.map {
+        private fun Set<String>.getStatusFilter(isMgm: Boolean): Set<String> {
+            val filter = this.mapTo(mutableSetOf()) {
                 val status = it.uppercase()
-                if (!listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED).contains(status)) {
+                if (!setOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED).contains(status)) {
                     throw ResourceNotFoundException("Invalid status: $it")
                 }
                 status
             }
 
             if (filter.isEmpty()) {
-                return listOf(MEMBER_STATUS_ACTIVE)
+                return setOf(MEMBER_STATUS_ACTIVE)
             }
 
-            return filter.filter { if (!isMgm) (it in setOf(MEMBER_STATUS_ACTIVE)) else true }.distinct()
+            return filter.filterTo(mutableSetOf()) { if (!isMgm) (it in setOf(MEMBER_STATUS_ACTIVE)) else true }
         }
 
         private fun MembershipGroupReader.isMgm(holdingIdentity: HoldingIdentity): Boolean =
