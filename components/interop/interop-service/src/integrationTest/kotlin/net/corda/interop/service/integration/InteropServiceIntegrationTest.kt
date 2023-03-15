@@ -53,8 +53,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 // To run the test outside Intellij:
-// ./gradlew :components:interop:interop-service:integrationTest
-// ./gradlew :components:interop:interop-service:testOSGi
+// ./gradlew clean :components:interop:interop-service:integrationTest
+// ./gradlew clean :components:interop:interop-service:testOSGi
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {
