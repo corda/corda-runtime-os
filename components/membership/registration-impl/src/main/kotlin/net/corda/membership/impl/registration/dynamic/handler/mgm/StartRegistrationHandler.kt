@@ -13,6 +13,7 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -53,6 +54,7 @@ internal class StartRegistrationHandler(
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
@@ -95,7 +97,6 @@ internal class StartRegistrationHandler(
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
-
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
@@ -187,6 +188,14 @@ internal class StartRegistrationHandler(
             ?: emptyMap()
         validateRegistrationRequest(memberContext.isNotEmpty()) {
             "Empty member context in the registration request."
+        }
+
+        when(val result = registrationContextCustomFieldsVerifier.verify(memberContext)) {
+            is RegistrationContextCustomFieldsVerifier.Result.Failure -> {
+                logger.info(result.reason)
+                throw InvalidRegistrationRequestException(result.reason)
+            }
+            RegistrationContextCustomFieldsVerifier.Result.Success -> {}
         }
 
         val now = clock.instant().toString()

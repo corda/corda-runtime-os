@@ -21,6 +21,8 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -37,6 +39,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -75,6 +78,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
@@ -90,12 +94,14 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mockito
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -305,6 +311,9 @@ class DynamicMemberRegistrationServiceTest {
         on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
+    private val registrationContextCustomFieldsVerifier = Mockito.mockConstruction(RegistrationContextCustomFieldsVerifier::class.java) {
+        mock, _ -> whenever(mock.verify(context)).doReturn(RegistrationContextCustomFieldsVerifier.Result.Success)
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -330,6 +339,11 @@ class DynamicMemberRegistrationServiceTest {
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
         "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
     )
+
+    @AfterEach
+    fun cleanUp() {
+        registrationContextCustomFieldsVerifier.close()
+    }
 
     private fun postStartEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -506,6 +520,19 @@ class DynamicMemberRegistrationServiceTest {
             assertThat(exception)
                 .hasMessageContaining("The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
             registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails if custom field validation fails`() {
+            whenever(registrationContextCustomFieldsVerifier.constructed().first().verify(context)).thenReturn(
+                RegistrationContextCustomFieldsVerifier.Result.Failure("")
+            )
+            postConfigChangedEvent()
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
         }
 
         @Test

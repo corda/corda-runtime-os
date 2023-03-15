@@ -43,6 +43,7 @@ import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -192,6 +193,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize registration request.") }
 
     private var impl: InnerRegistrationService = InactiveImpl
+    private val registrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -264,6 +266,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                     "Registration failed. The registration context is invalid: " + ex.message,
                     ex,
                 )
+            }
+            when (val result = registrationContextCustomFieldsVerifier.verify(context)) {
+                is RegistrationContextCustomFieldsVerifier.Result.Failure -> {
+                    logger.info(result.reason)
+                    throw InvalidMembershipRegistrationException("Registration failed. ${result.reason}")
+                }
+                RegistrationContextCustomFieldsVerifier.Result.Success -> {}
             }
             try {
                 val roles = MemberRole.extractRolesFromContext(context)
@@ -406,14 +415,19 @@ class DynamicMemberRegistrationService @Activate constructor(
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
+            val customContext = customContext(context)
             return filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +
                     additionalContext +
                     roleContext +
                     optionalContext +
-                    tlsSubject
+                    tlsSubject +
+                    customContext
+        }
 
+        private fun customContext(context: Map<String, String>): Map<String, String> {
+            return context.filterNot { it.key.startsWith("corda.") }.toMap()
         }
 
         private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
