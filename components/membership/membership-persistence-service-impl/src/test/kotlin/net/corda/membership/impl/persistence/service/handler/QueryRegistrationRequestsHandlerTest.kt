@@ -184,7 +184,8 @@ class QueryRegistrationRequestsHandlerTest {
                     "SENT_TO_MGM",
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
-                    byteArrayOf(1, 2, 3)
+                    byteArrayOf(1, 2, 3),
+                    0L,
                 )
             }
         )

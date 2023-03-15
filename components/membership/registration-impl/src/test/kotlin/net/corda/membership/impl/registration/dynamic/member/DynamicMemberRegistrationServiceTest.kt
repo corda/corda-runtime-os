@@ -70,8 +70,6 @@ import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesSer
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -317,9 +315,6 @@ class DynamicMemberRegistrationServiceTest {
         on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
-    private val membershipQueryClient = mock<MembershipQueryClient>() {
-        on { queryMemberInfo(any(), any()) } doReturn MembershipQueryResult.Success(emptyList())
-    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -334,8 +329,7 @@ class DynamicMemberRegistrationServiceTest {
         ephemeralKeyPairEncryptor,
         virtualNodeInfoReadService,
         locallyHostedIdentitiesService,
-        configurationGetService,
-        membershipQueryClient
+        configurationGetService
     )
 
     private val context = mapOf(
@@ -426,8 +420,7 @@ class DynamicMemberRegistrationServiceTest {
             val memberInfo = mock<MemberInfo> {
                 on { serial } doReturn 4
             }
-            whenever(membershipQueryClient.queryMemberInfo(any(), any()))
-                .doReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+            whenever(groupReader.lookup(memberName)).doReturn(memberInfo)
             val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
             verify(registrationRequestSerializer).serialize(capturedRequest.capture())
@@ -710,6 +703,23 @@ class DynamicMemberRegistrationServiceTest {
             }
 
             assertThat(exception).hasMessageContaining("is missing TLS certificates")
+        }
+
+        @Test
+        fun `registration fails when MGM info cannot be found`() {
+            // return non-MGM info on lookup
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mock()
+            }
+            whenever(groupReader.lookup()).doReturn(listOf(memberInfo))
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("MGM information")
         }
     }
 

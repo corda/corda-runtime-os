@@ -52,7 +52,8 @@ internal class MGMRegistrationRequestHandler (
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf()),
                     KeyValuePairList(emptyList())
-                )
+                ),
+                serial = 0L,
             )
         )
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {

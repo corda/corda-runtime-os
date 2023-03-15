@@ -32,6 +32,8 @@ import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -527,6 +529,23 @@ class MemberResourceClientTest {
                 assertThat(request?.registrationAction).isEqualTo(RegistrationAction.REQUEST_JOIN)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
             }
+    }
+
+    @Test
+    fun `startRegistration uses serial specified in registration context`() {
+        val serial = 12L
+        val request = MemberRegistrationRequestDto(
+            ShortHash.of(HOLDING_IDENTITY_ID),
+            RegistrationActionDto.REQUEST_JOIN,
+            mapOf("property" to "test", MemberInfoExtension.SERIAL to serial.toString()),
+        )
+        memberOpsClient.start()
+        setUpConfig()
+
+        val capturedRequest = argumentCaptor<RegistrationRequest>()
+        memberOpsClient.startRegistration(request)
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), capturedRequest.capture())
+        assertThat(capturedRequest.firstValue.serial).isEqualTo(serial)
     }
 
     @Test

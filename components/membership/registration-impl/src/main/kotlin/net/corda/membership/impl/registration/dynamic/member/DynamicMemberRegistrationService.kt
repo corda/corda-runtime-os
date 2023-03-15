@@ -74,7 +74,6 @@ import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecN
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
@@ -298,7 +297,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     )
                 }
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
-                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
+                val mgm = groupReader.lookup().find { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()
