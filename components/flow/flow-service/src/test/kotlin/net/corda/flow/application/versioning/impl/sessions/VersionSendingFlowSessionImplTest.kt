@@ -3,8 +3,8 @@ package net.corda.flow.application.versioning.impl.sessions
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.versioning.impl.AgreedVersion
 import net.corda.flow.application.versioning.impl.AgreedVersionAndPayload
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,9 +36,10 @@ class VersionSendingFlowSessionImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(serializationService.serialize(PAYLOAD)).thenReturn(SerializedBytes(SERIALIZED_PAYLOAD))
-        whenever(serializationService.serialize(ANOTHER_PAYLOAD)).thenReturn(SerializedBytes(SERIALIZED_ANOTHER_PAYLOAD))
-        whenever(serializationService.serialize(any<AgreedVersionAndPayload>())).thenReturn(SerializedBytes(SERIALIZED_VERSION_AND_PAYLOAD))
+        whenever(serializationService.serialize(PAYLOAD)).thenReturn(SerializedBytesImpl(SERIALIZED_PAYLOAD))
+        whenever(serializationService.serialize(ANOTHER_PAYLOAD)).thenReturn(SerializedBytesImpl(SERIALIZED_ANOTHER_PAYLOAD))
+        whenever(serializationService.serialize(any<AgreedVersionAndPayload>()))
+            .thenReturn(SerializedBytesImpl(SERIALIZED_VERSION_AND_PAYLOAD))
         whenever(delegate.sendAndReceive(eq(Any::class.java), any())).thenReturn(PAYLOAD)
         whenever(delegate.receive(Any::class.java)).thenReturn(PAYLOAD)
     }

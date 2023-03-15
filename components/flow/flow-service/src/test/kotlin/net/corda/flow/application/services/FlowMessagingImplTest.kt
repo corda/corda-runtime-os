@@ -12,11 +12,11 @@ import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowS
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -90,9 +90,9 @@ class FlowMessagingImplTest {
         whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FOUR, Any::class.java)).thenReturn(PAYLOAD_FOUR)
         whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FIVE, Any::class.java)).thenReturn(PAYLOAD_FIVE)
 
-        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytes(SERIALIZED_PAYLOAD_ONE))
-        whenever(serializationService.serialize(PAYLOAD_TWO)).thenReturn(SerializedBytes(SERIALIZED_PAYLOAD_TWO))
-        whenever(serializationService.serialize(PAYLOAD_THREE)).thenReturn(SerializedBytes(SERIALIZED_PAYLOAD_THREE))
+        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(SERIALIZED_PAYLOAD_ONE))
+        whenever(serializationService.serialize(PAYLOAD_TWO)).thenReturn(SerializedBytesImpl(SERIALIZED_PAYLOAD_TWO))
+        whenever(serializationService.serialize(PAYLOAD_THREE)).thenReturn(SerializedBytesImpl(SERIALIZED_PAYLOAD_THREE))
 
         whenever(normalSessionOne.getSessionInfo()).thenReturn(SESSION_INFO_ONE)
         whenever(versionSendingSessionOne.getSessionInfo()).thenReturn(SESSION_INFO_TWO)
