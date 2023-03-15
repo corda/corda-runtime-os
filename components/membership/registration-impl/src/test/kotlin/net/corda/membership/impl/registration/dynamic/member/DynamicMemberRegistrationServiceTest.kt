@@ -723,21 +723,19 @@ class DynamicMemberRegistrationServiceTest {
                 .containsEntry("corda.notary.keys.0.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
         }
 
-//        @Test
-//        fun `registration adds session spec if needed`() {
-//            val memberContext = argumentCaptor<KeyValuePairList>()
-//            whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
-//            val registrationContext = context - "corda.session.key.signature.spec"
-//            postConfigChangedEvent()
-//            registrationService.start()
-//
-//            assertThrows<NotReadyMembershipRegistrationException> {
-//                registrationService.register(registrationResultId, member, registrationContext)
-//            }
-//
-//            assertThat(memberContext.firstValue.toMap())
-//                .containsEntry("corda.session.key.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
-//        }
+        @Test
+        fun `registration adds session spec if needed`() {
+            val memberContext = argumentCaptor<KeyValuePairList>()
+            whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
+            val registrationContext = context - "corda.session.key.signature.spec"
+            postConfigChangedEvent()
+            registrationService.start()
+
+            registrationService.register(registrationResultId, member, registrationContext)
+
+            assertThat(memberContext.firstValue.toMap())
+                .containsEntry("corda.session.key.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
+        }
 
         @Test
         fun `registration adds ledger spec if needed`() {
