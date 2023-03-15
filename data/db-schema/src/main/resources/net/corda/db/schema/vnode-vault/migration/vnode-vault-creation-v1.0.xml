@@ -139,7 +139,7 @@
             <column name="public_key" type="VARBINARY(1024)">
                 <constraints nullable="false"/>
             </column>
-            <column name="context" type="VARBINARY(2048)">
+            <column name="signature_spec" type="NVARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="content" type="VARBINARY(4096)">

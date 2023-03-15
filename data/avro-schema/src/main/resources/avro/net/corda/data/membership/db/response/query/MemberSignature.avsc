@@ -13,6 +13,11 @@
       "name": "signature",
       "doc": "The member signature.",
       "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    },
+    {
+      "name": "signatureSpec",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureSpec",
+      "doc": "Signature spec of member signature."
     }
   ]
 }

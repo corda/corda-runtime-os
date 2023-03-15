@@ -20,9 +20,19 @@
       "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
     },
     {
+      "name": "memberSignatureSpec",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureSpec",
+      "doc": "Signature spec of member signature."
+    },
+    {
       "name": "mgmSignature",
       "doc": "Signature of the MGM over both the mgmContext and memberContext using MerkleTree.",
       "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    },
+    {
+      "name": "mgmSignatureSpec",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureSpec",
+      "doc": "Signature spec of MGM signature."
     }
   ]
 }

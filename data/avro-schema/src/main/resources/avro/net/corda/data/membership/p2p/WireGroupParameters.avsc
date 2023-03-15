@@ -13,6 +13,11 @@
       "name": "mgmSignature",
       "doc": "Signature of the MGM using MerkleTree.",
       "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    },
+    {
+      "name": "mgmSignatureSpec",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureSpec",
+      "doc": "Signature spec of MGM signature."
     }
   ]
 }

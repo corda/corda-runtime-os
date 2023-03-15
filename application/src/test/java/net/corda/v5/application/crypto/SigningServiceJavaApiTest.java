@@ -22,8 +22,7 @@ class SigningServiceJavaApiTest {
     void signWithByteArrayAndSignatureSpecTest() {
         final DigitalSignature.WithKey signatureWithKey = new DigitalSignature.WithKey(
             publicKey,
-            "test".getBytes(),
-            new HashMap<>()
+            "test".getBytes()
         );
         Mockito.when(signingService.sign(any(), any(), any(SignatureSpec.class))).thenReturn(signatureWithKey);
 
