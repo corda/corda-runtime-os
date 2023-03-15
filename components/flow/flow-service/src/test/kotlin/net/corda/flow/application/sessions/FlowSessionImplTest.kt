@@ -34,9 +34,7 @@ class FlowSessionImplTest {
         const val SESSION_ID = "session id"
         const val HI = "hi"
         const val HELLO_THERE = "hello there"
-
         val received = mapOf(SESSION_ID to HELLO_THERE.toByteArray())
-        val counterPartyFlowInfo = FlowInfoImpl("protocol", 1)
     }
 
     private val mockFlowFiberService = MockFlowFiberService()
