@@ -259,6 +259,7 @@ fun E2eCluster.assignSoftHsm(
 
 fun E2eCluster.register(
     holdingId: String,
+    mgmHoldingId: String?,
     context: Map<String, String>
 ): RegistrationRequestProgress {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
@@ -273,8 +274,19 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes, retryAllExceptions = true) {
-                    val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
+                eventually(duration = 3.minutes, retryAllExceptions = true) {
+                    mgmHoldingId?.let {
+                        val registrationStatusMgmView = proxy.checkSpecificRegistrationProgress(
+                            it,
+                            registrationId
+                        )
+                        assertThat(registrationStatusMgmView.registrationStatus)
+                            .isEqualTo(RegistrationStatus.APPROVED)
+                    }
+                    val registrationStatus = proxy.checkSpecificRegistrationProgress(
+                        holdingId,
+                        registrationId
+                    )
                     assertThat(registrationStatus.registrationStatus)
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
@@ -432,6 +444,7 @@ fun E2eCluster.onboardMembers(
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
             member.holdingId,
+            mgm.holdingId,
             createMemberRegistrationContext(
                 member,
                 this,
@@ -495,6 +508,7 @@ fun E2eCluster.onboardMgm(
 
     register(
         mgm.holdingId,
+        null,
         mgmRegistrationContext,
     )
 
@@ -533,7 +547,11 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
             )
         }
 
-        register(member.holdingId, registrationContext)
+        register(
+            member.holdingId,
+            null,
+            registrationContext
+        )
 
         // Check registration complete.
         // Eventually we can use the registration status endpoint.
