@@ -33,8 +33,11 @@ class SessionConfirmProcessorReceive(
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionConfirm-NullState", instant)
         } else {
+
             sessionState.apply {
                 counterpartySessionProperties = sessionConfirm.contextSessionProperties
+                //recalc high water mark but do not add the session confirm to the undelivered messages
+                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(sessionState.receivedEventsState.undeliveredMessages.plus(sessionEvent))
             }
 
             logger.trace {
@@ -44,5 +47,21 @@ class SessionConfirmProcessorReceive(
 
             return sessionState
         }
+    }
+
+    private fun recalcHighWatermark(receivedEvents: List<SessionEvent>): Int {
+        var highestContiguousSeqNum = 0
+        val sortedEvents = receivedEvents.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
+        for (undeliveredMessage in sortedEvents) {
+            if (undeliveredMessage.sequenceNum == highestContiguousSeqNum+1) {
+                highestContiguousSeqNum++
+            } else if (undeliveredMessage.sequenceNum < highestContiguousSeqNum) {
+                continue
+            } else {
+                break
+            }
+        }
+
+        return highestContiguousSeqNum
     }
 }
