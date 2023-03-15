@@ -60,11 +60,10 @@ class MembershipPackageFactory(
         hashCheck: SecureHash,
         groupParameters: GroupParameters,
     ): MembershipPackage {
+        val mgmSignatureSpec = mgmSigner.signatureSpec.toAvro()
         val signedMembers = membersToSend.map {
             val memberTree = merkleTreeGenerator.generateTree(listOf(it))
             val mgmSignature = mgmSigner.sign(memberTree.root.bytes).toAvro()
-            val mgmSignatureSpec =
-                CryptoSignatureSpec(mgmSigner.signatureSpec.signatureName, null, null)
             val (memberSignature, memberSignatureSpec) =
                 membersSignatures[it.holdingIdentity]?.let { signatureAndSpec ->
                     signatureAndSpec.first to signatureAndSpec.second

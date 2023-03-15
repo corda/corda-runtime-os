@@ -14,10 +14,6 @@ import javax.persistence.LockModeType
 internal class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer {
-            logger.error("Failed to serialize key value pair list.")
-        }
 
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId

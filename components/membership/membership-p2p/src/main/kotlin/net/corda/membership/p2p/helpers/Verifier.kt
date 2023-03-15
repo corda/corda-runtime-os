@@ -14,7 +14,6 @@ class Verifier(
     fun verify(signature: CryptoSignatureWithKey, signatureSpecAvro: CryptoSignatureSpec, data: ByteArray) {
         val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
         val signatureSpec = signatureSpecAvro.signatureName?.let {
-            // Maybe use `SignatureSpecService` here to check signature spec should be one of compatible ones
             SignatureSpec(it)
         } ?: throw CordaRuntimeException("Can not find signature spec")
         signatureVerificationService.verify(

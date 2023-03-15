@@ -33,7 +33,7 @@ class MemberSignatureEntity(
     val publicKey: ByteArray,
 
     // TODO Are we going to be storing `ParameterizedSignatureSpec` here?
-    //  If so need to consider saving extra signature spec parameters.
+    //  If so need to consider saving extra signature spec parameters as recorded in https://r3-cev.atlassian.net/browse/CORE-11685
     @Column(name = "signature_spec", nullable = false, updatable = false)
     val signatureSpec: String,
 
