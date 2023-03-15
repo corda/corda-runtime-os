@@ -78,7 +78,6 @@ class SessionEventHandler @Activate constructor(
             }
         }
 
-
         return context
     }
 

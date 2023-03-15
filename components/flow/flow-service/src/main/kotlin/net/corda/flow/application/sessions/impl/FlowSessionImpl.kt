@@ -55,13 +55,13 @@ class FlowSessionImpl(
         val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
         val counterpartySessionProperties = sessionState?.counterpartySessionProperties
         return if (counterpartySessionProperties != null) {
-            getFlowInfo(counterpartySessionProperties)
+            getFlowInfoFromSessionProps(counterpartySessionProperties)
         } else {
             null
         }
     }
 
-    private fun getFlowInfo(counterpartySessionProperties: KeyValuePairList): FlowInfo {
+    private fun getFlowInfoFromSessionProps(counterpartySessionProperties: KeyValuePairList): FlowInfo {
         val props = KeyValueStore(counterpartySessionProperties)
         val protocol = props[Constants.FLOW_PROTOCOL].toString()
         val protocolVersion = props[Constants.FLOW_PROTOCOL_VERSION_USED]!!.toInt()

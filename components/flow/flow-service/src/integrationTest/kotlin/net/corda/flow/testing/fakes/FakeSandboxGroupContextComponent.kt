@@ -198,7 +198,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
         override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): FlowAndProtocolVersion {
             val flowClass = responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
-            return FlowAndProtocolVersion("", 1, flowClass)
+            return FlowAndProtocolVersion(protocolName, 1, flowClass)
         }
 
         override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
