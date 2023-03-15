@@ -83,7 +83,11 @@ internal class CreateVirtualNodeOperationHandler(
             )
         }
 
-        val mgmInfo = policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy)
+        val mgmInfo = if(!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy)) {
+            policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy)
+        } else {
+            null
+        }
 
         val records = if (mgmInfo == null) {
             logger.info(".No MGM information found in group policy. MGM member info not published.")

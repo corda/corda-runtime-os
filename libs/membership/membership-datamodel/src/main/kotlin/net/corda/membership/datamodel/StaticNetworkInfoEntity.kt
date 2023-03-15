@@ -39,5 +39,5 @@ class StaticNetworkInfoEntity(
 ) {
     @Version
     @Column(name = "version", nullable = false)
-    var version: Int = 0
+    var version: Int = 1
 }

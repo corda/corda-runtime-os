@@ -2,6 +2,7 @@ package net.corda.applications.workers.rest
 
 import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.applications.workers.rest.utils.E2eClusterMember
+import net.corda.applications.workers.rest.utils.E2eClusterMemberRole
 import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rest.utils.assertP2pConnectivity
 import net.corda.applications.workers.rest.utils.createStaticMemberGroupPolicyJson
@@ -22,7 +23,15 @@ class StaticNetworkTest {
 
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
-            (1..5).map {
+            (1..2).map {
+                E2eClusterMember("C=GB, L=London, O=Member-${cluster.uniqueName}")
+            }
+        )
+        cluster.addMember(
+            E2eClusterMember("C=GB, L=London, O=Notary-${cluster.uniqueName}", E2eClusterMemberRole.NOTARY)
+        )
+        cluster.addMembers(
+            (3..4).map {
                 E2eClusterMember("C=GB, L=London, O=Member-${cluster.uniqueName}")
             }
         )

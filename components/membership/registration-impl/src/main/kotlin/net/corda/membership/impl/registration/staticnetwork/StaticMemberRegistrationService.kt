@@ -296,24 +296,24 @@ class StaticMemberRegistrationService(
             .queryStaticNetworkInfo(memberInfo.groupId)
             .getOrThrow()
 
-        val currentAvroGroupParameters = currentStaticNetworkInfo.groupParameters
-
         // If the current member is a notary then the group parameters need to be updated
-        val newStaticNetworkInfo = StaticNetworkInfo(
-            currentStaticNetworkInfo.groupId,
-            if (memberInfo.isNotary()) {
-                currentAvroGroupParameters.addNotary(
+        val newStaticNetworkInfo = if (memberInfo.isNotary()) {
+            StaticNetworkInfo(
+                currentStaticNetworkInfo.groupId,
+                currentStaticNetworkInfo.groupParameters.addNotary(
                     memberInfo,
                     keyEncodingService,
                     clock
-                )
-            } else {
-                currentAvroGroupParameters
-            },
-            currentStaticNetworkInfo.mgmPublicSigningKey,
-            currentStaticNetworkInfo.mgmPrivateSigningKey,
-            currentStaticNetworkInfo.version
-        )
+                ),
+                currentStaticNetworkInfo.mgmPublicSigningKey,
+                currentStaticNetworkInfo.mgmPrivateSigningKey,
+                currentStaticNetworkInfo.version
+            ).also {
+                persistenceClient.updateStaticNetworkInfo(it)
+            }
+        } else {
+            currentStaticNetworkInfo
+        }
 
         val avroSignedGroupParameters = newStaticNetworkInfo.signGroupParameters(
             keyValuePairListSerializer,

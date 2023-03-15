@@ -25,7 +25,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.staticnetwork.StaticNetworkInfoWriter
+import net.corda.membership.network.writer.NetworkInfoWriter
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated
@@ -33,7 +33,7 @@ import net.corda.membership.staticnetwork.StaticNetworkInfoWriter
  */
 class DatabaseCpiPersistence(
     private val entityManagerFactory: EntityManagerFactory,
-    private val staticNetworkInfoWriter: StaticNetworkInfoWriter
+    private val networkInfoWriter: NetworkInfoWriter
 ) : CpiPersistence {
 
     private companion object {
@@ -67,12 +67,15 @@ class DatabaseCpiPersistence(
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
 
+            networkInfoWriter.parseAndPersistStaticNetworkInfo(em, cpi)
+
             val cpiMetadataEntity = createCpiMetadataEntity(
                 cpi,
                 cpiFileName,
                 cpiFileChecksum,
                 requestId,
                 groupId,
+                networkInfoWriter.injectStaticNetworkMgm(em, cpi.metadata.groupPolicy!!),
                 createCpiCpkRelationships(em, cpi)
             )
 
@@ -81,8 +84,6 @@ class DatabaseCpiPersistence(
             persistNewCpkFileEntities(em, cpi.metadata.fileChecksum, cpi.cpks)
 
             persistNewChangelogs(em, changelogsExtractedFromCpi)
-
-            staticNetworkInfoWriter.parseAndPersistStaticNetworkInfo(em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -267,6 +268,7 @@ class DatabaseCpiPersistence(
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
+        groupPolicy: String,
         cpiCpkEntities: Set<CpiCpkEntity>
     ): CpiMetadataEntity {
         val cpiMetadata = cpi.metadata
@@ -275,7 +277,7 @@ class DatabaseCpiPersistence(
             id = cpiMetadata.cpiId,
             fileName = cpiFileName,
             fileChecksum = checksum,
-            groupPolicy = cpi.metadata.groupPolicy!!,
+            groupPolicy = groupPolicy,
             groupId = groupId,
             fileUploadRequestId = requestId,
             cpks = cpiCpkEntities

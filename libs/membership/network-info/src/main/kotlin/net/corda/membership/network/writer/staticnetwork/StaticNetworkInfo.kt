@@ -1,4 +1,4 @@
-package net.corda.membership.staticnetwork
+package net.corda.membership.network.writer.staticnetwork
 
 import net.corda.membership.lib.UnsignedGroupParameters
 import java.security.PrivateKey

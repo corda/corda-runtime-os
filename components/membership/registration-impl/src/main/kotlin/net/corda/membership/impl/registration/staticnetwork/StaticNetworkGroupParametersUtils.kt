@@ -14,9 +14,9 @@ import net.corda.membership.lib.notaryServiceRegex
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.membership.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
-import net.corda.membership.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
-import net.corda.membership.staticnetwork.StaticNetworkInfoMappingUtils.toCorda
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toCorda
 import net.corda.utilities.time.Clock
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory

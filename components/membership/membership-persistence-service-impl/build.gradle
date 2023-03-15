@@ -29,7 +29,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-datamodel')
     implementation project(':libs:membership:membership-common')
-    implementation project(':libs:membership:static-network')
+    implementation project(':libs:membership:network-info')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:platform-info")
     implementation project(':libs:virtual-node:virtual-node-info')

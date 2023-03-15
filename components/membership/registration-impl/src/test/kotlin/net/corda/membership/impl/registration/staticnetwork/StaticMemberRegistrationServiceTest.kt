@@ -84,7 +84,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.membership.staticnetwork.StaticNetworkUtils
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record

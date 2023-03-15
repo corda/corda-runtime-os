@@ -1,10 +1,10 @@
-package net.corda.membership.staticnetwork
+package net.corda.membership.network.writer
 
 import net.corda.libs.packaging.Cpi
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import javax.persistence.EntityManager
 
-interface StaticNetworkInfoWriter {
+interface NetworkInfoWriter {
 
     /**
      * Create and persist the initial static network information for a CPI.
@@ -19,4 +19,12 @@ interface StaticNetworkInfoWriter {
         em: EntityManager,
         cpi: Cpi
     ): StaticNetworkInfoEntity?
+
+    /**
+     *
+     */
+    fun injectStaticNetworkMgm(
+        em: EntityManager,
+        groupPolicyJson: String
+    ): String
 }

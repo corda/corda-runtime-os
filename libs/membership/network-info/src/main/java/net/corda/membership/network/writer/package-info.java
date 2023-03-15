@@ -1,4 +1,4 @@
 @Export
-package net.corda.membership.staticnetwork;
+package net.corda.membership.network.writer;
 
 import org.osgi.annotation.bundle.Export;

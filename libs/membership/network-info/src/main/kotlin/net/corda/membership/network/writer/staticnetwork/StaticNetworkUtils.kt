@@ -1,4 +1,4 @@
-package net.corda.membership.staticnetwork
+package net.corda.membership.network.writer.staticnetwork
 
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.jce.provider.BouncyCastleProvider

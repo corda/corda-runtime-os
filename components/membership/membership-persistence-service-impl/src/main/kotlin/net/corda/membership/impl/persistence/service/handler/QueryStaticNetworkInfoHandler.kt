@@ -5,7 +5,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
-import net.corda.membership.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
 
 internal class QueryStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices

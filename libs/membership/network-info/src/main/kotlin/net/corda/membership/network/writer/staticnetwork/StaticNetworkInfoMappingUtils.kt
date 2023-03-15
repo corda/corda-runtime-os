@@ -1,12 +1,12 @@
-package net.corda.membership.staticnetwork
+package net.corda.membership.network.writer.staticnetwork
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.StaticNetworkInfo as AvroStaticNetworkInfo
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
-import net.corda.membership.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
 import java.nio.ByteBuffer
 import java.security.KeyFactory
 import java.security.spec.PKCS8EncodedKeySpec

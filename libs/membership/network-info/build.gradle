@@ -20,4 +20,10 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:platform-info")
     implementation project(":libs:utilities")
+
+    testImplementation project(":testing:test-utilities")
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

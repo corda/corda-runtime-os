@@ -83,6 +83,12 @@ class MemberInfoExtension {
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
 
+        /**
+         * Key name for identifying static network MGM property.
+         * A static network MGM is not backed by a virtual node so may need different handling.
+         */
+        const val IS_STATIC_MGM = "corda.mgm.static"
+
         /** Key name for pre-auth token property. */
         const val PRE_AUTH_TOKEN = "corda.auth.token"
 
@@ -213,6 +219,11 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.isMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
+
+        /** Denotes whether this [MemberInfo] represents a static network MGM. */
+        @JvmStatic
+        val MemberInfo.isStaticMgm: Boolean
+            get() = mgmProvidedContext.parseOrNull(IS_STATIC_MGM) ?: false
 
         /**
          * Returns the pre-auth token from the member info if it is present, and it is a valid UUID.

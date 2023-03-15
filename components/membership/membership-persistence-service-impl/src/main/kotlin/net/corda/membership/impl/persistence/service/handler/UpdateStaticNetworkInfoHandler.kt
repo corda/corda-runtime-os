@@ -6,7 +6,7 @@ import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
 import javax.persistence.LockModeType
 
 internal class UpdateStaticNetworkInfoHandler(

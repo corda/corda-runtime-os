@@ -520,12 +520,20 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
     members.forEach { member ->
         createVirtualNode(member, cpiCheckSum)
 
-        register(
-            member.holdingId,
+        val registrationContext = if(member.isNotary()) {
+            mapOf(
+                "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService-$uniqueName, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.NonValidatingNotary"
+            )
+        } else {
             mapOf(
                 "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME
             )
-        )
+        }
+
+        register(member.holdingId, registrationContext)
 
         // Check registration complete.
         // Eventually we can use the registration status endpoint.
