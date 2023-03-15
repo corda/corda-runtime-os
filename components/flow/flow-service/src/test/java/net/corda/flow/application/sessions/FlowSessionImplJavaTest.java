@@ -2,6 +2,7 @@ package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
 import net.corda.flow.application.serialization.SerializationServiceInternal;
+import net.corda.flow.application.sessions.impl.FlowSessionImpl;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;

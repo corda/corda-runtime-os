@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests.sessions.service
 
+import net.corda.flow.application.sessions.SessionInfo
 import java.time.Instant
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
@@ -32,15 +32,15 @@ class InitiateFlowRequestService @Activate constructor(
 
     fun getSessionsNotInitiated(
         context: FlowEventContext<Any>,
-        sessionToInfo: Set<FlowIORequest.SessionInfo>
-    ): Set<FlowIORequest.SessionInfo> {
+        sessionToInfo: Set<SessionInfo>
+    ): Set<SessionInfo> {
         val checkpoint = context.checkpoint
         return sessionToInfo.filter { checkpoint.getSessionState(it.sessionId) == null }.toSet()
     }
 
     fun initiateFlowsNotInitiated(
         context: FlowEventContext<Any>,
-        sessionToInfo: Set<FlowIORequest.SessionInfo>,
+        sessionToInfo: Set<SessionInfo>,
     ) {
         val sessionsNotInitiated = getSessionsNotInitiated(context, sessionToInfo)
         if (sessionsNotInitiated.isNotEmpty()) {
@@ -51,7 +51,7 @@ class InitiateFlowRequestService @Activate constructor(
     @Suppress("ThrowsCount")
     private fun initiateFlows(
         context: FlowEventContext<Any>,
-        sessionsNotInitiated: Set<FlowIORequest.SessionInfo>
+        sessionsNotInitiated: Set<SessionInfo>
     ) {
         val checkpoint = context.checkpoint
 

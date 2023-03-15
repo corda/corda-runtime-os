@@ -5,6 +5,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
@@ -109,12 +110,12 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Send(mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0)
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)

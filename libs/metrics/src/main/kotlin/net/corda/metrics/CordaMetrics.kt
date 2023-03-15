@@ -21,6 +21,8 @@ object CordaMetrics {
             return MeterBuilder(this.metricsName, this.meter)
         }
 
+        // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
+
         /**
          * Number of HTTP Requests.
          */
@@ -85,6 +87,12 @@ object CordaMetrics {
         object InboundSessionCount: Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
     }
 
+    /**
+     * Metric tag names
+     *
+     * NOTE: please ensure the metric names adhere to the convensions described on
+     * https://micrometer.io/docs/concepts#_naming_meters
+     */
     enum class Tag(val value: String) {
         /**
          * Address for which the metric is applicable.
@@ -93,56 +101,56 @@ object CordaMetrics {
         /**
          * Type of the SandboxGroup to which the metric applies.
          */
-        SandboxGroupType("sandboxGroupType"),
+        SandboxGroupType("sandbox.type"),
         /**
          * Source of metric.
          */
-        WorkerType("workerType"),
+        WorkerType("worker.type"),
         /**
          * Virtual Node for which the metric is applicable.
          */
-        VirtualNode("virtualNode"),
+        VirtualNode("virtualnode"),
 
         /**
          * Message pattern type for which the metric is applicable.
          */
-        MessagePatternType("messagePatternType"),
+        MessagePatternType("messagepattern.type"),
 
         /**
          * The name of the operation performed
          */
-        OperationName("operationName"),
+        OperationName("operation.name"),
 
         /**
          * Message pattern clientId for which the metric is applicable.
          */
-        MessagePatternClientId("messagePatternClientId"),
+        MessagePatternClientId("messagepattern.clientid"),
 
         /**
          * Flow class for which the metric is applicable.
          */
-        FlowClass("flowClass"),
+        FlowClass("class"),
 
 
         /**
          * Flow Id for which the metric is applicable.
          */
-        FlowId("flowId"),
+        FlowId("id"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
          */
-        OperationStatus("operationStatus"),
+        OperationStatus("status"),
 
         /**
          * The source virtual node in peer-to-peer communication.
          */
-        SourceVirtualNode("sourceVNode"),
+        SourceVirtualNode("virtualnode.source"),
 
         /**
          * The destination virtual node in peer-to-peer communication.
          */
-        DestinationVirtualNode("destinationVNode"),
+        DestinationVirtualNode("virtualnode.destination"),
 
         /**
          * The membership group within which peer-to-peer communication happens.
@@ -152,7 +160,7 @@ object CordaMetrics {
         /**
          * The type of a peer-to-peer message.
          */
-        MessageType("messageType"),
+        MessageType("message.type"),
 
         /**
          * The subsystem that sends or receives a peer-to-peer message from the network layer.
