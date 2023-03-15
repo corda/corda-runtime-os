@@ -10,7 +10,6 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
-import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
 import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
@@ -47,19 +46,10 @@ class DefaultKryoCustomizer {
         internal fun customize(
             kryo: Kryo,
             serializers: Map<Class<*>, Serializer<*>>,
-            classResolver: CordaClassResolver,
-            classSerializer: ClassSerializer,
+            classSerializer: ClassSerializer
         ): Kryo {
             return kryo.apply {
-
                 isRegistrationRequired = false
-                classResolver.setKryo(this)
-
-                // The ClassResolver can only be set in the Kryo constructor and Quasar doesn't
-                // provide us with a way of doing that
-                Kryo::class.java.getDeclaredField("classResolver").apply {
-                    isAccessible = true
-                }.set(this, classResolver)
 
                 val defaultSerializer = SerializerFactory.FieldSerializerFactory().apply {
                     // Take the safest route here and allow subclasses to have fields named the same as super classes.

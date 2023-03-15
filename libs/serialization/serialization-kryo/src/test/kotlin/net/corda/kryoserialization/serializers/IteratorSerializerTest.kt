@@ -23,11 +23,10 @@ internal class IteratorSerializerTest {
         list.addAll(listOf(3, 4))
 
         val output = Output(2048)
-        val kryo = Kryo(MapReferenceResolver())
+        val kryo = Kryo(CordaClassResolver(mock()), MapReferenceResolver())
         DefaultKryoCustomizer.customize(
             kryo,
             emptyMap(),
-            CordaClassResolver(mock()),
             ClassSerializer(mock())
         )
         val compatibleFieldSerializer: CompatibleFieldSerializer<Iterator<*>> = mock()

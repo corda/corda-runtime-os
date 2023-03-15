@@ -52,9 +52,8 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(FlowStackItem::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(MapReferenceResolver()),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )
@@ -92,9 +91,8 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(MapReferenceResolver()),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )

@@ -24,10 +24,12 @@ fun createCheckpointSerializer(
 ): KryoCheckpointSerializer {
     val singletonSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
     val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java } + extraClasses)
-    val kryo = Kryo(MapReferenceResolver())
-    kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
     val checkpointSerializer =
-        KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup, kryo).let { builder ->
+        KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup) { classResolver ->
+            Kryo(classResolver, MapReferenceResolver()).also { kryo ->
+                kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
+            }
+        }.let { builder ->
             builder.addSingletonSerializableInstances(singletonInstances.toSet())
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
             serializers.forEach { (clazz, serializer) -> builder.addSerializer(clazz, serializer) }
