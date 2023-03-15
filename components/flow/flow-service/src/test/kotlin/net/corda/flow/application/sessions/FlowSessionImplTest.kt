@@ -50,7 +50,7 @@ class FlowSessionImplTest {
     private val flowFiber = mockFlowFiberService.flowFiber.apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
         whenever(suspend(any<FlowIORequest.Receive>())).thenReturn(received)
-        whenever(suspend(any<FlowIORequest.CounterPartyFlowInfo>())).thenReturn(counterPartyFlowInfo)
+        whenever(suspend(any<FlowIORequest.CounterPartyFlowInfo>())).thenReturn(Unit)
     }
 
     private val userKey = "userKey"
