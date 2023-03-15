@@ -394,8 +394,7 @@ class NonValidatingNotaryServerFlowImplTest {
                 NotarizationRequestSignature(
                     DigitalSignature.WithKey(
                         memberCharlieKey,
-                        "ABC".toByteArray(),
-                        emptyMap()
+                        "ABC".toByteArray()
                     ),
                     DUMMY_PLATFORM_VERSION
                 ),

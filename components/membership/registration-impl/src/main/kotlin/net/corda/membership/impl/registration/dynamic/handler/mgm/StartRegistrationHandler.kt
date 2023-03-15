@@ -216,6 +216,7 @@ internal class StartRegistrationHandler(
             source.toCorda(),
             memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature,
+            memberRegistrationRequest.memberSignatureSpec,
             true
         )
     }
