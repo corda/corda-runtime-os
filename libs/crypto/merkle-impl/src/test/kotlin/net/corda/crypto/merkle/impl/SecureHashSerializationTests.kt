@@ -4,9 +4,9 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -31,7 +31,7 @@ class SecureHashSerializationTests {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_256.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(algorithm, digest)
+        val cut = SecureHashImpl(algorithm, digest)
         val expected = byteArrayOf(
             83, 72, 65, 45, 50, 53, 54, // SHA-256
             58, // :
@@ -47,7 +47,7 @@ class SecureHashSerializationTests {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_256.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(algorithm, digest)
+        val cut = SecureHashImpl(algorithm, digest)
 
         val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
             58,

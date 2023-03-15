@@ -1,5 +1,6 @@
 package net.corda.virtualnode
 
+import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.time.Instant
 import java.util.UUID
@@ -69,10 +70,10 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() },
             uniquenessDmlConnectionId.toString(),
             hsmConnectionId?.let { hsmConnectionId.toString() },
-            flowP2pOperationalStatus.toString(),
-            flowStartOperationalStatus.toString(),
-            flowOperationalStatus.toString(),
-            vaultDbOperationalStatus.toString(),
+            flowP2pOperationalStatus.toAvro(),
+            flowStartOperationalStatus.toAvro(),
+            flowOperationalStatus.toAvro(),
+            vaultDbOperationalStatus.toAvro(),
             operationInProgress,
             version,
             timestamp
@@ -91,10 +92,10 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         uniquenessDdlConnectionId?.let { UUID.fromString(uniquenessDdlConnectionId) },
         UUID.fromString(uniquenessDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
-        OperationalStatus.valueOf(flowP2pOperationalStatus),
-        OperationalStatus.valueOf(flowStartOperationalStatus),
-        OperationalStatus.valueOf(flowOperationalStatus),
-        OperationalStatus.valueOf(vaultDbOperationalStatus),
+        OperationalStatus.fromAvro(flowP2pOperationalStatus),
+        OperationalStatus.fromAvro(flowStartOperationalStatus),
+        OperationalStatus.fromAvro(flowOperationalStatus),
+        OperationalStatus.fromAvro(vaultDbOperationalStatus),
         operationInProgress,
         version,
         timestamp,
@@ -104,5 +105,21 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
 
 enum class OperationalStatus {
     ACTIVE,
-    INACTIVE
+    INACTIVE;
+
+    companion object {
+        fun fromAvro(status: VirtualNodeOperationalState): OperationalStatus {
+            return when (status) {
+                VirtualNodeOperationalState.ACTIVE -> ACTIVE
+                VirtualNodeOperationalState.INACTIVE -> INACTIVE
+            }
+        }
+    }
+
+    fun toAvro(): VirtualNodeOperationalState {
+        return when (this) {
+            ACTIVE -> VirtualNodeOperationalState.ACTIVE
+            INACTIVE -> VirtualNodeOperationalState.INACTIVE
+        }
+    }
 }

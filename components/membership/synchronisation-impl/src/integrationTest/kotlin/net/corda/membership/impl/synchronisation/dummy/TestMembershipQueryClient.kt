@@ -80,6 +80,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
+        limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -106,7 +107,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
         )
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

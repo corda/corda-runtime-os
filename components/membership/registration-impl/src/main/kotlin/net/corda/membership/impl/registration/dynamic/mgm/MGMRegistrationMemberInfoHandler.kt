@@ -9,8 +9,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
@@ -29,8 +27,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
@@ -39,9 +35,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(
@@ -67,14 +61,12 @@ internal class MGMRegistrationMemberInfoHandler(
         }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
-    fun buildAndPersist(
-        registrationId: UUID,
+    fun buildAndPersistMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
     ): MemberInfo {
         return buildMgmInfo(holdingIdentity, context).also {
             persistMemberInfo(holdingIdentity, it)
-            persistRegistrationRequest(registrationId, holdingIdentity, it)
         }
     }
 
@@ -160,37 +152,6 @@ internal class MGMRegistrationMemberInfoHandler(
                 SERIAL to SERIAL_CONST,
             )
         )
-    }
-
-    private fun persistRegistrationRequest(
-        registrationId: UUID,
-        holdingIdentity: HoldingIdentity,
-        mgmInfo: MemberInfo
-    ) {
-        val serializedMemberContext = keyValuePairListSerializer.serialize(
-            mgmInfo.memberProvidedContext.toWire()
-        ) ?: throw MGMRegistrationMemberInfoHandlingException(
-            "Failed to serialize the member context for this request."
-        )
-        val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
-            viewOwningIdentity = holdingIdentity,
-            registrationRequest = RegistrationRequest(
-                status = RegistrationStatus.APPROVED,
-                registrationId = registrationId.toString(),
-                requester = holdingIdentity,
-                memberContext = ByteBuffer.wrap(serializedMemberContext),
-                signature = CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList())
-                )
-            )
-        )
-        if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
-            )
-        }
     }
 }
 

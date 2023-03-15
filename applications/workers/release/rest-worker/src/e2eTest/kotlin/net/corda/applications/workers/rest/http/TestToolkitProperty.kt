@@ -9,17 +9,13 @@ import kotlin.reflect.KProperty
  * testcase which contains this property, giving an opportunity to "personalize" implementation
  * for a specific test.
  *
- * Such personalization may, for example, include REST user names that are matching the name of the test class.
+ * Such personalization may, for example, include REST usernames that are matching the name of the test class.
+ *
+ * Rather than using this class, please consider using [net.corda.applications.workers.rest.utils.E2eCluster] to gain
+ * access to multi-cluster deployment as well as other functions available.
  */
 class TestToolkitProperty(private val host: String, private val port: Int) :
     ReadOnlyProperty<Any, TestToolkit> {
-
-    companion object {
-        const val DEFAULT_HTTP_HOST = "localhost"
-        const val DEFAULT_HTTP_PORT = 8888
-    }
-
-    constructor() : this(DEFAULT_HTTP_HOST, DEFAULT_HTTP_PORT)
 
     private lateinit var impl: TestToolkit
 

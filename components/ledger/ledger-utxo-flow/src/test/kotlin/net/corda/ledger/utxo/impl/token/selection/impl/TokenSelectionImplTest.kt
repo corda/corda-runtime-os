@@ -1,9 +1,9 @@
 package net.corda.ledger.utxo.impl.token.selection.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import org.assertj.core.api.Assertions
@@ -20,7 +20,7 @@ class TokenSelectionImplTest {
     fun `tryClaim executes external event with criteria`() {
         val criteria = TokenClaimCriteria(
             "tt",
-            SecureHash("SHA-256", byteArrayOf(1)),
+            SecureHashImpl("SHA-256", byteArrayOf(1)),
             MemberX500Name.parse("CN=user1, O=user1 Corp, L=LDN, C=GB"),
             "s",
             BigDecimal(1)

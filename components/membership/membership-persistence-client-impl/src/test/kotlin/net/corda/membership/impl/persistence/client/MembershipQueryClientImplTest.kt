@@ -435,14 +435,15 @@ class MembershipQueryClientImplTest {
             CompletableFuture.completedFuture(
                 MembershipPersistenceResponse(
                     context,
-                    GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))))
+                    GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))), 101L)
                 )
             )
         }
 
         val result = membershipQueryClient.queryGroupPolicy(ourHoldingIdentity)
         assertThat(result.getOrThrow()).isNotNull
-        assertThat(result.getOrThrow().entries.size).isEqualTo(1)
+        assertThat(result.getOrThrow().first.entries.size).isEqualTo(1)
+        assertThat(result.getOrThrow().second).isEqualTo(101L)
     }
 
     @Test
@@ -461,14 +462,15 @@ class MembershipQueryClientImplTest {
             CompletableFuture.completedFuture(
                 MembershipPersistenceResponse(
                     context,
-                    GroupPolicyQueryResponse(KeyValuePairList(emptyList()))
+                    GroupPolicyQueryResponse(KeyValuePairList(emptyList()), 0L)
                 )
             )
         }
 
         val result = membershipQueryClient.queryGroupPolicy(ourHoldingIdentity)
         assertThat(result.getOrThrow()).isNotNull
-        assertThat(result.getOrThrow().entries).isEmpty()
+        assertThat(result.getOrThrow().first.entries).isEmpty()
+        assertThat(result.getOrThrow().second).isEqualTo(0L)
     }
 
     @Nested

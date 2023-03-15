@@ -1,24 +1,18 @@
 package net.corda.crypto.softhsm.impl
 
-import com.typesafe.config.Config
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.CryptoServiceProvider
-import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
-import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
-import net.corda.crypto.softhsm.SoftCacheConfig
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.SoftKeyMap
-import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
-import net.corda.crypto.softhsm.SoftWrappingKeyMap
-import net.corda.crypto.softhsm.SoftWrappingKeyMapConfig
-import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
-import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getStringOrDefault
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -29,6 +23,15 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.Provider
+import java.security.PublicKey
+import java.util.concurrent.TimeUnit
+
+const val KEY_MAP_TRANSIENT_NAME = "TRANSIENT"
+const val KEY_MAP_CACHING_NAME = "CACHING"
+const val WRAPPING_DEFAULT_NAME = "DEFAULT"
 
 /**
  * A factory that creates [SoftCryptoService] instances given configuration.
@@ -43,10 +46,10 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = WrappingKeyStore::class)
+    private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
-    @Reference(service = WrappingKeyStore::class)
-    private val store: WrappingKeyStore
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -61,7 +64,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, digestService, store)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService, CacheFactoryImpl())
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
@@ -69,86 +72,59 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
+        private val wrappingKeyStore: WrappingKeyStore,
         private val digestService: PlatformDigestService,
-        private val store: WrappingKeyStore
+        private val cacheFactoryImpl: CacheFactoryImpl
     ) : AbstractImpl {
 
         fun getInstance(config: SmartConfig): CryptoService {
-            // TODO - find a way to avoid magic strings
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
-            val wrappingKeyMap = createSoftWrappingKeyMap(config.getConfig("wrappingKeyMap"))
-            val privateKeyWrapping = createSoftPrivateKeyWrapping(config, wrappingKeyMap)
-            val keyMapCacheConfig = SoftCacheConfig(
-                config.getConfig("keyMap").getConfig("cache").getLong("expireAfterAccessMins"),
-                config.getConfig("keyMap").getConfig("cache").getLong("maximumSize")
+            val wrappingKeyMapConfig = config.getConfig("wrappingKeyMap")
+            val rootWrappingKey =
+                WrappingKeyImpl.derive(
+                    schemeMetadata,
+                    wrappingKeyMapConfig.getString("salt"),
+                    wrappingKeyMapConfig.getString("passphrase")
+                )
+            val wrappingKeyCacheConfig = wrappingKeyMapConfig.getConfig("cache")
+            // TODO drop this compatibility code that supports name between KEY_MAP_TRANSIENT_NAME and if so disables caching
+            val wrappingKeyCache: Cache<String, WrappingKey> = cacheFactoryImpl.build(
+                "HSM-Wrapping-Keys-Map",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(wrappingKeyCacheConfig.getLong("expireAfterAccessMins"), TimeUnit.MINUTES)
+                    .maximumSize(
+                        if (wrappingKeyCacheConfig.getStringOrDefault("name", "") == KEY_MAP_TRANSIENT_NAME) 0
+                        else wrappingKeyCacheConfig.getLong("maximumSize")
+                    )
             )
-            val keyMap = createSoftKeyMap(config, privateKeyWrapping, keyMapCacheConfig)
+
+            val privateKeyMapName = config.getConfig("keyMap").getStringOrDefault("name", KEY_MAP_CACHING_NAME)
+            if (privateKeyMapName != KEY_MAP_CACHING_NAME && privateKeyMapName != KEY_MAP_TRANSIENT_NAME)
+                throw java.lang.IllegalStateException("unknown name $privateKeyMapName")
+            val privateKeyMapCacheConfig = config.getConfig("keyMap").getConfig("cache")
+            val privateKeyCache: Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
+                "HSM-Soft-Keys-Map",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(privateKeyMapCacheConfig.getLong("expireAfterAccessMins"), TimeUnit.MINUTES)
+                    .maximumSize(
+                        if (privateKeyMapName == KEY_MAP_TRANSIENT_NAME) 0 else privateKeyMapCacheConfig.getLong(
+                            "maximumSize"
+                        )
+                    )
+            )
             return SoftCryptoService(
-                keyMap = keyMap,
-                wrappingKeyMap = wrappingKeyMap,
+                wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
-                digestService = digestService
-            )
-        }
-
-        private fun createSoftWrappingKeyMap(
-            config: SmartConfig
-        ): SoftWrappingKeyMap {
-            // TODO - find a way to avoid magic strings
-            val name = config.getStringOrDefault("name", KEY_MAP_CACHING_NAME)
-            val wrappingKeyMapCacheConfig = SoftCacheConfig(
-                config.getConfig("cache").getLong("expireAfterAccessMins"),
-                config.getConfig("cache").getLong("maximumSize")
-            )
-            val softWrappingKeyMapConfig = SoftWrappingKeyMapConfig(
-                config.getString("salt"),
-                config.getString("passphrase"),
-                wrappingKeyMapCacheConfig
-            )
-            val masterKey = createMasterWrappingKey(softWrappingKeyMapConfig)
-            logger.info("set up soft wrapping key map with master key $masterKey")
-            val finalWrappingKeyMapCacheConfig = when (name) {
-                KEY_MAP_TRANSIENT_NAME -> SoftCacheConfig(0, 0)
-                else -> wrappingKeyMapCacheConfig
-            }
-            return CachingSoftWrappingKeyMap(finalWrappingKeyMapCacheConfig, store, masterKey)
-        }
-
-        // TODO - rework to use Config directly
-        private fun createMasterWrappingKey(config: SoftWrappingKeyMapConfig): WrappingKey {
-            logger.info("Deriving master key salt=${config.salt} passphrase=${config.passphrase}")
-            val k = WrappingKey.derive(schemeMetadata, config.salt, config.passphrase)
-            logger.info("master key is $k")
-            return k
-        }
-
-        private fun createSoftPrivateKeyWrapping(
-            config: Config,
-            wrappingKeyMap: SoftWrappingKeyMap
-        ): SoftPrivateKeyWrapping = when (config.getConfig("wrapping").getString("name")) {
-            // TODO - find a way to avoid magic strings
-            WRAPPING_DEFAULT_NAME -> DefaultSoftPrivateKeyWrapping(wrappingKeyMap)
-            WRAPPING_HSM_NAME -> throw NotImplementedError(
-                "${SoftPrivateKeyWrapping::class.java.simpleName} is not implemented."
-            )
-            else -> throw IllegalStateException(
-                "Unknown configuration value '${config.getConfig("wrapping").getString("name")}' for " +
-                        "${SoftPrivateKeyWrapping::class.java.simpleName}, must be " +
-                        "$WRAPPING_DEFAULT_NAME or $WRAPPING_HSM_NAME"
-            )
-        }
-
-        private fun createSoftKeyMap(
-            config: Config,
-            wrapping: SoftPrivateKeyWrapping,
-            cacheConfig: SoftCacheConfig
-        ): SoftKeyMap = when (config.getConfig("keyMap").getString("name")) {
-            KEY_MAP_TRANSIENT_NAME -> TransientSoftKeyMap(wrapping)
-            KEY_MAP_CACHING_NAME -> CachingSoftKeyMap(cacheConfig, wrapping)
-            else -> throw IllegalStateException(
-                "Unknown configuration value '${config.getConfig("keyMap").getString("cache")}' for " +
-                        "${SoftKeyMap::class.java.simpleName}, must be " +
-                        "$KEY_MAP_TRANSIENT_NAME or $KEY_MAP_CACHING_NAME."
+                digestService = digestService,
+                rootWrappingKey = rootWrappingKey,
+                wrappingKeyCache = wrappingKeyCache,
+                privateKeyCache = privateKeyCache,
+                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                    KeyPairGenerator.getInstance(algorithm, provider)
+                },
+                wrappingKeyFactory = {
+                    WrappingKeyImpl.generateWrappingKey(it)
+                }
             )
         }
     }

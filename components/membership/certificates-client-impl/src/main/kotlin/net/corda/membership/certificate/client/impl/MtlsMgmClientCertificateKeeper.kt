@@ -40,15 +40,17 @@ internal class MtlsMgmClientCertificateKeeper(
             .firstOrNull()?.subjectX500Principal ?:
         throw CordaRuntimeException("Can not extract TLS certificate subject.")
         val normalizedSubject = MemberX500Name.parse(subject.toString()).toString()
-        val newGroupPolicy = membershipQueryClient
+        val (persistedGroupPolicy, version) = membershipQueryClient
             .queryGroupPolicy(holdingIdentity)
             .getOrThrow()
-            .entries.associate { it.key to it.value } +
+
+        val newGroupPolicy = persistedGroupPolicy.entries.associate { it.key to it.value } +
                 (MGM_CLIENT_CERTIFICATE_SUBJECT to normalizedSubject)
 
         membershipPersistenceClient.persistGroupPolicy(
             holdingIdentity,
             layeredPropertyMapFactory.createMap(newGroupPolicy),
+            version + 1
         ).getOrThrow()
     }
 }

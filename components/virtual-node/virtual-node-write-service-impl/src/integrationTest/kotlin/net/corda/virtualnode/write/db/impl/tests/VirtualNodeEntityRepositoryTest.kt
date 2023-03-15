@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -11,7 +12,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import org.assertj.core.api.Assertions
@@ -68,9 +68,9 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "123456ABCDEF123456"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.parse(signerSummaryHash))
+        val cpiId = CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash))
         val expectedCpiMetadata =
-            CpiMetadataLite(cpiId, SecureHash.parse(fileChecksum), "Test Group ID", "Test Group Policy")
+            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy")
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -126,10 +126,10 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "123456789012"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI 2", "2.0", SecureHash.parse(signerSummaryHash))
+        val cpiId = CpiIdentifier("Test CPI 2", "2.0", parseSecureHash(signerSummaryHash))
         val mgmGroupId = "Test Group ID 2"
         val groupPolicy = "Test Group Policy 2"
-        val expectedCpiMetadata = CpiMetadataLite(cpiId, SecureHash.parse(fileChecksum), mgmGroupId, groupPolicy)
+        val expectedCpiMetadata = CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), mgmGroupId, groupPolicy)
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(

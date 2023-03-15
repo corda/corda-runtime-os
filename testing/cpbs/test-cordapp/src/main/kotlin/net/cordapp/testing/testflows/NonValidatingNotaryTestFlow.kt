@@ -1,6 +1,7 @@
 package net.cordapp.testing.testflows
 
 import com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClientFlowImpl
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -56,6 +57,9 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var digestService: DigestService
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -207,11 +211,11 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
                     }
 
                     inputStateRefs.forEach {
-                        builder = builder.addInputState(StateRef.parse(it))
+                        builder = builder.addInputState(StateRef.parse(it, digestService))
                     }
 
                     referenceStateRefs.forEach {
-                        builder = builder.addReferenceState(StateRef.parse(it))
+                        builder = builder.addReferenceState(StateRef.parse(it, digestService))
                     }
                     builder = builder.addSignatories(listOf(myKey))
                     builder

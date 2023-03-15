@@ -19,6 +19,7 @@ dependencies {
     cordapp project(':testing:cpbs:ledger-consensual-demo-contract')
 
     testImplementation project(":libs:application:application-impl")
+    testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":libs:sandbox-types")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -226,7 +226,7 @@ class MemberResourceClientImpl @Activate constructor(
                     listOf(
                         Record(
                             MEMBERSHIP_ASYNC_REQUEST_TOPIC,
-                            requestId,
+                            memberRegistrationRequest.holdingIdentityShortHash.toString(),
                             MembershipAsyncRequest(
                                 RegistrationAsyncRequest(
                                     memberRegistrationRequest.holdingIdentityShortHash.toString(),

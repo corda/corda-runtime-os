@@ -3,6 +3,7 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.PersistentMemberInfo
@@ -63,7 +64,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
@@ -118,7 +118,7 @@ class MGMResourceClientTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn VirtualNodeInfo(
             holdingIdentity,
-            CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
+            CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
             null,
             UUID(0, 1),
             null,

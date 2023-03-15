@@ -316,7 +316,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -331,7 +331,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -346,7 +346,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -360,7 +360,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -374,7 +374,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -388,7 +388,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -402,7 +402,7 @@ class CipherSchemeMetadataTests {
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec, "digest=$it")
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
-            verifier.verify(keyPair.public, signatureSpec, signature, data)
+            verifier.verify(data, signature, keyPair.public, signatureSpec)
         }
     }
 
@@ -540,7 +540,7 @@ class CipherSchemeMetadataTests {
         )
         val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
         kotlin.test.assertTrue(
-            verifier.isValid(decodedPublicKey, signatureSpec, signature, data),
+            verifier.isValid(data, signature, decodedPublicKey, signatureSpec),
             "algorithm=${keyPair.public.algorithm}, scheme=${
                 schemeMetadata.findKeyScheme(
                     keyPair.public
@@ -563,10 +563,10 @@ class CipherSchemeMetadataTests {
         val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
         kotlin.test.assertTrue(
             verifier.isValid(
-                decodedPublicKey,
-                signatureSpec,
+                data,
                 signature,
-                data
+                decodedPublicKey,
+                signatureSpec
             )
         )
     }

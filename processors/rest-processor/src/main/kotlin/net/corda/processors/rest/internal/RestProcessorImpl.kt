@@ -2,7 +2,7 @@ package net.corda.processors.rest.internal
 
 import net.corda.components.rest.RestGateway
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
@@ -48,8 +48,8 @@ class RestProcessorImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = FlowRestResourceService::class)
     private val flowRestResourceService: FlowRestResourceService,
-    @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = CpiUploadService::class)
+    private val cpiUploadService: CpiUploadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = MemberResourceClient::class)
@@ -88,7 +88,7 @@ class RestProcessorImpl @Activate constructor(
         ::configReadService,
         ::restGateway,
         ::flowRestResourceService,
-        ::cpiUploadRPCOpsService,
+        ::cpiUploadService,
         ::cpiInfoReadService,
         ::memberResourceClient,
         ::mgmResourceClient,

@@ -330,10 +330,10 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
         digitalSignatureVerificationService.verify(
-            publicKey,
-            SignatureSpec.ECDSA_SHA256,
+            bytesToSign,
             signedBytes.bytes,
-            bytesToSign
+            publicKey,
+            SignatureSpec.ECDSA_SHA256
         )
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
@@ -351,10 +351,10 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         log.info("Crypto - Signature $signedBytes received")
         return try {
             digitalSignatureVerificationService.verify(
-                publicKey,
-                SignatureSpec.RSA_SHA256,
+                bytesToSign,
                 signedBytes.bytes,
-                bytesToSign
+                publicKey,
+                SignatureSpec.RSA_SHA256
             )
             false
         } catch (e: CryptoSignatureException) {

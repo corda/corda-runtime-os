@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.crypto.SecureHash
@@ -25,9 +26,9 @@ import java.security.PublicKey
 class UtxoLedgerTransactionContractVerifierTest {
 
     private companion object {
-        val TX_ID_1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-        val TX_ID_2 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-        val TX_ID_3 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
     }
 
     private val transaction = mock<UtxoLedgerTransaction>()

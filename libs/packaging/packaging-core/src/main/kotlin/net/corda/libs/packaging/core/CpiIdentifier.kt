@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.core
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.comparator.identifierComparator
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
@@ -22,7 +23,7 @@ data class CpiIdentifier(
         fun fromAvro(other: CpiIdentifierAvro) = CpiIdentifier(
             other.name,
             other.version,
-            other.signerSummaryHash.let { SecureHash(it.algorithm, it.bytes.array()) },
+            other.signerSummaryHash.let { SecureHashImpl(it.algorithm, it.bytes.array()) },
         )
     }
 

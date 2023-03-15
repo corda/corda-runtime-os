@@ -1,5 +1,6 @@
 package net.corda.crypto.merkle.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService
@@ -183,7 +184,7 @@ internal fun deserialize(bytes: ByteArray, digestService: DigestService): Secure
     val data = bytes.drop(idxOfSeparator + 1).toByteArray()
     val digestLength = digestService.digestLength(digestAlgorithmName)
     return when (data.size) {
-        digestLength -> SecureHash(digestAlgorithmName.name, data)
+        digestLength -> SecureHashImpl(digestAlgorithmName.name, data)
         else -> throw IllegalArgumentException("Provided argument has ${data.size} bytes not $digestLength bytes: $data")
     }
 }

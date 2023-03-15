@@ -14,4 +14,10 @@ class TestUtxoState(
     override fun getParticipants(): List<PublicKey> {
         return participants
     }
+
+    override fun toString(): String{
+        return "testField: '$testField'; " +
+                "participants: $participants ;" +
+                "participantNames: $participantNames ;"
+    }
 }

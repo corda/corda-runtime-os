@@ -32,6 +32,7 @@ dependencies {
     implementation project(":libs:db:db-orm")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

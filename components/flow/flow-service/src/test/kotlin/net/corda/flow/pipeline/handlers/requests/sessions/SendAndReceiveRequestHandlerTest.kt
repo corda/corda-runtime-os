@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -28,8 +29,8 @@ class SendAndReceiveRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.SendAndReceive(
         mapOf(
-            FlowIORequest.SessionInfo(sessionId1, testContext.counterparty) to payload1,
-            FlowIORequest.SessionInfo(sessionId2, testContext.counterparty) to payload2
+            SessionInfo(sessionId1, testContext.counterparty) to payload1,
+            SessionInfo(sessionId2, testContext.counterparty) to payload2
         )
     )
     private val handler =

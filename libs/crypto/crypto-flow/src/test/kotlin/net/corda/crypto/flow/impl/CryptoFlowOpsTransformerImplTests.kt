@@ -2,6 +2,7 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -27,7 +28,6 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -103,7 +103,7 @@ class CryptoFlowOpsTransformerImplTests {
                 val bytesCaptor = argumentCaptor<ByteArray>()
                 whenever(it.hash(bytesCaptor.capture(), any())).thenAnswer {
                     val bytes = bytesCaptor.firstValue
-                    SecureHash(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
+                    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
                         capture()
                     }
                 }
@@ -210,7 +210,7 @@ class CryptoFlowOpsTransformerImplTests {
         val query = result.value.request as ByIdsFlowQuery
         val keyIds =
             (query.fullKeyIds as SecureHashes).hashes.map {
-                SecureHash(it.algorithm, it.bytes.array()).toString()
+                SecureHashImpl(it.algorithm, it.bytes.array()).toString()
             }
         assertEquals(3, keyIds.size)
         assertTrue(

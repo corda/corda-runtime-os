@@ -1,7 +1,8 @@
 package net.corda.applications.workers.rest
 
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.applications.workers.rest.http.TestToolkitProperty
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.TestMethodOrder
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CheckClusterRolesE2eTest {
 
-    private val testToolkit by TestToolkitProperty()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
 
     @Test
     fun `test UserAdminRole content`() {
@@ -28,7 +29,7 @@ class CheckClusterRolesE2eTest {
             return permissionRequested.matches(permissionString.toRegex(RegexOption.IGNORE_CASE))
         }
 
-        testToolkit.httpClientFor(RoleEndpoint::class.java).use { roleClient ->
+        cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { roleClient ->
             val roleProxy = roleClient.start().proxy
 
             val allRoles = roleProxy.getRoles()
@@ -36,7 +37,7 @@ class CheckClusterRolesE2eTest {
             val mayBeUserAdminRole: RoleResponseType? = allRoles.firstOrNull { it.roleName == "UserAdminRole" }
             val userAdminRole = requireNotNull(mayBeUserAdminRole) { "Available roles: $allRoles" }
 
-            testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
+            cordaCluster.clusterHttpClientFor(PermissionEndpoint::class.java).use { permClient ->
                 val permProxy = permClient.start().proxy
                 val permissions: List<PermissionResponseType> =
                     userAdminRole.permissions.map { permProxy.getPermission(it.id) }
@@ -54,7 +55,7 @@ class CheckClusterRolesE2eTest {
 
     @Test
     fun `test VNodeCreatorRole content`() {
-        testToolkit.httpClientFor(RoleEndpoint::class.java).use { roleClient ->
+        cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { roleClient ->
             val roleProxy = roleClient.start().proxy
 
             val allRoles = roleProxy.getRoles()
@@ -62,7 +63,7 @@ class CheckClusterRolesE2eTest {
             val mayBeRequiredRole: RoleResponseType? = allRoles.firstOrNull { it.roleName == "VNodeCreatorRole" }
             val requiredRole = requireNotNull(mayBeRequiredRole) { "Available roles: $allRoles" }
 
-            testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
+            cordaCluster.clusterHttpClientFor(PermissionEndpoint::class.java).use { permClient ->
                 val permProxy = permClient.start().proxy
                 val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
                 assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(8)
@@ -73,7 +74,7 @@ class CheckClusterRolesE2eTest {
 
     @Test
     fun `test CordaDeveloperRole content`() {
-        testToolkit.httpClientFor(RoleEndpoint::class.java).use { roleClient ->
+        cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { roleClient ->
             val roleProxy = roleClient.start().proxy
 
             val allRoles = roleProxy.getRoles()
@@ -81,7 +82,7 @@ class CheckClusterRolesE2eTest {
             val mayBeRequiredRole: RoleResponseType? = allRoles.firstOrNull { it.roleName == "CordaDeveloperRole" }
             val requiredRole = requireNotNull(mayBeRequiredRole) { "Available roles: $allRoles" }
 
-            testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
+            cordaCluster.clusterHttpClientFor(PermissionEndpoint::class.java).use { permClient ->
                 val permProxy = permClient.start().proxy
                 val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
                 assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(2)

@@ -1,7 +1,8 @@
 package net.corda.applications.workers.rest
 
-import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -17,12 +18,12 @@ import net.corda.rest.exception.ResourceAlreadyExistsException
 @SkipWhenRestEndpointUnavailable
 class CreateUserE2eTest {
 
-    private val testToolkit by TestToolkitProperty()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
 
     @Test
     fun testCreateAndGet() {
-        testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
-            val userName = testToolkit.uniqueName
+        cordaCluster.clusterHttpClientFor(UserEndpoint::class.java).use { client ->
+            val userName = cordaCluster.uniqueName
             val proxy = client.start().proxy
 
             // Check the user does not exist yet
@@ -30,7 +31,7 @@ class CreateUserE2eTest {
                 .hasMessageContaining("User '$userName' not found")
 
             // Create user
-            val password = testToolkit.uniqueName
+            val password = cordaCluster.uniqueName
             val passwordExpirySet = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
             val createUserType = CreateUserType(userName, userName, true, password, passwordExpirySet, null)
 

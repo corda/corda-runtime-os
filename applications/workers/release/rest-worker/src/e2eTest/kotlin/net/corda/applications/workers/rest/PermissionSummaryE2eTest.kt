@@ -6,6 +6,8 @@ import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
@@ -20,17 +22,17 @@ import java.time.Duration
 class PermissionSummaryE2eTest {
 
     companion object {
-        private val testToolkit by TestToolkitProperty()
-        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, adminUser, adminPassword)
+        private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
+        private val adminTestHelper = RbacE2eClientRequestHelper(cordaCluster, adminUser, adminPassword)
         private val passwordExpiry = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
     }
 
     @Test
     fun `permission summary added to kafka when a permission is added to a single user and a single role`() {
-        val newUser: String = testToolkit.uniqueName
-        val newUserPassword: String = testToolkit.uniqueName
-        val permissionString: String = testToolkit.uniqueName
-        val roleName: String = testToolkit.uniqueName
+        val newUser: String = cordaCluster.uniqueName
+        val newUserPassword: String = cordaCluster.uniqueName
+        val permissionString: String = cordaCluster.uniqueName
+        val roleName: String = cordaCluster.uniqueName
 
         adminTestHelper.createUser(newUser, newUserPassword, passwordExpiry)
 
@@ -58,9 +60,9 @@ class PermissionSummaryE2eTest {
 
     @Test
     fun `permission summary added to kafka when multiple users are assigned a role with multiple permissions`() {
-        val newUser1: String = testToolkit.uniqueName
-        val newUser2: String = testToolkit.uniqueName
-        val newUserPassword: String = testToolkit.uniqueName
+        val newUser1: String = cordaCluster.uniqueName
+        val newUser2: String = cordaCluster.uniqueName
+        val newUserPassword: String = cordaCluster.uniqueName
 
         adminTestHelper.createUser(newUser1, newUserPassword, passwordExpiry)
         adminTestHelper.createUser(newUser2, newUserPassword, passwordExpiry)
@@ -72,12 +74,12 @@ class PermissionSummaryE2eTest {
             assertEquals(0, this.permissions.size, "New user should have permission summary with empty list")
         }
 
-        val permissionString1: String = testToolkit.uniqueName
-        val permissionString2: String = testToolkit.uniqueName
+        val permissionString1: String = cordaCluster.uniqueName
+        val permissionString2: String = cordaCluster.uniqueName
         val permissionId1 = adminTestHelper.createPermission(PermissionType.DENY, permissionString1)
         val permissionId2 = adminTestHelper.createPermission(PermissionType.ALLOW, permissionString2)
 
-        val roleName: String = testToolkit.uniqueName
+        val roleName: String = cordaCluster.uniqueName
         val roleId = adminTestHelper.createRole(roleName)
 
         adminTestHelper.addPermissionsToRole(roleId, permissionId1)
@@ -121,9 +123,9 @@ class PermissionSummaryE2eTest {
     }
 
     @Test
-    fun `permission summary added to kafka when user is assigned multiple roles with multiple permissions`() {
-        val newUser1: String = testToolkit.uniqueName
-        val newUserPassword: String = testToolkit.uniqueName
+    fun `permission summary added to the message bus when user is assigned multiple roles with multiple permissions`() {
+        val newUser1: String = cordaCluster.uniqueName
+        val newUserPassword: String = cordaCluster.uniqueName
 
         adminTestHelper.createUser(newUser1, newUserPassword, passwordExpiry)
 
@@ -131,15 +133,15 @@ class PermissionSummaryE2eTest {
             assertEquals(0, this.permissions.size, "New user should have permission summary with empty list")
         }
 
-        val permissionString1: String = "aa" + testToolkit.uniqueName
-        val permissionString2: String = "bb" + testToolkit.uniqueName
-        val permissionString3: String = "cc" + testToolkit.uniqueName
+        val permissionString1: String = "aa" + cordaCluster.uniqueName
+        val permissionString2: String = "bb" + cordaCluster.uniqueName
+        val permissionString3: String = "cc" + cordaCluster.uniqueName
         val permissionId1 = adminTestHelper.createPermission(PermissionType.DENY, permissionString1)
         val permissionId2 = adminTestHelper.createPermission(PermissionType.ALLOW, permissionString2)
         val permissionId3 = adminTestHelper.createPermission(PermissionType.DENY, permissionString3)
 
-        val roleId1 = adminTestHelper.createRole(testToolkit.uniqueName)
-        val roleId2 = adminTestHelper.createRole(testToolkit.uniqueName)
+        val roleId1 = adminTestHelper.createRole(cordaCluster.uniqueName)
+        val roleId2 = adminTestHelper.createRole(cordaCluster.uniqueName)
 
         adminTestHelper.addPermissionsToRole(roleId1, permissionId1)
         adminTestHelper.addPermissionsToRole(roleId1, permissionId2)
@@ -176,8 +178,8 @@ class PermissionSummaryE2eTest {
 
     @Test
     fun `check permission summary when multiple users are assigned multiple roles with multiple permissions using bulk operation`() {
-        val newUserPassword: String = testToolkit.uniqueName
-        val users = (1..2).map { testToolkit.uniqueName }
+        val newUserPassword: String = cordaCluster.uniqueName
+        val users = (1..2).map { cordaCluster.uniqueName }
         users.map { adminTestHelper.createUser(it, newUserPassword, passwordExpiry) }
 
         users.map {
@@ -186,7 +188,7 @@ class PermissionSummaryE2eTest {
             }
         }
 
-        val roleIds: List<String> = (1..4).map { adminTestHelper.createRole(testToolkit.uniqueName + "_role") }
+        val roleIds: List<String> = (1..4).map { adminTestHelper.createRole(cordaCluster.uniqueName + "_role") }
 
         // Add roles to users
         users.forEach { user ->

@@ -473,6 +473,23 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
+    fun `declined if registering member's name is the same as an existing notary's service name`() {
+        val notaryDetails = MemberNotaryDetails(
+            notaryX500Name,
+            "pluginType",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val notaryResult = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        notaryResult.assertRegistrationStarted()
+
+        val memberStartRegistrationCommand = getStartRegistrationCommand(HoldingIdentity(notaryX500Name.toString(), groupId), memberContext)
+        val memberResult = handler.invoke(null, Record(testTopic, testTopicKey, memberStartRegistrationCommand))
+        memberResult.assertDeclinedRegistration()
+    }
+
+    @Test
     fun `declined if role is set to notary and notary service name already exists`() {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,

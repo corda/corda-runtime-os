@@ -1,15 +1,15 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
-import net.corda.v5.crypto.SecureHash
+import net.corda.crypto.core.SecureHashImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class TopologicalSortTest {
     private val topologicalSort = TopologicalSort()
-    private val t1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-    private val t2 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
-    private val t3 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
-    private val t4 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
+    private val t1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+    private val t2 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
+    private val t3 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+    private val t4 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
 
     @Test
     fun issuance() {

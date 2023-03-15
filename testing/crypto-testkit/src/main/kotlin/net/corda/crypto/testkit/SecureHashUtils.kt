@@ -1,5 +1,6 @@
 package net.corda.crypto.testkit
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
 
@@ -17,6 +18,6 @@ object SecureHashUtils {
      */
     fun randomSecureHash(algorithm: String = "SHA-256"): SecureHash {
         val digest = MessageDigest.getInstance(algorithm)
-        return SecureHash(digest.algorithm, digest.digest(randomBytes()))
+        return SecureHashImpl(digest.algorithm, digest.digest(randomBytes()))
     }
 }

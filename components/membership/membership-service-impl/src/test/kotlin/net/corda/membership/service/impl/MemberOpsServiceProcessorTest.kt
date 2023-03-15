@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -37,7 +38,6 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -75,7 +75,7 @@ class MemberOpsServiceProcessorTest {
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash) } doReturn VirtualNodeInfo(
             mgmHoldingIdentity,
-            CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
+            CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
             null,
             UUID.randomUUID(),
             null,
@@ -125,7 +125,7 @@ class MemberOpsServiceProcessorTest {
 
     private val testPersistedGroupPolicyEntries: LayeredPropertyMap =
         LayeredPropertyMapMocks.create<LayeredContextImpl>(testProperties)
-    private val membershipQueryResult = MembershipQueryResult.Success(testPersistedGroupPolicyEntries)
+    private val membershipQueryResult = MembershipQueryResult.Success(testPersistedGroupPolicyEntries to 1L)
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
     }
@@ -214,7 +214,7 @@ class MemberOpsServiceProcessorTest {
             LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
         whenever(
             membershipQueryClient.queryGroupPolicy(eq(mgmHoldingIdentity))
-        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries))
+        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries to 1L))
         val requestTimestamp = now
         val requestContext = MembershipRpcRequestContext(
             UUID.randomUUID().toString(),
