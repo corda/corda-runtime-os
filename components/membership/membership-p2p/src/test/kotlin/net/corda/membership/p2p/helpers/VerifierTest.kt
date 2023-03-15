@@ -2,10 +2,8 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -30,13 +28,9 @@ class VerifierTest {
     private val rawSignature = byteArrayOf(6, 7)
     private val signature = CryptoSignatureWithKey(
         ByteBuffer.wrap(rawPublicKey),
-        ByteBuffer.wrap(rawSignature),
-        KeyValuePairList(
-            listOf(
-                KeyValuePair(SIGNATURE_SPEC, SPEC)
-            )
-        )
+        ByteBuffer.wrap(rawSignature)
     )
+    private val signatureSpec = CryptoSignatureSpec(SPEC, null, null)
     private val publicKey = mock<PublicKey>()
     private val keyEncodingService = mock<KeyEncodingService> {
         on { decodePublicKey(rawPublicKey) } doReturn publicKey
@@ -52,7 +46,7 @@ class VerifierTest {
     fun `verify call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
 
-        verifier.verify(signature, data)
+        verifier.verify(signature, signatureSpec, data)
 
         verify(signatureVerificationService).verify(
             eq(data),
@@ -67,14 +61,14 @@ class VerifierTest {
     @Test
     fun `verify fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
-        val badSignature = CryptoSignatureWithKey(
+        val signature = CryptoSignatureWithKey(
             signature.publicKey,
-            signature.bytes,
-            KeyValuePairList(emptyList())
+            signature.bytes
         )
+        val badSignatureSpec = CryptoSignatureSpec(null, null, null)
 
         assertThrows<CordaRuntimeException> {
-            verifier.verify(badSignature, data)
+            verifier.verify(signature, badSignatureSpec, data)
         }
     }
 
@@ -91,7 +85,7 @@ class VerifierTest {
         ).doThrow(CryptoSignatureException("Not verified"))
 
         assertThrows<CryptoSignatureException> {
-            verifier.verify(signature, data)
+            verifier.verify(signature, signatureSpec, data)
         }
     }
 }

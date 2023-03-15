@@ -65,7 +65,6 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.lib.toMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
@@ -199,10 +198,7 @@ class DynamicMemberRegistrationServiceTest {
     private val mockSignature: DigitalSignature.WithKey =
         DigitalSignature.WithKey(
             sessionKey,
-            byteArrayOf(1),
-            mapOf(
-                Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA512.signatureName
-            )
+            byteArrayOf(1)
         )
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
@@ -214,11 +210,7 @@ class DynamicMemberRegistrationServiceTest {
                 any(),
                 any<SignatureSpec>(),
                 any(),
-                eq(
-                    mapOf(
-                        Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA512.signatureName
-                    )
-                ),
+                eq(emptyMap())
             )
         }.doReturn(mockSignature)
     }
@@ -739,9 +731,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<NotReadyMembershipRegistrationException> {
-                registrationService.register(registrationResultId, member, registrationContext)
-            }
+            registrationService.register(registrationResultId, member, registrationContext)
 
             assertThat(memberContext.firstValue.toMap())
                 .containsEntry("corda.session.key.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)

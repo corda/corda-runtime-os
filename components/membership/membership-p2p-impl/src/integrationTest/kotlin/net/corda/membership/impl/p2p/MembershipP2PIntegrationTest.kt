@@ -14,6 +14,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -305,9 +306,9 @@ class MembershipP2PIntegrationTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)))
         val fakeSigWithKey = CryptoSignatureWithKey(
             ByteBuffer.wrap(fakeKey.encodeToByteArray()),
-            ByteBuffer.wrap(fakeSig.encodeToByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(fakeSig.encodeToByteArray())
         )
+        val fakeSigSpec = CryptoSignatureSpec("", null, null)
         val messageHeader = UnauthenticatedMessageHeader(
             destination.toAvro(),
             source.toAvro(),
@@ -318,6 +319,7 @@ class MembershipP2PIntegrationTest {
             registrationId,
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
             fakeSigWithKey,
+            fakeSigSpec,
             true
         )
 
