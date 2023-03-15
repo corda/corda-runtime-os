@@ -9,8 +9,6 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
-import de.javakaffee.kryoserializers.ArraysAsListSerializer
-import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
@@ -38,8 +36,6 @@ import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
-import java.util.Arrays
-import java.util.BitSet
 import java.util.Collections.unmodifiableSet
 
 class DefaultKryoCustomizer {
@@ -86,11 +82,9 @@ class DefaultKryoCustomizer {
                 )
                 addDefaultSerializer(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
                 addDefaultSerializer(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
-                addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
 
-                addDefaultSerializer(BitSet::class.java, BitSetSerializer())
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
                 register(java.lang.invoke.SerializedLambda::class.java)
@@ -162,7 +156,7 @@ class DefaultKryoCustomizer {
             // However, this doesn't work for non-public classes in the java. namespace
             val strat =
                 if (type.name.startsWith("java.") && !isPublic(type.modifiers)) fallbackStrategy else defaultStrategy
-            return strat.newInstantiatorOf(type)
+            return strat.newInstantiatorOf(type) as ObjectInstantiator<T>
         }
     }
 }
