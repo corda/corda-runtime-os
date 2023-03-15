@@ -1,5 +1,6 @@
 package net.corda.membership.persistence.client
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.preauth.PreAuthToken
@@ -80,7 +81,7 @@ interface MembershipQueryClient : Lifecycle {
     fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>>
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>>
 
     /**
      * Query for GroupPolicy.
