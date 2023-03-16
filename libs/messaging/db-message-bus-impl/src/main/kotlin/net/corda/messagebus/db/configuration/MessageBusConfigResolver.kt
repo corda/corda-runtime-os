@@ -17,7 +17,7 @@ import net.corda.schema.configuration.MessagingConfig.Bus.DB_PROPERTIES
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_PASS
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_USER
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 

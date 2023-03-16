@@ -1,11 +1,11 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -19,14 +19,15 @@ import java.security.PublicKey
 class UtxoTransactionEncumbranceVerifierTest {
 
     class TestContractState : ContractState {
-        override val participants: List<PublicKey>
-            get() = TODO("Not yet implemented")
+        override fun getParticipants(): List<PublicKey> {
+            TODO("Not yet implemented")
+        }
     }
     
     private companion object {
         val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), publicKeyExample)
-        val transactionId1 = SecureHash.parse("SHA256:1234567890")
-        val transactionId2 = SecureHash.parse("SHA256:ABCDEF0123")
+        val transactionId1 = parseSecureHash("SHA256:1234567890")
+        val transactionId2 = parseSecureHash("SHA256:ABCDEF0123")
     }
     
     private val transaction = mock<UtxoLedgerTransaction>()

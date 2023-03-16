@@ -16,7 +16,7 @@ import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExter
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
 import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500_NAME
 import net.corda.ledger.utxo.impl.token.selection.impl.toSecureHash
-import net.corda.schema.Schemas.Services.Companion.TOKEN_CACHE_EVENT
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria

@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
@@ -11,7 +12,6 @@ import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
 import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

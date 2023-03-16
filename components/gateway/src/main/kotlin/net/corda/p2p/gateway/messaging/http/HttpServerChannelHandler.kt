@@ -14,7 +14,7 @@ import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.createResponse
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.Logger
 import java.lang.IndexOutOfBoundsException
 

@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.core
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.comparator.identifierComparator
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
@@ -24,7 +25,7 @@ data class CpkIdentifier(
             return CpkIdentifier(
                 other.name,
                 other.version,
-                SecureHash(other.signerSummaryHash.algorithm, other.signerSummaryHash.bytes.array())
+                SecureHashImpl(other.signerSummaryHash.algorithm, other.signerSummaryHash.bytes.array())
             )
         }
     }

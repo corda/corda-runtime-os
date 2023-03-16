@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -14,7 +15,6 @@ import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -174,7 +174,7 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `retrieves all tenant's cluster certificates`() {
 
-        val testUsage = CertificateUsage.RPC_API_TLS
+        val testUsage = CertificateUsage.REST_TLS
         val testRawCertificate1 = "testRawCertificate1"
         val testRawCertificate2 = "testRawCertificate2"
         entityManagerFactory.transaction {
@@ -202,12 +202,12 @@ internal class CertificatesServiceImplTest {
             it.createQuery("delete from Certificate").executeUpdate()
         }
 
-        certificatesService.client.importCertificates(CertificateUsage.RPC_API_TLS, testTenant, testAlias, testRawCertificate)
+        certificatesService.client.importCertificates(CertificateUsage.REST_TLS, testTenant, testAlias, testRawCertificate)
 
         val importedCertificate = entityManagerFactory.transaction {
             it.find(Certificate::class.java, testAlias)
         }
-        assertThat(importedCertificate).isEqualTo(Certificate(testAlias, CertificateUsage.RPC_API_TLS.publicName, testRawCertificate))
+        assertThat(importedCertificate).isEqualTo(Certificate(testAlias, CertificateUsage.REST_TLS.publicName, testRawCertificate))
     }
 
     @Test
@@ -231,11 +231,11 @@ internal class CertificatesServiceImplTest {
         val testRawCertificate = "testRawCertificate"
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
-            it.persist(Certificate(testAlias, CertificateUsage.RPC_API_TLS.publicName, testRawCertificate))
-            it.persist(Certificate("otherAlias", CertificateUsage.RPC_API_TLS.publicName, "otherCertificate"))
+            it.persist(Certificate(testAlias, CertificateUsage.REST_TLS.publicName, testRawCertificate))
+            it.persist(Certificate("otherAlias", CertificateUsage.REST_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.client.retrieveCertificates(testTenant, CertificateUsage.RPC_API_TLS, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates(testTenant, CertificateUsage.REST_TLS, testAlias)
 
         assertThat(certificate).isEqualTo(testRawCertificate)
     }

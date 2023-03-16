@@ -68,7 +68,7 @@ class Create(
         "membership" to listOf("membership", "combined"),
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),
-        "rpc" to listOf("rpc", "combined"),
+        "rest" to listOf("rest", "combined"),
         "uniqueness" to listOf("db", "combined"),
         "interop" to listOf("flow", "combined")
     )

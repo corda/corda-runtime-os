@@ -67,5 +67,15 @@ interface LiquibaseSchemaMigrator {
      * @param sql output
      */
     fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer)
+
+    /**
+     * Given the list of dbChange changesets, return a list of these changesets that are not applied in the given datasource.
+     *
+     * @param datasource the connection of the datasource to compare
+     * @param dbChange the changesets to compare
+     *
+     * @return a list of filepaths for the unrun change sets
+     */
+    fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String>
 }
 

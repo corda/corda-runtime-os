@@ -7,7 +7,6 @@ import net.corda.flow.state.impl.FlowStackImpl
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.set
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -52,13 +51,13 @@ class FlowStackBasedContextTest {
 
         assertThat(flowContext["key1"]).isNull()
 
-        flowContext["key1"] = "value1"
-        flowContext["key2"] = "value2"
+        flowContext.put("key1", "value1")
+        flowContext.put("key2", "value2")
 
         assertThat(flowContext["key1"]).isEqualTo("value1")
         assertThat(flowContext["key2"]).isEqualTo("value2")
 
-        flowContext["key1"] = "value1-overwritten"
+        flowContext.put("key1", "value1-overwritten")
 
         assertThat(flowContext["key1"]).isEqualTo("value1-overwritten")
         assertThat(flowContext["key2"]).isEqualTo("value2")
@@ -81,7 +80,7 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        flowContext["key1"] = "value1"
+        flowContext.put("key1", "value1")
 
         flowStack.pushWithContext(
             flow,
@@ -96,8 +95,8 @@ class FlowStackBasedContextTest {
         assertThat(flowContext["u-key2"]).isEqualTo("u-value2-overwritten")
         assertThat(flowContext["u-key3"]).isEqualTo("u-value3")
 
-        flowContext["key2"] = "value2"
-        flowContext["u-key1"] = "u-value1-overwritten"
+        flowContext.put("key2", "value2")
+        flowContext.put("u-key1", "u-value1-overwritten")
 
         assertThat(flowContext["key1"]).isEqualTo("value1")
         assertThat(flowContext["key2"]).isEqualTo("value2")
@@ -158,7 +157,7 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        assertThrows<IllegalArgumentException> { flowContext["p-key1"] = "value" }
+        assertThrows<IllegalArgumentException> { flowContext.put("p-key1", "value") }
     }
 
     @Test
@@ -169,8 +168,8 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        assertThrows<IllegalArgumentException> { flowContext["corda.property"] = "value" }
-        assertThrows<IllegalArgumentException> { flowContext["CORDA.property"] = "value" }
+        assertThrows<IllegalArgumentException> { flowContext.put("corda.property", "value") }
+        assertThrows<IllegalArgumentException> { flowContext.put("CORDA.property", "value") }
     }
 
     @Test
@@ -192,7 +191,7 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        flowContext["userkey1"] = "uservalue1"
+        flowContext.put("userkey1", "uservalue1")
         flowContext.platformProperties["platformkey1"] = "platformvalue1"
 
         flowStack.pushWithContext(
@@ -201,9 +200,9 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel2.avro
         )
 
-        flowContext["userkey2"] = "uservalue2"
+        flowContext.put("userkey2", "uservalue2")
         flowContext.platformProperties["platformkey2"] = "platformvalue2"
-        flowContext["u-key1"] = "u-value1-overwritten-by-context-api"
+        flowContext.put("u-key1", "u-value1-overwritten-by-context-api")
 
         val platformMap = flowContext.flattenPlatformProperties()
         val userMap = flowContext.flattenUserProperties()
@@ -233,7 +232,7 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        flowContext["userkey1"] = "uservalue1"
+        flowContext.put("userkey1", "uservalue1")
         flowContext.platformProperties["platformkey1"] = "platformvalue1"
 
         flowStack.pushWithContext(
@@ -242,7 +241,7 @@ class FlowStackBasedContextTest {
             contextPlatformProperties = platformPropertiesLevel2.avro
         )
 
-        flowContext["userkey2"] = "uservalue2"
+        flowContext.put("userkey2", "uservalue2")
         flowContext.platformProperties["platformkey2"] = "platformvalue2"
 
         flowStack.pop()

@@ -44,7 +44,7 @@ class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransac
     }
 
     private fun verifyEncumbranceGroups() {
-        check(transactionBuilder.getEncumbranceGroups().all { it.value.size > 1 }) {
+        check(transactionBuilder.encumbranceGroups.all { it.value.size > 1 }) {
             "Every encumbrance group of the current $subjectClass must contain more than one output state."
         }
     }

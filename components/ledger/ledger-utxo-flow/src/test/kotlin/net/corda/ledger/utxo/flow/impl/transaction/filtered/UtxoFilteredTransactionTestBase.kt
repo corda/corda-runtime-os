@@ -5,6 +5,7 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -16,7 +17,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -43,7 +43,7 @@ open class UtxoFilteredTransactionTestBase {
         val COMMAND = "command".toByteArray()
         val COMMAND_INFO = "command_info".toByteArray()
 
-        val inputId = SecureHash.parse("SHA-256:1234567890")
+        val inputId = parseSecureHash("SHA-256:1234567890")
         val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), mock())
         val timeWindow = mock<TimeWindow>()
 

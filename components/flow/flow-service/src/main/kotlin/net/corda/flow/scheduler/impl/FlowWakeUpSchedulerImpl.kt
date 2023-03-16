@@ -39,7 +39,7 @@ class FlowWakeUpSchedulerImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRPCOps"), config.getConfig(MESSAGING_CONFIG))
+        publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRestResource"), config.getConfig(MESSAGING_CONFIG))
     }
 
     override fun onPartitionSynced(states: Map<String, Checkpoint>) {

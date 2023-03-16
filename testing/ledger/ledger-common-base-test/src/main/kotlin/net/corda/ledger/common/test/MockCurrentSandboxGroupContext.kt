@@ -1,5 +1,6 @@
 package net.corda.ledger.common.test
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.internal.serialization.amqp.helper.MockitoHelper
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
@@ -12,7 +13,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import org.mockito.Mockito
 import org.osgi.framework.Bundle
 import java.time.Instant
@@ -37,7 +37,7 @@ private fun mockCpkMetadata() = mapOf(
     Mockito.mock(Bundle::class.java) to makeCpkMetadata(3, CordappType.CONTRACT),
 )
 
-val dummyCpkSignerSummaryHash = SecureHash("TEST", "TEST".toByteArray())
+val dummyCpkSignerSummaryHash = SecureHashImpl("TEST", "TEST".toByteArray())
 
 private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
     CpkIdentifier("MockCpk", "$i", dummyCpkSignerSummaryHash),
@@ -57,7 +57,7 @@ private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
         emptyMap()
     ),
     CpkType.UNKNOWN,
-    SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32) { i.toByte() }),
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32) { i.toByte() }),
     emptySet(),
     Instant.now()
 )

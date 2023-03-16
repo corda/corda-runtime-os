@@ -75,7 +75,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     UtxoTokenObserverMapImpl(sandbox),
                     request.flowExternalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory)
+                    UtxoOutputRecordFactoryImpl(responseFactory),
+                    sandbox.getSandboxSingletonService()
                 )
             }
             is PersistTransactionIfDoesNotExist -> {

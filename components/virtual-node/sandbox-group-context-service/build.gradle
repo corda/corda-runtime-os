@@ -36,6 +36,7 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(':libs:packaging:packaging-core')
     implementation project(':libs:sandbox')
+    implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation project(":components:virtual-node:cpk-read-service")

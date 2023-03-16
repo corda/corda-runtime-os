@@ -43,9 +43,11 @@ object DBSetup: BeforeAllCallback {
             )
         )
         val lbm = LiquibaseSchemaMigratorImpl()
-        StringWriter().use {
-            lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
+        dbConfig.dataSource.use { dataSource ->
+            StringWriter().use {
+                dataSource.connection.use { connection -> lbm.createUpdateSql(connection, cl, it) }
+            }
+            dataSource.connection.use { connection  ->  lbm.updateDb(connection, cl) }
         }
-        lbm.updateDb(dbConfig.dataSource.connection, cl)
     }
 }

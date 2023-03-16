@@ -6,7 +6,6 @@ import net.corda.e2etest.utilities.sourceConfigNode
 import net.corda.e2etest.utilities.toJsonString
 import net.corda.e2etest.utilities.updateConfig
 import net.corda.e2etest.utilities.waitForConfigurationChange
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
@@ -22,8 +21,9 @@ class ConfigTests {
     fun `get config includes defaults`() {
         val defaultedConfigValues = getConfig(RECONCILIATION_CONFIG).configWithDefaultsNode()
         ReconciliationConfig::class.java.declaredFields
-            .filter { it.name != "INSTANCE" }
-            .map { it.get(ConfigKeys) as String }
+            .map { it.get(null) }
+            .filterIsInstance<String>()
+            .also { assertThat(it.isNotEmpty()) }
             .forEach {
                 assertThat(defaultedConfigValues[it].asText())
                     .isNotBlank

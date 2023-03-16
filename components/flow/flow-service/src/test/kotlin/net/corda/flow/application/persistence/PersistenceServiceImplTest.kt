@@ -41,7 +41,7 @@ class PersistenceServiceImplTest {
         persistenceService =
             PersistenceServiceImpl(externalEventExecutor, pagedQueryFactory, serializationService)
 
-        whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
         whenever(
             externalEventExecutor.execute(
@@ -55,20 +55,20 @@ class PersistenceServiceImplTest {
     fun `persist executes successfully`() {
         persistenceService.persist(TestObject())
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
     fun `bulk persist executes successfully`() {
         persistenceService.persist(listOf(TestObject(), TestObject()))
-        verify(serializationService, times(2)).serialize(any())
+        verify(serializationService, times(2)).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
     fun `bulk persist with no input entities does nothing`() {
-        persistenceService.persist(emptyList())
+        persistenceService.persist(emptyList<Any>())
         verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, never()).serialize<TestObject>(any())
@@ -115,7 +115,7 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `bulk merge with no input entities does nothing`() {
-        persistenceService.merge(emptyList())
+        persistenceService.merge(emptyList<Any>())
         verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, never()).serialize<TestObject>(any())
@@ -133,7 +133,7 @@ class PersistenceServiceImplTest {
         persistenceService.remove(TestObject())
 
         verify(serializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService).serialize<TestObject>(any())
+        verify(serializationService).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
     }
 
@@ -155,7 +155,7 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `bulk remove with no input entities does nothing`() {
-        persistenceService.remove(emptyList())
+        persistenceService.remove(emptyList<Any>())
         verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, never()).serialize<TestObject>(any())
@@ -195,7 +195,7 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `bulk find with no input primary keys does nothing`() {
-        persistenceService.merge(emptyList())
+        persistenceService.merge(emptyList<Any>())
         verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, never()).serialize<TestObject>(any())

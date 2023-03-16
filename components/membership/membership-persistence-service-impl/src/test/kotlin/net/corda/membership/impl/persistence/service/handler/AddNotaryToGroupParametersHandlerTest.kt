@@ -49,6 +49,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
@@ -96,6 +97,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { singleResult } doReturn GroupParametersEntity(EPOCH, "test".toByteArray())
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
+        on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
         on { setMaxResults(1) } doReturn previousEntry
     }
     private val root = mock<Root<GroupParametersEntity>> {
@@ -433,6 +435,7 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
             on { setMaxResults(1) } doReturn previousEntry
+            on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
         }
         whenever(entityManager.createQuery(eq(query))).doReturn(groupParametersQuery)
         val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }

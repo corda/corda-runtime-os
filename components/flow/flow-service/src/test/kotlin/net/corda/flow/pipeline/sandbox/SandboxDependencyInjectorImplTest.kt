@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.sandbox
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -238,7 +238,7 @@ class ConcreteChildFlow : AbstractParentFlow() {
         return sharedService.get()
     }
 
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         return method()
     }
 }
@@ -251,7 +251,7 @@ class DoubleInjectedFlow : ClientStartableFlow {
     @CordaInject
     lateinit var service1Again: Service1
 
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         return ""
     }
 

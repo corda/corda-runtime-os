@@ -24,4 +24,5 @@ dependencies {
     implementation project(":libs:rest:rest-security-read")
     implementation project(":libs:serialization:serialization-amqp")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:utilities')
 }

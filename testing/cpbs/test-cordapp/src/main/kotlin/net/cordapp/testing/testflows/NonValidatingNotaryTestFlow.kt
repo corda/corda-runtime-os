@@ -1,18 +1,16 @@
 package net.cordapp.testing.testflows
 
 import com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClientFlowImpl
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parseList
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.hours
-import net.corda.v5.crypto.containsAny
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
@@ -21,6 +19,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -59,12 +58,15 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val params = extractParameters(requestBody)
 
         require(params.outputStateCount > 0 || params.inputStateRefs.isNotEmpty()) {
@@ -98,7 +100,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
             signatures.forEach {
-                require(notaryServiceParty.owningKey.containsAny(listOf(it.by))) {
+                require(KeyUtils.isKeyInSet(notaryServiceParty.owningKey, listOf(it.by))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }
@@ -116,19 +118,19 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      * [NotarisationTestFlowParameters] object so it is easily accessible and this way the parsing
      * logic is separated from the main flow logic in [call].
      */
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     @Suspendable
-    private fun extractParameters(requestBody: RestRequestBody): NotarisationTestFlowParameters {
-        val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
+    private fun extractParameters(requestBody: ClientRequestBody): NotarisationTestFlowParameters {
+        val requestMessage = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val outputStateCount = requestMessage["outputStateCount"]?.toInt() ?: 0
 
         val inputStateRefs = requestMessage["inputStateRefs"]?.let {
-            jsonMarshallingService.parseList<String>(it)
+            jsonMarshallingService.parseList(it, String::class.java)
         } ?: emptyList()
 
         val referenceStateRefs = requestMessage["referenceStateRefs"]?.let {
-            jsonMarshallingService.parseList<String>(it)
+            jsonMarshallingService.parseList(it, String::class.java)
         } ?: emptyList()
 
         val timeWindowLowerBoundOffsetMs = requestMessage["timeWindowLowerBoundOffsetMs"]?.toLong()
@@ -136,7 +138,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         val timeWindowUpperBoundOffsetMs = requestMessage["timeWindowUpperBoundOffsetMs"]?.toLong()
             ?: run {
                 log.info("timeWindowUpperBoundOffsetMs not provided, defaulting to 1 hour")
-                1.hours.toMillis()
+                Duration.ofHours(1).toMillis()
             }
 
         return NotarisationTestFlowParameters(
@@ -209,11 +211,11 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
                     }
 
                     inputStateRefs.forEach {
-                        builder = builder.addInputState(StateRef.parse(it))
+                        builder = builder.addInputState(StateRef.parse(it, digestService))
                     }
 
                     referenceStateRefs.forEach {
-                        builder = builder.addReferenceState(StateRef.parse(it))
+                        builder = builder.addReferenceState(StateRef.parse(it, digestService))
                     }
                     builder = builder.addSignatories(listOf(myKey))
                     builder

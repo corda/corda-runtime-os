@@ -16,6 +16,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.serialization.checkpoint.CheckpointSerializer
+import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -76,9 +77,13 @@ abstract class CommonLedgerIntegrationTest {
         // FlowSandboxService can use the correct VirtualNodeInfoReadService.
         val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
         val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
+        val cpiLoader = setup.fetchService<CpiLoader>(TIMEOUT_MILLIS)
+        val cpiMetadata = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
+            ?: fail("CpiMetadata is null ${virtualNodeInfo.cpiIdentifier}")
+        val cpks = cpiMetadata.cpksMetadata.map { it.fileChecksum }.toSet()
 
         flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
-        _sandboxGroupContext += flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+        _sandboxGroupContext += flowSandboxService.get(virtualNodeInfo.holdingIdentity, cpks)
         setup.withCleanup {
             val virtualNodeContext = sandboxGroupContext.virtualNodeContext
             _sandboxGroupContext.clear()

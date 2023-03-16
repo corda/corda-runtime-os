@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DBConfigurationException
@@ -8,7 +9,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException

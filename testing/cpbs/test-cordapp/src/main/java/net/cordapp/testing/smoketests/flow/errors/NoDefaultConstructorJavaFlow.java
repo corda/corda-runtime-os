@@ -1,6 +1,6 @@
 package net.cordapp.testing.smoketests.flow.errors;
 
-import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.ClientRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,7 +14,7 @@ public class NoDefaultConstructorJavaFlow implements ClientStartableFlow {
 
     @NotNull
     @Override
-    public String call(@NotNull RestRequestBody requestBody) {
+    public String call(@NotNull ClientRequestBody requestBody) {
         throw new IllegalStateException(message);
     }
 }

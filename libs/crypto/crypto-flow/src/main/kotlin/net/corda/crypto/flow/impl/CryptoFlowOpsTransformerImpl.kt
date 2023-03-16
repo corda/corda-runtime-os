@@ -2,7 +2,6 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -13,6 +12,7 @@ import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -21,7 +21,10 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -41,15 +44,19 @@ import java.util.UUID
  * @property requestValidityWindowSeconds - TTL for the message processing in seconds,
  * the default value is equal to 5 minutes.
  */
-@Suppress("TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions")
 class CryptoFlowOpsTransformerImpl(
     private val serializer: AlgorithmParameterSpecEncodingService,
     private val requestingComponent: String,
     private val responseTopic: String,
     private val keyEncodingService: KeyEncodingService,
-    private val requestValidityWindowSeconds: Long = 300
+    private val digestService: DigestService,
+    private val requestValidityWindowSeconds: Long = 300,
 ) : CryptoFlowOpsTransformer {
 
+    // This method is used by flows (currently only being used by `SigningServiceImpl.findMySigningKeys`).
+    // We can't risk getting back a key which is not actually owned by the caller due to a clashed short id.
+    // So use full ids.
     override fun createFilterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
@@ -59,10 +66,12 @@ class CryptoFlowOpsTransformerImpl(
             requestId = UUID.randomUUID().toString(),
             tenantId = tenantId,
             request = ByIdsFlowQuery(
-                candidateKeys.map {
-                    val keyBytes = keyEncodingService.encodeAsByteArray(it)
-                    publicKeyIdFromBytes(keyBytes)
-                }
+                SecureHashes(
+                    candidateKeys.map {
+                        val secureHash = it.fullId(keyEncodingService, digestService)
+                        net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
+                    }
+                )
             ),
             flowExternalEventContext = flowExternalEventContext
         )
@@ -130,9 +139,9 @@ class CryptoFlowOpsTransformerImpl(
     private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
-            by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
-            bytes = resp.bytes.array(),
-            context = resp.context.toMap()
+            keyEncodingService.decodePublicKey(resp.publicKey.array()),
+            resp.bytes.array(),
+            resp.context.toMap()
         )
     }
 
@@ -202,3 +211,9 @@ class CryptoFlowOpsTransformerImpl(
         return response as EXPECTED
     }
 }
+
+private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): SecureHash =
+    digestService.hash(
+        keyEncodingService.encodeAsByteArray(this),
+        DigestAlgorithmName.SHA2_256
+    )

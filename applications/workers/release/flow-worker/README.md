@@ -66,7 +66,7 @@ helm upgrade --install corda -n corda `
   --values values.yaml `
   --wait
 
-kubectl port-forward --namespace corda deployment/corda-rpc-worker 8888
+kubectl port-forward --namespace corda deployment/corda-rest-worker 8888
 ```
 
 ### Uploading the CBP and creating the Virtual Node

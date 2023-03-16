@@ -1,6 +1,6 @@
 package net.corda.layeredpropertymap
 
-import net.corda.v5.crypto.PublicKeyHash
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 

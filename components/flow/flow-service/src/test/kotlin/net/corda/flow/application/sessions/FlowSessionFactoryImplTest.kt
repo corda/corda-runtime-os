@@ -6,7 +6,6 @@ import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.asFlowContext
-import net.corda.v5.application.flows.set
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
@@ -74,7 +73,7 @@ class FlowSessionFactoryImplTest {
     fun `initiated sessions are given immutable context`() {
         val session = flowSessionFactory.createInitiatedFlowSession(SESSION_ID, BOB_X500_NAME, contextMap)
         assertEquals("value", session.contextProperties["key"])
-        assertThrows<CordaRuntimeException> { session.contextProperties["key2"] = "value2" }
+        assertThrows<CordaRuntimeException> { session.contextProperties.put("key2", "value2") }
 
         // Platform context via the Corda internal extension function should also be immutable
         assertThrows<CordaRuntimeException> {
@@ -90,7 +89,7 @@ class FlowSessionFactoryImplTest {
         assertEquals(mockFlowFiberService.userValue, session.contextProperties[mockFlowFiberService.userKey])
 
         // Immutable
-        assertThrows<CordaRuntimeException> { session.contextProperties["key2"] = "value2" }
+        assertThrows<CordaRuntimeException> { session.contextProperties.put("key2", "value2") }
 
         // Platform context via the Corda internal extension function should also be immutable
         assertThrows<CordaRuntimeException> {
@@ -103,7 +102,7 @@ class FlowSessionFactoryImplTest {
         val session =
             flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME) { flowContextProperties ->
                 // Additional user context
-                flowContextProperties["extraUserKey"] = "extraUserValue"
+                flowContextProperties.put("extraUserKey", "extraUserValue")
                 // Addition platform context via the Corda internal extension function
                 flowContextProperties.asFlowContext.platformProperties["extraPlatformKey"] = "extraPlatformValue"
             }
@@ -117,7 +116,7 @@ class FlowSessionFactoryImplTest {
         assertEquals(mockFlowFiberService.userValue, session.contextProperties[mockFlowFiberService.userKey])
 
         // The session context properties (user and platform) should be immutable once set
-        assertThrows<CordaRuntimeException> { session.contextProperties["key2"] = "value2" }
+        assertThrows<CordaRuntimeException> { session.contextProperties.put("key2", "value2") }
         assertThrows<CordaRuntimeException> {
             session.contextProperties.asFlowContext.platformProperties["key2"] = "value2"
         }

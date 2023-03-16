@@ -164,7 +164,7 @@ class DbConnectionManagerImplTest {
     @Test
     fun `initialise sets cluster db connection`() {
         val dbConnectionManager = DbConnectionManagerImpl(
-            mock(), dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
+            lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
             DbConnectionRepositoryFactory(), LateInitDbConnectionOps(), duration, sleeper)
         dbConnectionManager.initialise(clusterDbConfig)
 
@@ -174,7 +174,7 @@ class DbConnectionManagerImplTest {
     @Test
     fun `initialise verifies the DB connection`() {
         val dbConnectionManager = DbConnectionManagerImpl(
-            mock(), dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
+            lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
             DbConnectionRepositoryFactory(), LateInitDbConnectionOps(), duration, sleeper)
         dbConnectionManager.initialise(clusterDbConfig)
         verify(clusterConnection).close()
@@ -197,7 +197,7 @@ class DbConnectionManagerImplTest {
 
         val repository =
             DbConnectionManagerImpl(
-                mock(), dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
+                lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
                 DbConnectionRepositoryFactory(), LateInitDbConnectionOps(), duration,
                 // reconfigure mock after sleeping
                 sleeper = { d -> println("Sleeping for $d") })
@@ -225,7 +225,7 @@ class DbConnectionManagerImplTest {
         whenever(query.resultList).doReturn(listOf(connectionJPA))
 
         val dbConnectionManager = DbConnectionManagerImpl(
-            mock(), dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
+            lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
             DbConnectionRepositoryFactory(), LateInitDbConnectionOps(), duration, sleeper)
         dbConnectionManager.initialise(clusterDbConfig)
         dbConnectionManager.getDataSource(connectionJPA.name, connectionJPA.privilege)
@@ -263,7 +263,7 @@ class DbConnectionManagerImplTest {
         whenever(entityManager.transaction).doReturn(mock())
 
         val dbConnectionManager = DbConnectionManagerImpl(
-            mock(), dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
+            lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
             DbConnectionRepositoryFactory(), LateInitDbConnectionOps(), duration, sleeper)
         dbConnectionManager.initialise(clusterDbConfig)
         dbConnectionManager.putConnection(
@@ -308,7 +308,7 @@ class DbConnectionManagerImplTest {
 
         val dbConnectionOps = mock<DbConnectionOps>()
         val dbConnectionManager = DbConnectionManagerImpl(
-            mock(), dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
+            lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
             DbConnectionRepositoryFactory(), dbConnectionOps, duration, sleeper)
         dbConnectionManager.initialise(clusterDbConfig)
 

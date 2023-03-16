@@ -14,9 +14,11 @@ fun verifyEncumbrance(transaction: UtxoLedgerTransaction): List<ContractVerifica
 
 
         // Filter out unencumbered states
-        val encumbranceGroups = statesByTx.value.filter { it.state.encumbrance != null }
+        val encumbranceGroups = statesByTx.value.filter { it.state.encumbranceGroup != null }
             // within each tx, group by encumbrance tag, store the output index and the encumbrance group size
-            .groupBy({ it.state.encumbrance!!.tag }, { EncumbranceInfo(it.ref.index, it.state.encumbrance!!.size) })
+            .groupBy(
+                { it.state.encumbranceGroup!!.tag },
+                { EncumbranceInfo(it.ref.index, it.state.encumbranceGroup!!.size) })
 
         // for each encumbrance group (identified by tx id/tag), run the checks
         encumbranceGroups.forEach { encumbranceGroup ->

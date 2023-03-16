@@ -1,9 +1,10 @@
 package net.corda.cpk.write.impl.services.db
 
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.v5.crypto.SecureHash
 
 interface CpkStorage {
-    fun getCpkIdsNotIn(checksums: List<SecureHash>): List<SecureHash>
+    fun getAllCpkFileIds(fileChecksumsToExclude: Collection<SecureHash> = emptySet()): List<SecureHash>
 
-    fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumToData
+    fun getCpkFileById(fileChecksum: SecureHash): CpkFile
 }

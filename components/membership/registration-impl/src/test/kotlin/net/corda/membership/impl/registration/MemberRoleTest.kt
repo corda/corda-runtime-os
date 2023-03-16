@@ -1,9 +1,9 @@
 package net.corda.membership.impl.registration
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.impl.registration.MemberRole.Companion.extractRolesFromContext
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

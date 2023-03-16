@@ -96,7 +96,7 @@ interface BackingStore : Lifecycle {
          */
         fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+        ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal>
 
         /**
          * Provides the set of operations that may be performed within the context of a transaction.

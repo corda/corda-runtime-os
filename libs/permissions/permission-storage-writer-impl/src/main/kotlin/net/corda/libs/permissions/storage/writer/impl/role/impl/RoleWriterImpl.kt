@@ -9,10 +9,10 @@ import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidatio
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Permission
-import net.corda.permissions.model.RPCPermissionOperation
+import net.corda.permissions.model.RestPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RolePermissionAssociation
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -51,7 +51,7 @@ class RoleWriterImpl(
                 id = UUID.randomUUID().toString(),
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
-                changeType = RPCPermissionOperation.ROLE_INSERT,
+                changeType = RestPermissionOperation.ROLE_INSERT,
                 details = "Role '${role.id}' with name '$roleName' created by '$requestUserId'."
             )
 
@@ -89,7 +89,7 @@ class RoleWriterImpl(
                 id = UUID.randomUUID().toString(),
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
-                changeType = RPCPermissionOperation.ADD_PERMISSION_TO_ROLE,
+                changeType = RestPermissionOperation.ADD_PERMISSION_TO_ROLE,
                 details = "Role '${role.id}' got permission assigned '${permission.id}' by '$requestUserId'."
             )
 
@@ -122,7 +122,7 @@ class RoleWriterImpl(
                 id = UUID.randomUUID().toString(),
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
-                changeType = RPCPermissionOperation.DELETE_PERMISSION_FROM_ROLE,
+                changeType = RestPermissionOperation.DELETE_PERMISSION_FROM_ROLE,
                 details = "Role '${role.id}' got permission removed '${request.permissionId}' by '$requestUserId'."
             )
 

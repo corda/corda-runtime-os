@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -21,7 +22,6 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -42,6 +42,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 
 class PersistRegistrationRequestHandlerTest {
 
@@ -130,7 +131,8 @@ class PersistRegistrationRequestHandlerTest {
                 ByteBuffer.wrap("123".toByteArray()),
                 ByteBuffer.wrap("456".toByteArray()),
                 KeyValuePairList(emptyList())
-            )
+            ),
+            true
         )
     )
 
@@ -172,5 +174,47 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(entity.content).isEqualTo("456".toByteArray())
             assertThat(entity.context).isEqualTo(byteArrayOf(1, 3, 4))
         }
+    }
+
+    @Test
+    fun `invoke will not merge anything if the status as already moved on`() {
+        val status = mock<RegistrationRequestEntity> {
+            on { status } doReturn "APPROVED"
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(status)
+
+        persistRegistrationRequestHandler.invoke(
+            getMemberRequestContext(),
+            getPersistRegistrationRequest()
+        )
+
+        verify(entityManager, never()).merge(any<RegistrationRequestEntity>())
+    }
+
+    @Test
+    fun `invoke will merge if the status is in earlier state`() {
+        val status = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(status)
+
+        persistRegistrationRequestHandler.invoke(
+            getMemberRequestContext(),
+            getPersistRegistrationRequest()
+        )
+
+        verify(entityManager).merge(any<RegistrationRequestEntity>())
     }
 }

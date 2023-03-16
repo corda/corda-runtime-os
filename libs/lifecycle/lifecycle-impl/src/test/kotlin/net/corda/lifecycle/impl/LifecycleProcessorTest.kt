@@ -532,9 +532,9 @@ class LifecycleProcessorTest {
         val resource2 = mock<Resource>()
         val resource3 = mock<Resource>()
 
-        processor.addManagedResource("TEST1") { resource1 }
-        processor.addManagedResource("TEST2") { resource2 }
-        processor.addManagedResource("TEST3") { resource3 }
+        processor.addManagedResource<Resource>("TEST1") { resource1 }
+        processor.addManagedResource<Resource>("TEST2") { resource2 }
+        processor.addManagedResource<Resource>("TEST3") { resource3 }
 
         processor.closeManagedResources(null)
         verify(resource1).close()
@@ -551,9 +551,9 @@ class LifecycleProcessorTest {
         val resource2 = mock<Resource>()
         val resource3 = mock<Resource>()
 
-        processor.addManagedResource("TEST1") { resource1 }
-        processor.addManagedResource("TEST2") { resource2 }
-        processor.addManagedResource("TEST3") { resource3 }
+        processor.addManagedResource<Resource>("TEST1") { resource1 }
+        processor.addManagedResource<Resource>("TEST2") { resource2 }
+        processor.addManagedResource<Resource>("TEST3") { resource3 }
 
         processor.closeManagedResources(setOf("TEST1", "TEST2"))
 
@@ -569,7 +569,7 @@ class LifecycleProcessorTest {
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
         val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
         val resource = mock<Resource>()
-        processor.addManagedResource("TEST") { resource }
+        processor.addManagedResource<Resource>("TEST") { resource }
         processor.closeManagedResources(setOf("TEST"))
 
         processor.closeManagedResources(setOf("TEST"))
@@ -585,10 +585,22 @@ class LifecycleProcessorTest {
         val resource1 = mock<Resource>()
         val resource2 = mock<Resource>()
 
-        processor.addManagedResource("TEST") { resource1 }
-        processor.addManagedResource("TEST") { resource2 }
+        processor.addManagedResource<Resource>("TEST") { resource1 }
+        processor.addManagedResource<Resource>("TEST") { resource2 }
 
         verify(resource1).close()
+    }
+
+    @Test
+    fun `addManagedResource will return the created resource`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
+        val createdResource = mock<Resource>()
+
+        val returnedResource = processor.addManagedResource<Resource>("TEST") { createdResource }
+
+        assertThat(returnedResource).isSameAs(createdResource)
     }
 
     @Test

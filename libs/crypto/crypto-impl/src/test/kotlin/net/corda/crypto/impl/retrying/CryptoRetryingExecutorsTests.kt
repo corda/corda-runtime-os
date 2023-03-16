@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.retrying
 
+import net.corda.crypto.core.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoException
-import net.corda.v5.crypto.exceptions.CryptoRetryException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

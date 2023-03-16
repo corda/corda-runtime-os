@@ -27,6 +27,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:schema-registry:schema-registry")
+    implementation project(':libs:utilities')
 
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')

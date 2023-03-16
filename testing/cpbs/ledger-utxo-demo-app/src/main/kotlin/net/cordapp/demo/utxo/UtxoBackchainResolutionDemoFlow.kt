@@ -1,17 +1,15 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -28,15 +26,17 @@ import java.security.PublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-@InitiatingFlow("utxo-backchain-resolution-protocol")
+@InitiatingFlow(protocol = "utxo-backchain-resolution-protocol")
 class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
     @BelongsToContract(TestContract::class)
-    class TestState(
-        val testField: String,
-        override val participants: List<PublicKey>
-    ) : ContractState
+    class TestState(val testField: String, private val participants: List<PublicKey>) : ContractState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+    }
 
 
     class TestContract : Contract {
@@ -65,10 +65,10 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
 
     @Suppress("LongMethod")
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("UTXO backchain resolution demo flow starting!!...")
         try {
-            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
 
             val myInfo = memberLookup.myInfo()
             val members = request.members.map {
@@ -247,7 +247,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("utxo-backchain-resolution-protocol")
+@InitiatedBy(protocol = "utxo-backchain-resolution-protocol")
 class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
     private companion object {
@@ -260,7 +260,8 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val txs = session.receive<List<SecureHash>>()
+        @Suppress("unchecked_cast")
+        val txs = session.receive(List::class.java) as List<SecureHash>
         txs.map { utxoLedgerService.findSignedTransaction(it) }
             .forEachIndexed { index, tx ->
                 log.info("PEER TX${index + 1} = ${tx?.id}")

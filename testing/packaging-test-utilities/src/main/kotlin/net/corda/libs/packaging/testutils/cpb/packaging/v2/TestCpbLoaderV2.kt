@@ -1,12 +1,6 @@
 package net.corda.libs.packaging.testutils.cpb.packaging.v2
 
-import java.io.ByteArrayInputStream
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.Arrays
-import java.util.jar.JarEntry
-import java.util.jar.JarInputStream
-import java.util.zip.ZipEntry
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader
@@ -20,7 +14,13 @@ import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
+import java.io.ByteArrayInputStream
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.Arrays
+import java.util.jar.JarEntry
+import java.util.jar.JarInputStream
+import java.util.zip.ZipEntry
 
 internal class TestCpbLoaderV2(private val clock: Clock) {
 
@@ -81,7 +81,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                                 ?: throw PackagingException("$CPB_VERSION_ATTRIBUTE missing from CPB manifest"),
                                 firstCpkEntry.certificates.asSequence().signerSummaryHash()
                         ),
-                        fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
+                        fileChecksum = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, hash),
                         cpksMetadata = cpks.map { it.metadata },
                         groupPolicy = null,
                         timestamp = clock.instant()

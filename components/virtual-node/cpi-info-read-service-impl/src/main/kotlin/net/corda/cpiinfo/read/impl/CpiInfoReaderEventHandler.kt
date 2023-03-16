@@ -16,9 +16,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
+import net.corda.schema.Schemas.VirtualNode.CPI_INFO_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 /**

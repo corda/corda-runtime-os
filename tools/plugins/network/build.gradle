@@ -15,7 +15,7 @@ group 'net.corda.cli.deployment'
 dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    implementation project(":tools:plugins:plugins-http-rpc")
+    implementation project(":tools:plugins:plugins-rest")
     implementation project(":components:membership:membership-rest")
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

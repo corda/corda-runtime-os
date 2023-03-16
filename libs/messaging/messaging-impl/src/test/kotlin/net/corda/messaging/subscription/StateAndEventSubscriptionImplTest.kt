@@ -1,5 +1,10 @@
 package net.corda.messaging.subscription
 
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.data.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
@@ -8,6 +13,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.TOPIC_PREFIX
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -18,27 +24,22 @@ import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import net.corda.test.util.waitWhile
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
-import org.mockito.kotlin.never
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class StateAndEventSubscriptionImplTest {
 
@@ -50,6 +51,7 @@ class StateAndEventSubscriptionImplTest {
     private val config = createResolvedSubscriptionConfig(SubscriptionType.STATE_AND_EVENT)
     private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val chunkSerializerService: ChunkSerializerService = mock()
     private val rebalanceListener: StateAndEventConsumerRebalanceListener = mock()
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
@@ -140,7 +142,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -162,6 +165,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
+        verify(chunkSerializerService, times(5)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
 
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
@@ -187,7 +191,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -238,7 +243,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -257,7 +263,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -280,6 +287,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
+        verify(chunkSerializerService, times(5)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
 
     }
 
@@ -310,7 +318,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -331,6 +340,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(28)).sendRecords(any())
         verify(producer, times(28)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(28)).commitTransaction()
+        verify(chunkSerializerService, times(30)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -361,7 +371,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -382,6 +393,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(3)).sendRecords(any())
         verify(producer, times(3)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(3)).commitTransaction()
+        verify(chunkSerializerService, times(30)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -412,7 +424,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -439,6 +452,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
+        verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -473,7 +487,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -502,6 +517,7 @@ class StateAndEventSubscriptionImplTest {
         })
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
+        verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -528,7 +544,8 @@ class StateAndEventSubscriptionImplTest {
             builder,
             mock(),
             cordaAvroSerializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
         )
 
         subscription.start()
@@ -547,5 +564,6 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, never()).sendRecords(any())
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
+        verify(chunkSerializerService, never()).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 }

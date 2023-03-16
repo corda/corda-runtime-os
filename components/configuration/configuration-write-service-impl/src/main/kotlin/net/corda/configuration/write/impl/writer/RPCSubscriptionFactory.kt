@@ -9,7 +9,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_MGMT_REQUEST_TOPIC
 
 // Maybe inline in event handler
 /** A factory for [ConfigurationManagementRPCSubscription]s. */

@@ -6,7 +6,7 @@ import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
+import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.virtualnode.toCorda

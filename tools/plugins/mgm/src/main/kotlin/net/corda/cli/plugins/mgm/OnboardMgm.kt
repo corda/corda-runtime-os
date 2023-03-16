@@ -62,14 +62,21 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private fun saveGroupPolicy() {
-        val response = Unirest.get("/mgm/$holdingId/info").asString()
-        groupPolicyFile.parentFile.mkdirs()
-        json.writerWithDefaultPrettyPrinter()
-            .writeValue(
-                groupPolicyFile,
-                json.readTree(response.bodyOrThrow())
-            )
-        println("Group policy file created at $groupPolicyFile")
+        repeat(10) {
+            try {
+                val response = Unirest.get("/mgm/$holdingId/info").asString()
+                groupPolicyFile.parentFile.mkdirs()
+                json.writerWithDefaultPrettyPrinter()
+                    .writeValue(
+                        groupPolicyFile,
+                        json.readTree(response.bodyOrThrow())
+                    )
+                println("Group policy file created at $groupPolicyFile")
+                return@saveGroupPolicy
+            } catch (e: Exception) {
+                Thread.sleep(300)
+            }
+        }
     }
 
     private val tlsTrustRoot by lazy {

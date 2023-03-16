@@ -4,7 +4,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.base.util.parse
+import net.corda.utilities.parse
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo

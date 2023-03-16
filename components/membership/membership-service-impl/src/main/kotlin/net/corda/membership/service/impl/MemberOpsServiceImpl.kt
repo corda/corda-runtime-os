@@ -21,14 +21,16 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -39,9 +41,11 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 class MemberOpsServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = RegistrationProxy::class)
@@ -70,6 +74,8 @@ class MemberOpsServiceImpl @Activate constructor(
         coordinatorFactory.createCoordinator<MemberOpsService>(::eventHandler)
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
+
+    private val clock = UTCClock()
 
     override fun start() {
         logger.info("Starting...")
@@ -175,18 +181,27 @@ class MemberOpsServiceImpl @Activate constructor(
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }
-            val asyncSubscription = subscriptionFactory.createDurableSubscription(
+            val processor = MemberOpsAsyncProcessor(
+                registrationProxy,
+                virtualNodeInfoReadService,
+                membershipPersistenceClient,
+                membershipQueryClient,
+                clock,
+            )
+            val retryManager = CommandsRetryManager(
+                messagingConfig = messagingConfig,
+                clock = clock,
+                publisherFactory = publisherFactory,
+                coordinatorFactory = coordinatorFactory,
+            )
+            val asyncSubscription = subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(
                     ASYNC_GROUP_NAME,
                     MEMBERSHIP_ASYNC_REQUEST_TOPIC,
                 ),
-                MemberOpsAsyncProcessor(
-                    registrationProxy,
-                    virtualNodeInfoReadService,
-                    membershipPersistenceClient,
-                ),
+                processor,
                 messagingConfig,
-                null,
+                retryManager,
             ).also {
                 it.start()
             }
@@ -196,7 +211,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     asyncSubscription.subscriptionName,
                 )
             )
-            MembershipSubscriptionAndRegistration(subscription, asyncSubscription, handle)
+            MembershipSubscriptionAndRegistration(subscription, asyncSubscription, handle, retryManager)
         }
     }
 
@@ -209,7 +224,8 @@ class MemberOpsServiceImpl @Activate constructor(
     private class MembershipSubscriptionAndRegistration(
         val subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>,
         val asyncSubscription: Resource,
-        val registrationHandle: RegistrationHandle
+        val registrationHandle: RegistrationHandle,
+        val retryManager: Resource,
     ) : Resource {
         override fun close() {
             // The close order here is important - closing the subscription first can result in spurious lifecycle
@@ -217,6 +233,7 @@ class MemberOpsServiceImpl @Activate constructor(
             registrationHandle.close()
             subscription.close()
             asyncSubscription.close()
+            retryManager.close()
         }
     }
 }

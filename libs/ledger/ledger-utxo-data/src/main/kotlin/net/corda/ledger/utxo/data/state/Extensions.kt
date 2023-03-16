@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.data.state
 
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
@@ -34,7 +33,7 @@ fun <T : ContractState> ContractState.cast(type: Class<T>): T {
  * @throws IllegalArgumentException if the current [TransactionState] cannot be cast to the specified type.
  */
 fun <T : ContractState> TransactionState<*>.cast(type: Class<T>): TransactionState<T> {
-    return TransactionStateImpl(contractState.cast(type), notary, encumbrance)
+    return TransactionStateImpl(contractState.cast(type), notary, encumbranceGroup)
 }
 
 /**
@@ -75,7 +74,8 @@ fun ContractState.getContractClass(): Class<out Contract>? {
     val enclosingClass = javaClass.enclosingClass
 
     if (enclosingClass != null && Contract::class.java.isAssignableFrom(enclosingClass)) {
-        return uncheckedCast(enclosingClass)
+        @Suppress("unchecked_cast")
+        return enclosingClass as Class<out Contract>
     }
     return null
 }

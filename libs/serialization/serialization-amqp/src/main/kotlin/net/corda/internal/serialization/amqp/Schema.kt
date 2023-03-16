@@ -5,7 +5,6 @@ import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers.isPrimitive
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Companion.forGenericType
 import net.corda.internal.serialization.model.TypeIdentifier.TopType
-import net.corda.v5.base.util.uncheckedCast
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.DescribedType
 import org.apache.qpid.proton.amqp.Symbol
@@ -70,7 +69,8 @@ data class Schema(val types: List<TypeNotation>) : DescribedType {
 
         override fun newInstance(described: Any?): Schema {
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
-            return Schema(uncheckedCast(list[0]))
+            @Suppress("unchecked_cast")
+            return Schema(list[0] as List<TypeNotation>)
         }
     }
 
@@ -148,7 +148,16 @@ data class Field(
 
         override fun newInstance(described: Any?): Field {
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
-            return Field(list[0] as String, list[1] as String, uncheckedCast(list[2]), list[3] as? String, list[4] as? String, list[5] as Boolean, list[6] as Boolean)
+            @Suppress("unchecked_cast")
+            return Field(
+                name = list[0] as String,
+                type = list[1] as String,
+                requires = list[2] as List<String>,
+                default = list[3] as? String,
+                label = list[4] as? String,
+                mandatory = list[5] as Boolean,
+                multiple = list[6] as Boolean
+            )
         }
     }
 
@@ -216,7 +225,14 @@ data class CompositeType(
 
         override fun newInstance(described: Any?): CompositeType {
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
-            return CompositeType(list[0] as String, list[1] as? String, uncheckedCast(list[2]), list[3] as Descriptor, uncheckedCast(list[4]))
+            @Suppress("unchecked_cast")
+            return CompositeType(
+                name = list[0] as String,
+                label = list[1] as? String,
+                provides = list[2] as List<String>,
+                descriptor = list[3] as Descriptor,
+                fields = list[4] as List<Field>
+            )
         }
     }
 
@@ -267,7 +283,15 @@ data class RestrictedType(override val name: String,
 
         override fun newInstance(described: Any?): RestrictedType {
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
-            return RestrictedType(list[0] as String, list[1] as? String, uncheckedCast(list[2]), list[3] as String, list[4] as Descriptor, uncheckedCast(list[5]))
+            @Suppress("unchecked_cast")
+            return RestrictedType(
+                name = list[0] as String,
+                label = list[1] as? String,
+                provides = list[2] as List<String>,
+                source = list[3] as String,
+                descriptor = list[4] as Descriptor,
+                choices = list[5] as List<Choice>
+            )
         }
     }
 

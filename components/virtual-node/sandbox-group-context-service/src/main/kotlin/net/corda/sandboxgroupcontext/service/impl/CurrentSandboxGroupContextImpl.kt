@@ -3,7 +3,7 @@ package net.corda.sandboxgroupcontext.service.impl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory

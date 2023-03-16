@@ -8,7 +8,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -46,7 +46,7 @@ class InitiateFlowRequestServiceTest {
                 any()
             )
         ).thenReturn(sessionState1)
-        whenever(testContext.flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
+        whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)

@@ -64,7 +64,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
-                flowStatus(FlowStates.RETRYING)
             }
         }
 
@@ -86,7 +85,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
             }
         }
-
     }
 
     @Test

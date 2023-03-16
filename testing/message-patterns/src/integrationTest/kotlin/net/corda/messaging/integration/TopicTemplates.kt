@@ -1,8 +1,8 @@
 package net.corda.messaging.integration
 
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.getBundleContext
-import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
-import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
+import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.getStateAndEventStateTopic
 
 class TopicTemplates {
     companion object {

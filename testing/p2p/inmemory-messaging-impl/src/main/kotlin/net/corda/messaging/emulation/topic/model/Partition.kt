@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.topic.model
 
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicLong

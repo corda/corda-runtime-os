@@ -21,7 +21,7 @@ import java.util.UUID
  * @param configuration The configuration of the instance of Simulator.
  * @param virtualNodeName The name of the virtual node owner.
  * @param fiber A simulated fiber through which responders should be registered.
- * @param contextProperties The [FlowContextProperties] for the flow.
+ * @param userContextProperties The [FlowContextProperties] for the flow.
  * @param injector An injector which will initialize the services in the subFlow.
  * @param flowChecker A flow checker.
  *
@@ -30,7 +30,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class InjectingFlowEngine(
     private val configuration: SimulatorConfiguration,
-    override val virtualNodeName: MemberX500Name,
+    private val virtualNodeName: MemberX500Name,
     private val fiber: SimFiber,
     userContextProperties: FlowContextProperties,
     private val injector: FlowServicesInjector = DefaultServicesInjector(configuration),
@@ -40,14 +40,14 @@ class InjectingFlowEngine(
 
     private val userContextProperties = copyFlowContextProperties(userContextProperties)
     companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override val flowId: UUID
-        get() = TODO("Not yet implemented")
+    override fun getVirtualNodeName(): MemberX500Name = virtualNodeName
 
-    override val flowContextProperties: FlowContextProperties
-        get() = userContextProperties
+    override fun getFlowId(): UUID = TODO("Not yet implemented")
+
+    override fun getFlowContextProperties(): FlowContextProperties = userContextProperties
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         log.info("Running subflow ${SubFlow::class.java} for \"$virtualNodeName\"")

@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
@@ -34,6 +35,7 @@ import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,6 +57,8 @@ class CordaSubscriptionFactory @Activate constructor(
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = StateAndEventBuilder::class)
     private val stateAndEventBuilder: StateAndEventBuilder,
+    @Reference(service = MessagingChunkFactory::class)
+    private val messagingChunkFactory: MessagingChunkFactory,
 ) : SubscriptionFactory {
 
     // Used to ensure that each subscription has a unique client.id
@@ -132,6 +136,7 @@ class CordaSubscriptionFactory @Activate constructor(
             processor,
             serializer,
             lifecycleCoordinatorFactory,
+            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener,
         )
     }

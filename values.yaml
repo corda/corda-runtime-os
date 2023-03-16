@@ -26,6 +26,15 @@ bootstrap:
   initialAdminUser:
     password:
       value: "admin"
+  db:
+    cluster:
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "prereqs-postgresql"
+            key: "postgres-password"
+      username:
+        value: "postgres"
   kafka:
     replicas: 1
 

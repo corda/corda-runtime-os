@@ -93,9 +93,9 @@ class VirtualNodeEntitiesIntegrationTest {
     fun `can persist and read back Virtual Node entity and holding identity in one transaction`() {
         val name = "Test CPI - ${UUID.randomUUID()}"
         val version = "1.0-${Instant.now().toEpochMilli()}"
-        val hash = TestRandom.secureHash().toString()
+        val cpiSignerSummaryHash = TestRandom.secureHash()
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash)
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -105,7 +105,7 @@ class VirtualNodeEntitiesIntegrationTest {
     fun `can persist and read back Virtual Node entity with holding identity in two transactions`() {
         val name = "Test CPI - ${UUID.randomUUID()}"
         val version = "1.0-${Instant.now().toEpochMilli()}"
-        val hash = TestRandom.secureHash().toString()
+        val cpiSignerSummaryHash = TestRandom.secureHash()
 
 
         val holdingIdentityEntity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
@@ -114,7 +114,7 @@ class VirtualNodeEntitiesIntegrationTest {
             em.persist(holdingIdentityEntity)
         }
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash, holdingIdentityEntity = holdingIdentityEntity)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity)
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -124,7 +124,7 @@ class VirtualNodeEntitiesIntegrationTest {
     fun `can persist Virtual Node Entity with an in progress operation`() {
         val name = "Test CPI - ${UUID.randomUUID()}"
         val version = "1.0-${Instant.now().toEpochMilli()}"
-        val hash = TestRandom.secureHash().toString()
+        val cpiSignerSummaryHash = TestRandom.secureHash()
 
         val rand = UUID.randomUUID()
         val virtualNodeOperationEntity = VirtualNodeOperationEntity(
@@ -135,7 +135,7 @@ class VirtualNodeEntitiesIntegrationTest {
             OperationType.UPGRADE,
             Instant.now()
         )
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash, virtualNodeOperationEntity)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity)
 
         val foundEntity = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
         val operationEntity =

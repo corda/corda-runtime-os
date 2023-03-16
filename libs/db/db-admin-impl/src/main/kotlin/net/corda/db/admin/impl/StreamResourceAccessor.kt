@@ -101,7 +101,8 @@ class StreamResourceAccessor(
                 StreamResource(
                     masterChangeLogFileName,
                     URI(masterChangeLogFileName),
-                    ByteArrayInputStream(it.toByteArray())))
+                    ByteArrayInputStream(it.toByteArray()),
+                    dbChange))
         }
     }
 
@@ -127,7 +128,7 @@ class StreamResourceAccessor(
             return classLoaderResourceAccessor.getAll(path)
         }
         log.debug("Fetching change log from: $path relative")
-        return mutableListOf(StreamResource(path, URI(path), dbChange.fetch(path)))
+        return mutableListOf(StreamResource(path, URI(path), dbChange.fetch(path), dbChange))
     }
 
     /**
@@ -143,7 +144,8 @@ class StreamResourceAccessor(
     private class StreamResource(
         path: String,
         uri: URI,
-        private val inputStream: InputStream
+        private val inputStream: InputStream,
+        private val dbChange: DbChange
     ) : AbstractResource(path, uri) {
         override fun openInputStream(): InputStream {
             return inputStream
@@ -158,8 +160,8 @@ class StreamResourceAccessor(
         }
 
         override fun resolveSibling(other: String?): Resource {
-            TODO("Not yet implemented")
+            val resolvedPath = resolveSiblingPath(other)
+            return StreamResource(resolvedPath, URI(resolvedPath), dbChange.fetch(resolvedPath), dbChange)
         }
-
     }
 }

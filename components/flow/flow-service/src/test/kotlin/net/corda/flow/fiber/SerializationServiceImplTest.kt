@@ -35,7 +35,7 @@ class SerializationServiceImplTest {
     fun setup() {
         whenever(currentSandboxGroupContext.get()).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.get(AMQP_SERIALIZATION_SERVICE, SerializationService::class.java)).thenReturn(serializationService)
-        whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
     }
 
     @Test

@@ -2,6 +2,8 @@ package net.corda.crypto.persistence.impl.tests.infra
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.time.Instant
+import java.util.UUID
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -17,13 +19,12 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.TestRandom
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
-import java.time.Instant
-import java.util.*
 
 object CryptoConfigurationSetup {
 
     private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

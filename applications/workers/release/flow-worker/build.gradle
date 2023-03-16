@@ -25,6 +25,7 @@ dependencies {
     implementation project(':processors:flow-processor')
     implementation project(':processors:verification-processor')
     implementation project(':processors:interop-processor')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'

@@ -5,7 +5,6 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.kryoserialization.CordaKryoException
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
@@ -25,8 +24,7 @@ class SingletonSerializeAsTokenSerializer(
     override fun read(kryo: Kryo, input: Input, type: Class<SingletonSerializeAsToken>): SingletonSerializeAsToken {
         val token = (kryo.readClassAndObject(input) as? String)
             ?: throw CordaKryoException("Attempt to deserialize a tokenized type: ${type.name}, but no token found.")
-        val obj = serializableInstances[token]
+        return serializableInstances[token]
                 ?: throw CordaKryoException("No instance of type ${type.simpleName} found in ${this::class.java.simpleName}.")
-        return uncheckedCast(obj)
     }
 }

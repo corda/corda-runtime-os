@@ -1,12 +1,12 @@
 package net.corda.p2p.gateway.messaging.http
 
 import java.security.MessageDigest
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.net.URI
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 object SniCalculator {
 
@@ -24,7 +24,7 @@ object SniCalculator {
         val x500NameSorted = X500Name(x500Name).rdNs.flatMap { it.typesAndValues.asList() }.sortedBy { it.type.toString() }.groupBy(
             AttributeTypeAndValue::getType, AttributeTypeAndValue::getValue)
             .mapValues { it.value[0].toString() }.map { it }.joinToString(", ")
-        return sha256Hash(x500NameSorted.toByteArray()).toHex().take(HASH_TRUNCATION_SIZE)
+        return toHex(sha256Hash(x500NameSorted.toByteArray())).take(HASH_TRUNCATION_SIZE)
             .lowercase() + CLASSIC_CORDA_SNI_SUFFIX
     }
 

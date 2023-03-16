@@ -1,5 +1,8 @@
+@file:JvmName("PluggableNotaryFlowHelpers")
+
 package com.r3.corda.notary.plugin.common
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -11,114 +14,134 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.notary.plugin.core.NotaryError
+import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
+import java.security.PublicKey
 
 /**
- * Verifies that the correct notarisation request was signed by the counterparty.
+ * Verifies that the correct notarization request was signed by the counterparty.
  *
  * @throws IllegalStateException if the request signature could not be validated.
  */
 @Suspendable
-fun validateRequestSignature(notarisationRequest: NotarisationRequest,
+@Suppress("LongParameterList")
+fun validateRequestSignature(notarizationRequest: NotarizationRequest,
                              requestingParty: Party,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
-                             signature: NotarisationRequestSignature
+                             signature: NotarizationRequestSignature,
+                             digestService: DigestService
 ) {
     val digitalSignature = signature.digitalSignature
 
     if (requestingParty.owningKey != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingParty.owningKey.publicKeyId()}, " +
-                    "but received by ${digitalSignature.by.publicKeyId()}}"
+            "Expected a signature by ${requestingParty.owningKey.publicKeyId(digestService)}, " +
+                    "but received by ${digitalSignature.by.publicKeyId(digestService)}}"
         )
     }
 
-    val expectedSignedBytes = serializationService.serialize(notarisationRequest).bytes
+    val expectedSignedBytes = serializationService.serialize(notarizationRequest).bytes
 
     try {
         signatureVerifier.verify(
-            digitalSignature.by,
-            SignatureSpec.ECDSA_SHA256, // TODO This shouldn't be hardcoded?
+            expectedSignedBytes,
             digitalSignature.bytes,
-            expectedSignedBytes
+            digitalSignature.by,
+            SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
         )
     } catch (e: Exception) {
         throw IllegalStateException("Error while verifying request signature.", e)
     }
 }
 
-/** Creates a signature over the notarisation request using the legal identity key. */
+/** Creates a signature over the notarization request using the legal identity key. */
 @Suspendable
-fun generateRequestSignature(notarisationRequest: NotarisationRequest,
+fun generateRequestSignature(notarizationRequest: NotarizationRequest,
                              memberInfo: MemberInfo,
                              serializationService: SerializationService,
                              signingService: SigningService
-): NotarisationRequestSignature {
-    val serializedRequest = serializationService.serialize(notarisationRequest).bytes
+): NotarizationRequestSignature {
+    val serializedRequest = serializationService.serialize(notarizationRequest).bytes
     val myLegalIdentity = memberInfo.sessionInitiationKey
     val signature = signingService.sign(
         serializedRequest,
         myLegalIdentity,
         SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
     )
-    return NotarisationRequestSignature(signature, memberInfo.platformVersion)
+    return NotarizationRequestSignature(signature, memberInfo.platformVersion)
 }
 
 /**
- * A helper function that will convert a [UniquenessCheckResponse] to a [NotarisationResponse].
+ * A helper function that will convert a [UniquenessCheckResult] to a [NotarizationResponse].
  */
 @Suspendable
-fun UniquenessCheckResult.toNotarisationResponse(signature: DigitalSignatureAndMetadata?): NotarisationResponse {
+fun UniquenessCheckResult.toNotarizationResponse(
+    txId: SecureHash?,
+    signature: DigitalSignatureAndMetadata?
+): NotarizationResponse {
     return when (val uniquenessResult = this) {
         is UniquenessCheckResultSuccess -> {
             require(signature != null) {
                 "If the uniqueness check result was successful, a signature must be provided!"
             }
-            NotarisationResponse(
+            NotarizationResponse(
                 listOf(signature),
                 null
             )
         }
-        is UniquenessCheckResultFailure -> NotarisationResponse(
+        is UniquenessCheckResultFailure -> NotarizationResponse(
             emptyList(),
-            uniquenessResult.error.toNotaryError()
+            uniquenessResult.error.toNotaryException(txId)
         )
-        else -> NotarisationResponse(
+        else -> NotarizationResponse(
             emptyList(),
-            NotaryErrorGeneralImpl(
-                "Unknown uniqueness check result: $uniquenessResult"
-            )
+            NotaryExceptionGeneral("Unknown uniqueness check result: $uniquenessResult")
         )
     }
 }
 
 /**
- * A helper function that will convert a [UniquenessCheckError] to a [NotaryError].
+ * A helper function that will convert a [UniquenessCheckError] to a [NotaryException].
  */
 @Suspendable
-private fun UniquenessCheckError.toNotaryError(): NotaryError {
+private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryException {
     return when (this) {
-        is UniquenessCheckErrorInputStateConflict -> NotaryErrorInputStateConflictImpl(conflictingStates)
-        is UniquenessCheckErrorInputStateUnknown -> NotaryErrorInputStateUnknownImpl(unknownStates)
-        is UniquenessCheckErrorReferenceStateConflict -> NotaryErrorReferenceStateConflictImpl(conflictingStates)
-        is UniquenessCheckErrorReferenceStateUnknown -> NotaryErrorReferenceStateUnknownImpl(unknownStates)
-        is UniquenessCheckErrorTimeWindowOutOfBounds -> NotaryErrorTimeWindowOutOfBoundsImpl(
+        is UniquenessCheckErrorInputStateConflict -> NotaryExceptionInputStateConflict(conflictingStates, txId)
+        is UniquenessCheckErrorInputStateUnknown -> NotaryExceptionInputStateUnknown(unknownStates, txId)
+        is UniquenessCheckErrorReferenceStateConflict -> NotaryExceptionReferenceStateConflict(conflictingStates, txId)
+        is UniquenessCheckErrorReferenceStateUnknown -> NotaryExceptionReferenceStateUnknown(unknownStates, txId)
+        is UniquenessCheckErrorTimeWindowOutOfBounds -> NotaryExceptionTimeWindowOutOfBounds(
             evaluationTimestamp,
             timeWindowLowerBound,
-            timeWindowUpperBound
+            timeWindowUpperBound,
+            txId
         )
-        is UniquenessCheckErrorMalformedRequest -> NotaryErrorMalformedRequestImpl(errorText)
-        else -> NotaryErrorGeneralImpl(
-            "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}"
+        is UniquenessCheckErrorMalformedRequest -> NotaryExceptionMalformedRequest(errorText, txId)
+        is UniquenessCheckErrorUnhandledException -> NotaryExceptionGeneral(
+            "Unhandled exception of type $unhandledExceptionType encountered during uniqueness checking with " +
+                    "message: $unhandledExceptionMessage",
+            txId
+        )
+        else -> NotaryExceptionGeneral(
+            "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}",
+            txId
         )
     }
+}
+
+private const val SHORT_KEY_ID_LENGTH = 12
+
+private fun PublicKey.publicKeyId(digestService: DigestService): String {
+    val fullKeyId = digestService.hash(encoded, DigestAlgorithmName.SHA2_256)
+    return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
 }

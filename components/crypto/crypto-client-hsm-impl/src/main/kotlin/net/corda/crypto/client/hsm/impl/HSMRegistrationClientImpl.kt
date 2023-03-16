@@ -14,7 +14,7 @@ import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID

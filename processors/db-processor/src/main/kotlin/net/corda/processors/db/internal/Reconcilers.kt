@@ -33,7 +33,7 @@ import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
  * Container component that holds the reconilcation objects.
  */
 @Suppress("LongParameterList")
-class Reconcilers constructor(
+class Reconcilers(
     coordinatorFactory: LifecycleCoordinatorFactory,
     dbConnectionManager: DbConnectionManager,
     virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
@@ -49,7 +49,7 @@ class Reconcilers constructor(
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     groupParametersFactory: GroupParametersFactory,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
-) : AutoCloseable {
+) {
     private val cpiReconciler = CpiReconciler(
         coordinatorFactory,
         dbConnectionManager,
@@ -93,12 +93,12 @@ class Reconcilers constructor(
         allowedCertificatesReaderWriterService,
     )
 
-    override fun close() {
-        cpiReconciler.close()
-        vnodeReconciler.close()
-        configReconciler.close()
-        groupParametersReconciler.close()
-        mgmAllowedCertificateSubjectsReconciler.close()
+    fun stop() {
+        cpiReconciler.stop()
+        vnodeReconciler.stop()
+        configReconciler.stop()
+        groupParametersReconciler.stop()
+        mgmAllowedCertificateSubjectsReconciler.stop()
     }
 
     /**

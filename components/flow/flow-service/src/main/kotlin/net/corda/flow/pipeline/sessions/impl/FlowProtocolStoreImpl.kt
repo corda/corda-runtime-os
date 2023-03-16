@@ -1,8 +1,8 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 
 /**
  * Tracks initiator and responder flows for either side of flow protocols declared in the CPI.
@@ -11,8 +11,25 @@ import net.corda.flow.pipeline.sessions.FlowProtocolStore
  */
 class FlowProtocolStoreImpl(
     private val initiatorToProtocol: Map<String, List<FlowProtocol>>,
+    private val protocolToInitiator: Map<FlowProtocol, String>,
     private val protocolToResponder: Map<FlowProtocol, String>
 ) : FlowProtocolStore {
+
+    override fun initiatorForProtocol(
+        protocolName: String,
+        supportedVersions: Collection<Int>
+    ): String {
+        val sortedProtocols = supportedVersions.sortedDescending().map { FlowProtocol(protocolName, it) }
+        for (protocol in sortedProtocols) {
+            val initiator = protocolToInitiator[protocol]
+            if (initiator != null) {
+                return initiator
+            }
+        }
+        throw FlowFatalException(
+            "No initiator is configured for protocol $protocolName at versions $supportedVersions"
+        )
+    }
 
     override fun responderForProtocol(
         protocolName: String,

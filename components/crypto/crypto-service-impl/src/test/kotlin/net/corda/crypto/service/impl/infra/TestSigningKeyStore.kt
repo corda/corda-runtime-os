@@ -1,12 +1,14 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningKeyStatus
+import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
@@ -21,7 +23,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
@@ -35,7 +38,7 @@ class TestSigningKeyStore(
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
     private val lock = ReentrantLock()
-    private val keys = mutableMapOf<Pair<String, String>, SigningCachedKey>()
+    private val keys = mutableMapOf<Pair<String, ShortHash>, SigningCachedKey>()
 
     override fun save(tenantId: String, context: SigningKeySaveContext) = lock.withLock {
         val now = Instant.now()
@@ -43,7 +46,8 @@ class TestSigningKeyStore(
             is SigningPublicKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
-                    id = publicKeyIdFromBytes(encodedKey),
+                    id = keyIdFromBytes(encodedKey),
+                    fullId = fullKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -62,7 +66,8 @@ class TestSigningKeyStore(
             is SigningWrappedKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
-                    id = publicKeyIdFromBytes(encodedKey),
+                    id = keyIdFromBytes(encodedKey),
+                    fullId = fullKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -90,7 +95,7 @@ class TestSigningKeyStore(
     }
 
     override fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? = lock.withLock {
-        keys[Pair(tenantId, publicKey.publicKeyId())]
+        keys[Pair(tenantId, keyIdFromKey(publicKey))]
     }
 
     @Suppress("ComplexMethod")
@@ -119,7 +124,7 @@ class TestSigningKeyStore(
         }
         return when(orderBy) {
             SigningKeyOrderBy.NONE -> filtered
-            SigningKeyOrderBy.ID -> filtered.sortedBy { it.id }
+            SigningKeyOrderBy.ID -> filtered.sortedBy { it.id.value }
             SigningKeyOrderBy.TIMESTAMP -> filtered.sortedBy { it.timestamp }
             SigningKeyOrderBy.CATEGORY -> filtered.sortedBy { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME -> filtered.sortedBy { it.schemeCodeName }
@@ -132,19 +137,26 @@ class TestSigningKeyStore(
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> filtered.sortedByDescending { it.masterKeyAlias }
             SigningKeyOrderBy.EXTERNAL_ID_DESC -> filtered.sortedByDescending { it.externalId }
-            SigningKeyOrderBy.ID_DESC -> filtered.sortedByDescending { it.id }
+            SigningKeyOrderBy.ID_DESC -> filtered.sortedByDescending { it.id.value }
         }.drop(skip).take(take)
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningCachedKey> = lock.withLock {
+    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningCachedKey> {
         val result = mutableListOf<SigningCachedKey>()
-        ids.forEach {
+        keyIds.forEach {
             val found = keys[Pair(tenantId, it)]
             if(found != null) {
                 result.add(found)
             }
         }
         return result
+    }
+
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+        val keyIds = fullKeyIds.map {
+            ShortHash.of(it)
+        }
+        return lookupByIds(tenantId, keyIds)
     }
 
     override val isRunning: Boolean
@@ -159,3 +171,12 @@ class TestSigningKeyStore(
     }
 
 }
+
+fun fullKeyIdFromBytes(publicKey: ByteArray): SecureHash =
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
+
+fun keyIdFromBytes(publicKey: ByteArray): ShortHash =
+    ShortHash.of(fullKeyIdFromBytes(publicKey))
+
+fun keyIdFromKey(publicKey: PublicKey): ShortHash =
+    keyIdFromBytes(publicKey.encoded)

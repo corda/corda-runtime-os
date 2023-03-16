@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
@@ -10,10 +11,9 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsume
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsParameters
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -47,7 +47,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             val contractState = serializationService.deserialize<ContractState>(it.data)
             StateAndRefImpl(
                 state = TransactionStateImpl(contractState as T, info.notary, info.getEncumbranceGroup()),
-                ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
+                ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
             )
         }
     }
@@ -64,7 +64,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             val contractState = serializationService.deserialize<ContractState>(it.data)
             StateAndRefImpl(
                 state = TransactionStateImpl(contractState, info.notary, info.getEncumbranceGroup()),
-                ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
+                ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
             )
         }
     }

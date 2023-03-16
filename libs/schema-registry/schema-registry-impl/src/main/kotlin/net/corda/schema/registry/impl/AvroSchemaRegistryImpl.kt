@@ -5,10 +5,9 @@ import net.corda.data.AvroGeneratedMessageClasses
 import net.corda.data.Fingerprint
 import net.corda.data.SchemaLoadException
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.toHexString
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.base.types.ByteArrays.toHexString
 import org.apache.avro.Schema
 import org.apache.avro.SchemaNormalization
 import org.apache.avro.io.DecoderFactory
@@ -109,7 +108,7 @@ class AvroSchemaRegistryImpl(
         ?: throw CordaRuntimeException("Could not find fingerprint for class ${clazz.name}")
 
     private fun getSchema(fingerprint: Fingerprint) = schemasByFingerprint[fingerprint]
-        ?: throw CordaRuntimeException("Could not find schema for fingerprint ${fingerprint.bytes().toHexString()}")
+        ?: throw CordaRuntimeException("Could not find schema for fingerprint ${toHexString(fingerprint.bytes())}")
 
     private fun <T : Any> getRecordData(clazz: Class<T>) = recordDataByFingerprint[getFingerprint(clazz)]
         ?: throw CordaRuntimeException("Could not record data for class: $clazz")
@@ -117,10 +116,11 @@ class AvroSchemaRegistryImpl(
     private fun getRecordData(fingerprint: Fingerprint) = recordDataByFingerprint[fingerprint]
         ?: throw CordaRuntimeException("Could not find data for record with fingerprint: $fingerprint")
 
-    private fun <T : Any> getDecoder(clazz: Class<T>) = uncheckedCast(getRecordData(clazz).decoder)
-    private fun getDecoder(fingerprint: Fingerprint) = uncheckedCast(getRecordData(fingerprint).decoder)
-    private fun <T : Any> getEncoder(clazz: Class<T>): (T) -> ByteArray = uncheckedCast(getRecordData(clazz).encoder)
-    private fun getEncoder(fingerprint: Fingerprint) = uncheckedCast(getRecordData(fingerprint).encoder)
+    private fun <T : Any> getDecoder(clazz: Class<T>) = getRecordData(clazz).decoder
+    private fun getDecoder(fingerprint: Fingerprint) = getRecordData(fingerprint).decoder
+    @Suppress("unchecked_cast")
+    private fun <T : Any> getEncoder(clazz: Class<T>): (T) -> ByteArray = (getRecordData(clazz).encoder) as (T) -> ByteArray
+    private fun getEncoder(fingerprint: Fingerprint) = getRecordData(fingerprint).encoder
 
     /**
      * Special member function to install schemas.  Will create the encoder/decoder for each
@@ -140,7 +140,8 @@ class AvroSchemaRegistryImpl(
             val encoder: (T) -> ByteArray = { obj ->
                 ByteArrayOutputStream().use { bytes ->
                     val binaryEncoder = EncoderFactory.get().binaryEncoder(bytes, null)
-                    val writer: SpecificDatumWriter<T> = uncheckedCast(SpecificDatumWriter(obj::class.java))
+                    @Suppress("unchecked_cast")
+                    val writer = SpecificDatumWriter(obj::class.java) as SpecificDatumWriter<T>
                     writer.write(obj, binaryEncoder)
                     binaryEncoder.flush()
                     bytes.toByteArray()
@@ -148,12 +149,13 @@ class AvroSchemaRegistryImpl(
             }
 
             val decoder: (ByteArray, Schema, T?) -> T = { bytes, writerSchema, obj ->
-                val reader: SpecificDatumReader<T> = SpecificDatumReader(writerSchema, schema, SpecificData.getForClass(it))
+                val reader = SpecificDatumReader<T>(writerSchema, schema, SpecificData.getForClass(it))
                 val binaryDecoder = DecoderFactory.get().binaryDecoder(bytes, null)
                 reader.read(obj, binaryDecoder)
             }
 
-            addSchema(schema, it, encoder, uncheckedCast(decoder))
+            @Suppress("unchecked_cast")
+            addSchema(schema, it as Class<T>, encoder, decoder)
         }
     }
 
@@ -197,7 +199,8 @@ class AvroSchemaRegistryImpl(
     override fun <T : Any> serialize(obj: T): ByteBuffer {
         log.trace("Serializing obj (${obj::class.java.name}): $obj")
         val fingerprint = getFingerprint(obj::class.java)
-        val encoder: (T) -> ByteArray = uncheckedCast(getEncoder(obj::class.java))
+        @Suppress("unchecked_cast")
+        val encoder: (T) -> ByteArray = getEncoder(obj::class.java) as (T) -> ByteArray
         val payload = try {
             if (options.compressed) {
                 zipPayload(encoder.invoke(obj))
@@ -218,21 +221,22 @@ class AvroSchemaRegistryImpl(
     }
 
     override fun <T : Any> deserialize(bytes: ByteBuffer, offset: Int, length: Int, clazz: Class<T>, reusable: T?): T {
-        log.trace("Deserializing from: ${bytes.array().toHexString()}")
+        log.trace("Deserializing from: ${toHexString(bytes.array())}")
         val envelope = decodeAvroEnvelope(bytes.array())
         if (envelope.magic != MAGIC) {
             throw CordaRuntimeException("Incorrect Header detected.  Cannot deserialize message.")
         }
 
         val writerSchema = getSchema(envelope.fingerprint)
-        val specificDecoder: (ByteArray, Schema, T?) -> T = uncheckedCast(getDecoder(clazz))
+        @Suppress("unchecked_cast")
+        val specificDecoder: (ByteArray, Schema, T?) -> T = getDecoder(clazz) as (ByteArray, Schema, T?) -> T
         val flags = Options.from(envelope.flags)
         val payload = if (flags.compressed) {
             unzipPayload(envelope.payload)
         } else {
             envelope.payload
         }
-        return uncheckedCast(specificDecoder.invoke(payload.array(), writerSchema, reusable))
+        return specificDecoder.invoke(payload.array(), writerSchema, reusable)
     }
 
     override fun getClassType(bytes: ByteBuffer): Class<*> {
@@ -244,7 +248,8 @@ class AvroSchemaRegistryImpl(
         log.trace("Encoding envelope $this")
         return ByteArrayOutputStream().use {
             val binaryEncoder = EncoderFactory.get().binaryEncoder(it, null)
-            val envelopeWriter: SpecificDatumWriter<AvroEnvelope> = uncheckedCast(SpecificDatumWriter(this::class.java))
+            @Suppress("unchecked_cast")
+            val envelopeWriter = SpecificDatumWriter(this::class.java) as SpecificDatumWriter<AvroEnvelope>
             EncoderFactory.get().binaryEncoder(it, binaryEncoder)
             envelopeWriter.write(this, binaryEncoder)
             binaryEncoder.flush()
@@ -276,7 +281,7 @@ class AvroSchemaRegistryImpl(
 
     init {
         val classes = try {
-            AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses(AvroGeneratedMessageClasses::class.java)
+            AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses()
         } catch (e: SchemaLoadException) {
             throw CordaRuntimeException("Initialization error in AvroSchemaRegistry", e)
         }

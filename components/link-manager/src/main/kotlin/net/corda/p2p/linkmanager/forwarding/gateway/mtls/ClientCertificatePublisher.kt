@@ -11,8 +11,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.P2P.Companion.P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
-import net.corda.schema.Schemas.P2P.Companion.P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+import net.corda.schema.Schemas.P2P.P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT_TOPIC
 
 @Suppress("LongParameterList")
 internal class ClientCertificatePublisher(

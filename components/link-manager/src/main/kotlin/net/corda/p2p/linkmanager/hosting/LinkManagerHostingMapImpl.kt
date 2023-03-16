@@ -13,7 +13,7 @@ import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.p2p.linkmanager.common.GroupIdWithPublicKeyHash
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
-import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer

@@ -128,8 +128,8 @@ val config = SimulatorConfigurationBuilder.create()
 ## RequestData
 
 Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted
-by Corda into an `RestRequestBody` interface. This is represented in Simulator by a `RequestData` factory,
-which allows Simulator to construct an `RestRequestBody` when the flow is called. There are three different construction
+by Corda into an `ClientRequestBody` interface. This is represented in Simulator by a `RequestData` factory,
+which allows Simulator to construct an `ClientRequestBody` when the flow is called. There are three different construction
 methods available:
 
 - A JSON-formatted string, as you would submit with `curl`:
@@ -219,7 +219,7 @@ in a readable JSON wrapper, using the key, alias, HSM category and signature sch
 }
 ```
 
-The equivalent `DigitalVerificationService` simply looks to see if the clear data, signature spec and key are a match.
+The equivalent `DigitalVerificationService` simply looks to see if the clear/original data, signature spec and key are a match.
 
 Note that as with real Corda, all public keys are accessible through `MemberInfo`, and that even though Simulator does 
 not perform any actual crypto, a member cannot use another member's key in signing.

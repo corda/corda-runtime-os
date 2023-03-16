@@ -59,6 +59,7 @@ dependencies {
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     //runtime implementation dependencies
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"

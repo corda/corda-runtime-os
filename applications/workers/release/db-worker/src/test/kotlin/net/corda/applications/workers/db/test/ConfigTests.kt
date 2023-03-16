@@ -1,6 +1,7 @@
 package net.corda.applications.workers.db.test
 
 import com.typesafe.config.Config
+import java.io.InputStream
 import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.db.DBWorker
@@ -11,13 +12,13 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidator
-
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.v5.base.versioning.Version
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
-import java.io.InputStream
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].
@@ -45,7 +45,7 @@ class ConfigTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `instance ID, topic prefix, workspace dir, temp dir, messaging params, database params and additional params are passed through to the processor`() {
+    fun `instance ID, topic prefix, workspace dir, temp dir, max size, messaging params, database params and additional params are passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
         val dbWorker = DBWorker(
             dbProcessor,
@@ -60,6 +60,7 @@ class ConfigTests {
         val args = defaultArgs + arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
             FLAG_TOPIC_PREFIX, VALUE_TOPIC_PREFIX,
+            FLAG_MAX_SIZE, VALUE_MAX_SIZE,
             FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE"
         )
@@ -70,6 +71,7 @@ class ConfigTests {
         val expectedKeys = setOf(
             INSTANCE_ID,
             TOPIC_PREFIX,
+            BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
             TEMP_DIR,
             "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
@@ -80,6 +82,7 @@ class ConfigTests {
 
         assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(INSTANCE_ID))
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
+        assertEquals(VALUE_MAX_SIZE, config.getString(BOOT_MAX_ALLOWED_MSG_SIZE))
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
         assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
     }
@@ -109,6 +112,7 @@ class ConfigTests {
         val expectedKeys = setOf(
             INSTANCE_ID,
             TOPIC_PREFIX,
+            BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
             TEMP_DIR
         )
@@ -136,6 +140,7 @@ class ConfigTests {
         val expectedKeys = setOf(
             INSTANCE_ID,
             TOPIC_PREFIX,
+            BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
             TEMP_DIR
         )
@@ -223,10 +228,9 @@ class ConfigTests {
     }
 
     private class DummyConfigurationValidator : ConfigurationValidator {
-        override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig =
-            SmartConfigImpl.empty()
+        override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig = config
 
-        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = Unit
+        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = config
 
         override fun getDefaults(key: String, version: Version): Config = SmartConfigImpl.empty()
     }

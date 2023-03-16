@@ -1,5 +1,6 @@
 package net.corda.flow.testing.context
 
+import java.nio.ByteBuffer
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -21,7 +22,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,7 +42,7 @@ class OutputAssertionsImpl(
 ) : OutputAssertions {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val asserts = mutableListOf<(TestRun) -> Unit>()
@@ -70,7 +70,7 @@ class OutputAssertionsImpl(
                 sessionToPayload.map { it.first },
                 initiatingIdentity,
                 initiatedIdentity
-            ).associate { it.sessionId to (it.payload as SessionData).payload.array() }
+            ).associate { it.sessionId to ((it.payload as SessionData).payload as ByteBuffer).array() }
 
             assertEquals(
                 sessionToPayload.toMap(),
@@ -398,9 +398,10 @@ class OutputAssertionsImpl(
     private fun getMatchedFlowMapperEventRecords(
         response: StateAndEventProcessor.Response<Checkpoint>
     ): List<Record<*, FlowMapperEvent>> {
+        @Suppress("unchecked_cast")
         return response.responseEvents
             .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
-            .map { uncheckedCast(it) }
+            as List<Record<*, FlowMapperEvent>>
     }
 
     private fun getMatchedSessionEvents(

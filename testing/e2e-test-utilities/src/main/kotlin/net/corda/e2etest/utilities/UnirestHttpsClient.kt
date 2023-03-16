@@ -69,6 +69,13 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         return SimpleResponse(response.status, response.body, url)
     }
 
+    override fun delete(cmd: String): SimpleResponse {
+        val url = endpoint.resolve(cmd).toURL().toString()
+
+        val response = Unirest.delete(url).basicAuth(username, password).asString()
+        return SimpleResponse(response.status, response.body, url)
+    }
+
     private fun addSslParams() {
         val sslContext: SSLContext = SSLContexts.custom()
             .loadTrustMaterial(TrustAllStrategy())

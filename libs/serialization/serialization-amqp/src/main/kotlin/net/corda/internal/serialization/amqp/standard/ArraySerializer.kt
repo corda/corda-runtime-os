@@ -19,8 +19,8 @@ import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.withList
 import net.corda.internal.serialization.model.resolveAgainst
 import net.corda.serialization.SerializationContext
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import org.slf4j.LoggerFactory

@@ -16,7 +16,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC
+import net.corda.schema.Schemas.P2P.GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertPathBuilder

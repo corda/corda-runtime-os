@@ -16,21 +16,21 @@ class SimWithJsonSignatureVerificationService : DigitalSignatureVerificationServ
 
     /**
      * Parses the wrapper which was created by the simulated [net.corda.v5.application.crypto.SigningService]
-     * and checks that the clear data, encoded key and signature spec in that wrapper are a match for the parameters
+     * and checks that the original data, encoded key and signature spec in that wrapper are a match for the parameters
      * passed in here.
      *
      * @param publicKey The public key that should have been encoded and embedded in the signatureData.
      * @param signatureSpec The signature spec that should have been embedded in the signatureData.
-     * @param signatureData A JSON wrapper containing the above parameters around the clear data.
-     * @param clearData The data to match against the "signed" data.
+     * @param signatureData A JSON wrapper containing the above parameters around the original data.
+     * @param originalData The data to match against the "signed" data.
      *
-     * @throws CryptoSignatureException if the parameters or the clear data in the wrapper are not a match.
+     * @throws CryptoSignatureException if the parameters or the original data in the wrapper are not a match.
      */
     override fun verify(
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        originalData: ByteArray,
         signatureData: ByteArray,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec
     ) {
         val wrapper = jsonMarshallingService.parse(String(signatureData), SimJsonSignedWrapper::class.java)
         val encodedKey = pemEncode(publicKey)
@@ -44,8 +44,8 @@ class SimWithJsonSignatureVerificationService : DigitalSignatureVerificationServ
                         "expected ${signatureSpec.signatureName} but was ${wrapper.signatureSpecName}"
             )
         }
-        if (!clearData.contentEquals(wrapper.clearData)) {
-            throw CryptoSignatureException("Clear data did not match")
+        if (!originalData.contentEquals(wrapper.originalData)) {
+            throw CryptoSignatureException("Original data did not match")
         }
     }
 
@@ -55,7 +55,7 @@ class SimWithJsonSignatureVerificationService : DigitalSignatureVerificationServ
         publicKey: PublicKey,
         signatureSpec: SignatureSpec
     ) {
-        verify(publicKey, signatureSpec, signature.bytes, originalData)
+        verify(originalData, signature.bytes, publicKey, signatureSpec)
     }
 
 }

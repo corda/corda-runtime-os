@@ -25,6 +25,7 @@ dependencies {
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:utilities')
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 

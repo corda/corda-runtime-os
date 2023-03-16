@@ -13,6 +13,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":components:reconciliation:reconciliation")
 

@@ -12,12 +12,12 @@ import java.util.UUID
 
 @Component(service = [FlowEngine::class, UsedByFlow::class], scope = PROTOTYPE)
 class FakeFlowEngineImpl : FlowEngine, UsedByFlow, SingletonSerializeAsToken {
-    override val flowId: UUID
-        get() = throw UnsupportedOperationException("VICTORY IS MINE!")
-    override val virtualNodeName: MemberX500Name
-        get() = throw UnsupportedOperationException("VICTORY IS MINE!")
-    override val flowContextProperties: FlowContextProperties
-        get() = throw UnsupportedOperationException("VICTORY IS MINE!")
+    override fun getFlowId(): UUID
+        = throw UnsupportedOperationException("VICTORY IS MINE!")
+    override fun getVirtualNodeName(): MemberX500Name
+        = throw UnsupportedOperationException("VICTORY IS MINE!")
+    override fun getFlowContextProperties(): FlowContextProperties
+        = throw UnsupportedOperationException("VICTORY IS MINE!")
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         throw UnsupportedOperationException("VICTORY IS MINE!")

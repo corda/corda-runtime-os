@@ -21,18 +21,18 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-consensual'
     implementation 'net.corda:corda-topic-schema'
+    implementation project(':components:ledger:ledger-common-flow-api')
+    implementation project(':components:ledger:ledger-common-flow')
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:flows:flow-api')
-    implementation project(':components:ledger:ledger-common-flow-api')
-    implementation project(':components:ledger:ledger-common-flow')
-    implementation project(':libs:serialization:serialization-checkpoint-api')
-    implementation project(':libs:serialization:serialization-internal')
-    implementation project(':libs:virtual-node:sandbox-group-context')
-
-    implementation project(":libs:serialization:json-validator")
     implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-common-data')
+    implementation project(":libs:serialization:json-validator")
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:sandbox-group-context')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

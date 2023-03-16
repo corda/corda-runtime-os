@@ -1,6 +1,10 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import com.typesafe.config.ConfigValueFactory
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -10,6 +14,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,10 +22,6 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
 @Timeout(10, unit = TimeUnit.SECONDS)
@@ -41,7 +42,9 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
     private data class Key(val type: Int)
     private data class State(val number: Int)
 
-    private val  config = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+    private val config = SmartConfigImpl.empty()
+        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(1000000))
 
     @Test
     fun `states and events going to the same partition`() {
@@ -88,7 +91,9 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             subscriptionFactory.createStateAndEventSubscription(
                 subscriptionConfig = subscriptionConfig,
                 processor = processor,
-                messagingConfig = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(it))
+                messagingConfig = config
+                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(it))
+                    .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(1000000))
             )
         }.onEach {
             it.start()

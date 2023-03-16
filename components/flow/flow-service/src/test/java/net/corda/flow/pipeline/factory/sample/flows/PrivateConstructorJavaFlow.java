@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.factory.sample.flows;
 
-import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.ClientRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.application.flows.ResponderFlow;
 import net.corda.v5.application.messaging.FlowSession;
@@ -17,7 +17,7 @@ public class PrivateConstructorJavaFlow implements ClientStartableFlow, Responde
 
     @NotNull
     @Override
-    public String call(@NotNull RestRequestBody requestBody) {
+    public String call(@NotNull ClientRequestBody requestBody) {
         throw new IllegalStateException("Should not reach this point");
     }
 }

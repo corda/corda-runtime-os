@@ -26,7 +26,7 @@ import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
-import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import org.slf4j.LoggerFactory

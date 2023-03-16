@@ -16,9 +16,9 @@ import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.utilities.debug
 import net.corda.utilities.reflection.kotlinObjectInstance
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.apache.qpid.proton.amqp.Symbol
 import org.slf4j.LoggerFactory
 import java.lang.reflect.ParameterizedType

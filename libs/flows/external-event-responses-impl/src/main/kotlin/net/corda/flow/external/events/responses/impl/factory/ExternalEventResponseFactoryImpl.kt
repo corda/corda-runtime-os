@@ -53,7 +53,9 @@ class ExternalEventResponseFactoryImpl(
     ): Record<String, FlowEvent> {
         return transientError(
             flowExternalEventContext,
-            ExceptionEnvelope(throwable::class.java.name, throwable.message)
+            ExceptionEnvelope(
+                throwable::class.java.name, throwable.message ?: "No exception message provided"
+            )
         )
     }
 
@@ -70,7 +72,9 @@ class ExternalEventResponseFactoryImpl(
     ): Record<String, FlowEvent> {
         return platformError(
             flowExternalEventContext,
-            ExceptionEnvelope(throwable::class.java.name, throwable.message)
+            ExceptionEnvelope(
+                throwable::class.java.name, throwable.message ?: "No exception message provided."
+            )
         )
     }
 
@@ -87,7 +91,9 @@ class ExternalEventResponseFactoryImpl(
     ): Record<String, FlowEvent> {
         return fatalError(
             flowExternalEventContext,
-            ExceptionEnvelope(throwable::class.java.name, throwable.message)
+            ExceptionEnvelope(
+                throwable::class.java.name, throwable.message ?: "No exception message provided."
+            )
         )
     }
 

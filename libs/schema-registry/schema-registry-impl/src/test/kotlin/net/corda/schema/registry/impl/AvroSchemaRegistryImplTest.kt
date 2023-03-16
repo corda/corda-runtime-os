@@ -1,14 +1,14 @@
 package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
-import net.corda.data.AvroGeneratedMessageClasses.Companion.getAvroGeneratedMessageClasses
+import net.corda.data.AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses
 import net.corda.data.crypto.SecureHash
 import net.corda.data.test.EvolvedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.parseAsHex
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.types.ByteArrays.parseAsHex
+import net.corda.v5.base.types.ByteArrays.toHexString
 import org.apache.avro.Schema
 import org.apache.avro.SchemaNormalization
 import org.apache.avro.generic.GenericContainer
@@ -26,7 +26,7 @@ internal class AvroSchemaRegistryImplTest {
     private val secureHash = SecureHash("algorithm", ByteBuffer.wrap("1".toByteArray()))
     private val expectedSchemaFingerprint: ByteArray =
         SchemaNormalization.parsingFingerprint("SHA-256", secureHash.schema)
-    private val avroGeneratedMessages = getAvroGeneratedMessageClasses(AvroSchemaRegistryImpl::class.java)
+    private val avroGeneratedMessages = getAvroGeneratedMessageClasses()
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
@@ -39,9 +39,9 @@ internal class AvroSchemaRegistryImplTest {
         registry.initialiseSchemas(avroGeneratedMessages)
         val encoded = registry.serialize(secureHash)
 
-        val encodedString = encoded.array().toHexString()
+        val encodedString = toHexString(encoded.array())
         assertThat(encodedString.contains(MAGIC.toString()))
-        assertThat(encodedString.contains(expectedSchemaFingerprint.toHexString()))
+        assertThat(encodedString.contains(toHexString(expectedSchemaFingerprint)))
 
         val decoded = registry.deserialize<SecureHash>(encoded)
         assertThat(secureHash).isEqualTo(decoded)
@@ -58,9 +58,9 @@ internal class AvroSchemaRegistryImplTest {
         registry.initialiseSchemas(avroGeneratedMessages)
         val encoded = registry.serialize(secureHash)
 
-        val encodedString = encoded.array().toHexString()
+        val encodedString = toHexString(encoded.array())
         assertThat(encodedString.contains(MAGIC.toString()))
-        assertThat(encodedString.contains(expectedSchemaFingerprint.toHexString()))
+        assertThat(encodedString.contains(toHexString(expectedSchemaFingerprint)))
 
         val reuse = SecureHash("reuse", ByteBuffer.wrap("3".toByteArray()))
         assertThat(secureHash).isNotEqualTo(reuse)
@@ -79,9 +79,9 @@ internal class AvroSchemaRegistryImplTest {
         serializingRegistry.initialiseSchemas(avroGeneratedMessages)
         val encoded = serializingRegistry.serialize(secureHash)
 
-        val encodedString = encoded.array().toHexString()
+        val encodedString = toHexString(encoded.array())
         assertThat(encodedString.contains(MAGIC.toString()))
-        assertThat(encodedString.contains(expectedSchemaFingerprint.toHexString()))
+        assertThat(encodedString.contains(toHexString(expectedSchemaFingerprint)))
 
         val deserializingRegistry = AvroSchemaRegistryImpl(
             options = AvroSchemaRegistryImpl.Options(
@@ -147,9 +147,9 @@ internal class AvroSchemaRegistryImplTest {
 
         val encoded = registry.serialize(nonAvroMessage)
 
-        val encodedString = encoded.array().toHexString()
+        val encodedString = toHexString(encoded.array())
         assertThat(encodedString.contains(MAGIC.toString()))
-        assertThat(encodedString.contains(expectedSchemaFingerprint.toHexString()))
+        assertThat(encodedString.contains(toHexString(expectedSchemaFingerprint)))
 
         val decoded = registry.deserialize<TestMessage>(encoded)
         assertThat(nonAvroMessage).isEqualTo(decoded)
@@ -170,7 +170,7 @@ internal class AvroSchemaRegistryImplTest {
         // val evolvedMessage = EvolvedMessage(5)
         // {"flags": 5}
         val encodedMessage = "636F726461010000DA291C049362E1AC80C927626090F4ECB88A0F881673325C2C994CBBA108C48400020A"
-        val encoded = encodedMessage.parseAsHex()
+        val encoded = parseAsHex(encodedMessage)
 
         registry.addSchemaOnly(previousSchema)
 
@@ -209,7 +209,7 @@ internal class AvroSchemaRegistryImplTest {
 
         val dummy = EvolvedMessage(0, "")
 
-        val encoded = ByteBuffer.wrap(evolvedMessage.parseAsHex())
+        val encoded = ByteBuffer.wrap(parseAsHex(evolvedMessage))
 
         val decoded = registry.deserialize(encoded, dummy)
         assertThat(decoded.flags).isEqualTo(5)
@@ -228,9 +228,9 @@ internal class AvroSchemaRegistryImplTest {
         repeat(1_000_000) {
             val encoded = registry.serialize(secureHash)
 
-            val encodedString = encoded.array().toHexString()
+            val encodedString = toHexString(encoded.array())
             assertThat(encodedString.contains(MAGIC.toString()))
-            assertThat(encodedString.contains(expectedSchemaFingerprint.toHexString()))
+            assertThat(encodedString.contains(toHexString(expectedSchemaFingerprint)))
 
             val decoded = registry.deserialize(encoded, reusable)
             assertThat(secureHash).isEqualTo(decoded)

@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
@@ -20,8 +21,7 @@ import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.toHex
-import net.corda.v5.crypto.sha256Bytes
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -44,7 +44,7 @@ import kotlin.test.assertTrue
 
 class HSMRegistrationBusProcessorTests {
     companion object {
-        private val tenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+        private val tenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
 
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),

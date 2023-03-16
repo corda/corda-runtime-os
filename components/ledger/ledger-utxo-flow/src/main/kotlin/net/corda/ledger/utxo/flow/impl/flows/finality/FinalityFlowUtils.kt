@@ -1,17 +1,21 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.v5.application.membership.MemberLookup
-import java.security.PublicKey
+import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.utxo.VisibilityChecker
 
-fun UtxoSignedTransactionInternal.getRelevantStatesIndexes(keys: Set<PublicKey>): List<Int> {
-    return this.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
+@Suspendable
+fun UtxoSignedTransactionInternal.getVisibleStateIndexes(checker: VisibilityChecker): List<Int> {
+    val result = mutableListOf<Int>()
+
+    for (index in outputStateAndRefs.indices) {
+        val stateAndRef = outputStateAndRefs[index]
         val contract = stateAndRef.state.contractType.getConstructor().newInstance()
-        contract.isRelevant(stateAndRef.state.contractState, keys)
-    }.map { it.index }
-}
 
-fun MemberLookup.getMyLedgerKeys() =
-    this.myInfo()
-        .ledgerKeys
-        .toSet()
+        if (contract.isVisible(stateAndRef.state.contractState, checker)) {
+            result.add(index)
+        }
+    }
+
+    return result
+}

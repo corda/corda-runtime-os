@@ -16,6 +16,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:lifecycle:lifecycle-impl")
     implementation project(':libs:lifecycle:registry')
+    implementation project(':libs:utilities')
     implementation project(':components:reconciliation:reconciliation')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

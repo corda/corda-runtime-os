@@ -1,4 +1,12 @@
 bootstrap:
+  db:
+    cluster:
+      username:
+        value: "postgres"
+      password:
+        valueFrom:
+          secretKeyRef:
+            key: "postgres-password"
   kafka:
     sasl:
       username:
@@ -15,12 +23,12 @@ logging:
 
 db:
   cluster:
-    username:
-      value: "user"
     password:
       valueFrom:
         secretKeyRef:
           key: "password"
+    username:
+      value: "user"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
@@ -95,13 +103,13 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
-  rpc:
+  rest:
     kafka:
       sasl:
         username:
-          value: "rpc"
+          value: "rest"
         password:
           valueFrom:
             secretKeyRef:
               name: "kafka-credentials"
-              key: "rpc"
+              key: "rest"

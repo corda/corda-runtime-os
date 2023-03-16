@@ -38,10 +38,14 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 
 class UpdateRegistrationRequestStatusHandlerTest {
-    private val clock = TestClock(Instant.ofEpochSecond(0))
+    private companion object {
+        const val REASON = "test reason"
+    }
 
+    private val clock = TestClock(Instant.ofEpochSecond(0))
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = "cbdc24f5-35b0-4ef3-be9e-f428d273d7b1"
     private val ourHoldingIdentity = HoldingIdentity(
@@ -112,9 +116,15 @@ class UpdateRegistrationRequestStatusHandlerTest {
     @Test
     fun `invoke throws exception when registration request cannot be found`() {
         val registrationId = "regId"
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(null)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(registrationId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(null)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
-        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
         assertThrows<MembershipPersistenceException> {
             updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
         }
@@ -126,14 +136,21 @@ class UpdateRegistrationRequestStatusHandlerTest {
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
             on { status } doReturn "SENT_TO_MGM"
         }
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(registrationId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
-        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
         clock.setTime(Instant.ofEpochMilli(500))
         updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
 
         verify(registrationRequestEntity).status = RegistrationStatus.PENDING_AUTO_APPROVAL.name
         verify(registrationRequestEntity).lastModified = Instant.ofEpochMilli(500)
+        verify(registrationRequestEntity).reason = REASON
         verify(entityManager, times(1)).merge(registrationRequestEntity)
     }
 
@@ -143,9 +160,15 @@ class UpdateRegistrationRequestStatusHandlerTest {
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
             on { status } doReturn "APPROVED"
         }
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(registrationId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
-        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
         clock.setTime(Instant.ofEpochMilli(500))
 
         updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)

@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.crypto.SecureHash
 
 /**
  *  The metadata associated with a CPI file.
@@ -12,7 +13,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
  */
 internal data class CpiMetadataLite(
     val id: CpiIdentifier,
-    val fileChecksum: String,
+    val fileChecksum: SecureHash,
     val mgmGroupId: String,
     val groupPolicy: String
 )
