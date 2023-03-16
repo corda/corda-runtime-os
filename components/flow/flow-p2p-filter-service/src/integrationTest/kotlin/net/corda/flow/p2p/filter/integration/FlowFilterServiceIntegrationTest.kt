@@ -103,13 +103,11 @@ class FlowFilterServiceIntegrationTest {
         val flowHeader = AuthenticatedMessageHeader(
             identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
         )
-        val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
                 testId,
-                version,
-                testId,
                 null,
+                emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
