@@ -77,8 +77,11 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     MEMBER_STATUS_ACTIVE,
                     now,
                     member.memberContext,
+                    member.signatureKey,
+                    member.signatureSpec,
+                    member.signatureContent,
                     serializedMgmContext,
-                    member.serialNumber
+                    member.serialNumber,
                 )
             )
 
@@ -94,23 +97,6 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             }
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
-
-            val signature = em.find(
-                MemberSignatureEntity::class.java,
-                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
-                LockModeType.PESSIMISTIC_WRITE,
-            ) ?: throw MembershipPersistenceException("Could not find signature for member: ${request.member}")
-
-            em.merge(
-                MemberSignatureEntity(
-                    member.groupId,
-                    member.memberX500Name,
-                    false,
-                    signature.publicKey,
-                    signature.signatureSpec,
-                    signature.content
-                )
-            )
 
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(

@@ -38,10 +38,13 @@ internal class PersistRegistrationRequestHandler(
                     created = now,
                     lastModified = now,
                     context = request.registrationRequest.memberContext.array(),
-                    serial = request.registrationRequest.serial
+                    signatureKey = request.registrationRequest.memberSignature.publicKey.array(),
+                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
+                    signatureContent = request.registrationRequest.memberSignature.bytes.array(),
+                    serial = request.registrationRequest.serial,
                 )
             )
-            em.merge(
+            /*em.merge(
                 MemberSignatureEntity(
                     groupId = request.registeringHoldingIdentity.groupId,
                     memberX500Name = request.registeringHoldingIdentity.x500Name,
@@ -50,7 +53,7 @@ internal class PersistRegistrationRequestHandler(
                     content = request.registrationRequest.memberSignature.bytes.array(),
                     isPending = request.registrationRequest.isPending
                 )
-            )
+            )*/
         }
     }
 }
