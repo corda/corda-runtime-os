@@ -93,8 +93,8 @@ internal class MGMRegistrationContextValidator(
         val clusterTlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
         if (contextRegistrationTlsType != clusterTlsType) {
             throw IllegalArgumentException(
-                "A cluster with TLS type is $clusterTlsType can not register " +
-                "MGM with TLS type $contextRegistrationTlsType"
+                "A cluster configured with TLS type of $clusterTlsType can not register " +
+                "an MGM with TLS type $contextRegistrationTlsType"
             )
         }
     }

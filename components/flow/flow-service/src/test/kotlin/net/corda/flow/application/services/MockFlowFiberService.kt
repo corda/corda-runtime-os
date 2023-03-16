@@ -6,6 +6,7 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
@@ -38,6 +39,7 @@ class MockFlowFiberService : FlowFiberService {
     val platformContext = mapOf(platformKey to platformValue)
 
     private val flowContext = mock<FlowContext>()
+    private val platformProperties = mock<ContextPlatformProperties>()
 
     init {
         /**
@@ -62,6 +64,7 @@ class MockFlowFiberService : FlowFiberService {
 
         whenever(flowContext.flattenUserProperties()).thenReturn(userContext)
         whenever(flowContext.flattenPlatformProperties()).thenReturn(platformContext)
+        whenever(flowContext.platformProperties).thenReturn(platformProperties)
         whenever(flowCheckpoint.flowContext).thenReturn(flowContext)
     }
 
