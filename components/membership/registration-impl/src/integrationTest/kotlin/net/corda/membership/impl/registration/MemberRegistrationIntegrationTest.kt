@@ -281,8 +281,6 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        membershipGroupReaderProvider.getGroupReader(member).lookup()
-
         registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
         }
