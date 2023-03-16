@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
+import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -115,7 +116,7 @@ class UtxoRepositoryImpl @Activate constructor(
                 JOIN {h-schema}utxo_transaction_status AS ts
                     ON ts.transaction_id = tc.transaction_id
                 WHERE tc.group_idx IN (:groupIndices)
-                AND rts.consumed = false
+                AND rts.consumed IS NULL
                 AND ts.status = :verified
                 ORDER BY tc.group_idx, tc.leaf_idx""",
             Tuple::class.java
@@ -202,15 +203,17 @@ class UtxoRepositoryImpl @Activate constructor(
 
     override fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        stateRefs: List<StateRef>
+        stateRefs: List<StateRef>,
+        timestamp: Instant
     ) {
         entityManager.createNativeQuery(
         """
             UPDATE {h-schema}utxo_relevant_transaction_state
-            SET consumed = true
+            SET consumed = :consumed
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
         )
+            .setParameter("consumed", timestamp)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
@@ -331,21 +334,30 @@ class UtxoRepositoryImpl @Activate constructor(
         groupIndex: Int,
         leafIndex: Int,
         consumed: Boolean,
-        timestamp: Instant
+        customRepresentation: CustomRepresentation,
+        timestamp: Instant,
     ) {
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_relevant_transaction_state(
-                transaction_id, group_idx, leaf_idx, consumed, created)
+                transaction_id, group_idx, leaf_idx, custom_representation, created, consumed
+            )
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :consumed, :createdAt)
+                :transactionId, 
+                :groupIndex, 
+                :leafIndex, 
+                CAST(:custom_representation as JSONB), 
+                :createdAt, 
+                ${if (consumed) ":consumedAt" else "null"}
+            )
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
-            .setParameter("consumed", consumed)
+            .setParameter("custom_representation", customRepresentation.json)
             .setParameter("createdAt", timestamp)
+            .run { if (consumed) setParameter("consumedAt", timestamp) else this }
             .executeUpdate()
             .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
     }
