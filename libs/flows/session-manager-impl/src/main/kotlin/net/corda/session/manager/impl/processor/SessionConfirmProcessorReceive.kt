@@ -6,6 +6,7 @@ import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
+import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -33,12 +34,13 @@ class SessionConfirmProcessorReceive(
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionConfirm-NullState", instant)
         } else {
+            val eventsReceived = sessionState.receivedEventsState.undeliveredMessages.plus(sessionEvent)
+                .distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
 
             sessionState.apply {
                 counterpartySessionProperties = sessionConfirm.contextSessionProperties
                 //recalc high watermark but do not add the session confirm to the undelivered messages
-                receivedEventsState.lastProcessedSequenceNum =
-                    recalcHighWatermark(sessionState.receivedEventsState.undeliveredMessages.plus(sessionEvent))
+                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(eventsReceived)
             }
 
             logger.trace {
@@ -48,21 +50,5 @@ class SessionConfirmProcessorReceive(
 
             return sessionState
         }
-    }
-
-    private fun recalcHighWatermark(receivedEvents: List<SessionEvent>): Int {
-        var highestContiguousSeqNum = 0
-        val sortedEvents = receivedEvents.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
-        for (undeliveredMessage in sortedEvents) {
-            if (undeliveredMessage.sequenceNum == highestContiguousSeqNum + 1) {
-                highestContiguousSeqNum++
-            } else if (undeliveredMessage.sequenceNum < highestContiguousSeqNum) {
-                continue
-            } else {
-                break
-            }
-        }
-
-        return highestContiguousSeqNum
     }
 }

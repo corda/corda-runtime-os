@@ -102,25 +102,22 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
 }
 
 /**
- * Update and return the received events session state. Set the last processed sequence number to the last
+ * Recalculate the last processed sequence number to the last
  * contiguous event in the sequence of [undeliveredMessages].
  */
-fun recalcReceivedProcessState(receivedEventsState: SessionProcessState): SessionProcessState {
-    var nextSeqNum = receivedEventsState.lastProcessedSequenceNum + 1
-    val undeliveredMessages = receivedEventsState.undeliveredMessages
-
-    val sortedEvents = undeliveredMessages.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
+fun recalcHighWatermark(sortedEvents: List<SessionEvent>): Int {
+    var highestContiguousSeqNum = 0
     for (undeliveredMessage in sortedEvents) {
-        if (undeliveredMessage.sequenceNum == nextSeqNum) {
-            nextSeqNum++
-        } else if (undeliveredMessage.sequenceNum < nextSeqNum) {
+        if (undeliveredMessage.sequenceNum == highestContiguousSeqNum + 1) {
+            highestContiguousSeqNum++
+        } else if (undeliveredMessage.sequenceNum < highestContiguousSeqNum) {
             continue
         } else {
             break
         }
     }
 
-    return SessionProcessState(nextSeqNum - 1, sortedEvents)
+    return highestContiguousSeqNum
 }
 
 /**
