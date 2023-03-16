@@ -8,7 +8,7 @@ description 'Security Manager One'
 group 'com.example.securitymanager'
 
 cordapp {
-    targetPlatformVersion 999 as Integer
+    targetPlatformVersion = 999
     contract {
         name 'Security Manager One CPK'
         versionId 1
@@ -22,7 +22,6 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     cordaProvided 'org.osgi:osgi.core'
-    cordaProvided 'org.jetbrains:annotations'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'org.slf4j:slf4j-api'
