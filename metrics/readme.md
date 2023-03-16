@@ -6,7 +6,7 @@ The docker-compose configuration in this directory can be used to test this in t
 To start Prometheus and Grafana, simply run `docker compose up` in this directory and browse to the grafana dashboard by
 on to `http://localhost:3000/` using the initial username & password of admin/admin. 
 
-Prometheus is using the worker's `/metrics` endpoint exposed on port `7000` (default).
+Prometheus is using the worker's `/metrics` endpoint exposed on port `7004` (default).
 
 ## Grafana datasource
 
@@ -24,4 +24,3 @@ This can be found by going to `Dashboards` -> `Browse`, then searching for `JVM`
 Custom metrics can be added to a dashboard by choosing the metrics name from the datasource. E.g. `http_server_requests_total`.
 An example Corda dashboard has been added (`grafana/provisioning/dashboards/corda.json`). Please note that this is for testing and 
 development purpose and is not officially supported. Feel free to add/change/improve.
-
