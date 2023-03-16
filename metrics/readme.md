@@ -6,7 +6,7 @@ The docker-compose configuration in this directory can be used to test this in t
 To start Prometheus and Grafana, simply run `docker compose up` in this directory and browse to the grafana dashboard by
 on to `http://localhost:3000/` using the initial username & password of admin/admin. 
 
-Prometheus is using the worker's `/metrics` endpoint exposed on port `7004` (default).
+Prometheus is using the worker's `/metrics` endpoint exposed on the configured worker port (default `7000`, or `7004` for the combined worker by default).
 
 ## Grafana datasource
 
