@@ -16,6 +16,11 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
 class MemberNotaryDetailsConverterTest {
+    private companion object {
+        const val SERVICE_NAME = "service.name"
+        const val SERVICE_PROTOCOL = "service.flow.protocol.name"
+    }
+
     private val publicKeyOne = mock<PublicKey> {
         on { encoded } doReturn byteArrayOf(1, 2, 3)
     }
@@ -29,8 +34,8 @@ class MemberNotaryDetailsConverterTest {
     private val hashOne = PublicKeyHash.calculate(publicKeyOne).value
     private val hashTwo = PublicKeyHash.calculate(publicKeyTwo).value
     private val context = mock<ConversionContext> {
-        on { value("service.name") } doReturn "O=Service, L=London, C=GB"
-        on { value("service.plugin") } doReturn "net.corda.membership.Plugin"
+        on { value(SERVICE_NAME) } doReturn "O=Service, L=London, C=GB"
+        on { value(SERVICE_PROTOCOL) } doReturn "net.corda.membership.Plugin"
         on { value("keys.0.hash") } doReturn hashOne
         on { value("keys.0.pem") } doReturn "PEM1"
         on { value("keys.0.signature.spec") } doReturn SignatureSpec.ECDSA_SHA512.signatureName
@@ -73,7 +78,7 @@ class MemberNotaryDetailsConverterTest {
 
     @Test
     fun `convert throws exception if service name is missing`() {
-        whenever(context.value("service.name")).doReturn(null)
+        whenever(context.value(SERVICE_NAME)).doReturn(null)
 
         assertThrows<ValueNotFoundException> {
             converter.convert(context)
@@ -82,7 +87,7 @@ class MemberNotaryDetailsConverterTest {
 
     @Test
     fun `convert return null plugin if plugin is not set`() {
-        whenever(context.value("service.plugin")).doReturn(null)
+        whenever(context.value(SERVICE_PROTOCOL)).doReturn(null)
 
         assertThat(converter.convert(context).servicePlugin).isNull()
     }

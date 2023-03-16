@@ -5,7 +5,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PLUGIN
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.v5.base.types.MemberX500Name
 
@@ -50,7 +50,7 @@ internal sealed class MemberRole {
         private fun readNotary(context: Map<String, String>): Notary {
             val serviceName = context[NOTARY_SERVICE_NAME]
             if(serviceName.isNullOrEmpty()) throw IllegalArgumentException("Notary must have a non-empty service name.")
-            val plugin = context[NOTARY_SERVICE_PLUGIN]
+            val plugin = context[NOTARY_SERVICE_PROTOCOL]
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 plugin = plugin,
@@ -85,7 +85,7 @@ internal sealed class MemberRole {
                 emptyList()
             } else {
                 listOf(
-                    NOTARY_SERVICE_PLUGIN to plugin,
+                    NOTARY_SERVICE_PROTOCOL to plugin,
                 )
             }
         }

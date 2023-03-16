@@ -23,7 +23,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
 ) : CustomPropertyConverter<MemberNotaryDetails> {
     private companion object {
         const val SERVICE_NAME = "service.name"
-        const val SERVICE_PLUGIN = "service.plugin"
+        const val SERVICE_PROTOCOL = "service.flow.protocol.name"
         const val KEYS_PREFIX = "keys."
         const val HASH = ".hash"
         const val PEM = ".pem"
@@ -35,7 +35,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
 
     override fun convert(context: ConversionContext): MemberNotaryDetails {
         val serviceName = context.value(SERVICE_NAME) ?: throw ValueNotFoundException("'$SERVICE_NAME' is null or absent.")
-        val servicePlugin = context.value(SERVICE_PLUGIN)
+        val servicePlugin = context.value(SERVICE_PROTOCOL)
         val keys = generateSequence(0) {
             it + 1
         }.map { index ->
