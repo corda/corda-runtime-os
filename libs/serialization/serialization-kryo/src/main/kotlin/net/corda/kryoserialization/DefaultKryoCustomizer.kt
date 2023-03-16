@@ -52,6 +52,7 @@ class DefaultKryoCustomizer {
         ): Kryo {
             return kryo.apply {
                 isRegistrationRequired = false
+                setOptimizedGenerics(false)
 
                 val defaultSerializerConfig = FieldSerializerConfig().apply {
                     // Take the safest route here and allow subclasses to have fields named the same as super classes.
