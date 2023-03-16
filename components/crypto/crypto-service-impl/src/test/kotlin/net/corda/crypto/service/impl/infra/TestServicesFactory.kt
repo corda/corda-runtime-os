@@ -21,7 +21,7 @@ import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.impl.CryptoServiceProviderImpl
+import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
@@ -230,8 +230,8 @@ class TestServicesFactory {
 
     // this MUST return cryptoService at the end of the day, rather than make its own,
     // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
-    val cryptoServiceProvider: CryptoServiceProviderImpl by lazy {
-        CryptoServiceProviderImpl(
+    val cryptoServiceProvider: CryptoServiceFactoryImpl by lazy {
+        CryptoServiceFactoryImpl(
             coordinatorFactory,
             configurationReadService,
             hsmStore,

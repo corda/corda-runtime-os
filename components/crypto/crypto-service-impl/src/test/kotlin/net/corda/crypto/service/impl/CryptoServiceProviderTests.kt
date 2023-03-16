@@ -22,7 +22,7 @@ class CryptoServiceProviderTests {
     private lateinit var tenantId1: String
     private lateinit var tenantId2: String
     private lateinit var factory: TestServicesFactory
-    private lateinit var component: CryptoServiceProviderImpl
+    private lateinit var component: CryptoServiceFactoryImpl
 
     @BeforeEach
     fun setup() {
@@ -41,7 +41,7 @@ class CryptoServiceProviderTests {
 
         // now make a new crypto service factory, since we cannot reuse the previous one since we
         // closed its coordinator and that's game over.
-        component = CryptoServiceProviderImpl(
+        component = CryptoServiceFactoryImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmStore,

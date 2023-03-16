@@ -33,7 +33,7 @@ import java.time.Duration
  * and CryptoServiceDecorator to add retries logic
  */
 @Component(service = [CryptoServiceProvider::class])
-class CryptoServiceProviderImpl @Activate constructor(
+class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -42,7 +42,7 @@ class CryptoServiceProviderImpl @Activate constructor(
     private val hsmStore: HSMStore,
     @Reference(service = CryptoService::class)
     private val cryptoService: CryptoService,
-) : AbstractConfigurableComponent<CryptoServiceProviderImpl.Impl>(
+) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceProvider>(),
     configurationReadService = configurationReadService,
