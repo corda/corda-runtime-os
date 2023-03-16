@@ -156,6 +156,82 @@ class VirtualNodeRpcTest {
         return cpiHash
     }
 
+    /**
+     * Runs second to ensure that we reject this with a correct message
+     */
+    @Test
+    @Order(20)
+    fun `cannot upload a CPB`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val requestId = cpbUpload(TEST_CPB_LOCATION).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition {
+                    try {
+                        if (it.code == 400) {
+                            val json = it.toJson()["details"]
+                            json.has("errorMessage")
+                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_CPB_INSTEAD_OF_CPI
+                        } else {
+                            false
+                        }
+                    } catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @Order(30)
+    fun `cannot upload same CPI`() {
+        cluster {
+            endpoint(
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
+            )
+            val requestId = cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
+                .let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 409 }
+            }
+        }
+    }
+
+    @Test
+    @Order(31)
+    fun `cannot upload same CPI with different groupId`() {
+        cluster {
+            endpoint(
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
+            )
+            val requestId = cpiUpload(
+                TEST_CPB_LOCATION,
+                "8c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
+                staticMemberList,
+                cpiName
+            ).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 409 }
+            }
+        }
+    }
+
     @Test
     @Order(32)
     fun `can upload different CPI with same groupId`() {
@@ -259,6 +335,9 @@ class VirtualNodeRpcTest {
         val vnodeShortHash = vNodeJson["requestId"].textValue()
         assertThat(vnodeShortHash).isNotNull.isNotEmpty
 
+        println("created vNode with x500 $x500Name and cpiFileChecksum $cpiFileChecksum")
+        println("and vNodeShortHash: $vnodeShortHash")
+
         assertWithRetry {
             command { getVNode(vnodeShortHash)}
             condition { it.code == 200 }
@@ -267,6 +346,20 @@ class VirtualNodeRpcTest {
             )
         }
         return vnodeShortHash
+    }
+
+    @Test
+    @Order(50)
+    fun `cannot create duplicate virtual node`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val hash = getCpiChecksum(cpiName)
+
+            assertWithRetry {
+                command { vNodeCreate(hash, aliceX500) }
+                condition { it.code == 409 }
+            }
+        }
     }
 
     @Test
@@ -430,141 +523,6 @@ class VirtualNodeRpcTest {
                 USERNAME,
                 PASSWORD
             )
-
-            runSimplePersistenceCheckFlow("Could persist dog")
-        }
-    }
-
-//    @Test
-//    @Order(90)
-//    fun `can force upload the CPI with a new set of CPKs`() {
-//        cluster {
-//            endpoint(
-//                CLUSTER_URI,
-//                USERNAME,
-//                PASSWORD
-//            )
-//
-//            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-//
-//            val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
-//                .let { it.toJson()["id"].textValue() }
-//            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-//
-//            assertWithRetry {
-//                command { cpiStatus(requestId) }
-//                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-//            }
-//
-//            eventually(Duration.ofSeconds(120)) {
-//                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-//            }
-//        }
-//    }
-
-    @Test
-    @Order(91)
-    fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
-            runReturnAStringFlow("force-uploaded-cpi")
-        }
-    }
-
-    @Test
-    @Order(92)
-    fun `can sync the virtual node's DB and run a flow on the force uploaded CPI to persist a fish entity`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            // Status 204 indicates a non-error but no response data
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
-
-            runSimplePersistenceCheckFlow("Could persist Floaty")
-        }
-    }
-
-//    @Test
-//    @Order(93)
-//    fun `can force upload the CPI with CPKs that have no changelogs`() {
-//        cluster {
-//            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-//
-//            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-//
-//            val requestId = forceCpiUpload(TEST_CPB_WITHOUT_CHANGELOGS_LOCATION, GROUP_ID, staticMemberList, cpiName)
-//                .let { it.toJson()["id"].textValue() }
-//            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-//
-//            assertWithRetry {
-//                command { cpiStatus(requestId) }
-//                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-//            }
-//
-//            eventually(Duration.ofSeconds(120)) {
-//                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-//            }
-//        }
-//    }
-
-//    @Test
-//    @Order(94)
-//    fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
-//        cluster {
-//            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-//            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
-//
-//            val className = "net.cordapp.testing.smoketests.virtualnode.NoChangelogFlow"
-//            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
-//            val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
-//
-//            assertThat(flowStatus.flowResult).isEqualTo("NO_CHANGELOG_FLOW_COMPLETE")
-//        }
-//    }
-
-    @Test
-    @Order(100)
-    fun `can force upload the original CPI back again and run a flow that does not interact with the database`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-
-            runReturnAStringFlow("original-cpi")
-        }
-    }
-
-    @Test
-    @Order(101)
-    fun `can sync the vault DB again and run a flow from the original CPI that persists a dog entity`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
 
             runSimplePersistenceCheckFlow("Could persist dog")
         }
