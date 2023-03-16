@@ -58,12 +58,12 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     override fun persist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
-        relevantStatesIndexes: List<Int>
+        visibleStatesIndexes: List<Int>
     ): List<CordaPackageSummary> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, relevantStatesIndexes)
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
             )
         }.map { serializationService.deserialize(it.array()) }
     }
