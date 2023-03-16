@@ -101,12 +101,9 @@ class SessionEventHandler @Activate constructor(
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
         val holdingIdentity = initiatedIdentity.toCorda()
-        val sessionProperties = KeyValueStore(sessionInit.contextSessionProperties)
-        val requestedProtocolName = sessionProperties[FLOW_PROTOCOL].toString()
-        val initiatorVersionsSupportedProp = sessionProperties[FLOW_PROTOCOL_VERSIONS_SUPPORTED]
-        val initiatorVersionsSupported = initiatorVersionsSupportedProp?.split(",")?.map { it.toInt() } ?: emptyList()
-
+        val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionInit, sessionEvent)
         var initiatedFlowNameAndProtocol: FlowAndProtocolVersion? = null
+
         checkpointInitializer.initialize(
             context.checkpoint,
             WaitingFor(WaitingForSessionInit(sessionId)),
@@ -142,6 +139,22 @@ class SessionEventHandler @Activate constructor(
         context.checkpoint.putSessionState(initialSessionState)
 
         sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
+    }
+
+    private fun getProtocolInfo(
+        sessionInit: SessionInit,
+        sessionEvent: SessionEvent,
+    ): Pair<String, List<Int>> {
+        val sessionProperties = KeyValueStore(sessionInit.contextSessionProperties)
+        val requestedProtocolName = sessionProperties[FLOW_PROTOCOL]
+        val initiatorVersionsSupportedProp = sessionProperties[FLOW_PROTOCOL_VERSIONS_SUPPORTED]
+        if (requestedProtocolName == null || initiatorVersionsSupportedProp == null) {
+            throw FlowFatalException(
+                "Failed to start initiated flow for sessionId ${sessionEvent.sessionId}. Flow protocol info is " +
+                        "missing from SessionInit"
+            )
+        }
+        return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.toInt() })
     }
 
     private fun sendConfirmMessage(
