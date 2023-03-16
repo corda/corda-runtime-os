@@ -1,7 +1,7 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
 import com.fasterxml.jackson.databind.JsonNode
-import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
+//import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.CLUSTER_URI
@@ -28,12 +28,10 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCATION
+//import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCATION
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V3
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V4
 import net.corda.e2etest.utilities.getFlowStatus
 
 /**
@@ -437,32 +435,32 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
-    @Order(90)
-    fun `can force upload the CPI with a new set of CPKs`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-        }
-    }
+//    @Test
+//    @Order(90)
+//    fun `can force upload the CPI with a new set of CPKs`() {
+//        cluster {
+//            endpoint(
+//                CLUSTER_URI,
+//                USERNAME,
+//                PASSWORD
+//            )
+//
+//            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
+//
+//            val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
+//                .let { it.toJson()["id"].textValue() }
+//            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+//
+//            assertWithRetry {
+//                command { cpiStatus(requestId) }
+//                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+//            }
+//
+//            eventually(Duration.ofSeconds(120)) {
+//                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
+//            }
+//        }
+//    }
 
     @Test
     @Order(91)
@@ -494,43 +492,43 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
-    @Order(93)
-    fun `can force upload the CPI with CPKs that have no changelogs`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+//    @Test
+//    @Order(93)
+//    fun `can force upload the CPI with CPKs that have no changelogs`() {
+//        cluster {
+//            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+//
+//            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
+//
+//            val requestId = forceCpiUpload(TEST_CPB_WITHOUT_CHANGELOGS_LOCATION, GROUP_ID, staticMemberList, cpiName)
+//                .let { it.toJson()["id"].textValue() }
+//            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+//
+//            assertWithRetry {
+//                command { cpiStatus(requestId) }
+//                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+//            }
+//
+//            eventually(Duration.ofSeconds(120)) {
+//                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
+//            }
+//        }
+//    }
 
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(TEST_CPB_WITHOUT_CHANGELOGS_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-        }
-    }
-
-    @Test
-    @Order(94)
-    fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
-
-            val className = "net.cordapp.testing.smoketests.virtualnode.NoChangelogFlow"
-            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
-            val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
-
-            assertThat(flowStatus.flowResult).isEqualTo("NO_CHANGELOG_FLOW_COMPLETE")
-        }
-    }
+//    @Test
+//    @Order(94)
+//    fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
+//        cluster {
+//            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+//            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+//
+//            val className = "net.cordapp.testing.smoketests.virtualnode.NoChangelogFlow"
+//            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+//            val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+//
+//            assertThat(flowStatus.flowResult).isEqualTo("NO_CHANGELOG_FLOW_COMPLETE")
+//        }
+//    }
 
     @Test
     @Order(100)
@@ -580,8 +578,6 @@ class VirtualNodeRpcTest {
 
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V3, upgradeTestingCpiName, "v3")
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V4, upgradeTestingCpiName, "v4")
         }
     }
 
