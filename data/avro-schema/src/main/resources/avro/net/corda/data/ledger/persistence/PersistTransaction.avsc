@@ -15,12 +15,12 @@
       "doc": "the transaction status"
     },
     {
-      "name": "relevantStatesIndexes",
+      "name": "visibleStatesIndexes",
       "type": {
         "type" : "array",
         "items" : "int"
       },
-      "doc": "indexes of the relevant states"
+      "doc": "indexes of the visible states"
     }
   ]
 }

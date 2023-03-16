@@ -3,9 +3,9 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <changeSet author="R3.Corda" id="ledger-utxo-relevant-transaction-state-creation-postgres-v1.0" dbms="postgresql">
+    <changeSet author="R3.Corda" id="ledger-utxo-visible-transaction-state-creation-postgres-v1.0" dbms="postgresql">
 
-        <createTable tableName="utxo_relevant_transaction_state">
+        <createTable tableName="utxo_visible_transaction_state">
             <column name="transaction_id" type="VARCHAR(160)">
                 <constraints nullable="false"/>
             </column>
@@ -26,11 +26,11 @@
             </column>
         </createTable>
         <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
-                       constraintName="utxo_relevant_transaction_state_pkey"
-                       tableName="utxo_relevant_transaction_state"/>
+                       constraintName="utxo_visible_transaction_state_pkey"
+                       tableName="utxo_visible_transaction_state"/>
         <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
-                                 baseTableName="utxo_relevant_transaction_state"
-                                 constraintName="fk_utxo_relevant_transaction_state"
+                                 baseTableName="utxo_visible_transaction_state"
+                                 constraintName="fk_utxo_visible_transaction_state"
                                  referencedColumnNames="transaction_id,group_idx,leaf_idx"
                                  referencedTableName="utxo_transaction_component"/>
     </changeSet>

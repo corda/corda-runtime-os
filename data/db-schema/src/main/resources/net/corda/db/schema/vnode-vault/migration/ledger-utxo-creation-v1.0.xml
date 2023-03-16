@@ -192,5 +192,5 @@
                        tableName="utxo_transaction_cpk"/>
     </changeSet>
 
-    <include file="net/corda/db/schema/vnode-vault/migration/ledger-utxo-relevant-transaction-state-creation-v1.0.xml"/>
+    <include file="net/corda/db/schema/vnode-vault/migration/ledger-utxo-visible-transaction-state-creation-v1.0.xml"/>
 </databaseChangeLog>
