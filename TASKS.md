@@ -9,5 +9,5 @@
 * Implement signing key rekeying
 * Config schema change for controlling key rotation (addition only)
 * E2E test that checks signature can be done after key rotation, with virtualised time
-* tidy up: Move components/crypto/persistence to libs/crypto
-* tidy up
+* move components/crypto/persistence to libs/crypto
+* combine CryptoServiceFactoryImpl and CryptoServiceProviderImpl
