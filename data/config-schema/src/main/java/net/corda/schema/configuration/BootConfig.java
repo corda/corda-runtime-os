@@ -5,6 +5,7 @@ import static net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZ
 /**
  * Configuration paths for values used to bootstrap the worker
  */
+@SuppressWarnings("unused")
 public final class BootConfig {
     private BootConfig() {
     }
@@ -26,4 +27,9 @@ public final class BootConfig {
     public static final String BOOT_DIR = "dir";
     public static final String BOOT_WORKSPACE_DIR = BOOT_DIR + ".workspace";
     public static final String BOOT_TMP_DIR = BOOT_DIR + ".tmp";
+
+    public static final String BOOT_REST = "rest";
+    public static final String BOOT_REST_PARAMS = BOOT_REST + ".params";
+    public static final String BOOT_REST_TLS_KEYSTORE_FILE_PATH = BOOT_REST_PARAMS + ".tls.keystore.file.path";
+    public static final String BOOT_REST_TLS_KEYSTORE_PASSWORD = BOOT_REST_PARAMS + ".tls.keystore.password";
 }
