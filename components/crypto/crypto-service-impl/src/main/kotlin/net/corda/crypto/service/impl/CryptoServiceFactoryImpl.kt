@@ -12,7 +12,6 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.softhsm.CryptoServiceFactory
 import net.corda.libs.configuration.SmartConfig

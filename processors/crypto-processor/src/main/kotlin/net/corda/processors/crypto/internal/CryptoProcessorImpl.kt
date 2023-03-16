@@ -11,10 +11,10 @@ import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
-import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
+import net.corda.crypto.softhsm.CryptoServiceFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -94,7 +94,6 @@ class CryptoProcessorImpl @Activate constructor(
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
         ::cryptoOpsClient,
-        ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
         ::hsmRegistration,
