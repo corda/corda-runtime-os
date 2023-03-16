@@ -9,7 +9,7 @@ import net.corda.utilities.time.UTCClock
 import org.slf4j.Logger
 
 const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"
-const val NOTARY_SERVICE_PLUGIN_KEY = "corda.notary.service.%s.plugin"
+const val NOTARY_SERVICE_PROTOCOL_KEY = "corda.notary.service.%s.protocol"
 const val NOTARY_SERVICE_KEYS_KEY = "corda.notary.service.%s.keys.%s"
 const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
 const val EPOCH_KEY = "corda.epoch"
@@ -30,7 +30,7 @@ fun updateExistingNotaryService(
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
     notaryDetails.servicePlugin?.let {
-        require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
+        require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
             throw MembershipPersistenceException("Cannot add notary to notary service " +
                     "'$notaryServiceName' - plugin types do not match.")
         }
@@ -93,7 +93,7 @@ fun addNewNotaryService(
             )
         } + listOf(
         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName),
-        KeyValuePair(String.format(NOTARY_SERVICE_PLUGIN_KEY, newNotaryServiceNumber), notaryDetails.servicePlugin)
+        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.servicePlugin)
     )
     val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
     val parametersWithUpdatedEpoch = with(currentParameters) {

@@ -19,6 +19,9 @@ import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
@@ -200,9 +203,9 @@ class AddNotaryToGroupParametersHandlerTest {
                 listOf(
                     KeyValuePair(EPOCH_KEY, "2"),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                    KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
-                    KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
-                    KeyValuePair("corda.notary.service.0.keys.0", "test-key"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), KNOWN_NOTARY_SERVICE),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), "test-key"),
                 )
             ))
             assertThat(result).isEqualTo(PersistGroupParametersResponse(persistedParameters))
@@ -248,9 +251,9 @@ class AddNotaryToGroupParametersHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(mutableListOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-                KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
+                KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
             ))
         )
 
@@ -270,10 +273,10 @@ class AddNotaryToGroupParametersHandlerTest {
                 listOf(
                     KeyValuePair(EPOCH_KEY, "2"),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                    KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                    KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-                    KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
-                    KeyValuePair("corda.notary.service.5.keys.1", "test-key"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
                 )
             ))
             assertThat(result).isEqualTo(PersistGroupParametersResponse(persistedParameters))
@@ -318,9 +321,9 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val mockGroupParameters = KeyValuePairList(mutableListOf(
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-            KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-            KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
-            KeyValuePair("corda.notary.service.5.keys.0", "test-key")
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "test-key")
         ))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(mockGroupParameters)
 
@@ -415,8 +418,8 @@ class AddNotaryToGroupParametersHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(mutableListOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-                KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
-                KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
+                KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
             ))
         )
 

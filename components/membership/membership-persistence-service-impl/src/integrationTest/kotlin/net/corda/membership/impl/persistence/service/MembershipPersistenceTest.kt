@@ -50,9 +50,15 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -60,6 +66,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -669,12 +678,12 @@ class MembershipPersistenceTest {
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-                KeyValuePair("corda.notary.service.name", notaryServiceName),
-                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
-                KeyValuePair("corda.roles.0", "notary"),
-                KeyValuePair("corda.notary.keys.0.pem", keyEncodingService.encodeAsString(notaryKey)),
-                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), keyEncodingService.encodeAsString(notaryKey)),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
@@ -687,9 +696,9 @@ class MembershipPersistenceTest {
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
             KeyValuePair(MPV_KEY, "5000"),
-            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-            KeyValuePair("corda.notary.service.0.keys.0", keyEncodingService.encodeAsString(notaryKey)),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
@@ -735,12 +744,12 @@ class MembershipPersistenceTest {
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-                KeyValuePair("corda.notary.service.name", notaryServiceName),
-                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
-                KeyValuePair("corda.roles.0", "notary"),
-                KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
-                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
@@ -760,8 +769,8 @@ class MembershipPersistenceTest {
                             KeyValuePair(EPOCH_KEY, "100"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                             KeyValuePair(MPV_KEY, "5000"),
-                            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-                            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin)
+                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin)
                             )
                         )
                     )!!
@@ -771,9 +780,9 @@ class MembershipPersistenceTest {
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "101"),
             KeyValuePair(MPV_KEY, "5000"),
-            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-            KeyValuePair("corda.notary.service.0.keys.0", notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
@@ -820,12 +829,12 @@ class MembershipPersistenceTest {
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-                KeyValuePair("corda.notary.service.name", notaryServiceName),
-                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
-                KeyValuePair("corda.roles.0", "notary"),
-                KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
-                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
@@ -848,9 +857,9 @@ class MembershipPersistenceTest {
                             KeyValuePair(EPOCH_KEY, "150"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                             KeyValuePair(MPV_KEY, "5000"),
-                            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-                            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-                            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey)
+                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey)
                         )
                     )
                 )!!
@@ -860,10 +869,10 @@ class MembershipPersistenceTest {
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "151"),
             KeyValuePair(MPV_KEY, "5000"),
-            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey),
-            KeyValuePair("corda.notary.service.0.keys.1", notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)

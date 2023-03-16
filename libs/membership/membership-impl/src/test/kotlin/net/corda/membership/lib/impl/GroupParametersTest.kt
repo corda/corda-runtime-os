@@ -7,6 +7,9 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
 import net.corda.membership.lib.impl.converter.NotaryInfoConverter
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
@@ -52,9 +55,9 @@ class GroupParametersTest {
             MPV_KEY to mpv.toString(),
             EPOCH_KEY to epoch.toString(),
             MODIFIED_TIME_KEY to time.toString(),
-            "corda.notary.service.0.name" to notaryName.toString(),
-            "corda.notary.service.0.plugin" to PLUGIN,
-            "corda.notary.service.0.keys.0" to KEY
+            String.format(NOTARY_SERVICE_NAME_KEY, 0) to notaryName.toString(),
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0) to PLUGIN,
+            String.format(NOTARY_SERVICE_KEYS_KEY, 0) to KEY
         ),
         listOf(NotaryInfoConverter(compositeKeyProvider), PublicKeyConverter(keyEncodingService))
     )
