@@ -22,7 +22,7 @@ import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.softhsm.CryptoServiceFactory
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -35,7 +35,7 @@ import java.security.PublicKey
 @Suppress("TooManyFunctions")
 class SigningServiceImpl(
     private val store: SigningKeyStore,
-    private val cryptoServiceFactory: CryptoServiceFactory,
+    private val cryptoServiceProvider: CryptoServiceProvider,
     override val schemeMetadata: CipherSchemeMetadata,
     private val digestService: PlatformDigestService
 ) : SigningService {
@@ -47,7 +47,7 @@ class SigningServiceImpl(
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
-        val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
+        val ref = cryptoServiceProvider.findInstance(tenantId = tenantId, category = category)
         return ref.instance.supportedSchemes.map { it.key.codeName }
     }
 
@@ -92,7 +92,7 @@ class SigningServiceImpl(
             "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
                     "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
-        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(masterKeyAlias, failIfExists, context)
+        cryptoServiceProvider.getInstance(hsmId).createWrappingKey(masterKeyAlias, failIfExists, context)
     }
 
     override fun generateKeyPair(
@@ -169,7 +169,7 @@ class SigningServiceImpl(
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
+        val cryptoService = cryptoServiceProvider.getInstance(record.data.hsmId)
         val spec = if (record.data.keyMaterial != null)
             SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
         else
@@ -192,7 +192,7 @@ class SigningServiceImpl(
             otherPublicKey.publicKeyId()
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
+        val cryptoService = cryptoServiceProvider.getInstance(record.data.hsmId)
         val spec = if (record.data.keyMaterial != null)
             SharedSecretWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
         else
@@ -218,7 +218,7 @@ class SigningServiceImpl(
         context: Map<String, String>
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-        val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
+        val ref = cryptoServiceProvider.findInstance(tenantId = tenantId, category = category)
         if (alias != null && store.find(tenantId, alias) != null) {
             throw KeyAlreadyExistsException(
                 "The key with alias $alias already exists for tenant $tenantId",

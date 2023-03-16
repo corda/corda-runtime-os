@@ -9,7 +9,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.CryptoRepository
-import net.corda.crypto.softhsm.CryptoServiceFactory
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getStringOrDefault
 import org.osgi.service.component.annotations.Activate
@@ -32,7 +32,7 @@ const val WRAPPING_DEFAULT_NAME = "DEFAULT"
  * The service ranking is set to the smallest possible number to allow the upstream implementation to pick other
  * providers as this one will always be present in the deployment.
  */
-open class CryptoServiceFactoryImpl @Activate constructor(
+open class CryptoServiceProviderImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = CryptoRepository::class)
@@ -41,7 +41,7 @@ open class CryptoServiceFactoryImpl @Activate constructor(
     private val digestService: PlatformDigestService,
     @Reference(service = CacheFactoryImpl::class)
     private val cacheFactoryImpl: CacheFactoryImpl,
-) : CryptoServiceFactory {
+) : CryptoServiceProvider {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

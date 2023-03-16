@@ -51,7 +51,7 @@ class CryptoOpsBusServiceTests {
                 factory.coordinatorFactory,
                 factory.schemeMetadata,
                 factory.signingKeyStore,
-                factory.cryptoServiceFactory,
+                factory.cryptoServiceProvider,
                 factory.platformDigest
             ).also {
                 it.start()

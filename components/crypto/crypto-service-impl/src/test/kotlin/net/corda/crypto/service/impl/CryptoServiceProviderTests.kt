@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.softhsm.CryptoServiceFactory
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
@@ -18,11 +18,11 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class CryptoServiceFactoryTests {
+class CryptoServiceProviderTests {
     private lateinit var tenantId1: String
     private lateinit var tenantId2: String
     private lateinit var factory: TestServicesFactory
-    private lateinit var component: CryptoServiceFactoryImpl
+    private lateinit var component: CryptoServiceProviderImpl
 
     @BeforeEach
     fun setup() {
@@ -33,7 +33,7 @@ class CryptoServiceFactoryTests {
         factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
         factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.TLS)
 
-        val cryptoServiceFactoryCoordinator = factory.cryptoServiceFactory.lifecycleCoordinator
+        val cryptoServiceFactoryCoordinator = factory.cryptoServiceProvider.lifecycleCoordinator
         cryptoServiceFactoryCoordinator.close()
         eventually {
             assertEquals(LifecycleStatus.DOWN, cryptoServiceFactoryCoordinator.status)
@@ -41,11 +41,11 @@ class CryptoServiceFactoryTests {
 
         // now make a new crypto service factory, since we cannot reuse the previous one since we
         // closed its coordinator and that's game over.
-        component = CryptoServiceFactoryImpl(
+        component = CryptoServiceProviderImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmStore,
-            object : CryptoServiceFactory {
+            object : CryptoServiceProvider {
                 override fun getInstance(config: SmartConfig): CryptoService = factory.cryptoService
             }
         )

@@ -62,7 +62,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -88,7 +88,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -113,7 +113,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -140,7 +140,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -182,7 +182,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -215,7 +215,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -260,7 +260,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock(),
+            cryptoServiceProvider = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mock()
         )
@@ -301,7 +301,7 @@ class SigningServiceGeneralTests {
             }
             val signingService = SigningServiceImpl(
                 store = store,
-                cryptoServiceFactory = mock(),
+                cryptoServiceProvider = mock(),
                 schemeMetadata = schemeMetadata,
                 digestService = mock()
             )
@@ -347,7 +347,7 @@ class SigningServiceGeneralTests {
         )
         val signingService = SigningServiceImpl(
             store = store,
-            cryptoServiceFactory = mock {
+            cryptoServiceProvider = mock {
                 on { this.findInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },
             schemeMetadata = schemeMetadata,

@@ -14,7 +14,7 @@ import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.softhsm.CryptoServiceFactory
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -62,8 +62,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val cryptoFlowOpsBusService: CryptoFlowOpsBusService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = CryptoServiceFactory::class)
-    private val cryptoServiceFactory: CryptoServiceFactory,
+    @Reference(service = CryptoServiceProvider::class)
+    private val cryptoServiceProvider: CryptoServiceProvider,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
     @Reference(service = HSMRegistrationBusService::class)
@@ -94,7 +94,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
         ::cryptoOpsClient,
-        ::cryptoServiceFactory,
+        ::cryptoServiceProvider,
         ::hsmService,
         ::hsmRegistration,
         ::dbConnectionManager,
@@ -144,8 +144,8 @@ class CryptoProcessorImpl @Activate constructor(
                 logger.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
 
-                logger.info("Bootstrapping {}", cryptoServiceFactory::class.simpleName)
-                cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
+                logger.info("Bootstrapping {}", cryptoServiceProvider::class.simpleName)
+                cryptoServiceProvider.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {

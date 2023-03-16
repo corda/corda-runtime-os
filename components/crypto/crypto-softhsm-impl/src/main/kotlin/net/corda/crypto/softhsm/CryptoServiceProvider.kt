@@ -9,6 +9,6 @@ import net.corda.libs.configuration.SmartConfig
 // the TestServiceFactory can control the instances of crypto services.
 //
 // This interface is used as a type for dependency injection in CryptoServiceFactoryImpl
-fun interface CryptoServiceFactory {
+fun interface CryptoServiceProvider {
     fun getInstance(config: SmartConfig): CryptoService
 }

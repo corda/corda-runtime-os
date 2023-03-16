@@ -77,7 +77,7 @@ class SigningServiceFactoryImpl @Activate constructor(
                         logger.info("Creating the signing service.")
                         signingService = SigningServiceImpl(
                             store = store,
-                            cryptoServiceFactory = cryptoServiceFactory,
+                            cryptoServiceProvider = cryptoServiceFactory,
                             schemeMetadata = schemeMetadata,
                             digestService = digestService
                         )

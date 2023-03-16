@@ -13,7 +13,7 @@ import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.softhsm.CryptoServiceFactory
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -32,8 +32,8 @@ import java.time.Duration
  * tenantId and category, and then CryptoServiceProvider to make the crypto service,
  * and CryptoServiceDecorator to add retries logic
  */
-@Component(service = [CryptoServiceFactory::class])
-class CryptoServiceFactoryImpl @Activate constructor(
+@Component(service = [CryptoServiceProvider::class])
+class CryptoServiceProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -42,9 +42,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
     private val hsmStore: HSMStore,
     @Reference(service = CryptoService::class)
     private val cryptoService: CryptoService,
-) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
+) : AbstractConfigurableComponent<CryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
-    myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
+    myName = LifecycleCoordinatorName.forComponent<CryptoServiceProvider>(),
     configurationReadService = configurationReadService,
     upstream = DependenciesTracker.Default(
         setOf(
@@ -53,7 +53,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
-), CryptoServiceFactory {
+), CryptoServiceProvider {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
