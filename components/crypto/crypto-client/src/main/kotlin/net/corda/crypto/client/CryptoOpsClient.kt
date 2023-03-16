@@ -9,12 +9,10 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.PublicKey
-import kotlin.jvm.Throws
 
 /**
  * The crypto operations client to generate fresh keys, sign, find or filter public keys, some HSM related queries.

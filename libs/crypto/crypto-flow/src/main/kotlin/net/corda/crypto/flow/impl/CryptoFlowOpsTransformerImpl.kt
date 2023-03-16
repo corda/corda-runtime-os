@@ -23,7 +23,6 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer

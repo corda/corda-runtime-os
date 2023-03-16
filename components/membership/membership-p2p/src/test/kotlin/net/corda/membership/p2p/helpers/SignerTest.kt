@@ -6,7 +6,6 @@ import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat

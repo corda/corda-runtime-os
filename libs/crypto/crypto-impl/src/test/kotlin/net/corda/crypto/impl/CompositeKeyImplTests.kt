@@ -3,7 +3,6 @@ package net.corda.crypto.impl
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeyUtils
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll

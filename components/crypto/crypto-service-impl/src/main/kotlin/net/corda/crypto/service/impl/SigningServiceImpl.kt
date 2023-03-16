@@ -26,11 +26,9 @@ import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
