@@ -12,6 +12,8 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.interop.FacadeInvocation
+import net.corda.messaging.interop.FacadeInvocationResult
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -37,6 +39,8 @@ class SessionEventExecutor(
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             handleNullState()
+        } else if (sessionEvent.isInteropEvent()) {
+            processOtherSessionEventsInterop(flowMapperState)
         } else {
             processOtherSessionEvents(flowMapperState)
         }
@@ -87,5 +91,33 @@ class SessionEventExecutor(
         }
 
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
+    }
+
+    private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
+        return if (messageDirection == MessageDirection.OUTBOUND) {
+            val facadeInvocation = sessionEvent.payload as FacadeInvocation
+            val returnEvent = SessionEvent(
+                MessageDirection.INBOUND,
+                Instant.now(),
+                sessionEvent.sessionId,
+                1,
+                sessionEvent.initiatingIdentity,
+                sessionEvent.initiatedIdentity,
+                sessionEvent.receivedSequenceNum,
+                emptyList(),
+                FacadeInvocationResult(facadeInvocation.payload)
+            )
+            val record = Record(
+                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                sessionEvent.sessionId,
+                appMessageFactory(returnEvent, sessionEventSerializer, flowConfig)
+            )
+            FlowMapperResult(flowMapperState, listOf(record))
+        } else {
+            // CORE-10240, handle inbound events from the interop processor properly
+            log.warn("Flow mapper received inbound interop event from counterparty. This should not happen yet! " +
+                    "Ignoring event. Key: $eventKey, Event: $sessionEvent")
+            FlowMapperResult(flowMapperState, listOf())
+        }
     }
 }

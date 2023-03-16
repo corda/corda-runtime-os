@@ -10,11 +10,12 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.messaging.interop.FacadeInvocation
+import net.corda.messaging.interop.FacadeInvocationResult
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -51,19 +52,6 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, flowContextPropertiesBuilder)
     }
 
-    @CordaSerializable
-    data class FacadeInvocation(
-        val memberName: MemberX500Name,
-        val facadeName: String,
-        val methodName: String,
-        val payload: String
-    )
-
-    @CordaSerializable
-    data class FacadeInvocationResult(
-        val result: String
-    )
-
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
@@ -71,12 +59,11 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-        //val session = createInteropFlowSession(memberName)
-        //val request = FacadeInvocation(memberName, facadeName, methodName, payload)
-        //val response = session.sendAndReceive(FacadeInvocationResult::class.java, request)
-        //session.close()
-        //return response.result
-        return payload
+        val session = createInteropFlowSession(memberName)
+        val request = FacadeInvocation(memberName, facadeName, methodName, payload)
+        val response = session.sendAndReceive(FacadeInvocationResult::class.java, request)
+        session.close()
+        return response.result
     }
 
     @Suspendable

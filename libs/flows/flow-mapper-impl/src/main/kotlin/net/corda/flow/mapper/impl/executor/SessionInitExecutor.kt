@@ -49,6 +49,15 @@ class SessionInitExecutor(
                 sessionInit
             )
 
+        // Don't propagate interop session init events.
+        // This will need to be changed for CORE-10420
+        if (sessionEvent.isInteropEvent()) {
+            return FlowMapperResult(
+                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+                emptyList()
+            )
+        }
+
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
