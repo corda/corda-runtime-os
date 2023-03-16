@@ -40,6 +40,14 @@ class UtxoSignedTransactionBase(
     private val config : SimulatorConfiguration,
 ) : UtxoSignedTransaction {
 
+    private val ledgerTransaction =
+        UtxoLedgerTransactionBase(
+            ledgerInfo,
+            getStateAndRef(ledgerInfo.inputStateRefs),
+            getStateAndRef(ledgerInfo.referenceStateRefs)
+        )
+
+
     companion object {
 
         /**
@@ -139,13 +147,6 @@ class UtxoSignedTransactionBase(
         }.map { it.index }
         return outputEntities.filter { relevantIndexes.contains(it.index) }
     }
-
-    private val ledgerTransaction =
-        UtxoLedgerTransactionBase(
-            ledgerInfo,
-            getStateAndRef(ledgerInfo.inputStateRefs),
-            getStateAndRef(ledgerInfo.referenceStateRefs)
-        )
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
         return ledgerTransaction

@@ -15,6 +15,7 @@ class SimTransactionMetadata: TransactionMetadata {
     override fun getLedgerVersion(): Int = 1
 
     override fun getNumberOfComponentGroups(): Int = 1
+
     override fun getPlatformVersion(): Int = 1
 
     override fun getSchemaVersion(): Int  = 1

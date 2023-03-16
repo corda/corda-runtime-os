@@ -117,7 +117,7 @@ class SimUtxoLedgerService(
             UtxoTransactionOutputEntity::class.java,
             UtxoTransactionOutputEntityId(stateRef.transactionId.toString(), stateRef.index)
         ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
-                    String(stateRef.transactionId.bytes))
+                    String(stateRef.transactionId.bytes) + " and index" + stateRef.index)
 
         //Convert entity to StateAndRef
         val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)

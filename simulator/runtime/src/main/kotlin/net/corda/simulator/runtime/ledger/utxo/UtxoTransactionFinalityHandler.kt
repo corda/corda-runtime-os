@@ -152,16 +152,16 @@ class UtxoTransactionFinalityHandler(
                 val contract = contractClass.getConstructor().newInstance()
                 contract.verify(ledgerTransaction)
             } catch (ex: Exception) {
-                failureReasons.add(ex.message?:"The thrown exception did not provide a failure message.")
+                failureReasons.add(ex.message?: "The thrown exception did not provide a failure message.")
             }
         }
 
         if (failureReasons.isNotEmpty()) {
-            throw CordaRuntimeException(buildString {
-                appendLine("Contract verification failed for transaction: ${ledgerTransaction.id}.")
-                appendLine("The following contract verification requirements were not met:")
-                appendLine(failureReasons.joinToString("\n"))
-            })
+            throw CordaRuntimeException(
+                "Contract verification failed for transaction: ${ledgerTransaction.id}." +
+                "The following contract verification requirements were not met:" +
+                failureReasons.joinToString("\n")
+            )
         }
     }
 
