@@ -20,10 +20,14 @@ import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
+import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -46,20 +50,23 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import javax.persistence.PessimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
 class MGMRestResourceTest {
-    companion object {
-        private const val HOLDING_IDENTITY_ID = "111213141500"
-        private const val INVALID_SHORT_HASH = "ABS09234745D"
-        private const val RULE_REGEX = "rule-regex"
-        private const val INVALID_RULE_REGEX = "*"
-        private const val RULE_LABEL = "rule-label"
-        private const val RULE_ID = "rule-id"
-        private const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
+    private companion object {
+        const val HOLDING_IDENTITY_ID = "111213141500"
+        const val INVALID_SHORT_HASH = "ABS09234745D"
+        const val RULE_REGEX = "rule-regex"
+        const val INVALID_RULE_REGEX = "*"
+        const val RULE_LABEL = "rule-label"
+        const val RULE_ID = "rule-id"
+        const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
+        const val REASON = "test"
+        const val SERIAL = 1L
 
         fun String.shortHash() = ShortHash.of(this)
         fun String.uuid(): UUID = UUID.fromString(this)
@@ -90,7 +97,8 @@ class MGMRestResourceTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
-    private val manualDeclinationReason = "test"
+    private val manualDeclinationReason = REASON
+    private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
 
     private val mgmRestResource = MGMRestResourceImpl(
         lifecycleCoordinatorFactory,
@@ -1134,6 +1142,234 @@ class MGMRestResourceTest {
             val token = mgmRestResource.revokePreAuthToken(HOLDING_IDENTITY_ID, tokenId.toString(), removalRemark)
 
             assertThat(token).isEqualTo(PreAuthToken(tokenId.toString(), subject, ttl, PreAuthTokenStatus.AVAILABLE, remark, removalRemark))
+        }
+    }
+
+    @Nested
+    inner class SuspendMemberTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `suspendMember delegates correctly to mgm resource client`() {
+            mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
+
+            verify(mgmResourceClient).suspendMember(
+                (ShortHash.of(HOLDING_IDENTITY_ID)),
+                MemberX500Name.parse(subject),
+                SERIAL,
+                REASON
+            )
+        }
+
+        @Test
+        fun `suspendMember throws resource not found for invalid member`() {
+            whenever(mgmResourceClient.suspendMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
+            }
+        }
+
+        @Test
+        fun `suspendMember throws invalid input for non MGM member`() {
+            whenever(mgmResourceClient.suspendMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
+            }
+        }
+
+        @Test
+        fun `suspendMember throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.suspendMember(INVALID_SHORT_HASH, suspensionActivationParameters)
+            }
+        }
+
+        @Test
+        fun `suspendMember throws bad request if MGM tries to suspend itself`() {
+            val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=MGM"), "group")
+            whenever(mgmResourceClient.suspendMember(
+                mgm.shortHash, mgm.x500Name, SERIAL, REASON
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.suspendMember(
+                    mgm.shortHash.value,
+                    SuspensionActivationParameters(mgm.x500Name.toString(), SERIAL, REASON)
+                )
+            }
+        }
+
+        @Test
+        fun `suspendMember throws bad request if member is not currently active`() {
+            val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=SuspendedMember"), "group")
+            whenever(mgmResourceClient.suspendMember(
+                mgm.shortHash, mgm.x500Name, SERIAL, REASON
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.suspendMember(
+                    mgm.shortHash.value,
+                    SuspensionActivationParameters(mgm.x500Name.toString(), SERIAL, REASON)
+                )
+            }
+        }
+
+        @Test
+        fun `suspendMember throws resource not found if member to be suspended is not found`() {
+            val missingMember = MemberX500Name.parse("C=GB,L=London,O=MissingMember")
+            whenever(mgmResourceClient.suspendMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), missingMember
+            )).doThrow(mock<NoSuchElementException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(missingMember.toString()))
+            }
+        }
+
+        @Test
+        fun `suspendMember throws invalid state change in case of concurrent update attempt`() {
+            whenever(mgmResourceClient.suspendMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
+            )).doThrow(mock<PessimisticLockException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+
+        @Test
+        fun `suspendMember throws invalid state change in case of failed serial number check`() {
+            whenever(mgmResourceClient.suspendMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
+            )).doThrow(mock<InvalidEntityUpdateException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+    }
+
+    @Nested
+    inner class ActivateMemberTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `activateMember delegates correctly to mgm resource client`() {
+            mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
+
+            verify(mgmResourceClient).activateMember(
+                (ShortHash.of(HOLDING_IDENTITY_ID)),
+                MemberX500Name.parse(subject),
+                SERIAL,
+                REASON
+            )
+        }
+
+        @Test
+        fun `activateMember throws resource not found for invalid member`() {
+            whenever(mgmResourceClient.activateMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
+            }
+        }
+
+        @Test
+        fun `activateMember throws invalid input for non MGM member`() {
+            whenever(mgmResourceClient.activateMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
+            }
+        }
+
+        @Test
+        fun `activateMember throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.activateMember(INVALID_SHORT_HASH, suspensionActivationParameters)
+            }
+        }
+
+        @Test
+        fun `activateMember throws bad request if MGM tries to activate itself`() {
+            val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=MGM"), "group")
+            whenever(mgmResourceClient.activateMember(
+                mgm.shortHash, mgm.x500Name, SERIAL, REASON
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.activateMember(
+                    mgm.shortHash.value,
+                    SuspensionActivationParameters(mgm.x500Name.toString(), SERIAL, REASON)
+                )
+            }
+        }
+
+        @Test
+        fun `activateMember throws bad request if member is not currently suspended`() {
+            val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=ActiveMember"), "group")
+            whenever(mgmResourceClient.activateMember(
+                mgm.shortHash, mgm.x500Name, SERIAL, REASON
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.activateMember(
+                    mgm.shortHash.value,
+                    SuspensionActivationParameters(mgm.x500Name.toString(), SERIAL, REASON)
+                )
+            }
+        }
+
+        @Test
+        fun `activateMember throws resource not found if member to be activated is not found`() {
+            val missingMember = MemberX500Name.parse("C=GB,L=London,O=MissingMember")
+            whenever(mgmResourceClient.activateMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), missingMember
+            )).doThrow(mock<NoSuchElementException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(missingMember.toString()))
+            }
+        }
+
+        @Test
+        fun `activateMember throws invalid state change in case of concurrent update attempt`() {
+            whenever(mgmResourceClient.activateMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
+            )).doThrow(mock<PessimisticLockException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+
+        @Test
+        fun `activateMember throws invalid state change in case of failed serial number check`() {
+            whenever(mgmResourceClient.activateMember(
+                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject)
+            )).doThrow(mock<InvalidEntityUpdateException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
         }
     }
 
