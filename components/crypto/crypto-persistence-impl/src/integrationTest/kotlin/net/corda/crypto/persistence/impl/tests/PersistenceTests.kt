@@ -18,7 +18,6 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
@@ -32,7 +31,6 @@ import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
@@ -104,9 +102,6 @@ class PersistenceTests {
         @InjectService(timeout = 5000)
         lateinit var signingKeyStore: SigningKeyStore
 
-        @InjectService(timeout = 5000)
-        lateinit var wrappingKeyStore: WrappingKeyStore
-
         private lateinit var publisher: Publisher
 
         private lateinit var tracker: TestDependenciesTracker
@@ -147,7 +142,6 @@ class PersistenceTests {
                     CryptoConnectionsFactory::class.java,
                     HSMStore::class.java,
                     SigningKeyStore::class.java,
-                    WrappingKeyStore::class.java
                 )
             )
             tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
