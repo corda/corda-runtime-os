@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dummy
 
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -110,6 +112,14 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleId: String,
         ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
+
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
     override fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
