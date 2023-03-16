@@ -443,7 +443,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArray, emptyMap()),
+            DigitalSignature.WithKey(publicKey, byteArray),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }

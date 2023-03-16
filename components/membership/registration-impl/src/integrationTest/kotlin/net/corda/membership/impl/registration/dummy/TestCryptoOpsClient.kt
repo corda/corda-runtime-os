@@ -137,7 +137,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ) = DigitalSignature.WithKey(publicKey, byteArrayOf(1), emptyMap())
+    ) = DigitalSignature.WithKey(publicKey, byteArrayOf(1))
 
     override fun sign(
         tenantId: String,
