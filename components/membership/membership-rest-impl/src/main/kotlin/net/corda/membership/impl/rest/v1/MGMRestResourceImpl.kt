@@ -31,13 +31,16 @@ import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -45,6 +48,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
+import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
@@ -146,6 +150,10 @@ class MGMRestResourceImpl internal constructor(
         fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String)
 
         fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason)
+
+        fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
+
+        fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
     }
 
     override val protocolVersion = 1
@@ -234,6 +242,12 @@ class MGMRestResourceImpl internal constructor(
     override fun declineRegistrationRequest(
         holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
+
+    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
+        impl.suspendMember(holdingIdentityShortHash, suspensionParams)
+
+    override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
+        impl.activateMember(holdingIdentityShortHash, activationParams)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -325,6 +339,16 @@ class MGMRestResourceImpl internal constructor(
 
         override fun declineRegistrationRequest(
             holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+        ): Unit = throwNotRunningException()
+
+        override fun suspendMember(
+            holdingIdentityShortHash: String,
+            suspensionParams: SuspensionActivationParameters
+        ): Unit = throwNotRunningException()
+
+        override fun activateMember(
+            holdingIdentityShortHash: String,
+            activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
@@ -525,6 +549,56 @@ class MGMRestResourceImpl internal constructor(
                 }
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
+            }
+        }
+
+        override fun suspendMember(
+            holdingIdentityShortHash: String,
+            suspensionParams: SuspensionActivationParameters
+        ) {
+            val memberName = parseX500Name("suspensionParams.x500Name", suspensionParams.x500Name)
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.suspendMember(
+                        it,
+                        memberName,
+                        suspensionParams.serialNumber,
+                        suspensionParams.reason,
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException("${e.message}")
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            } catch (e: InvalidEntityUpdateException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
+        }
+
+        override fun activateMember(
+            holdingIdentityShortHash: String,
+            activationParams: SuspensionActivationParameters
+        ) {
+            val memberName = parseX500Name("activationParams.x500Name", activationParams.x500Name)
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.activateMember(
+                        it,
+                        memberName,
+                        activationParams.serialNumber,
+                        activationParams.reason,
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException("${e.message}")
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            } catch (e: InvalidEntityUpdateException) {
+                throw InvalidStateChangeException("${e.message}")
             }
         }
 
