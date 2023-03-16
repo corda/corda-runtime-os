@@ -202,7 +202,7 @@ class ConsensualRepositoryImpl @Activate constructor(
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
-            .setParameter("publicKeyHash", signature.by.encoded.hashAsString())
+            .setParameter("publicKeyHash", signature.by)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction signature [$transactionId, $index]")
@@ -236,9 +236,6 @@ class ConsensualRepositoryImpl @Activate constructor(
         }
         return this
     }
-
-    private fun ByteArray.hashAsString() =
-        digestService.hash(this, DigestAlgorithmName.SHA2_256).toString()
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>

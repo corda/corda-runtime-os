@@ -116,7 +116,7 @@ class UtxoFinalityFlowV1(
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
                 log.debug {
-                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
+                    "Added signature by ${signature.by} (key id) from ${session.counterparty} of $signature for transaction " +
                             transactionId
                 }
             }
@@ -137,8 +137,8 @@ class UtxoFinalityFlowV1(
             transaction.verifySignatures()
         } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
-                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-                        signatures.map { it.by.encoded }
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +
+                        signatures.map { it.by }
             }
             val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
                 "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"

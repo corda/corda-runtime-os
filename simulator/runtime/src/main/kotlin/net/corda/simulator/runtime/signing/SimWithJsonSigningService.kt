@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.signing
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.crypto.DigitalSignature
@@ -31,7 +32,7 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
      * @return A digital signature object containing a JSON string wrapping the "signed" data, with the parameters
      * with which the data was "signed".
      */
-    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
+    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKeyId {
         log.info("Simulating signing of bytes: $bytes")
         val keyParameters = checkNotNull(keyStore.getParameters(publicKey)) {
             "Attempted signing, but key has not been generated on the given node. Bytes being signed were" +
@@ -47,7 +48,7 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
                 keyParameters
             )
         ).toByteArray()
-        return DigitalSignature.WithKey(publicKey, opaqueBytes)
+        return DigitalSignature.WithKeyId(publicKey.fullIdHash(), opaqueBytes)
     }
 
     override fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {

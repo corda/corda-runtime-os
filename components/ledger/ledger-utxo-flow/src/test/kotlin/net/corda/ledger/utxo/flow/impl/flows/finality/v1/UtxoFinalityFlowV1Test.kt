@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -817,6 +818,10 @@ class UtxoFinalityFlowV1Test {
     @Test
     fun `missing signatures when verifying all signatures rethrows exception with useful message`() {
         val aliceSignatures = listOf(signatureAlice1, signatureAlice2)
+        val aliceKeyIdToKey = mapOf(
+            publicKeyAlice1.fullIdHash() to publicKeyAlice1,
+            publicKeyAlice2.fullIdHash() to publicKeyAlice2
+        )
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(aliceSignatures))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(
@@ -834,7 +839,10 @@ class UtxoFinalityFlowV1Test {
             .hasMessageContainingAll(
                 "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
                 "The following counterparties provided signatures while finalizing the transaction:",
-                "$ALICE provided 2 signature(s) to satisfy the signatories (encoded) ${aliceSignatures.map { it.by.encoded }}",
+                // TODO consumer -> to be reviewed by Lajos
+                "$ALICE provided 2 signature(s) to satisfy the signatories (encoded) ${aliceSignatures.map {
+                    aliceKeyIdToKey[it.by] ?: throw IllegalArgumentException("key id ${it.by} does not exist in key id to key mapping") 
+                }}",
                 "$BOB provided 0 signature(s) to satisfy the signatories (encoded) []"
             )
 
@@ -923,7 +931,7 @@ class UtxoFinalityFlowV1Test {
 
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArray),
+            DigitalSignature.WithKeyId(publicKey.fullIdHash(), byteArray),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }

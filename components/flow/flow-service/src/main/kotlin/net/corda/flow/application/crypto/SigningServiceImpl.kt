@@ -1,6 +1,7 @@
 package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
@@ -35,14 +36,15 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
+    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKeyId {
         val digitalSignatureWithKey = externalEventExecutor.execute(
             CreateSignatureExternalEventFactory::class.java,
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
         )
 
-        return DigitalSignature.WithKey(
-            digitalSignatureWithKey.by,
+        return DigitalSignature.WithKeyId(
+            // TODO the following needs to come from the Database
+            digitalSignatureWithKey.by.fullIdHash(),
             digitalSignatureWithKey.bytes
         )
     }

@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKeys
@@ -150,7 +151,7 @@ class ConsensualSignedTransactionBaseTest {
     }
 
     private fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = now()) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray()),
+        DigitalSignature.WithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
         DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
     )
 

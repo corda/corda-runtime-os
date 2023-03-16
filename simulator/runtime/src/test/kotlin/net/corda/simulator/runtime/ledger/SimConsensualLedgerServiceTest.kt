@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
@@ -222,7 +223,7 @@ class SimConsensualLedgerServiceTest {
     }
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray()),
+        DigitalSignature.WithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
         DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
     )
 

@@ -2,6 +2,7 @@ package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
@@ -32,8 +33,8 @@ class SigningServiceImplTest {
         whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), captor.capture()))
             .thenReturn(signature)
         // the below will be changed to signatureWithKeyId
-        val signatureApi = DigitalSignature.WithKey(signature.by, signature.bytes)
-        assertEquals(signatureApi, signingService.sign(byteArrayOf(1), publicKey, mock()))
+        val signatureWithKeyId = DigitalSignature.WithKeyId(signature.by.fullIdHash(), signature.bytes)
+        assertEquals(signatureWithKeyId, signingService.sign(byteArrayOf(1), publicKey, mock()))
         assertEquals(encodedPublicKeyBytes, captor.firstValue.encodedPublicKeyBytes)
     }
 

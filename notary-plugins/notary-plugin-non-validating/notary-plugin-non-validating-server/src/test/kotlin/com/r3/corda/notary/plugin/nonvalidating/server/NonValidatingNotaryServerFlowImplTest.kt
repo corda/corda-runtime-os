@@ -6,6 +6,7 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
@@ -392,8 +393,8 @@ class NonValidatingNotaryServerFlowImplTest {
             on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
                 NotarizationRequestSignature(
-                    DigitalSignature.WithKey(
-                        memberCharlieKey,
+                    DigitalSignature.WithKeyId(
+                        memberCharlieKey.fullIdHash(),
                         "ABC".toByteArray()
                     ),
                     DUMMY_PLATFORM_VERSION

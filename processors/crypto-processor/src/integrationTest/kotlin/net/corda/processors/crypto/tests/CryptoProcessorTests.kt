@@ -822,7 +822,7 @@ class CryptoProcessorTests {
             ).forEach { it.get() }
             logger.info("Waiting for response for createSign")
             val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignature.WithKey
+            val signature = transformer.transform(response) as DigitalSignatureWithKey
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
