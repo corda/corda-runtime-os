@@ -190,12 +190,9 @@ internal class StartRegistrationHandler(
             "Empty member context in the registration request."
         }
 
-        when(val result = registrationContextCustomFieldsVerifier.verify(memberContext)) {
-            is RegistrationContextCustomFieldsVerifier.Result.Failure -> {
-                logger.info(result.reason)
-                throw InvalidRegistrationRequestException(result.reason)
-            }
-            RegistrationContextCustomFieldsVerifier.Result.Success -> {}
+        val customFieldsValid = registrationContextCustomFieldsVerifier.verify(memberContext)
+        validateRegistrationRequest(customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+            (customFieldsValid as RegistrationContextCustomFieldsVerifier.Result.Failure).reason
         }
 
         val now = clock.instant().toString()

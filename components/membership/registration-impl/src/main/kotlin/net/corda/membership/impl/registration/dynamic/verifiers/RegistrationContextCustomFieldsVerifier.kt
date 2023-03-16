@@ -3,14 +3,14 @@ package net.corda.membership.impl.registration.dynamic.verifiers
 internal class RegistrationContextCustomFieldsVerifier {
 
     private companion object {
-        const val RESERVED_KEY_PREFIX = "corda."
-        const val MAX_VALUE_LENGTH = 128
+        const val CUSTOM_KEY_PREFIX = "ext."
+        const val MAX_VALUE_LENGTH = 256
         const val MAX_KEY_LENGTH = 128
         const val MAX_CUSTOM_FIELDS = 100
     }
 
     fun verify(context: Map<String, String>): Result {
-        val customFields = context.filterNot { it.key.startsWith(RESERVED_KEY_PREFIX) }
+        val customFields = context.filter { it.key.startsWith(CUSTOM_KEY_PREFIX) }
         if (customFields.size > MAX_CUSTOM_FIELDS ) {
             return Result.Failure("The number of custom fields (${customFields.size}) in the registration context is larger than " +
                 "the maximum allowed ($MAX_CUSTOM_FIELDS).")

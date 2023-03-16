@@ -267,12 +267,10 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ex,
                 )
             }
-            when (val result = registrationContextCustomFieldsVerifier.verify(context)) {
-                is RegistrationContextCustomFieldsVerifier.Result.Failure -> {
-                    logger.info(result.reason)
-                    throw InvalidMembershipRegistrationException("Registration failed. ${result.reason}")
-                }
-                RegistrationContextCustomFieldsVerifier.Result.Success -> {}
+            val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
+            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
+                    logger.info(customFieldsValid.reason)
+                    throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
             try {
                 val roles = MemberRole.extractRolesFromContext(context)
@@ -415,19 +413,14 @@ class DynamicMemberRegistrationService @Activate constructor(
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
-            val customContext = customContext(context)
             return filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +
                     additionalContext +
                     roleContext +
                     optionalContext +
-                    tlsSubject +
-                    customContext
-        }
+                    tlsSubject
 
-        private fun customContext(context: Map<String, String>): Map<String, String> {
-            return context.filterNot { it.key.startsWith("corda.") }.toMap()
         }
 
         private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
