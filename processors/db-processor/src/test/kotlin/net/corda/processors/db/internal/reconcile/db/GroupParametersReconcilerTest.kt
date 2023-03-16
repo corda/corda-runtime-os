@@ -1,9 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -21,6 +18,7 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -62,17 +60,14 @@ class GroupParametersReconcilerTest {
 
     private val signatureKey = byteArrayOf(1, 2, 3)
     private val signatureContent = byteArrayOf(4, 5, 6)
-    private val serializedSignatureContext = byteArrayOf(7, 8, 9)
-    private val deserializedSignatureContext = KeyValuePairList(
-        listOf(KeyValuePair("sig-context-key", "sig-context-value"))
-    )
+    private val signatureSpec = SignatureSpec.ECDSA_SHA256.signatureName
 
     private val signedGroupParametersEntity = GroupParametersEntity(
         epoch = 9,
         parameters = serialisedSignedGroupParameters,
         signaturePublicKey = signatureKey,
         signatureContent = signatureContent,
-        signatureContext = serializedSignatureContext
+        signatureSpec = signatureSpec
     )
 
     private val tx1: EntityTransaction = mock()
@@ -105,12 +100,6 @@ class GroupParametersReconcilerTest {
         on { createEntityManager() } doReturn em3
     }
 
-    private val cordaAvroDeserialiser: CordaAvroDeserializer<KeyValuePairList> = mock {
-        on { deserialize(eq(serializedSignatureContext)) } doReturn deserializedSignatureContext
-    }
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn cordaAvroDeserialiser
-    }
     private val coordinator: LifecycleCoordinator = mock()
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
@@ -138,8 +127,10 @@ class GroupParametersReconcilerTest {
                         ByteBuffer.wrap(serialisedSignedGroupParameters),
                         CryptoSignatureWithKey(
                             ByteBuffer.wrap(signatureKey),
-                            ByteBuffer.wrap(signatureContent),
-                            deserializedSignatureContext
+                            ByteBuffer.wrap(signatureContent)
+                        ),
+                        CryptoSignatureSpec(
+                            signatureSpec, null, null
                         )
                     )
                 )
@@ -164,7 +155,6 @@ class GroupParametersReconcilerTest {
     }
 
     private val groupParametersReconciler = GroupParametersReconciler(
-        cordaAvroSerializationFactory,
         coordinatorFactory,
         dbConnectionManager,
         virtualNodeInfoReadService,
@@ -242,7 +232,6 @@ class GroupParametersReconcilerTest {
             verify(em2).criteriaBuilder
             verify(em2).createQuery(any<CriteriaQuery<GroupParametersEntity>>())
 
-            verify(cordaAvroDeserialiser, times(2)).deserialize(any())
             verify(groupParametersFactory, times(2)).create(any<AvroGroupParameters>())
         }
 

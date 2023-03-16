@@ -72,7 +72,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                         "Group parameters initial snapshot already exist with different parameters."
                     )
                 } else {
-                    return@transaction currentGroupParameters.toAvro(deserializer)
+                    return@transaction currentGroupParameters.toAvro()
                 }
             }
             GroupParametersEntity(
@@ -80,10 +80,10 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 parameters = serializeProperties(groupParameters),
                 signaturePublicKey = null,
                 signatureContent = null,
-                signatureContext = null
+                signatureSpec = null
             ).also {
                 em.persist(it)
-            }.toAvro(deserializer)
+            }.toAvro()
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)

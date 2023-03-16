@@ -2,9 +2,9 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.SignedGroupParameters
@@ -19,6 +19,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -60,30 +61,25 @@ class PersistGroupParametersHandlerTest {
     private val sigPubKey = "public-key".toByteArray()
     private val sigContent = "signature-bytes".toByteArray()
 
-    private val deserializedSigContext = KeyValuePairList(emptyList())
-    private val serializedSigContext = "signature-context".toByteArray()
-
     private val signature = CryptoSignatureWithKey(
         ByteBuffer.wrap(sigPubKey),
-        ByteBuffer.wrap(sigContent),
-        deserializedSigContext
+        ByteBuffer.wrap(sigContent)
+    )
+    private val signatureSpec = CryptoSignatureSpec(
+        SignatureSpec.ECDSA_SHA256.signatureName, null, null
     )
 
     private val newSignedParams = SignedGroupParameters(
         ByteBuffer.wrap(serializedNewParams),
-        signature
+        signature,
+        signatureSpec
     )
 
-    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(deserializedSigContext) } doReturn serializedSigContext
-    }
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serializedParams) } doReturn deserializedParams
         on { deserialize(serializedNewParams) } doReturn deserializedNewParams
-        on { deserialize(serializedSigContext) } doReturn deserializedSigContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
 
@@ -106,7 +102,7 @@ class PersistGroupParametersHandlerTest {
         parameters = serializedParams,
         signaturePublicKey = sigPubKey,
         signatureContent = sigContent,
-        signatureContext = serializedSigContext
+        signatureSpec = signatureSpec.signatureName
     )
     private val resultList = listOf(currentEntity)
     private val currentEntry: TypedQuery<GroupParametersEntity> = mock {
@@ -117,6 +113,7 @@ class PersistGroupParametersHandlerTest {
     private fun mockCurrentEntity(entity: GroupParametersEntity) {
         whenever(currentEntry.resultList).doReturn(listOf(entity))
     }
+
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
         on { setMaxResults(1) } doReturn currentEntry
     }
@@ -229,7 +226,8 @@ class PersistGroupParametersHandlerTest {
         val serializedNewParams = "group-parameters-3".toByteArray()
         val newSignedParams = SignedGroupParameters(
             ByteBuffer.wrap(serializedNewParams),
-            signature
+            signature,
+            signatureSpec
         )
         whenever(deserializer.deserialize(serializedNewParams)).doReturn(newParams)
         whenever(request.groupParameters).doReturn(newSignedParams)

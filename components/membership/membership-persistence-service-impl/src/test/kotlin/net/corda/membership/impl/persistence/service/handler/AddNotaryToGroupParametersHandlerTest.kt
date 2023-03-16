@@ -26,6 +26,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -99,7 +100,7 @@ class AddNotaryToGroupParametersHandlerTest {
             parameters = "test".toByteArray(),
             signaturePublicKey = byteArrayOf(0),
             signatureContent = byteArrayOf(1),
-            signatureContext = byteArrayOf(2)
+            signatureSpec = SignatureSpec.ECDSA_SHA256.signatureName
         )
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
@@ -215,7 +216,7 @@ class AddNotaryToGroupParametersHandlerTest {
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             assertThat(entity.signaturePublicKey).isNull()
             assertThat(entity.signatureContent).isNull()
-            assertThat(entity.signatureContext).isNull()
+            assertThat(entity.signatureSpec).isNull()
         }
     }
 
@@ -291,7 +292,7 @@ class AddNotaryToGroupParametersHandlerTest {
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             assertThat(entity.signaturePublicKey).isNull()
             assertThat(entity.signatureContent).isNull()
-            assertThat(entity.signatureContext).isNull()
+            assertThat(entity.signatureSpec).isNull()
         }
     }
 

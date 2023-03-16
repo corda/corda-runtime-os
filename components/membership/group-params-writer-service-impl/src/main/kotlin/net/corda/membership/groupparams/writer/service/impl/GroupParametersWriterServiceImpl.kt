@@ -4,6 +4,7 @@ import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.helper.getConfig
@@ -19,7 +20,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -77,6 +77,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
+
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
     private var _publisher: Publisher? = null
@@ -181,6 +182,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
+
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()
@@ -198,17 +200,22 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         activate(coordinator)
     }
 
-    private fun InternalGroupParameters.toAvro(owner: HoldingIdentity) = PersistentGroupParameters(
-        owner.toAvro(),
-        AvroGroupParameters(
-            ByteBuffer.wrap(bytes),
-            (this as? SignedGroupParameters)?.signature?.let {
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
-                    ByteBuffer.wrap(it.bytes),
-                    it.context.toWire()
-                )
-            }
+    private fun InternalGroupParameters.toAvro(owner: HoldingIdentity): PersistentGroupParameters {
+        val signed = this as? SignedGroupParameters
+        return PersistentGroupParameters(
+            owner.toAvro(),
+            AvroGroupParameters(
+                ByteBuffer.wrap(bytes),
+                signed?.let {
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.signature.by)),
+                        ByteBuffer.wrap(it.signature.bytes)
+                    )
+                },
+                signed?.let {
+                    CryptoSignatureSpec(it.signatureSpec.signatureName, null, null)
+                }
+            )
         )
-    )
+    }
 }

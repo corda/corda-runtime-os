@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.EPOCH_KEY
@@ -94,14 +95,16 @@ class GroupParametersFactoryTest {
         @Test
         fun `if the avro group parameters are submitted, the factory returns a signed group parameters instance`() {
             val sigBytes = "sig-bytes".toByteArray()
-            val sigContext = mapOf("sig-context-key" to "sig-context-value")
             val sig = mock<CryptoSignatureWithKey> {
                 on { publicKey } doReturn pubKeyBytes.buffer
-                on { context } doReturn KeyValuePairList(sigContext.map { KeyValuePair(it.key, it.value) })
                 on { bytes } doReturn sigBytes.buffer
+            }
+            val sigSpec = mock<CryptoSignatureSpec> {
+                on { signatureName } doReturn "SHA256withRSA"
             }
             val avro = mock<AvroGroupParameters> {
                 on { mgmSignature } doReturn sig
+                on { mgmSignatureSpec } doReturn sigSpec
                 on { groupParameters } doReturn serialisedGroupParameters.buffer
             }
             val groupParameters = groupParametersFactory.create(avro)
@@ -112,7 +115,8 @@ class GroupParametersFactoryTest {
             assertThat(groupParameters.entries)
                 .containsExactlyElementsOf(groupParametersValues.entries)
             assertThat(groupParameters.bytes).isEqualTo(serialisedGroupParameters)
-            assertThat((groupParameters as SignedGroupParameters).signature.context).isEqualTo(sigContext)
+            assertThat((groupParameters as SignedGroupParameters).signatureSpec.signatureName)
+                .isEqualTo("SHA256withRSA")
             assertThat(groupParameters.signature.by).isEqualTo(pubKey)
             assertThat(groupParameters.signature.bytes).isEqualTo(sigBytes)
         }

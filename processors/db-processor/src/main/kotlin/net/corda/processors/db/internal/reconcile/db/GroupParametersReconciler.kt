@@ -1,7 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -34,7 +33,6 @@ import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
  */
 @Suppress("LongParameterList")
 class GroupParametersReconciler(
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -50,15 +48,9 @@ class GroupParametersReconciler(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
         )
-        const val FAILED_DESERIALIZATION = "Could not deserialize group parameters from the database entity."
     }
 
     private val lock = ReentrantLock()
-
-    private val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
-        { logger.warn(FAILED_DESERIALIZATION) },
-        KeyValuePairList::class.java
-    )
 
     private val entitiesSet
         get() = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
@@ -126,14 +118,15 @@ class GroupParametersReconciler(
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
         return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
-            val signature = if (entity.isSigned()) {
+            val (signature, signatureSpec) = if (entity.isSigned()) {
                 CryptoSignatureWithKey(
                     entity.signaturePublicKey!!.buffer,
-                    entity.signatureContent!!.buffer,
-                    entity.signatureContext!!.let { cordaAvroDeserializer.deserialize(it) }
+                    entity.signatureContent!!.buffer
+                ) to CryptoSignatureSpec(
+                    entity.signatureSpec, null, null
                 )
-            } else null
-            val signedGroupParameters = AvroGroupParameters(entity.parameters.buffer, signature)
+            } else null to null
+            val signedGroupParameters = AvroGroupParameters(entity.parameters.buffer, signature, signatureSpec)
             val params = groupParametersFactory.create(signedGroupParameters)
 
             Stream.of(

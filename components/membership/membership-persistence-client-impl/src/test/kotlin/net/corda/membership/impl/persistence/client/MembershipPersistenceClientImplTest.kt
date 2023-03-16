@@ -66,6 +66,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -163,9 +164,9 @@ class MembershipPersistenceClientImplTest {
     private val signatureBytes = "signature".toByteArray()
     private val mockSignatureWithKey = DigitalSignature.WithKey(
         publicKey,
-        signatureBytes,
-        mapOf("a" to "b")
+        signatureBytes
     )
+    private val mockSignatureSpec = SignatureSpec.ECDSA_SHA256
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsByteArray(publicKey) } doReturn publicKeyBytes
     }
@@ -577,6 +578,7 @@ class MembershipPersistenceClientImplTest {
             val signedGroupParameters = mock<SignedGroupParameters> {
                 on { bytes } doReturn serialisedParams
                 on { signature } doReturn mockSignatureWithKey
+                on { signatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             whenever(groupParametersFactory.create(avroGroupParameters)).doReturn(signedGroupParameters)
@@ -594,6 +596,7 @@ class MembershipPersistenceClientImplTest {
             val groupParameters = mock<SignedGroupParameters> {
                 on { bytes } doReturn serialisedParams
                 on { signature } doReturn mockSignatureWithKey
+                on { signatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             mockPersistenceResponse(
@@ -610,6 +613,7 @@ class MembershipPersistenceClientImplTest {
             val groupParameters = mock<SignedGroupParameters> {
                 on { bytes } doReturn serialisedParams
                 on { signature } doReturn mockSignatureWithKey
+                on { signatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
@@ -630,8 +634,8 @@ class MembershipPersistenceClientImplTest {
                 .isNotNull
 
             assertThat(sentParams?.mgmSignature?.publicKey?.array()).isEqualTo(publicKeyBytes)
-            assertThat(sentParams?.mgmSignature?.context).isEqualTo(KeyValuePairList(listOf(KeyValuePair("a", "b"))))
             assertThat(sentParams?.mgmSignature?.bytes?.array()).isEqualTo(signatureBytes)
+            assertThat(sentParams?.mgmSignatureSpec?.signatureName).isEqualTo(mockSignatureSpec.signatureName)
 
         }
     }

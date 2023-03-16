@@ -93,6 +93,8 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec.RSA_SHA256
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -621,7 +623,7 @@ class MembershipPersistenceTest {
                 )!!,
                 signaturePublicKey = keyEncodingService.encodeAsByteArray(pubKey),
                 signatureContent = byteArrayOf(1),
-                signatureContext = cordaAvroSerializer.serialize(KeyValuePairList(emptyList()))!!
+                signatureSpec = RSA_SHA256.signatureName
             )
             it.persist(entity)
         }
@@ -675,7 +677,7 @@ class MembershipPersistenceTest {
                 )!!,
                 signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
                 signatureContent = byteArrayOf(1),
-                signatureContext = cordaAvroSerializer.serialize(KeyValuePairList(emptyList()))!!
+                signatureSpec = RSA_SHA256.signatureName
             )
             it.persist(entity)
         }
@@ -792,7 +794,7 @@ class MembershipPersistenceTest {
                 )!!,
                 signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
                 signatureContent = byteArrayOf(1),
-                signatureContext = cordaAvroSerializer.serialize(KeyValuePairList(emptyList()))!!
+                signatureSpec = RSA_SHA256.signatureName
             )
             it.persist(entity)
         }
@@ -884,7 +886,7 @@ class MembershipPersistenceTest {
                 )!!,
                 signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public),
                 signatureContent = byteArrayOf(1),
-                signatureContext = cordaAvroSerializer.serialize(KeyValuePairList(emptyList()))!!
+                signatureSpec = RSA_SHA256.signatureName
             )
             it.persist(entity)
         }
@@ -1517,9 +1519,12 @@ class MembershipPersistenceTest {
             get() = DigitalSignature.WithKey(
                 publicKey
                     ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function"),
-                byteArrayOf(1),
-                emptyMap(),
+                byteArrayOf(1)
             )
+        override val signatureSpec: SignatureSpec
+            get() = RSA_SHA256
+
+
         override val bytes: ByteArray
             get() = serialisedParams
                 ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function")

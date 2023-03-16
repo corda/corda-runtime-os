@@ -5,8 +5,6 @@ import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -29,6 +27,7 @@ import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -97,15 +96,13 @@ class GroupParametersWriterServiceTest {
         on { encodeAsByteArray(publicKey) } doReturn keyBytes
     }
     private val serializedGroupParameters = "group-params".toByteArray()
-    private val cordaAvroSerialiser: CordaAvroSerializer<KeyValuePairList> = mock {
-        on { serialize(any()) } doReturn serializedGroupParameters
-    }
+
     private val sigBytes = "signature".toByteArray()
     private val signature = DigitalSignature.WithKey(
         publicKey,
-        sigBytes,
-        emptyMap()
+        sigBytes
     )
+    private val signatureSpec = SignatureSpec.ECDSA_SHA256
 
     private val writerService = GroupParametersWriterServiceImpl(
         coordinatorFactory,
@@ -267,6 +264,7 @@ class GroupParametersWriterServiceTest {
             val groupParameters: SignedGroupParameters = mock {
                 on { bytes } doReturn serializedGroupParameters
                 on { signature } doReturn signature
+                on { signatureSpec } doReturn signatureSpec
             }
 
             writerService.put(viewOwner, groupParameters)
@@ -286,9 +284,9 @@ class GroupParametersWriterServiceTest {
 
                 it.assertThat(publishedParams.groupParameters.mgmSignature).isNotNull
                 it.assertThat(publishedParams.groupParameters.mgmSignature.publicKey.array()).isEqualTo(keyBytes)
-                it.assertThat(publishedParams.groupParameters.mgmSignature.context)
-                    .isEqualTo(KeyValuePairList(emptyList()))
                 it.assertThat(publishedParams.groupParameters.mgmSignature.bytes.array()).isEqualTo(sigBytes)
+                it.assertThat(publishedParams.groupParameters.mgmSignatureSpec.signatureName)
+                    .isEqualTo(signatureSpec.signatureName)
             }
         }
 

@@ -43,11 +43,11 @@ class GroupParametersEntity(
     @Column(name = "signature_content", nullable = true, updatable = false)
     val signatureContent: ByteArray?,
 
-    @Column(name = "signature_context", nullable = true, updatable = false)
-    val signatureContext: ByteArray?,
+    @Column(name = "signature_spec", nullable = true, updatable = false)
+    val signatureSpec: String?,
 ) {
     fun isSigned(): Boolean {
-        return signatureContext != null
+        return signatureSpec != null
                 && signatureContent != null
                 && signaturePublicKey != null
     }

@@ -26,7 +26,7 @@ class GroupParametersEntityTest {
         parameters = parameters,
         signaturePublicKey = byteArrayOf(0),
         signatureContent = byteArrayOf(1),
-        signatureContext = byteArrayOf(2)
+        signatureSpec = "sig-spec"
     )
     private val epochPath: Path<String> = mock()
     private val order: Order = mock()

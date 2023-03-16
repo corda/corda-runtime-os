@@ -88,7 +88,7 @@ internal class AddNotaryToGroupParametersHandler(
                     logger,
                     clock
                 ).apply {
-                    first ?: return@transaction previous.singleResult.toAvro(deserializer)
+                    first ?: return@transaction previous.singleResult.toAvro()
                 }
             } else {
                 // Add new notary service
@@ -107,10 +107,10 @@ internal class AddNotaryToGroupParametersHandler(
                 parameters = serializeProperties(groupParameters!!),
                 signaturePublicKey = null,
                 signatureContent = null,
-                signatureContext = null
+                signatureSpec = null
             ).also {
                 em.persist(it)
-            }.toAvro(deserializer)
+            }.toAvro()
         }
         return PersistGroupParametersResponse(persistedGroupParameters)
     }

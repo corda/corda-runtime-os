@@ -3,6 +3,7 @@ package net.corda.membership.lib
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.GroupParameters
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -13,7 +14,8 @@ import org.mockito.kotlin.mock
 
 class GroupParametersUtilsTest {
 
-    private val mockSignature = DigitalSignature.WithKey(mock(), byteArrayOf(4, 5, 6), emptyMap())
+    private val mockSignature = DigitalSignature.WithKey(mock(), byteArrayOf(4, 5, 6))
+    private val mockSignatureSpec = SignatureSpec.ECDSA_SHA256
 
     private fun mockGroupParameters(
         serializedBytes: ByteArray = "group-params-a".toByteArray(),
@@ -22,6 +24,7 @@ class GroupParametersUtilsTest {
         mock<SignedGroupParameters> {
             on { bytes } doReturn serializedBytes
             on { signature } doReturn mockSignature
+            on { signatureSpec } doReturn mockSignatureSpec
         }
     } else {
         mock<UnsignedGroupParameters> {
@@ -38,28 +41,6 @@ class GroupParametersUtilsTest {
             assertThat(result).isInstanceOf(SecureHash::class.java)
             assertThat(result.algorithm).isEqualTo(DigestAlgorithmName.SHA2_256.name)
             assertThat(result.bytes.size).isGreaterThan(0)
-        }
-
-        @Test
-        fun `same serialized bytes for different group parameters objects produce the same hash`() {
-            val params1 = mockGroupParameters()
-            val params2 = mockGroupParameters()
-
-            assertThat(params1.hash()).isEqualTo(params2.hash())
-            assertThat(params1).isNotSameAs(params2)
-            assertThat(params1.bytes)
-                .isNotSameAs(params2.bytes)
-                .isEqualTo(params2.bytes)
-        }
-
-        @Test
-        fun `group parameters with different serialized bytes have a different hash`() {
-            val params1 = mockGroupParameters()
-            val params2 = mockGroupParameters("group-params-2".toByteArray())
-
-            assertThat(params1.hash()).isNotEqualTo(params2.hash())
-            assertThat(params1.bytes)
-                .isNotEqualTo(params2.bytes)
         }
     }
 }

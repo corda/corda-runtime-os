@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.StaticNetworkInfo
@@ -94,13 +95,9 @@ object StaticNetworkGroupParametersUtils {
             ByteBuffer.wrap(serializedParams),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(staticNetworkInfo.mgmSigningPublicKey)),
-                ByteBuffer.wrap(signature.sign()),
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair(SIGNATURE_SPEC_CONTEXT_KEY, mgmSignatureSpec.signatureName)
-                    )
-                )
-            )
+                ByteBuffer.wrap(signature.sign())
+            ),
+            CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
         )
     }
 }
