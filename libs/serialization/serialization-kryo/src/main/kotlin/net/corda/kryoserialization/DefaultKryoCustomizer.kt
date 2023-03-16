@@ -59,6 +59,8 @@ class DefaultKryoCustomizer {
 
                 isRegistrationRequired = false
                 references = true
+                // Needed because of https://github.com/EsotericSoftware/kryo/issues/864
+                setOptimizedGenerics(false)
 
                 val defaultFactory = SerializerFactory.FieldSerializerFactory()
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
