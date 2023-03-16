@@ -1,9 +1,10 @@
-package net.corda.crypto.softhsm
+package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.CryptoRepository
 import net.corda.crypto.persistence.v1schema.V1CryptoRepositoryImpl
+import net.corda.crypto.softhsm.CryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -52,6 +53,7 @@ constructor(
 //            else -> V2CryptoRepositoryImpl(entityManagerFactory)
 //        }
 
+        // should this be injected?
         return V1CryptoRepositoryImpl(entityManagerFactory)
     }
 }

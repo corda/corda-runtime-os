@@ -1,7 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.softhsm.CryptoRepositoryFactoryImpl
+import net.corda.crypto.softhsm.impl.CryptoRepositoryFactoryImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
