@@ -29,7 +29,7 @@ import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.BootConfig.BOOT_TLS_REST_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_REST_PARAMS
 import net.corda.schema.configuration.DatabaseConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -112,7 +112,7 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
-        val restConfig = PathAndConfig(BOOT_TLS_REST_PARAMS, params.restParams)
+        val restConfig = PathAndConfig(BOOT_REST_PARAMS, params.restParams)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,

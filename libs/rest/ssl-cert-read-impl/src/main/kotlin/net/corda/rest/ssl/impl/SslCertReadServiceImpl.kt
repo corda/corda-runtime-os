@@ -3,11 +3,12 @@ package net.corda.rest.ssl.impl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.rest.ssl.KeyStoreInfo
 import net.corda.rest.ssl.SslCertReadService
-import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_REST_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_FILE_PATH
+import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_PASSWORD
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -21,6 +22,11 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
         const val KEYSTORE_NAME = "https.keystore"
 
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private val String.withoutPrefix: String
+            get() {
+                return this.removePrefix("$BOOT_REST_PARAMS.")
+            }
     }
 
     @Volatile
@@ -51,15 +57,15 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
 
         if (localKeyStoreInfo != null) return localKeyStoreInfo
 
-        localKeyStoreInfo = if (config.hasPath(BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH)) {
-            val bootKeyStorePath = config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH)
-            val keyStorePassword = config.getString(BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD)
+        localKeyStoreInfo = if (config.hasPath(BOOT_REST_TLS_KEYSTORE_FILE_PATH)) {
+            val bootKeyStorePath = config.getString(BOOT_REST_TLS_KEYSTORE_FILE_PATH)
+            val keyStorePassword = config.getString(BOOT_REST_TLS_KEYSTORE_PASSWORD)
             KeyStoreInfo(Path.of(bootKeyStorePath), keyStorePassword)
         } else {
             log.warn(
                 "Using default self-signed TLS certificate. To stop seeing this message, please use bootstrap " +
-                        "parameters: '${BootConfig.BOOT_TLS_REST_KEYSTORE_FILE_PATH}' and " +
-                        "'${BootConfig.BOOT_TLS_REST_KEYSTORE_PASSWORD}'."
+                        "parameters: '-r${BOOT_REST_TLS_KEYSTORE_FILE_PATH.withoutPrefix}' and " +
+                        "-r'${BOOT_REST_TLS_KEYSTORE_PASSWORD.withoutPrefix}'."
             )
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)

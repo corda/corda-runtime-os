@@ -61,7 +61,7 @@ class RestWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val restConfig = PathAndConfig(BootConfig.BOOT_TLS_REST_PARAMS, params.restParams)
+        val restConfig = PathAndConfig(BootConfig.BOOT_REST_PARAMS, params.restParams)
         val config = getBootstrapConfig(
                 secretsServiceFactoryResolver,
                 params.defaultParams,
