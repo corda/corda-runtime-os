@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
 import net.corda.data.p2p.HeartbeatMessage
@@ -63,7 +64,6 @@ import net.corda.utilities.millis
 import net.corda.utilities.minutes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.EncodingUtils.toBase64
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -231,7 +231,7 @@ class SessionManagerTest {
         on { dominoTile } doReturn hostingMapDominoTile
         on { allLocallyHostedIdentities() } doReturn listOf(OUR_PARTY)
     }
-    private val signature = mock<DigitalSignature.WithKey> {
+    private val signature = mock<DigitalSignatureWithKey> {
         on { bytes } doReturn "signature-from-A".toByteArray()
     }
     private val cryptoOpsClient = mock<CryptoOpsClient> {

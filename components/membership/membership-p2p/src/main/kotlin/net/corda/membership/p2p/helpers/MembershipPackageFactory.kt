@@ -1,6 +1,7 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.toAvro
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -38,7 +39,7 @@ class MembershipPackageFactory(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-    private fun DigitalSignature.WithKey.toAvro() =
+    private fun DigitalSignatureWithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))
             .setPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.by)))

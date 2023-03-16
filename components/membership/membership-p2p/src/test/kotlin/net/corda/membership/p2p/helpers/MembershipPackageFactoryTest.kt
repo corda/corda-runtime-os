@@ -1,6 +1,7 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -44,7 +45,7 @@ class MembershipPackageFactoryTest {
     private val pubKey: PublicKey = mock {
         on { encoded } doReturn "test-key".toByteArray()
     }
-    private val signedGroupParameters: DigitalSignature.WithKey = mock {
+    private val signedGroupParameters: DigitalSignatureWithKey = mock {
         on { bytes } doReturn "dummy-signature".toByteArray()
         on { by } doReturn pubKey
     }
@@ -88,7 +89,7 @@ class MembershipPackageFactoryTest {
             val publicKey = mock<PublicKey> {
                 on { encoded } doReturn pk
             }
-            val signature = DigitalSignature.WithKey(
+            val signature = DigitalSignatureWithKey(
                 publicKey,
                 bytes
             )

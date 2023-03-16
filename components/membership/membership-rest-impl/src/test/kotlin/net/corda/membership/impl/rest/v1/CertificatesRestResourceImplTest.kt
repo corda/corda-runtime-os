@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -24,7 +25,6 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.ECDSA_SHA256
@@ -159,7 +159,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )
@@ -389,7 +389,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )
@@ -431,7 +431,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )
@@ -473,7 +473,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )

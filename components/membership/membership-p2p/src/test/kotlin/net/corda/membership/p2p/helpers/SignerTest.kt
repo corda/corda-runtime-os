@@ -2,6 +2,7 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -32,7 +33,7 @@ class SignerTest {
             on { schemeCodeName } doReturn RSA_CODE_NAME
         }
         whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
-        val signature = mock<DigitalSignature.WithKey>()
+        val signature = mock<DigitalSignatureWithKey>()
         whenever(
             cryptoOpsClient.sign(
                 tenantId = tenantId,
