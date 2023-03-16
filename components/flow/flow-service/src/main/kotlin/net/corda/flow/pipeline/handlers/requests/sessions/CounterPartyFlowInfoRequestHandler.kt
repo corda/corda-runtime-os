@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.Reference
  * the flow fiber from the flow checkpoint.
  */
 @Component(service = [FlowRequestHandler::class])
-class CounterPartyInfoRequestHandler @Activate constructor(
+class CounterPartyFlowInfoRequestHandler @Activate constructor(
     @Reference(service = InitiateFlowRequestService::class)
     private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.CounterPartyFlowInfo> {

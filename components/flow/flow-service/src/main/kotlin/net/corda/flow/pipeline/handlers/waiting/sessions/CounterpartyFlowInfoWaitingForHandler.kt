@@ -42,6 +42,4 @@ class CounterpartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterParty
             else -> FlowContinuation.Run(Unit)
         }
     }
-
-
  }

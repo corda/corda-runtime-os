@@ -27,7 +27,7 @@ class CounterpartyInfoRequestHandlerTest {
 
     )
     private val handler =
-        CounterPartyInfoRequestHandler(testContext.initiateFlowReqService)
+        CounterPartyFlowInfoRequestHandler(testContext.initiateFlowReqService)
 
 
     @Suppress("Unused")
