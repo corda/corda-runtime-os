@@ -102,7 +102,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
-    override fun findUnconsumedRelevantStatesByType(
+    override fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager,
         groupIndices: List<Int>
     ):  List<ComponentLeafDto> {
@@ -110,7 +110,7 @@ class UtxoRepositoryImpl @Activate constructor(
             """
                 SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
                 FROM {h-schema}utxo_transaction_component AS tc
-                JOIN {h-schema}utxo_relevant_transaction_state AS rts
+                JOIN {h-schema}utxo_visible_transaction_state AS rts
                     ON rts.transaction_id = tc.transaction_id
                     AND rts.leaf_idx = tc.leaf_idx
                 JOIN {h-schema}utxo_transaction_status AS ts
@@ -201,14 +201,14 @@ class UtxoRepositoryImpl @Activate constructor(
             .singleOrNull()
     }
 
-    override fun markTransactionRelevantStatesConsumed(
+    override fun markTransactionVisibleStatesConsumed(
         entityManager: EntityManager,
         stateRefs: List<StateRef>,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(
         """
-            UPDATE {h-schema}utxo_relevant_transaction_state
+            UPDATE {h-schema}utxo_visible_transaction_state
             SET consumed = :consumed
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
@@ -328,7 +328,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionRelevantStates(
+    override fun persistTransactionVisibleStates(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
@@ -339,7 +339,7 @@ class UtxoRepositoryImpl @Activate constructor(
     ) {
         entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_relevant_transaction_state(
+            INSERT INTO {h-schema}utxo_visible_transaction_state(
                 transaction_id, group_idx, leaf_idx, custom_representation, created, consumed
             )
             VALUES(
