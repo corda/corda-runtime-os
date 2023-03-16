@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
@@ -37,9 +36,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
             TransactionVerificationExternalEventFactory::class.java,
             TransactionVerificationParameters(
                 serialize(transaction.toContainer()),
-                transaction.getCpkMetadata().map {
-                    CordaPackageSummary(it.name, it.version, it.signerSummaryHash, it.fileChecksum)
-                }
+                transaction.getCpkMetadata()
             )
         )
 
