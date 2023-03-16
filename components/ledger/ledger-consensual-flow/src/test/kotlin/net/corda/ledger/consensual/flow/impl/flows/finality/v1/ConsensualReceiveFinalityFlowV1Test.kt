@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
@@ -238,7 +239,7 @@ class ConsensualReceiveFinalityFlowV1Test {
 
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArray),
+            DigitalSignature.WithKeyId(publicKey.fullIdHash(), byteArray),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }

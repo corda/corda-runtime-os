@@ -1,5 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
@@ -29,8 +30,11 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -69,7 +73,11 @@ class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider
+    private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = MemberLookup::class)
+    private val memberLookup: MemberLookup,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
@@ -131,7 +139,13 @@ class TransactionSignatureServiceImpl @Activate constructor(
         transaction: TransactionWithMetadata,
         signatureWithMetadata: DigitalSignatureAndMetadata
     ) {
-        val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
+        // TODO needs to be reviewed by Lajos
+        val keyUsedToSign = memberLookup.lookup(signatureWithMetadata.by)
+        val signatureSpec =
+            checkAndGetSignatureSpec(
+                signatureWithMetadata.metadata.signatureSpec,
+                keyUsedToSign
+            )
 
         val proof = signatureWithMetadata.proof
         val signedHash = if (proof == null) {   // Simple signature
@@ -154,9 +168,21 @@ class TransactionSignatureServiceImpl @Activate constructor(
         return digitalSignatureVerificationService.verify(
             serializationService.serialize(signedData).bytes,
             signatureWithMetadata.signature.bytes,
-            signatureWithMetadata.by,
+            keyUsedToSign,
             signatureSpec
         )
+    }
+
+    @Suspendable
+    private fun MemberLookup.lookup(keyId: SecureHash): PublicKey {
+        val digestAlgorithmOfKeyId = keyId.algorithm
+        val knownKeysByKeyIds = lookup().flatMap {
+            it.ledgerKeys
+        }.associateBy {
+            it.fullIdHash(keyEncodingService, digestService, digestAlgorithmOfKeyId)
+        }
+
+        return knownKeysByKeyIds[keyId] ?: error("Member for consensual signature not found")
     }
 
     private fun confirmBatchSigningRequirements(transactions: List<TransactionWithMetadata>) {
@@ -257,10 +283,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
         }
     }
 
-    private fun checkAndGetSignatureSpec(signatureWithMetadata: DigitalSignatureAndMetadata): SignatureSpec {
-        val signatureSpec = signatureWithMetadata.metadata.signatureSpec
-
-        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
+    private fun checkAndGetSignatureSpec(signatureSpec: SignatureSpec, signingKey: PublicKey): SignatureSpec {
+        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signingKey)
         require(signatureSpec in compatibleSpecs) {
             "The signature spec in the signature metadata ('$signatureSpec') is incompatible with its key!"
         }
@@ -302,3 +326,10 @@ private fun getCpiSummary(): CordaPackageSummary =
         signerSummaryHash = SecureHashImpl("SHA-256", "Fake-value".toByteArray()).toHexString(),
         fileChecksum = SecureHashImpl("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
     )
+
+private fun PublicKey.fullIdHash(
+    keyEncodingService: KeyEncodingService,
+    digestService: DigestService,
+    digestAlgorithmName: String
+): SecureHash =
+    digestService.hash(keyEncodingService.encodeAsByteArray(this), DigestAlgorithmName(digestAlgorithmName))

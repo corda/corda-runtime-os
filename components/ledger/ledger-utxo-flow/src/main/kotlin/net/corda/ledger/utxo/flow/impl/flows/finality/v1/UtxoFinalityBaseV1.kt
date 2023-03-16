@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -15,12 +16,15 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeyUtils
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import java.security.InvalidParameterException
+import java.security.PublicKey
 
 /**
  * Initiator will notify the receiver side with FATAL if the notarization error cannot be recovered and the
@@ -61,6 +65,9 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     @CordaInject
     lateinit var visibilityChecker: VisibilityChecker
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     abstract val log: Logger
 
     @Suspendable
@@ -72,9 +79,9 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
         try {
             log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
             transactionSignatureService.verifySignature(transaction, signature)
-            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
+            log.debug { "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id" }
         } catch (e: Exception) {
-            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
+            val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
@@ -95,12 +102,13 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     @Suspendable
     protected fun verifyAndAddNotarySignature(
         transaction: UtxoSignedTransactionInternal,
-        signature: DigitalSignatureAndMetadata
+        signature: DigitalSignatureAndMetadata,
     ): UtxoSignedTransactionInternal {
         try {
+            val keyUsedToSign = memberLookup.lookup(signature.by)
             // If the notary service key (composite key) is provided we need to make sure it contains the key the
             // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
-            if (!KeyUtils.isKeyInSet(transaction.notaryKey, listOf(signature.by))) {
+            if (!KeyUtils.isKeyInSet(transaction.notaryKey, listOf(keyUsedToSign))) {
                 throw CordaRuntimeException(
                     "Notary's signature has not been created by the transaction's notary. " +
                             "Notary's public key: ${transaction.notaryKey} " +
@@ -153,4 +161,21 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
             verifySignature(initialTransaction, it, sessionToNotify)
         }
     }
+
+    @Suspendable
+    private fun MemberLookup.lookup(keyId: SecureHash): PublicKey {
+        val digestAlgorithmOfKeyId = keyId.algorithm
+        val knownKeysByKeyIds = lookup().flatMap {
+            it.ledgerKeys
+        }.associateBy {
+            // TODO Need to use KeyEncodingService below but not sure if it is CordaInject-able
+            it.fullIdHash(digestService, digestAlgorithmOfKeyId)
+        }
+
+        return knownKeysByKeyIds[keyId] ?: error("Member for consensual signature not found")
+    }
 }
+
+private fun PublicKey.fullIdHash(digestService: DigestService, digestAlgorithmName: String) =
+    digestService.hash(this.encoded, DigestAlgorithmName(digestAlgorithmName))
+

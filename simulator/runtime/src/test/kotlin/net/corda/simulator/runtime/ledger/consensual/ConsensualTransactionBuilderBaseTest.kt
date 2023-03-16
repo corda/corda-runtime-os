@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.consensual
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
@@ -34,7 +35,7 @@ class ConsensualTransactionBuilderBaseTest {
     fun `set up signing service mock`() {
         publicKeys.map {
             whenever(signingService.sign(any(), eq(it), any()))
-                .thenReturn(DigitalSignature.WithKey(it, "some bytes".toByteArray()))
+                .thenReturn(DigitalSignature.WithKeyId(it.fullIdHash(), "some bytes".toByteArray()))
         }
         whenever(myMemberInfo.ledgerKeys).thenReturn(listOf(myLedgerKey))
         whenever(memberLookup.myInfo()).thenReturn(myMemberInfo)
@@ -57,7 +58,7 @@ class ConsensualTransactionBuilderBaseTest {
     fun `should be able to build a consensual transaction and sign with a key`() {
         // Given a key has been generated on the node, so the SigningService can sign with it
         whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
-            .thenReturn(DigitalSignature.WithKey(publicKeys[0], "My fake signed things".toByteArray()))
+            .thenReturn(DigitalSignature.WithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
 
         // And our configuration has a special clock
         val clock = mock<Clock>()

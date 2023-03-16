@@ -62,7 +62,7 @@ interface CryptoFlowOpsTransformer {
      * Transforms the response type.
      *
      * @return [PublicKey] for [GenerateFreshKeyFlowCommand] request and [CryptoPublicKey] response type, [List<PublicKey>] for
-     * [ByIdsFlowQuery] request and [CryptoSigningKeys] response type [DigitalSignature.WithKey] for [SignFlowCommand] or
+     * [ByIdsFlowQuery] request and [CryptoSigningKeys] response type [DigitalSignatureWithKey] for [SignFlowCommand] or
      * [SignWithSpecFlowCommand] request with [CryptoSignatureWithKey] response type
      *
      * @throws [IllegalArgumentException] if the request type is not one of [SignWithSpecFlowCommand], [SignFlowCommand],
