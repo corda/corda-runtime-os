@@ -37,7 +37,7 @@ class SigningServiceImpl(
     private val store: SigningKeyStore,
     private val cryptoServiceProvider: CryptoServiceProvider,
     override val schemeMetadata: CipherSchemeMetadata,
-    private val digestService: PlatformDigestService
+    private val digestService: PlatformDigestService,
 ) : SigningService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

@@ -59,7 +59,8 @@ class CryptoServiceProviderImpl @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
+        bootConfig = bootConfig
+            ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
         event = event,
         hsmStore = hsmStore,
         cryptoService = cryptoService
