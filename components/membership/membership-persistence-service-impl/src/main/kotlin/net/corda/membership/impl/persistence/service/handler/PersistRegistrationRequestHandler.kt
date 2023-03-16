@@ -1,7 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.membership.datamodel.MemberSignatureEntity
@@ -14,10 +12,6 @@ import javax.persistence.LockModeType
 internal class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer {
-            logger.error("Failed to serialize key value pair list.")
-        }
 
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
@@ -51,7 +45,7 @@ internal class PersistRegistrationRequestHandler(
                     groupId = request.registeringHoldingIdentity.groupId,
                     memberX500Name = request.registeringHoldingIdentity.x500Name,
                     publicKey = request.registrationRequest.memberSignature.publicKey.array(),
-                    context = keyValuePairListSerializer.serialize(request.registrationRequest.memberSignature.context) ?: byteArrayOf(),
+                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
                     content = request.registrationRequest.memberSignature.bytes.array(),
                     isPending = request.registrationRequest.isPending
                 )

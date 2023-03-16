@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -29,8 +30,8 @@ class SendRequestHandlerTest {
 
     private val ioRequest = FlowIORequest.Send(
         mapOf(
-            FlowIORequest.SessionInfo(sessionId1, testContext.counterparty) to payload1,
-            FlowIORequest.SessionInfo(sessionId2, testContext.counterparty) to payload2
+            SessionInfo(sessionId1, testContext.counterparty) to payload1,
+            SessionInfo(sessionId2, testContext.counterparty) to payload2
         )
     )
     private val handler =
@@ -65,7 +66,7 @@ class SendRequestHandlerTest {
     @Test
     fun `Waiting for session confirmation event`() {
         whenever(testContext.initiateFlowReqService.getSessionsNotInitiated(any(), any())).thenReturn(setOf(
-            FlowIORequest.SessionInfo
+            SessionInfo
             (sessionId1, testContext.counterparty)))
         val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
         verify(testContext.initiateFlowReqService).getSessionsNotInitiated(any(), any())

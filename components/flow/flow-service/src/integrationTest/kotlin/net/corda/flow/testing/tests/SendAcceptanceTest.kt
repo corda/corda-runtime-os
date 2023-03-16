@@ -1,5 +1,6 @@
 package net.corda.flow.testing.tests
 
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
@@ -50,8 +51,8 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
                 )))
         }
 
@@ -74,7 +75,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                     )))
         }
 
@@ -109,22 +110,22 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
-                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
                     )))
 
             wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
-                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
                     )))
 
             wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_5,
-                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_6,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_5,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_6,
                     )))
         }
 
@@ -156,8 +157,8 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
                 )))
         }
 
@@ -167,8 +168,8 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
-                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
                     )))
         }
 
@@ -193,8 +194,8 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.Send(
                         mapOf(
-                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
-                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
+                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
                         ),
                     )
                 )
@@ -207,7 +208,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.Send(
                         mapOf(
-                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1
                         )
                     )
                 )
