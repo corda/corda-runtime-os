@@ -12,6 +12,7 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
@@ -32,7 +33,7 @@ import java.time.Duration
  * tenantId and category, and then CryptoServiceProvider to make the crypto service,
  * and CryptoServiceDecorator to add retries logic
  */
-@Component(service = [CryptoServiceProvider::class])
+@Component(service = [CryptoServiceFactory::class])
 class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -40,8 +41,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStore::class)
     private val hsmStore: HSMStore,
-    @Reference(service = CryptoService::class)
-    private val cryptoService: CryptoService,
+    @Reference(service = CryptoServiceProvider::class)
+    private val cryptoServiceProvider: CryptoServiceProvider,
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceProvider>(),
@@ -53,7 +54,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
-), CryptoServiceProvider {
+), CryptoServiceFactory {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -63,7 +64,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
             ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
         event = event,
         hsmStore = hsmStore,
-        cryptoService = cryptoService
+        cryptoServiceProvider = cryptoServiceProvider
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
@@ -82,7 +83,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmStore: HSMStore,
-        private val cryptoService: CryptoService,
+        private val cryptoServiceProvider: CryptoServiceProvider,
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String

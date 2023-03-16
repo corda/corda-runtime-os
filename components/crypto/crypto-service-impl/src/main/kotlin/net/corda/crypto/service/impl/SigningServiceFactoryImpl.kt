@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.persistence.SigningKeyStore
+import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -77,9 +78,9 @@ class SigningServiceFactoryImpl @Activate constructor(
                         logger.info("Creating the signing service.")
                         signingService = SigningServiceImpl(
                             store = store,
-                            cryptoServiceProvider = cryptoServiceFactory,
+                            cryptoServiceFactory = cryptoServiceFactory,
                             schemeMetadata = schemeMetadata,
-                            digestService = digestService
+                            digestService = digestService,
                         )
                         signingService!!
                     }
