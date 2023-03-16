@@ -1,7 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -89,8 +87,8 @@ class SimUtxoLedgerService(
                 utxoTransactionOutputEntity.stateData, ContractState::class.java)
             val encumbrance = serializationService
                 .deserialize(utxoTransactionOutputEntity.encumbranceData, List::class.java).firstOrNull()
-            val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance as? EncumbranceGroup)
-            StateAndRefImpl(transactionState, stateRef)
+            val transactionState = SimTransactionState(contractState as T, notary, encumbrance as? EncumbranceGroup)
+            SimStateAndRef(transactionState, stateRef)
         }
         return stateAndRefs
     }
@@ -123,7 +121,7 @@ class SimUtxoLedgerService(
         val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)
         val encumbrance = serializer
             .deserialize(entity.encumbranceData, List::class.java).firstOrNull()
-        val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance as? EncumbranceGroup)
-        return StateAndRefImpl(transactionState, stateRef)
+        val transactionState = SimTransactionState(contractState as T, notary, encumbrance as? EncumbranceGroup)
+        return SimStateAndRef(transactionState, stateRef)
     }
 }

@@ -1,8 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseMemberInfo
 import net.corda.simulator.runtime.notary.SimTimeWindow
@@ -214,19 +211,19 @@ class UtxoTransactionFinalityHandlerTest {
         val signedTransaction = mock<UtxoSignedTransaction>()
         val ledgerTx = mock<UtxoLedgerTransaction>()
         val duplicateStateAndRefs = listOf(
-                StateAndRefImpl(
-                    TransactionStateImpl(
+                SimStateAndRef(
+                    SimTransactionState(
                         TestUtxoState("S1", publicKeys),
                         notary,
-                        EncumbranceGroupImpl(
+                        SimEncumbranceGroup(
                             1, "some-tag"
                         )),
                     StateRef(SecureHash.parse(txIds[0]), 0)),
-                StateAndRefImpl(
-                    TransactionStateImpl(
+                SimStateAndRef(
+                    SimTransactionState(
                         TestUtxoState("S1", publicKeys),
                         notary,
-                        EncumbranceGroupImpl(
+                        SimEncumbranceGroup(
                             1, "some-tag"
                         )),
                     StateRef(SecureHash.parse(txIds[0]), 0))
@@ -257,19 +254,19 @@ class UtxoTransactionFinalityHandlerTest {
             mock(), signingService, signingService, persistenceService, mock())
 
         val faultyEncumbranceStateAndRefs = listOf(
-            StateAndRefImpl(
-                TransactionStateImpl(
+            SimStateAndRef(
+                SimTransactionState(
                     TestUtxoState("S1", publicKeys),
                     notary,
-                    EncumbranceGroupImpl(
+                    SimEncumbranceGroup(
                         3, "some-tag"
                     )),
                 StateRef(SecureHash.parse(txIds[0]), 0)),
-            StateAndRefImpl(
-                TransactionStateImpl(
+            SimStateAndRef(
+                SimTransactionState(
                     TestUtxoState("S2", publicKeys),
                     notary,
-                    EncumbranceGroupImpl(
+                    SimEncumbranceGroup(
                         3, "some-tag"
                     )),
                 StateRef(SecureHash.parse(txIds[0]), 1))

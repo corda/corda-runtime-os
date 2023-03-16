@@ -1,7 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -15,6 +13,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
@@ -194,9 +193,20 @@ data class UtxoTransactionBuilderBase(
 data class ContractStateAndEncumbranceTag(val contractState: ContractState, val encumbranceTag: String?) {
 
     fun toTransactionState(notary: Party, encumbranceGroupSize: Int?): TransactionState<*> {
-        return TransactionStateImpl(contractState, notary, encumbranceTag?.let{
+        return SimTransactionState(contractState, notary, encumbranceTag?.let{
             requireNotNull(encumbranceGroupSize)
-            EncumbranceGroupImpl(encumbranceGroupSize, it)
+            SimEncumbranceGroup(encumbranceGroupSize, it)
         })
+    }
+}
+
+data class SimEncumbranceGroup(private val size: Int, private val tag: String) : EncumbranceGroup {
+
+    override fun getTag(): String {
+        return tag
+    }
+
+    override fun getSize(): Int {
+        return size
     }
 }

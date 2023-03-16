@@ -1,7 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.crypto.SecureHash
@@ -13,6 +11,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.MessageDigest
 import java.security.PublicKey
@@ -97,7 +96,7 @@ data class UtxoLedgerTransactionBase(
             val stateRef = StateRef(id, index)
             val transactionState = contractStateAndTag.toTransactionState(notary,
                 contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
-            StateAndRefImpl(transactionState, stateRef)
+            SimStateAndRef(transactionState, stateRef)
         }
     }
 
@@ -147,3 +146,53 @@ data class UtxoLedgerTransactionBase(
 
 }
 
+/**
+ * Filters a collection of [StateAndRef] and returns only the elements that match the specified [ContractState] type.
+ *
+ * @param T The underlying type of the [ContractState].
+ * @param type The type of the [ContractState] to cast to.
+ * @return Returns a collection of [StateAndRef] that match the specified [ContractState] type.
+ */
+fun <T : ContractState> Iterable<StateAndRef<*>>.filterIsContractStateInstance(type: Class<T>): List<StateAndRef<T>> {
+    return filter { type.isAssignableFrom(it.state.contractState.javaClass) }.map { it.cast(type) }
+}
+
+/**
+ * Casts the current [ContractState] to the specified type.
+ *
+ * @param T The underlying type of the [ContractState].
+ * @param type The type of the [ContractState] to cast.
+ * @return Returns a new [ContractState] instance cast to the specified type.
+ * @throws IllegalArgumentException if the current [ContractState] cannot be cast to the specified type.
+ */
+fun <T : ContractState> ContractState.cast(type: Class<T>): T {
+    return if (type.isAssignableFrom(javaClass)) {
+        type.cast(this)
+    } else {
+        throw IllegalArgumentException("ContractState of type ${javaClass.canonicalName} cannot be cast to type ${type.canonicalName}.")
+    }
+}
+
+/**
+ * Casts the current [TransactionState] to the specified type.
+ *
+ * @param T The underlying type of the [ContractState].
+ * @param type The type of the [ContractState] to cast to.
+ * @return Returns a new [TransactionState] instance cast to the specified type.
+ * @throws IllegalArgumentException if the current [TransactionState] cannot be cast to the specified type.
+ */
+fun <T : ContractState> TransactionState<*>.cast(type: Class<T>): TransactionState<T> {
+    return SimTransactionState(contractState.cast(type), notary, encumbranceGroup)
+}
+
+/**
+ * Casts the current [StateAndRef] to the specified type.
+ *
+ * @param T The underlying type of the [ContractState].
+ * @param type The type of the [ContractState] to cast to.
+ * @return Returns a new [StateAndRef] instance cast to the specified type.
+ * @throws IllegalArgumentException if the current [StateAndRef] cannot be cast to the specified type.
+ */
+fun <T : ContractState> StateAndRef<*>.cast(type: Class<T>): StateAndRef<T> {
+    return SimStateAndRef(state.cast(type), ref)
+}

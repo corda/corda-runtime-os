@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
@@ -59,7 +58,7 @@ class UtxoTransactionBuilderBaseTest {
         val outputEntity = UtxoTransactionOutputEntity(
             "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
             TestUtxoState::class.java.canonicalName,
-            serializer.serialize(listOf<EncumbranceGroupImpl>()).bytes,
+            serializer.serialize(listOf<SimEncumbranceGroup>()).bytes,
             serializer.serialize(refState).bytes,
             0,
             false

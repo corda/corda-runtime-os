@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -128,4 +127,17 @@ private class FilteredDataAuditImpl<T>(
     override fun getValues(): Map<Int, T> {
         return values
     }
+}
+
+enum class UtxoComponentGroup {
+    METADATA,
+    NOTARY,
+    SIGNATORIES,
+    OUTPUTS_INFO,
+    COMMANDS_INFO,
+    DATA_ATTACHMENTS,
+    INPUTS,
+    REFERENCES,
+    OUTPUTS,
+    COMMANDS,
 }
