@@ -36,9 +36,14 @@ class SigningServiceImpl @Activate constructor(
 
     @Suspendable
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
-        return externalEventExecutor.execute(
+        val digitalSignatureWithKey = externalEventExecutor.execute(
             CreateSignatureExternalEventFactory::class.java,
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
+        )
+
+        return DigitalSignature.WithKey(
+            digitalSignatureWithKey.by,
+            digitalSignatureWithKey.bytes
         )
     }
 

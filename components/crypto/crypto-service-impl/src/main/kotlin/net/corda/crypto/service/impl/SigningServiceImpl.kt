@@ -19,6 +19,7 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
@@ -104,7 +105,7 @@ class SigningServiceImpl(
             "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
         }
         // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
-        // querying 
+        // querying
         return signingRepositoryFactory.getInstance(tenantId).use {
             it.query(
                 skip,
@@ -244,8 +245,8 @@ class SigningServiceImpl(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String>,
-    ): DigitalSignature.WithKey {
+        context: Map<String, String>
+    ): DigitalSignatureWithKey {
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
@@ -255,7 +256,7 @@ class SigningServiceImpl(
         else
             SigningAliasSpec(getHsmAlias(record, publicKey, tenantId), publicKey, scheme, signatureSpec)
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
-        return DigitalSignature.WithKey(record.publicKey, signedBytes)
+        return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
 
     override fun deriveSharedSecret(
