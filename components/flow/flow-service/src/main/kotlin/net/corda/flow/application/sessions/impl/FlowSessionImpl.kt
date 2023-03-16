@@ -64,11 +64,10 @@ class FlowSessionImpl(
 
     private fun getFlowInfoFromSessionProps(counterpartySessionProperties: KeyValuePairList): FlowInfo {
         val props = KeyValueStore(counterpartySessionProperties)
-        val protocol = props[Constants.FLOW_PROTOCOL] ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty " +
-                "protocol was set to null")
+        val protocol = props[Constants.FLOW_PROTOCOL]
+            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty protocol was set to null")
         val protocolVersion = props[Constants.FLOW_PROTOCOL_VERSION_USED]?.toInt()
-            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty " +
-                "protocol version was set to null")
+            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty protocol version was set to null")
         return FlowInfoImpl(protocol, protocolVersion)
     }
 
