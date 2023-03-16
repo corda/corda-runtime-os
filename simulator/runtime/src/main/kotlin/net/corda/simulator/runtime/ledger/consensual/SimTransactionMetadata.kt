@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.ledger
+package net.corda.simulator.runtime.ledger.consensual
 
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata

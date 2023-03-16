@@ -13,7 +13,8 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /***
- * This class is used to send backchain of an asset from one party to another
+ * This class is used to send backchain of an asset from one party to another. It is required in cases when a
+ * new party is sent an asset who was not part of it in pervious transactions
  */
 class TransactionBackchainHandlerBase(
     val persistenceService: PersistenceService,
@@ -22,6 +23,10 @@ class TransactionBackchainHandlerBase(
     val configuration: SimulatorConfiguration
 ):TransactionBackchainHandler {
 
+    /**
+     * This method handles sending of tx backchain when requested by the receiver
+     * @param session The flow session with the counterparty
+     */
     override fun sendBackChain(session: FlowSession) {
         val serializationService = BaseSerializationService()
         // Runs till all missing transaction have been requested
@@ -45,6 +50,12 @@ class TransactionBackchainHandlerBase(
         }
     }
 
+    /**
+     * This method is call by the responder to check for transaction dependencies and request
+     * tx backchain for missing transaction dependencies
+     *
+     * @param transaction The current tx which need to be checked for missing dependencies
+     */
     @Suppress("UNCHECKED_CAST")
     override fun receiveBackChain(transaction: UtxoSignedTransaction, session: FlowSession) {
         val dependencies = getTxDependencies(transaction)

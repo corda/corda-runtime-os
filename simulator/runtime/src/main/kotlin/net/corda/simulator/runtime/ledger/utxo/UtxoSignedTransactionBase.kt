@@ -7,7 +7,7 @@ import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.entities.UtxoTransactionSignatureEntity
-import net.corda.simulator.runtime.ledger.SimTransactionMetadata
+import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata

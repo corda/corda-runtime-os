@@ -133,7 +133,7 @@ data class UtxoTransactionBuilderBase(
 
     override fun toSignedTransaction(): UtxoSignedTransaction = sign()
 
-    fun sign(): UtxoSignedTransaction {
+    private fun sign(): UtxoSignedTransaction {
         val signatories = this.signatories
         check(!alreadySigned) { "The transaction cannot be signed twice." }
         verifyTx()

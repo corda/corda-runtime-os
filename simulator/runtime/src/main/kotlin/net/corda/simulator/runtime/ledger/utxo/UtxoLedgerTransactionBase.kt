@@ -2,7 +2,7 @@ package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
-import net.corda.simulator.runtime.ledger.SimTransactionMetadata
+import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party

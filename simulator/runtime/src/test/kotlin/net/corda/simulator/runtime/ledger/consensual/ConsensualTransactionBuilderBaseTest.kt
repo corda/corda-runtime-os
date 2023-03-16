@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.ledger
+package net.corda.simulator.runtime.ledger.consensual
 
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.testutils.generateKeys

@@ -21,6 +21,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import java.security.PublicKey
 import java.time.Instant
 
+/**
+ * This class handles utxo finality flow and receive finality flow in Simulator
+ */
 class UtxoTransactionFinalityHandler(
      private val memberLookup: MemberLookup,
      private val signingService: SigningService,
@@ -31,6 +34,9 @@ class UtxoTransactionFinalityHandler(
 
     /**
      * Handles finality flow in Simulator
+     *
+     * @param signedTransaction The tx to finalize
+     * @param sessions The counterparty session for the transaction
      */
     @Suppress( "UNCHECKED_CAST")
     fun finalizeTransaction(signedTransaction: UtxoSignedTransaction,
@@ -59,6 +65,9 @@ class UtxoTransactionFinalityHandler(
 
     /**
      * Handles receive finality flow in Simulator
+     *
+     * @param session The counterparty session who is calling finality
+     * @param validator Validates the received [UtxoSignedTransaction].
      */
     fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
         val signedTransaction = session.receive(UtxoSignedTransactionBase::class.java)

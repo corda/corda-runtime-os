@@ -2,7 +2,7 @@ package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
-import net.corda.simulator.runtime.ledger.SimConsensualLedgerService
+import net.corda.simulator.runtime.ledger.consensual.SimConsensualLedgerService
 import net.corda.simulator.runtime.ledger.utxo.SimUtxoLedgerService
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService

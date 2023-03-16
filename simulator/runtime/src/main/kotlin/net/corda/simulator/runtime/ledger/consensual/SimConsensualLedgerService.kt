@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.ledger
+package net.corda.simulator.runtime.ledger.consensual
 
 import net.corda.crypto.core.bytes
 import net.corda.simulator.SimulatorConfiguration
