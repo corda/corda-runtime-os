@@ -72,7 +72,6 @@ internal class InboundMessageProcessor(
                     logger.info( //TODO info level for Interop Team, revert to debug as part of CORE-10683
                         "Processing unauthenticated message ${payload.header.messageId}"
                     )
-
                     recordInboundMessagesMetric(payload)
                     listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }

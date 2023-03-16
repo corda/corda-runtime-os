@@ -27,6 +27,7 @@ import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.Component
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -134,7 +135,7 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.debug("Processing outbound message ${message.header.messageId} to ${message.header.destination}.")
+        logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
