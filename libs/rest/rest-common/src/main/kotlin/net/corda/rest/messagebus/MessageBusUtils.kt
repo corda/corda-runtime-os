@@ -1,8 +1,8 @@
 package net.corda.rest.messagebus
 
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ServiceUnavailableException
-import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import org.slf4j.Logger
 
 object MessageBusUtils {

@@ -2,7 +2,6 @@ package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
@@ -10,17 +9,6 @@ import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ForbiddenException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.ws.DuplexChannel
-import net.corda.rest.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
@@ -34,6 +22,20 @@ import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.OperationNotAllowedException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.ws.DuplexChannel
+import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.virtualnode.OperationalStatus
@@ -46,7 +48,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
-import net.corda.rest.exception.OperationNotAllowedException
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRestResource::class, PluggableRestResource::class], immediate = true)
@@ -102,7 +103,7 @@ class FlowRestResourceImpl @Activate constructor(
         startFlow: StartFlowParameters
     ): ResponseEntity<FlowStatusResponse> {
         if (publisher == null) {
-            throw FlowRestResourceServiceException("FlowRestResource has not been initialised ")
+            throw ServiceUnavailableException("FlowRestResource has not been initialised ")
         }
         if (fatalErrorOccurred) {
             // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
@@ -110,7 +111,7 @@ class FlowRestResourceImpl @Activate constructor(
             // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
             // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
             // closing us down soon. There are other fatal error types, but none are recoverable by definition.
-            throw FlowRestResourceServiceException("Fatal error occurred, can no longer start flows from this worker")
+            throw InternalServerException("Fatal error occurred, can no longer start flows from this worker")
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
@@ -182,11 +183,11 @@ class FlowRestResourceImpl @Activate constructor(
         } catch (ex: CordaMessageAPIFatalException) {
             throw markFatalAndReturnFailureException(ex)
         }
-        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsTerminal ->
-            if (failureIsTerminal) {
+        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsFatal ->
+            if (failureIsFatal) {
                 throw markFatalAndReturnFailureException(ex)
             } else {
-                throw failureException(ex)
+                throw InternalServerException("Fatal error occurred, can no longer start flows from this worker")
             }
         }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
@@ -196,11 +197,8 @@ class FlowRestResourceImpl @Activate constructor(
         fatalErrorOccurred = true
         log.error("Fatal error occurred, FlowRestResource can no longer start flows, worker expected to terminate.", exception)
         onFatalError()
-        return failureException(exception)
+        throw InternalServerException("Fatal error occurred, can no longer start flows from this worker")
     }
-
-    private fun failureException(cause: Exception): Exception =
-        FlowRestResourceServiceException("Failed to publish the Start Flow event.", cause)
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
         val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
