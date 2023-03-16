@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.runner.impl
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
@@ -16,6 +17,8 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,7 +30,11 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFactory::class)
     private val flowFactory: FlowFactory,
     @Reference(service = FlowFiberExecutionContextFactory::class)
-    private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory
+    private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : FlowRunner {
     override fun runFlow(
         context: FlowEventContext<Any>,
@@ -51,12 +58,18 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         startFlowEvent: StartFlow
     ): FiberFuture {
+
+        val contextPlatformProperties = getPropertiesWithCpiMetadata(
+            context.checkpoint.holdingIdentity,
+            startFlowEvent.startContext.contextPlatformProperties
+        )
+
         return startFlow(
             context,
             createFlow = { sgc -> flowFactory.createFlow(startFlowEvent, sgc) },
             updateFlowStackItem = { },
             contextUserProperties = emptyKeyValuePairList(),
-            contextPlatformProperties = startFlowEvent.startContext.contextPlatformProperties
+            contextPlatformProperties = contextPlatformProperties
         )
     }
 
@@ -66,9 +79,15 @@ class FlowRunnerImpl @Activate constructor(
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
 
+        val remotePlatformProperties =
+            getPropertiesWithCpiMetadata(
+                context.checkpoint.holdingIdentity,
+                sessionInitEvent.contextPlatformProperties
+            )
+
         val localContext = remoteToLocalContextMapper(
             remoteUserContextProperties = sessionInitEvent.contextUserProperties,
-            remotePlatformContextProperties = sessionInitEvent.contextPlatformProperties
+            remotePlatformContextProperties = remotePlatformProperties
         )
 
         return startFlow(
@@ -112,5 +131,23 @@ class FlowRunnerImpl @Activate constructor(
     ): FiberFuture {
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         return flowFiberFactory.createAndResumeFlowFiber(fiberContext, flowContinuation)
+    }
+
+    private fun getPropertiesWithCpiMetadata(
+        holdingIdentity: HoldingIdentity,
+        contextProperties: KeyValuePairList
+    ): KeyValuePairList {
+        return virtualNodeInfoReadService.get(holdingIdentity).let {
+            if (it == null) contextProperties
+            else {
+                cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
+                    contextProperties.put("corda.cpiName", metadata.cpiId.name)
+                    contextProperties.put("corda.cpiVersion", metadata.version)
+                    contextProperties.put("corda.cpiSignerSummaryHash", metadata.cpiId.signerSummaryHash)
+                    contextProperties.put("corda.cpiFileChecksum", metadata.fileChecksum)
+                }
+                contextProperties
+            }
+        }
     }
 }

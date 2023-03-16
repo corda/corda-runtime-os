@@ -1,5 +1,9 @@
 package net.corda.flow.pipeline.runner
 
+import java.time.Instant
+import java.util.UUID
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
@@ -29,10 +33,15 @@ import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -51,6 +60,8 @@ class FlowRunnerImplTest {
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
+    private val cpiInfoReadService = mock<CpiInfoReadService>()
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
@@ -58,7 +69,13 @@ class FlowRunnerImplTest {
     private var clientFlow = mock<ClientStartableFlow>()
     private var initiatedFlow = mock<ResponderFlow>()
 
-    private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
+    private val flowRunner = FlowRunnerImpl(
+        flowFiberFactory,
+        flowFactory,
+        flowFiberExecutionContextFactory,
+        cpiInfoReadService,
+        virtualNodeInfoReadService
+    )
 
     private val userContext = KeyValueStore().apply {
         this["user"] = "user"
@@ -79,6 +96,8 @@ class FlowRunnerImplTest {
             mock(),
             emptyMap()
         )
+        whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
+        whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
     }
 
     @BeforeEach
@@ -120,7 +139,6 @@ class FlowRunnerImplTest {
         val result = flowRunner.runFlow(context, flowContinuation)
 
         assertThat(result).isSameAs(fiberFuture)
-
         verify(sandboxDependencyInjector).injectServices(clientFlow)
     }
 
@@ -200,5 +218,41 @@ class FlowRunnerImplTest {
         val result = flowRunner.runFlow(context, flowContinuation)
 
         assertThat(result).isSameAs(fiberFuture)
+    }
+
+    private fun getMockVNodeInfo(): VirtualNodeInfo {
+        return VirtualNodeInfo(
+            BOB_X500_HOLDING_IDENTITY.toCorda(),
+            getMockCpiId(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            OperationalStatus.ACTIVE,
+            OperationalStatus.ACTIVE,
+            OperationalStatus.ACTIVE,
+            OperationalStatus.ACTIVE,
+            null,
+            1,
+            Instant.now()
+        )
+    }
+
+    private fun getMockCpiId(): CpiIdentifier {
+        return CpiIdentifier("CpiName", "1", parseSecureHash("ALGO:0987654321"))
+    }
+
+    private fun getMockCpiMetaData(): CpiMetadata {
+        return CpiMetadata(
+            getMockCpiId(),
+            parseSecureHash("ALGO:0987654321"),
+            mock(),
+            null,
+            2,
+            Instant.now(),
+        )
     }
 }
