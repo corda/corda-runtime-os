@@ -6,15 +6,15 @@ import net.corda.v5.base.annotations.CordaSerializable
 /**
  * Object used to store flow information.
  * @param protocol the protocol this flow is using
- * @param protocolVersion the protocol version this flow is running
+ * @param protocolVersion the protocol version this flow is running. Null if no version associated with this.
  */
 @CordaSerializable
-class FlowInfoImpl(private val protocol: String, private val protocolVersion: Int) : FlowInfo {
+class FlowInfoImpl(private val protocol: String, private val protocolVersion: Int?) : FlowInfo {
     override fun protocol(): String {
         return protocol
     }
 
-    override fun protocolVersion(): Int {
+    override fun protocolVersion(): Int? {
         return protocolVersion
     }
 }

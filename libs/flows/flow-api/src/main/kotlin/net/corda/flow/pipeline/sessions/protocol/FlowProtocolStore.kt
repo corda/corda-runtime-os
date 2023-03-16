@@ -61,6 +61,6 @@ interface FlowProtocolStore {
  */
 data class FlowAndProtocolVersion(
     val protocol: String,
-    val protocolVersion: Int,
     val flowClassName: String,
+    val protocolVersion: Int? = null,
 )

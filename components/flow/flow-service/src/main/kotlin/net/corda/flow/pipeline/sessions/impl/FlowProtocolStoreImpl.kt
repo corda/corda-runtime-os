@@ -41,7 +41,7 @@ class FlowProtocolStoreImpl(
         for (protocol in sortedProtocols) {
             val responder = protocolToResponder[protocol]
             if (responder != null) {
-                return FlowAndProtocolVersion(protocolName, protocol.version, responder)
+                return FlowAndProtocolVersion(protocolName, responder, protocol.version, )
             }
         }
         throw FlowFatalException(
