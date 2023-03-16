@@ -9,20 +9,30 @@ import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.impl.InteropMessageTransformer
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
+import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
 //Based on FlowP2PFilter
-@Suppress("Unused")
+@Suppress("LongParameterList", "Unused")
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val subscriptionFactory: SubscriptionFactory,
+    private val config: SmartConfig,
     private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : DurableProcessor<String, AppMessage> {
 
@@ -33,8 +43,7 @@ class InteropProcessor(
 
     private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
         cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
-    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> =
-        cordaAvroSerializationFactory.createAvroSerializer {}
+    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
@@ -49,6 +58,12 @@ class InteropProcessor(
         // they are of not the expected type (not UnauthenticatedMessage)
 
         val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
+        val realHoldingIdentity = InteropAliasProcessor.getRealHoldingIdentity(
+            getRealHoldingIdentityFromAliasMapping(unAuthMessage.header.destination.toCorda())
+        )
+        logger.info(
+            "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity $realHoldingIdentity"
+        )
         getOutputRecord(header, unAuthMessage.payload, key)
     }
 
@@ -111,6 +126,12 @@ class InteropProcessor(
                 ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
             )
         )
+    }
+
+    private fun getRealHoldingIdentityFromAliasMapping(fakeHoldingIdentity: HoldingIdentity): String? {
+        val groupReader = membershipGroupReaderProvider.getGroupReader(fakeHoldingIdentity)
+        val memberInfo = groupReader.lookup(fakeHoldingIdentity.x500Name)
+        return memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
     }
 
     //Temporary function to increment message id to debug the lifecycle of seed messages
