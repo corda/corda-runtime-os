@@ -2,6 +2,7 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
@@ -74,35 +75,21 @@ class FlowEngineImpl @Activate constructor(
         }
     }
 
+    private val currentSessionIds: List<String>
+        get() = peekCurrentFlowStackItem().sessions
+            .filter(FlowStackItemSession::getInitiated)
+            .map(FlowStackItemSession::getSessionId)
+
     @Suspendable
     private fun finishSubFlow() {
-        flowFiberService
-            .getExecutingFiber()
-            .suspend(
-                FlowIORequest.SubFlowFinished(
-                    peekCurrentFlowStackItem()
-                        .sessions
-                        .filter { it.initiated }
-                        .map { it.sessionId }
-                        .toList()
-                )
-            )
+        flowFiberService.getExecutingFiber()
+            .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
     }
 
     @Suspendable
     private fun failSubFlow(t: Throwable) {
-        flowFiberService
-            .getExecutingFiber()
-            .suspend(
-                FlowIORequest.SubFlowFailed(
-                    t,
-                    peekCurrentFlowStackItem()
-                        .sessions
-                        .filter { it.initiated }
-                        .map { it.sessionId }
-                        .toList()
-                )
-            )
+        flowFiberService.getExecutingFiber()
+            .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {

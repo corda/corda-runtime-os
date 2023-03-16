@@ -102,7 +102,7 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     private fun setSessionsAsConfirmed(flowSessionInternals: Set<FlowSessionInternal>) {
-        flowSessionInternals.onEach { it.setSessionConfirmed() }
+        flowSessionInternals.onEach(FlowSessionInternal::setSessionConfirmed)
     }
 
     @Suspendable

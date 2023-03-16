@@ -4,8 +4,8 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.SerializerFactory
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory
+import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig
@@ -18,6 +18,9 @@ import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
 import net.corda.kryoserialization.serializers.IteratorSerializer
+import net.corda.kryoserialization.serializers.KotlinEmptyListSerializer
+import net.corda.kryoserialization.serializers.KotlinEmptyMapSerializer
+import net.corda.kryoserialization.serializers.KotlinEmptySetSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
@@ -73,6 +76,9 @@ class DefaultKryoCustomizer {
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,
                     LinkedHashMapIteratorSerializer
                 )
+                addDefaultSerializer(emptySet<Any?>()::class.java, KotlinEmptySetSerializer)
+                addDefaultSerializer(emptyList<Any?>()::class.java, KotlinEmptyListSerializer)
+                addDefaultSerializer(emptyMap<Any?, Any?>()::class.java, KotlinEmptyMapSerializer)
                 addDefaultSerializer(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
                 addDefaultSerializer(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
@@ -83,31 +89,22 @@ class DefaultKryoCustomizer {
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
-                addDefaultSerializer(Iterator::class.java, object : SerializerFactory<IteratorSerializer> {
-                    private val compatibleFieldSerializerConfig = CompatibleFieldSerializerConfig().apply {
-                        // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
-                        // their parents after deserialization.
-                        ignoreSyntheticFields = false
-
-                        // Take the safest route here and allow subclasses to have fields named the same as super classes.
-                        extendedFieldNames = true
-                    }
-
+                addDefaultSerializer(Iterator::class.java, object : BaseSerializerFactory<IteratorSerializer>() {
                     override fun newSerializer(kryo: Kryo?, type: Class<*>): IteratorSerializer {
+                        val compatibleFieldSerializerConfig = CompatibleFieldSerializerConfig().apply {
+                            // For checkpoints we still want all the synthetic fields. This allows inner classes to reference
+                            // their parents after deserialization.
+                            ignoreSyntheticFields = false
+
+                            // Take the safest route here and allow subclasses to have fields named the same as super classes.
+                            extendedFieldNames = true
+                        }
                         return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type, compatibleFieldSerializerConfig))
                     }
-
-                    override fun isSupported(type: Class<*>): Boolean {
-                        return Iterator::class.java.isAssignableFrom(type)
-                    }
                 })
-                addDefaultSerializer(Throwable::class.java, object : SerializerFactory<ThrowableSerializer<*>> {
+                addDefaultSerializer(Throwable::class.java, object : BaseSerializerFactory<ThrowableSerializer<*>>() {
                     override fun newSerializer(kryo: Kryo, type: Class<*>): ThrowableSerializer<*> {
                         return ThrowableSerializer(kryo, type)
-                    }
-
-                    override fun isSupported(type: Class<*>): Boolean {
-                        return Throwable::class.java.isAssignableFrom(type)
                     }
                 })
 
