@@ -45,6 +45,20 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `Requesting counterparty info flow sends a session init event`() {
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionInitEvents(SESSION_ID_1)
+            }
+        }
+    }
+
+    @Test
     fun `Receiving a session ack resumes the initiating flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
