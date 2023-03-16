@@ -40,7 +40,8 @@ class SessionConfirmProcessorReceive(
             sessionState.apply {
                 counterpartySessionProperties = sessionConfirm.contextSessionProperties
                 //recalc high watermark but do not add the session confirm to the undelivered messages
-                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(eventsReceived, receivedEventsState.lastProcessedSequenceNum)
+                receivedEventsState.lastProcessedSequenceNum =
+                    recalcHighWatermark(eventsReceived, receivedEventsState.lastProcessedSequenceNum)
             }
 
             logger.trace {
