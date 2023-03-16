@@ -49,6 +49,7 @@ import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoRe
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
@@ -335,6 +336,22 @@ class MembershipPersistenceTest {
             ) = safeCall {
                 membershipPersistenceClient.deleteApprovalRule(
                     viewOwningIdentity, ruleId, ruleType
+                )
+            }
+
+            override fun suspendMember(
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+            ) = safeCall {
+                membershipPersistenceClient.suspendMember(
+                    viewOwningIdentity, memberX500Name, serialNumber, reason
+                )
+            }
+
+            override fun activateMember(
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+            ) = safeCall {
+                membershipPersistenceClient.activateMember(
+                    viewOwningIdentity, memberX500Name, serialNumber, reason
                 )
             }
 
@@ -938,7 +955,7 @@ class MembershipPersistenceTest {
     @Test
     fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
         // 1. Persist a member
-        val memberPersistentResult = persistMember(registeringX500Name)
+        val memberPersistentResult = persistMember(registeringX500Name, MEMBER_STATUS_PENDING)
 
         assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val memberEntity = vnodeEmf.use {
@@ -1006,7 +1023,7 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
-            persistMember(holdingId.x500Name)
+            persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING)
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
@@ -1288,12 +1305,108 @@ class MembershipPersistenceTest {
         assertThat(result).isEmpty()
     }
 
+    @Test
+    fun `suspendMember can persist suspended member info over RPC topic`() {
+        val member1 = MemberX500Name.parse("O=Suspend1, C=GB, L=London")
+        val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_ACTIVE)
+        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended1 = membershipPersistenceClientWrapper.suspendMember(
+            viewOwningHoldingIdentity, member1, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity1 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
+            )
+        }
+        assertThat(persistedEntity1).isNotNull
+        assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
+        assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
+        with(suspended1.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+
+        val member2 = MemberX500Name.parse("O=Suspend2, C=GB, L=London")
+        val memberPersistenceResult2 = persistMember(member2, MEMBER_STATUS_ACTIVE)
+        assertThat(memberPersistenceResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        // Test without specifying serial number
+        val suspended2 = membershipPersistenceClientWrapper.suspendMember(
+            viewOwningHoldingIdentity, member2, null, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity2 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
+            )
+        }
+        assertThat(persistedEntity2).isNotNull
+        assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
+        assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
+        with(suspended2.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+    }
+
+    @Test
+    fun `activateMember can persist activated member info over RPC topic`() {
+        val member1 = MemberX500Name.parse("O=Activate1, C=GB, L=London")
+        val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_SUSPENDED)
+        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended1 = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, member1, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity1 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
+            )
+        }
+        assertThat(persistedEntity1).isNotNull
+        assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
+        with(suspended1.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+
+        // Test without specifying serial number
+        val member2 = MemberX500Name.parse("O=Activate2, C=GB, L=London")
+        val memberPersistenceResult2 = persistMember(member2, MEMBER_STATUS_SUSPENDED)
+        assertThat(memberPersistenceResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended2 = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, member2, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity2 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
+            )
+        }
+        assertThat(persistedEntity2).isNotNull
+        assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
+        with(suspended2.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+    }
+
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
         cordaAvroDeserializer.deserialize(this)
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
 
-    private fun persistMember(memberName: MemberX500Name): MembershipPersistenceResult<Unit> {
+    private fun persistMember(memberName: MemberX500Name, memberStatus: String): MembershipPersistenceResult<Unit> {
         val endpointUrl = "http://localhost:8080"
         val memberContext = KeyValuePairList(
             listOf(
@@ -1307,7 +1420,7 @@ class MembershipPersistenceTest {
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
+                KeyValuePair(STATUS, memberStatus),
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )

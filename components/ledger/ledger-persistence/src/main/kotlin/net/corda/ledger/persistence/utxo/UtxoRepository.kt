@@ -52,7 +52,8 @@ interface UtxoRepository {
     /** Marks relevant states of transactions consumed */
     fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        stateRefs: List<StateRef>
+        stateRefs: List<StateRef>,
+        timestamp: Instant
     )
 
     /** Persists transaction (operation is idempotent) */
@@ -109,6 +110,7 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         consumed: Boolean,
+        customRepresentation: CustomRepresentation,
         timestamp: Instant
     )
 
