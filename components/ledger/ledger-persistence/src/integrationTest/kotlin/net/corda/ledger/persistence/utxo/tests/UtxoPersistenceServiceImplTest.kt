@@ -169,6 +169,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed relevant transaction states`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction(createdTs)
