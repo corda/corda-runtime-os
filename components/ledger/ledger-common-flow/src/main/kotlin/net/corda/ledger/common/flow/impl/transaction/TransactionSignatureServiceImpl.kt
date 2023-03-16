@@ -30,7 +30,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -74,8 +73,6 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val digestService: DigestService,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
-    @Reference(service = MemberLookup::class)
-    private val memberLookup: MemberLookup,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
@@ -137,14 +134,18 @@ class TransactionSignatureServiceImpl @Activate constructor(
 
     override fun verifySignature(
         transaction: TransactionWithMetadata,
-        signatureWithMetadata: DigitalSignatureAndMetadata
+        signatureWithMetadata: DigitalSignatureAndMetadata,
+        publicKey: PublicKey
     ) {
-        // TODO needs to be reviewed by Lajos
-        val keyUsedToSign = memberLookup.lookup(signatureWithMetadata.by)
+        val digestAlgorithmOfKeyId = signatureWithMetadata.signature.by.algorithm
+        val publicKeyId = getIdOfPublicKey(publicKey, digestAlgorithmOfKeyId)
+        require(publicKeyId == signatureWithMetadata.signature.by) {
+            "The key Id of the provided signature does not match the provided public key's id."
+        }
         val signatureSpec =
             checkAndGetSignatureSpec(
                 signatureWithMetadata.metadata.signatureSpec,
-                keyUsedToSign
+                publicKey
             )
 
         val proof = signatureWithMetadata.proof
@@ -168,21 +169,16 @@ class TransactionSignatureServiceImpl @Activate constructor(
         return digitalSignatureVerificationService.verify(
             serializationService.serialize(signedData).bytes,
             signatureWithMetadata.signature.bytes,
-            keyUsedToSign,
+            publicKey,
             signatureSpec
         )
     }
 
-    @Suspendable
-    private fun MemberLookup.lookup(keyId: SecureHash): PublicKey {
-        val digestAlgorithmOfKeyId = keyId.algorithm
-        val knownKeysByKeyIds = lookup().flatMap {
-            it.ledgerKeys
-        }.associateBy {
-            it.fullIdHash(keyEncodingService, digestService, digestAlgorithmOfKeyId)
-        }
-
-        return knownKeysByKeyIds[keyId] ?: error("Member for consensual signature not found")
+    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash{
+        return digestService.hash(
+            keyEncodingService.encodeAsByteArray(publicKey),
+            DigestAlgorithmName(digestAlgorithmName)
+        )
     }
 
     private fun confirmBatchSigningRequirements(transactions: List<TransactionWithMetadata>) {
@@ -327,9 +323,3 @@ private fun getCpiSummary(): CordaPackageSummary =
         fileChecksum = SecureHashImpl("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
     )
 
-private fun PublicKey.fullIdHash(
-    keyEncodingService: KeyEncodingService,
-    digestService: DigestService,
-    digestAlgorithmName: String
-): SecureHash =
-    digestService.hash(keyEncodingService.encodeAsByteArray(this), DigestAlgorithmName(digestAlgorithmName))

@@ -53,7 +53,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
 
     @Test
     fun `verifyNotarySignatureAttached throws on unnotarized transaction`() {
-        Assertions.assertThatThrownBy { signedTransaction.verifyNotarySignatureAttached() }.isInstanceOf(
+        Assertions.assertThatThrownBy { signedTransaction.verifyAttachedNotarySignature() }.isInstanceOf(
             TransactionSignatureException::class.java)
             .hasMessageContaining("There are no notary")
 
@@ -65,7 +65,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
         val sig = getSignatureWithMetadataExample(notaryNode1PublicKey)
         signedTransaction = signedTransaction.addSignature(sig)
         assertDoesNotThrow {
-            signedTransaction.verifyNotarySignatureAttached()
+            signedTransaction.verifyAttachedNotarySignature()
         }
     }
 }

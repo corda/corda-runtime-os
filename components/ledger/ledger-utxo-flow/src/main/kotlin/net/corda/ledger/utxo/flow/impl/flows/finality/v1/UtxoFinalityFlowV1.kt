@@ -134,7 +134,7 @@ class UtxoFinalityFlowV1(
         log.debug { "Verifying all signatures for transaction $transactionId." }
 
         try {
-            transaction.verifySignatures()
+            transaction.verifySignatorySignatures()
         } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
                 "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +

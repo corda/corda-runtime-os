@@ -369,7 +369,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(invalidSignature))
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf())
         whenever(signedTransactionWithOwnKeys.addSignature(any())).thenReturn(signedTransactionWithOwnKeys)
-        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(
+        whenever(signedTransactionWithOwnKeys.verifySignatorySignatures()).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
 
@@ -385,7 +385,7 @@ class UtxoReceiveFinalityFlowV1Test {
     @Test
     fun `receiving a transaction to record that is not fully signed throws an exception`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf())
-        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
+        whenever(signedTransactionWithOwnKeys.verifySignatorySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
 
         assertThatThrownBy { callReceiveFinalityFlow() }

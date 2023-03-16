@@ -830,7 +830,7 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(updatedTxSomeSigs.verifySignatures()).thenThrow(
+        whenever(updatedTxSomeSigs.verifySignatorySignatures()).thenThrow(
             TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
 
@@ -867,7 +867,7 @@ class UtxoFinalityFlowV1Test {
         )
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(updatedTxAllSigs.verifySignatures()).thenThrow(
+        whenever(updatedTxAllSigs.verifySignatorySignatures()).thenThrow(
             TransactionMissingSignaturesException(
                 TX_ID,
                 setOf(),

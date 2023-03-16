@@ -46,10 +46,6 @@ enum class FinalityNotarizationFailureType(val value: String) {
 
 @CordaSystemFlow
 abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
-
-    @CordaInject
-    lateinit var transactionSignatureService: TransactionSignatureService
-
     @CordaInject
     lateinit var persistenceService: UtxoLedgerPersistenceService
 
@@ -65,9 +61,6 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     @CordaInject
     lateinit var visibilityChecker: VisibilityChecker
 
-    @CordaInject
-    lateinit var digestService: DigestService
-
     abstract val log: Logger
 
     @Suspendable
@@ -78,7 +71,7 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     ) {
         try {
             log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
-            transactionSignatureService.verifySignature(transaction, signature)
+            transaction.verifySignatorySignature(signature)
             log.debug { "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id" }
         } catch (e: Exception) {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +
@@ -105,17 +98,7 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
         signature: DigitalSignatureAndMetadata,
     ): UtxoSignedTransactionInternal {
         try {
-            val keyUsedToSign = memberLookup.lookup(signature.by)
-            // If the notary service key (composite key) is provided we need to make sure it contains the key the
-            // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
-            if (!KeyUtils.isKeyInSet(transaction.notaryKey, listOf(keyUsedToSign))) {
-                throw CordaRuntimeException(
-                    "Notary's signature has not been created by the transaction's notary. " +
-                            "Notary's public key: ${transaction.notaryKey} " +
-                            "Notary signature's key: ${signature.by}"
-                )
-            }
-            transactionSignatureService.verifySignature(transaction, signature)
+            transaction.verifyNotarySignature(signature)
             log.debug {
                 "Successfully verified signature($signature) by notary ${transaction.notaryName} for transaction ${transaction.id}"
             }
@@ -161,21 +144,4 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
             verifySignature(initialTransaction, it, sessionToNotify)
         }
     }
-
-    @Suspendable
-    private fun MemberLookup.lookup(keyId: SecureHash): PublicKey {
-        val digestAlgorithmOfKeyId = keyId.algorithm
-        val knownKeysByKeyIds = lookup().flatMap {
-            it.ledgerKeys
-        }.associateBy {
-            // TODO Need to use KeyEncodingService below but not sure if it is CordaInject-able
-            it.fullIdHash(digestService, digestAlgorithmOfKeyId)
-        }
-
-        return knownKeysByKeyIds[keyId] ?: error("Member for consensual signature not found")
-    }
 }
-
-private fun PublicKey.fullIdHash(digestService: DigestService, digestAlgorithmName: String) =
-    digestService.hash(this.encoded, DigestAlgorithmName(digestAlgorithmName))
-

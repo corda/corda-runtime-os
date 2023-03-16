@@ -5,6 +5,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
@@ -46,19 +47,40 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
     fun getMissingSignatories(): Set<PublicKey>
 
     /**
-     * Verify all available signatures and whether there are any missing ones.
+     * Verify the signatories' signatures and check if there are any missing one.
+     * It ignores the non-signatory signatures! (including the notary's)
      *
      * @throws TransactionSignatureException if any signatures are invalid or missing.
      */
     @Suspendable
-    fun verifySignatures()
+    fun verifySignatorySignatures()
 
     /**
      * Verify if notary has signed the transaction.
-     * The signature itself does not get verified!
+     * The signature itself is also verified!
      *
      * @throws TransactionSignatureException if notary signatures is missing.
      */
     @Suspendable
-    fun verifyNotarySignatureAttached()
+    fun verifyAttachedNotarySignature()
+
+    /**
+     * Verify if a signature
+     *  - is the transaction's notary's
+     *  - is valid
+     *
+     * @throws CordaRuntimeException if not owned by the notary // todo: change this to TransactionSignatureException
+     * @throws TransactionSignatureException if invalid
+     */
+    @Suspendable
+    fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
+
+    /**
+     * Verify if a signature is one of the signatories is valid.
+     * It does not throw if the signature is not one of the signatories!
+     *
+     * @throws TransactionSignatureException if signature is owned by a signature, and it is not valid.
+     */
+    @Suspendable
+    fun verifySignatorySignature(signature: DigitalSignatureAndMetadata)
 }
