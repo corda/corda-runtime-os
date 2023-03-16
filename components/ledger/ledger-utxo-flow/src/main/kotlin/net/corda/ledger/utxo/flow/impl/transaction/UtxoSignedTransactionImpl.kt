@@ -220,7 +220,7 @@ data class UtxoSignedTransactionImpl(
         val keyIdToSignatory = getNotaryKeys().associateBy {
             transactionSignatureService.getIdOfPublicKey(
                 it,
-                DigestAlgorithmName.SHA2_256.name // TODO: Where should this come from???
+                signature.by.algorithm
             )
         }
         if (!KeyUtils.isKeyInSet(notary.owningKey, listOf(keyIdToSignatory[signature.by]))) {
@@ -250,7 +250,7 @@ data class UtxoSignedTransactionImpl(
         val keyIdToSignatory = signatories.associateBy {
             transactionSignatureService.getIdOfPublicKey(
                 it,
-                DigestAlgorithmName.SHA2_256.name // TODO: Where should this come from???
+                signature.by.algorithm
             )
         }
 
