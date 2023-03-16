@@ -12,8 +12,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger

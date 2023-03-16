@@ -4,9 +4,9 @@ import net.corda.simulator.exceptions.NoDefaultConstructorException
 import net.corda.simulator.exceptions.NoSuspendableCallMethodException
 import net.corda.simulator.exceptions.UnrecognizedFlowClassException
 import net.corda.simulator.tools.FlowChecker
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -27,7 +27,7 @@ class CordaFlowChecker : FlowChecker {
             if (ResponderFlow::class.java.isAssignableFrom(flowClass)) {
                 flowClass.getMethod("call", FlowSession::class.java)
             } else if (ClientStartableFlow::class.java.isAssignableFrom(flowClass)) {
-                flowClass.getMethod("call", RestRequestBody::class.java)
+                flowClass.getMethod("call", ClientRequestBody::class.java)
             } else  {
                 throw UnrecognizedFlowClassException(flowClass, listOf(
                     ResponderFlow::class.java,

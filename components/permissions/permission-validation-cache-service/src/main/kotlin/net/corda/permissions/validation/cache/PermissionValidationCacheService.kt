@@ -22,7 +22,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.validation.cache.internal.PermissionSummaryTopicSnapshotReceived
-import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
+import net.corda.schema.Schemas.Permissions.PERMISSIONS_USER_SUMMARY_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate

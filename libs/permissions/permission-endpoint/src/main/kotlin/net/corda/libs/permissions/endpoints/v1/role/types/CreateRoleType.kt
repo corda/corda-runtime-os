@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.role.types
 
-import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidInputDataException
 
 /**
  * Request type for creating a Role in the permission system.

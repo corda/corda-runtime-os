@@ -28,7 +28,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock
@@ -115,6 +115,7 @@ class DistributeMembershipPackageHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
+                any()
             )
         } doReturn record
     }
@@ -186,6 +187,7 @@ class DistributeMembershipPackageHandlerTest {
                 eq(allMembershipPackage),
                 anyOrNull(),
                 any(),
+                any(),
             )
         ).doReturn(allMemberPackage)
 
@@ -218,6 +220,7 @@ class DistributeMembershipPackageHandlerTest {
                     eq(memberAvro),
                     eq(memberPackage),
                     anyOrNull(),
+                    any(),
                     any(),
                 )
             ).doReturn(record)

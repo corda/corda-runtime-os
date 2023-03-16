@@ -27,14 +27,14 @@ class FlowEngineImpl @Activate constructor(
     private val flowFiberService: FlowFiberService
 ) : FlowEngine, UsedByFlow, SingletonSerializeAsToken {
 
-    override val flowId: UUID
-        get() = flowFiberService.getExecutingFiber().flowId
+    override fun getFlowId(): UUID
+        = flowFiberService.getExecutingFiber().flowId
 
-    override val virtualNodeName: MemberX500Name
-        get() = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
+    override fun getVirtualNodeName(): MemberX500Name
+        = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
 
-    override val flowContextProperties: FlowContextProperties
-        get() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext
+    override fun getFlowContextProperties(): FlowContextProperties
+        = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext
 
     @Suspendable
     override fun <R> subFlow(subFlow: SubFlow<R>): R {

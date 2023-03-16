@@ -19,10 +19,10 @@ import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI

@@ -24,6 +24,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-config-impl")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:virtual-node:virtual-node-info')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

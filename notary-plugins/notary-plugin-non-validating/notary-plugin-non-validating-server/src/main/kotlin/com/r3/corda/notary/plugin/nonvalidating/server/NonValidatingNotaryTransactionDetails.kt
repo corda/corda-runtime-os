@@ -12,12 +12,21 @@ import net.corda.v5.ledger.utxo.TimeWindow
  * on the actual transaction object (e.g. FilteredTransaction).
  */
 data class NonValidatingNotaryTransactionDetails(
-    override val id: SecureHash,
-    override val metadata: TransactionMetadata,
+    private val id: SecureHash,
+    private val metadata: TransactionMetadata,
     val numOutputs: Int,
     val timeWindow: TimeWindow,
     val inputs: List<StateRef>,
     val references: List<StateRef>,
     // TODO CORE-8976 This is not used for now but will be needed when the notary check is added
     val notary: Party,
-) : TransactionWithMetadata
+) : TransactionWithMetadata {
+
+    override fun getId(): SecureHash {
+        return id
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        return metadata
+    }
+}

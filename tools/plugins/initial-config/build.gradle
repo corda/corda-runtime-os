@@ -13,7 +13,7 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     implementation 'javax.persistence:javax.persistence-api'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
@@ -32,6 +32,7 @@ dependencies {
     implementation project(':libs:db:db-core')
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"

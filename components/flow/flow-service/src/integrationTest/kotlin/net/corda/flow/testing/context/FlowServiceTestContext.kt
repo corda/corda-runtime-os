@@ -1,7 +1,11 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
@@ -41,7 +45,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -56,9 +60,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -88,12 +89,14 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
+        FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW to 300000L,
         FlowConfig.SESSION_FLOW_CLEANUP_TIME to 30000,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
         FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
         FlowConfig.PROCESSING_FLOW_CLEANUP_TIME to 30000,
-        MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000
+        MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000,
+        MessagingConfig.MAX_ALLOWED_MSG_SIZE to 972800
     )
 
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
@@ -483,7 +486,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private fun getSecureHash(): SecureHash {
-        return SecureHash("ALG", byteArrayOf(0, 0, 0, 0))
+        return SecureHashImpl("ALG", byteArrayOf(0, 0, 0, 0))
     }
 
     private fun addTestRun(eventRecord: Record<String, FlowEvent>): FlowIoRequestSetup {

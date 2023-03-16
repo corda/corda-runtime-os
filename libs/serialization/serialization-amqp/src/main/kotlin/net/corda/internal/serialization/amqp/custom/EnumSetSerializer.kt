@@ -2,7 +2,6 @@ package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.standard.MapSerializer
 import net.corda.serialization.BaseProxySerializer
-import net.corda.v5.base.util.uncheckedCast
 import java.util.EnumSet
 
 /**
@@ -25,10 +24,11 @@ class EnumSetSerializer : BaseProxySerializer<EnumSet<*>, EnumSetSerializer.Enum
     }
 
     override fun fromProxy(proxy: EnumSetProxy): EnumSet<*> {
+        @Suppress("unchecked_cast")
         return if (proxy.elements.isEmpty()) {
-            EnumSet.noneOf(uncheckedCast<Class<*>, Class<MapSerializer.EnumJustUsedForCasting>>(proxy.clazz))
+            EnumSet.noneOf(proxy.clazz as Class<MapSerializer.EnumJustUsedForCasting>)
         } else {
-            EnumSet.copyOf(uncheckedCast<List<Any>, List<MapSerializer.EnumJustUsedForCasting>>(proxy.elements))
+            EnumSet.copyOf(proxy.elements as List<MapSerializer.EnumJustUsedForCasting>)
         }
     }
 

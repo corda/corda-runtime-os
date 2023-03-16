@@ -30,4 +30,11 @@ ignore:
           artifacts
         expires: 2023-06-19T12:17:21.108Z
         created: 2022-12-20T12:17:21.129Z
+  SNYK-JAVA-ORGYAML-3152153:
+    - '*':
+        reason: >-
+          We are not exposed because we don’t accept yaml based input in any of
+          the components affected.
+        expires: 2023-06-19T16:36:01.301Z
+        created: 2023-02-02T16:36:01.322Z
 patch: {}

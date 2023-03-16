@@ -86,8 +86,14 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
                     UtxoOutputInfoComponent::class.java
                 ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { it.index != 0 },
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java) { it.index != 0 },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    StateRef::class.java
+                ) { it.index != 0 },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.REFERENCES.ordinal,
+                    StateRef::class.java
+                ) { it.index != 0 },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
@@ -142,8 +148,14 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
                     UtxoOutputInfoComponent::class.java
                 ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    StateRef::class.java
+                ) { true },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.REFERENCES.ordinal,
+                    StateRef::class.java
+                ) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
@@ -172,8 +184,14 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
                     UtxoOutputInfoComponent::class.java
                 ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    StateRef::class.java
+                ) { true },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.REFERENCES.ordinal,
+                    StateRef::class.java
+                ) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
@@ -211,11 +229,13 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
 }
 
 class OutputState1 : ContractState {
-    override val participants: List<PublicKey>
-        get() = TODO("Not yet implemented")
+    override fun getParticipants(): MutableList<PublicKey> {
+        TODO("Not yet implemented")
+    }
 }
 
 class OutputState2 : ContractState {
-    override val participants: List<PublicKey>
-        get() = TODO("Not yet implemented")
+    override fun getParticipants(): MutableList<PublicKey> {
+        TODO("Not yet implemented")
+    }
 }

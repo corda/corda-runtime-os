@@ -18,7 +18,7 @@ import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
@@ -26,10 +26,7 @@ import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.softhsm.CryptoServiceProvider
-import net.corda.crypto.softhsm.impl.DefaultSoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.impl.SoftCryptoService
-import net.corda.crypto.softhsm.impl.TransientSoftKeyMap
-import net.corda.crypto.softhsm.impl.TransientSoftWrappingKeyMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -37,6 +34,8 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
+import java.security.KeyPairGenerator
+import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
@@ -173,7 +172,8 @@ class TestServicesFactory {
         SigningServiceImpl(
             signingKeyStore,
             cryptoServiceFactory,
-            schemeMetadata
+            schemeMetadata,
+            platformDigest
         )
     }
 
@@ -182,7 +182,8 @@ class TestServicesFactory {
             coordinatorFactory,
             schemeMetadata,
             signingKeyStore,
-            cryptoServiceFactory
+            cryptoServiceFactory,
+            platformDigest
         ).also {
             it.start()
             eventually {
@@ -205,17 +206,23 @@ class TestServicesFactory {
         }
     }
 
+    val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+
     val cryptoService: CryptoService by lazy {
-        val wrappingKeyMap = TransientSoftWrappingKeyMap(
-            wrappingKeyStore,
-            WrappingKey.generateWrappingKey(schemeMetadata)
-        )
         CryptoServiceWrapper(
             SoftCryptoService(
-                TransientSoftKeyMap(DefaultSoftPrivateKeyWrapping(wrappingKeyMap)),
-                wrappingKeyMap,
-                schemeMetadata,
-                platformDigest
+                wrappingKeyStore = wrappingKeyStore,
+                schemeMetadata = schemeMetadata,
+                rootWrappingKey = rootWrappingKey,
+                digestService = PlatformDigestServiceImpl(schemeMetadata),
+                wrappingKeyCache = null,
+                privateKeyCache = null,
+                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                    KeyPairGenerator.getInstance(algorithm, provider)
+                },
+                wrappingKeyFactory = {
+                    WrappingKeyImpl.generateWrappingKey(it)
+                }
             ),
             recordedCryptoContexts
         )
@@ -248,11 +255,11 @@ class TestServicesFactory {
 
         override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = impl.supportedSchemes
 
-        override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
+        override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
             }
-            impl.createWrappingKey(masterKeyAlias, failIfExists, context)
+            impl.createWrappingKey(wrappingKeyAlias, failIfExists, context)
         }
 
         override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {

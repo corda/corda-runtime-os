@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.tests
 
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
-import net.corda.v5.application.serialization.deserialize
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow

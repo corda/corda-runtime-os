@@ -5,7 +5,7 @@ import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
@@ -41,6 +41,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
     val flowSandboxService = mock<FlowSandboxService>()
     val initiateFlowReqService = mock<InitiateFlowRequestService>()
+    val isRetryEvent = false
 
     init {
         flowStartContext.identity = holdingIdentity
@@ -57,6 +58,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         whenever(flowCheckpoint.holdingIdentity).thenReturn(holdingIdentity.toCorda())
     }
 
-    val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, flowConfig, recordList, mdcProperties = emptyMap())
+    val flowEventContext = FlowEventContext(
+        flowCheckpoint,flowEvent, payload, flowConfig, isRetryEvent, recordList, mdcProperties = emptyMap()
+    )
 }
-

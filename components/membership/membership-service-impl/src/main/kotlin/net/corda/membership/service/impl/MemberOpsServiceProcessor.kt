@@ -1,12 +1,14 @@
 package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
@@ -34,11 +36,10 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -129,7 +130,7 @@ class MemberOpsServiceProcessor(
 
             val persistedGroupPolicyProperties = membershipQueryClient
                 .queryGroupPolicy(holdingIdentity)
-                .getOrThrow()
+                .getOrThrow().first
 
             val registrationProtocol: String = persistedGroupPolicyProperties.parse(PropertyKeys.REGISTRATION_PROTOCOL)
             val syncProtocol: String = persistedGroupPolicyProperties.parse(PropertyKeys.SYNC_PROTOCOL)
@@ -180,7 +181,8 @@ class MemberOpsServiceProcessor(
                     SESSION_KEY_POLICY to sessionKeyPolicy
                 ),
                 P2P_PARAMETERS to p2pParameters,
-                MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value },
+                MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value }
+                    .plus(SERIAL to mgm.serial.toString()),
                 CIPHER_SUITE to emptyMap<String, String>()
             )
             return MGMGroupPolicyResponse(ObjectMapper().writeValueAsString(groupPolicy))

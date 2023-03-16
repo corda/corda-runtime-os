@@ -91,7 +91,7 @@ db:
           # -- the cluster database password secret key
           key: ""
     database: cordacluster
-    # the schema in which the cluster database will be stored
+    # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
     schema: CONFIG
 
 # Kafka configuration
@@ -191,10 +191,38 @@ bootstrap:
           key: ""
   # Configuration for database bootstrap
   db:
+    # Bootstrap cluster database configuration
+    cluster:
+      # the bootstrap cluster database password configuration
+      password:
+        # -- the bootstrap cluster database password
+        value: ""
+        # the bootstrap cluster database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap cluster database password secret key reference
+          secretKeyRef:
+            # -- the bootstrap cluster database password secret name
+            name: ""
+            # -- the bootstrap cluster database password secret key
+            key: ""
+      # the bootstrap cluster database user configuration
+      username:
+        # -- the bootstrap cluster database user
+        value: ""
+        # the bootstrap cluster database user secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap cluster database user secret key reference
+          secretKeyRef:
+            # -- the bootstrap cluster database user secret name
+            name: ""
+            # -- the bootstrap cluster database user secret key
+            key: ""
     # -- Indicates whether DB bootstrap is enabled as part of installation
     enabled: true
     # crypto configuration
     crypto:
+      # -- the schema in which the cluster database crypto entities will be stored
+      schema: CRYPTO
       # JDBC connection pool configuration for crypto DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for crypto DB
@@ -226,6 +254,8 @@ bootstrap:
 
     # RBAC configuration
     rbac:
+      # -- the schema in which the cluster database rbac entities will be stored
+      schema: RBAC
       # JDBC connection pool configuration for RBAC DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
@@ -634,27 +664,27 @@ workers:
               # -- the membership worker SASL password secret key for client connection to Kafka
               key: ""
 
-  # RPC worker configuration
-  rpc:
-    # RPC worker image configuration
+  # REST worker configuration
+  rest:
+    # REST worker image configuration
     image:
-      # -- RPC worker image registry, defaults to image.registry
+      # -- REST worker image registry, defaults to image.registry
       registry: ""
-      # -- RPC worker image repository
-      repository: "corda-os-rpc-worker"
-      # -- RPC worker image tag, defaults to image.tag
+      # -- REST worker image repository
+      repository: "corda-os-rest-worker"
+      # -- REST worker image tag, defaults to image.tag
       tag: ""
-    # -- RPC worker replica count
+    # -- REST worker replica count
     replicaCount: 1
-    # -- RPC worker extra annotations
+    # -- REST worker extra annotations
     annotations: {}
-    # -- additional Java options for the rpc worker
+    # -- additional Java options for the rest worker
     javaOptions: "-XX:MaxRAMPercentage=75"
-    # RPC worker debug configuration
+    # REST worker debug configuration
     debug:
-      # -- run RPC worker with debug enabled
+      # -- run REST worker with debug enabled
       enabled: false
-      # -- if debug is enabled, suspend the RPC worker until the debugger is attached
+      # -- if debug is enabled, suspend the REST worker until the debugger is attached
       suspend: false
     # logging configuration
     logging:
@@ -663,51 +693,53 @@ workers:
       # -- additional Log4j 2 XML configuration
       override: ""
     profiling:
-      # -- run RPC worker with profiling enabled
+      # -- run REST worker with profiling enabled
       enabled: false
-    # -- resource limits and requests configuration for the RPC worker containers.
+    # -- resource limits and requests configuration for the REST worker containers.
     resources:
-      # -- the CPU/memory resource requests for the RPC worker containers
+      # -- the CPU/memory resource requests for the REST worker containers
       requests: {}
-      # -- the CPU/memory resource limits for the RPC worker containers
+      # -- the CPU/memory resource limits for the REST worker containers
       limits: {}
-    # RPC worker service configuration
+    # REST worker service configuration
     service:
-      # -- the type for the RPC worker service
+      # -- the type for the REST worker service
       type: ClusterIP
-      # -- the traffic policy for the RPC worker service
+      # -- the HTTP port for the REST worker service
+      port: 443
+      # -- the traffic policy for the REST worker service
       externalTrafficPolicy: ""
-      # -- the LoadBalancer source ranges to limit access to the RPC worker service
+      # -- the LoadBalancer source ranges to limit access to the REST worker service
       loadBalancerSourceRanges: []
-      # -- the annotations for RPC worker service
+      # -- the annotations for REST worker service
       annotations: {}
-    # RPC worker Kafka configuration
+    # REST worker Kafka configuration
     kafka:
-      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the RPC worker
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the REST worker
       sasl:
-        # RPC worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        # REST worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
         username:
-          # -- the RPC worker SASL username for client connection to Kafka
+          # -- the REST worker SASL username for client connection to Kafka
           value: ""
           # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
           valueFrom:
-            # the RPC worker SASL username secret key reference for client connection to Kafka
+            # the REST worker SASL username secret key reference for client connection to Kafka
             secretKeyRef:
-              # -- the RPC worker SASL username secret name for client connection to Kafka
+              # -- the REST worker SASL username secret name for client connection to Kafka
               name: ""
-              # -- the RPC worker SASL username secret key for client connection to Kafka
+              # -- the REST worker SASL username secret key for client connection to Kafka
               key: ""
-        # RPC worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        # REST worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
         password:
-          # -- the RPC worker SASL password for client connection to Kafka
+          # -- the REST worker SASL password for client connection to Kafka
           value: ""
-          # the RPC worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          # the REST worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
           valueFrom:
-            # the RPC worker SASL password secret key reference for client connection to Kafka
+            # the REST worker SASL password secret key reference for client connection to Kafka
             secretKeyRef:
-              # -- the RPC worker SASL password secret name for client connection to Kafka
+              # -- the REST worker SASL password secret name for client connection to Kafka
               name: ""
-              # -- the RPC worker SASL password secret key for client connection to Kafka
+              # -- the REST worker SASL password secret key for client connection to Kafka
               key: ""
 
   # P2P link manager worker configuration

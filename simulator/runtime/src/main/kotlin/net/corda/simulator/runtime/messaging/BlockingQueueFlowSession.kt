@@ -43,14 +43,14 @@ abstract class BlockingQueueFlowSession(
     /**
      * Not implemented.
      */
-    override val contextProperties: FlowContextProperties
-        get() = flowContextProperties.toImmutableContext()
+    override fun getContextProperties(): FlowContextProperties
+        = flowContextProperties.toImmutableContext()
 
     /**
      * Returns the counterparty with whom this session has been opened.
      */
-    override val counterparty: MemberX500Name
-        get() = flowDetails.member
+    override fun getCounterparty(): MemberX500Name
+        = flowDetails.member
 
     /**
      * Waits to receive a payload from the counterparty, polling to check for any detected errors on the

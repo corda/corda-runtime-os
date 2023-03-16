@@ -4,7 +4,7 @@ import kong.unirest.Unirest
 import kong.unirest.json.JSONArray
 import kong.unirest.json.JSONObject
 import net.corda.cli.plugins.packaging.CreateCpiV2
-import net.corda.v5.base.util.toBase64
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -176,7 +176,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         }
         return digest
             .digest()
-            .toBase64()
+            .let(::toBase64)
             .replace('/', '.')
             .replace('+', '-')
             .replace('=', '_')

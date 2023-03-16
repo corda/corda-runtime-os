@@ -9,10 +9,18 @@ import java.time.Instant
  * @property from The boundary at which the time window begins.
  * @property until The boundary at which the time window ends.
  */
-data class TimeWindowBetweenImpl(override val from: Instant, override val until: Instant) : TimeWindow {
+data class TimeWindowBetweenImpl(private val from: Instant, private val until: Instant) : TimeWindow {
 
     init {
         require(from < until) { "from must be earlier than until." }
+    }
+
+    override fun getFrom(): Instant {
+        return from
+    }
+
+    override fun getUntil(): Instant {
+        return until
     }
 
     override fun contains(instant: Instant): Boolean {

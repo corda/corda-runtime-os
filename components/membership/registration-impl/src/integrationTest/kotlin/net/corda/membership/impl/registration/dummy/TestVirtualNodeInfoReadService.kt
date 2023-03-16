@@ -1,9 +1,9 @@
 package net.corda.membership.impl.registration.dummy
 
+import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

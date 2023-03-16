@@ -16,8 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.RejectedExecutionException
@@ -214,18 +213,20 @@ class LifecycleCoordinatorImpl(
         val coordinators = try {
             coordinatorNames.mapTo(LinkedHashSet(), registry::getCoordinator)
         } catch (e: LifecycleRegistryException) {
-            logger.error("Failed to register on coordinator as an invalid name was provided. ${e.message}", e)
+            logger.error("Failed to register on coordinator as an invalid name was provided. " +
+                        (e.message ?: "No exception message provided"), e)
             throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)
         }
         return followStatusChanges(coordinators)
     }
 
-    override fun <T : Resource> createManagedResource(name: String, generator: () -> T) {
-        processor.addManagedResource(name, generator)
+    override fun <T : Resource> createManagedResource(name: String, generator: () -> T): T {
+        return processor.addManagedResource(name, generator)
     }
 
     override fun <T: Resource> getManagedResource(name: String) : T? {
-        return uncheckedCast(processor.getManagedResource(name))
+        @Suppress("unchecked_cast")
+        return processor.getManagedResource(name) as? T
     }
 
     override fun closeManagedResources(resources: Set<String>?) = processor.closeManagedResources(resources)

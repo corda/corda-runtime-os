@@ -1,17 +1,20 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
-import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
-import net.corda.ledger.utxo.testkit.utxoStateExample
+import net.corda.ledger.utxo.testkit.getExampleInvalidStateAndRefImpl
+import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -21,12 +24,13 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.utxo.VisibilityChecker
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -48,7 +52,7 @@ class UtxoReceiveFinalityFlowTest {
 
     private companion object {
         val MEMBER = MemberX500Name("Alice", "London", "GB")
-        val ID = SecureHash("algo", byteArrayOf(1, 2, 3))
+        val ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
     }
 
     private val memberLookup = mock<MemberLookup>()
@@ -56,6 +60,7 @@ class UtxoReceiveFinalityFlowTest {
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
+    private val visibilityChecker = mock<VisibilityChecker>()
 
     private val session = mock<FlowSession>()
 
@@ -80,7 +85,7 @@ class UtxoReceiveFinalityFlowTest {
     private val ledgerTransaction = mock<UtxoLedgerTransactionImpl>()
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
-    private val notarisedTransaction = mock<UtxoSignedTransactionInternal>()
+    private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
 
     @BeforeEach
     fun beforeEach() {
@@ -103,13 +108,13 @@ class UtxoReceiveFinalityFlowTest {
         whenever(signedTransactionWithOwnKeys.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransactionWithOwnKeys.signatures).thenReturn(listOf(signature1, signature2))
         whenever(signedTransactionWithOwnKeys.addSignature(signature3)).thenReturn(signedTransactionWithOwnKeys)
-        whenever(signedTransactionWithOwnKeys.addSignature(signatureNotary)).thenReturn(notarisedTransaction)
+        whenever(signedTransactionWithOwnKeys.addSignature(signatureNotary)).thenReturn(notarizedTransaction)
         whenever(signedTransactionWithOwnKeys.notary).thenReturn(notaryService)
 
-        whenever(notarisedTransaction.id).thenReturn(ID)
+        whenever(notarizedTransaction.id).thenReturn(ID)
 
         whenever(ledgerTransaction.id).thenReturn(ID)
-        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
+        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(getUtxoStateExample()))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
@@ -119,7 +124,7 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that passes verification and notarisation is signed and recorded`() {
+    fun `receiving a transaction that passes verification and notarization is signed and recorded`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
@@ -130,7 +135,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(signedTransactionWithOwnKeys).addSignature(signature3)
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(notarisedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
@@ -162,7 +167,14 @@ class UtxoReceiveFinalityFlowTest {
 
     @Test
     fun `receiving an invalid transaction initially throws and persists as invalid`() {
-        whenever(transactionVerificationService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        whenever(transactionVerificationService.verify(any())).thenThrow(
+            TransactionVerificationException(
+                ID,
+                TransactionVerificationStatus.INVALID,
+                null,
+                "Verification error"
+            )
+        )
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")
@@ -189,19 +201,19 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that passes verification then unrecoverable failure from notarisation throws and invalidates tx`() {
+    fun `receiving a transaction that passes verification then unrecoverable failure from notarization throws and invalidates tx`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarisation error",
-                FinalityNotarizationFailureType.UNRECOVERABLE.value
+                "notarization error",
+                FinalityNotarizationFailureType.FATAL.value
             )
         )
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Notarisation error")
+            .hasMessageContaining("notarization error")
 
         verify(signedTransaction).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
@@ -211,14 +223,14 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that passes verification then a non-unrecoverable failure from notarisation throws and does not invalidate tx`() {
+    fun `receiving a transaction that passes verification then a non-unrecoverable failure from notarization throws and does not invalidate tx`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
-        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Failure<List<DigitalSignatureAndMetadata>>("Notarisation error"))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Failure<List<DigitalSignatureAndMetadata>>("notarization error"))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Notarisation error")
+            .hasMessageContaining("notarization error")
 
         verify(signedTransaction).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
@@ -279,14 +291,14 @@ class UtxoReceiveFinalityFlowTest {
 
         whenever(signedTransactionWith1Key.addSignature(signature3)).thenReturn(signedTransactionWith1Key)
         whenever(signedTransactionWith1Key.notary).thenReturn(notaryService)
-        whenever(signedTransactionWith1Key.addSignature(signatureNotary)).thenReturn(notarisedTransaction)
+        whenever(signedTransactionWith1Key.addSignature(signatureNotary)).thenReturn(notarizedTransaction)
 
         callReceiveFinalityFlow()
 
         verify(signedTransaction).addMissingSignatures()
         verify(signedTransactionWith1Key, never()).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(notarisedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
     }
 
@@ -342,7 +354,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf())
         whenever(memberInfo.ledgerKeys).thenReturn(emptyList())
         whenever(signedTransaction.addSignature(signature3)).thenReturn(signedTransaction)
-        whenever(signedTransaction.addSignature(signatureNotary)).thenReturn(notarisedTransaction)
+        whenever(signedTransaction.addSignature(signatureNotary)).thenReturn(notarizedTransaction)
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
@@ -351,7 +363,7 @@ class UtxoReceiveFinalityFlowTest {
         verify(signedTransaction).addMissingSignatures()
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
         verify(persistenceService, times(2)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(notarisedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -377,11 +389,11 @@ class UtxoReceiveFinalityFlowTest {
     @Test
     fun `receiving a transaction to record that is not fully signed throws an exception`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf())
-        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(TransactionVerificationException(ID, "There are missing signatures", null))
+        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(TransactionSignatureException::class.java)
             .hasMessageContaining("There are missing signatures")
 
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
@@ -397,18 +409,25 @@ class UtxoReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
-        whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
-        whenever(transactionVerificationService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
+        whenever(transactionVerificationService.verify(any())).thenThrow(
+            TransactionVerificationException(
+                ID,
+                TransactionVerificationStatus.INVALID,
+                null,
+                "Verification error"
+            )
+        )
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")
 
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
@@ -418,6 +437,7 @@ class UtxoReceiveFinalityFlowTest {
         flow.transactionSignatureService = transactionSignatureService
         flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
+        flow.visibilityChecker = visibilityChecker
         flow.call()
     }
 

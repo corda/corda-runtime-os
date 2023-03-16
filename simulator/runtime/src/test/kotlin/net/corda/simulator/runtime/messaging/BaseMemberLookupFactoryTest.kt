@@ -20,8 +20,7 @@ class BaseMemberLookupFactoryTest {
 
         val memberRegistry = mock<HasMemberInfos>()
         val mapItem = member to object : MemberInfo by mock() {
-            override val name: MemberX500Name
-                get() = member
+            override fun getName(): MemberX500Name = member
         }
         whenever(memberRegistry.members).thenReturn(mapOf(mapItem))
 
@@ -40,8 +39,7 @@ class BaseMemberLookupFactoryTest {
         val memberRegistry = mock<HasMemberInfos>()
         val mapItems = members.associateWith {
             object : MemberInfo by mock() {
-                override val name: MemberX500Name
-                    get() = it
+                override fun getName() = it
             }
         }
         whenever(memberRegistry.members).thenReturn(mapItems)

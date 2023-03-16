@@ -10,6 +10,7 @@ dependencies {
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:lifecycle:registry")
+    implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.google.guava:guava:$guavaVersion"

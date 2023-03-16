@@ -6,10 +6,10 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 
 @CordaSerializable
 data class CordaPackageSummaryImpl(
-    override val name: String,
-    override val version: String,
-    override val signerSummaryHash: String?,
-    override val fileChecksum: String,
+    private val name: String,
+    private val version: String,
+    private val signerSummaryHash: String?,
+    private val fileChecksum: String,
 ) : CordaPackageSummary {
 
     companion object {
@@ -35,5 +35,21 @@ data class CordaPackageSummaryImpl(
                 }
             }
         }
+    }
+
+    override fun getName(): String {
+        return name
+    }
+
+    override fun getVersion(): String {
+        return version
+    }
+
+    override fun getSignerSummaryHash(): String? {
+        return signerSummaryHash
+    }
+
+    override fun getFileChecksum(): String {
+        return fileChecksum
     }
 }

@@ -3,9 +3,9 @@ package net.corda.membership.lib.impl.converter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.impl.MemberContextImpl
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.v5.base.exceptions.ValueNotFoundException
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.EndpointInfo
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

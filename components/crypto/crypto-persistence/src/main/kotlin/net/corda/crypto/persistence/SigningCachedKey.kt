@@ -1,10 +1,13 @@
 package net.corda.crypto.persistence
 
+import net.corda.crypto.core.ShortHash
+import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 
 @Suppress("LongParameterList")
 class SigningCachedKey(
-    val id: String,
+    val id: ShortHash,
+    val fullId: SecureHash,
     val tenantId: String,
     val category: String,
     val alias: String?,

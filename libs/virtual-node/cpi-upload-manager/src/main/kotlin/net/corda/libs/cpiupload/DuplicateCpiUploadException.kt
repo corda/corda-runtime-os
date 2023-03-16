@@ -8,6 +8,6 @@ package net.corda.libs.cpiupload
  * "checked" in the rpc ops layer when received.
  *
  * @param resourceName Must be the 'resource name' rather than the message so we
- * can pass it back to [net.corda.httprpc.exception.ResourceAlreadyExistsException]
+ * can pass it back to [net.corda.rest.exception.ResourceAlreadyExistsException]
  */
 class DuplicateCpiUploadException(resourceName: String) : Exception(resourceName)

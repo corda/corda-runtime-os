@@ -119,17 +119,17 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
     }
 
     @Test
-    fun `close will close the reconciler`() {
+    fun `stop will stop the reconciler`() {
         mgmAllowedCertificateSubjectsReconciler.updateInterval(10)
 
-        mgmAllowedCertificateSubjectsReconciler.close()
+        mgmAllowedCertificateSubjectsReconciler.stop()
 
         verify(reconciler).stop()
     }
 
     @Test
-    fun `close will not close the reconciler is not started`() {
-        mgmAllowedCertificateSubjectsReconciler.close()
+    fun `stop will not stop the reconciler is not started`() {
+        mgmAllowedCertificateSubjectsReconciler.stop()
 
         verify(reconciler, never()).stop()
     }

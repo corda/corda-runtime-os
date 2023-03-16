@@ -23,7 +23,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -377,8 +378,10 @@ class ExternalEventManagerImplTest {
         assertEquals(payload.array(), record.value)
     }
 
-    @Test
-    fun `getEventToSend returns an external event and updates the state if the state is RETRY and the sendTimestamp is surpassed`() {
+    @ParameterizedTest(name = "getEventToSend returns an external event and updates the state if the state is {0} and the sendTimestamp is surpassed")
+    @EnumSource(names = ["RETRY", "OK"])
+    @Suppress("MaxLineLength")
+    fun `getEventToSend returns an external event and updates the state if the state is non-error and the sendTimestamp is surpassed`(stateType: ExternalEventStateType) {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
         val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
@@ -394,7 +397,7 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             eventToSend = externalEvent
             sendTimestamp = now.minusSeconds(1)
-            status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())
+            status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
         }
 
         whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
@@ -412,8 +415,10 @@ class ExternalEventManagerImplTest {
         assertEquals(payload.array(), record.value)
     }
 
-    @Test
-    fun `getEventToSend does not return an external event if the state is RETRY and the sendTimestamp is not surpassed`() {
+    @ParameterizedTest(name = "getEventToSend does not return an external event if the state is {0} and the sendTimestamp is not surpassed")
+    @EnumSource(names = ["RETRY", "OK"])
+    @Suppress("MaxLineLength")
+    fun `getEventToSend does not return an external event if the state is non-error and the sendTimestamp is not surpassed`(stateType: ExternalEventStateType) {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
         val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
@@ -429,7 +434,7 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             eventToSend = externalEvent
             sendTimestamp = now.plusSeconds(1)
-            status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())
+            status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
         }
 
         whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())

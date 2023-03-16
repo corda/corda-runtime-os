@@ -3,12 +3,12 @@ plugins {
 }
 
 tasks.named("jar") {
-    baseName 'upgrade-testing-cordapp'
+    archiveBaseName = 'upgrade-testing-cordapp'
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     contract {
         name "Version upgrade testing v1"
         versionId 1
@@ -18,5 +18,6 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
 }

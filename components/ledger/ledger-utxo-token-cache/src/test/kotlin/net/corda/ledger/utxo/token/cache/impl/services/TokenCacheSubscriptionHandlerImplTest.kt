@@ -11,7 +11,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Services.Companion.TOKEN_CACHE_EVENT
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
 import net.corda.ledger.utxo.token.cache.impl.MINIMUM_SMART_CONFIG
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler

@@ -146,6 +146,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Receiving an external event response with the wrong request id does not resume the flow and ignores the response ✅
 - Given a flow has already received its external event response the flow can send another event and receive a response ✅
 - Receiving an event does not resend the external event unless a 'transient' error is received ✅
+- Receiving an event resends the external event if status is OK but the retry window has been surpassed ✅
 - Receiving a 'transient' error response resends the external event if the retry window has been surpassed ✅
 - Receiving a 'transient' error response does not resend the external event if the retry window has not been surpassed ✅
 - Given a 'transient' error response has been received receiving an event will resend the external event if the retry window has been surpassed ✅

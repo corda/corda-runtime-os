@@ -37,7 +37,6 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(':libs:chunking:chunking-core')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
@@ -47,6 +46,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 

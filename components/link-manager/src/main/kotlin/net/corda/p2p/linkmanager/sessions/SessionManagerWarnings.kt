@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.crypto.core.ShortHash
 import org.slf4j.Logger
 
 internal object SessionManagerWarnings {
@@ -59,5 +60,10 @@ internal object SessionManagerWarnings {
 
     internal fun Logger.validationFailedWarning(messageName: String, sessionId: String, error: String?) {
         this.warn("Received $messageName with sessionId $sessionId, which failed validation with: $error The message was discarded.")
+    }
+
+    internal fun Logger.couldNotFindSessionInformation(us: ShortHash, peer: ShortHash, messageId: String) {
+        this.warn("Could not get session information from message sent from $us" +
+                " to $peer with ID `$messageId`. Peer is not in the members map.")
     }
 }

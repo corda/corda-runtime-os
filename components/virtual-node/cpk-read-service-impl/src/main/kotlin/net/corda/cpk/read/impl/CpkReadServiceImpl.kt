@@ -29,7 +29,7 @@ import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.WorkspacePathProvider
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

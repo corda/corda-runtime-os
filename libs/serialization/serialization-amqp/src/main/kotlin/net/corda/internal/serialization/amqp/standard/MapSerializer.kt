@@ -19,7 +19,6 @@ import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.serialization.SerializationContext
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.util.uncheckedCast
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
@@ -32,7 +31,6 @@ import java.util.NavigableMap
 import java.util.SortedMap
 import java.util.TreeMap
 import java.util.WeakHashMap
-import kotlin.collections.LinkedHashMap
 
 private typealias MapCreationFunction = (Map<*, *>) -> Map<*, *>
 
@@ -55,7 +53,8 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
                 LinkedHashMap::class.java to { map -> LinkedHashMap(map) },
                 TreeMap::class.java to { map -> TreeMap(map) },
                 EnumMap::class.java to { map ->
-                    EnumMap(uncheckedCast<Map<*, *>, Map<EnumJustUsedForCasting, Any>>(map))
+                    @Suppress("unchecked_cast")
+                    EnumMap(map as Map<EnumJustUsedForCasting, Any>)
                 }
         ))
 

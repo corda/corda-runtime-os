@@ -2,6 +2,7 @@ package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * [FlowEventPipeline] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].

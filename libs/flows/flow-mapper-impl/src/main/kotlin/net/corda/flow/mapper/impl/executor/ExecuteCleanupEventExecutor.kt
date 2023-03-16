@@ -2,7 +2,7 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.Collections.emptyList
 

@@ -13,6 +13,8 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
@@ -20,7 +22,7 @@ import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -61,7 +63,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         val thrown = assertThrows(exception::class.java) {
             signingService.sign(
@@ -86,7 +89,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         assertThrows(IllegalArgumentException::class.java) {
             signingService.sign(
@@ -110,7 +114,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         val thrown = assertThrows(exception::class.java) {
             signingService.deriveSharedSecret(
@@ -136,7 +141,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         assertThrows(IllegalArgumentException::class.java) {
             signingService.deriveSharedSecret(
@@ -155,7 +161,8 @@ class SigningServiceGeneralTests {
     @Test
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
-            id = UUID.randomUUID().toString(),
+            id = ShortHash.of("0123456789AB"),
+            fullId = parseSecureHash("SHA-256:0123456789ABCDEF"),
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             alias = "alias1",
@@ -176,7 +183,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         assertThrows(KeyAlreadyExistsException::class.java) {
             signingService.generateKeyPair(
@@ -208,7 +216,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         var thrown = assertThrows(exception::class.java) {
             signingService.generateKeyPair(
@@ -252,7 +261,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         val filter = mapOf(
             CATEGORY_FILTER to category,
@@ -292,7 +302,8 @@ class SigningServiceGeneralTests {
             val signingService = SigningServiceImpl(
                 store = store,
                 cryptoServiceFactory = mock(),
-                schemeMetadata = schemeMetadata
+                schemeMetadata = schemeMetadata,
+                digestService = mock()
             )
             val filter = emptyMap<String, String>()
             val result = signingService.lookup(
@@ -339,7 +350,8 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock {
                 on { this.findInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         var result = signingService.generateKeyPair(
             tenantId = tenantId,

@@ -6,9 +6,9 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
@@ -18,13 +18,13 @@ class MerkleTreeGenerator(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val NODE_HASH_PREFIX = "CORDA_MEMBERSHIP_NODE"
         const val LEAF_HASH_PREFIX = "CORDA_MEMBERSHIP_LEAF"
     }
     private val hashDigestProvider = merkleTreeProvider.createHashDigestProvider(
         HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME,
+        DigestAlgorithmName.SHA2_256,
         mapOf(
             HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to LEAF_HASH_PREFIX.toByteArray(),
             HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to NODE_HASH_PREFIX.toByteArray(),

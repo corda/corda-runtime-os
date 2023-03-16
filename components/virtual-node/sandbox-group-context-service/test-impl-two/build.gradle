@@ -10,5 +10,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:sandbox-types')
     api project(':testing:sandboxes:test-api')
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'net.corda:corda-application'
 }

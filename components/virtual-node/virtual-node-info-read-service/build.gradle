@@ -24,6 +24,8 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:utilities')
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation project(":libs:configuration:configuration-core")

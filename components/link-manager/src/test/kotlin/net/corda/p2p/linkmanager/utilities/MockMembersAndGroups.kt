@@ -1,16 +1,15 @@
 package net.corda.p2p.linkmanager.utilities
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -34,6 +33,7 @@ fun mockMemberInfo(
     holdingIdentity: HoldingIdentity,
     endPoint: String,
     publicKey: PublicKey,
+    serialNumber: Long = 1,
 ): MemberInfo {
     val endpoints = mock<EndpointInfo> {
         on { url } doReturn endPoint
@@ -47,10 +47,11 @@ fun mockMemberInfo(
         on { memberProvidedContext } doReturn context
         on { name } doReturn holdingIdentity.x500Name
         on { sessionInitiationKey } doReturn publicKey
+        on { serial } doReturn serialNumber
     }
 }
 
-fun mockMembers(members: Collection<HoldingIdentity>): MembershipGroupReaderProvider {
+fun mockMembers(members: Collection<HoldingIdentity>, serialNumber: Long = 1,): MembershipGroupReaderProvider {
     val endpoint = "https://10.0.0.1/"
 
     val provider = BouncyCastleProvider()
@@ -61,7 +62,8 @@ fun mockMembers(members: Collection<HoldingIdentity>): MembershipGroupReaderProv
         mockMemberInfo(
             holdingId,
             endpoint,
-            keyPair.public
+            keyPair.public,
+            serialNumber
         )
     }
     fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -76,11 +78,11 @@ fun mockMembers(members: Collection<HoldingIdentity>): MembershipGroupReaderProv
     return object : MembershipGroupReaderProvider {
         override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader {
             return mock {
-                on { lookup(any()) } doAnswer {
+                on { lookup(name = any(), filter = any()) } doAnswer {
                     val name = it.arguments[0] as MemberX500Name
                     identities[HoldingIdentity(name, holdingIdentity.groupId)]
                 }
-                on { lookupBySessionKey(any()) } doAnswer {
+                on { lookupBySessionKey(sessionKeyHash = any(), filter = any()) } doAnswer {
                     val key = it.arguments[0] as PublicKeyHash
                     hashToInfo[key]
                 }

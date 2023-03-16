@@ -17,7 +17,7 @@ import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.storage.writer.impl.user.impl.UserWriterImpl
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
-import net.corda.permissions.model.RPCPermissionOperation
+import net.corda.permissions.model.RestPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
@@ -119,7 +119,7 @@ internal class UserWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)
-        assertEquals(RPCPermissionOperation.USER_INSERT, audit.changeType)
+        assertEquals(RestPermissionOperation.USER_INSERT, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 
@@ -147,7 +147,7 @@ internal class UserWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)
-        assertEquals(RPCPermissionOperation.USER_INSERT, audit.changeType)
+        assertEquals(RestPermissionOperation.USER_INSERT, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 
@@ -225,7 +225,7 @@ internal class UserWriterImplTest {
         assertEquals(user, persistedAssociation.user)
 
         val audit = capture.secondValue as ChangeAudit
-        assertEquals(RPCPermissionOperation.ADD_ROLE_TO_USER, audit.changeType)
+        assertEquals(RestPermissionOperation.ADD_ROLE_TO_USER, audit.changeType)
         assertEquals(
             "Role 'role1' assigned to User 'userLogin1' by 'requestUserId'. Created RoleUserAssociation '${persistedAssociation.id}'.",
             audit.details
@@ -294,7 +294,7 @@ internal class UserWriterImplTest {
         assertEquals(0, persistedUser.roleUserAssociations.size)
 
         val audit = capture.thirdValue as ChangeAudit
-        assertEquals(RPCPermissionOperation.DELETE_ROLE_FROM_USER, audit.changeType)
+        assertEquals(RestPermissionOperation.DELETE_ROLE_FROM_USER, audit.changeType)
         assertEquals(
             "Role 'role1' unassigned from User 'userLogin1' by 'requestUserId'. Removed RoleUserAssociation 'assoc1'.",
             audit.details

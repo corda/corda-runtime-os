@@ -4,6 +4,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -14,7 +16,12 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.core.fullId
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
@@ -46,11 +53,11 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.toHex
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.base.util.EncodingUtils.toHex
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -70,6 +77,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -192,7 +200,7 @@ class PersistenceTests {
                 hsmId = hsmId,
                 timestamp = Instant.now(),
                 masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
-                    UUID.randomUUID().toString().toByteArray().toHex().take(30)
+                    toHex(UUID.randomUUID().toString().toByteArray()).take(30)
                 } else {
                     null
                 }
@@ -272,7 +280,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -296,7 +304,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -345,9 +353,11 @@ class PersistenceTests {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
         val keyId = keyPair.public.publicKeyId()
+        val fullKeyId = keyPair.public.fullId()
         val entity = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
+            fullKeyId = fullKeyId,
             timestamp = Instant.now(),
             category = CryptoConsts.Categories.LEDGER,
             schemeCodeName = EDDSA_ED25519_CODE_NAME,
@@ -374,6 +384,7 @@ class PersistenceTests {
             assertNotNull(retrieved)
             assertEquals(entity.tenantId, retrieved.tenantId)
             assertEquals(entity.keyId, retrieved.keyId)
+            assertEquals(entity.fullKeyId, retrieved.fullKeyId)
             assertEquals(entity.timestamp.epochSecond, retrieved.timestamp.epochSecond)
             assertEquals(entity.category, retrieved.category)
             assertEquals(entity.schemeCodeName, retrieved.schemeCodeName)
@@ -399,7 +410,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            masterKeyAlias = toHex(UUID.randomUUID().toString().toByteArray()).take(30)
         )
         cryptoDbEmf().transaction { em ->
             em.persist(association)
@@ -437,7 +448,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            masterKeyAlias = toHex(UUID.randomUUID().toString().toByteArray()).take(30)
         )
         cryptoDbEmf().transaction { em ->
             em.persist(association1)
@@ -447,7 +458,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            masterKeyAlias = toHex(UUID.randomUUID().toString().toByteArray()).take(30)
         )
         assertThrows(PersistenceException::class.java) {
             cryptoDbEmf().transaction { em ->
@@ -596,16 +607,16 @@ class PersistenceTests {
 
     @Test
     fun `Should save and then retrieve wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias1 = UUID.randomUUID().toString()
         val alias2 = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo1 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key1.algorithm,
             keyMaterial = masterKey.wrap(key1)
         )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key2.algorithm,
@@ -619,15 +630,15 @@ class PersistenceTests {
 
     @Test
     fun `Should fail override existing wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val alias = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo1 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key1.algorithm,
             keyMaterial = masterKey.wrap(key1)
         )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 1,
             algorithmName = key2.algorithm,
@@ -661,23 +672,27 @@ class PersistenceTests {
     fun `Should save same public keys for different tenants and lookup by id for each tenant`() {
         val hsmId = UUID.randomUUID().toString()
         val tenantId1 = CryptoTenants.P2P
-        val tenantId2 = CryptoTenants.RPC_API
+        val tenantId2 = CryptoTenants.REST
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId1, p1)
         signingKeyStore.save(tenantId2, p1)
         signingKeyStore.save(tenantId1, w1)
         signingKeyStore.save(tenantId2, w1)
-        val keyP11 = signingKeyStore.lookup(tenantId1, listOf(p1.key.publicKey.publicKeyId()))
+        val keyP11 =
+            signingKeyStore.lookupByIds(tenantId1, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
         assertEquals(1, keyP11.size)
         assertSigningCachedKey(tenantId1, p1, keyP11.first())
-        val keyP12 = signingKeyStore.lookup(tenantId2, listOf(p1.key.publicKey.publicKeyId()))
+        val keyP12 =
+            signingKeyStore.lookupByIds(tenantId2, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
         assertEquals(1, keyP12.size)
         assertSigningCachedKey(tenantId2, p1, keyP12.first())
-        val keyW11 = signingKeyStore.lookup(tenantId1, listOf(w1.key.publicKey.publicKeyId()))
+        val keyW11 =
+            signingKeyStore.lookupByIds(tenantId1, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
         assertEquals(1, keyW11.size)
         assertSigningCachedKey(tenantId1, w1, keyW11.first())
-        val keyW12 = signingKeyStore.lookup(tenantId2, listOf(w1.key.publicKey.publicKeyId()))
+        val keyW12 =
+            signingKeyStore.lookupByIds(tenantId2, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
         assertEquals(1, keyW12.size)
         assertSigningCachedKey(tenantId2, w1, keyW12.first())
     }
@@ -715,19 +730,19 @@ class PersistenceTests {
         signingKeyStore.save(tenantId, w1)
         signingKeyStore.save(tenantId, w2)
         signingKeyStore.save(tenantId, w3)
-        val keys = signingKeyStore.lookup(
+        val keys = signingKeyStore.lookupByIds(
             tenantId,
             listOf(
-                p1.key.publicKey.publicKeyId(),
-                p0.publicKeyId(),
-                p3.key.publicKey.publicKeyId(),
-                w2.key.publicKey.publicKeyId()
+                ShortHash.of(p1.key.publicKey.publicKeyId()),
+                ShortHash.of(p0.publicKeyId()),
+                ShortHash.of(p3.key.publicKey.publicKeyId()),
+                ShortHash.of(w2.key.publicKey.publicKeyId())
             )
         )
         assertEquals(3, keys.size)
-        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.publicKeyId() })
-        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.publicKeyId() })
-        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.publicKeyId() })
+        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.id() })
+        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.id() })
+        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.id() })
     }
 
     @ParameterizedTest
@@ -781,7 +796,7 @@ class PersistenceTests {
             mapOf(
                 CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(2, result1.size)
         listOf(p1, p4).sortedBy { it.alias }.forEachIndexed { i, o ->
             assertSigningCachedKey(tenantId, o, result1.elementAt(i))
@@ -794,7 +809,7 @@ class PersistenceTests {
             mapOf(
                 CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(2, result2.size)
         listOf(p1, p4).sortedByDescending { it.alias }.forEachIndexed { i, o ->
             assertSigningCachedKey(tenantId, o, result2.elementAt(i))
@@ -808,7 +823,7 @@ class PersistenceTests {
                 CATEGORY_FILTER to CryptoConsts.Categories.CI,
                 SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(1, result3.size)
         assertSigningCachedKey(tenantId, w1, result3.first())
         val result4 = signingKeyStore.lookup(
@@ -821,7 +836,7 @@ class PersistenceTests {
                 SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
                 CATEGORY_FILTER to CryptoConsts.Categories.TLS
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(1, result4.size)
         assertSigningCachedKey(tenantId, p2, result4.first())
         val result5 = signingKeyStore.lookup(
@@ -835,7 +850,7 @@ class PersistenceTests {
                 CATEGORY_FILTER to CryptoConsts.Categories.CI,
                 EXTERNAL_ID_FILTER to w3.externalId!!
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(1, result5.size)
         assertSigningCachedKey(tenantId, w3, result5.first())
         val result6 = signingKeyStore.lookup(
@@ -847,7 +862,7 @@ class PersistenceTests {
                 CREATED_AFTER_FILTER to Instant.now().minusSeconds(300).toString(),
                 CREATED_BEFORE_FILTER to Instant.now().minusSeconds(-1).toString()
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(7, result6.size)
         listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
             when (it) {
@@ -862,6 +877,21 @@ class PersistenceTests {
                 else -> throw IllegalArgumentException()
             }
         }
+    }
+
+    @Test
+    fun `Key lookup works for both short and full key ids`() {
+        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        signingKeyStore.save(tenantId, p1)
+        val keyId = p1.key.publicKey.publicKeyId()
+        val fullKeyId = p1.key.publicKey.fullId()
+        val keyLookedUpByKeyId =
+            signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
+        val keyLookedUpByFullKeyId =
+            signingKeyStore.lookupByFullIds(tenantId, listOf(parseSecureHash(fullKeyId)))
+        assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
     }
 
     /**
@@ -943,3 +973,6 @@ class PersistenceTests {
         assertEquals(0, page3.size)
     }
 }
+
+fun PublicKey.id(): ShortHash =
+    ShortHash.of(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))

@@ -50,7 +50,7 @@ class ConsensualTransactionBuilderBaseTest {
         )
 
         val tx = builder.toSignedTransaction()
-        assertThat(tx.signatures.map {it.by}, `is`(listOf(myLedgerKey)))
+        assertThat(tx.signatures.map { it.by }, `is`(listOf(myLedgerKey)))
     }
 
     @Test
@@ -87,7 +87,12 @@ class ConsensualTransactionBuilderBaseTest {
         assertThat(tx.toLedgerTransaction().timestamp, `is`(Instant.EPOCH))
     }
 
-    class MyConsensualState(override val participants: List<PublicKey>) : ConsensualState {
+    class MyConsensualState(private val participants: List<PublicKey>) : ConsensualState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
 }

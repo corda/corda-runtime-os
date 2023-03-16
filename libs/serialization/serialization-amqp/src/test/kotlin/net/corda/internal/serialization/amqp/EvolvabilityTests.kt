@@ -231,7 +231,7 @@ class EvolvabilityTests {
         @Suppress("UNUSED")
         @CordaSerializable
         data class CC(val a: Int, val b: String) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             constructor (a: Int) : this(a, "hello")
         }
 
@@ -258,7 +258,7 @@ class EvolvabilityTests {
         @Suppress("UNUSED")
         @CordaSerializable
         data class CC(val z: Int, val y: Int, val a: String) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             constructor (z: Int, y: Int) : this(z, y, "10")
         }
 
@@ -350,7 +350,7 @@ class EvolvabilityTests {
         data class CC(val a: Int, val b: Int, val c: String, val d: String) {
             // ensure none of the original parameters align with the initial
             // construction order
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             constructor (c: String, a: Int, b: Int) : this(a, b, c, "wibble")
         }
 
@@ -384,7 +384,7 @@ class EvolvabilityTests {
             // ensure none of the original parameters align with the initial
             // construction order
             @Suppress("UNUSED")
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             constructor (c: String, a: Int) : this(a, c, "wibble")
         }
 
@@ -429,13 +429,13 @@ class EvolvabilityTests {
         @Suppress("UNUSED")
         @CordaSerializable
         data class C(val e: Int, val c: Int, val b: Int, val a: Int, val d: Int) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             constructor (b: Int, a: Int) : this(-1, -1, b, a, -1)
 
-            @DeprecatedConstructorForDeserialization(2)
+            @DeprecatedConstructorForDeserialization(version = 2)
             constructor (a: Int, c: Int, b: Int) : this(-1, c, b, a, -1)
 
-            @DeprecatedConstructorForDeserialization(3)
+            @DeprecatedConstructorForDeserialization(version = 3)
             constructor (a: Int, b: Int, c: Int, d: Int) : this(-1, c, b, a, d)
         }
 
@@ -553,16 +553,16 @@ class EvolvabilityTests {
         @Suppress("UNUSED")
         @CordaSerializable
         data class C(val b: Int, val c: Int, val d: Int, val e: Int, val f: Int, val g: Int) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             constructor (b: Int, c: Int) : this(b, c, -1, -1, -1, -1)
 
-            @DeprecatedConstructorForDeserialization(2)
+            @DeprecatedConstructorForDeserialization(version = 2)
             constructor (b: Int, c: Int, d: Int) : this(b, c, d, -1, -1, -1)
 
-            @DeprecatedConstructorForDeserialization(3)
+            @DeprecatedConstructorForDeserialization(version = 3)
             constructor (b: Int, c: Int, d: Int, e: Int) : this(b, c, d, e, -1, -1)
 
-            @DeprecatedConstructorForDeserialization(4)
+            @DeprecatedConstructorForDeserialization(version = 4)
             constructor (b: Int, c: Int, d: Int, e: Int, f: Int) : this(b, c, d, e, f, -1)
         }
 
@@ -686,7 +686,7 @@ class EvolvabilityTests {
 
         @CordaSerializable
         data class CC(val a: Int?, val b: Int) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             @Suppress("unused")
             constructor(a: Int) : this(a, 42)
         }
@@ -711,7 +711,7 @@ class EvolvabilityTests {
 
         @CordaSerializable
         data class CC(val a: Int, val b: Int) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             @Suppress("unused")
             constructor(a: Int?) : this(a ?: -1, 42)
         }
@@ -736,7 +736,7 @@ class EvolvabilityTests {
 
         @CordaSerializable
         data class CC(val data: String, val b: String) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             @Suppress("unused")
             constructor(data: String, a: Int?) : this(data, a?.toString() ?: "<not provided>")
         }
@@ -761,7 +761,7 @@ class EvolvabilityTests {
 
         @CordaSerializable
         data class CC(val data: String) {
-            @DeprecatedConstructorForDeserialization(1)
+            @DeprecatedConstructorForDeserialization(version = 1)
             @Suppress("unused")
             constructor(data: String, a: Int?) : this(data + (a?.toString() ?: "<not provided>"))
         }

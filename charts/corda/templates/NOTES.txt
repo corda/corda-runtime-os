@@ -3,6 +3,6 @@ kubectl get secret {{ include "corda.initialAdminUserUsernameSecretName" . }} -o
 kubectl get secret {{ include "corda.initialAdminUserPasswordSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.initialAdminUserSecretPasswordKey" . }} | base64decode {{ `}}` }}'
 
 2. Expose the API endpoint on localhost by running this command:
-kubectl port-forward --namespace {{ .Release.Namespace }} deployment/{{ include "corda.fullname" . }}-rpc-worker 8888 &
+kubectl port-forward --namespace {{ .Release.Namespace }} deployment/{{ include "corda.fullname" . }}-rest-worker 8888 &
 
 3. The API endpoint definition can then be accessed via: https://localhost:8888/api/v1/swagger

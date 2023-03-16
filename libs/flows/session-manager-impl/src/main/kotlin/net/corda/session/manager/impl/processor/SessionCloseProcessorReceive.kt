@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -8,10 +9,9 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 
 /**
@@ -58,6 +58,8 @@ class SessionCloseProcessorReceive(
             } else {
                 sessionState.receivedEventsState.undeliveredMessages = undeliveredReceivedMessages.plus(sessionEvent)
                 sessionState.receivedEventsState = recalcReceivedProcessState(receivedEventsState)
+                logger.trace { "receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState
+                    .lastProcessedSequenceNum}, ${sessionState.receivedEventsState}" }
                 processCloseReceivedAndGetState(sessionState)
             }
         }

@@ -2,9 +2,9 @@ package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

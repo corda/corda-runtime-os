@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.JsonWriter
-import net.corda.v5.base.util.uncheckedCast
 
 /**
  * Adaptor between a Jackson serializer and a Corda Json serializer exposed to the public api. Every Json serializer
@@ -13,10 +12,11 @@ import net.corda.v5.base.util.uncheckedCast
  * class creates that simple bridge, wrapping the Corda serializer into a Jackson [StdSerializer] subclass.
  *
  * Because JsonSerializers are created at runtime dynamically, no compile time type information can be referenced in
- * this class in the form of generics. Instead all type information is supplied only via a Class<*> object.
+ * this class in the form of generics. Instead, all type information is supplied only via a Class<*> object.
  */
+@Suppress("unchecked_cast")
 class JsonSerializerAdaptor(private val jsonSerializer: JsonSerializer<*>, val serializingType: Class<*>) :
-    StdSerializer<Any>(uncheckedCast<Class<*>, Class<Any>>(serializingType)) {
+    StdSerializer<Any>(serializingType as Class<Any>) {
     override fun serialize(value: Any, jgen: JsonGenerator, provider: SerializerProvider) {
         serializeAny(jsonSerializer, value, JsonWriterAdaptor(jgen))
     }

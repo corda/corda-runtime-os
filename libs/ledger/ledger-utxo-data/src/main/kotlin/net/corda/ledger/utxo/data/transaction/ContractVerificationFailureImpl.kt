@@ -12,11 +12,27 @@ import net.corda.v5.ledger.utxo.ContractVerificationFailure
  * @property exceptionMessage The details of the [Exception] that caused verification failure.
  */
 data class ContractVerificationFailureImpl(
-    override val contractClassName: String,
-    override val contractStateClassNames: List<String>,
-    override val exceptionClassName: String,
-    override val exceptionMessage: String,
+    private val contractClassName: String,
+    private val contractStateClassNames: List<String>,
+    private val exceptionClassName: String,
+    private val exceptionMessage: String,
 ) : ContractVerificationFailure {
+
+    override fun getContractClassName(): String {
+        return contractClassName
+    }
+
+    override fun getContractStateClassNames(): List<String> {
+        return contractStateClassNames
+    }
+
+    override fun getExceptionClassName(): String {
+        return exceptionClassName
+    }
+
+    override fun getExceptionMessage(): String {
+        return exceptionMessage
+    }
 
     /**
      * Returns a string that represents the current object.

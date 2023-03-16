@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.ShortHash
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -72,7 +73,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
-    private val registrationId = UUID(0, 1)
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }
@@ -110,10 +110,10 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
-            lookup(
+            lookupKeysByIds(
                 eq(holdingIdentity.shortHash.value),
                 argThat {
-                    this.firstOrNull() == ecdhKeyId
+                    this.firstOrNull()?.value == ecdhKeyId
                 }
             )
         } doReturn listOf(
@@ -132,10 +132,10 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         )
         on {
-            lookup(
+            lookupKeysByIds(
                 eq(holdingIdentity.shortHash.value),
                 argThat {
-                    this.firstOrNull() == sessionKeyId
+                    this.firstOrNull()?.value == sessionKeyId
                 }
             )
         } doReturn listOf(
@@ -165,10 +165,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         on {
             persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
         } doReturn MembershipPersistenceResult.success()
-
-        on {
-            persistRegistrationRequest(any(), any())
-        } doReturn MembershipPersistenceResult.success()
     }
 
     private val platformInfoProvider: PlatformInfoProvider = mock {
@@ -190,8 +186,8 @@ class MGMRegistrationMemberInfoHandlerTest {
         virtualNodeInfoReadService
     )
 
-    private val ecdhKeyId = "ECDH key"
-    private val sessionKeyId = "session key"
+    private val ecdhKeyId = "ABC123456789"
+    private val sessionKeyId = "BBC123456789"
 
     private val validTestContext
         get() = mapOf(
@@ -213,8 +209,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `MGM info is returned if all is processed successfully`() {
         val result = assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -224,32 +219,28 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
-    fun `Expected services are called`() {
+    fun `Expected services are called by buildAndPersistMgmMemberInfo`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
         }
 
-        verify(membershipPersistenceClient).persistRegistrationRequest(any(), any())
         verify(membershipPersistenceClient).persistMemberInfo(any(), any())
-        verify(cordaAvroSerializer).serialize(any())
         verify(memberInfoFactory).create(any(), any<SortedMap<String, String?>>())
         verify(platformInfoProvider).activePlatformVersion
         verify(platformInfoProvider).localWorkerSoftwareVersion
         verify(keyEncodingService, times(2)).encodeAsString(any())
         verify(keyEncodingService, times(2)).decodePublicKey(any<ByteArray>())
-        verify(cryptoOpsClient, times(2)).lookup(any(), any())
+        verify(cryptoOpsClient, times(2)).lookupKeysByIds(any(), any())
         verify(virtualNodeInfoReadService).get(any())
     }
 
     @Test
     fun `Member context filters out group policy properties`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -261,8 +252,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `Member context is built as expected`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -287,8 +277,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `MGM context is built as expected`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -308,36 +297,34 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         ).doReturn(null)
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
-        verify(cryptoOpsClient, never()).lookup(any(), any())
+        verify(cryptoOpsClient, never()).lookupKeysByIds(any(), any())
     }
 
     @Test
     fun `expected exception thrown if key cannot be found for holding identity`() {
         whenever(
-            cryptoOpsClient.lookup(
+            cryptoOpsClient.lookupKeysByIds(
                 eq(holdingIdentity.shortHash.value),
-                eq(listOf(sessionKeyId))
+                eq(listOf(ShortHash.of(sessionKeyId)))
             )
         ).doReturn(emptyList())
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
-        verify(cryptoOpsClient).lookup(
+        verify(cryptoOpsClient).lookupKeysByIds(
             eq(holdingIdentity.shortHash.value),
-            eq(listOf(sessionKeyId))
+            eq(listOf(ShortHash.of(sessionKeyId)))
         )
         verify(keyEncodingService, never()).decodePublicKey(any<ByteArray>())
     }
@@ -349,14 +336,13 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doThrow(RuntimeException::class)
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
-        verify(cryptoOpsClient).lookup(any(), any())
+        verify(cryptoOpsClient).lookupKeysByIds(any(), any())
         verify(keyEncodingService).decodePublicKey(any<ByteArray>())
     }
 
@@ -369,8 +355,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doReturn(MembershipPersistenceResult.Failure(""))
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -382,45 +367,6 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
-    fun `expected exception thrown if registration request persistence fails`() {
-        whenever(
-            membershipPersistenceClient.persistRegistrationRequest(
-                eq(holdingIdentity), any()
-            )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(membershipPersistenceClient).persistRegistrationRequest(
-            eq(holdingIdentity),
-            any()
-        )
-    }
-
-    @Test
-    fun `expected exception thrown if serializing the registration request fails`() {
-        whenever(
-            cordaAvroSerializer.serialize(
-                any()
-            )
-        ).doReturn(null)
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(cordaAvroSerializer).serialize(any())
-    }
-
-    @Test
     fun `non EC algorithm ECDH key will cause an exception`() {
         val encryptedPublicKey = byteArrayOf(1, 2, 4)
         val ecdhPublicKey = mock<PublicKey>() {
@@ -428,10 +374,10 @@ class MGMRegistrationMemberInfoHandlerTest {
             on { algorithm } doReturn "RSA"
         }
         whenever(
-            cryptoOpsClient.lookup(
+            cryptoOpsClient.lookupKeysByIds(
                 holdingIdentity.shortHash.value,
                 listOf(
-                    ecdhKeyId
+                    ShortHash.of(ecdhKeyId)
                 )
             )
         ).doReturn(
@@ -454,8 +400,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         whenever(keyEncodingService.decodePublicKey(encryptedPublicKey)).doReturn(ecdhPublicKey)
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -465,10 +410,10 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `session key with the wrong category will cause an exception`() {
         whenever(
-            cryptoOpsClient.lookup(
+            cryptoOpsClient.lookupKeysByIds(
                 holdingIdentity.shortHash.value,
                 listOf(
-                    sessionKeyId
+                    ShortHash.of(sessionKeyId)
                 )
             )
         ).doReturn(
@@ -490,8 +435,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -501,10 +445,10 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `ECDH key with the wrong category will cause an exception`() {
         whenever(
-            cryptoOpsClient.lookup(
+            cryptoOpsClient.lookupKeysByIds(
                 holdingIdentity.shortHash.value,
                 listOf(
-                    ecdhKeyId
+                    ShortHash.of(ecdhKeyId)
                 )
             )
         ).doReturn(
@@ -526,8 +470,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )

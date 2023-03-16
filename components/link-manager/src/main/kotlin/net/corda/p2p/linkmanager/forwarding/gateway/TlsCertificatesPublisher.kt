@@ -16,7 +16,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
+import net.corda.schema.Schemas.P2P.GATEWAY_TLS_CERTIFICATES
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import java.util.concurrent.CompletableFuture

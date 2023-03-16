@@ -24,6 +24,7 @@ dependencies {
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:packaging:packaging")
     implementation 'net.corda:corda-serialization'
     implementation project(':libs:sandbox')

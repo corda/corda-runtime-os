@@ -138,7 +138,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
             private val context: QueryContext = QueryContext(
                 0,
                 Int.MAX_VALUE,
-                mapOf<String, Any>()
+                mapOf()
             )
         ) : ParameterizedQuery<T> {
             override fun execute(): List<T> {
@@ -215,14 +215,14 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         }
     }
 
-    override fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T> {
+    override fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<*>): List<T> {
         return emf.guard {
             primaryKeys.map { pk -> it.find(entityClass, pk) }
         }
     }
 
     override fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T> {
-        return PagedQueryBase<T>(emf, entityClass)
+        return PagedQueryBase(emf, entityClass)
     }
 
     override fun <T : Any> merge(entity: T): T? {
@@ -243,14 +243,14 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         }
     }
 
-    override fun persist(entities: List<Any>) {
+    override fun persist(entities: List<*>) {
         emf.transaction { em ->
             entities.forEach { em.persist(it) }
         }
     }
 
     override fun <T : Any> query(queryName: String, entityClass: Class<T>): ParameterizedQuery<T> {
-        return ParameterizedQueryBase<T>(emf, queryName, entityClass)
+        return ParameterizedQueryBase(emf, queryName, entityClass)
     }
 
     override fun remove(entity: Any) {
@@ -265,7 +265,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         }
     }
 
-    override fun remove(entities: List<Any>) {
+    override fun remove(entities: List<*>) {
         emf.transaction {
             entities.forEach { entity ->
                 it.remove(if (it.contains(entity)) { entity } else { it.merge(entity) })

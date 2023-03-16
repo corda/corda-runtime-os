@@ -10,7 +10,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.v5.base.versioning.Version
 import java.time.Clock
 

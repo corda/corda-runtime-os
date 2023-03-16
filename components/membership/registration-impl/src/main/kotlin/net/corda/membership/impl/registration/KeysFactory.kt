@@ -1,13 +1,13 @@
 package net.corda.membership.impl.registration
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.p2p.helpers.KeySpecExtractor
-import net.corda.v5.crypto.calculateHash
 import java.security.PublicKey
 
 internal class KeysFactory(

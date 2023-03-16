@@ -1,10 +1,10 @@
 package net.corda.libs.virtualnode.maintenance.endpoints.v1
 
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 
 /**

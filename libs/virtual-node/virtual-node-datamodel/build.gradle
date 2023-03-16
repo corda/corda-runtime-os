@@ -15,8 +15,10 @@ dependencies {
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
     implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':libs:virtual-node:virtual-node-common')
 
     integrationTestImplementation project(':libs:configuration:configuration-datamodel')
+    integrationTestImplementation project(':libs:crypto:crypto-core')
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:db:db-orm-impl')

@@ -1,19 +1,23 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
-import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryErrorGeneral
-import com.r3.corda.notary.plugin.common.NotaryErrorReferenceStateUnknown
-import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
+import com.r3.corda.notary.plugin.common.NotarizationRequestSignature
+import com.r3.corda.notary.plugin.common.NotarizationResponse
+import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
+import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
@@ -51,7 +55,7 @@ class NonValidatingNotaryServerFlowImplTest {
         const val DUMMY_PLATFORM_VERSION = 9001
 
         /* Cache for storing response from server */
-        val responseFromServer = mutableListOf<NotarisationResponse>()
+        val responseFromServer = mutableListOf<NotarizationResponse>()
 
         /* Notary VNodes */
         val notaryVNodeAliceKey = mock<PublicKey>()
@@ -84,7 +88,7 @@ class NonValidatingNotaryServerFlowImplTest {
         // Default signature verifier, no verification
         val mockSigVerifier = mock<DigitalSignatureVerificationService> {
             // Do nothing
-            on { verify(any(), any(), any<ByteArray>(), any()) } doAnswer { }
+            on { verify(any(), any<ByteArray>(), any(), any()) } doAnswer { }
         }
 
         val mockTransactionSignatureService = mock<TransactionSignatureService>()
@@ -117,12 +121,9 @@ class NonValidatingNotaryServerFlowImplTest {
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
             assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "The publicKeys do not have any private counterparts available."
-            )
         }
     }
 
@@ -145,7 +146,7 @@ class NonValidatingNotaryServerFlowImplTest {
     @Test
     fun `Non-validating notary plugin server should respond with error if request signature is invalid`() {
         val mockSigVerifierError = mock<DigitalSignatureVerificationService> {
-            on { verify(any(), any(), any<ByteArray>(), any()) } doThrow IllegalArgumentException("Sig error")
+            on { verify(any(), any<ByteArray>(), any(), any()) } doThrow IllegalArgumentException("Sig error")
         }
 
         createAndCallServer(mockSuccessfulUniquenessClientService(), sigVerifier = mockSigVerifierError) {
@@ -153,25 +154,22 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "Sig error"
-            )
         }
     }
 
     @Test
     fun `Non-validating notary plugin server should respond with error if the uniqueness check fails`() {
-        createAndCallServer(mockErrorUniquenessClientService()) {
+        createAndCallServer(mockErrorUniquenessClientService(UniquenessCheckErrorReferenceStateUnknownImpl(emptyList()))) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
             assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryErrorReferenceStateUnknown::class.java)
-            assertThat((responseError as NotaryErrorReferenceStateUnknown).unknownStates).isEmpty()
+            assertThat(responseError).isInstanceOf(NotaryExceptionReferenceStateUnknown::class.java)
+            assertThat((responseError as NotaryExceptionReferenceStateUnknown).unknownStates).isEmpty()
         }
     }
 
@@ -182,12 +180,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "Uniqueness checker cannot be reached"
-            )
         }
     }
 
@@ -222,12 +217,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
                 "Error while processing request from client"
-            )
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Time window component could not be found on the transaction"
             )
         }
     }
@@ -239,12 +231,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
                 "Error while processing request from client"
-            )
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Notary component could not be found on the transaction"
             )
         }
     }
@@ -261,12 +250,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
                 "Error while processing request from client"
-            )
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Could not fetch input states from the filtered transaction"
             )
         }
     }
@@ -281,10 +267,28 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat((responseError).cause).hasStackTraceContaining("DUMMY ERROR")
+        }
+    }
+
+    @Test
+    fun `Non-validating notary plugin server should respond with general error if unhandled exception occurred in uniqueness checker`() {
+        createAndCallServer(mockErrorUniquenessClientService(
+            UniquenessCheckErrorUnhandledExceptionImpl(
+                IllegalArgumentException::class.java.name,
+                "Unhandled error!"
+            )
+        )) {
+            assertThat(responseFromServer).hasSize(1)
+
+            val responseError = responseFromServer.first().error
+            assertThat(responseError).isNotNull
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
+                .contains("Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
+                        "uniqueness checking with message: Unhandled error!")
         }
     }
 
@@ -301,12 +305,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Notary server identity does not match with the one attached to the transaction"
-            )
         }
     }
 
@@ -318,7 +319,7 @@ class NonValidatingNotaryServerFlowImplTest {
         sigVerifier: DigitalSignatureVerificationService = mockSigVerifier,
         flowSession: FlowSession? = null,
         txVerificationLogic: () -> Unit = {},
-        extractData: (sigs: List<NotarisationResponse>) -> Unit
+        extractData: (sigs: List<NotarizationResponse>) -> Unit
     ) {
         val txId = randomSecureHash()
 
@@ -388,9 +389,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 3. Mock the receive and send from the counterparty session, unless it is overwritten
         val paramOrDefaultSession = flowSession ?: mock {
-            on { receive(NonValidatingNotarisationPayload::class.java) } doReturn NonValidatingNotarisationPayload(
+            on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
-                NotarisationRequestSignature(
+                NotarizationRequestSignature(
                     DigitalSignature.WithKey(
                         memberCharlieKey,
                         "ABC".toByteArray(),
@@ -401,7 +402,7 @@ class NonValidatingNotaryServerFlowImplTest {
                 notaryServiceKey
             )
             on { send(any()) } doAnswer {
-                responseFromServer.add(it.arguments.first() as NotarisationResponse)
+                responseFromServer.add(it.arguments.first() as NotarizationResponse)
                 Unit
             }
             on { counterparty } doReturn memberCharlieParty.name
@@ -419,7 +420,12 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 5. Serialization service has no part in this testing so just returning a dummy
         val mockSerializationService = mock<SerializationService> {
-            on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
+            on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
+        }
+
+        val mockDigestService = mock<DigestService> {
+            on { hash(any<ByteArray>(), any()) } doReturn
+                    SecureHashImpl("dummy", byteArrayOf(0x01, 0x02, 0x03, 0x04))
         }
 
         val server = NonValidatingNotaryServerFlowImpl(
@@ -427,7 +433,8 @@ class NonValidatingNotaryServerFlowImplTest {
             mockSerializationService,
             sigVerifier,
             mockMemberLookup,
-            mockTransactionSignatureService
+            mockTransactionSignatureService,
+            mockDigestService
         )
 
         server.call(paramOrDefaultSession)
@@ -439,11 +446,13 @@ class NonValidatingNotaryServerFlowImplTest {
         return mockUniquenessClientService(UniquenessCheckResultSuccessImpl(Instant.now()))
     }
 
-    private fun mockErrorUniquenessClientService(): LedgerUniquenessCheckerClientService {
+    private fun mockErrorUniquenessClientService(
+        errorType: UniquenessCheckError
+    ): LedgerUniquenessCheckerClientService {
         return mockUniquenessClientService(
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
-                UniquenessCheckErrorReferenceStateUnknownImpl(emptyList())
+                errorType
             )
         )
     }

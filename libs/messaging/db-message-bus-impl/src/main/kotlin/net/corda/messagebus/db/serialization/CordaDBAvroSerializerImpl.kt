@@ -2,7 +2,6 @@ package net.corda.messagebus.db.serialization
 
 import net.corda.data.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.uncheckedCast
 
 class CordaDBAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry
@@ -13,9 +12,7 @@ class CordaDBAvroSerializerImpl<T : Any>(
             String::class.java -> {
                 (data as String).encodeToByteArray()
             }
-            ByteArray::class.java -> {
-                uncheckedCast(data)
-            }
+            ByteArray::class.java -> data as ByteArray
             else -> {
                 schemaRegistry.serialize(data).array()
             }

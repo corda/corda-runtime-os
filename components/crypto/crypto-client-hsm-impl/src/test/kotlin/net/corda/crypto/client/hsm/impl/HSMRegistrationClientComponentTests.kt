@@ -1,5 +1,6 @@
 package net.corda.crypto.client.hsm.impl
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.component.test.utils.SendActResult
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
@@ -23,9 +24,8 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.exceptions.CryptoException
-import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -63,7 +63,7 @@ class HSMRegistrationClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+        knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         sender = TestRPCSender(coordinatorFactory)
         publisherFactory = mock {

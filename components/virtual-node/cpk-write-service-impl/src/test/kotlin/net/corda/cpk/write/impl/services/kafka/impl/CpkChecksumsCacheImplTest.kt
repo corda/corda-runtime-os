@@ -1,6 +1,7 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.records.Record
@@ -26,7 +27,7 @@ class CpkChecksumsCacheImplTest {
         fun secureHash(bytes: ByteArray): SecureHash {
             val algorithm = "SHA-256"
             val messageDigest = MessageDigest.getInstance(algorithm)
-            return SecureHash(algorithm, messageDigest.digest(bytes))
+            return SecureHashImpl(algorithm, messageDigest.digest(bytes))
         }
 
         fun dummyCpkChunkIdToCpkChunk(cpkChecksum: SecureHash, partNumber: Int, zeroChunk: Boolean) =

@@ -16,6 +16,7 @@ import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.db.messagebus.testkit.DBSetup
@@ -30,12 +31,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -52,8 +54,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 // To run the test outside Intellij:
-// ./gradlew :components:interop:interop-service:integrationTest
-// ./gradlew :components:interop:interop-service:testOSGi
+// ./gradlew clean :components:interop:interop-service:integrationTest
+// ./gradlew clean :components:interop:interop-service:testOSGi
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {
@@ -85,6 +87,7 @@ class InteropServiceIntegrationTest {
     private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+        .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -134,7 +137,7 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
+        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE)
         val nonInteropSessionRecord = Record(
             P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 AuthenticatedMessage(

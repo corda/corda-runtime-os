@@ -46,12 +46,12 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <R : Any> find(entityClass: Class<R>, primaryKeys: List<Any>): List<R> {
+    override fun <R : Any> find(entityClass: Class<R>, primaryKeys: List<*>): List<R> {
         requireBoxedType(entityClass)
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindExternalEventFactory::class.java,
-                FindParameters(entityClass, primaryKeys.map { serialize(it) })
+                FindParameters(entityClass, primaryKeys.filterNotNull().map(::serialize))
             )
         }.map { serializationService.deserialize(it.array(), entityClass) }
     }
@@ -106,13 +106,13 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun persist(entities: List<Any>) {
+    override fun persist(entities: List<*>) {
         if (entities.isNotEmpty()) {
             requireBoxedType(entities)
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistExternalEventFactory::class.java,
-                    PersistParameters(entities.map { serialize(it) })
+                    PersistParameters(entities.filterNotNull().map(::serialize))
                 )
             }
         }
@@ -130,13 +130,13 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun remove(entities: List<Any>) {
+    override fun remove(entities: List<*>) {
         if (entities.isNotEmpty()) {
             requireBoxedType(entities)
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     RemoveExternalEventFactory::class.java,
-                    RemoveParameters(entities.map { serialize(it) })
+                    RemoveParameters(entities.filterNotNull().map(::serialize))
                 )
             }
         }
@@ -158,9 +158,11 @@ class PersistenceServiceImpl @Activate constructor(
         require(!type.isPrimitive) { "Cannot perform persistence operation on primitive type ${type.name}" }
     }
 
-    private fun requireBoxedType(objects: List<Any>) {
+    private fun requireBoxedType(objects: List<*>) {
         for (obj in objects) {
-            requireBoxedType(obj.javaClass)
+            if (obj != null) {
+                requireBoxedType(obj.javaClass)
+            }
         }
     }
 

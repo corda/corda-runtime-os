@@ -12,7 +12,7 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
@@ -28,6 +28,7 @@ dependencies {
     // the Postgres drivers are packaged within the tool itself.
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"

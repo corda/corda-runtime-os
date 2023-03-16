@@ -20,7 +20,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
-import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
+import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.membership.GroupParameters

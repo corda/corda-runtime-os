@@ -27,7 +27,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 

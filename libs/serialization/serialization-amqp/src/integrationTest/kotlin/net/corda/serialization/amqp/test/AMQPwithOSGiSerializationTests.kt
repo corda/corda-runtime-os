@@ -226,9 +226,11 @@ class AMQPwithOSGiSerializationTests {
                     .loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
                     .getConstructor()
                     .newInstance() as SerializationCustomSerializer<*, *>
-            assertThrows<IllegalCustomSerializerException> {
+            val exception = assertThrows<IllegalCustomSerializerException> {
                 factory.registerExternal(serializer, factory)
             }
+            assertEquals("Custom serializer net.cordapp.bundle.VersionSerializer to serialize " +
+                    "non-custom-serializable type class net.cordapp.bundle.VersionSerializer", exception.message)
 
             // JDK type custom serializer
             val factory1 = testDefaultFactory(sandboxGroup)
@@ -237,9 +239,24 @@ class AMQPwithOSGiSerializationTests {
                     .loadClassFromMainBundles("net.cordapp.bundle.ThreadSerializer")
                     .getConstructor()
                     .newInstance() as SerializationCustomSerializer<*, *>
-            assertThrows<IllegalCustomSerializerException> {
+            val exception1 = assertThrows<IllegalCustomSerializerException> {
                 factory1.registerExternal(serializer1, factory1)
             }
+            assertEquals("Custom serializer net.cordapp.bundle.ThreadSerializer to serialize " +
+                    "non-custom-serializable type class net.cordapp.bundle.ThreadSerializer", exception1.message)
+
+            // CordaSerializable annotated Corda platform type custom serializer
+            val factory2 = testDefaultFactory(sandboxGroup)
+            val serializer2 =
+                sandboxGroup
+                    .loadClassFromMainBundles("net.cordapp.bundle.MemberX500NameSerializer")
+                    .getConstructor()
+                    .newInstance() as SerializationCustomSerializer<*, *>
+            val exception2 = assertThrows<IllegalCustomSerializerException> {
+                factory2.registerExternal(serializer2, factory2)
+            }
+            assertEquals("Custom serializer net.cordapp.bundle.MemberX500NameSerializer to serialize " +
+                    "non-custom-serializable type class net.cordapp.bundle.MemberX500NameSerializer", exception2.message)
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }

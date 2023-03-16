@@ -13,7 +13,6 @@ import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
-import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,7 +40,8 @@ class TokenCacheEventProcessorTest {
 
     @BeforeEach
     fun setup() {
-        tokenCacheEventHandlerMap[FakeTokenEvent::class.java] = uncheckedCast(mockHandler)
+        @Suppress("unchecked_cast")
+        tokenCacheEventHandlerMap[FakeTokenEvent::class.java] = mockHandler as TokenEventHandler<in TokenEvent>
         whenever(eventConverter.convert(tokenPoolCacheEvent)).thenReturn(event)
     }
 

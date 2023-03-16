@@ -3,7 +3,7 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
@@ -31,6 +31,7 @@ import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.layeredpropertymap.toAvro
@@ -73,11 +74,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_TOPIC
+import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
@@ -91,7 +93,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -201,11 +203,13 @@ class SynchronisationIntegrationTest {
                     """
                 $INSTANCE_ID = 1
                 $BUS_TYPE = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
                 """
                 )
             )
         const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -409,7 +413,8 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
 
@@ -591,7 +596,8 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(membershipPackageSerializer.serialize(membershipPackage))
         updatesSender.publish(

@@ -136,6 +136,7 @@ class QueryMemberSignatureHandlerTest {
             MemberSignatureEntity(
                 memberKey.groupId,
                 memberKey.memberX500Name,
+                true,
                 "pk-${memberKey.memberX500Name}".toByteArray(),
                 "context-${memberKey.memberX500Name}".toByteArray(),
                 "sig-${memberKey.memberX500Name}".toByteArray(),
@@ -195,6 +196,7 @@ class QueryMemberSignatureHandlerTest {
             MemberSignatureEntity(
                 memberKey.groupId,
                 memberKey.memberX500Name,
+                true,
                 "pk-${memberKey.memberX500Name}".toByteArray(),
                 byteArrayOf(),
                 "sig-${memberKey.memberX500Name}".toByteArray(),

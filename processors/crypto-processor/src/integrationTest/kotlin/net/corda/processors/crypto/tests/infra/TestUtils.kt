@@ -1,6 +1,8 @@
 package net.corda.processors.crypto.tests.infra
 
 import com.typesafe.config.ConfigFactory
+import java.time.Instant
+import kotlin.random.Random
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -14,13 +16,12 @@ import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
-import java.time.Instant
-import kotlin.random.Random
 
 const val RESPONSE_TOPIC = "test.response"
 
 private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

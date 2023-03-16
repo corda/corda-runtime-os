@@ -51,7 +51,7 @@ class SimConsensualLedgerServiceTest {
         whenever(fiber.createMemberLookup(any())).thenReturn(memberLookup)
         whenever(fiber.createSigningService(any())).thenReturn(signingService)
 
-        lateinit var capture : Triple<SigningService, MemberLookup, SimulatorConfiguration>
+        lateinit var capture: Triple<SigningService, MemberLookup, SimulatorConfiguration>
         val builderFactory = ConsensualTransactionBuilderFactory { ss, ml, c ->
             capture = Triple(ss, ml, c)
             builder
@@ -76,10 +76,11 @@ class SimConsensualLedgerServiceTest {
     }
 
     @Test
-    fun `should get transaction signed from counterparties when finality is called`(){
+    fun `should get transaction signed from counterparties when finality is called`() {
         // Given a signed transaction is generated
         val ledgerInfo = ConsensualStateLedgerInfo(
-            listOf(NameConsensualState("CordaDev", publicKeys)), Instant.now())
+            listOf(NameConsensualState("CordaDev", publicKeys)), Instant.now()
+        )
         val signingService = mock<SigningService>()
 
         publicKeys.forEach {
@@ -114,7 +115,8 @@ class SimConsensualLedgerServiceTest {
         val ledgerService = SimConsensualLedgerService(
             alice,
             simFiber,
-            defaultConfiguration)
+            defaultConfiguration
+        )
         val finalSignedTx = ledgerService.finalize(signedTransaction, sessions)
 
         // Then the transaction should get signed by the counterparty
@@ -128,10 +130,11 @@ class SimConsensualLedgerServiceTest {
     }
 
     @Test
-    fun `should sign transaction when receive finality is called then receive fully-signed transaction`(){
+    fun `should sign transaction when receive finality is called then receive fully-signed transaction`() {
         // Given a signed transaction is generated with all keys except for publicKey[1]
         val ledgerInfo = ConsensualStateLedgerInfo(
-            listOf(NameConsensualState("CordaDev", publicKeys.minus(publicKeys[1]))), Instant.now())
+            listOf(NameConsensualState("CordaDev", publicKeys.minus(publicKeys[1]))), Instant.now()
+        )
         val signingService = mock<SigningService>()
 
         publicKeys.forEach {
@@ -189,11 +192,13 @@ class SimConsensualLedgerServiceTest {
         // Given a persistence service in which we stored a transaction entity
         val transaction = ConsensualSignedTransactionBase(
             publicKeys.map { toSignature(it) },
-            ConsensualStateLedgerInfo(listOf(
-                NameConsensualState("Gnu", publicKeys),
-                NameConsensualState("Wildebeest", publicKeys)
+            ConsensualStateLedgerInfo(
+                listOf(
+                    NameConsensualState("Gnu", publicKeys),
+                    NameConsensualState("Wildebeest", publicKeys)
+                ),
+                Instant.now()
             ),
-            Instant.now()),
             mock(),
             defaultConfiguration
         )
@@ -221,7 +226,12 @@ class SimConsensualLedgerServiceTest {
         DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
     )
 
-    data class NameConsensualState(val name: String, override val participants: List<PublicKey>) : ConsensualState {
+    data class NameConsensualState(val name: String, private val participants: List<PublicKey>) : ConsensualState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
 }

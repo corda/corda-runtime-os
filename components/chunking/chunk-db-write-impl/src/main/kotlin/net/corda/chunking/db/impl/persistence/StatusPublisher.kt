@@ -1,6 +1,6 @@
 package net.corda.chunking.db.impl.persistence
 
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey

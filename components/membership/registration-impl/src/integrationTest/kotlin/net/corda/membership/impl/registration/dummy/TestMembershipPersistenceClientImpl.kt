@@ -31,7 +31,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ) = MembershipPersistenceResult.Success(1)
+        version: Long
+    ) = MembershipPersistenceResult.success()
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
@@ -40,7 +41,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceResult<GroupParameters> = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
@@ -58,16 +59,11 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         registrationRequestId: String,
     ): MembershipPersistenceResult<MemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
-
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
+        reason: String?,
     ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
 
     override fun mutualTlsAddCertificateToAllowedList(

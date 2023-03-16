@@ -16,9 +16,9 @@ import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListenerImpl
 import net.corda.messaging.subscription.factory.MapFactory
-import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
+import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

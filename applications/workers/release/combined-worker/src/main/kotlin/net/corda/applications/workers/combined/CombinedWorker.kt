@@ -37,6 +37,12 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
+
+// We use a different port for the combined worker since it is often run on Macs, which 
+// sometimes have our chosen container health port of 7000 used.
+
+const val COMBINED_WORKER_MONITOR_PORT = 7004
+
 /** A worker that starts all processors. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
@@ -105,12 +111,11 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
-        
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, cryptoConfig)
+            listOf(databaseConfig, cryptoConfig),
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -177,13 +182,13 @@ class CombinedWorker @Activate constructor(
 /** Additional parameters for the combined worker are added here. */
 private class CombinedWorkerParams {
     @Mixin
-    var defaultParams = DefaultWorkerParams()
+    var defaultParams = DefaultWorkerParams(COMBINED_WORKER_MONITOR_PORT)
 
     @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @Option(names = ["-r", "--rpc-params"], description = ["RPC parameters for the worker."])
-    var rpcParams = emptyMap<String, String>()
+    @Option(names = ["-r", "--rest-params"], description = ["REST parameters for the worker."])
+    var restParams = emptyMap<String, String>()
 
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""

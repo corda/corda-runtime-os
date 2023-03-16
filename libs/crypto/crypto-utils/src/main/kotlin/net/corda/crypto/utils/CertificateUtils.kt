@@ -1,6 +1,6 @@
 package net.corda.crypto.utils
 
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.bouncycastle.asn1.ASN1IA5String
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.DEROctetString
@@ -12,17 +12,17 @@ import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier
 import org.bouncycastle.cert.X509CertificateHolder
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.KeyStoreException
+import java.security.cert.Certificate
 import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
-import org.slf4j.LoggerFactory
 import java.security.cert.CertPathValidatorException
-import java.security.cert.Certificate
 import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509Certificate
-import java.util.*
+import java.util.LinkedList
 
 private const val KEY_STORE_TYPE = "PKCS12"
 typealias PemCertificate = String
@@ -108,12 +108,12 @@ fun certPathToString(certPath: Array<out X509Certificate?>?): String {
         val subject = bcCert.subject.toString()
         val issuer = bcCert.issuer.toString()
         val keyIdentifier = try {
-            SubjectKeyIdentifier.getInstance(bcCert.getExtension(Extension.subjectKeyIdentifier).parsedValue).keyIdentifier.toHex()
+            toHex(SubjectKeyIdentifier.getInstance(bcCert.getExtension(Extension.subjectKeyIdentifier).parsedValue).keyIdentifier)
         } catch (ex: Exception) {
             "null"
         }
         val authorityKeyIdentifier = try {
-            AuthorityKeyIdentifier.getInstance(bcCert.getExtension(Extension.authorityKeyIdentifier).parsedValue).keyIdentifier.toHex()
+            toHex(AuthorityKeyIdentifier.getInstance(bcCert.getExtension(Extension.authorityKeyIdentifier).parsedValue).keyIdentifier)
         } catch (ex: Exception) {
             "null"
         }

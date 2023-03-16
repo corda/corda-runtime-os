@@ -34,7 +34,7 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     private val groupPolicyParser: GroupPolicyParser,
 ) : VirtualNodeWriteService {
     private val coordinator = let {
-        val vnodeWriterFactory = VirtualNodeWriterFactory(
+        val vNodeWriterFactory = VirtualNodeWriterFactory(
             subscriptionFactory,
             publisherFactory,
             dbConnectionManager,
@@ -42,7 +42,7 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             schemaMigrator,
             groupPolicyParser
         )
-        val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
+        val eventHandler = VirtualNodeWriteEventHandler(configReadService, vNodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
     }
 

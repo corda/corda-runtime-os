@@ -2,13 +2,14 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
-description 'Corda HTTP SSL Cert Read'
+description 'Corda HTTP SSL Certificate Read'
 
 dependencies {
 
     compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api project(":libs:lifecycle:lifecycle")
+    api project(':libs:lifecycle:lifecycle')
+    api project(':libs:configuration:configuration-core')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }

@@ -17,7 +17,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -53,7 +52,8 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
-        val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
+        @Suppress("unchecked_cast")
+        val flowSessionInternals = sessions as Set<FlowSessionInternal>
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
             it.getSessionInfo()
         }.toSet())
@@ -80,7 +80,8 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
         requireBoxedType(payload::class.java)
-        val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
+        @Suppress("unchecked_cast")
+        val flowSessionInternals = sessions as Set<FlowSessionInternal>
         val serializedPayload = serialize(payload)
         val sessionToPayload =
             flowSessionInternals.associate { it.getSessionInfo() to serializedPayload }
@@ -96,7 +97,8 @@ class FlowMessagingImpl @Activate constructor(
             flowSessionInternal.getSessionInfo() to serialize(it.value)
         }.toMap()
         fiber.suspend(FlowIORequest.Send(sessionPayload))
-        setSessionsAsConfirmed(uncheckedCast(payloadsPerSession.keys))
+        @Suppress("unchecked_cast")
+        setSessionsAsConfirmed(payloadsPerSession.keys as Set<FlowSessionInternal>)
     }
 
     private fun setSessionsAsConfirmed(flowSessionInternals: Set<FlowSessionInternal>) {

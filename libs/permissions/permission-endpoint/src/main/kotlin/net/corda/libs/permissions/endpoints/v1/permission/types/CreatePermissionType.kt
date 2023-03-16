@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.permission.types
 
-import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidInputDataException
 
 /**
  * Request type for creating a Permission in the permission system.

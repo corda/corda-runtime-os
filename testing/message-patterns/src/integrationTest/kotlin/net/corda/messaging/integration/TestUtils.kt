@@ -2,6 +2,7 @@ package net.corda.messaging.integration
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import java.util.*
 import net.corda.data.demo.DemoRecord
 import net.corda.data.flow.event.Wakeup
 import net.corda.messaging.api.records.Record
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
-import java.util.*
 
 
 fun BundleContext.isDBBundle() = bundles.find { it.symbolicName.contains("db-message-bus-impl") } != null
@@ -40,8 +40,8 @@ fun getDummyRecords(topic: String, recordCount: Int, keyCount: Int): List<Record
     return records
 }
 
-fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<*, *>> {
-    val records = mutableListOf<Record<*, *>>()
+fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<String, String>> {
+    val records = mutableListOf<Record<String, String>>()
     for (i in 1..keyCount) {
         val key = "key$i"
         for (j in 1..recordCount) {

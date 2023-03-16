@@ -37,6 +37,7 @@
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.membership-impl',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='junit-platform-launcher'
 
 -runstartlevel: \

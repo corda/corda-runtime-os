@@ -71,8 +71,8 @@ import net.corda.v5.crypto.merkle.MerkleTree
  */
 
 class MerkleTreeImpl(
-    override val leaves: List<ByteArray>,
-    override val digest: MerkleTreeHashDigestProvider
+    private val leaves: List<ByteArray>,
+    private val digest: MerkleTreeHashDigestProvider
 ) : MerkleTree {
 
     init {
@@ -152,9 +152,15 @@ class MerkleTreeImpl(
         treeDepth(leaves.size)
     }
 
-    override val root: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val _root: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
         nodeHashes.last().single()
     }
+
+    override fun getLeaves() = leaves
+
+    override fun getDigest() = digest
+
+    override fun getRoot() = _root
 
     /**
      * createAuditProof creates the proof for a set of leaf indices.

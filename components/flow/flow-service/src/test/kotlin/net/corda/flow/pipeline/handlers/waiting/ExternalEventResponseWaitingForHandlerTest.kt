@@ -12,7 +12,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.external.events.impl.factory.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext

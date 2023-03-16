@@ -2,7 +2,9 @@ package net.corda.membership.impl.registration
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -51,16 +53,15 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -125,11 +126,13 @@ class MemberRegistrationIntegrationTest {
                     """
                 ${BootConfig.INSTANCE_ID} = 1
                 ${MessagingConfig.Bus.BUS_TYPE} = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
                 """
                 )
             )
         const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -201,7 +204,7 @@ class MemberRegistrationIntegrationTest {
             testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
                 VirtualNodeInfo(
                     holdingIdentity = HoldingIdentity(memberName, groupId),
-                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, SecureHash.parse(CPI_SIGNER_HASH)),
+                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, parseSecureHash(CPI_SIGNER_HASH)),
                     cryptoDmlConnectionId = UUID.randomUUID(),
                     uniquenessDmlConnectionId = UUID.randomUUID(),
                     vaultDmlConnectionId = UUID.randomUUID(),

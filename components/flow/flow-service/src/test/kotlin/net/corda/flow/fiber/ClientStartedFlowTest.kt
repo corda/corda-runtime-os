@@ -1,6 +1,6 @@
 package net.corda.flow.fiber
 
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,23 +19,31 @@ class ClientStartedFlowTest {
         assertEquals(REQUEST_BODY, output)
     }
 
-    private class TestRPCRequestData : RestRequestBody {
+    private class TestRPCRequestData : ClientRequestBody {
         override fun getRequestBody(): String {
             return REQUEST_BODY
         }
 
-        override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+        override fun <T : Any> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
 
         override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
             TODO("Not yet implemented")
         }
+
+        override fun <K : Any?, V : Any?> getRequestBodyAsMap(
+            marshallingService: MarshallingService,
+            keyClass: Class<K>,
+            valueClass: Class<V>
+        ): MutableMap<K, V> {
+            TODO("Not yet implemented")
+        }
     }
 
     private class TestFlow : ClientStartableFlow {
-        override fun call(requestBody: RestRequestBody): String {
-            return requestBody.getRequestBody()
+        override fun call(requestBody: ClientRequestBody): String {
+            return requestBody.requestBody
         }
     }
 }

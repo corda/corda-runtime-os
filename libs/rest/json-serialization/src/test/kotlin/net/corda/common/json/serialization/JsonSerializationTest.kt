@@ -18,7 +18,7 @@ class JsonSerializationTest{
         val df = SimpleDateFormat("dd-MM-yyyy hh:mm")
         df.timeZone = TimeZone.getTimeZone("UTC")
         val date: Date = df.parse("01-01-1970 01:00")
-        val event = Event("party", date.toInstant(), MemberX500Name.Companion.parse("O=Alice, L=London, C=GB"))
+        val event = Event("party", date.toInstant(), MemberX500Name.parse("O=Alice, L=London, C=GB"))
 
         val expectedSerializedEvent = """{"name":"party","date":"1970-01-01T01:00:00Z","memberX500Name":"O=Alice, L=London, C=GB"}"""
 

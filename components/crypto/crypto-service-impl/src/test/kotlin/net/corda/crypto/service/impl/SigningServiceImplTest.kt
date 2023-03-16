@@ -19,7 +19,8 @@ class SigningServiceImplTest {
     private val service = SigningServiceImpl(
         store,
         cryptoServiceFactory,
-        schemeMetadata
+        schemeMetadata,
+        mock()
     )
 
     @Test

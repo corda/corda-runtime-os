@@ -2,21 +2,22 @@ package net.corda.cpk.read.impl.services.persistence
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import net.corda.chunking.toCorda
 import net.corda.cpk.read.impl.Helpers
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkDirName
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkFileName
-import net.corda.data.chunking.CpkChunkId
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import java.nio.file.FileSystem
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toFileName
+import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.core.toCorda
+import net.corda.data.chunking.CpkChunkId
 import net.corda.utilities.inputStream
 import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
+import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -79,28 +80,28 @@ class CpkChunksFileManagerImplTest {
     @Test
     fun `chunk file exists looks for requested cpk chunk id`() {
         val (cpkChunkId0, _) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 0, SecureHash.parse(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(parseSecureHash(DUMMY_HASH), 0, parseSecureHash(DUMMY_HASH), byteArrayOf())
         cpkChunkId0.toDummyFile()
         assertTrue(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId0).exists)
 
         val (cpkChunkId1, _) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 1, SecureHash.parse(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(parseSecureHash(DUMMY_HASH), 1, parseSecureHash(DUMMY_HASH), byteArrayOf())
         assertFalse(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId1).exists)
     }
 
     @Test
     fun `on write chunk file writes chunk file creates corresponding CPK directory`() {
         val (cpkChunkId, _) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 0, SecureHash.parse(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(parseSecureHash(DUMMY_HASH), 0, parseSecureHash(DUMMY_HASH), byteArrayOf())
         val filePath = cpkChunkId.toDummyFile()
-        assertTrue(filePath.contains(fs.getPath(SecureHash.parse(DUMMY_HASH).toHexString())))
+        assertTrue(filePath.contains(fs.getPath(parseSecureHash(DUMMY_HASH).toHexString())))
     }
 
     @Test
     fun `on write chunk file writes chunk file`() {
         val bytes = byteArrayOf(0x01, 0x02)
         val (cpkChunkId, chunk) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 0, SecureHash.parse(DUMMY_HASH), bytes)
+            Helpers.dummyCpkChunkIdToChunk(parseSecureHash(DUMMY_HASH), 0, parseSecureHash(DUMMY_HASH), bytes)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId, chunk)
         assertTrue(cpkChunkFileExists(cpkChunkId))
 
@@ -110,13 +111,13 @@ class CpkChunksFileManagerImplTest {
 
     @Test
     fun `assembles cpk`() {
-        val cpkChecksum = SecureHash.parse(DUMMY_HASH)
+        val cpkChecksum = parseSecureHash(DUMMY_HASH)
         val bytes0 = byteArrayOf(0x01, 0x02)
         val bytes1 = byteArrayOf(0x03, 0x04)
         val (cpkChunkId0, chunk0) =
-            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 0, SecureHash.parse(DUMMY_HASH), bytes0)
+            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 0, parseSecureHash(DUMMY_HASH), bytes0)
         val (cpkChunkId1, chunk1) =
-            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 1, SecureHash.parse(DUMMY_HASH), bytes1)
+            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 1, parseSecureHash(DUMMY_HASH), bytes1)
 
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId0, chunk0)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId1, chunk1)

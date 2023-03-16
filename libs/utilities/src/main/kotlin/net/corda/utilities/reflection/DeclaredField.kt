@@ -1,6 +1,5 @@
 package net.corda.utilities.reflection
 
-import net.corda.v5.base.util.uncheckedCast
 import java.lang.reflect.Field
 
 /**
@@ -12,7 +11,8 @@ class DeclaredField<T>(clazz: Class<*>, name: String, private val receiver: Any?
     var value: T
         get() {
             synchronized(this) {
-                return javaField.accessible { uncheckedCast<Any?, T>(get(receiver)) }
+                @Suppress("unchecked_cast")
+                return javaField.accessible { get(receiver) as T }
             }
         }
         set(value) {

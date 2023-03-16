@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ListCertificateAliasesRpcRequest
@@ -10,7 +11,6 @@ import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
 import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.virtualnode.ShortHash
 import java.util.concurrent.CompletableFuture
 
 internal class CertificatesProcessor(

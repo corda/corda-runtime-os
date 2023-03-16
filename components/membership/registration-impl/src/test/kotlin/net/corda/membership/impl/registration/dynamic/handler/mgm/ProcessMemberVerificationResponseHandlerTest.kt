@@ -14,6 +14,7 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -91,9 +93,10 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setRegistrationRequestStatus(
-                mgm.toCorda(),
-                REGISTRATION_ID,
-                RegistrationStatus.PENDING_AUTO_APPROVAL
+                eq(mgm.toCorda()),
+                eq(REGISTRATION_ID),
+                eq(RegistrationStatus.PENDING_AUTO_APPROVAL),
+                anyOrNull()
             )
         } doReturn MembershipPersistenceResult.success()
     }
@@ -132,7 +135,8 @@ class ProcessMemberVerificationResponseHandlerTest {
                 eq(member),
                 capturedStatus.capture(),
                 any(),
-                any()
+                any(),
+                eq(MembershipStatusFilter.PENDING),
             )
         } doReturn record
     }
@@ -493,15 +497,17 @@ class ProcessMemberVerificationResponseHandlerTest {
         verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
     }
 
     private fun verifySetRegistrationStatus(status: RegistrationStatus) {
         verify(membershipPersistenceClient).setRegistrationRequestStatus(
-            mgm.toCorda(),
-            REGISTRATION_ID,
-            status
+            eq(mgm.toCorda()),
+            eq(REGISTRATION_ID),
+            eq(status),
+            anyOrNull()
         )
     }
 
@@ -513,7 +519,8 @@ class ProcessMemberVerificationResponseHandlerTest {
                 registrationId == REGISTRATION_ID && newStatus == status
             },
             any(),
-            any()
+            any(),
+            eq(MembershipStatusFilter.PENDING),
         )
     }
 

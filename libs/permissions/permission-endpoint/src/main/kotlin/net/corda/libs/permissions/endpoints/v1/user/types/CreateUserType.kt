@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
-import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rbac.schema.RbacKeys.USER_REGEX
 import java.time.Instant
 import java.util.UUID

@@ -14,8 +14,8 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.data.p2p.app.AppMessage
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat

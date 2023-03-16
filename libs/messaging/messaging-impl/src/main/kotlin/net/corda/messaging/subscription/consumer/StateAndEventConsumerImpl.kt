@@ -12,8 +12,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.tryGetResult
-import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
-import net.corda.v5.base.util.debug
+import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -68,8 +68,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
 
         stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
-            log.debug { "Updating state: $state" }
-            updateInMemoryState(state)
+            log.debug { "Processing state: $state" }
+            // Do not update in memory state unless we are syncing as we are already guaranteed to have the latest state
+            if (partitionsToSync.containsKey(state.partition)) {
+                updateInMemoryState(state)
+            }
         }
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {

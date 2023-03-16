@@ -1,5 +1,7 @@
 package net.corda.common.json.serializers
 
+import java.io.IOException
+import java.io.UncheckedIOException
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonSerializer
@@ -28,5 +30,11 @@ class MemberX500NameDeserializer : JsonDeserializer<MemberX500Name> {
  */
 @Component
 class MemberX500NameSerializer : JsonSerializer<MemberX500Name> {
-    override fun serialize(item: MemberX500Name, jsonWriter: JsonWriter) = jsonWriter.writeString(item.toString())
+    override fun serialize(item: MemberX500Name, jsonWriter: JsonWriter) {
+        return try {
+            jsonWriter.writeString(item.toString())
+        } catch (e: IOException) {
+            throw UncheckedIOException(e)
+        }
+    }
 }

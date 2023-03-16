@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchema
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
-import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.security.CodeSigner
 import java.util.Base64
@@ -88,7 +88,7 @@ internal object CpkV2DependenciesReader {
         return if (dependency.verifyFileHash != null) {
             try {
                 val hashData = Base64.getDecoder().decode(dependency.verifyFileHash.fileHash)
-                val fileHash = SecureHash(dependency.verifyFileHash.algorithm, hashData)
+                val fileHash = SecureHashImpl(dependency.verifyFileHash.algorithm, hashData)
                 CpkHashDependency(dependency.name, dependency.version, fileHash)
             } catch (e: IllegalArgumentException) {
                 throw DependencyMetadataException("Error parsing CPK dependency: $dependency", e)

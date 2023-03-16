@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.crypto.SecureHash
@@ -17,24 +18,28 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
 class UtxoLedgerTransactionContractVerifierTest {
 
     private companion object {
-        val TX_ID_1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-        val TX_ID_2 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-        val TX_ID_3 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
     }
 
     private val transaction = mock<UtxoLedgerTransaction>()
+    private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
         MyValidContractA.EXECUTION_COUNT = 0
         MyValidContractB.EXECUTION_COUNT = 0
         MyValidContractC.EXECUTION_COUNT = 0
+        whenever(transactionFactory.invoke()).thenReturn(transaction)
         whenever(transaction.id).thenReturn(TX_ID_1)
     }
 
@@ -44,9 +49,17 @@ class UtxoLedgerTransactionContractVerifierTest {
         val validContractBState = stateAndRef<MyValidContractB>(TX_ID_3, 1)
         val validContractCState1 = stateAndRef<MyValidContractC>(TX_ID_2, 1)
         val validContractCState2 = stateAndRef<MyValidContractC>(TX_ID_1, 0)
-        whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, validContractCState1))
+        whenever(transaction.inputStateAndRefs).thenReturn(
+            listOf(
+                validContractAState,
+                validContractBState,
+                validContractCState1
+            )
+        )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transaction)
+        verifyContracts(transactionFactory, transaction)
+        // Called once for each of 3 contracts
+        verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractC.EXECUTION_COUNT).isEqualTo(1)
@@ -58,11 +71,19 @@ class UtxoLedgerTransactionContractVerifierTest {
         val validContractBState = stateAndRef<MyValidContractB>(TX_ID_3, 1)
         val invalidContractAState = stateAndRef<MyInvalidContractA>(TX_ID_2, 1)
         val invalidContractBState = stateAndRef<MyInvalidContractB>(TX_ID_1, 0)
-        whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, invalidContractAState))
+        whenever(transaction.inputStateAndRefs).thenReturn(
+            listOf(
+                validContractAState,
+                validContractBState,
+                invalidContractAState
+            )
+        )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transaction) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
+        // Called once for each of 4 contracts
+        verify(transactionFactory, times(4)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
     }
@@ -71,22 +92,37 @@ class UtxoLedgerTransactionContractVerifierTest {
         val state = MyState()
         return StateAndRefImpl(
             object : TransactionState<MyState> {
-                override val contractState: MyState = state
-                override val contractStateType: Class<out MyState> = state::class.java
-                override val contractType: Class<out Contract> = C::class.java
-                override val notary: Party = utxoNotaryExample
-                override val encumbrance: EncumbranceGroup? = null
+                override fun getContractState(): MyState {
+                    return state
+                }
+
+                override fun getContractStateType(): Class<MyState> {
+                    return state.javaClass
+                }
+
+                override fun getContractType(): Class<out Contract> {
+                    return C::class.java
+                }
+
+                override fun getNotary(): Party {
+                    return utxoNotaryExample
+                }
+
+                override fun getEncumbranceGroup(): EncumbranceGroup? {
+                    return null
+                }
             },
             StateRef(transactionId, index)
         )
     }
 
     class MyState : ContractState {
-        override val participants: List<PublicKey> = emptyList()
+        override fun getParticipants(): List<PublicKey> {
+            return listOf()
+        }
     }
 
     class MyValidContractA : Contract {
-
         companion object {
             var EXECUTION_COUNT = 0
         }

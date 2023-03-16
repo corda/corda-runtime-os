@@ -4,7 +4,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.types.sequence
+import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.security.AccessController
@@ -40,7 +40,7 @@ class SerializationServiceImpl(
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                deserializationInput.deserialize(bytes.sequence(), clazz, context)
+                deserializationInput.deserialize(sequence(bytes), clazz, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

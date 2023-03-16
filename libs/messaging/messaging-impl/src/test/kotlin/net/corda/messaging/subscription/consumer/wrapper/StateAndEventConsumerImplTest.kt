@@ -179,6 +179,36 @@ class StateAndEventConsumerImplTest {
     }
 
     @Test
+    fun `pollAndUpdateStates should not update in memory states for partitions not being synced`() {
+        val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
+        val partitionId = partitions.first().partition
+        val key = "key1"
+        val originalState = Pair(Long.MIN_VALUE, "value0")
+        val partitionState = StateAndEventPartitionState(
+            mutableMapOf(partitionId to mutableMapOf(key to originalState)),
+            mutableMapOf()
+        )
+
+        val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, key, "value1", 0)
+        whenever(stateConsumer.poll(any())).thenReturn(listOf(record))
+
+        val consumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            stateAndEventListener
+        )
+
+        consumer.pollAndUpdateStates(false)
+        verify(stateConsumer, times(1)).assignment()
+        verify(stateConsumer, times(1)).poll(any())
+        verify(stateConsumer, times(1)).poll(any())
+        verify(stateAndEventListener, times(0)).onPartitionSynced(any())
+        assertThat(partitionState.currentStates[partitionId]!!["key1"]!!).isEqualTo(originalState)
+    }
+
+    @Test
     fun testWaitForFunctionToFinish() {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
