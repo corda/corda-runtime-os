@@ -24,7 +24,6 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.ShortHashes
@@ -760,12 +759,10 @@ class CryptoOpsClientComponentTests {
             DigestAlgorithmName.SHA2_256.name,
             null
         )
-        val opCtx = knownOperationContext.toWire()
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 publicKey,
-                ByteBuffer.wrap(signature),
-                opCtx
+                ByteBuffer.wrap(signature)
             )
         }
         val result = sender.act {
@@ -774,7 +771,6 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertArrayEquals(publicKey.array(), result.value.publicKey.array())
         assertArrayEquals(signature, result.value.bytes.array())
-        assertSame(opCtx, result.value.context)
         val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
         assertSame(spec, command.signatureSpec)
@@ -813,8 +809,7 @@ class CryptoOpsClientComponentTests {
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
-                ByteBuffer.wrap(signature),
-                knownOperationContext.toWire()
+                ByteBuffer.wrap(signature)
             )
         }
         val result = sender.act {
@@ -823,10 +818,6 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value.by)
         assertArrayEquals(signature, result.value.bytes)
-        assertThat(result.value.context).hasSize(knownOperationContext.size)
-        knownOperationContext.forEach {
-            assertThat(result.value.context).containsEntry(it.key, it.value)
-        }
         val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
         assertEquals(SignatureSpec.ECDSA_SHA256.signatureName, command.signatureSpec.signatureName)
@@ -854,8 +845,7 @@ class CryptoOpsClientComponentTests {
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
-                ByteBuffer.wrap(signature),
-                knownOperationContext.toWire()
+                ByteBuffer.wrap(signature)
             )
         }
         val result = sender.act {
@@ -864,10 +854,6 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value.by)
         assertArrayEquals(signature, result.value.bytes)
-        assertThat(result.value.context).hasSize(knownOperationContext.size)
-        knownOperationContext.forEach {
-            assertThat(result.value.context).containsEntry(it.key, it.value)
-        }
         val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)

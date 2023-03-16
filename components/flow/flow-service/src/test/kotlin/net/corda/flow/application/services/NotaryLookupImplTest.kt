@@ -1,5 +1,6 @@
 package net.corda.flow.application.services
 
+import net.corda.flow.application.services.impl.NotaryLookupImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService

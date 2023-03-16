@@ -153,7 +153,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         )
         signature.initSign(keyPair.private)
         signature.update(data)
-        return DigitalSignature.WithKey(publicKey, signature.sign(), context)
+        return DigitalSignature.WithKey(publicKey, signature.sign())
     }
 
     override fun sign(
