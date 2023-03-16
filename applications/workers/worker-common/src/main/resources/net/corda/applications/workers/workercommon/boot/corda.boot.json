@@ -127,7 +127,46 @@
       "default": 972800,
       "minimum": 512000,
       "maximum": 8388608
-    }
+    },
+    "rest": {
+      "description": "Configuration options related to REST worker.",
+      "properties": {
+        "params": {
+          "description": "Additional params REST worker is bootstrapped with.",
+          "properties": {
+            "tls" : {
+              "description": "Transport Layer Security (TLS) params",
+              "properties": {
+                "keystore": {
+                  "description": "Keystore info",
+                  "properties": {
+                    "file": {
+                      "properties": {
+                        "path": {
+                          "description": "File path to a Keystore file",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    },
+                    "password": {
+                      "description": "The password for the Keystore",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "additionalProperties": false
   },
   "additionalProperties": false
 }
