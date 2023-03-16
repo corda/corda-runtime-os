@@ -59,6 +59,26 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`
+                () {
+        `given` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noFlowEvents()
+            }
+        }
+    }
+
+    @Test
     fun `Receiving a session ack resumes the initiating flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
