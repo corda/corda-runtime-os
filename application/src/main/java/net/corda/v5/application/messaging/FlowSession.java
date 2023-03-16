@@ -35,6 +35,18 @@ public interface FlowSession {
     MemberX500Name getCounterparty();
 
     /**
+     * Returns a [FlowInfo] object describing the flow which the [counterparty] is running. With [FlowInfo.protocolVersion] it
+     * provides the necessary information needed for the evolution of flows and enabling backwards compatibility.
+     *
+     * This method can be called before any send or receive has been done with [counterparty]. In such a case this will
+     * force them to start their flow.
+     * @throws CordaRuntimeException If the session is in a failed or errorred state
+     */
+    @Suspendable
+    @NotNull
+    FlowInfo getCounterpartyFlowInfo();
+
+    /**
      * Session local {@link FlowContextProperties}.
      * <p>
      * If this session is part of an initiating flow, i.e. was obtained from {@link FlowMessaging} then this is a read only

@@ -72,6 +72,14 @@
       "name": "hasScheduledCleanup",
       "type": "boolean",
       "doc": "Whether the session state has already scheduled a cleanup event with the flow mapper."
+    },
+    {
+      "name": "counterpartySessionProperties",
+      "type": [
+        "null",
+        "net.corda.data.KeyValuePairList"
+      ],
+      "doc": "A map of context properties received from a counterparty related to this flow session. This contains information such as protocol name and the version running."
     }
   ]
 }

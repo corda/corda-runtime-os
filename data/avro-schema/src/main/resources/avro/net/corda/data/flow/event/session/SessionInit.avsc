@@ -5,19 +5,6 @@
   "namespace": "net.corda.data.flow.event.session",
   "fields": [
     {
-      "name": "protocol",
-      "type": "string",
-      "doc": "The flow protocol name to initiate on the counterparty side"
-    },
-    {
-      "name": "versions",
-      "type": {
-        "type": "array",
-        "items": "int"
-      },
-      "doc": "The list of protocol versions supported on the initiator side"
-    },
-    {
       "name": "cpiId",
       "type": "string"
     },
@@ -38,6 +25,11 @@
       "name": "contextPlatformProperties",
       "type": "net.corda.data.KeyValuePairList",
       "doc": "A map of context platform properties made available to the flow which will also be propagated to sub flows, initiated flows and services"
+    },
+    {
+      "name": "contextSessionProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "A map of context properties to send to a counterparty related to this flow session. This contains information such as protocol name and versions supported."
     },
     {
       "name": "payload",

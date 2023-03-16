@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "CounterPartyFlowInfo",
+  "namespace": "net.corda.data.flow.state.waiting",
+  "fields": [
+    {
+      "name": "sessionId",
+      "type": "string",
+      "doc": "The session that this flow is waiting to receive flow info from."
+    }
+  ]
+}
