@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.v1schema
+package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.persistence.WrappingKeyInfo
 import org.assertj.core.api.Assertions.assertThat

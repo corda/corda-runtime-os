@@ -1,5 +1,6 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm
 
+import net.corda.crypto.persistence.WrappingKeyInfo
 import java.io.Closeable
 
 /**

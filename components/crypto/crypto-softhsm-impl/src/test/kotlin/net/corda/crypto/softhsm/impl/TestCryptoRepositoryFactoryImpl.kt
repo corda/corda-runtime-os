@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.CryptoTenants
 import net.corda.db.connection.manager.DbConnectionManager
