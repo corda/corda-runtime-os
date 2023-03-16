@@ -33,8 +33,9 @@ import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_ACTIVE_PLATFORM_VERSION
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.dummy.TestVirtualNodeInfoReadService
-import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
@@ -43,6 +44,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
@@ -279,6 +281,8 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
+        membershipGroupReaderProvider.getGroupReader(member).lookup()
+
         registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
         }
@@ -356,14 +360,14 @@ class MemberRegistrationIntegrationTest {
                 sortedMapOf(
                     PARTY_NAME to mgmName.toString(),
                     GROUP_ID to groupId,
-                    "corda.endpoints.0.connectionURL" to "localhost:1081",
-                    "corda.endpoints.0.protocolVersion" to "1",
+                    URL_KEY.format(0) to "localhost:1081",
+                    PROTOCOL_VERSION.format(0) to "1",
                     PLATFORM_VERSION to "5000",
                     SOFTWARE_VERSION to "5.0.0",
-                    MemberInfoExtension.ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
+                    ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
                 ),
                 sortedMapOf(
-                    MemberInfoExtension.IS_MGM to "true",
+                    IS_MGM to "true",
                 )
             ),
             memberInfoFactory.create(

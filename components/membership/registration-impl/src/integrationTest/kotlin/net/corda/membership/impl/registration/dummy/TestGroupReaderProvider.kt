@@ -20,7 +20,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 
 interface TestGroupReaderProvider : MembershipGroupReaderProvider {
-    fun loadMembers(holdingIdentity: HoldingIdentity, members: List<MemberInfo>)
+    fun loadMembers(holdingIdentity: HoldingIdentity, memberList: List<MemberInfo>)
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -29,9 +29,8 @@ class TestGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : TestGroupReaderProvider {
-    companion object {
+    private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
 
     private val coordinator = coordinatorFactory.createCoordinator(
@@ -42,12 +41,14 @@ class TestGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    override fun loadMembers(holdingIdentity: HoldingIdentity, members: List<MemberInfo>) {
+    private val groupReader = TestGroupReader()
+
+    override fun loadMembers(holdingIdentity: HoldingIdentity, memberList: List<MemberInfo>) {
         val reader = getGroupReader(holdingIdentity) as TestGroupReader
-        reader.loadMembers(members)
+        reader.loadMembers(memberList)
     }
 
-    override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader = TestGroupReader()
+    override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader = groupReader
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
@@ -64,11 +65,11 @@ class TestGroupReaderProviderImpl @Activate constructor(
 }
 
 class TestGroupReader @Activate constructor() : MembershipGroupReader {
-    companion object {
+    private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
-        private val cache = mutableListOf<MemberInfo>()
+        const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
+    private val cache = mutableListOf<MemberInfo>()
 
     override val groupId: String
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
