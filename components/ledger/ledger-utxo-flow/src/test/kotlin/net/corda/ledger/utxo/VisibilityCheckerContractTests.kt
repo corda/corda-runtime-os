@@ -38,10 +38,10 @@ class VisibilityCheckerContractTests {
         val visibilityChecker = VisibilityCheckerImpl(aliceSigningService)
 
         // Act
-        val expected = contract.isVisible(state, visibilityChecker)
+        val actual = contract.isVisible(state, visibilityChecker)
 
         // Assert
-        assertTrue(expected)
+        assertTrue(actual)
     }
 
     @Test
@@ -53,10 +53,10 @@ class VisibilityCheckerContractTests {
         val visibilityChecker = VisibilityCheckerImpl(aliceSigningService)
 
         // Act
-        val expected = contract.isVisible(state, visibilityChecker)
+        val actual = contract.isVisible(state, visibilityChecker)
 
         // Assert
-        assertFalse(expected)
+        assertFalse(actual)
     }
 
     private class TestUtxoContractState(private val participants: Set<PublicKey>) : ContractState {

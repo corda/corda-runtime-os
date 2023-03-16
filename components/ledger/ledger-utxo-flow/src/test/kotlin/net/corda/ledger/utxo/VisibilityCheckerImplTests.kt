@@ -37,10 +37,10 @@ class VisibilityCheckerImplTests {
         val sut = VisibilityCheckerImpl(aliceSigningService)
 
         // Act
-        val expected = sut.containsMySigningKeys(aliceLedgerKeys)
+        val actual = sut.containsMySigningKeys(aliceLedgerKeys)
 
         // Assert
-        assertTrue(expected)
+        assertTrue(actual)
     }
 
     @Test
@@ -50,10 +50,10 @@ class VisibilityCheckerImplTests {
         val sut = VisibilityCheckerImpl(aliceSigningService)
 
         // Act
-        val expected = sut.containsMySigningKeys(allLedgerKeys)
+        val actual = sut.containsMySigningKeys(allLedgerKeys)
 
         // Assert
-        assertTrue(expected)
+        assertTrue(actual)
     }
 
     @Test
@@ -63,9 +63,9 @@ class VisibilityCheckerImplTests {
         val sut = VisibilityCheckerImpl(aliceSigningService)
 
         // Act
-        val expected = sut.containsMySigningKeys(bobLedgerKeys)
+        val actual = sut.containsMySigningKeys(bobLedgerKeys)
 
         // Assert
-        assertFalse(expected)
+        assertFalse(actual)
     }
 }
