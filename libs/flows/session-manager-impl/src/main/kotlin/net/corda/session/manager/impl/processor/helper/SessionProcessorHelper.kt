@@ -105,8 +105,8 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
  * Recalculate the last processed sequence number to the last
  * contiguous event in the sequence of [undeliveredMessages].
  */
-fun recalcHighWatermark(sortedEvents: List<SessionEvent>): Int {
-    var highestContiguousSeqNum = 0
+fun recalcHighWatermark(sortedEvents: List<SessionEvent>, lastProcessedSeqNum: Int): Int {
+    var highestContiguousSeqNum = lastProcessedSeqNum
     for (undeliveredMessage in sortedEvents) {
         if (undeliveredMessage.sequenceNum == highestContiguousSeqNum + 1) {
             highestContiguousSeqNum++

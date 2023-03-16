@@ -58,7 +58,7 @@ class SessionCloseProcessorReceive(
             } else {
                 sessionState.receivedEventsState.apply {
                     undeliveredMessages = undeliveredMessages.plus(sessionEvent).distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
-                    lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages)
+                    lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages, lastProcessedSeqNum)
                 }
 
                 logger.trace { "receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState

@@ -93,7 +93,8 @@ class SessionDataProcessorReceive(
             }
         } else {
             sessionState.apply {
-                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages)
+                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages,
+                    receivedEventState.lastProcessedSequenceNum)
                 sendAck = true
             }
             logger.trace { "receivedEventsState after update: ${sessionState.receivedEventsState}" }
