@@ -12,6 +12,7 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
@@ -140,10 +141,25 @@ class UtxoSignedTransactionBase(
 
         //Filter relevant outputs, based on ledger keys
         val relevantIndexes = this.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
-            val contract = stateAndRef.state.contractType.getConstructor().newInstance()
-            contract.isRelevant(stateAndRef.state.contractState, keys)
+            stateAndRef.state.contractState.participants.stream().anyMatch { key: PublicKey? ->
+                isKeyInSet(key!!, keys)
+            }
         }.map { it.index }
         return outputEntities.filter { relevantIndexes.contains(it.index) }
+    }
+
+    private fun isKeyInSet(key: PublicKey, otherKeys: Iterable<PublicKey>): Boolean {
+        if (key is CompositeKey) {
+            val leafKeys = key.leafKeys
+            for (otherKey in otherKeys) {
+                if (leafKeys.contains(otherKey)) return true
+            }
+        } else {
+            for (otherKey in otherKeys) {
+                if (otherKey == key) return true
+            }
+        }
+        return false
     }
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {

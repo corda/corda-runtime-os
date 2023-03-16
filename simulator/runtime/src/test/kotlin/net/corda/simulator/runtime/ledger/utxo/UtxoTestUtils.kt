@@ -13,7 +13,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = Instant.now()) = DigitalSignatureAndMetadata(
-    DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
+    DigitalSignature.WithKey(key, "some bytes".toByteArray()),
     DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
 )
 

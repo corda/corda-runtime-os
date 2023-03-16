@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseMemberInfo
 import net.corda.simulator.runtime.notary.SimTimeWindow
@@ -14,7 +15,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
@@ -218,7 +218,7 @@ class UtxoTransactionFinalityHandlerTest {
                         SimEncumbranceGroup(
                             1, "some-tag"
                         )),
-                    StateRef(SecureHash.parse(txIds[0]), 0)),
+                    StateRef(parseSecureHash(txIds[0]), 0)),
                 SimStateAndRef(
                     SimTransactionState(
                         TestUtxoState("S1", publicKeys),
@@ -226,11 +226,11 @@ class UtxoTransactionFinalityHandlerTest {
                         SimEncumbranceGroup(
                             1, "some-tag"
                         )),
-                    StateRef(SecureHash.parse(txIds[0]), 0))
+                    StateRef(parseSecureHash(txIds[0]), 0))
             )
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTx)
         whenever(ledgerTx.inputStateAndRefs).thenReturn(duplicateStateAndRefs)
-        whenever(ledgerTx.id).thenReturn(SecureHash.parse(txIds[1]))
+        whenever(ledgerTx.id).thenReturn(parseSecureHash(txIds[1]))
 
         val finalizer = UtxoTransactionFinalityHandler(
             mock(), signingService, signingService, persistenceService, mock())
@@ -248,7 +248,7 @@ class UtxoTransactionFinalityHandlerTest {
         val signedTransaction = mock<UtxoSignedTransaction>()
         val ledgerTx = mock<UtxoLedgerTransaction>()
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTx)
-        whenever(ledgerTx.id).thenReturn(SecureHash.parse(txIds[1]))
+        whenever(ledgerTx.id).thenReturn(parseSecureHash(txIds[1]))
 
         val finalizer = UtxoTransactionFinalityHandler(
             mock(), signingService, signingService, persistenceService, mock())
@@ -261,7 +261,7 @@ class UtxoTransactionFinalityHandlerTest {
                     SimEncumbranceGroup(
                         3, "some-tag"
                     )),
-                StateRef(SecureHash.parse(txIds[0]), 0)),
+                StateRef(parseSecureHash(txIds[0]), 0)),
             SimStateAndRef(
                 SimTransactionState(
                     TestUtxoState("S2", publicKeys),
@@ -269,7 +269,7 @@ class UtxoTransactionFinalityHandlerTest {
                     SimEncumbranceGroup(
                         3, "some-tag"
                     )),
-                StateRef(SecureHash.parse(txIds[0]), 1))
+                StateRef(parseSecureHash(txIds[0]), 1))
         )
 
         whenever(ledgerTx.inputStateAndRefs).thenReturn(faultyEncumbranceStateAndRefs)

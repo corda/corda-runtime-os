@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+
+import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -55,6 +57,21 @@ class SimUtxoLedgerService(
         return finalityHandler.receiveFinality(session, validator)
     }
 
+    override fun sendAndReceiveTransactionBuilder(
+        transactionBuilder: UtxoTransactionBuilder,
+        session: FlowSession
+    ): UtxoTransactionBuilder {
+        TODO("Not yet implemented")
+    }
+
+    override fun receiveTransactionBuilder(session: FlowSession): UtxoTransactionBuilder {
+        TODO("Not yet implemented")
+    }
+
+    override fun sendUpdatedTransactionBuilder(transactionBuilder: UtxoTransactionBuilder, session: FlowSession) {
+        TODO("Not yet implemented")
+    }
+
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
         return findSignedTransaction(id)?.toLedgerTransaction()
     }
@@ -81,7 +98,8 @@ class SimUtxoLedgerService(
 
         // For each entity fetched, convert it to StateAndRef
         val stateAndRefs = result.map { utxoTransactionOutputEntity ->
-            val stateRef = StateRef(SecureHash.parse(utxoTransactionOutputEntity.transactionId),
+            val stateRef = StateRef(
+                parseSecureHash(utxoTransactionOutputEntity.transactionId),
                 utxoTransactionOutputEntity.index)
             val contractState = serializationService.deserialize(
                 utxoTransactionOutputEntity.stateData, ContractState::class.java)

@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
@@ -36,7 +37,7 @@ class UtxoTransactionBuilderBaseTest {
         // Given a key has been generated on the node, so the SigningService can sign with it
         val signingService = mock<SigningService>()
         whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
-            .thenReturn(DigitalSignature.WithKey(publicKeys[0], "My fake signed things".toByteArray(), mapOf()))
+            .thenReturn(DigitalSignature.WithKey(publicKeys[0], "My fake signed things".toByteArray()))
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
 
         // And our configuration has a special clock
@@ -67,15 +68,17 @@ class UtxoTransactionBuilderBaseTest {
             eq(UtxoTransactionOutputEntityId(
                 "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D", 0))))
             .thenReturn(outputEntity)
+        val refStateRef = StateRef(
+            parseSecureHash(
+                "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D")
+            , 0)
 
         val tx = builder.addCommand(command)
             .addSignatories(listOf(publicKeys[0]))
             .addOutputState(output)
             .setNotary(notary)
             .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
-            .addReferenceState(
-                StateRef.parse("SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D:0")
-            )
+            .addReferenceState(refStateRef)
             .toSignedTransaction()
 
         assertThat(tx.notary, `is`(notary))
@@ -91,8 +94,7 @@ class UtxoTransactionBuilderBaseTest {
         assertThat(String(tx.signatures[0].signature.bytes), `is`("My fake signed things"))
         assertThat(tx.signatures[0].metadata.timestamp, `is`(Instant.EPOCH))
         assertThat(ledgerTx.referenceStateRefs.size, `is`(1))
-        assertThat(ledgerTx.referenceStateRefs[0], `is`(StateRef.parse(
-            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D:0")))
+        assertThat(ledgerTx.referenceStateRefs[0], `is`(refStateRef))
     }
 
     @Test

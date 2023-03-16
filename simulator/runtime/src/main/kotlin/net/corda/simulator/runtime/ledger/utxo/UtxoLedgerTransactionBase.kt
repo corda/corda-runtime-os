@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.crypto.SecureHash
@@ -121,7 +122,7 @@ data class UtxoLedgerTransactionBase(
 
     override fun getId(): SecureHash {
         val digest = MessageDigest.getInstance("SHA-256")
-        return SecureHash(digest.algorithm, digest.digest(bytes))
+        return SecureHashImpl(digest.algorithm, digest.digest(bytes))
     }
 
     override fun getNotary(): Party {

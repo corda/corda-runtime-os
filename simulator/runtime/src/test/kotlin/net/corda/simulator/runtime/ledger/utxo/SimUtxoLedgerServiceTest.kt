@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -15,7 +16,6 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -150,7 +150,7 @@ class SimUtxoLedgerServiceTest {
         assertThat(stateAndRefs.size, `is`(1))
         assertThat(stateAndRefs[0].state.contractState, `is`(testState))
         assertThat(stateAndRefs[0].state.notary, `is`(notary))
-        assertThat(stateAndRefs[0].ref.transactionId, `is`(SecureHash.parse(utxoTxOutputEntity.transactionId)))
+        assertThat(stateAndRefs[0].ref.transactionId, `is`(parseSecureHash(utxoTxOutputEntity.transactionId)))
         assertThat(stateAndRefs[0].ref.index, `is`(utxoTxOutputEntity.index))
 
     }
@@ -177,7 +177,7 @@ class SimUtxoLedgerServiceTest {
             eq(UtxoTransactionOutputEntity::class.java),
             eq(entityId))).thenReturn(utxoOutputEntity)
         val stateRef = StateRef(
-            SecureHash.parse("SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D"),
+            parseSecureHash("SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D"),
             0
         )
         val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
