@@ -96,6 +96,7 @@ class SessionEventExecutor(
     private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
         return if (messageDirection == MessageDirection.OUTBOUND) {
             val facadeInvocation = sessionEvent.payload as FacadeInvocation
+            log.info("Received facade invocation: payload=${facadeInvocation.payload}")
             val returnEvent = SessionEvent(
                 MessageDirection.INBOUND,
                 instant,

@@ -52,6 +52,7 @@ class SessionInitExecutor(
         // Don't propagate interop session init events.
         // This will need to be changed for CORE-10420
         if (sessionEvent.isInteropEvent()) {
+            log.info("Received interop session init event, ignoring for now.")
             return FlowMapperResult(
                 FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
                 emptyList()
