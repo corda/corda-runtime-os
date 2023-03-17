@@ -16,5 +16,6 @@ data class RegistrationRequest(
     val memberContext: ByteBuffer,
     val signature: CryptoSignatureWithKey,
     val signatureSpec: CryptoSignatureSpec,
+    val serial: Long?,
     val isPending: Boolean = false,
 )

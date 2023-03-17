@@ -106,7 +106,8 @@ class StartRegistrationHandlerTest {
                             ByteBuffer.wrap("789".toByteArray())
                         ),
                         CryptoSignatureSpec("", null, null),
-                        true
+                        true,
+                        0L,
                     )
                 )
             )

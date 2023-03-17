@@ -33,6 +33,7 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             .setRegistrationProtocolVersion(registrationProtocolVersion)
             .setMemberProvidedContext(context)
             .setReason(this.reason)
+            .setSerial(this.serial)
             .build()
     }
 }

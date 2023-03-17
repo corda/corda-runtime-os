@@ -29,7 +29,7 @@ interface UtxoLedgerPersistenceService {
      *
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
-     * @param relevantStatesIndexes Indexes of relevant states.
+     * @param visibleStatesIndexes Indexes of visible states.
      *
      * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
      *
@@ -39,7 +39,7 @@ interface UtxoLedgerPersistenceService {
     fun persist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
-        relevantStatesIndexes: List<Int> = emptyList()
+        visibleStatesIndexes: List<Int> = emptyList()
     ): List<CordaPackageSummary>
 
     @Suspendable

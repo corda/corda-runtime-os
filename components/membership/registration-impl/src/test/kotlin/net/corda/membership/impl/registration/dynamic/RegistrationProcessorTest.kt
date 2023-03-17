@@ -78,7 +78,8 @@ class  RegistrationProcessorTest {
                 memberContext.toByteBuffer(),
                 signature,
                 CryptoSignatureSpec("", null, null),
-                true
+                true,
+                0L,
             )
 
         val startRegistrationCommand = RegistrationCommand(
