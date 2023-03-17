@@ -9,13 +9,19 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 
-
+@Component(service = [CryptoRepositoryFactory::class])
 class CryptoRepositoryFactoryImpl
-constructor(
+@Activate constructor(
+    @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : CryptoRepositoryFactory {
     override fun create(tenantId: String): CryptoRepository {

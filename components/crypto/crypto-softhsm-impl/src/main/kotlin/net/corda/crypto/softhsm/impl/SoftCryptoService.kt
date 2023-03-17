@@ -23,6 +23,7 @@ import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -40,7 +41,8 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * This class is all about the business logic of generating, storing and using key pairs; it can be run
  * without a database, without OSGi and without SmartConfig, which makes it easy to test.
  *
- * @param wrappingKeyStore which provides save and find operations for wrapping keys.
+ * @param cryptoRepository which provides database operations
+ * @param wrappingKeyStore which provides save and find operations for wrapping keys (being phased out)
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
  * @param digestService supply a platform digest service instance; if not one will be constructed
@@ -55,6 +57,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 
 @Suppress("LongParameterList")
 class SoftCryptoService(
+    private val cryptoRepository: CryptoRepository,
     private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
@@ -64,7 +67,7 @@ class SoftCryptoService(
     private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator,
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
         WrappingKeyImpl.generateWrappingKey(it)
-    }
+    },
 ) : CryptoService {
 
     companion object {
