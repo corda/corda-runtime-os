@@ -1,5 +1,6 @@
 package net.cordapp.testing.packagingverification
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -53,6 +54,9 @@ class TransferStatesFlow : ClientStartableFlow {
     @CordaInject
     lateinit var tokenSelection: TokenSelection
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         val transferRequest = requestBody.getRequestBodyAs(jsonMarshallingService, TransferRequest::class.java)
@@ -66,7 +70,7 @@ class TransferStatesFlow : ClientStartableFlow {
 
         val selectionCriteria = TokenClaimCriteria(
             STATE_NAME,
-            ISSUER.toSecureHash(),
+            ISSUER.toSecureHash(digestService),
             notary.name,
             STATE_SYMBOL,
             BigDecimal(transferRequest.value)
