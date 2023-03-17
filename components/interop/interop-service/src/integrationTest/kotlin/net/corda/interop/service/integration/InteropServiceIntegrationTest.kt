@@ -34,10 +34,10 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -87,7 +87,7 @@ class InteropServiceIntegrationTest {
     private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
-        .withValue(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
+        .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -186,7 +186,7 @@ class InteropServiceIntegrationTest {
         clearHostedIdsSub.close()
 
         interopService.start()
-        val memberExpectedOutputMessages = 4
+        val memberExpectedOutputMessages = 5
         val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
         val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
         val memberOutSub = subscriptionFactory.createDurableSubscription(
@@ -201,7 +201,7 @@ class InteropServiceIntegrationTest {
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
 
-        val hostedIdsExpected = 6
+        val hostedIdsExpected = 8
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
