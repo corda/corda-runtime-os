@@ -2,5 +2,5 @@ apiVersion: v2
 name: corda
 description: A Helm chart for Corda
 type: application
-version: 5.0.0-Gecko-RC.2
+version: 5.0.0-Gecko-RC03
 appVersion: unstable
