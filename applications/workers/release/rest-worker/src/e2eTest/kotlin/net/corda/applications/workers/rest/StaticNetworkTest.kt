@@ -1,12 +1,12 @@
 package net.corda.applications.workers.rest
 
-import net.corda.applications.workers.rest.utils.E2eClusterFactory
-import net.corda.applications.workers.rest.utils.E2eClusterMember
-import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
-import net.corda.applications.workers.rest.utils.assertP2pConnectivity
-import net.corda.applications.workers.rest.utils.createStaticMemberGroupPolicyJson
-import net.corda.applications.workers.rest.utils.getCa
-import net.corda.applications.workers.rest.utils.onboardStaticMembers
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterFactory
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterMember
+import net.corda.applications.workers.e2etestutils.utils.assertAllMembersAreInMemberList
+import net.corda.applications.workers.e2etestutils.utils.assertP2pConnectivity
+import net.corda.applications.workers.e2etestutils.utils.createStaticMemberGroupPolicyJson
+import net.corda.applications.workers.e2etestutils.utils.getCa
+import net.corda.applications.workers.e2etestutils.utils.onboardStaticMembers
 import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test

@@ -1,7 +1,6 @@
 package net.corda.applications.workers.rest
 
-import java.time.Instant
-import net.corda.applications.workers.rest.utils.E2eCluster
+import net.corda.applications.workers.e2etestutils.utils.E2eCluster
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -17,6 +16,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.test.util.eventually
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.assertDoesNotThrow
+import java.time.Instant
 
 class RbacE2eClientRequestHelper(
     private val cluster: E2eCluster,

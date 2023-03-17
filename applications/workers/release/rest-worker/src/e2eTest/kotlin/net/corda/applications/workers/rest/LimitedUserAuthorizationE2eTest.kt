@@ -1,17 +1,17 @@
 package net.corda.applications.workers.rest
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit.DAYS
-import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
-import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
-import net.corda.applications.workers.rest.utils.E2eClusterBConfig
-import net.corda.applications.workers.rest.utils.E2eClusterFactory
+import net.corda.applications.workers.e2etestutils.http.SkipWhenRestEndpointUnavailable
+import net.corda.applications.workers.e2etestutils.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.e2etestutils.utils.AdminPasswordUtil.adminUser
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterBConfig
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.temporal.ChronoUnit.DAYS
 
 /**
  * This test uses the admin user to create a new user with limited operations authorized.

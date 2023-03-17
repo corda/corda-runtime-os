@@ -1,8 +1,8 @@
 package net.corda.applications.workers.rest
 
-import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.applications.workers.rest.utils.E2eClusterBConfig
-import net.corda.applications.workers.rest.utils.E2eClusterFactory
+import net.corda.applications.workers.e2etestutils.http.SkipWhenRestEndpointUnavailable
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterBConfig
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint

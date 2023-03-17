@@ -1,19 +1,18 @@
 package net.corda.applications.workers.rest
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit.DAYS
-import net.corda.applications.workers.rest.http.TestToolkitProperty
-import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
-import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
-import net.corda.applications.workers.rest.utils.E2eClusterBConfig
-import net.corda.applications.workers.rest.utils.E2eClusterFactory
+import net.corda.applications.workers.e2etestutils.http.SkipWhenRestEndpointUnavailable
+import net.corda.applications.workers.e2etestutils.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.e2etestutils.utils.AdminPasswordUtil.adminUser
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterBConfig
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterFactory
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit.DAYS
 
 /**
  * These tests make assertions about permission summaries utilizing the `getPermissionSummary` API.
