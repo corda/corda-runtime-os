@@ -271,8 +271,8 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
+        val visibleStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED, visibleStatesIndexes)
         log.debug { "Recorded notarized transaction $transactionId" }
     }
 

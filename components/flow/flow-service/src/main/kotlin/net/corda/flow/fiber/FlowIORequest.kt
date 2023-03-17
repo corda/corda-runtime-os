@@ -1,9 +1,9 @@
 package net.corda.flow.fiber
 
-import net.corda.flow.application.sessions.SessionInfo
-import net.corda.flow.external.events.factory.ExternalEventFactory
 import java.nio.ByteBuffer
 import java.time.Instant
+import net.corda.flow.application.sessions.SessionInfo
+import net.corda.flow.external.events.factory.ExternalEventFactory
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
@@ -39,6 +39,14 @@ interface FlowIORequest<out R> {
     ) : FlowIORequest<Map<String, ByteArray>> {
         override fun toString() = "SendAndReceive(${sessionToInfo.keys.joinToString { it.toString() }})"
     }
+
+    /**
+     * IORequest to allow the Flow Fiber to request data from the Flow Engine
+     * This request will be used to get the counterparties flow information.
+     *
+     * @property sessionInfo the session to get flow info for.
+     */
+    data class CounterPartyFlowInfo(val sessionInfo: SessionInfo) : FlowIORequest<Unit>
 
     /**
      * Closes the specified sessions.

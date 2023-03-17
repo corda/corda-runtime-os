@@ -320,7 +320,8 @@ class MembershipP2PIntegrationTest {
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
             fakeSigWithKey,
             fakeSigSpec,
-            true
+            true,
+            0L,
         )
 
         var latestHeader: UnauthenticatedRegistrationRequestHeader? = null

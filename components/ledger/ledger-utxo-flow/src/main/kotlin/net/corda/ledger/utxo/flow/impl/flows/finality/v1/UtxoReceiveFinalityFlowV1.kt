@@ -180,8 +180,8 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun persistNotarizedTransaction(notarizedTransaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = notarizedTransaction.getVisibleStateIndexes(visibilityChecker)
-        persistenceService.persist(notarizedTransaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
+        val visibleStatesIndexes = notarizedTransaction.getVisibleStateIndexes(visibilityChecker)
+        persistenceService.persist(notarizedTransaction, TransactionStatus.VERIFIED, visibleStatesIndexes)
         if (log.isDebugEnabled) {
             log.debug("Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}")
         }

@@ -13,6 +13,7 @@ class RegistrationRequestEntityTest {
     private companion object {
         const val HOLDING_ID_1 = "1B229F6F6C88"
         const val HOLDING_ID_2 = "58B6030FABDD"
+        const val SERIAL = 0L
 
         const val REGISTRATION_STATUS_1 = "status_1"
         const val REGISTRATION_STATUS_2 = "status_2"
@@ -42,7 +43,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            SERIAL,
         )
         val e2 = RegistrationRequestEntity(
             registrationId,
@@ -50,7 +52,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_2,
             currentInstant.minusSeconds(5),
             currentInstant.minusSeconds(5),
-            getRegistrationContext(KEY_2 to VALUE_2)
+            getRegistrationContext(KEY_2 to VALUE_2),
+            SERIAL,
         )
         assertEquals(e1, e2)
         assertEquals(e1.hashCode(), e2.hashCode())
@@ -64,7 +67,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            SERIAL,
         )
         val e2 = RegistrationRequestEntity(
             randomId,
@@ -72,7 +76,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_2,
             currentInstant.minusSeconds(5),
             currentInstant.minusSeconds(5),
-            getRegistrationContext(KEY_2 to VALUE_2)
+            getRegistrationContext(KEY_2 to VALUE_2),
+            SERIAL,
         )
         assertNotEquals(e1, e2)
         assertNotEquals(e1.hashCode(), e2.hashCode())
@@ -86,7 +91,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            SERIAL,
         )
         assertEquals(e1, e1)
         assertEquals(e1.hashCode(), e1.hashCode())
@@ -100,7 +106,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            SERIAL,
         )
         assertNotEquals(e1, null)
     }
@@ -113,7 +120,8 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            SERIAL,
         )
         assertNotEquals(e1, "")
     }

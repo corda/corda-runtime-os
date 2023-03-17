@@ -15,13 +15,13 @@ import javax.persistence.Table
 
 @CordaSerializable
 @NamedQuery(
-    name = "UtxoRelevantTransactionStateEntity.findByTransactionId",
-    query = "from UtxoRelevantTransactionStateEntity where transaction.id = :transactionId"
+    name = "UtxoVisibleTransactionStateEntity.findByTransactionId",
+    query = "from UtxoVisibleTransactionStateEntity where transaction.id = :transactionId"
 )
 @Entity
-@Table(name = "utxo_relevant_transaction_state")
-@IdClass(UtxoRelevantTransactionStateEntityId::class)
-data class UtxoRelevantTransactionStateEntity(
+@Table(name = "utxo_visible_transaction_state")
+@IdClass(UtxoVisibleTransactionStateEntityId::class)
+data class UtxoVisibleTransactionStateEntity(
     @Id
     @ManyToOne
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
@@ -35,15 +35,18 @@ data class UtxoRelevantTransactionStateEntity(
     @Column(name = "leaf_idx", nullable = false)
     val leafIndex: Int,
 
-    @Column(name = "consumed", nullable = false)
-    val isConsumed: Boolean,
+    @Column(name = "custom_representation", nullable = false, columnDefinition = "jsonb")
+    val customRepresentation: String,
 
     @Column(name = "created", nullable = false)
-    val created: Instant
+    val created: Instant,
+
+    @Column(name = "consumed", nullable = true)
+    val consumed: Instant?
 )
 
 @Embeddable
-data class UtxoRelevantTransactionStateEntityId(
+data class UtxoVisibleTransactionStateEntityId(
     val transaction: UtxoTransactionEntity,
     val groupIndex: Int,
     val leafIndex: Int

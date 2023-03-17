@@ -127,8 +127,8 @@ class UtxoLedgerMessageProcessorTests {
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = TransactionStatus.VERIFIED.value
-        val relevantStatesIndexes = listOf(0)
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, relevantStatesIndexes)
+        val visibleStatesIndexes = listOf(0)
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, visibleStatesIndexes)
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor

@@ -3,7 +3,6 @@ package net.corda.interop.service.integration
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.MessageDirection
@@ -20,6 +19,7 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -115,15 +115,13 @@ class InteropServiceIntegrationTest {
         val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
         val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
         val header = UnauthenticatedMessageHeader(destinationIdentity, sourceIdentity, "interop" , "1")
-        val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
                 aliceX500Name,
-                version,
-                aliceX500Name,
                 null,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList()),
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
             )
         )
