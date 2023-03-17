@@ -3,7 +3,6 @@ package net.corda.interop.service.integration
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.MessageDirection
@@ -20,6 +19,7 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -34,10 +34,10 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -87,7 +87,7 @@ class InteropServiceIntegrationTest {
     private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
-        .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
+        .withValue(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -115,15 +115,13 @@ class InteropServiceIntegrationTest {
         val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
         val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
         val header = UnauthenticatedMessageHeader(destinationIdentity, sourceIdentity, "interop" , "1")
-        val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
                 aliceX500Name,
-                version,
-                aliceX500Name,
                 null,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList()),
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
             )
         )
@@ -188,7 +186,7 @@ class InteropServiceIntegrationTest {
         clearHostedIdsSub.close()
 
         interopService.start()
-        val memberExpectedOutputMessages = 5
+        val memberExpectedOutputMessages = 4
         val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
         val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
         val memberOutSub = subscriptionFactory.createDurableSubscription(
@@ -203,7 +201,7 @@ class InteropServiceIntegrationTest {
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
 
-        val hostedIdsExpected = 8
+        val hostedIdsExpected = 6
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
