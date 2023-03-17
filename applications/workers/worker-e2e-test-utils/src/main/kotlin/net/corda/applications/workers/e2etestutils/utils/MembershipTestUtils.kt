@@ -114,6 +114,22 @@ fun createMemberRegistrationContext(
     "corda.endpoints.0.protocolVersion" to "1"
 )
 
+fun createNotaryRegistrationContext(
+    memberE2eCluster: E2eCluster,
+    sessionKeyId: String,
+    ledgerKeyId: String
+) = mapOf(
+    "corda.session.key.id" to sessionKeyId,
+    "corda.session.key.signature.spec" to SIGNATURE_SPEC,
+    "corda.ledger.keys.0.id" to ledgerKeyId,
+    "corda.ledger.keys.0.signature.spec" to SIGNATURE_SPEC,
+    "corda.endpoints.0.connectionURL" to memberE2eCluster.p2pUrl,
+    "corda.endpoints.0.protocolVersion" to "1",
+    "corda.roles.0" to "notary",
+    "corda.notary.service.name" to "C=GB, L=London, O=MyNotary",
+    "corda.notary.service.plugin" to "net.corda.notary.NonValidatingNotary"
+)
+
 val RestMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
 val RestMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
 val RestMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not find member name")

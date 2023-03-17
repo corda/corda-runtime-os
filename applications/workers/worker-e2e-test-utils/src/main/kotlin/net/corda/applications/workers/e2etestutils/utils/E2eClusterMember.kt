@@ -4,7 +4,8 @@ import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.fail
 
 data class E2eClusterMember(
-    private val x500Name: String
+    private val x500Name: String,
+    val isNotary: Boolean = false
 ) {
     val name: String = MemberX500Name.parse(x500Name).toString()
 

@@ -419,14 +419,22 @@ fun E2eCluster.onboardMembers(
 
 
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
-        register(
-            member.holdingId,
+
+        val registrationContext = if (member.isNotary) {
+            createNotaryRegistrationContext(
+                this,
+                memberSessionKeyId,
+                memberLedgerKeyId
+            )
+        } else {
             createMemberRegistrationContext(
                 this,
                 memberSessionKeyId,
                 memberLedgerKeyId
             )
-        )
+        }
+
+        register(member.holdingId, registrationContext)
 
         // Check registration complete.
         // Eventually we can use the registration status endpoint.
