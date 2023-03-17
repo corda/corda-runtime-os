@@ -22,6 +22,7 @@ import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafP
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefixB64
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefix
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefixB64
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigestService
@@ -55,7 +56,7 @@ const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batc
 
 @Suppress("Unused", "LongParameterList")
 @Component(
-    service = [TransactionSignatureService::class, UsedByFlow::class],
+    service = [TransactionSignatureService::class, TransactionSignatureServiceInternal::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureServiceImpl @Activate constructor(
@@ -75,7 +76,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
-) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
+) : TransactionSignatureService, TransactionSignatureServiceInternal, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
     override fun sign(

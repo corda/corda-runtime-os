@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -16,7 +17,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -28,7 +28,7 @@ import java.util.Objects
 @Suppress("TooManyFunctions")
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val transactionSignatureService: TransactionSignatureService,
+    private val transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     private val signatures: List<DigitalSignatureAndMetadata>
@@ -89,7 +89,7 @@ data class UtxoSignedTransactionImpl(
     override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
         UtxoSignedTransactionImpl(
             serializationService,
-            transactionSignatureService,
+            transactionSignatureServiceInternal,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures + signature
@@ -98,14 +98,14 @@ data class UtxoSignedTransactionImpl(
     @Suspendable
     override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val newSignatures = try {
-            transactionSignatureService.sign(this, getMissingSignatories())
+            transactionSignatureServiceInternal.sign(this, getMissingSignatories())
         } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
             return Pair(this, emptyList())
         }
         return Pair(
             UtxoSignedTransactionImpl(
                 serializationService,
-                transactionSignatureService,
+                transactionSignatureServiceInternal,
                 utxoLedgerTransactionFactory,
                 wireTransaction,
                 signatures + newSignatures
@@ -116,7 +116,7 @@ data class UtxoSignedTransactionImpl(
 
     private fun getSignatoryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
         val keyIdToSignatory = signatories.associateBy {// todo cache this
-            transactionSignatureService.getIdOfPublicKey(
+            transactionSignatureServiceInternal.getIdOfPublicKey(
                 it,
                 keyId.algorithm
             )
@@ -133,7 +133,7 @@ data class UtxoSignedTransactionImpl(
                 null
             } else {
                 try {
-                    transactionSignatureService.verifySignature(this, it, publicKey)
+                    transactionSignatureServiceInternal.verifySignature(this, it, publicKey)
                     publicKey
                 } catch (e: Exception) {
                     null
@@ -154,7 +154,7 @@ data class UtxoSignedTransactionImpl(
                 null// We do not care about non-notary/non-signatory keys
             } else {
                 try {
-                    transactionSignatureService.verifySignature(this, it, publicKey)
+                    transactionSignatureServiceInternal.verifySignature(this, it, publicKey)
                     publicKey
                 } catch (e: Exception) {
                     throw TransactionSignatureException(
@@ -179,7 +179,7 @@ data class UtxoSignedTransactionImpl(
 
     private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
         val keyIdNotary = getNotaryKeys().associateBy {// todo cache this
-            transactionSignatureService.getIdOfPublicKey(
+            transactionSignatureServiceInternal.getIdOfPublicKey(
                 it,
                 keyId.algorithm
             )
@@ -193,7 +193,7 @@ data class UtxoSignedTransactionImpl(
             val publicKey = getNotaryPublicKeyByKeyId(it.by)
             if (publicKey != null) {
                 try {
-                    transactionSignatureService.verifySignature(this, it, publicKey)
+                    transactionSignatureServiceInternal.verifySignature(this, it, publicKey)
                     publicKey
                 } catch (e: Exception) {
                     throw TransactionSignatureException(
@@ -238,7 +238,7 @@ data class UtxoSignedTransactionImpl(
             )
         }
         try {
-            transactionSignatureService.verifySignature(this, signature, publicKey)
+            transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
         } catch (e: Exception) {
             throw TransactionSignatureException(
                 id,
@@ -254,7 +254,7 @@ data class UtxoSignedTransactionImpl(
             ?: return // We do not care about non-notary/non-signatory signatures.
 
         try {
-            transactionSignatureService.verifySignature(this, signature, publicKey)
+            transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
         } catch (e: Exception) {
             throw TransactionSignatureException(
                 id,
