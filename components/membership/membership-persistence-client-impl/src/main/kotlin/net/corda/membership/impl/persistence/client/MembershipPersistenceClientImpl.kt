@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.client
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.PersistentSignedMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -39,6 +40,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.impl.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -104,7 +106,7 @@ class MembershipPersistenceClientImpl(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>
+        memberInfos: Collection<SignedMemberInfo>
     ): MembershipPersistenceResult<Unit> {
         logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
@@ -112,10 +114,14 @@ class MembershipPersistenceClientImpl(
             buildMembershipRequestContext(avroViewOwningIdentity),
             PersistMemberInfo(
                 memberInfos.map {
-                    PersistentMemberInfo(
-                        avroViewOwningIdentity,
-                        it.memberProvidedContext.toAvro(),
-                        it.mgmProvidedContext.toAvro(),
+                    PersistentSignedMemberInfo(
+                        PersistentMemberInfo(
+                            avroViewOwningIdentity,
+                            it.memberInfo.memberProvidedContext.toAvro(),
+                            it.memberInfo.mgmProvidedContext.toAvro(),
+                        ),
+                        it.memberSignature,
+                        it.memberSignatureSpec,
                     )
                 }
 
