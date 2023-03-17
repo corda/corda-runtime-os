@@ -30,6 +30,6 @@ public final class BootConfig {
 
     public static final String BOOT_REST = "rest";
     public static final String BOOT_REST_PARAMS = BOOT_REST + ".params";
-    public static final String BOOT_REST_TLS_KEYSTORE_FILE_PATH = BOOT_REST_PARAMS + ".tls.keystore.file.path";
+    public static final String BOOT_REST_TLS_KEYSTORE_FILE_PATH = BOOT_REST_PARAMS + ".tls.keystore.path";
     public static final String BOOT_REST_TLS_KEYSTORE_PASSWORD = BOOT_REST_PARAMS + ".tls.keystore.password";
 }
