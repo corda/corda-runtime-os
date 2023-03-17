@@ -53,7 +53,8 @@ internal class MGMRegistrationRequestHandler (
                     ByteBuffer.wrap(byteArrayOf()),
                     ByteBuffer.wrap(byteArrayOf())
                 ),
-                signatureSpec = CryptoSignatureSpec("", null, null)
+                signatureSpec = CryptoSignatureSpec("", null, null),
+                serial = 0L,
             )
         )
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {

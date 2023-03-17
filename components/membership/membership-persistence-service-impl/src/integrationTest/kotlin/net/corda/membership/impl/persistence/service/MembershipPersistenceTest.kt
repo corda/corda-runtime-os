@@ -127,6 +127,8 @@ class MembershipPersistenceTest {
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
 
+        private const val REGISTRATION_SERIAL = 0L
+
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val BOOT_CONFIG_STRING = """
@@ -517,7 +519,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf())
                 ),
                 CryptoSignatureSpec("", null, null),
-                true
+                REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -1040,7 +1043,8 @@ class MembershipPersistenceTest {
                         signature
                     ),
                     CryptoSignatureSpec("", null, null),
-                    true
+                    REGISTRATION_SERIAL,
+                    true,
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
@@ -1093,7 +1097,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf())
                 ),
                 CryptoSignatureSpec("", null, null),
-                true
+                REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -1461,7 +1466,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf())
                 ),
                 CryptoSignatureSpec("", null, null),
-                true
+                REGISTRATION_SERIAL,
+                true,
             )
         )
     }
