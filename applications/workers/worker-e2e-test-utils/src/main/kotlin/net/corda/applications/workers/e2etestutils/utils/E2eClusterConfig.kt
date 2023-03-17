@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
 abstract class E2eClusterConfig {
     abstract val restHostPropertyName: String
@@ -21,7 +21,7 @@ abstract class E2eClusterConfig {
     val p2pPort: Int get() = System.getenv(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT
 }
 
-internal object E2eClusterAConfig : E2eClusterConfig() {
+object E2eClusterAConfig : E2eClusterConfig() {
     override val restHostPropertyName = "E2E_CLUSTER_A_REST_HOST"
     override val restPortPropertyName = "E2E_CLUSTER_A_REST_PORT"
     override val restPasswordPropertyName = "E2E_CLUSTER_A_REST_PASSWORD"
@@ -29,7 +29,7 @@ internal object E2eClusterAConfig : E2eClusterConfig() {
     override val p2pPortPropertyName = "E2E_CLUSTER_A_P2P_PORT"
 }
 
-internal object E2eClusterBConfig : E2eClusterConfig() {
+object E2eClusterBConfig : E2eClusterConfig() {
     override val restHostPropertyName = "E2E_CLUSTER_B_REST_HOST"
     override val restPortPropertyName = "E2E_CLUSTER_B_REST_PORT"
     override val restPasswordPropertyName = "E2E_CLUSTER_B_REST_PASSWORD"
@@ -37,7 +37,7 @@ internal object E2eClusterBConfig : E2eClusterConfig() {
     override val p2pPortPropertyName = "E2E_CLUSTER_B_P2P_PORT"
 }
 
-internal object E2eClusterCConfig : E2eClusterConfig() {
+object E2eClusterCConfig : E2eClusterConfig() {
     override val restHostPropertyName = "E2E_CLUSTER_C_REST_HOST"
     override val restPortPropertyName = "E2E_CLUSTER_C_REST_PORT"
     override val restPasswordPropertyName = "E2E_CLUSTER_C_REST_PASSWORD"

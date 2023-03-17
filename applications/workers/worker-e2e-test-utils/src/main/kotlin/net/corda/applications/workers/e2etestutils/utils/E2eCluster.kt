@@ -1,7 +1,7 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
-import net.corda.applications.workers.rest.http.TestToolkitProperty
-import net.corda.applications.workers.rest.kafka.KafkaTestToolKit
+import net.corda.applications.workers.e2etestutils.http.TestToolkitProperty
+import net.corda.applications.workers.e2etestutils.kafka.KafkaTestToolKit
 import net.corda.rest.RestResource
 import net.corda.rest.client.RestClient
 
@@ -28,7 +28,7 @@ interface E2eCluster {
     ): RestClient<I>
 }
 
-internal object E2eClusterFactory {
+object E2eClusterFactory {
     fun getE2eCluster(clusterConfig: E2eClusterConfig = E2eClusterAConfig): E2eCluster {
         return E2eClusterImpl(clusterConfig)
     }

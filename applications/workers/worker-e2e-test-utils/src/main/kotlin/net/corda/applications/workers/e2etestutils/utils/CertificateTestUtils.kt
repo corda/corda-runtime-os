@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory

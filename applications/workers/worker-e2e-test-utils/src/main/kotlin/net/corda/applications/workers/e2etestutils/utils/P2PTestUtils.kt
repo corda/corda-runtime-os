@@ -1,6 +1,6 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
-import net.corda.applications.workers.rest.kafka.KafkaTestToolKit
+import net.corda.applications.workers.e2etestutils.kafka.KafkaTestToolKit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage

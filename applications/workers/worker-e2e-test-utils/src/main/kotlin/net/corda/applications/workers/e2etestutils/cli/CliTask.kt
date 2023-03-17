@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.cli
+package net.corda.applications.workers.e2etestutils.cli
 
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader

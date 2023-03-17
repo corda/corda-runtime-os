@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.fail

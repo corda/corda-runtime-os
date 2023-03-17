@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.packaging.CreateCpiV2

@@ -1,10 +1,10 @@
-package net.corda.applications.workers.rest.kafka
+package net.corda.applications.workers.e2etestutils.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
-import net.corda.applications.workers.rest.http.TestToolkit
+import net.corda.applications.workers.e2etestutils.http.TestToolkit
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl

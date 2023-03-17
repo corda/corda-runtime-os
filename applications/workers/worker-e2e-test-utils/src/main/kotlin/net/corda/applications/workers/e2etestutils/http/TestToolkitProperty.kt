@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.http
+package net.corda.applications.workers.e2etestutils.http
 
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty

@@ -1,7 +1,7 @@
-package net.corda.applications.workers.rest.http
+package net.corda.applications.workers.e2etestutils.http
 
-import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
-import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
+import net.corda.applications.workers.e2etestutils.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.e2etestutils.utils.AdminPasswordUtil.adminUser
 import net.corda.rest.RestResource
 import net.corda.rest.client.RestClient
 

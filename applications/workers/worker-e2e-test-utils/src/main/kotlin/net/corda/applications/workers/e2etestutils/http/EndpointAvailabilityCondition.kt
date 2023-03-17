@@ -1,7 +1,7 @@
-package net.corda.applications.workers.rest.http
+package net.corda.applications.workers.e2etestutils.http
 
-import net.corda.applications.workers.rest.utils.E2eClusterBConfig
-import net.corda.applications.workers.rest.utils.E2eClusterFactory
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterBConfig
+import net.corda.applications.workers.e2etestutils.utils.E2eClusterFactory
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition

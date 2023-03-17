@@ -1,0 +1,79 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Worker e2e test utils'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    implementation project(':libs:application:addon')
+    implementation project(':libs:application:banner')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:messaging:message-bus')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:lifecycle:registry')
+    implementation project(':libs:metrics')
+    implementation project(':libs:utilities')
+    implementation project(':libs:platform-info')
+    implementation project(':osgi-framework-api')
+
+    implementation project(':libs:configuration:configuration-endpoints')
+    implementation project(':libs:chunking:chunking-core')
+    implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:rest:rest-client')
+    implementation project(':libs:permissions:permission-endpoint')
+    implementation project(':libs:permissions:permission-common')
+    implementation project(':testing:test-utilities')
+    implementation project(':libs:messaging:kafka-message-bus-impl')
+    implementation project(':libs:messaging:messaging-impl')
+    implementation project(":libs:schema-registry:schema-registry-impl")
+    implementation project(":libs:lifecycle:lifecycle-impl")
+    implementation project(':libs:schema-registry:schema-registry')
+    implementation project(':libs:lifecycle:registry')
+    implementation project(':libs:messaging:message-bus')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:virtual-node:cpi-upload-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':components:membership:membership-rest')
+    implementation project(':testing:packaging-test-utilities')
+    implementation project(':tools:plugins:package')
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    implementation "org.assertj:assertj-core:$assertjVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+    implementation "net.corda:corda-config-schema"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation ("io.micrometer:micrometer-core:0.1.0-SNAPSHOT") {
+        // we don't need these in classpath, so excluding them to reduce dependencies.
+        exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
+        exclude group: 'org.latencyutils', module: 'LatencyUtils'
+    }
+    implementation "io.micrometer:micrometer-registry-prometheus:0.1.0-SNAPSHOT"
+
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly 'org.osgi:osgi.core'
+}

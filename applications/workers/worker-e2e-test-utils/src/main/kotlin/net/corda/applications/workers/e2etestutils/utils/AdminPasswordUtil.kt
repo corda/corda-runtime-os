@@ -1,4 +1,4 @@
-package net.corda.applications.workers.rest.utils
+package net.corda.applications.workers.e2etestutils.utils
 
 object AdminPasswordUtil {
     const val adminUser = "admin"
