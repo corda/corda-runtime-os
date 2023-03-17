@@ -98,12 +98,12 @@ class SessionEventExecutor(
             val facadeInvocation = sessionEvent.payload as FacadeInvocation
             val returnEvent = SessionEvent(
                 MessageDirection.INBOUND,
-                Instant.now(),
+                instant,
                 sessionEvent.sessionId,
-                0,
+                null,
                 sessionEvent.initiatingIdentity,
                 sessionEvent.initiatedIdentity,
-                sessionEvent.receivedSequenceNum,
+                0,
                 emptyList(),
                 FacadeInvocationResult(facadeInvocation.payload)
             )
