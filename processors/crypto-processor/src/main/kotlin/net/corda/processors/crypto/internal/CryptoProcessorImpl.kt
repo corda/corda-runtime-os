@@ -76,7 +76,7 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val vnodeInfo: VirtualNodeInfoReadService,
+    private val vnodeInfo: VirtualNodeInfoReadService
 ) : CryptoProcessor {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
