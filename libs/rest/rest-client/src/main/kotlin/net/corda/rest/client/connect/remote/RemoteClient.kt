@@ -1,13 +1,14 @@
 package net.corda.rest.client.connect.remote
 
+import kong.unirest.Config
 import kong.unirest.GenericType
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
 import kong.unirest.HttpResponse
 import kong.unirest.HttpStatus
 import kong.unirest.MultipartBody
-import kong.unirest.Unirest
 import kong.unirest.UnirestException
+import kong.unirest.UnirestInstance
 import kong.unirest.apache.ApacheClient
 import kong.unirest.jackson.JacksonObjectMapper
 import net.corda.rest.client.auth.RequestContext
@@ -18,7 +19,6 @@ import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.rest.client.processing.RestClientFileUpload
 import net.corda.rest.client.processing.WebRequest
 import net.corda.rest.client.processing.WebResponse
-import net.corda.rest.client.serialization.objectMapper
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.trace
@@ -46,9 +46,11 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    init {
-        Unirest.config().objectMapper = JacksonObjectMapper(objectMapper)
+    private val config = Config().apply {
+        objectMapper = JacksonObjectMapper(net.corda.rest.client.serialization.objectMapper)
+        addSslParams()
     }
+    private val unirestInstance = UnirestInstance(config)
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, responseType: Type, context: RequestContext): WebResponse<Any> {
 
@@ -79,13 +81,12 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
     ): WebResponse<R> where R : Any {
         val path = baseAddress + webRequest.path
         log.trace { """Do call "$verb $path".""" }
-        addSslParams()
 
         var request = when (verb) {
-            HttpVerb.GET -> Unirest.get(path)
-            HttpVerb.POST -> Unirest.post(path)
-            HttpVerb.PUT -> Unirest.put(path)
-            HttpVerb.DELETE -> Unirest.delete(path)
+            HttpVerb.GET -> unirestInstance.get(path)
+            HttpVerb.POST -> unirestInstance.post(path)
+            HttpVerb.PUT -> unirestInstance.put(path)
+            HttpVerb.DELETE -> unirestInstance.delete(path)
         }
 
         request = if(isMultipartFormRequest(webRequest)) {
@@ -101,7 +102,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         try {
             val response = request.remoteCallFn()
             if (!response.isSuccess || response.parsingError.isPresent) {
-                val mapper = Unirest.config().objectMapper
+                val mapper = config.objectMapper
                 val errorResponseJson = mapper.writeValue(response.mapError(String::class.java))
                 when (response.status) {
                     HttpStatus.BAD_REQUEST -> throw RequestErrorException(errorResponseJson)
@@ -166,9 +167,9 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         return requestBuilder
     }
 
-    private fun addSslParams() {
-        log.trace { "Add Ssl params." }
+    private fun Config.addSslParams() {
         if (enableSsl) {
+            log.trace { "Add Ssl params." }
             val sslContext: SSLContext = SSLContexts.custom()
                 .loadTrustMaterial(TrustAllStrategy())
                 .build()
@@ -178,11 +179,10 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
                 .setSSLHostnameVerifier(NoopHostnameVerifier())
                 .build()
 
-            Unirest.config().let { config ->
-                config.httpClient(ApacheClient.builder(httpClient).apply(config))
-            }
+            val apacheClient = ApacheClient.builder(httpClient).apply(this)
+            this.httpClient(apacheClient)
+            log.trace { "Add Ssl params completed." }
         }
-        log.trace { "Add Ssl params completed." }
     }
 
     private fun isMultipartFormRequest(webRequest: WebRequest<*>) =
