@@ -94,6 +94,7 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_ID = "rule-id"
         const val DUMMY_RULE = "corda.*"
         const val DUMMY_LABEL = "label1"
+        const val SERIAL = 0L
     }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
@@ -124,7 +125,8 @@ class MembershipPersistenceRPCProcessorTest {
         RegistrationStatus.PENDING_MEMBER_VERIFICATION.name,
         clock.instant(),
         clock.instant(),
-        context
+        context,
+        SERIAL,
     )
 
     private val groupPolicyQuery: TypedQuery<GroupPolicyEntity> = mock {
@@ -321,7 +323,8 @@ class MembershipPersistenceRPCProcessorTest {
                         ByteBuffer.wrap("456".toByteArray())
                     ),
                     CryptoSignatureSpec("", null, null),
-                    true
+                    true,
+                    SERIAL,
                 )
             )
         )
@@ -417,7 +420,8 @@ class MembershipPersistenceRPCProcessorTest {
                         ByteBuffer.wrap("456".toByteArray())
                     ),
                     CryptoSignatureSpec("", null, null),
-                    false
+                    false,
+                    SERIAL,
                 )
             )
         )

@@ -57,6 +57,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
@@ -293,15 +294,21 @@ class DynamicMemberRegistrationService @Activate constructor(
                         ByteBuffer.wrap(it.bytes)
                     )
                 }
-                val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
+
+                val serialInfo = context[SERIAL]?.toLong()
+                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: 0
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature,
                     CryptoSignatureSpec(signatureSpec, null, null),
-                    true
+                    true,
+                    serialInfo,
                 )
 
                 val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
@@ -350,7 +357,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
-                        isPending = true
+                        serial = serialInfo,
+                        isPending = true,
                     )
                 ).getOrThrow()
 
@@ -390,7 +398,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
-                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) || it.key.startsWith(SERIAL)
             }
             val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)

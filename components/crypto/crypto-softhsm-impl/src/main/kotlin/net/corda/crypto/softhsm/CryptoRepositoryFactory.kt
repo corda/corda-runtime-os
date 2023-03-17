@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm
 
 interface CryptoRepositoryFactory {
     /**

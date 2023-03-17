@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.v1schema
+package net.corda.crypto.softhsm.impl
 
 import net.corda.db.schema.DbSchema
 import java.time.Instant

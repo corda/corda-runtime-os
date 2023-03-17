@@ -213,7 +213,8 @@ class MembershipPersistenceClientImpl(
                         memberContext,
                         signature,
                         signatureSpec,
-                        isPending
+                        isPending,
+                        serial,
                     )
                 }
             )
