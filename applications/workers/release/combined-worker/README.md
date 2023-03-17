@@ -86,7 +86,7 @@ cd ../corda-runtime-os/
 Just as with DB parameters there are `-r` command-line arguments introduced which allow passing custom PKCS12 keystore
 along with password as follows:
 ```bash
--rtls.keystore.file.path=<path_to_keystore> -rtls.keystore.password=<keystore_password>
+-rtls.keystore.path=<path_to_keystore> -rtls.keystore.password=<keystore_password>
 ```
 
 For your convenience a Keystore along with instructions can be found in this repo under: 

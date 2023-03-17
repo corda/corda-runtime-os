@@ -140,16 +140,12 @@
                 "keystore": {
                   "description": "Keystore info",
                   "properties": {
-                    "file": {
-                      "properties": {
-                        "path": {
-                          "description": "File path to a Keystore file",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        }
-                      }
+                    "path": {
+                      "description": "Path to a Keystore file",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "password": {
                       "description": "The password for the Keystore",
