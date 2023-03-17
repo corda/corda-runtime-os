@@ -1,5 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
@@ -16,7 +17,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
-import javax.persistence.EntityManagerFactory
 
 class TestCryptoRepositoryFactory {
     @Test
