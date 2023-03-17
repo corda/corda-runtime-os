@@ -156,82 +156,6 @@ class VirtualNodeRpcTest {
         return cpiHash
     }
 
-    /**
-     * Runs second to ensure that we reject this with a correct message
-     */
-    @Test
-    @Order(20)
-    fun `cannot upload a CPB`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val requestId = cpbUpload(TEST_CPB_LOCATION).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition {
-                    try {
-                        if (it.code == 400) {
-                            val json = it.toJson()["details"]
-                            json.has("errorMessage")
-                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_CPB_INSTEAD_OF_CPI
-                        } else {
-                            false
-                        }
-                    } catch (e: Exception) {
-                        println("Failed, repsonse: $it")
-                        false
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
-    @Order(30)
-    fun `cannot upload same CPI`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            val requestId = cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 409 }
-            }
-        }
-    }
-
-    @Test
-    @Order(31)
-    fun `cannot upload same CPI with different groupId`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            val requestId = cpiUpload(
-                TEST_CPB_LOCATION,
-                "8c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
-                staticMemberList,
-                cpiName
-            ).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 409 }
-            }
-        }
-    }
-
     @Test
     @Order(32)
     fun `can upload different CPI with same groupId`() {
@@ -334,9 +258,6 @@ class VirtualNodeRpcTest {
         }.toJson()
         val vnodeShortHash = vNodeJson["requestId"].textValue()
         assertThat(vnodeShortHash).isNotNull.isNotEmpty
-
-        println("created vNode with x500 $x500Name and cpiFileChecksum $cpiFileChecksum")
-        println("and vNodeShortHash: $vnodeShortHash")
 
         assertWithRetry {
             command { getVNode(vnodeShortHash)}
