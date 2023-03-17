@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.applications.workers.e2etestutils.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -55,6 +56,7 @@ private class TestJsonObject(data: Map<String, Any?>) : JsonObject {
     }
 }
 
+@Suppress("NestedBlockDepth")
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
     tempDir: Path,

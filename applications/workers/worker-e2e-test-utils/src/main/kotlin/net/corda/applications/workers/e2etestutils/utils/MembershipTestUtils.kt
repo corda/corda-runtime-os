@@ -74,6 +74,7 @@ fun createStaticMemberGroupPolicyJson(
     }
 }
 
+@Suppress("LongParameterList")
 fun createMgmRegistrationContext(
     caTrustRoot: String,
     sessionKeyId: String,
