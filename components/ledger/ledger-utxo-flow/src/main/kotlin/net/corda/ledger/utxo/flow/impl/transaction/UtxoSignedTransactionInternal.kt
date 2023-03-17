@@ -50,36 +50,37 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      * Verify the signatories' signatures and check if there are any missing one.
      * It ignores the non-signatory signatures! (including the notary's)
      *
-     * @throws TransactionSignatureException if any signatures are invalid or missing.
+     * @throws TransactionSignatureException if any signatures are missing or invalid.
      */
     @Suspendable
     fun verifySignatorySignatures()
 
     /**
      * Verify if notary has signed the transaction.
-     * The signature itself is also verified!
+     * It checks both the existence and the validity of that signature.
      *
-     * @throws TransactionSignatureException if notary signatures is missing.
+     * @throws TransactionSignatureException if notary signatures is missing or invalid.
      */
     @Suspendable
     fun verifyAttachedNotarySignature()
 
     /**
      * Verify if a signature
-     *  - is the transaction's notary's
+     *  - is made by the notary of the transaction
      *  - is valid
      *
-     * @throws CordaRuntimeException if not owned by the notary // todo: change this to TransactionSignatureException
-     * @throws TransactionSignatureException if invalid
+     * @throws CordaRuntimeException if not made by the notary // todo: change this to TransactionSignatureException
+     * @throws TransactionSignatureException if the signature is invalid
      */
     @Suspendable
     fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
 
     /**
      * Verify if a signature is one of the signatories is valid.
-     * It does not throw if the signature is not one of the signatories!
+     * It does not throw if the signature is not one of the signatories regardless of the validity since
+     * the public key is not available, the validity cannot be verified.
      *
-     * @throws TransactionSignatureException if signature is owned by a signature, and it is not valid.
+     * @throws TransactionSignatureException if signature is owned by a signatory, and it is not valid.
      */
     @Suspendable
     fun verifySignatorySignature(signature: DigitalSignatureAndMetadata)

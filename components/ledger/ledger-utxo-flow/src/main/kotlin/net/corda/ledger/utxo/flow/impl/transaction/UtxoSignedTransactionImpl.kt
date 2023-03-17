@@ -115,7 +115,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getSignatoryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
-        val keyIdToSignatory = signatories.associateBy {
+        val keyIdToSignatory = signatories.associateBy {// todo cache this
             transactionSignatureService.getIdOfPublicKey(
                 it,
                 keyId.algorithm
@@ -178,7 +178,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
-        val keyIdNotary = getNotaryKeys().associateBy {
+        val keyIdNotary = getNotaryKeys().associateBy {// todo cache this
             transactionSignatureService.getIdOfPublicKey(
                 it,
                 keyId.algorithm
@@ -224,14 +224,14 @@ data class UtxoSignedTransactionImpl(
     @Suspendable
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
         val publicKey = getNotaryPublicKeyByKeyId(signature.by)
-            ?: throw CordaRuntimeException(
+            ?: throw CordaRuntimeException( // todo transition to TransactionSignatureException
                 "Notary's signature has not been created by the transaction's notary. " +
                         "Notary's public key: ${notary.owningKey} " +
                         "Notary signature's key Id: ${signature.by}"
             )
 
         if (!KeyUtils.isKeyInSet(notary.owningKey, listOf(publicKey))) {
-            throw CordaRuntimeException(
+            throw CordaRuntimeException( // todo transition to TransactionSignatureException
                 "Notary's signature has not been created by the transaction's notary. " +
                         "Notary's public key: ${notary.owningKey} " +
                         "Notary signature's key: $publicKey"
@@ -242,7 +242,7 @@ data class UtxoSignedTransactionImpl(
         } catch (e: Exception) {
             throw TransactionSignatureException(
                 id,
-                "Failed to verify signature of ${signature.signature} for transaction $id. Message: ${e.message}",
+                "Failed to verify notary signature of ${signature.signature} for transaction $id. Message: ${e.message}",
                 e
             )
         }
@@ -286,7 +286,7 @@ data class UtxoSignedTransactionImpl(
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
     }
 
-    private fun getNotaryKeys(): List<PublicKey>{
+    private fun getNotaryKeys(): List<PublicKey> {
         return when (val owningKey = notary.owningKey) {
             is CompositeKey -> owningKey.leafKeys.toList()
             else -> listOf(owningKey)
