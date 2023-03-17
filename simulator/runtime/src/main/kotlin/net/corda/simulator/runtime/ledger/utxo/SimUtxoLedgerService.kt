@@ -23,6 +23,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 
+/**
+ * Simulator implementation of [UtxoLedgerService]
+ */
 class SimUtxoLedgerService(
     member: MemberX500Name,
     private val fiber: SimFiber,
@@ -86,6 +89,13 @@ class SimUtxoLedgerService(
         return UtxoFilteredTransactionBuilderBase(signedTransaction as UtxoSignedTransactionBase)
     }
 
+    /**
+     * Searches for unconsumed state of a particular [ContractState] type. Uses Persistence Service to filter
+     * [UtxoTransactionOutputEntity] based on [ContractState] type. Converts the entities fetched into [StateAndRef]
+     * by deserializing the contractStateData and encumbranceData
+     *
+     * @param type The [ContractState] type to filter unconsumed states
+     */
     @Suppress("UNCHECKED_CAST")
     override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
         // Fetch unconsumed states using named query
@@ -111,6 +121,9 @@ class SimUtxoLedgerService(
         return stateAndRefs
     }
 
+    /**
+     * Resolves [StateRef] list to [StateAndRef] list
+     */
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
         val serializer = BaseSerializationService()
         val notaryInfo = fiber.getNotary()
@@ -122,6 +135,15 @@ class SimUtxoLedgerService(
         return resolve<T>(listOf(stateRef)).first()
     }
 
+    /**
+     * Converts [StateRef] to [StateAndRef]. Uses Persistence Service to filter
+     * [UtxoTransactionOutputEntity] based on txId and index from [StateRef]. Converts the entities fetched into
+     * [StateAndRef] by deserializing the contractStateData and encumbranceData
+     *
+     * @param stateRef The [StateRef] to be converted to [StateAndRef]
+     * @param notary The notary to be added to [TransactionState]
+     * @param serializer The serialization service to deserialize contractState and encumbrance
+     */
     @Suppress("UNCHECKED_CAST")
     private fun <T : ContractState> getStateAndRef(
         stateRef: StateRef,

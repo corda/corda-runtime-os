@@ -86,6 +86,11 @@ class UtxoTransactionFinalityHandler(
         return persist(notarizedTx)
     }
 
+    /**
+     * Persists transaction to the database and consume inputs
+     *
+     * @param notarizedTx Final notarised [UtxoSignedTransaction]
+     */
     private fun persist(notarizedTx: UtxoSignedTransactionBase): UtxoSignedTransaction{
         persistenceService.persist(notarizedTx.toEntity())
         persistenceService.persist(notarizedTx.toOutputsEntity(memberLookup.myInfo().ledgerKeys.toSet()))
@@ -95,6 +100,8 @@ class UtxoTransactionFinalityHandler(
 
     /**
      * Mark transaction inputs as consumed.
+     *
+     * @param signedTransaction The current transaction whose inputs are to be consumed
      */
     private fun consumeInputs(signedTransaction: UtxoSignedTransaction){
         val updatedEntities = signedTransaction.inputStateRefs.map {
@@ -114,6 +121,11 @@ class UtxoTransactionFinalityHandler(
         persistenceService.merge(updatedEntities.filterNotNull())
     }
 
+    /**
+     * Verifies if a [UtxoSignedTransaction] has been completly signed by all required signatories
+     *
+     * @param finalTransaction The final [UtxoSignedTransaction] to be checked for signatures
+     */
     private fun verifySignatures(finalTransaction: UtxoSignedTransaction){
         val appliedSignatories = finalTransaction.signatures.map { it.by }.toSet()
         val missingSignatories = finalTransaction.signatories
@@ -125,7 +137,9 @@ class UtxoTransactionFinalityHandler(
     }
 
     /**
-     * Simulator doesn't check for double spending, it signs transaction irrespective
+     * Notarises a transaction, Simulator doesn't check for double spending, it signs transaction irrespective
+     *
+     * @param finalTransaction The [UtxoSignedTransaction] signed by all required signatories
      */
     private fun notarize(finalTransaction: UtxoSignedTransaction): UtxoSignedTransactionBase{
         val notaryX500 = MemberX500Name.parse("CN=SimulatorNotaryService, OU=Simulator, O=R3, L=London, C=GB")
@@ -134,6 +148,13 @@ class UtxoTransactionFinalityHandler(
         return (finalTransaction as UtxoSignedTransactionBase).addSignatureAndMetadata(signatures)
     }
 
+    /**
+     * Handles signing of a transaction
+     *
+     * @param signedTransaction The [UtxoSignedTransaction] to be signed
+     * @param publicKeys The [PublicKey] list to be used to sign the tx
+     * @param signingService The simulator signing service require to handle signing
+     */
     private fun sign(signedTransaction: UtxoSignedTransaction, publicKeys: List<PublicKey>,
                      signingService: SigningService): List<DigitalSignatureAndMetadata>{
         val serializer = SimpleJsonMarshallingService()
@@ -148,6 +169,8 @@ class UtxoTransactionFinalityHandler(
 
     /**
      * Runs the contract verification associated with the transaction. Also handles encumbrance checks
+     *
+     * @param ledgerTransaction The [UtxoLedgerTransaction] to run the contract validation
      */
     private fun runContractVerification(ledgerTransaction: UtxoLedgerTransaction){
         val failureReasons = ArrayList<String>()
@@ -174,6 +197,11 @@ class UtxoTransactionFinalityHandler(
         }
     }
 
+    /**
+     * Verifies encumbrance is satisfied for the transaction
+     *
+     * @param inputStateAndRefs - The inputs of the [UtxoSignedTransaction]
+     */
     private fun verifyEncumberedInput(inputStateAndRefs: List<StateAndRef<*>>): List<String> {
         val failureReasons = ArrayList<String>()
         // group input by transaction id (encumbrance is only unique within one transaction output)
@@ -225,4 +253,7 @@ class UtxoTransactionFinalityHandler(
     }
 }
 
+/**
+ * Data class to hold encumbrance
+ */
 private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)

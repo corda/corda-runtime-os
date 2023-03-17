@@ -5,6 +5,9 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
+/**
+ * A factory to build [UtxoTransactionBuilder]
+ */
 fun interface UtxoTransactionBuilderFactory {
     fun createUtxoTransactionBuilder(
         signingService: SigningService,

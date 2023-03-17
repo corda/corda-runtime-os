@@ -19,6 +19,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
 
+/**
+ * Simulator implementation of [UtxoTransactionBuilder], used to build [UtxoSignedTransaction]
+ */
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderBase(
     private val notary: Party? = null,
@@ -189,6 +192,9 @@ data class UtxoTransactionBuilderBase(
 
 }
 
+/**
+ * Data class to hold state and encumbrance data
+ */
 @CordaSerializable
 data class ContractStateAndEncumbranceTag(val contractState: ContractState, val encumbranceTag: String?) {
 
@@ -200,6 +206,9 @@ data class ContractStateAndEncumbranceTag(val contractState: ContractState, val 
     }
 }
 
+/**
+ * Data class to hold individual encumbrance group with its size
+ */
 data class SimEncumbranceGroup(private val size: Int, private val tag: String) : EncumbranceGroup {
 
     override fun getTag(): String {

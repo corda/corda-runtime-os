@@ -13,6 +13,9 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 import java.util.function.Predicate
 
+/**
+ * Simulator implementation of [UtxoFilteredTransaction]
+ */
 class UtxoFilteredTransactionBase(
     private val signedTransaction: UtxoSignedTransaction,
     private val builder: UtxoFilteredTransactionBuilderBase,

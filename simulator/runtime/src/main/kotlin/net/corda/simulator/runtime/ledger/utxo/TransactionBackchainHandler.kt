@@ -12,6 +12,12 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
+
+interface TransactionBackchainHandler{
+    fun sendBackChain(session: FlowSession)
+    fun receiveBackChain(transaction: UtxoSignedTransaction, session: FlowSession)
+}
+
 /***
  * This class is used to send backchain of an asset from one party to another. It is required in cases when a
  * new party is sent an asset who was not part of it in pervious transactions
@@ -112,10 +118,6 @@ class TransactionBackchainHandlerBase(
     }
 }
 
-interface TransactionBackchainHandler{
-    fun sendBackChain(session: FlowSession)
-    fun receiveBackChain(transaction: UtxoSignedTransaction, session: FlowSession)
-}
 
 @CordaSerializable
 sealed interface TransactionBackchainRequest {

@@ -18,6 +18,9 @@ import java.security.MessageDigest
 import java.security.PublicKey
 import java.util.Objects
 
+/**
+ * Simulator implementation of [UtxoLedgerTransaction]
+ */
 @Suppress("TooManyFunctions")
 data class UtxoLedgerTransactionBase(
     val ledgerInfo: UtxoStateLedgerInfo,
