@@ -8,9 +8,12 @@ import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.core.CryptoTenants.CRYPTO
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.CryptoRepository
+import net.corda.crypto.softhsm.CryptoRepositoryFactory
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
@@ -29,6 +32,7 @@ import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 
+
 const val KEY_MAP_TRANSIENT_NAME = "TRANSIENT"
 const val KEY_MAP_CACHING_NAME = "CACHING"
 const val WRAPPING_DEFAULT_NAME = "DEFAULT"
@@ -39,6 +43,7 @@ const val WRAPPING_DEFAULT_NAME = "DEFAULT"
  * The service ranking is set to the smallest possible number to allow the upstream implementation to pick other
  * providers as this one will always be present in the deployment.
  */
+@Suppress("LongParameterList")
 @ServiceRanking(Int.MIN_VALUE)
 @Component(service = [CryptoServiceProvider::class, SoftCryptoServiceProvider::class])
 open class SoftCryptoServiceProviderImpl @Activate constructor(
@@ -50,6 +55,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
+    @Reference(service = CryptoRepositoryFactory::class)
+    private val cryptoRepositoryFactory: CryptoRepositoryFactory,
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -64,7 +71,14 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, wrappingKeyStore, digestService, CacheFactoryImpl())
+    override fun createActiveImpl(): Impl =
+        Impl(
+            schemeMetadata,
+            cryptoRepositoryFactory.create(CRYPTO),
+            wrappingKeyStore,
+            digestService,
+            CacheFactoryImpl()
+        )
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
@@ -72,9 +86,10 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
+        private val cryptoRepository: CryptoRepository,
         private val wrappingKeyStore: WrappingKeyStore,
         private val digestService: PlatformDigestService,
-        private val cacheFactoryImpl: CacheFactoryImpl
+        private val cacheFactoryImpl: CacheFactoryImpl,
     ) : AbstractImpl {
 
         fun getInstance(config: SmartConfig): CryptoService {
@@ -113,6 +128,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                     )
             )
             return SoftCryptoService(
+                cryptoRepository = cryptoRepository,
                 wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,

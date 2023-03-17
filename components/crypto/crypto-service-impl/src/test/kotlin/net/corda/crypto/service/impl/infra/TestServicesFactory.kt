@@ -168,6 +168,10 @@ class TestServicesFactory {
         }
     }
 
+
+    // no need for cryptoRepository to be lazy since it does not involve lifecycle
+    val cryptoRepository: TestCryptoRepository = TestCryptoRepository()
+
     val signingService: SigningService by lazy {
         SigningServiceImpl(
             signingKeyStore,
@@ -211,6 +215,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
+                cryptoRepository = cryptoRepository,
                 wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
@@ -222,7 +227,7 @@ class TestServicesFactory {
                 },
                 wrappingKeyFactory = {
                     WrappingKeyImpl.generateWrappingKey(it)
-                }
+                },
             ),
             recordedCryptoContexts
         )
