@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import java.security.PublicKey
 
 interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransactionBuilderData {
     /**
@@ -22,4 +23,9 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
      * But keeps potential duplications in user-defined types. (commands and output states)
      */
     fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderInternal
+
+    /**
+     * The key of the selected notary
+     */
+    var notaryKey: PublicKey?
 }

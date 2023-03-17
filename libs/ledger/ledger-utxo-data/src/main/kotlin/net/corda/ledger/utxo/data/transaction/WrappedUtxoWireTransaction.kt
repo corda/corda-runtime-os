@@ -7,8 +7,8 @@ import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
@@ -24,8 +24,9 @@ class WrappedUtxoWireTransaction(
 ) {
 
     companion object {
-        const val notaryIndex: Int = 0
-        const val timeWindowIndex: Int = 1
+        const val notaryNameIndex: Int = 0
+        const val notaryKeyIndex: Int = 1
+        const val timeWindowIndex: Int = 2
     }
 
     init{
@@ -41,8 +42,12 @@ class WrappedUtxoWireTransaction(
 
     val metadata: TransactionMetadata get() = wireTransaction.metadata
 
-    val notary: Party by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        deserialize(UtxoComponentGroup.NOTARY, notaryIndex)
+    val notaryName: MemberX500Name by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        deserialize(UtxoComponentGroup.NOTARY, notaryNameIndex)
+    }
+
+    val notaryKey: PublicKey by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        deserialize(UtxoComponentGroup.NOTARY, notaryKeyIndex)
     }
 
     val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -81,7 +86,7 @@ class WrappedUtxoWireTransaction(
                 val contractState: ContractState = serializationService.deserialize(state)
                 val stateRef = StateRef(id, index)
                 val outputInfo = outputsInfo[index]
-                val transactionState = TransactionStateImpl(contractState, outputInfo.notary, outputInfo.getEncumbranceGroup())
+                val transactionState = TransactionStateImpl(contractState, outputInfo.notaryName, outputInfo.notaryKey, outputInfo.getEncumbranceGroup())
                 StateAndRefImpl(transactionState, stateRef)
             }
     }

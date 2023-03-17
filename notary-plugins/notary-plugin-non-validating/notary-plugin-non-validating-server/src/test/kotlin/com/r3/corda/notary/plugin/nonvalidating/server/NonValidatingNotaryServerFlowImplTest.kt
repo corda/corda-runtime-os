@@ -22,7 +22,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -66,23 +65,17 @@ class NonValidatingNotaryServerFlowImplTest {
             on { leafKeys } doReturn setOf(notaryVNodeAliceKey, notaryVNodeBobKey)
         }
 
-        val notaryServiceParty = Party(
-            MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"),
-            notaryServiceCompositeKey
-        )
+        val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
 
         /* Member - The client that initiated the session with the notary server */
         val memberCharlieKey = mock<PublicKey>()
 
         // The client that initiated the session with the notary server
-        val memberCharlieParty = Party(
-            MemberX500Name.parse("O=MemberCharlie, L=London, C=GB"),
-            memberCharlieKey
-        )
+        val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
 
         val memberCharlieMemberInfo = mock<MemberInfo> {
-            on { name } doReturn memberCharlieParty.name
-            on { sessionInitiationKey } doReturn memberCharlieParty.owningKey
+            on { name } doReturn memberCharlieName
+            on { sessionInitiationKey } doReturn memberCharlieKey
         }
 
         // Default signature verifier, no verification
@@ -299,7 +292,7 @@ class NonValidatingNotaryServerFlowImplTest {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
             // What party we pass in here does not matter, it just needs to be different from the notary server party
-            filteredTxContents = mapOf("notary" to Party(MemberX500Name.parse("C=GB,L=London,O=Bob"), mock()))
+            filteredTxContents = mapOf("notaryName" to MemberX500Name.parse("C=GB,L=London,O=Bob"))
         ) {
             assertThat(responseFromServer).hasSize(1)
 
@@ -345,11 +338,11 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 2. Check if any filtered transaction data should be overwritten
         val filteredTx = mock<UtxoFilteredTransaction> {
-            on { notary } doAnswer {
-                if (filteredTxContents.containsKey("notary")) {
-                    filteredTxContents["notary"] as Party?
+            on { notaryName } doAnswer {
+                if (filteredTxContents.containsKey("notaryName")) {
+                    filteredTxContents["notaryName"] as MemberX500Name?
                 } else {
-                    notaryServiceParty
+                    notaryServiceName
                 }
             }
 
@@ -404,7 +397,7 @@ class NonValidatingNotaryServerFlowImplTest {
                 responseFromServer.add(it.arguments.first() as NotarizationResponse)
                 Unit
             }
-            on { counterparty } doReturn memberCharlieParty.name
+            on { counterparty } doReturn memberCharlieName
         }
 
         // 4. Mock my member info to always return a platform version, and make sure we get the right party when
@@ -413,7 +406,7 @@ class NonValidatingNotaryServerFlowImplTest {
             on { platformVersion } doReturn DUMMY_PLATFORM_VERSION
         }
         val mockMemberLookup = mock<MemberLookup> {
-            on { lookup(memberCharlieParty.name) } doReturn memberCharlieMemberInfo
+            on { lookup(memberCharlieName) } doReturn memberCharlieMemberInfo
             on { myInfo() } doReturn mockMemberInfo
         }
 

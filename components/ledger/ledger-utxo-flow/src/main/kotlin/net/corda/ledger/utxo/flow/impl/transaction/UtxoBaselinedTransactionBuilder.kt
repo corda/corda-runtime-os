@@ -3,8 +3,8 @@ package net.corda.ledger.utxo.flow.impl.transaction
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -19,6 +19,8 @@ class UtxoBaselinedTransactionBuilder private constructor(
     val baselineTransactionBuilder: UtxoTransactionBuilderContainer,
     private val currentTransactionBuilder: UtxoTransactionBuilderInternal,
 ) : UtxoTransactionBuilderInternal {
+
+    override var notaryKey: PublicKey? = null
 
     constructor(transactionBuilderInternal: UtxoTransactionBuilderInternal) : this(
         transactionBuilderInternal.copy(),
@@ -40,9 +42,9 @@ class UtxoBaselinedTransactionBuilder private constructor(
     override val outputStates: List<ContractStateAndEncumbranceTag>
         get() = currentTransactionBuilder.outputStates
 
-    override fun getNotary(): Party? = currentTransactionBuilder.notary
+    override fun getNotary(): MemberX500Name? = currentTransactionBuilder.notary
 
-    override fun setNotary(notary: Party): UtxoBaselinedTransactionBuilder {
+    override fun setNotary(notary: MemberX500Name): UtxoBaselinedTransactionBuilder {
         require(this.notary == null || this.notary == notary) {
             "Original notary cannot be overridden."
         }

@@ -5,8 +5,9 @@ import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionBuilderVerifier
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -20,7 +21,8 @@ import java.util.Objects
 @Suppress("TooManyFunctions", "LongParameterList")
 class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    private var notary: Party? = null,
+    private val notaryLookup: NotaryLookup,
+    private var notary: MemberX500Name? = null,
     override var timeWindow: TimeWindow? = null,
     override val attachments: MutableList<SecureHash> = mutableListOf(),
     override val commands: MutableList<Command> = mutableListOf(),
@@ -31,6 +33,8 @@ class UtxoTransactionBuilderImpl(
 ) : UtxoTransactionBuilderInternal {
 
     private var alreadySigned = false
+
+    override var notaryKey: PublicKey? = null
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         require(attachmentId !in attachments) {
@@ -146,11 +150,11 @@ class UtxoTransactionBuilderImpl(
             .toMap()
     }
 
-    override fun getNotary(): Party? {
+    override fun getNotary(): MemberX500Name? {
         return notary
     }
 
-    override fun setNotary(notary: Party): UtxoTransactionBuilder {
+    override fun setNotary(notary: MemberX500Name): UtxoTransactionBuilder {
         this.notary = notary
         return this
     }
@@ -186,6 +190,9 @@ class UtxoTransactionBuilderImpl(
     @Suspendable
     private fun sign(): UtxoSignedTransaction {
         check(!alreadySigned) { "The transaction cannot be signed twice." }
+
+        require(notaryKey == null){ "The notary must not be set by user code"}
+        notaryKey = if (notary != null) notaryLookup.lookup(notary!!)?.publicKey else null
         UtxoTransactionBuilderVerifier(this).verify()
         return utxoSignedTransactionFactory.create(this, signatories).also {
             alreadySigned = true
@@ -248,6 +255,7 @@ class UtxoTransactionBuilderImpl(
     override fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderImpl {
         return UtxoTransactionBuilderImpl(
             this.utxoSignedTransactionFactory,
+            this.notaryLookup,
             this.notary ?: other.getNotary(),
             this.timeWindow ?: other.timeWindow,
             (this.attachments + other.attachments).distinct().toMutableList(),

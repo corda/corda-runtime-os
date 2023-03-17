@@ -1,12 +1,17 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.ledger.common.testkit.anotherPublicKeyExample
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
+import net.corda.ledger.utxo.testkit.notaryX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,7 +32,8 @@ class UtxoTransactionBuilderVerifierTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(transactionBuilder.notary).thenReturn(utxoNotaryExample)
+        whenever(transactionBuilder.notary).thenReturn(notaryX500Name)
+        whenever(transactionBuilder.notaryKey).thenReturn(publicKeyExample)
         whenever(transactionBuilder.timeWindow).thenReturn(timeWindow)
         whenever(transactionBuilder.getEncumbranceGroups()).thenReturn(emptyMap())
         whenever(transactionBuilder.signatories).thenReturn(listOf(signatory))
@@ -48,6 +54,15 @@ class UtxoTransactionBuilderVerifierTest {
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("The notary")
     }
+
+    @Test
+    fun `throws an exception when the notary key is null`() {
+        whenever(transactionBuilder.notaryKey).thenReturn(null)
+        assertThatThrownBy { verifier.verify() }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("cannot be found or is not a valid notary.")
+    }
+
 
     @Test
     fun `throws an exception when the time window is null`() {

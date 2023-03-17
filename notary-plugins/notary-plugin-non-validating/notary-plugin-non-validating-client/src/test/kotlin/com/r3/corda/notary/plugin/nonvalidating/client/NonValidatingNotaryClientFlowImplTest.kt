@@ -10,7 +10,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -61,7 +60,7 @@ class NonValidatingNotaryClientFlowImplTest {
         val mockUtxoTx = mock<UtxoSignedTransaction> {
             on { toLedgerTransaction() } doReturn mockLedgerTransaction
             on { id } doReturn txId
-            on { notary } doReturn Party(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"), mock())
+            on { notaryName } doReturn MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
         }
     }
 
@@ -136,7 +135,7 @@ class NonValidatingNotaryClientFlowImplTest {
 
         return NonValidatingNotaryClientFlowImpl(
             mockUtxoTx,
-            Party(MemberX500Name("Alice", "Alice Corp", "LDN", "GB"), mock()),
+            MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             flowMessaging,
             mock {
                 on { myInfo() } doReturn mockMemberInfo

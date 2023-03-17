@@ -6,7 +6,7 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,15 +38,15 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
     fun `diff - notary gets set when original is null`() {
         val result =
             UtxoBaselinedTransactionBuilder(utxoTransactionBuilder)
-                .setNotary(utxoNotaryExample)
+                .setNotary(notaryX500Name)
                 .diff()
-        assertEquals(utxoNotaryExample, result.getNotary())
+        assertEquals(notaryX500Name, result.getNotary())
     }
 
     @Test
     fun `diff - notary does not get set when original is not null`() {
         val result =
-            UtxoBaselinedTransactionBuilder(utxoTransactionBuilder.setNotary(utxoNotaryExample) as UtxoTransactionBuilderInternal)
+            UtxoBaselinedTransactionBuilder(utxoTransactionBuilder.setNotary(notaryX500Name) as UtxoTransactionBuilderInternal)
                 .diff()
         assertNull(result.getNotary())
     }

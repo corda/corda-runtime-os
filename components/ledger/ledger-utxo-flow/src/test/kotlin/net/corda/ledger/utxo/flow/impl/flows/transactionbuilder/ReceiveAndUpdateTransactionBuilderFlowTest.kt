@@ -11,8 +11,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
@@ -67,25 +67,25 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     @Test
     fun `called with original notary null and receives new notary returns a builder with the new notary`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notary = utxoNotaryExample)
+            UtxoTransactionBuilderContainer(notary = notaryX500Name)
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertEquals(utxoNotaryExample, returnedTransactionBuilder.notary)
+        assertEquals(notaryX500Name, returnedTransactionBuilder.notary)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
     fun `called with original notary and receives a different new notary returns with the original notary`() {
-        originalTransactionalBuilder.setNotary(utxoNotaryExample)
+        originalTransactionalBuilder.setNotary(notaryX500Name)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notary = anotherUtxoNotaryExample)
+            UtxoTransactionBuilderContainer(notary = anotherNotaryX500Name)
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertEquals(utxoNotaryExample, returnedTransactionBuilder.notary)
+        assertEquals(notaryX500Name, returnedTransactionBuilder.notary)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 

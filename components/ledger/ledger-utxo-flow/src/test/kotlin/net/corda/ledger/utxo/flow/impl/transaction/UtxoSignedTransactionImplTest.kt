@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.crypto.impl.CompositeKeyProviderImpl
+import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
@@ -8,13 +9,13 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
 
@@ -27,17 +28,18 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     private val notaryKey =
         CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also{println(it)}
     private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
-    private val notary = Party(notaryX500Name, notaryKey)
+    private val notary = notaryX500Name
 
     @BeforeEach
     fun beforeEach() {
         signedTransaction = UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory
+            utxoSignedTransactionFactory,
+            mockNotaryLookup
         )
             .setNotary(notary)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
-            .addSignatories(listOf(publicKeyExample))
+            .addSignatories(listOf(anotherPublicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal
 

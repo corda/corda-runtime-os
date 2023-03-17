@@ -13,7 +13,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
@@ -71,7 +70,7 @@ class UtxoDemoFlow : ClientStartableFlow {
             val txBuilder = utxoLedgerService.getTransactionBuilder()
 
             val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.publicKey))
+                .setNotary(notary.name)
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())

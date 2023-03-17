@@ -116,6 +116,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         val notaryGroup = listOf(
             utxoTransactionBuilder.notary,
+            utxoTransactionBuilder.notaryKey,
             utxoTransactionBuilder.timeWindow,
             /*TODO notaryallowlist*/
         )
@@ -126,6 +127,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val outputTransactionStates = utxoTransactionBuilder.outputStates.map {
             it.toTransactionState(
                 utxoTransactionBuilder.notary!!,
+                utxoTransactionBuilder.notaryKey!!,
                 it.encumbranceTag?.let { tag -> encumbranceGroupSizes[tag] })
         }
 
@@ -134,6 +136,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 it.encumbranceGroup?.tag,
                 it.encumbranceGroup?.size,
                 utxoTransactionBuilder.notary!!,
+                utxoTransactionBuilder.notaryKey!!,
                 currentSandboxGroup.getEvolvableTag(it.contractStateType),
                 currentSandboxGroup.getEvolvableTag(it.contractType)
             )

@@ -2,9 +2,10 @@ package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -124,7 +125,8 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(publicKeyExample)
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(timeWindow)
     }
 
@@ -139,7 +141,8 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
                 ) { true },
                 ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) {
                     when (it) {
-                        is Party -> false
+                        is MemberX500Name -> false
+                        is PublicKey -> false
                         else -> true
                     }
                 },
@@ -166,7 +169,8 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.notaryName).isNull()
+        assertThat(utxoFilteredTransaction.notaryKey).isNull()
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(timeWindow)
     }
 
@@ -202,7 +206,8 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.notaryName).isNull()
+        assertThat(utxoFilteredTransaction.notaryKey).isNull()
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
     }
 

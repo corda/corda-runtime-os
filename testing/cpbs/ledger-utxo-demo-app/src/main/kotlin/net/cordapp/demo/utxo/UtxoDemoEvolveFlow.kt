@@ -81,7 +81,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 .addCommand(TestCommand())
                 .addOutputState(output)
                 .addInputState(input.ref)
-                .setNotary(input.state.notary)
+                .setNotary(input.state.notaryName)
                 .setTimeWindowUntil(Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addSignatories(output.participants)
                 .toSignedTransaction()
