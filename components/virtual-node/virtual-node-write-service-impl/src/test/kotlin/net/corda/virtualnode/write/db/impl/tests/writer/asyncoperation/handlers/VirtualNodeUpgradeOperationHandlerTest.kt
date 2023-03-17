@@ -1,19 +1,27 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.LiquibaseDiffCheckFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -31,14 +39,6 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
-import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.LiquibaseDiffCheckFailedException
 
 class VirtualNodeUpgradeOperationHandlerTest {
     private val oldVirtualNodeEntityRepository = mock<VirtualNodeEntityRepository>()
@@ -53,11 +53,11 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val vnodeId = "123456789011"
 
     private val mockChangelog1 = mock<CpkDbChangeLog> { changelog ->
-        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256","abc".toByteArray()), "cpk1"))
+        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()), "cpk1"))
         whenever(changelog.content).thenReturn( "dog.xml")
     }
     private val mockChangelog2 = mock<CpkDbChangeLog> { changelog ->
-        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256","abc".toByteArray()),"cpk1"))
+        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()),"cpk1"))
         whenever(changelog.content).thenReturn( "cat.xml")
     }
     private val cpkDbChangelogs = listOf(mockChangelog1, mockChangelog2)
@@ -75,7 +75,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     )
 
     private val sshBytes = ByteArray(16)
-    private val ssh = SecureHash("SHA-256", sshBytes)
+    private val ssh = SecureHashImpl("SHA-256", sshBytes)
     private val sshString = ssh.toString()
     private val cpiName = "someCpi"
     private val cpiId = CpiIdentifier(cpiName,"v1", ssh)

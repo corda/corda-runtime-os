@@ -1,6 +1,7 @@
 package net.corda.crypto.persistence.impl
 
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
@@ -70,7 +71,7 @@ object SigningKeysRepositoryImpl : SigningKeysRepository {
 fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
     SigningCachedKey(
         id = ShortHash.parse(keyId),
-        fullId = SecureHash.parse(fullKeyId),
+        fullId = parseSecureHash(fullKeyId),
         tenantId = tenantId,
         category = category,
         alias = alias,

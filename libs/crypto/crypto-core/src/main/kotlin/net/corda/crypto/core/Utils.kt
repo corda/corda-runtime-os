@@ -7,7 +7,7 @@ fun SecureHash.toAvro(): AvroSecureHash =
     AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
 
 fun AvroSecureHash.toCorda(): SecureHash =
-    SecureHash(this.algorithm, this.bytes.array())
+    SecureHashImpl(this.algorithm, this.bytes.array())
 
 fun concatByteArrays(vararg concat: ByteArray): ByteArray {
     if (concat.isEmpty()) {

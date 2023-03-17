@@ -1,6 +1,7 @@
 @file:JvmName("SandboxServiceUtils")
 package net.corda.sandbox.internal
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.Cpk
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
@@ -290,7 +291,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 // read all bytes to calculate digest
             }
         }
-        return SecureHash(digest.algorithm, digest.digest())
+        return SecureHashImpl(digest.algorithm, digest.digest())
     }
 
     /**

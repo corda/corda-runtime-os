@@ -1,24 +1,24 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import javax.persistence.EntityManager
-import net.corda.v5.crypto.SecureHash
-import java.util.*
-import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
-import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import java.util.*
+import javax.persistence.EntityManager
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkFileRepositoryTest {
@@ -136,7 +136,7 @@ class CpkFileRepositoryTest {
 
             // Query database
             assertThat(cpkFileRepository.exists(this, cpkFile1.fileChecksum)).isTrue
-            assertThat(cpkFileRepository.exists(this, SecureHash("SHA-256", "DUMMY".toByteArray()))).isFalse
+            assertThat(cpkFileRepository.exists(this, SecureHashImpl("SHA-256", "DUMMY".toByteArray()))).isFalse
         }
     }
 

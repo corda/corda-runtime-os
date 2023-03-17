@@ -1,5 +1,6 @@
 package net.corda.libs.cpi.datamodel.repository
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.v5.crypto.SecureHash
@@ -55,6 +56,6 @@ class CpkFileRepositoryImpl: CpkFileRepository {
     }
 
     private fun CpkFileEntity.toDto(): CpkFile {
-        return CpkFile(SecureHash.parse(fileChecksum), data, entityVersion)
+        return CpkFile(parseSecureHash(fileChecksum), data, entityVersion)
     }
 }

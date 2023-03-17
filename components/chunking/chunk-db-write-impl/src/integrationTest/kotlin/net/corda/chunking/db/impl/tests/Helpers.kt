@@ -2,6 +2,7 @@ package net.corda.chunking.db.impl.tests
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.packaging.Cpi
@@ -12,7 +13,7 @@ import java.util.UUID
 
 fun newRandomSecureHash(): SecureHash {
     val random = Random()
-    return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+    return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
 }
 
 @Suppress("LongParameterList")

@@ -1,5 +1,6 @@
 package net.corda.flow.state.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.PipelineState
@@ -35,7 +36,7 @@ class PipelineStateManager(
     }
 
     val cpkFileHashes: Set<SecureHash>
-        get() = state.cpkFileHashes.map { SecureHash(it.algorithm, it.bytes.array()) }.toSet()
+        get() = state.cpkFileHashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }.toSet()
 
     val retryState: RetryState?
         get() = state.retryState

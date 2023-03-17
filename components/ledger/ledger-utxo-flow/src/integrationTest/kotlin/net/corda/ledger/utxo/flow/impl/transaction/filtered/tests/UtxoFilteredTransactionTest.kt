@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.tests
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
@@ -398,7 +399,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
     }
     
     private fun createSignedTransaction(numberOfInputStates: Int = 2, numberOfOutputStates: Int = 2): UtxoSignedTransaction {
-        val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
+        val inputHash = parseSecureHash("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
             encumbranceGroupSize = null,

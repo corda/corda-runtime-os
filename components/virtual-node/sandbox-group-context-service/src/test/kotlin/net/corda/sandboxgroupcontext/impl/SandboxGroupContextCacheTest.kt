@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -7,7 +8,6 @@ import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCacheImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +51,7 @@ class SandboxGroupContextCacheTest {
             holdingIdentity = idBob,
             serviceFilter = "filter",
             sandboxGroupType = SandboxGroupType.FLOW,
-            cpkFileChecksums = setOf(SecureHash.parse("SHA-256:1234567890"))
+            cpkFileChecksums = setOf(parseSecureHash("SHA-256:1234567890"))
         )
     }
 
@@ -131,7 +131,7 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
         val vNodeContext2 = VirtualNodeContext(
             holdingIdentity = idBob,
-            cpkFileChecksums = setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
+            cpkFileChecksums = setOf(parseSecureHash("DUMMY:1234567890abcdef")),
             sandboxGroupType = SandboxGroupType.FLOW,
             serviceFilter = createRandomFilter()
         )
@@ -209,13 +209,13 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
         val vnodeContext1 = VirtualNodeContext(
             idAlice,
-            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
+            setOf(parseSecureHash("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             "filter"
         )
         val equalVnodeContext1 = VirtualNodeContext(
             idAlice,
-            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
+            setOf(parseSecureHash("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             "filter"
         )

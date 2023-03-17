@@ -16,10 +16,12 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
@@ -56,7 +58,6 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -889,7 +890,7 @@ class PersistenceTests {
         val keyLookedUpByKeyId =
             signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
         val keyLookedUpByFullKeyId =
-            signingKeyStore.lookupByFullIds(tenantId, listOf(SecureHash.parse(fullKeyId)))
+            signingKeyStore.lookupByFullIds(tenantId, listOf(parseSecureHash(fullKeyId)))
         assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
     }
 
@@ -974,4 +975,4 @@ class PersistenceTests {
 }
 
 fun PublicKey.id(): ShortHash =
-    ShortHash.of(SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))
+    ShortHash.of(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))

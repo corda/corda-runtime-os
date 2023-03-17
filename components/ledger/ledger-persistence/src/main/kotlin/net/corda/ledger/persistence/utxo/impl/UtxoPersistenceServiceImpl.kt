@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -37,11 +38,11 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManagerFactory.transaction { em ->
-            repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
+            repository.findUnconsumedVisibleStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
             ?.associate { Pair(it.leafIndex, it.data) }
@@ -140,13 +141,14 @@ class UtxoPersistenceServiceImpl constructor(
         }
 
         // Insert relevancy information for outputs
-        transaction.relevantStatesIndexes.forEach { relevantStateIndex ->
-            repository.persistTransactionRelevantStates(
+        transaction.visibleStatesIndexes.forEach { visibleStateIndex ->
+            repository.persistTransactionVisibleStates(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,
-                relevantStateIndex,
+                visibleStateIndex,
                 consumed = false,
+                CustomRepresentation("{\"temp\": \"value\"}"),
                 nowUtc
             )
         }
@@ -155,9 +157,10 @@ class UtxoPersistenceServiceImpl constructor(
         if (transaction.status == TransactionStatus.VERIFIED) {
             val inputStateRefs = transaction.getConsumedStateRefs()
             if (inputStateRefs.isNotEmpty()) {
-                repository.markTransactionRelevantStatesConsumed(
+                repository.markTransactionVisibleStatesConsumed(
                     em,
-                    inputStateRefs
+                    inputStateRefs,
+                    nowUtc
                 )
             }
         }

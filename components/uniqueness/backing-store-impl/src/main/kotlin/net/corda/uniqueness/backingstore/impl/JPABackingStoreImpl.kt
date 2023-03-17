@@ -1,5 +1,6 @@
 package net.corda.uniqueness.backingstore.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -207,10 +208,10 @@ open class JPABackingStoreImpl @Activate constructor(
             existing.forEach { stateEntity ->
                 val consumingTxId =
                     if (stateEntity.consumingTxId != null) {
-                        SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
+                        SecureHashImpl(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
                     } else null
                 val returnedState = UniquenessCheckStateRefImpl(
-                    SecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
+                    SecureHashImpl(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
                     stateEntity.issueTxOutputIndex)
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
@@ -220,7 +221,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
         override fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal> {
+        ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
 
             val txPks = txIds.map {
                 UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
@@ -255,7 +256,7 @@ open class JPABackingStoreImpl @Activate constructor(
                                 "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                     )
                 }
-                val txHash = SecureHash(txEntity.txIdAlgo, txEntity.txId)
+                val txHash = SecureHashImpl(txEntity.txIdAlgo, txEntity.txId)
                 txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
             }.toMap()
 

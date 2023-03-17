@@ -1,7 +1,7 @@
 package net.corda.libs.packaging.core
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Random
@@ -15,15 +15,15 @@ object CpkMetaTestData {
     val cpiId = CpiIdentifier(
         "SomeName",
         "1.0",
-        SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     )
     val cpkId = CpkIdentifier(
         "SomeName",
-        "1.0", SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        "1.0", SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     )
     val cpkDependencyId = CpkIdentifier(
         "SomeName 2",
-        "1.0", SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        "1.0", SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     )
     val cpkType = CpkType.CORDA_API
     val cpkFormatVersion = CpkFormatVersion(2, 3)
@@ -53,7 +53,7 @@ object CpkMetaTestData {
             listOf("library.jar"),
             cordappManifest,
             cpkType,
-            SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
+            SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
             emptySet(),
             currentTimeStamp
         )

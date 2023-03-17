@@ -7,12 +7,12 @@ import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
@@ -76,7 +76,7 @@ class CryptoOpsBusProcessor(
 
         private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
             secureHashes.hashes.map {
-                SecureHash(it.algorithm, it.bytes.array())
+                SecureHashImpl(it.algorithm, it.bytes.array())
             }
     }
 
@@ -226,8 +226,7 @@ class CryptoOpsBusProcessor(
             )
             return CryptoSignatureWithKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes),
-                signature.context.toWire()
+                ByteBuffer.wrap(signature.bytes)
             )
         }
 
