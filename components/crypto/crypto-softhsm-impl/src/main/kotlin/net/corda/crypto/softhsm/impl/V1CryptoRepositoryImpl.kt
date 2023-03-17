@@ -1,7 +1,7 @@
-package net.corda.crypto.persistence.v1schema
+package net.corda.crypto.softhsm.impl
 
-import net.corda.crypto.persistence.CryptoRepository
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import java.time.Instant
