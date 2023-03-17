@@ -18,8 +18,6 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -31,8 +29,6 @@ import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
@@ -104,9 +100,6 @@ class PersistenceTests {
         @InjectService(timeout = 5000)
         lateinit var signingKeyStore: SigningKeyStore
 
-        @InjectService(timeout = 5000)
-        lateinit var wrappingKeyStore: WrappingKeyStore
-
         private lateinit var publisher: Publisher
 
         private lateinit var tracker: TestDependenciesTracker
@@ -147,7 +140,6 @@ class PersistenceTests {
                     CryptoConnectionsFactory::class.java,
                     HSMStore::class.java,
                     SigningKeyStore::class.java,
-                    WrappingKeyStore::class.java
                 )
             )
             tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
@@ -603,53 +595,6 @@ class PersistenceTests {
         assertEquals(0, association2.deprecatedAt)
         assertEquals(hsmId2, association2.hsmId)
         assertNotNull(association2.masterKeyAlias)
-    }
-
-    @Test
-    fun `Should save and then retrieve wrapping keys`() {
-        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val alias1 = UUID.randomUUID().toString()
-        val alias2 = UUID.randomUUID().toString()
-        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key1.algorithm,
-            keyMaterial = masterKey.wrap(key1)
-        )
-        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo2 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key2.algorithm,
-            keyMaterial = masterKey.wrap(key2)
-        )
-        wrappingKeyStore.saveWrappingKey(alias1, wrappingKeyInfo1)
-        wrappingKeyStore.saveWrappingKey(alias2, wrappingKeyInfo2)
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias1)!!.keyMaterial))
-        assertEquals(key2, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias2)!!.keyMaterial))
-    }
-
-    @Test
-    fun `Should fail override existing wrapping keys`() {
-        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val alias = UUID.randomUUID().toString()
-        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key1.algorithm,
-            keyMaterial = masterKey.wrap(key1)
-        )
-        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo2 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key2.algorithm,
-            keyMaterial = masterKey.wrap(key2)
-        )
-        wrappingKeyStore.saveWrappingKey(alias, wrappingKeyInfo1)
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias)!!.keyMaterial))
-        assertThrows(PersistenceException::class.java) {
-            wrappingKeyStore.saveWrappingKey(alias, wrappingKeyInfo2)
-        }
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias)!!.keyMaterial))
     }
 
     @ParameterizedTest

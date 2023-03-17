@@ -6,10 +6,8 @@ import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.impl.SoftCryptoService
-import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -20,7 +18,6 @@ fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,
     cryptoRepository: CryptoRepository = TestCryptoRepository(),
-    wrappingKeyStore: WrappingKeyStore = TestWrappingKeyStore(mock()),
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
@@ -28,7 +25,6 @@ fun makeSoftCryptoService(
     },
 ) = SoftCryptoService(
     cryptoRepository = cryptoRepository,
-    wrappingKeyStore = wrappingKeyStore,
     schemeMetadata = schemeMetadata,
     rootWrappingKey = rootWrappingKey,
     digestService = PlatformDigestServiceImpl(schemeMetadata),

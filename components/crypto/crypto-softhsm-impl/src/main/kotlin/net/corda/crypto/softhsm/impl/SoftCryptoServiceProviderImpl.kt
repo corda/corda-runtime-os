@@ -16,10 +16,13 @@ import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.CryptoRepositoryFactory
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getStringOrDefault
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.orm.JpaEntitiesRegistry
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -57,6 +60,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val digestService: PlatformDigestService,
     @Reference(service = CryptoRepositoryFactory::class)
     private val cryptoRepositoryFactory: CryptoRepositoryFactory,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -74,7 +83,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     override fun createActiveImpl(): Impl =
         Impl(
             schemeMetadata,
-            cryptoRepositoryFactory.create(CRYPTO),
+            cryptoRepositoryFactory.create(
+                CRYPTO,
+                dbConnectionManager,
+                jpaEntitiesRegistry,
+                virtualNodeInfoReadService
+            ),
             wrappingKeyStore,
             digestService,
             CacheFactoryImpl()
@@ -129,7 +143,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             )
             return SoftCryptoService(
                 cryptoRepository = cryptoRepository,
-                wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 rootWrappingKey = rootWrappingKey,

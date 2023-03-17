@@ -22,7 +22,6 @@ import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
@@ -42,7 +41,6 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * without a database, without OSGi and without SmartConfig, which makes it easy to test.
  *
  * @param cryptoRepository which provides database operations
- * @param wrappingKeyStore which provides save and find operations for wrapping keys (being phased out)
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
  * @param digestService supply a platform digest service instance; if not one will be constructed
@@ -58,7 +56,6 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 @Suppress("LongParameterList")
 class SoftCryptoService(
     private val cryptoRepository: CryptoRepository,
-    private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
     private val digestService: PlatformDigestService,
@@ -83,7 +80,7 @@ class SoftCryptoService(
     override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(wrappingKeyAlias != "") { "Alias must not be empty" }
         val isCached = wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null
-        val isAvailable = if (isCached) true else wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
+        val isAvailable = if (isCached) true else cryptoRepository.findWrappingKey(wrappingKeyAlias) != null
         logger.trace {
             "createWrappingKey(alias=$wrappingKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
         }
@@ -96,7 +93,7 @@ class SoftCryptoService(
         val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
-        wrappingKeyStore.saveWrappingKey(wrappingKeyAlias, wrappingKeyInfo)
+        cryptoRepository.saveWrappingKey(wrappingKeyAlias, wrappingKeyInfo)
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
@@ -198,9 +195,8 @@ class SoftCryptoService(
 
     private fun getWrappingKeyUncached(alias: String): WrappingKey {
         // use IllegalArgumentException instead for not found?
-        val wrappingKeyInfo =
-            wrappingKeyStore.findWrappingKey(alias)
-                ?: throw IllegalStateException("Wrapping key with alias $alias not found")
+        val wrappingKeyInfo = cryptoRepository.findWrappingKey(alias)
+            ?: throw IllegalStateException("Wrapping key with alias $alias not found")
         require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
             "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
         }

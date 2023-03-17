@@ -18,6 +18,7 @@ import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.crypto.softhsm.impl.V1WrappingKeyEntity
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
@@ -276,12 +277,12 @@ class CryptoProcessorTests {
             databaseInstaller.setupDatabase(
                 vnodeDb,
                 "vnode-crypto",
-                CryptoEntities.classes
+                CryptoEntities.classes.union(setOf(V1WrappingKeyEntity::class.java))
             ).close()
             databaseInstaller.setupDatabase(
                 vnodeDb2,
                 "vnode-crypto",
-                CryptoEntities.classes
+                CryptoEntities.classes.union(setOf(V1WrappingKeyEntity::class.java))
             ).close()
             connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb, vnodeDb2)
             configEmf.close()

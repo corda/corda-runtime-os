@@ -15,7 +15,7 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
@@ -56,8 +56,7 @@ class SoftCryptoServiceOperationsTests {
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
-        private val wrappingKeyStore = TestWrappingKeyStore(
-            coordinatorFactory,
+        private val cryptoRepository = TestCryptoRepository(
             ConcurrentHashMap(
                 listOf(
                     knownWrappingKeyAlias to WrappingKeyInfo(
@@ -70,7 +69,7 @@ class SoftCryptoServiceOperationsTests {
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
         private val cryptoService = makeSoftCryptoService(
-            wrappingKeyStore = wrappingKeyStore,
+            cryptoRepository = cryptoRepository,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
@@ -379,8 +378,8 @@ class SoftCryptoServiceOperationsTests {
         val key2Missing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2Missing)
 
-        wrappingKeyStore.saveWrappingKey(alias1, info1)
-        wrappingKeyStore.saveWrappingKey(alias2, info2)
+        cryptoRepository.saveWrappingKey(alias1, info1)
+        cryptoRepository.saveWrappingKey(alias2, info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
@@ -400,15 +399,15 @@ class SoftCryptoServiceOperationsTests {
 
         val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
         assertEquals(expected1, key1FoundLater)
-        
-        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(1)
-        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(1)
+
+        assertThat(cryptoRepository.findCounter[alias1]).isEqualTo(1)
+        assertThat(cryptoRepository.findCounter[alias2]).isEqualTo(1)
     }
 
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
-        wrappingKeyStore.saveWrappingKey(
+        cryptoRepository.saveWrappingKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
@@ -424,7 +423,7 @@ class SoftCryptoServiceOperationsTests {
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
-        wrappingKeyStore.saveWrappingKey(
+        cryptoRepository.saveWrappingKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
@@ -449,11 +448,11 @@ class SoftCryptoServiceOperationsTests {
     fun `wrapping key store can find keys that have been stored`() {
         val storeAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
-        assertNull(wrappingKeyStore.findWrappingKey(storeAlias))
-        assertNull(wrappingKeyStore.findWrappingKey(unknownAlias))
-        wrappingKeyStore.saveWrappingKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
-        assertNotNull(wrappingKeyStore.findWrappingKey(storeAlias))
-        assertNull(wrappingKeyStore.findWrappingKey(unknownAlias))
+        assertNull(cryptoRepository.findWrappingKey(storeAlias))
+        assertNull(cryptoRepository.findWrappingKey(unknownAlias))
+        cryptoRepository.saveWrappingKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
+        assertNotNull(cryptoRepository.findWrappingKey(storeAlias))
+        assertNull(cryptoRepository.findWrappingKey(unknownAlias))
     }
 
     @Test
