@@ -1,10 +1,9 @@
 package net.corda.messaging.chunking
 
-import java.io.ByteArrayOutputStream
-import java.util.function.Consumer
 import net.corda.chunking.Checksum
 import net.corda.chunking.Constants
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -14,6 +13,8 @@ import net.corda.utilities.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayOutputStream
+import java.util.function.Consumer
 
 /**
  * Service to reassemble chunked messages into their original values.
@@ -66,7 +67,7 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
      */
     private fun validateBytes(receivedBytes: ByteArray, messageDigestBytes: ByteArray) {
         val receivedDigest = platformDigestService.hash(receivedBytes, DigestAlgorithmName(Checksum.ALGORITHM))
-        val expectedDigest = SecureHash(DigestAlgorithmName(Checksum.ALGORITHM).name, messageDigestBytes)
+        val expectedDigest = SecureHashImpl(DigestAlgorithmName(Checksum.ALGORITHM).name, messageDigestBytes)
         if (receivedDigest != expectedDigest) {
             throw IllegalArgumentException(Constants.SECURE_HASH_VALIDATION_ERROR)
         }

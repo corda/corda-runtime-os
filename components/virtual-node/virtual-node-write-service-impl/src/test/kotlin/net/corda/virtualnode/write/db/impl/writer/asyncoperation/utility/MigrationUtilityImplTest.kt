@@ -1,16 +1,12 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import java.lang.IllegalArgumentException
-import java.sql.Connection
-import java.util.UUID
-import javax.persistence.PersistenceException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.v5.crypto.SecureHash
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
@@ -23,6 +19,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.sql.Connection
+import java.util.UUID
+import javax.persistence.PersistenceException
 
 class MigrationUtilityImplTest {
 
@@ -37,19 +36,19 @@ class MigrationUtilityImplTest {
     private val migrationUtility = MigrationUtilityImpl(dbConnectionManager, liquibaseSchemaMigrator)
     private val vaultDdlConnectionId = UUID.randomUUID()
     private val cpk1DogsChangelog = mock<CpkDbChangeLog> {
-        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256", "cpk1".toByteArray()), "dogs.xml"))
+        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256", "cpk1".toByteArray()), "dogs.xml"))
         whenever(it.content).thenReturn("content-dogs")
     }
     private val cpk1CatsChangelog = mock<CpkDbChangeLog> {
-        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256", "cpk1".toByteArray()), "cats.xml"))
+        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256", "cpk1".toByteArray()), "cats.xml"))
         whenever(it.content).thenReturn("content-cats")
     }
     private val cpk2RabbitsChangelog = mock<CpkDbChangeLog> {
-        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256", "cpk2".toByteArray()), "rabbits.xml"))
+        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256", "cpk2".toByteArray()), "rabbits.xml"))
         whenever(it.content).thenReturn("content-rabbits")
     }
     private val cpk2SnakesChangelog = mock<CpkDbChangeLog> {
-        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256", "cpk2".toByteArray()), "snakes.xml"))
+        whenever(it.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256", "cpk2".toByteArray()), "snakes.xml"))
         whenever(it.content).thenReturn("content-snakes")
     }
 
@@ -78,7 +77,7 @@ class MigrationUtilityImplTest {
         verify(liquibaseSchemaMigrator).updateDb(
             eq(connection),
             changelogsCapture.capture(),
-            tag = eq(SecureHash("SHA-256", "cpk1".toByteArray()).toString())
+            tag = eq(SecureHashImpl("SHA-256", "cpk1".toByteArray()).toString())
         )
 
         assertThat(changelogsCapture.firstValue).isNotNull
@@ -99,12 +98,12 @@ class MigrationUtilityImplTest {
         verify(liquibaseSchemaMigrator).updateDb(
             eq(connection),
             changelogsCapture.capture(),
-            tag = eq(SecureHash("SHA-256", "cpk1".toByteArray()).toString())
+            tag = eq(SecureHashImpl("SHA-256", "cpk1".toByteArray()).toString())
         )
         verify(liquibaseSchemaMigrator).updateDb(
             eq(connection),
             changelogsCapture.capture(),
-            tag = eq(SecureHash("SHA-256", "cpk2".toByteArray()).toString())
+            tag = eq(SecureHashImpl("SHA-256", "cpk2".toByteArray()).toString())
         )
 
         assertThat(changelogsCapture.firstValue).isNotNull
@@ -123,7 +122,7 @@ class MigrationUtilityImplTest {
             liquibaseSchemaMigrator.updateDb(
                 eq(connection),
                 changelogsCapture.capture(),
-                tag = eq(SecureHash("SHA-256", "cpk1".toByteArray()).toString())
+                tag = eq(SecureHashImpl("SHA-256", "cpk1".toByteArray()).toString())
             )
         )
             .thenThrow(PersistenceException("error running migrations"))
@@ -139,7 +138,7 @@ class MigrationUtilityImplTest {
         verify(liquibaseSchemaMigrator, times(0)).updateDb(
             eq(connection),
             changelogsCapture.capture(),
-            tag = eq(SecureHash("SHA-256", "cpk2".toByteArray()).toString())
+            tag = eq(SecureHashImpl("SHA-256", "cpk2".toByteArray()).toString())
         )
     }
 

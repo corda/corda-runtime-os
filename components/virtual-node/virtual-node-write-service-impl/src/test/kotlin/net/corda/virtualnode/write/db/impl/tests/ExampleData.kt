@@ -1,12 +1,13 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
@@ -27,8 +28,8 @@ internal val MGM_HOLDING_ID1 = HoldingIdentity(MGM_X500_NAME, GROUP_ID1)
 
 internal const val CPI_NAME1 = "CPI1"
 internal const val CPI_VERSION1 = "1.0"
-internal val CPI_CHECKSUM1 = SecureHash("SHA-256","CPI_CHECKSUM1".toByteArray())
-internal val CPI_SIGNER_HASH1 = SecureHash.parse("SHA-256:1234567890123456")
+internal val CPI_CHECKSUM1 = SecureHashImpl("SHA-256","CPI_CHECKSUM1".toByteArray())
+internal val CPI_SIGNER_HASH1 = parseSecureHash("SHA-256:1234567890123456")
 internal val CPI_IDENTIFIER1 = CpiIdentifier(CPI_NAME1, CPI_VERSION1, CPI_SIGNER_HASH1)
 internal val CPI_METADATA1 = CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, GROUP_POLICY1)
 

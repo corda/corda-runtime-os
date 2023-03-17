@@ -1,12 +1,12 @@
 package net.cordapp.testing.testflows.ledger
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
@@ -26,6 +26,9 @@ class TokenSelectionFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -81,13 +84,13 @@ class TokenSelectionFlow : ClientStartableFlow {
 
         return TokenClaimCriteria(
             checkNotNull(inputRequest.tokenType) { "Token Type is required" },
-            SecureHash.parse(checkNotNull(inputRequest.issuerHash) { "Issuer Hash is required" }),
+            digestService.parseSecureHash(checkNotNull(inputRequest.issuerHash) { "Issuer Hash is required" }),
             MemberX500Name.parse(checkNotNull(inputRequest.notaryX500Name) { "Notary Hash is required" }),
             checkNotNull(inputRequest.symbol) { "Symbolis required" },
             BigDecimal(inputRequest.targetAmount!!)
         ).apply {
             tagRegex = inputRequest.tagRegex
-            ownerHash = inputRequest.ownerHash?.let { SecureHash.parse(it) }
+            ownerHash = inputRequest.ownerHash?.let { digestService.parseSecureHash(it) }
         }
     }
 }

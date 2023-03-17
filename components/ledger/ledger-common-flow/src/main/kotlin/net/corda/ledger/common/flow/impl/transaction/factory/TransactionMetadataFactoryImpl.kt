@@ -1,5 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction.factory
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
@@ -7,7 +8,6 @@ import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFacto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -60,6 +60,6 @@ private fun getCpiSummary(): CordaPackageSummary =
     CordaPackageSummaryImpl(
         name = "CPI name",
         version = "CPI version",
-        signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
-        fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
+        signerSummaryHash = SecureHashImpl("SHA-256", "Fake-value".toByteArray()).toHexString(),
+        fileChecksum = SecureHashImpl("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
     )

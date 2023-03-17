@@ -5,12 +5,14 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
@@ -18,6 +20,7 @@ import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
@@ -25,9 +28,11 @@ import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
+import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
@@ -47,6 +52,8 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -87,6 +94,7 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_ID = "rule-id"
         const val DUMMY_RULE = "corda.*"
         const val DUMMY_LABEL = "label1"
+        const val SERIAL = 0L
     }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
@@ -117,7 +125,8 @@ class MembershipPersistenceRPCProcessorTest {
         RegistrationStatus.PENDING_MEMBER_VERIFICATION.name,
         clock.instant(),
         clock.instant(),
-        context
+        context,
+        SERIAL,
     )
 
     private val groupPolicyQuery: TypedQuery<GroupPolicyEntity> = mock {
@@ -196,6 +205,14 @@ class MembershipPersistenceRPCProcessorTest {
         null,
         null
     )
+    private val memberEntity = mock<MemberInfoEntity> {
+        on { memberContext } doReturn byteArrayOf(1)
+        on { mgmContext } doReturn byteArrayOf(2)
+        on { serialNumber } doReturn 1L
+        on { groupId } doReturn "groupId"
+        on { memberX500Name } doReturn ourX500Name
+        on { isPending } doReturn false
+    }
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
         on { find(RegistrationRequestEntity::class.java, ourRegistrationId, LockModeType.PESSIMISTIC_WRITE) } doReturn registrationRequest
@@ -208,6 +225,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { createQuery(preAuthTokenQuery) } doReturn typedPreAuthTokenQuery
         on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
         on { createQuery(registrationRequestsQuery) } doReturn registrationRequestQuery
+        on { find(eq(MemberInfoEntity::class.java), any(), eq(LockModeType.PESSIMISTIC_WRITE)) } doReturn memberEntity
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -225,11 +243,13 @@ class MembershipPersistenceRPCProcessorTest {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
-    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn byteArrayOf(0)
+    }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
-        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListDeserializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
@@ -300,10 +320,11 @@ class MembershipPersistenceRPCProcessorTest {
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray()),
-                        KeyValuePairList(emptyList())
+                        ByteBuffer.wrap("456".toByteArray())
                     ),
-                    true
+                    CryptoSignatureSpec("", null, null),
+                    true,
+                    SERIAL,
                 )
             )
         )
@@ -396,10 +417,11 @@ class MembershipPersistenceRPCProcessorTest {
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray()),
-                        KeyValuePairList(emptyList())
+                        ByteBuffer.wrap("456".toByteArray())
                     ),
-                    false
+                    CryptoSignatureSpec("", null, null),
+                    false,
+                    SERIAL,
                 )
             )
         )
@@ -646,6 +668,56 @@ class MembershipPersistenceRPCProcessorTest {
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
             assertThat(payload).isNull()
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `suspend member returns success`() {
+        whenever(memberEntity.status).doReturn(MEMBER_STATUS_ACTIVE)
+        whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            SuspendMember(ourX500Name, null, null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(SuspendMemberResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `activate member returns success`() {
+        whenever(memberEntity.status).doReturn(MEMBER_STATUS_SUSPENDED)
+        whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            ActivateMember(ourX500Name, null, null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(ActivateMemberResponse::class.java)
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

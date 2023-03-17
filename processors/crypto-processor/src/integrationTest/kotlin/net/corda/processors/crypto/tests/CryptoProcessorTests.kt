@@ -9,6 +9,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
@@ -926,4 +927,4 @@ private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<B
             }
 
 fun PublicKey.fullId(): SecureHash =
-    SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())

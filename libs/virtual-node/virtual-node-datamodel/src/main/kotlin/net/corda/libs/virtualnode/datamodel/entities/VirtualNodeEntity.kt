@@ -1,10 +1,10 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.schema.DbSchema.VIRTUAL_NODE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 import java.io.Serializable
 import java.time.Instant
 import java.util.Objects
@@ -12,8 +12,8 @@ import java.util.UUID
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.Enumerated
 import javax.persistence.EnumType
+import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.MapsId
@@ -126,7 +126,7 @@ internal class VirtualNodeEntity(
     fun toVirtualNodeInfo(): VirtualNodeInfo {
         return VirtualNodeInfo(
             holdingIdentity.toHoldingIdentity(),
-            CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash)),
+            CpiIdentifier(cpiName, cpiVersion, parseSecureHash(cpiSignerSummaryHash)),
             vaultDDLConnectionId,
             vaultDMLConnectionId!!,
             cryptoDDLConnectionId,

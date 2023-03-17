@@ -1772,6 +1772,20 @@
             "nullable" : true,
             "example" : "string"
           }
+        }, {
+          "name" : "statuses",
+          "in" : "query",
+          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only an MGM can view suspended members.",
+          "required" : false,
+          "schema" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
         } ],
         "responses" : {
           "200" : {
@@ -4809,6 +4823,12 @@
             "format" : "datetime",
             "nullable" : true,
             "example" : "2022-06-24T10:15:30Z"
+          },
+          "serial" : {
+            "type" : "integer",
+            "format" : "int64",
+            "nullable" : true,
+            "example" : 0
           }
         }
       },

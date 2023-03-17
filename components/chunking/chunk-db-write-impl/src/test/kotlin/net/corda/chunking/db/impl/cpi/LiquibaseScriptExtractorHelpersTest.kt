@@ -2,6 +2,7 @@ package net.corda.chunking.db.impl.cpi
 
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractorHelpers
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -88,8 +89,8 @@ internal class LiquibaseScriptExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.0",
-            SecureHash.parse("ALGO:1234567890"),
-            SecureHash.parse("ALGO:0987654321")
+            parseSecureHash("ALGO:1234567890"),
+            parseSecureHash("ALGO:0987654321")
         )
 
         val obj = LiquibaseScriptExtractorHelpers()
@@ -103,8 +104,8 @@ internal class LiquibaseScriptExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.0",
-            SecureHash.parse("ALGO:1234567890"),
-            SecureHash.parse("ALGO:0987654321")
+            parseSecureHash("ALGO:1234567890"),
+            parseSecureHash("ALGO:0987654321")
         )
 
         val obj = LiquibaseScriptExtractorHelpers()
@@ -118,8 +119,8 @@ internal class LiquibaseScriptExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.1",
-            SecureHash.parse("ALGO:1234567890"),
-            SecureHash.parse("ALGO:0987654321")
+            parseSecureHash("ALGO:1234567890"),
+            parseSecureHash("ALGO:0987654321")
         )
 
         val obj = LiquibaseScriptExtractorHelpers()
@@ -133,8 +134,8 @@ internal class LiquibaseScriptExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.2",
-            SecureHash.parse("ALGO:1234567890"),
-            SecureHash.parse("ALGO:0987654321")
+            parseSecureHash("ALGO:1234567890"),
+            parseSecureHash("ALGO:0987654321")
         )
 
         val obj = LiquibaseScriptExtractorHelpers()
@@ -148,8 +149,8 @@ internal class LiquibaseScriptExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.2",
-            SecureHash.parse("ALGO:1234567890"),
-            SecureHash.parse("ALGO:0987654321")
+            parseSecureHash("ALGO:1234567890"),
+            parseSecureHash("ALGO:0987654321")
         )
 
 
@@ -184,8 +185,8 @@ internal class LiquibaseScriptExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.2",
-            SecureHash.parse("ALGO:1234567890"),
-            SecureHash.parse("ALGO:0987654321")
+            parseSecureHash("ALGO:1234567890"),
+            parseSecureHash("ALGO:0987654321")
         )
 
         val obj = LiquibaseScriptExtractorHelpers()
