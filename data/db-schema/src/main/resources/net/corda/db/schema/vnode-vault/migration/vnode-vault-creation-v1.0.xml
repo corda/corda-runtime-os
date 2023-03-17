@@ -79,6 +79,9 @@
             <column name="reason" type="NVARCHAR(255)">
                 <constraints nullable="true"/>
             </column>
+            <column name="serial" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
         <addPrimaryKey columnNames="registration_id"
                        constraintName="vnode_registration_request_pk"

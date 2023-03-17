@@ -44,6 +44,11 @@
       "name": "reason",
       "doc": "Reason why the request is in the status specified by [registrationStatus].",
       "type": ["string", "null"]
+    },
+    {
+      "name": "serial",
+      "doc": "The version of the member info the member saw when they submitted their registration.",
+      "type": "long"
     }
   ]
 }
