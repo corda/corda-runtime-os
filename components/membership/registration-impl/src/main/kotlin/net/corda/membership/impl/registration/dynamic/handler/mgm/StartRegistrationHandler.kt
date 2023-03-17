@@ -191,7 +191,7 @@ internal class StartRegistrationHandler(
         }
 
         val customFieldsValid = registrationContextCustomFieldsVerifier.verify(memberContext)
-        validateRegistrationRequest(customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+        validateRegistrationRequest(customFieldsValid !is RegistrationContextCustomFieldsVerifier.Result.Failure) {
             (customFieldsValid as RegistrationContextCustomFieldsVerifier.Result.Failure).reason
         }
 

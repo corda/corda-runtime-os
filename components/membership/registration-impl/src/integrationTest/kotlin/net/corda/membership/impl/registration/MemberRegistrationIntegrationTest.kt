@@ -160,7 +160,7 @@ class MemberRegistrationIntegrationTest {
         const val URL_KEY = "corda.endpoints.0.connectionURL"
         const val URL_VALUE = "https://localhost:1080"
         const val PROTOCOL_KEY = "corda.endpoints.0.protocolVersion"
-        const val CUSTOM_KEY = "MyCustomKey"
+        const val CUSTOM_KEY = "ext.MyCustomKey"
         const val CUSTOM_VALUE = "MyCustomValue"
         const val PROTOCOL_VALUE = "1"
         const val CPI_VERSION = "1.1"
