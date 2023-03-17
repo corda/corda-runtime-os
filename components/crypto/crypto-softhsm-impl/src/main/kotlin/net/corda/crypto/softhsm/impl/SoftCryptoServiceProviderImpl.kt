@@ -35,7 +35,6 @@ import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 
-
 const val KEY_MAP_TRANSIENT_NAME = "TRANSIENT"
 const val KEY_MAP_CACHING_NAME = "CACHING"
 const val WRAPPING_DEFAULT_NAME = "DEFAULT"
@@ -71,7 +70,9 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     myName = lifecycleCoordinatorName,
     upstream = DependenciesTracker.Default(
         setOf(
-            LifecycleCoordinatorName.forComponent<WrappingKeyStore>()
+            LifecycleCoordinatorName.forComponent<WrappingKeyStore>(),
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
     )
 ), SoftCryptoServiceProvider {

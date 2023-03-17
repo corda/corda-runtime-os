@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyStore
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
@@ -15,7 +16,6 @@ import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.impl.V1WrappingKeyEntity
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -49,6 +49,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = CryptoConnectionsFactory::class)
     private val cryptoConnectionsFactory: CryptoConnectionsFactory,
+    @Reference(service = WrappingKeyStore::class)
+    private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = SigningKeyStore::class)
     private val signingKeyStore: SigningKeyStore,
     @Reference(service = HSMStore::class)
@@ -81,17 +83,14 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     init {
-        logger.info("Crypto processor starting")
-        entitiesRegistry.register(
-            CordaDb.Crypto.persistenceUnitName,
-            CryptoEntities.classes.union(setOf(V1WrappingKeyEntity::class.java))
-        )
+        entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
     }
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::cryptoConnectionsFactory,
+        ::wrappingKeyStore,
         ::signingKeyStore,
         ::hsmStore,
         ::signingServiceFactory,
