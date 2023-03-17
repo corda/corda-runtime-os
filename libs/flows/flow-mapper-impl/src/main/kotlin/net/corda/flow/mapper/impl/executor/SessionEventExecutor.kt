@@ -100,7 +100,7 @@ class SessionEventExecutor(
                 MessageDirection.INBOUND,
                 Instant.now(),
                 sessionEvent.sessionId,
-                1,
+                0,
                 sessionEvent.initiatingIdentity,
                 sessionEvent.initiatedIdentity,
                 sessionEvent.receivedSequenceNum,
