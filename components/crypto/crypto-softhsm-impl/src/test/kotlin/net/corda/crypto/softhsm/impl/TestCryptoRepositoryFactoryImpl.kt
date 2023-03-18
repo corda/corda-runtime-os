@@ -24,12 +24,12 @@ class TestCryptoRepositoryFactoryImpl {
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
-        val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, mock(), mock())
-        val repo = cut.create(CryptoTenants.CRYPTO)
+        val cut = CryptoRepositoryFactoryImpl()
+        val repo = cut.create(CryptoTenants.CRYPTO, dbConnectionManager, mock(), mock())
         assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create(CryptoTenants.P2P)
+        cut.create(CryptoTenants.P2P, dbConnectionManager, mock(), mock())
         verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
         repo.close()
@@ -53,14 +53,14 @@ class TestCryptoRepositoryFactoryImpl {
         val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
             on { get(any()) } doReturn mock()
         }
-        val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService)
+        val cut = CryptoRepositoryFactoryImpl()
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create(CryptoTenants.P2P).use {
+        cut.create(CryptoTenants.P2P, dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService).use {
             verify(sharedEntityManagerFactory, times(0)).close()
         }
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create("123456789012").use {
+        cut.create("123456789012", dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())

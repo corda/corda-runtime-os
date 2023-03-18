@@ -3,10 +3,11 @@ package net.corda.crypto.softhsm.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.crypto.softhsm.CryptoRepository
-import net.corda.crypto.softhsm.CryptoRepositoryFactory
+//import net.corda.crypto.softhsm.CryptoRepository
+//import net.corda.crypto.softhsm.CryptoRepositoryFactory
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
+//import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
+import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -24,16 +25,24 @@ import kotlin.test.assertTrue
 class SoftCryptoServiceProviderTests {
     private val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
     private val schemeMetadata = CipherSchemeMetadataImpl()
-    private val cryptoRepository = TestCryptoRepository()
+    private val wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
+        it.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+        }
+    }
+
+    //private val cryptoRepository = TestCryptoRepository()
     private val component =
         SoftCryptoServiceProviderImpl(
             coordinatorFactory = coordinatorFactory,
             schemeMetadata = schemeMetadata,
+            wrappingKeyStore = wrappingKeyStore,
             digestService = PlatformDigestServiceImpl(schemeMetadata),
-            cryptoRepositoryFactory = object : CryptoRepositoryFactory {
-                override fun create(tenantId: String): CryptoRepository =
-                    this@SoftCryptoServiceProviderTests.cryptoRepository
-            }
+//            cryptoRepositoryFactory = object : CryptoRepositoryFactory {
+//                override fun create(tenantId: String): CryptoRepository =
+//                    this@SoftCryptoServiceProviderTests.cryptoRepository
+//            }
         )
     private val defaultConfig: SmartConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
 

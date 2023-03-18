@@ -6,8 +6,10 @@ import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.CryptoRepository
+//import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
+//import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
+import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
@@ -16,6 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.mock
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
@@ -150,7 +153,22 @@ class SoftCryptoServiceCachingTests {
 
         var saveCount = 0
         var findCount = 0
-        val countingCryptoRepository = object : V1CryptoRepositoryImpl() {
+//        val testCryptoRepository = TestCryptoRepository()
+//        val countingCryptoRepository = object : CryptoRepository {
+//            override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
+//                saveCount++
+//                return testCryptoRepository.saveWrappingKey(alias, key)
+//            }
+//
+//            override fun findWrappingKey(alias: String): WrappingKeyInfo? {
+//                findCount++
+//                return testCryptoRepository.findWrappingKey(alias)
+//            }
+//
+//            override fun close() {
+//            }
+//        }
+        val countingWrappingStore = object : TestWrappingKeyStore(mock()) {
             override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
                 saveCount++
                 return super.saveWrappingKey(alias, key)
@@ -160,13 +178,11 @@ class SoftCryptoServiceCachingTests {
                 findCount++
                 return super.findWrappingKey(alias)
             }
-
-            override fun close() {
-            }
         }
         val wrappingKeyCache = makeWrappingKeyCache()
         val myCryptoService = makeSoftCryptoService(
-            cryptoRepository = countingCryptoRepository,
+            //cryptoRepository = countingCryptoRepository,
+            wrappingKeyStore = countingWrappingStore,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
