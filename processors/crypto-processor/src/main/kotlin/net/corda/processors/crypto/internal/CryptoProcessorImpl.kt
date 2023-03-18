@@ -90,7 +90,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::cryptoConnectionsFactory,
-        ::wrappingKeyStore,
         ::signingKeyStore,
         ::hsmStore,
         ::signingServiceFactory,

@@ -214,7 +214,6 @@ class TestServicesFactory {
         CryptoServiceWrapper(
             SoftCryptoService(
                 cryptoRepository = cryptoRepository,
-                wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
                 digestService = PlatformDigestServiceImpl(schemeMetadata),

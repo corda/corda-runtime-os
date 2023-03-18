@@ -39,7 +39,6 @@ class SoftCryptoServiceGeneralTests {
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
     private val service = makeSoftCryptoService(
         cryptoRepository = cryptoRepository,
-        wrappingKeyStore = wrappingKeyStore,
         schemeMetadata = schemeMetadata,
         rootWrappingKey = mock(),
     )

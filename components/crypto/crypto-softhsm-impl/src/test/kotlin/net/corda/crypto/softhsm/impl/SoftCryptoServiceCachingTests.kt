@@ -47,7 +47,6 @@ class SoftCryptoServiceCachingTests {
 
         val myCryptoService =
             makeSoftCryptoService(
-
                 privateKeyCache = privateKeyCache,
                 wrappingKeyCache = wrappingKeyCache,
                 rootWrappingKey = rootWrappingKey,

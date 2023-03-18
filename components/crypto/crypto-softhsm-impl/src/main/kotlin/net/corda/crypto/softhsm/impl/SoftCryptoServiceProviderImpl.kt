@@ -11,7 +11,6 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
@@ -52,8 +51,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = WrappingKeyStore::class)
-    private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
     @Reference(service = DbConnectionManager::class)
@@ -67,7 +64,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     myName = lifecycleCoordinatorName,
     upstream = DependenciesTracker.Default(
         setOf(
-            LifecycleCoordinatorName.forComponent<WrappingKeyStore>(),
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
@@ -84,7 +80,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             jpaEntitiesRegistry,
             virtualNodeInfoReadService
         ),
-        schemeMetadata, wrappingKeyStore, digestService, CacheFactoryImpl()
+        schemeMetadata, digestService, CacheFactoryImpl()
     )
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
@@ -94,7 +90,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     class Impl(
         private val cryptoRepository: CryptoRepository,
         private val schemeMetadata: CipherSchemeMetadata,
-        private val wrappingKeyStore: WrappingKeyStore,
         private val digestService: PlatformDigestService,
         private val cacheFactoryImpl: CacheFactoryImpl,
     ) : AbstractImpl {
@@ -136,7 +131,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             )
             return SoftCryptoService(
                 cryptoRepository = cryptoRepository,
-                wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 rootWrappingKey = rootWrappingKey,

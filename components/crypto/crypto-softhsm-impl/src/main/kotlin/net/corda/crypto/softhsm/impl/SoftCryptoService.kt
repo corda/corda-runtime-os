@@ -22,7 +22,6 @@ import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
@@ -42,7 +41,6 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * without a database, without OSGi and without SmartConfig, which makes it easy to test.
  *
  * @param cryptoRepository which provides save and find operations for wrapping keys.
- * @param wrappingKeyStore which provides save and find operations for wrapping keys.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
  * @param digestService supply a platform digest service instance; if not one will be constructed
@@ -58,7 +56,6 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 @Suppress("LongParameterList")
 class SoftCryptoService(
     private val cryptoRepository: CryptoRepository,
-    private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
     private val digestService: PlatformDigestService,

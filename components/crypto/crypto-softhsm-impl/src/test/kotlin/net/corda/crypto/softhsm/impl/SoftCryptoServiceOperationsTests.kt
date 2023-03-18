@@ -84,7 +84,6 @@ class SoftCryptoServiceOperationsTests {
         private val wrappingKeyCache = makeWrappingKeyCache()
         private val cryptoService = makeSoftCryptoService(
             cryptoRepository = cryptoRepository,
-            wrappingKeyStore = wrappingKeyStore,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
