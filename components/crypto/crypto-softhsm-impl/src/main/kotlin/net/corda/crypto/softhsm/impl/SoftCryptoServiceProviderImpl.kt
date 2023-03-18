@@ -44,6 +44,11 @@ const val WRAPPING_DEFAULT_NAME = "DEFAULT"
  * The service ranking is set to the smallest possible number to allow the upstream implementation to pick other
  * providers as this one will always be present in the deployment.
  */
+
+// This class is really a simple factory routine with dynamic configuration, lifecycle, and OSGi dependency
+// injection. It is hard to unit test, since it requires a lot of code to instantiate in a useful way. So,
+// the QA strategy for this code is to rely in smoke tests and e2e tests.
+
 @Suppress("LongParameterList")
 @ServiceRanking(Int.MIN_VALUE)
 @Component(service = [CryptoServiceProvider::class, SoftCryptoServiceProvider::class])
