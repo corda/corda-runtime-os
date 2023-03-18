@@ -27,6 +27,7 @@ import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.SM2_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -383,22 +384,22 @@ class SoftCryptoServiceOperationsTests {
         val key2StillMissing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2StillMissing)
 
-//        cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias1), emptyMap())
-//        val key1Found = wrappingKeyCache.getIfPresent(alias1)
-//        assertEquals(expected1, key1Found)
-//        val key2AgainStillMissing = wrappingKeyCache.getIfPresent(alias2)
-//        assertNull(key2AgainStillMissing)
-//
-//        cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key2", alias2), emptyMap())
-//        val key2Found = wrappingKeyCache.getIfPresent(alias2)
-//        assertEquals(expected2, key2Found)
-//        assertNotEquals(key1Found, key2Found)
-//
-//        val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
-//        assertEquals(expected1, key1FoundLater)
-//
-//        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(1)
-//        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(1)
+        cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias1), emptyMap())
+        val key1Found = wrappingKeyCache.getIfPresent(alias1)
+        assertEquals(expected1, key1Found)
+        val key2AgainStillMissing = wrappingKeyCache.getIfPresent(alias2)
+        assertNull(key2AgainStillMissing)
+
+        cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key2", alias2), emptyMap())
+        val key2Found = wrappingKeyCache.getIfPresent(alias2)
+        assertEquals(expected2, key2Found)
+        assertNotEquals(key1Found, key2Found)
+
+        val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
+        assertEquals(expected1, key1FoundLater)
+
+        assertThat(cryptoRepository.findCounter[alias1]).isEqualTo(1)
+        assertThat(cryptoRepository.findCounter[alias2]).isEqualTo(1)
     }
 
     @Test
@@ -411,9 +412,9 @@ class SoftCryptoServiceOperationsTests {
                 rootWrappingKey.wrap(knownWrappingKey)
             )
         )
-//        assertThrows<IllegalArgumentException> {
-//            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
-//        }
+        assertThrows<IllegalArgumentException> {
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
+        }
     }
 
 
