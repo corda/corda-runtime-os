@@ -14,6 +14,7 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
+import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getStringOrDefault
@@ -75,8 +76,9 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     }
 
     override fun createActiveImpl(): Impl = Impl(
-        CryptoRepositoryFactoryImpl().create(
-            CryptoTenants.CRYPTO, dbConnectionManager,
+        cryptoRepositoryFactory(
+            CryptoTenants.CRYPTO,
+            dbConnectionManager,
             jpaEntitiesRegistry,
             virtualNodeInfoReadService
         ),
