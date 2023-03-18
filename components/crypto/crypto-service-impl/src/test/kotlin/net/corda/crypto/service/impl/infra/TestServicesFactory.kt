@@ -159,15 +159,6 @@ class TestServicesFactory {
         }
     }
 
-    val wrappingKeyStore: TestWrappingKeyStore by lazy {
-        TestWrappingKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
-
     val cryptoRepository = TestCryptoRepository()
 
     val signingService: SigningService by lazy {

@@ -13,7 +13,6 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -32,7 +31,6 @@ import kotlin.test.assertTrue
 class SoftCryptoServiceGeneralTests {
     private val schemeMetadata = CipherSchemeMetadataImpl()
     private val UNSUPPORTED_SIGNATURE_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
-    private val wrappingKeyStore = TestWrappingKeyStore(mock())
     private val cryptoRepository = TestCryptoRepository()
     private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf())
     val defaultContext =
