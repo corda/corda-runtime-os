@@ -38,7 +38,7 @@ class SoftCryptoServiceGeneralTests {
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
     private val service = makeSoftCryptoService(
-        //cryptoRepository = cryptoRepository,
+        cryptoRepository = cryptoRepository,
         wrappingKeyStore = wrappingKeyStore,
         schemeMetadata = schemeMetadata,
         rootWrappingKey = mock(),
@@ -47,22 +47,18 @@ class SoftCryptoServiceGeneralTests {
     @Test
     fun `Should throw IllegalStateException when wrapping key alias exists and failIfExists is true`() {
         val alias = "stuff"
-        //cryptoRepository.keys[alias] = sampleWrappingKeyInfo
-        wrappingKeyStore.keys[alias] = sampleWrappingKeyInfo
+        cryptoRepository.keys[alias] = sampleWrappingKeyInfo
         assertThrows<IllegalStateException> {
             service.createWrappingKey(alias, true, emptyMap())
         }
-        //assertThat(cryptoRepository.keys[alias]).isEqualTo(sampleWrappingKeyInfo)
-        assertThat(wrappingKeyStore.keys[alias]).isEqualTo(sampleWrappingKeyInfo)
+        assertThat(cryptoRepository.keys[alias]).isEqualTo(sampleWrappingKeyInfo)
     }
 
     @Test
     fun `Should not generate new master key when master alias exists and failIfExists is false`() {
-        wrappingKeyStore.keys["stuff2"] = sampleWrappingKeyInfo
-        //cryptoRepository.keys["stuff2"] = sampleWrappingKeyInfo
+        cryptoRepository.keys["stuff2"] = sampleWrappingKeyInfo
         service.createWrappingKey("stuff2", false, emptyMap())
-        //assertThat(cryptoRepository.keys["stuff2"]).isEqualTo(sampleWrappingKeyInfo)
-        assertThat(wrappingKeyStore.keys["stuff2"]).isEqualTo(sampleWrappingKeyInfo)
+        assertThat(cryptoRepository.keys["stuff2"]).isEqualTo(sampleWrappingKeyInfo)
     }
 
     @Test

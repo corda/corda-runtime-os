@@ -41,6 +41,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * This class is all about the business logic of generating, storing and using key pairs; it can be run
  * without a database, without OSGi and without SmartConfig, which makes it easy to test.
  *
+ * @param cryptoRepository which provides save and find operations for wrapping keys.
  * @param wrappingKeyStore which provides save and find operations for wrapping keys.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
@@ -82,7 +83,7 @@ class SoftCryptoService(
     override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(wrappingKeyAlias != "") { "Alias must not be empty" }
         val isCached = wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null
-        val isAvailable = if (isCached) true else wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null
+        val isAvailable = if (isCached) true else cryptoRepository.findWrappingKey(wrappingKeyAlias) != null
         logger.trace {
             "createWrappingKey(alias=$wrappingKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
         }
@@ -95,7 +96,7 @@ class SoftCryptoService(
         val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
-        wrappingKeyStore.saveWrappingKey(wrappingKeyAlias, wrappingKeyInfo)
+        cryptoRepository.saveWrappingKey(wrappingKeyAlias, wrappingKeyInfo)
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
@@ -198,7 +199,7 @@ class SoftCryptoService(
     private fun getWrappingKeyUncached(alias: String): WrappingKey {
         // use IllegalArgumentException instead for not found?
         val wrappingKeyInfo =
-            wrappingKeyStore.findWrappingKey(alias)
+            cryptoRepository.findWrappingKey(alias)
                 ?: throw IllegalStateException("Wrapping key with alias $alias not found")
         require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
             "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"

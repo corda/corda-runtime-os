@@ -168,6 +168,8 @@ class TestServicesFactory {
         }
     }
 
+    val cryptoRepository = TestCryptoRepository()
+
     val signingService: SigningService by lazy {
         SigningServiceImpl(
             signingKeyStore,
@@ -211,7 +213,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
-                cryptoRepository = TestCryptoRepository(),
+                cryptoRepository = cryptoRepository,
                 wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
