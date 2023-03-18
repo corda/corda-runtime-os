@@ -23,6 +23,7 @@ import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -55,6 +56,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 
 @Suppress("LongParameterList")
 class SoftCryptoService(
+    private val cryptoRepository: CryptoRepository,
     private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,

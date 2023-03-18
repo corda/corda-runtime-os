@@ -7,6 +7,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
@@ -24,7 +25,9 @@ fun makeSoftCryptoService(
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
         WrappingKeyImpl.generateWrappingKey(it)
     },
+    cryptoRepository: CryptoRepository = TestCryptoRepository(),
 ) = SoftCryptoService(
+    cryptoRepository = cryptoRepository,
     wrappingKeyStore = wrappingKeyStore,
     schemeMetadata = schemeMetadata,
     rootWrappingKey = rootWrappingKey,

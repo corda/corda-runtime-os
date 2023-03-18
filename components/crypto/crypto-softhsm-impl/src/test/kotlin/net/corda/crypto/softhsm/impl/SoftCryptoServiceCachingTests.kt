@@ -48,7 +48,10 @@ class SoftCryptoServiceCachingTests {
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
         val myCryptoService =
-            makeSoftCryptoService(privateKeyCache = privateKeyCache, wrappingKeyCache = wrappingKeyCache,
+            makeSoftCryptoService(
+
+                privateKeyCache = privateKeyCache,
+                wrappingKeyCache = wrappingKeyCache,
                 rootWrappingKey = rootWrappingKey,
                 wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
                     CountingWrappingKey(

@@ -211,6 +211,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
+                cryptoRepository = TestCryptoRepository(),
                 wrappingKeyStore = wrappingKeyStore,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
