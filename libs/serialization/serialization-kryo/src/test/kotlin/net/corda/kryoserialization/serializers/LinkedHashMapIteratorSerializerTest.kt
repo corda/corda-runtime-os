@@ -10,7 +10,11 @@ import org.objenesis.strategy.StdInstantiatorStrategy
 internal class LinkedHashMapIteratorSerializerTest {
     @Test
     fun `LinkedHashMapIterator serializer returns correct iterator`() {
-        val kryo = Kryo().also { it.instantiatorStrategy = StdInstantiatorStrategy() }
+        val kryo = Kryo().apply {
+            instantiatorStrategy = StdInstantiatorStrategy()
+            isRegistrationRequired = false
+            references = true
+        }
         val output = Output(25 * 1024)
         val iterator = (0..1000).associateWith { "$it" }.iterator()
         val index = 100

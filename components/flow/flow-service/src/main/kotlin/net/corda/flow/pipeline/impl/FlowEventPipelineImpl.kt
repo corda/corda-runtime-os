@@ -14,9 +14,9 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.utilities.trace
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -47,7 +47,7 @@ class FlowEventPipelineImpl(
 ) : FlowEventPipeline {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
@@ -59,10 +59,10 @@ class FlowEventPipelineImpl(
          * wakeup behavior
          */
         val updatedContext = if (context.checkpoint.inRetryState && context.inputEventPayload is Wakeup) {
-            log.debug(
-                "Flow is in retry state, using retry event " +
-                        "${context.checkpoint.retryEvent.payload::class.qualifiedName} for the pipeline processing."
-            )
+            if (log.isDebugEnabled) {
+                log.debug("Flow is in retry state, using retry event {} for the pipeline processing.",
+                          context.checkpoint.retryEvent.payload::class.qualifiedName)
+            }
             context.copy(
                 inputEvent = context.checkpoint.retryEvent,
                 inputEventPayload = context.checkpoint.retryEvent.payload,

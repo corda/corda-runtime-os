@@ -28,7 +28,7 @@ class WireTransactionKryoSerializer @Activate constructor(
         output.writeClassAndObject(obj.componentGroupLists)
     }
 
-    override fun read(input: CheckpointInput, type: Class<WireTransaction>): WireTransaction {
+    override fun read(input: CheckpointInput, type: Class<out WireTransaction>): WireTransaction {
         val privacySalt = input.readClassAndObject() as PrivacySalt
         @Suppress("unchecked_cast")
         val componentGroupLists = input.readClassAndObject() as List<List<ByteArray>>

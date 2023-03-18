@@ -41,6 +41,7 @@ def jar = tasks.named('jar', Jar) {
 
     bundle {
         bnd """\
+Automatic-Module-Name: de.javakaffee.kryoserializers
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.kryo-serializers
 Bundle-Version: ${kryoSerializerVersion}

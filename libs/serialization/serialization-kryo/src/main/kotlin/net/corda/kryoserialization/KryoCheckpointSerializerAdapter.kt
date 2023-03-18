@@ -56,14 +56,14 @@ class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : Checkpoint
     }
 
     private inner class KyroCheckpointSerializer : Serializer<OBJ>() {
-        override fun write(kryo: Kryo?, output: Output?, obj: OBJ) {
-            val adaptedOutput = KryoCheckpointOutput(kryo!!, output!!)
+        override fun write(kryo: Kryo, output: Output, obj: OBJ) {
+            val adaptedOutput = KryoCheckpointOutput(kryo, output)
             checkpointSerializer.write(adaptedOutput, obj)
         }
 
-        override fun read(kryo: Kryo?, input: Input?, type: Class<OBJ>?): OBJ {
-            val adaptedInput = KryoCheckpointInput(kryo!!, input!!)
-            return checkpointSerializer.read(adaptedInput, type!!)
+        override fun read(kryo: Kryo, input: Input, type: Class<out OBJ>): OBJ {
+            val adaptedInput = KryoCheckpointInput(kryo, input)
+            return checkpointSerializer.read(adaptedInput, type)
         }
     }
 
