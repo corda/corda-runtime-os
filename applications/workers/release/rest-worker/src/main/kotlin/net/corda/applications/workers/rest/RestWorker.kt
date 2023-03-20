@@ -61,7 +61,7 @@ class RestWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val restConfig = PathAndConfig(BootConfig.BOOT_REST_PARAMS, params.restParams)
+        val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
         val config = getBootstrapConfig(
                 secretsServiceFactoryResolver,
                 params.defaultParams,
@@ -83,6 +83,6 @@ private class RestWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @CommandLine.Option(names = ["-r", "--rest-params"], description = ["REST worker specific params."])
+    @CommandLine.Option(names = ["-r", "--${BootConfig.BOOT_REST}"], description = ["REST worker specific params."])
     var restParams = emptyMap<String, String>()
 }

@@ -58,7 +58,8 @@ class CpiInfoDbReconcilerReaderTest {
         CpkType.CORDA_API,
         SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
         emptySet(),
-        Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        Instant.now().truncatedTo(ChronoUnit.MILLIS),
+        externalChannelsConfig = "{}"
     )
 
     private val dummyCpk =
