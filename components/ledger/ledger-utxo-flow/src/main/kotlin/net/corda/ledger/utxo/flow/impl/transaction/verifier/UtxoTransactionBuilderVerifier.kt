@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.transaction.verifier.UtxoTransactionVerifier
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
 /**

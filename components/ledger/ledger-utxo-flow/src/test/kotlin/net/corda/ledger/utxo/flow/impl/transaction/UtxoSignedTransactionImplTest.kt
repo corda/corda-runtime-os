@@ -3,18 +3,19 @@ package net.corda.ledger.utxo.flow.impl.transaction
 import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
-import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
@@ -32,6 +33,11 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
 
     @BeforeEach
     fun beforeEach() {
+        val notaryInfo = mock<NotaryInfo>().also {
+            whenever(it.name).thenReturn(notaryX500Name)
+            whenever(it.publicKey).thenReturn(notaryKey)
+        }
+        whenever(mockNotaryLookup.lookup(notaryX500Name)).thenReturn(notaryInfo)
         signedTransaction = UtxoTransactionBuilderImpl(
             utxoSignedTransactionFactory,
             mockNotaryLookup

@@ -86,7 +86,12 @@ class WrappedUtxoWireTransaction(
                 val contractState: ContractState = serializationService.deserialize(state)
                 val stateRef = StateRef(id, index)
                 val outputInfo = outputsInfo[index]
-                val transactionState = TransactionStateImpl(contractState, outputInfo.notaryName, outputInfo.notaryKey, outputInfo.getEncumbranceGroup())
+                val transactionState = TransactionStateImpl(
+                    contractState,
+                    outputInfo.notaryName,
+                    outputInfo.notaryKey,
+                    outputInfo.getEncumbranceGroup()
+                )
                 StateAndRefImpl(transactionState, stateRef)
             }
     }

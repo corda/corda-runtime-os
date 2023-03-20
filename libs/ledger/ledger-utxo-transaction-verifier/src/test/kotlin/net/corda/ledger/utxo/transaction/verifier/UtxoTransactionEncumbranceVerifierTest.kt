@@ -1,13 +1,11 @@
 package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.testkit.notaryX500Name
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction

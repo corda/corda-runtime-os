@@ -1,17 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
-import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.notaryX500Name
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
