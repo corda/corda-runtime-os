@@ -20,6 +20,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.crypto.SecureHash
 
+@Suppress("LongParameterList")
 class V1CryptoRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val cacheFactory: CacheFactory,
