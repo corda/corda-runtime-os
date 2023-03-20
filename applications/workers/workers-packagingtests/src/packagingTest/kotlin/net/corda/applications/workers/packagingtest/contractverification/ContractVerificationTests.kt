@@ -10,9 +10,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 @TestInstance(Lifecycle.PER_CLASS)
 class ContractVerificationTests {
+    @TempDir
+    lateinit var tempDir: Path
 
     companion object {
         const val TEST_CPI_NAME = "packaging-verification-app-v1"
@@ -34,7 +38,7 @@ class ContractVerificationTests {
 
     @Test
     fun `contract verification across two clusters succeeds`() {
-        val multiClusterHelper = MultiClusterHelper(false)
+        val multiClusterHelper = MultiClusterHelper(tempDir, mutualTls = false)
 
         // Clusters A and B have the same CPI uploaded, the is the happy flow test
 

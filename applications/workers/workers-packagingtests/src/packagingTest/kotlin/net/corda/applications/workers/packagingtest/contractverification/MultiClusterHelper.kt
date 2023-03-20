@@ -11,12 +11,9 @@ import net.corda.applications.workers.e2etestutils.utils.generateGroupPolicy
 import net.corda.applications.workers.e2etestutils.utils.onboardMembers
 import net.corda.applications.workers.e2etestutils.utils.onboardMgm
 import net.corda.applications.workers.e2etestutils.utils.setSslConfiguration
-import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
-internal class MultiClusterHelper(mutualTls: Boolean) {
-    @TempDir
-    lateinit var tempDir: Path
+internal class MultiClusterHelper(private var tempDir: Path, mutualTls: Boolean) {
 
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
