@@ -3,7 +3,6 @@ package net.corda.flow.rest.impl.v1
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
-import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.impl.FlowRestExceptionConstants
@@ -34,18 +33,6 @@ import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
-import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.ws.DuplexChannel
-import net.corda.rest.ws.WebSocketValidationException
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ForbiddenException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.OperationNotAllowedException
-import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -92,7 +79,7 @@ class FlowRestResourceImpl @Activate constructor(
 
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
-    private lateinit var onFatalError:() -> Unit
+    private lateinit var onFatalError: () -> Unit
 
     override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
         this.onFatalError = onFatalError
@@ -108,7 +95,8 @@ class FlowRestResourceImpl @Activate constructor(
         if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
             throw BadRequestException(
                 """Supplied Client Request ID "$clientRequestId" is invalid,""" +
-                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}".""")
+                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}"."""
+            )
         }
     }
 
@@ -147,7 +135,8 @@ class FlowRestResourceImpl @Activate constructor(
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
         if (!startableFlows.contains(flowClassName)) {
             val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-            val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
+            val msg =
+                "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
             val details = mapOf(
                 "CPI-name" to cpiMeta?.cpiId?.name.toString(),
                 "CPI-version" to cpiMeta?.cpiId?.version.toString(),
@@ -163,8 +152,11 @@ class FlowRestResourceImpl @Activate constructor(
         val restContext = CURRENT_REST_CONTEXT.get()
         val principal = restContext.principal
 
-        if (!permissionValidationService.permissionValidator.authorizeUser(principal,
-                "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}")) {
+        if (!permissionValidationService.permissionValidator.authorizeUser(
+                principal,
+                "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}"
+            )
+        ) {
             throw ForbiddenException("User $principal is not allowed to start a flow: ${startFlow.flowClassName}")
         }
 
