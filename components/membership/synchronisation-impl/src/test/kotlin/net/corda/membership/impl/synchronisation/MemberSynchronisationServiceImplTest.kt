@@ -36,6 +36,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -58,6 +59,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.minutes
+import net.corda.utilities.parseOrNull
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -236,17 +238,27 @@ class MemberSynchronisationServiceImplTest {
         on { createTree(any()) } doReturn tree
     }
     private val memberMgmContext = mock<MGMContext> {
-        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn null
+        on { parseOrNull<Boolean>(IS_MGM) } doReturn null
+    }
+    private val memberMemberContext = mock<MemberContext> {
+        on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
     }
     private val memberInfo = mock<MemberInfo> {
         on { mgmProvidedContext } doReturn memberMgmContext
+        on { memberProvidedContext } doReturn memberMemberContext
+        on { name } doReturn MemberX500Name.parse("O=Alice, L=London, C=GB")
     }
     private val mgmMgmContext = mock<MGMContext> {
-        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn true
+        on { parseOrNull<Boolean>(IS_MGM) } doReturn true
+    }
+    private val mgmMemberContext = mock<MemberContext> {
+        on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
     }
     private val mgmInfo = mock<MemberInfo> {
         on { sessionInitiationKey } doReturn mock()
+        on { name } doReturn MemberX500Name.parse("O=MGM, L=London, C=GB")
         on { mgmProvidedContext } doReturn mgmMgmContext
+        on { memberProvidedContext } doReturn mgmMemberContext
     }
     private val groupReader = mock<MembershipGroupReader> {
         on { lookup() } doReturn listOf(memberInfo, mgmInfo)
@@ -428,6 +440,7 @@ class MemberSynchronisationServiceImplTest {
     fun `failed MGM signature verification will not persist the group parameters`() {
         whenever(
             verifier.verify(
+                any(),
                 eq(mgmSignatureGroupParameters),
                 any(),
                 any()
@@ -445,6 +458,7 @@ class MemberSynchronisationServiceImplTest {
     fun `failed MGM signature verification will not publish the group parameters to Kafka`() {
         whenever(
             verifier.verify(
+                any(),
                 eq(mgmSignatureGroupParameters),
                 any(),
                 any()
