@@ -144,7 +144,7 @@ class PersistenceTests {
             )
             tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
             tracker.component<DbConnectionManager>().bootstrap(
-                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS)
+                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB)
             )
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
         }

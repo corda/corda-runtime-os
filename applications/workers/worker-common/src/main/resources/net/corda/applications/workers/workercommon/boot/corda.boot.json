@@ -32,10 +32,7 @@
     "db": {
       "description": "Configuration options related to database.",
       "properties": {
-        "params": {
-          "description": "Additional db params the worker is bootstrapped with.",
-          "properties": {
-            "database" : {
+        "database" : {
               "description": "Database params",
               "properties": {
                 "jdbc": {
@@ -79,9 +76,7 @@
                   ]
                 }
               }
-            }
-          }
-        },
+            },
         "bus": {
           "description": "Details about the bus type if it is backed by a DB",
           "properties": {
@@ -131,30 +126,25 @@
     "rest": {
       "description": "Configuration options related to REST worker.",
       "properties": {
-        "params": {
-          "description": "Additional params REST worker is bootstrapped with.",
+        "tls" : {
+          "description": "Transport Layer Security (TLS) params",
           "properties": {
-            "tls" : {
-              "description": "Transport Layer Security (TLS) params",
+            "keystore": {
+              "description": "Keystore info",
               "properties": {
-                "keystore": {
-                  "description": "Keystore info",
-                  "properties": {
-                    "path": {
-                      "description": "Path to a Keystore file",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "password": {
-                      "description": "The password for the Keystore",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    }
-                  }
+                "path": {
+                  "description": "Path to a Keystore file",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "password": {
+                  "description": "The password for the Keystore",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               }
             }
