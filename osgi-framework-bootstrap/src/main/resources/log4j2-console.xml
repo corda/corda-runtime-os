@@ -7,7 +7,7 @@
     </Appenders>
     <Loggers>
         <logger name="Console">
-            <AppenderRef ref="Console" level="trace"/>
+            <AppenderRef ref="Console" level="info"/>
         </logger>
 
         <!-- log warn only for these 3rd party libs -->
