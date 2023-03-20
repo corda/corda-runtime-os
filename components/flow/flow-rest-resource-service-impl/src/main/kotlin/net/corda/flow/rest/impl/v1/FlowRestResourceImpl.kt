@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
+import net.corda.flow.rest.impl.FlowRestExceptionConstants
 import net.corda.flow.rest.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
@@ -111,7 +112,7 @@ class FlowRestResourceImpl @Activate constructor(
             // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
             // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
             // closing us down soon. There are other fatal error types, but none are recoverable by definition.
-            throw InternalServerException("Fatal error occurred, can no longer start flows from this worker")
+            throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
@@ -187,7 +188,7 @@ class FlowRestResourceImpl @Activate constructor(
             if (failureIsFatal) {
                 throw markFatalAndReturnFailureException(ex)
             } else {
-                throw InternalServerException("Fatal error occurred, can no longer start flows from this worker")
+                throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
             }
         }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
@@ -195,9 +196,9 @@ class FlowRestResourceImpl @Activate constructor(
 
     private fun markFatalAndReturnFailureException(exception: Exception): Exception {
         fatalErrorOccurred = true
-        log.error("Fatal error occurred, FlowRestResource can no longer start flows, worker expected to terminate.", exception)
+        log.error(FlowRestExceptionConstants.FATAL_ERROR, exception)
         onFatalError()
-        throw InternalServerException("Fatal error occurred, can no longer start flows from this worker")
+        throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
     }
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
@@ -210,13 +211,11 @@ class FlowRestResourceImpl @Activate constructor(
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
         val vNode = getVirtualNode(holdingIdentityShortHash)
-
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
                 "Failed to find the flow status for holding identity='${holdingIdentityShortHash} " +
                         "and Client Request ID='${clientRequestId}"
             )
-
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
