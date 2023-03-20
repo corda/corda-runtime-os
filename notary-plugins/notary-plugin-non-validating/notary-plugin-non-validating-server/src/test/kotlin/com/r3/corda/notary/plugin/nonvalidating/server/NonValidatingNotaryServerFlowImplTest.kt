@@ -218,8 +218,10 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary plugin server should respond with error if notary not present on filtered tx`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTxContents = mapOf("notary" to null)) {
+    fun `Non-validating notary plugin server should respond with error if notary name not present on filtered tx`() {
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+            filteredTxContents = mapOf("notaryName" to null)) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -230,6 +232,23 @@ class NonValidatingNotaryServerFlowImplTest {
             )
         }
     }
+
+    @Test
+    fun `Non-validating notary plugin server should respond with error if notary key not present on filtered tx`() {
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+            filteredTxContents = mapOf("notaryKey" to null)) {
+            assertThat(responseFromServer).hasSize(1)
+
+            val responseError = responseFromServer.first().error
+            assertThat(responseError).isNotNull
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
+                "Error while processing request from client"
+            )
+        }
+    }
+
 
     @Test
     fun `Non-validating notary plugin server should respond with error if input states are not audit type in the filtered tx`() {
@@ -343,6 +362,14 @@ class NonValidatingNotaryServerFlowImplTest {
                     filteredTxContents["notaryName"] as MemberX500Name?
                 } else {
                     notaryServiceName
+                }
+            }
+
+            on { notaryKey } doAnswer {
+                if (filteredTxContents.containsKey("notaryKey")) {
+                    filteredTxContents["notaryKey"] as PublicKey?
+                } else {
+                    notaryServiceKey
                 }
             }
 

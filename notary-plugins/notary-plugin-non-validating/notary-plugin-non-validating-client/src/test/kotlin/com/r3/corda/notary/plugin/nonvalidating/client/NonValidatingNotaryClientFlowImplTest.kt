@@ -27,6 +27,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import java.security.PublicKey
 import java.time.Instant
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -61,6 +62,7 @@ class NonValidatingNotaryClientFlowImplTest {
             on { toLedgerTransaction() } doReturn mockLedgerTransaction
             on { id } doReturn txId
             on { notaryName } doReturn MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
+            on { notaryKey } doReturn mock<PublicKey>()
         }
     }
 
