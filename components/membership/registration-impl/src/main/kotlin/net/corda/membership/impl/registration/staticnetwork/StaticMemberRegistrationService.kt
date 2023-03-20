@@ -10,6 +10,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -286,9 +287,10 @@ class StaticMemberRegistrationService @Activate constructor(
                 memberContext = ByteBuffer.wrap(memberContext),
                 signature = CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList())
-                )
+                    ByteBuffer.wrap(byteArrayOf())
+                ),
+                signatureSpec = CryptoSignatureSpec("", null, null),
+                serial = 0L,
             )
         ).getOrThrow()
     }
@@ -299,17 +301,25 @@ class StaticMemberRegistrationService @Activate constructor(
         notaryInfo: Collection<Pair<String, String>>,
         membershipGroupReader: MembershipGroupReader,
     ) {
-        val serviceName = notaryInfo.firstOrNull { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }?.second
+        val serviceName = MemberX500Name.parse(
+            notaryInfo.first { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }.second
+        )
         //The notary service x500 name is different from the notary virtual node being registered.
-        require(registeringMember.name != serviceName) {
+        require(
+            MemberX500Name.parse(registeringMember.name!!) != serviceName
+        ) {
             "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
         }
         //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
-        require(staticMemberList.none { it.name == serviceName }) {
+        require(
+            staticMemberList.none { MemberX500Name.parse(it.name!!) == serviceName }
+        ) {
             "Notary service name invalid: There is a virtual node having the same name $serviceName."
         }
         // Allow only a single notary virtual node under each notary service.
-        require(membershipGroupReader.lookup().none { it.notaryDetails?.serviceName.toString() == serviceName }) {
+        require(
+            membershipGroupReader.lookup().none { it.notaryDetails?.serviceName == serviceName }
+        ) {
             throw InvalidMembershipRegistrationException("Notary service '$serviceName' already exists.")
         }
     }

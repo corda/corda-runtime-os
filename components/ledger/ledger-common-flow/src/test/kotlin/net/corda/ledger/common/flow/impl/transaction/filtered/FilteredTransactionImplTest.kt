@@ -3,6 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction.filtered
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
@@ -214,7 +215,7 @@ class FilteredTransactionImplTest {
 
     @Test
     fun `verification fails when the transaction's id does not verify with the component group merkle proof`() {
-        val transactionId = SecureHash("SHA", byteArrayOf(1, 2, 3))
+        val transactionId = SecureHashImpl("SHA", byteArrayOf(1, 2, 3))
         filteredTransaction = filteredTransaction(
             transactionId,
             filteredComponentGroups = mapOf(
@@ -261,7 +262,7 @@ class FilteredTransactionImplTest {
 
         whenever(
             filteredComponentGroup1AuditProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(true)
@@ -289,7 +290,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(5)
         whenever(
             filteredComponentGroup1SizeProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(true)
@@ -318,7 +319,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf(1))))
         whenever(
             filteredComponentGroup1SizeProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(true)
@@ -347,7 +348,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf())))
         whenever(
             filteredComponentGroup1SizeProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(true)
@@ -374,7 +375,7 @@ class FilteredTransactionImplTest {
 
         whenever(
             filteredComponentGroup1AuditProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(false)
@@ -403,7 +404,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(5)
         whenever(
             filteredComponentGroup1SizeProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(false)
@@ -435,7 +436,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf(1))))
         whenever(
             filteredComponentGroup1SizeProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(false)
@@ -467,7 +468,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf())))
         whenever(
             filteredComponentGroup1SizeProof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(false)
@@ -594,14 +595,14 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataJson.encodeToByteArray())))
         whenever(
             filteredComponentGroup0Proof.verify(
-                eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf0.leafData)),
+                eq(SecureHashImpl(digestAlgorithmName, indexedMerkleLeaf0.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
         ).thenReturn(true)
     }
 
     private fun filteredTransaction(
-        transactionId: SecureHash = SecureHash("SHA", byteArrayOf(1, 2, 3)),
+        transactionId: SecureHash = SecureHashImpl("SHA", byteArrayOf(1, 2, 3)),
         filteredComponentGroups: Map<Int, FilteredComponentGroup>
     ): FilteredTransaction {
         return FilteredTransactionImpl(

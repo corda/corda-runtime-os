@@ -13,6 +13,7 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -53,6 +54,7 @@ internal class StartRegistrationHandler(
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
@@ -95,7 +97,6 @@ internal class StartRegistrationHandler(
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
-
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
@@ -189,6 +190,11 @@ internal class StartRegistrationHandler(
             "Empty member context in the registration request."
         }
 
+        val customFieldsValid = registrationContextCustomFieldsVerifier.verify(memberContext)
+        validateRegistrationRequest(customFieldsValid !is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+            (customFieldsValid as RegistrationContextCustomFieldsVerifier.Result.Failure).reason
+        }
+
         val now = clock.instant().toString()
         return memberInfoFactory.create(
             memberContext.toSortedMap(),
@@ -216,7 +222,9 @@ internal class StartRegistrationHandler(
             source.toCorda(),
             memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature,
-            true
+            memberRegistrationRequest.memberSignatureSpec,
+            memberRegistrationRequest.serial,
+            true,
         )
     }
 
@@ -244,6 +252,9 @@ internal class StartRegistrationHandler(
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
             membershipGroupReaderProvider.getGroupReader(mgmHoldingId).groupParameters?.let { groupParameters ->
+                validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
+                    "Registering member's name '${member.name}' is already in use as a notary service name."
+                }
                 validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
                     "Notary service '${notary.serviceName}' already exists."
                 }

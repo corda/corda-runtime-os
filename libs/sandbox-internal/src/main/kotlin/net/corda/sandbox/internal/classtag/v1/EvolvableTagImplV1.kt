@@ -1,5 +1,6 @@
 package net.corda.sandbox.internal.classtag.v1
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
@@ -37,7 +38,7 @@ internal data class EvolvableTagImplV1(
 
             val cpkSignerSummaryHashString = classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
             val cpkSignerSummaryHash = try {
-                SecureHash.parse(cpkSignerSummaryHashString)
+                parseSecureHash(cpkSignerSummaryHashString)
             } catch (e: IllegalArgumentException) {
                 throw SandboxException(
                     "Couldn't parse hash $cpkSignerSummaryHashString in serialised evolvable class tag.", e

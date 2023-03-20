@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.tests.legacy
 
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -14,7 +15,7 @@ class DigestServiceImpl : PlatformDigestService {
 
     override fun hash(bytes: ByteArray, platformDigestName: DigestAlgorithmName): SecureHash {
         val hashBytes = digestAs(bytes, platformDigestName)
-        return SecureHash(platformDigestName.name, hashBytes)
+        return SecureHashImpl(platformDigestName.name, hashBytes)
     }
 
     override fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash {
@@ -25,7 +26,7 @@ class DigestServiceImpl : PlatformDigestService {
             if(read <= 0) break
             messageDigest.update(buffer, 0, read)
         }
-        return SecureHash(platformDigestName.name, messageDigest.digest())
+        return SecureHashImpl(platformDigestName.name, messageDigest.digest())
     }
 
     override fun digestLength(platformDigestName: DigestAlgorithmName): Int {

@@ -1,5 +1,6 @@
 package net.corda.libs.packaging
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.v5.base.types.MemberX500Name
@@ -24,7 +25,7 @@ internal val secureHashComparator = Comparator.nullsFirst(
 fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
     val md = MessageDigest.getInstance(algo.name)
     md.update(this)
-    return SecureHash(algo.name, md.digest())
+    return SecureHashImpl(algo.name, md.digest())
 }
 
 fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
@@ -36,7 +37,7 @@ fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
             // Consume whole stream
         }
     }
-    return SecureHash(algo.name, md.digest())
+    return SecureHashImpl(algo.name, md.digest())
 }
 
 /**
@@ -49,7 +50,7 @@ fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
 internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.SHA2_256, withDigestAction : (MessageDigest) -> Unit) : SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
     withDigestAction(md)
-    return SecureHash(algorithm.name, md.digest())
+    return SecureHashImpl(algorithm.name, md.digest())
 }
 
 internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {

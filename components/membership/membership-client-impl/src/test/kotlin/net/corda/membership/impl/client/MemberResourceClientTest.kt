@@ -32,6 +32,8 @@ import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -75,6 +77,7 @@ class MemberResourceClientTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "00AABB00AABB"
         private val clock = TestClock(Instant.ofEpochSecond(100))
+        private const val SERIAL = 0L
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -308,6 +311,7 @@ class MemberResourceClientTest {
                     registrationId = "registration id",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatus(
                     registrationSent = clock.instant().plusSeconds(10),
@@ -316,6 +320,7 @@ class MemberResourceClientTest {
                     registrationId = "registration id 2",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatus(
                     registrationSent = clock.instant().plusSeconds(30),
@@ -324,10 +329,11 @@ class MemberResourceClientTest {
                     registrationId = "registration id 3",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                    serial = SERIAL,
                 ),
             )
         whenever(membershipQueryClient.queryRegistrationRequestsStatus(
-            any(), eq(null), eq(RegistrationStatus.values().toList()))
+            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
         ).doReturn(MembershipQueryResult.Success(response))
 
         memberOpsClient.start()
@@ -347,7 +353,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key" to "value"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatusDto(
                     registrationId = "registration id 2",
@@ -359,7 +366,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key 2" to "value 2"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 ),
                 RegistrationRequestStatusDto(
                     registrationId = "registration id 3",
@@ -371,7 +379,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key 3" to "value 3"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 ),
             )
     }
@@ -391,7 +400,7 @@ class MemberResourceClientTest {
     @Test
     fun `checkRegistrationProgress throw exception if the request fails`() {
         whenever(membershipQueryClient.queryRegistrationRequestsStatus(
-            any(), eq(null), eq(RegistrationStatus.values().toList()))
+            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
         ).doReturn(MembershipQueryResult.Failure("oops"))
 
         memberOpsClient.start()
@@ -413,6 +422,7 @@ class MemberResourceClientTest {
                 registrationId = "registration id",
                 protocolVersion = 1,
                 memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                serial = SERIAL,
             )
         whenever(
             membershipQueryClient.queryRegistrationRequestStatus(any(), any())
@@ -436,7 +446,8 @@ class MemberResourceClientTest {
                             "registrationProtocolVersion" to "1",
                             "key" to "value"
                         )
-                    )
+                    ),
+                    serial = SERIAL,
                 )
             )
     }
@@ -518,6 +529,23 @@ class MemberResourceClientTest {
                 assertThat(request?.registrationAction).isEqualTo(RegistrationAction.REQUEST_JOIN)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
             }
+    }
+
+    @Test
+    fun `startRegistration uses serial specified in registration context`() {
+        val serial = 12L
+        val request = MemberRegistrationRequestDto(
+            ShortHash.of(HOLDING_IDENTITY_ID),
+            RegistrationActionDto.REQUEST_JOIN,
+            mapOf("property" to "test", MemberInfoExtension.SERIAL to serial.toString()),
+        )
+        memberOpsClient.start()
+        setUpConfig()
+
+        val capturedRequest = argumentCaptor<RegistrationRequest>()
+        memberOpsClient.startRegistration(request)
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), capturedRequest.capture())
+        assertThat(capturedRequest.firstValue.serial).isEqualTo(serial)
     }
 
     @Test

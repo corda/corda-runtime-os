@@ -10,6 +10,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -53,6 +54,16 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun sessionConfirmEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?,
+    ) {
+        asserts.add { testRun ->
+            findAndAssertSessionEvents<SessionConfirm>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
+        }
+    }
+
     override fun sessionInitEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
             findAndAssertSessionEvents<SessionInit>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
@@ -62,7 +73,7 @@ class OutputAssertionsImpl(
     override fun sessionDataEvents(
         vararg sessionToPayload: Pair<String, ByteArray>,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
+        initiatedIdentity: HoldingIdentity?,
     ) {
         asserts.add { testRun ->
             val foundSessionToPayload = findAndAssertSessionEvents<SessionData>(
@@ -110,7 +121,8 @@ class OutputAssertionsImpl(
 
             assertArrayEquals(
                 serializedKey!!,
-                externalEventsToTopic.single().key as ByteArray) {
+                externalEventsToTopic.single().key as ByteArray
+            ) {
                 "Expected the external event to have a key of $key but was ${
                     avroDeserializeTo(externalEventsToTopic.single().key as ByteArray, key)
                 }"
@@ -118,7 +130,8 @@ class OutputAssertionsImpl(
 
             assertArrayEquals(
                 serializedPayload,
-                externalEventsToTopic.single().value as ByteArray) {
+                externalEventsToTopic.single().value as ByteArray
+            ) {
                 "Expected the external event to have a payload of $payload but was ${
                     avroDeserializeTo(externalEventsToTopic.single().value as ByteArray, payload)
                 }"
@@ -177,7 +190,8 @@ class OutputAssertionsImpl(
             if (resumedWith is Map<*, *>) {
                 assertEquals(value.keys, resumedWith.keys)
                 value.values.zip(resumedWith.values).forEach { pair ->
-                    assertArrayEquals(pair.component1(), pair.component2() as ByteArray,
+                    assertArrayEquals(
+                        pair.component1(), pair.component2() as ByteArray,
                         "Expected flow to resume with $value but was $resumedWith"
                     )
                 }
@@ -225,13 +239,13 @@ class OutputAssertionsImpl(
     }
 
     override fun hasPendingUserException() {
-        asserts.add{ testRun ->
+        asserts.add { testRun ->
             assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNotNull()
         }
     }
 
     override fun noPendingUserException() {
-        asserts.add{ testRun ->
+        asserts.add { testRun ->
             assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNull()
         }
     }
@@ -283,7 +297,7 @@ class OutputAssertionsImpl(
         testRun: TestRun,
         sessionIds: List<String>,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
+        initiatedIdentity: HoldingIdentity?,
     ): List<SessionEvent> {
         assertNotNull(testRun.response, "Test run response value")
         val eventRecords = getMatchedFlowMapperEventRecords(testRun.response!!).map { it.value as FlowMapperEvent }
@@ -314,7 +328,7 @@ class OutputAssertionsImpl(
         errorType: String?,
         errorMessage: String?,
         flowTerminatedReason: String?,
-        record: Record<*, *>
+        record: Record<*, *>,
     ): Boolean {
         if (record.value !is FlowStatus) {
             return false
@@ -356,8 +370,10 @@ class OutputAssertionsImpl(
 
             assertNotNull(foundEntityRequest, "No entity request found in response events.")
             val outputRequestPayload = foundEntityRequest.request
-            assertTrue(outputRequestPayload::class.java == expectedRequestPayload::class.java,
-                "Entity request found is of the wrong type. Expected ${expectedRequestPayload::class.java}, found: ${expectedRequestPayload::class.java}")
+            assertTrue(
+                outputRequestPayload::class.java == expectedRequestPayload::class.java,
+                "Entity request found is of the wrong type. Expected ${expectedRequestPayload::class.java}, found: ${expectedRequestPayload::class.java}"
+            )
             assertTrue(expectedRequestPayload == outputRequestPayload, "Entity request payload found does not match the expected payload")
         }
     }
@@ -388,7 +404,7 @@ class OutputAssertionsImpl(
 
     private fun getMatchedFlowEventRecords(
         flowId: String,
-        response: StateAndEventProcessor.Response<Checkpoint>
+        response: StateAndEventProcessor.Response<Checkpoint>,
     ): List<FlowEvent> {
         return response.responseEvents
             .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_EVENT_TOPIC || it.value is FlowEvent }
@@ -396,18 +412,18 @@ class OutputAssertionsImpl(
     }
 
     private fun getMatchedFlowMapperEventRecords(
-        response: StateAndEventProcessor.Response<Checkpoint>
+        response: StateAndEventProcessor.Response<Checkpoint>,
     ): List<Record<*, FlowMapperEvent>> {
         @Suppress("unchecked_cast")
         return response.responseEvents
             .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
-            as List<Record<*, FlowMapperEvent>>
+                as List<Record<*, FlowMapperEvent>>
     }
 
     private fun getMatchedSessionEvents(
         initiatingIdentity: HoldingIdentity,
         initiatedIdentity: HoldingIdentity,
-        flowMapperEvents: List<FlowMapperEvent>
+        flowMapperEvents: List<FlowMapperEvent>,
     ): List<SessionEvent> {
         val sessionEvents = flowMapperEvents.filter { it.payload is SessionEvent }.map { it.payload as SessionEvent }
         log.info("Found ${sessionEvents.size} session events in ${flowMapperEvents.size} flow mapper events.")

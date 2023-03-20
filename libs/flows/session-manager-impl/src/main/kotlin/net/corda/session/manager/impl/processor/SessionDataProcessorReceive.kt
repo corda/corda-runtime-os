@@ -10,7 +10,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
-import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
+import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -78,6 +78,8 @@ class SessionDataProcessorReceive(
 
         //store data event received regardless of current state status
         receivedEventState.undeliveredMessages = receivedEventState.undeliveredMessages.plus(sessionEvent)
+            .distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
+
 
         return if (isSessionMismatch(receivedEventState, expectedNextSeqNum, currentStatus)) {
             val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
@@ -91,7 +93,8 @@ class SessionDataProcessorReceive(
             }
         } else {
             sessionState.apply {
-                receivedEventsState = recalcReceivedProcessState(receivedEventsState)
+                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages,
+                    receivedEventState.lastProcessedSequenceNum)
                 sendAck = true
             }
             logger.trace { "receivedEventsState after update: ${sessionState.receivedEventsState}" }

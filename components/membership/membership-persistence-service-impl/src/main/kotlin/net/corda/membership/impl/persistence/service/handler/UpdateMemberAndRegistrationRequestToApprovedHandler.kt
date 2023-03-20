@@ -107,7 +107,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     member.memberX500Name,
                     false,
                     signature.publicKey,
-                    signature.context,
+                    signature.signatureSpec,
                     signature.content
                 )
             )

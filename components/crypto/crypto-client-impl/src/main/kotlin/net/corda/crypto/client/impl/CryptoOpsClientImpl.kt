@@ -10,10 +10,10 @@ import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
@@ -63,7 +63,7 @@ class CryptoOpsClientImpl(
 
         private fun SecureHashes.toDto(): List<SecureHash> =
             this.hashes.map {
-                SecureHash(it.algorithm, it.bytes.array())
+                SecureHashImpl(it.algorithm, it.bytes.array())
             }
 
         private fun SecureHash.toAvro(): net.corda.data.crypto.SecureHash =
@@ -273,8 +273,7 @@ class CryptoOpsClientImpl(
         val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-            response.bytes.array(),
-            response.context.toMap()
+            response.bytes.array()
         )
     }
 

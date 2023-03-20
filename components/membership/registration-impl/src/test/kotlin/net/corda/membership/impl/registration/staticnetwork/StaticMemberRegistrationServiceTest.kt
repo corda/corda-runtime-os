@@ -104,6 +104,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
@@ -286,6 +287,7 @@ class StaticMemberRegistrationServiceTest {
                 any(),
                 any(),
                 any(),
+                anyOrNull(),
             )
         } doReturn MembershipQueryResult.Success(emptyList())
     }
@@ -407,11 +409,11 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration persist the status`() {
-            val status = argumentCaptor<RegistrationRequest>()
+            val capturedRequest = argumentCaptor<RegistrationRequest>()
             whenever(
                 persistenceClient.persistRegistrationRequest(
                     eq(alice),
-                    status.capture()
+                    capturedRequest.capture()
                 )
             ).doReturn(MembershipPersistenceResult.success())
             setUpPublisher()
@@ -419,7 +421,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, alice, mockContext)
 
-            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+            val registrationRequest = capturedRequest.firstValue
+            assertThat(registrationRequest.status).isEqualTo(RegistrationStatus.APPROVED)
+            assertThat(registrationRequest.serial).isEqualTo(0L)
         }
 
         @Test

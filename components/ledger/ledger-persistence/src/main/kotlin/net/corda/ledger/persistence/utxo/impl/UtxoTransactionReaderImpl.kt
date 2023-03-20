@@ -33,7 +33,7 @@ class UtxoTransactionReaderImpl(
     private val externalEventContext: ExternalEventContext,
     transaction: ByteArray,
     override val status: TransactionStatus,
-    override val relevantStatesIndexes: List<Int>
+    override val visibleStatesIndexes: List<Int>
 ) : UtxoTransactionReader {
 
     constructor(
@@ -45,7 +45,7 @@ class UtxoTransactionReaderImpl(
         externalEventContext,
         transaction.transaction.array(),
         transaction.status.toTransactionStatus(),
-        transaction.relevantStatesIndexes
+        transaction.visibleStatesIndexes
     )
 
     constructor(
@@ -88,11 +88,11 @@ class UtxoTransactionReaderImpl(
         get() = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
-        val relevantStatesSet = relevantStatesIndexes.toSet()
+        val visibleStatesSet = visibleStatesIndexes.toSet()
         return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
-            .filter { indexed -> relevantStatesSet.contains(indexed.index) }
+            .filter { indexed -> visibleStatesSet.contains(indexed.index) }
             .map { (index, value) ->
                 Triple(
                     index,

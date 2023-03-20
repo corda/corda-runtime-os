@@ -17,6 +17,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.GroupParameters
@@ -479,42 +480,41 @@ class SynchronisationIntegrationTest {
         val members: List<MemberInfo> = mutableListOf(participantInfo)
         val signedMembers = members.map {
             val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val memberSignatureSpec = SignatureSpec.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
-                SignatureSpec.ECDSA_SHA256,
-                memberInfo!!,
-                mapOf(
-                    Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
-                )
+                memberSignatureSpec,
+                memberInfo!!
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
-                    ByteBuffer.wrap(withKey.bytes),
-                    withKey.context.toWire()
+                    ByteBuffer.wrap(withKey.bytes)
                 )
             }
+            val mgmSignatureSpec = SignatureSpec.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
-                SignatureSpec.ECDSA_SHA256,
-                merkleTreeGenerator.generateTree(listOf(it))
-                    .root.bytes,
-                mapOf(
-                    Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
-                )
+                mgmSignatureSpec,
+                merkleTreeGenerator.generateTree(listOf(it)).root.bytes
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
-                    ByteBuffer.wrap(withKey.bytes),
-                    withKey.context.toWire()
+                    ByteBuffer.wrap(withKey.bytes)
                 )
             }
             SignedMemberInfo.newBuilder()
                 .setMemberContext(ByteBuffer.wrap(memberInfo))
                 .setMgmContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())))
                 .setMemberSignature(memberSignature)
+                .setMemberSignatureSpec(
+                    CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                )
                 .setMgmSignature(mgmSignature)
+                .setMgmSignatureSpec(
+                    CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                )
                 .build()
         }
         val hash = merkleTreeGenerator.generateTree(members).root
@@ -535,18 +535,19 @@ class SynchronisationIntegrationTest {
             mgm.toCorda().shortHash.value,
             mgmSessionKey,
             SignatureSpec.ECDSA_SHA256,
-            serializedGroupParameters,
-            mapOf(
-                Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
-            )
+            serializedGroupParameters
         ).let { withKey ->
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
-                ByteBuffer.wrap(withKey.bytes),
-                withKey.context.toWire()
+                ByteBuffer.wrap(withKey.bytes)
             )
         }
-        val wireGroupParameters = WireGroupParameters(ByteBuffer.wrap(serializedGroupParameters), mgmSignatureGroupParameters)
+        val wireGroupParameters =
+            WireGroupParameters(
+                ByteBuffer.wrap(serializedGroupParameters),
+                mgmSignatureGroupParameters,
+                CryptoSignatureSpec(SignatureSpec.ECDSA_SHA256.signatureName, null, null)
+            )
 
         val membershipPackage = MembershipPackage.newBuilder()
             .setDistributionType(DistributionType.STANDARD)

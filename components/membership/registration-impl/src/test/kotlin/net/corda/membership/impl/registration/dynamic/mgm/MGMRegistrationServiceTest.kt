@@ -216,7 +216,7 @@ class MGMRegistrationServiceTest {
     private val mockGroupParametersList: KeyValuePairList = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryRegistrationRequestsStatus(any(), anyOrNull(), any()) } doReturn MembershipQueryResult.Success(emptyList())
+        on { queryRegistrationRequestsStatus(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
@@ -395,6 +395,7 @@ class MGMRegistrationServiceTest {
                 it.assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
                 it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
                 it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+                it.assertThat(statusUpdate.firstValue.serial).isEqualTo(0L)
 
 
                 val membershipEvent = publishedEvent.value as MembershipEvent

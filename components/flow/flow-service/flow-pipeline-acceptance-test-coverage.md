@@ -22,6 +22,8 @@ This document should be maintained so that we can ensure that we have quick visi
 - Receiving a session init event for a flow that does not exist within the sandbox sends a session error event
 - Receiving a session error event resumes the flow with an error ✅
 - Open multiple sessions, receiving ack for only one session does not resume or set output events ✅
+- Requesting counterparty info flow sends a session init event ✅
+- Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit ✅
 
 ## Sending
 - Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event ✅

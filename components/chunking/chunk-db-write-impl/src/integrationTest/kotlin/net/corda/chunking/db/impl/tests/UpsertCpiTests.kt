@@ -3,6 +3,7 @@ package net.corda.chunking.db.impl.tests
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -58,7 +59,7 @@ class UpsertCpiTests {
         emConfig
     )
 
-    private val cpiSignerSummaryHash = SecureHash("SHA-256","signerSummaryHash".toByteArray())
+    private val cpiSignerSummaryHash = SecureHashImpl("SHA-256","signerSummaryHash".toByteArray())
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -109,7 +110,7 @@ class UpsertCpiTests {
 
     private fun newRandomSecureHash(): SecureHash {
         val random = Random()
-        return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
     /** Mock cpk with random string content **/

@@ -8,6 +8,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.messaging.api.records.Record
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
@@ -21,7 +22,8 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
-    private val utxoOutputRecordFactory: UtxoOutputRecordFactory
+    private val utxoOutputRecordFactory: UtxoOutputRecordFactory,
+    private val digestService: DigestService
 ) : RequestHandler {
 
     private companion object {
@@ -53,7 +55,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     ): List<Pair<StateAndRef<*>, UtxoToken>> = flatMap { stateAndRef ->
         tokenObservers.getObserversFor(stateAndRef.state.contractStateType).mapNotNull { observer ->
             try {
-                val token = observer.onCommit(stateAndRef.state.contractState).let { token ->
+                val token = observer.onCommit(stateAndRef.state.contractState, digestService).let { token ->
                     token.poolKey.tokenType?.let { token } ?: UtxoToken(
                         UtxoTokenPoolKey(
                             stateAndRef.state.contractStateType.name,

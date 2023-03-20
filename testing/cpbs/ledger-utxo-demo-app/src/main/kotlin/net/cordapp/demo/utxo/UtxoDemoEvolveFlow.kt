@@ -1,5 +1,6 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -12,13 +13,12 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import java.time.Duration
+import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
@@ -40,6 +40,9 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     private val log = LoggerFactory.getLogger(this::class.java)
 
 
@@ -49,8 +52,9 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
         val response = try {
             val request = requestBody.getRequestBodyAs(jsonMarshallingService, EvolveMessage::class.java)
 
-            val inputTx = utxoLedgerService.findLedgerTransaction(SecureHash.parse(request.transactionId)) ?:
-                throw EvolveFlowError( "Failed to find transaction ${request.transactionId}")
+            val inputTx =
+                utxoLedgerService.findLedgerTransaction(digestService.parseSecureHash(request.transactionId))
+                    ?: throw EvolveFlowError("Failed to find transaction ${request.transactionId}")
 
             val prevStates = inputTx.outputStateAndRefs
             if (prevStates.size <= request.index)

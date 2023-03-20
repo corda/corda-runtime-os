@@ -23,6 +23,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 
+    testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(':simulator:api')
     testRuntimeOnly project(':simulator:runtime')
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

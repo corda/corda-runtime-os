@@ -21,7 +21,6 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
-    runtimeOnly project(':components:virtual-node:sandbox-notary-impl')
 
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:crypto:cipher-suite-impl")
