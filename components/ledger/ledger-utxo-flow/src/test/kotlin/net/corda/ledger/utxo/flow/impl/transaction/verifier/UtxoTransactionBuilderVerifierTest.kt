@@ -28,7 +28,7 @@ class UtxoTransactionBuilderVerifierTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(transactionBuilder.notary).thenReturn(notaryX500Name)
+        whenever(transactionBuilder.notaryName).thenReturn(notaryX500Name)
         whenever(transactionBuilder.notaryKey).thenReturn(publicKeyExample)
         whenever(transactionBuilder.timeWindow).thenReturn(timeWindow)
         whenever(transactionBuilder.getEncumbranceGroups()).thenReturn(emptyMap())
@@ -45,7 +45,7 @@ class UtxoTransactionBuilderVerifierTest {
 
     @Test
     fun `throws an exception when the notary is null`() {
-        whenever(transactionBuilder.notary).thenReturn(null)
+        whenever(transactionBuilder.notaryName).thenReturn(null)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("The notary")

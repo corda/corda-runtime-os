@@ -22,7 +22,8 @@ import java.util.Objects
 class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     private val notaryLookup: NotaryLookup,
-    private var notary: MemberX500Name? = null,
+    private var notaryName: MemberX500Name? = null,
+    private var notaryKey: PublicKey? = null,
     override var timeWindow: TimeWindow? = null,
     override val attachments: MutableList<SecureHash> = mutableListOf(),
     override val commands: MutableList<Command> = mutableListOf(),
@@ -33,8 +34,6 @@ class UtxoTransactionBuilderImpl(
 ) : UtxoTransactionBuilderInternal {
 
     private var alreadySigned = false
-
-    override var notaryKey: PublicKey? = null
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         require(attachmentId !in attachments) {
@@ -150,13 +149,19 @@ class UtxoTransactionBuilderImpl(
             .toMap()
     }
 
-    override fun getNotary(): MemberX500Name? {
-        return notary
+    override fun getNotaryName(): MemberX500Name? {
+        return notaryName
     }
 
     override fun setNotary(notary: MemberX500Name): UtxoTransactionBuilder {
-        this.notary = notary
+        this.notaryName = notary
+        notaryKey = notaryLookup.lookup(notary)?.publicKey
+
         return this
+    }
+
+    override fun getNotaryKey(): PublicKey? {
+        return notaryKey
     }
 
     override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
@@ -176,7 +181,8 @@ class UtxoTransactionBuilderImpl(
 
     override fun copy(): UtxoTransactionBuilderContainer {
         return UtxoTransactionBuilderContainer(
-            notary,
+            notaryName,
+            notaryKey,
             timeWindow,
             attachments.toMutableList(),
             commands.toMutableList(),
@@ -191,8 +197,6 @@ class UtxoTransactionBuilderImpl(
     private fun sign(): UtxoSignedTransaction {
         check(!alreadySigned) { "The transaction cannot be signed twice." }
 
-        require(notaryKey == null){ "The notary must not be set by user code"}
-        notaryKey = if (notary != null) notaryLookup.lookup(notary!!)?.publicKey else null
         UtxoTransactionBuilderVerifier(this).verify()
         return utxoSignedTransactionFactory.create(this, signatories).also {
             alreadySigned = true
@@ -207,7 +211,8 @@ class UtxoTransactionBuilderImpl(
     override fun equals(other: Any?): Boolean {
         return this === other
                 || other is UtxoTransactionBuilderImpl
-                && other.notary == notary
+                && other.notaryName == notaryName
+                && other.notaryKey == notaryKey
                 && other.timeWindow == timeWindow
                 && other.attachments == attachments
                 && other.commands == commands
@@ -218,7 +223,8 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun hashCode(): Int = Objects.hash(
-        notary,
+        notaryName,
+        notaryKey,
         timeWindow,
         attachments,
         commands,
@@ -230,7 +236,7 @@ class UtxoTransactionBuilderImpl(
 
     override fun toString(): String {
         return "UtxoTransactionBuilderImpl(" +
-                "notary=$notary, " +
+                "notary=$notaryName (key: $notaryKey), " +
                 "timeWindow=$timeWindow, " +
                 "attachments=$attachments, " +
                 "commands=$commands, " +
@@ -256,7 +262,8 @@ class UtxoTransactionBuilderImpl(
         return UtxoTransactionBuilderImpl(
             this.utxoSignedTransactionFactory,
             this.notaryLookup,
-            this.notary ?: other.getNotary(),
+            this.notaryName ?: other.getNotaryName(),
+            this.notaryKey ?: other.getNotaryKey(),
             this.timeWindow ?: other.timeWindow,
             (this.attachments + other.attachments).distinct().toMutableList(),
             (this.commands + other.commands).toMutableList(),

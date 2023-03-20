@@ -40,7 +40,7 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
             UtxoBaselinedTransactionBuilder(utxoTransactionBuilder)
                 .setNotary(notaryX500Name)
                 .diff()
-        assertEquals(notaryX500Name, result.getNotary())
+        assertEquals(notaryX500Name, result.getNotaryName())
     }
 
     @Test
@@ -48,7 +48,7 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
         val result =
             UtxoBaselinedTransactionBuilder(utxoTransactionBuilder.setNotary(notaryX500Name) as UtxoTransactionBuilderInternal)
                 .diff()
-        assertNull(result.getNotary())
+        assertNull(result.getNotaryName())
     }
 
     @Test

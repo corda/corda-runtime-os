@@ -22,5 +22,6 @@ interface UtxoTransactionBuilderData {
             .map { it.transactionId }
             .toSet()
 
-    fun getNotary(): MemberX500Name?
+    fun getNotaryName(): MemberX500Name?
+    fun getNotaryKey(): PublicKey?
 }

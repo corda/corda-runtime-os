@@ -7,10 +7,12 @@ import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
+import kotlin.reflect.jvm.internal.impl.descriptors.Visibilities.Public
 
 @CordaSerializable
 data class UtxoTransactionBuilderContainer(
-    private val notary: MemberX500Name? = null,
+    private val notaryName: MemberX500Name? = null,
+    private val notaryKey: PublicKey? = null,
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = listOf(),
     override val commands: List<Command> = listOf(),
@@ -19,7 +21,11 @@ data class UtxoTransactionBuilderContainer(
     override val referenceStateRefs: List<StateRef> = listOf(),
     override val outputStates: List<ContractStateAndEncumbranceTag> = listOf()
 ) : UtxoTransactionBuilderData {
-    override fun getNotary(): MemberX500Name? {
-        return notary
+    override fun getNotaryName(): MemberX500Name? {
+        return notaryName
+    }
+
+    override fun getNotaryKey(): PublicKey? {
+        return notaryKey
     }
 }

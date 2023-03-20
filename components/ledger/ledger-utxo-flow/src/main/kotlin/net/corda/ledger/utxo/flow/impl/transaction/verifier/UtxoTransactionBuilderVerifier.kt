@@ -34,11 +34,11 @@ class UtxoTransactionBuilderVerifier(
     }
 
     private fun verifyNotary() {
-        checkNotNull(transactionBuilder.notary) {
-            "The notary of the current $subjectClass must not be null."
+        checkNotNull(transactionBuilder.notaryName) {
+            "The notary name of the current $subjectClass must not be null."
         }
         checkNotNull(transactionBuilder.notaryKey) {
-            "The notary ${transactionBuilder.notary} of the current $subjectClass cannot be found or is not a valid notary."
+            "The notary ${transactionBuilder.notaryName} of the current $subjectClass cannot be found or is not a valid notary."
         }
 
 

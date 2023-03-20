@@ -45,7 +45,8 @@ class SendTransactonBuilderDiffFlowTest {
     fun beforeEach() {
         whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
 
-        whenever(currentTransactionBuilder.notary).thenReturn(null)
+        whenever(currentTransactionBuilder.notaryName).thenReturn(null)
+        whenever(currentTransactionBuilder.notaryKey).thenReturn(null)
         whenever(currentTransactionBuilder.timeWindow).thenReturn(null)
         whenever(currentTransactionBuilder.attachments).thenReturn(listOf())
         whenever(currentTransactionBuilder.commands).thenReturn(listOf())
@@ -55,7 +56,8 @@ class SendTransactonBuilderDiffFlowTest {
         whenever(currentTransactionBuilder.outputStates).thenReturn(listOf())
         whenever(currentTransactionBuilder.copy()).thenReturn(originalTransactionalBuilder)
 
-        whenever(originalTransactionalBuilder.getNotary()).thenReturn(null)
+        whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(null)
+        whenever(originalTransactionalBuilder.getNotaryKey()).thenReturn(null)
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(null)
         whenever(originalTransactionalBuilder.attachments).thenReturn(listOf())
         whenever(originalTransactionalBuilder.commands).thenReturn(listOf())
@@ -75,18 +77,21 @@ class SendTransactonBuilderDiffFlowTest {
 
     @Test
     fun `called with old notary null and new notary sends back a builder with the new notary`() {
-        whenever(currentTransactionBuilder.notary).thenReturn(notaryX500Name)
+        whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
+        whenever(currentTransactionBuilder.notaryKey).thenReturn(publicKeyExample)
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(notary = notaryX500Name))
+        verify(session).send(UtxoTransactionBuilderContainer(notaryName = notaryX500Name, notaryKey = publicKeyExample))
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
     fun `called with old notary and a different new notary sends back a builder without notary`() {
-        whenever(originalTransactionalBuilder.getNotary()).thenReturn(anotherNotaryX500Name)
-        whenever(currentTransactionBuilder.notary).thenReturn(notaryX500Name)
+        whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(anotherNotaryX500Name)
+        whenever(originalTransactionalBuilder.getNotaryKey()).thenReturn(anotherPublicKeyExample)
+        whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
+        whenever(currentTransactionBuilder.notaryKey).thenReturn(publicKeyExample)
 
         callSendFlow()
 

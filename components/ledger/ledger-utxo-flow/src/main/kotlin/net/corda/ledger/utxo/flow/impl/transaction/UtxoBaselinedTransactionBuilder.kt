@@ -20,8 +20,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
     private val currentTransactionBuilder: UtxoTransactionBuilderInternal,
 ) : UtxoTransactionBuilderInternal {
 
-    override var notaryKey: PublicKey? = null
-
     constructor(transactionBuilderInternal: UtxoTransactionBuilderInternal) : this(
         transactionBuilderInternal.copy(),
         transactionBuilderInternal
@@ -42,10 +40,12 @@ class UtxoBaselinedTransactionBuilder private constructor(
     override val outputStates: List<ContractStateAndEncumbranceTag>
         get() = currentTransactionBuilder.outputStates
 
-    override fun getNotary(): MemberX500Name? = currentTransactionBuilder.notary
+    override fun getNotaryName(): MemberX500Name? = currentTransactionBuilder.notaryName
+
+    override fun getNotaryKey(): PublicKey? = currentTransactionBuilder.notaryKey
 
     override fun setNotary(notary: MemberX500Name): UtxoBaselinedTransactionBuilder {
-        require(this.notary == null || this.notary == notary) {
+        require(this.notaryName == null || this.notaryName == notary) {
             "Original notary cannot be overridden."
         }
         currentTransactionBuilder.setNotary(notary)
@@ -82,7 +82,8 @@ class UtxoBaselinedTransactionBuilder private constructor(
         return this === other
                 || other is UtxoBaselinedTransactionBuilder
                 && other.baselineTransactionBuilder == baselineTransactionBuilder
-                && other.notary == notary
+                && other.notaryName == notaryName
+                && other.notaryKey == notaryKey
                 && other.timeWindow == timeWindow
                 && other.attachments == attachments
                 && other.commands == commands
@@ -94,7 +95,8 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     override fun hashCode(): Int = Objects.hash(
         baselineTransactionBuilder,
-        notary,
+        notaryName,
+        notaryKey,
         timeWindow,
         attachments,
         commands,
@@ -106,7 +108,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     override fun toString(): String {
         return "UtxoBaselinedTransactionBuilder(" +
-                "notary=$notary (orig: ${baselineTransactionBuilder.getNotary()}), " +
+                "notary=$notaryName (key: $notaryKey) (orig: ${baselineTransactionBuilder.getNotaryName()}), " +
                 "timeWindow=$timeWindow (orig: ${baselineTransactionBuilder.timeWindow}), " +
                 "attachments=$attachments (orig: ${baselineTransactionBuilder.attachments}), " +
                 "commands=$commands (orig: ${baselineTransactionBuilder.commands}), " +
@@ -217,7 +219,8 @@ class UtxoBaselinedTransactionBuilder private constructor(
      */
     fun diff(): UtxoTransactionBuilderContainer =
         UtxoTransactionBuilderContainer(
-            if (baselineTransactionBuilder.getNotary() == null) notary else null,
+            if (baselineTransactionBuilder.getNotaryName() == null) notaryName else null,
+            if (baselineTransactionBuilder.getNotaryKey() == null) notaryKey else null,
             if (baselineTransactionBuilder.timeWindow == null) timeWindow else null,
             attachments - baselineTransactionBuilder.attachments.toSet(),
             commands.drop(baselineTransactionBuilder.commands.size),

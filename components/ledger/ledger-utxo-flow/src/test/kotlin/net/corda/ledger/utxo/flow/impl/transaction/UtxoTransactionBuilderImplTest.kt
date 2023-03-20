@@ -204,7 +204,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `setting the notary mutates and returns the current builder`() {
         val originalTransactionBuilder = utxoTransactionBuilder
         val mutatedTransactionBuilder = utxoTransactionBuilder.setNotary(notaryX500Name)
-        assertThat(mutatedTransactionBuilder.notary).isEqualTo(notaryX500Name)
+        assertThat(mutatedTransactionBuilder.notaryName).isEqualTo(notaryX500Name)
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
             System.identityHashCode(

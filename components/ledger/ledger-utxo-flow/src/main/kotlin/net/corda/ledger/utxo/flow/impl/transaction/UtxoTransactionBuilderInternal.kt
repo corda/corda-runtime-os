@@ -23,9 +23,4 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
      * But keeps potential duplications in user-defined types. (commands and output states)
      */
     fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderInternal
-
-    /**
-     * The key of the selected notary
-     */
-    var notaryKey: PublicKey?
 }

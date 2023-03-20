@@ -67,12 +67,13 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     @Test
     fun `called with original notary null and receives new notary returns a builder with the new notary`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notary = notaryX500Name)
+            UtxoTransactionBuilderContainer(notaryName = notaryX500Name, notaryKey = publicKeyExample)
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertEquals(notaryX500Name, returnedTransactionBuilder.notary)
+        assertEquals(notaryX500Name, returnedTransactionBuilder.notaryName)
+        assertEquals(publicKeyExample, returnedTransactionBuilder.notaryKey)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
@@ -80,12 +81,13 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     fun `called with original notary and receives a different new notary returns with the original notary`() {
         originalTransactionalBuilder.setNotary(notaryX500Name)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notary = anotherNotaryX500Name)
+            UtxoTransactionBuilderContainer(notaryName = anotherNotaryX500Name, notaryKey = anotherPublicKeyExample)
         )
 
         val returnedTransactionBuilder = callSendFlow()
 
-        assertEquals(notaryX500Name, returnedTransactionBuilder.notary)
+        assertEquals(notaryX500Name, returnedTransactionBuilder.notaryName)
+        assertEquals(publicKeyExample, returnedTransactionBuilder.notaryKey)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
