@@ -3,7 +3,7 @@ package net.corda.crypto.softhsm
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
+import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.softhsm.impl.V1CryptoRepositoryImpl
@@ -74,7 +74,7 @@ fun cryptoRepositoryFactory(
         )
     }
 
-    val cache = V1CryptoRepositoryImpl.createCache(CryptoSigningServiceConfig(config))
+    val cache = V1CryptoRepositoryImpl.createCache(config.signingService())
 
 //        // somehow figure out which version we want, e.g.
 //        when (entityManagerFactory.getSchemaVersion()) {
