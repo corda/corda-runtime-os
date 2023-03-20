@@ -4,6 +4,6 @@ endToEndPipeline(
     assembleAndCompile: false,
     dailyBuildCron: '',
     multiCluster: true,
-    gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
+    gradleTestTargetsToExecute: ['smokeTest', 'packagingTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
 )
