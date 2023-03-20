@@ -180,11 +180,11 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
         // The notary component is not needed by us but we validate that it is present just in case
         requireNotNull(filteredTx.notaryName) {
-            "Notary component could not be found on the transaction"
+            "Notary name component could not be found on the transaction"
         }
 
         requireNotNull(filteredTx.notaryKey) {
-            "Notary component could not be found on the transaction"
+            "Notary key component could not be found on the transaction"
         }
 
 

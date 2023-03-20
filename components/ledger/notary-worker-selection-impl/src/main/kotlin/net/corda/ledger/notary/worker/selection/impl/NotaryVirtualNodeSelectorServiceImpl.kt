@@ -28,11 +28,9 @@ class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
      * This function will fetch the virtual nodes that belong to the [serviceIdentity] and do a random selection on
      * that list.
      */
-    override fun selectVirtualNode(serviceIdentity: MemberX500Name): MemberX500Name {
-        val selectedMember = memberLookup.lookup().filter {
+    override fun selectVirtualNode(serviceIdentity: MemberX500Name): MemberX500Name
+    = memberLookup.lookup().filter {
             it.notaryDetails?.serviceName == serviceIdentity
-        }.random()
+        }.random().name
 
-        return selectedMember.name
-    }
 }
