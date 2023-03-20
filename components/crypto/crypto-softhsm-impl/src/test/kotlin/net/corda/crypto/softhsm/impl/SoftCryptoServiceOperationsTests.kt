@@ -428,9 +428,9 @@ class SoftCryptoServiceOperationsTests {
                 rootWrappingKey.wrap(knownWrappingKey)
             )
         )
-//        assertThrows<IllegalArgumentException> {
-//            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
-//        }
+        assertThrows<IllegalArgumentException> {
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
+        }
     }
 
 
