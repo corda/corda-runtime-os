@@ -1,7 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
 import com.fasterxml.jackson.databind.JsonNode
-import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.CLUSTER_URI
@@ -28,12 +27,9 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCATION
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V3
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V4
 import net.corda.e2etest.utilities.getFlowStatus
 
 /**
@@ -156,82 +152,6 @@ class VirtualNodeRpcTest {
             .withFailMessage("Short code length of wrong size - likely this test needs fixing")
             .isEqualTo(12)
         return cpiHash
-    }
-
-    /**
-     * Runs second to ensure that we reject this with a correct message
-     */
-    @Test
-    @Order(20)
-    fun `cannot upload a CPB`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val requestId = cpbUpload(TEST_CPB_LOCATION).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition {
-                    try {
-                        if (it.code == 400) {
-                            val json = it.toJson()["details"]
-                            json.has("errorMessage")
-                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_CPB_INSTEAD_OF_CPI
-                        } else {
-                            false
-                        }
-                    } catch (e: Exception) {
-                        println("Failed, repsonse: $it")
-                        false
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
-    @Order(30)
-    fun `cannot upload same CPI`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            val requestId = cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 409 }
-            }
-        }
-    }
-
-    @Test
-    @Order(31)
-    fun `cannot upload same CPI with different groupId`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            val requestId = cpiUpload(
-                TEST_CPB_LOCATION,
-                "8c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
-                staticMemberList,
-                cpiName
-            ).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 409 }
-            }
-        }
     }
 
     @Test
@@ -528,141 +448,6 @@ class VirtualNodeRpcTest {
     }
 
     @Test
-    @Order(90)
-    fun `can force upload the CPI with a new set of CPKs`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-        }
-    }
-
-    @Test
-    @Order(91)
-    fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
-            runReturnAStringFlow("force-uploaded-cpi")
-        }
-    }
-
-    @Test
-    @Order(92)
-    fun `can sync the virtual node's DB and run a flow on the force uploaded CPI to persist a fish entity`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            // Status 204 indicates a non-error but no response data
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
-
-            runSimplePersistenceCheckFlow("Could persist Floaty")
-        }
-    }
-
-    @Test
-    @Order(93)
-    fun `can force upload the CPI with CPKs that have no changelogs`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(TEST_CPB_WITHOUT_CHANGELOGS_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-        }
-    }
-
-    @Test
-    @Order(94)
-    fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
-
-            val className = "net.cordapp.testing.smoketests.virtualnode.NoChangelogFlow"
-            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
-            val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
-
-            assertThat(flowStatus.flowResult).isEqualTo("NO_CHANGELOG_FLOW_COMPLETE")
-        }
-    }
-
-    @Test
-    @Order(100)
-    fun `can force upload the original CPI back again and run a flow that does not interact with the database`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-
-            runReturnAStringFlow("original-cpi")
-        }
-    }
-
-    @Test
-    @Order(101)
-    fun `can sync the vault DB again and run a flow from the original CPI that persists a dog entity`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
-
-            runSimplePersistenceCheckFlow("Could persist dog")
-        }
-    }
-
-    @Test
     @Order(110)
     fun `can upload multiple versions of a CPI with the same name`() {
         cluster {
@@ -670,8 +455,6 @@ class VirtualNodeRpcTest {
 
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V3, upgradeTestingCpiName, "v3")
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V4, upgradeTestingCpiName, "v4")
         }
     }
 
@@ -688,23 +471,6 @@ class VirtualNodeRpcTest {
 
             runReturnAStringFlow("upgrade-test-v1", bobHoldingId)
             runSimplePersistenceCheckFlow("Could persist fish", bobHoldingId)
-        }
-    }
-
-    @Test
-    @Order(112)
-    fun `upgrading without transitioning virtual node to maintenance fails with bad request`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
-
-            assertWithRetry {
-                command { vNodeUpgrade(bobHoldingId, cpiV2) }
-                condition { it.code == 400 }
-                failMessage(ERROR_VNODE_NOT_IN_MAINTENANCE)
-            }.toJson()
-
         }
     }
 
@@ -745,51 +511,6 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
-    @Order(115)
-    fun `upgrading to a CPI with a corrupt changelog writes failed operation and removes operation in progress`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
-
-            val cpiV3 = getCpiChecksum(upgradeTestingCpiName, "v3")
-            val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV3)
-
-            eventuallyAssertVNodeOperationState(requestId, "LIQUIBASE_DIFF_CHECK_FAILED")
-        }
-    }
-
-    @Test
-    @Order(116)
-    fun `can recover a failed virtual node upgrade due to corrupt XML changeset`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val cpiV4 = getCpiChecksum(upgradeTestingCpiName, "v4")
-            val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV4)
-
-            eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v4")
-            awaitVirtualNodeOperationCompletion(bobHoldingId)
-
-            eventuallyAssertVNodeOperationState(requestId, "COMPLETED")
-        }
-    }
-
-    @Test
-    @Order(117)
-    fun `can run flows of virtual node after recovering from failed upgrade`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
-
-            runReturnAStringFlow("upgrade-test-v4", bobHoldingId)
-            runSimplePersistenceCheckFlow("Could persist egg", bobHoldingId)
-
-        }
-    }
-
     private fun ClusterBuilder.triggerVirtualNodeUpgrade(
         virtualNodeShortHash: String, targetCpiFileChecksum: String
     ): String {
@@ -806,21 +527,6 @@ class VirtualNodeRpcTest {
             command { getVNodeOperationStatus(requestId) }
             condition { it.code == 200 }
             failMessage(ERROR_REQUEST_ID)
-        }.toJson()
-        return operationStatus
-    }
-
-    private fun ClusterBuilder.eventuallyAssertVNodeOperationState(
-        requestId: String,
-        expectedState: String
-    ): JsonNode {
-        val operationStatus = assertWithRetry {
-            command { getVNodeOperationStatus(requestId) }
-            condition {
-                val response = it.toJson()["response"]
-                it.code == 200 && !response.isEmpty && response.first()["state"].textValue() == expectedState
-            }
-            failMessage("Could not assert a virtual node operation with state: $expectedState")
         }.toJson()
         return operationStatus
     }

@@ -1,6 +1,7 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -17,19 +18,18 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import javax.persistence.EntityManagerFactory
 
-class TestCryptoRepositoryFactoryImpl {
+class TestCryptoRepositoryFactory {
     @Test
     fun `DML to Corda crypto DB for Crypto tenant and P2P`() {
         val entityManagerFactory = mock<EntityManagerFactory>()
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
-        val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, mock(), mock())
-        val repo = cut.create(CryptoTenants.CRYPTO)
+        val repo = cryptoRepositoryFactory(CryptoTenants.CRYPTO, dbConnectionManager, mock(), mock())
         assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create(CryptoTenants.P2P)
+        cryptoRepositoryFactory(CryptoTenants.P2P, dbConnectionManager, mock(), mock())
         verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
         repo.close()
@@ -53,14 +53,23 @@ class TestCryptoRepositoryFactoryImpl {
         val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
             on { get(any()) } doReturn mock()
         }
-        val cut = CryptoRepositoryFactoryImpl(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create(CryptoTenants.P2P).use {
+        cryptoRepositoryFactory(
+            CryptoTenants.P2P,
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService
+        ).use {
             verify(sharedEntityManagerFactory, times(0)).close()
         }
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cut.create("123456789012").use {
+        cryptoRepositoryFactory(
+            "123456789012",
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService
+        ).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())

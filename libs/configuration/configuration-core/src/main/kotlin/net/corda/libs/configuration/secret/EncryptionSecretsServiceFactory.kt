@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.secret
 
 import com.typesafe.config.Config
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -9,8 +10,8 @@ import org.slf4j.LoggerFactory
 class EncryptionSecretsServiceFactory : SecretsServiceFactory {
     companion object {
         const val TYPE = "encryption"
-        const val SECRET_PASSPHRASE_KEY = "${ConfigKeys.SECRETS_CONFIG}.${ConfigKeys.SECRETS_PASSPHRASE}"
-        const val SECRET_SALT_KEY = "${ConfigKeys.SECRETS_CONFIG}.${ConfigKeys.SECRETS_SALT}"
+        const val SECRET_PASSPHRASE_KEY = "${BootConfig.BOOT_SECRETS}.${ConfigKeys.SECRETS_PASSPHRASE}"
+        const val SECRET_SALT_KEY = "${BootConfig.BOOT_SECRETS}.${ConfigKeys.SECRETS_SALT}"
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

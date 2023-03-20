@@ -17,7 +17,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -64,7 +64,7 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
+        val databaseConfig = PathAndConfig(BOOT_DB, params.databaseParams)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
@@ -88,6 +88,6 @@ private class DBWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
+    @Option(names = ["-d", "--$BOOT_DB"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 }

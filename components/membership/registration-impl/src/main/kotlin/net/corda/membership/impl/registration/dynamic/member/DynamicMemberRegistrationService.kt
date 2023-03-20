@@ -43,6 +43,7 @@ import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -193,6 +194,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize registration request.") }
 
     private var impl: InnerRegistrationService = InactiveImpl
+    private val registrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -265,6 +267,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                     "Registration failed. The registration context is invalid: " + ex.message,
                     ex,
                 )
+            }
+            val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
+            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
+                    logger.info(customFieldsValid.reason)
+                    throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
             try {
                 val roles = MemberRole.extractRolesFromContext(context)

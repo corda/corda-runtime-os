@@ -174,6 +174,8 @@ class MemberRegistrationIntegrationTest {
         const val URL_KEY = "corda.endpoints.0.connectionURL"
         const val URL_VALUE = "https://localhost:1080"
         const val PROTOCOL_KEY = "corda.endpoints.0.protocolVersion"
+        const val CUSTOM_KEY = "ext.MyCustomKey"
+        const val CUSTOM_VALUE = "MyCustomValue"
         const val PROTOCOL_VALUE = "1"
         const val CPI_VERSION = "1.1"
         const val CPI_SIGNER_HASH = "ALG:A1B2C3D4"
@@ -327,6 +329,7 @@ class MemberRegistrationIntegrationTest {
                     it.assertThat(getValue(MEMBER_CPI_SIGNER_HASH)).isEqualTo(CPI_SIGNER_HASH)
                     it.assertThat(getValue(PLATFORM_VERSION)).isEqualTo(TEST_ACTIVE_PLATFORM_VERSION.toString())
                     it.assertThat(getValue(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
+                    it.assertThat(getValue(CUSTOM_KEY)).isEqualTo(CUSTOM_VALUE)
 
                     with(map { pair -> pair.key }) {
                         it.assertThat(contains(String.format(LEDGER_KEYS_KEY, 0))).isTrue
@@ -405,6 +408,7 @@ class MemberRegistrationIntegrationTest {
             PROTOCOL_KEY to PROTOCOL_VALUE,
             "corda.ledger.keys.0.id" to ledgerKeyId,
             "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+            CUSTOM_KEY to CUSTOM_VALUE
         )
     }
 
