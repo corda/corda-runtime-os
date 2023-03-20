@@ -6,7 +6,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.RPC_API
+import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.rest.exception.BadRequestException
@@ -175,10 +175,10 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignHsm will not verify the tenantId from REST tenant`() {
-            whenever(hsmRegistrationClient.assignHSM(RPC_API, LEDGER, emptyMap())).doReturn(
+            whenever(hsmRegistrationClient.assignHSM(REST, LEDGER, emptyMap())).doReturn(
                 HSMAssociationInfo(
                     "id1",
-                    RPC_API,
+                    REST,
                     "hsm-id",
                     LEDGER,
                     "master-key-alias",
@@ -186,7 +186,7 @@ class HsmRestResourceImplTest {
                 )
             )
 
-            ops.assignHsm(RPC_API, LEDGER)
+            ops.assignHsm(REST, LEDGER)
 
             verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(tenantIdShortHash)
         }

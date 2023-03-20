@@ -64,9 +64,9 @@ class CryptoServiceThrottlingDecorator(
     override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() =
         cryptoService.supportedSchemes
 
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) =
+    override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) =
         executeWithBackingOff {
-            cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
+            cryptoService.createWrappingKey(wrappingKeyAlias, failIfExists, context)
         }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey =

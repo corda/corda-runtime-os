@@ -1,15 +1,19 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -66,8 +70,10 @@ class VirtualNodeOperationStatusHandlerTest {
     }
 
     @Test
-    fun `Handler returns empty list if no operations found for request Id`() {
-        whenever(virtualNodeRepository.findVirtualNodeOperationByRequestId(em, requestId.toString())).thenReturn(listOf())
+    fun `Handler returns VirtualNodeManagementResponseFailure if no operations found for request Id`() {
+        whenever(virtualNodeRepository.findVirtualNodeOperationByRequestId(any(), eq(requestId.toString()))).thenThrow(
+            VirtualNodeOperationNotFoundException(requestId.toString())
+        )
 
         val respFuture = CompletableFuture<VirtualNodeManagementResponse>()
 
@@ -80,8 +86,8 @@ class VirtualNodeOperationStatusHandlerTest {
         )
 
         val response = respFuture.get().responseType
-        val operationHistory = (response as VirtualNodeOperationStatusResponse).operationHistory
+        val exception = (response as VirtualNodeManagementResponseFailure).exception
 
-        assertThat(operationHistory).isEmpty()
+        assertThat(exception.errorMessage).isEqualTo("Could not find a virtual node operation with requestId of $requestId")
     }
 }

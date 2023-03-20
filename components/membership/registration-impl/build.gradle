@@ -37,7 +37,6 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(':libs:chunking:chunking-core')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.ResponseCode
 import net.corda.utilities.seconds
-import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
@@ -18,12 +17,12 @@ import java.time.Duration
 fun onboardMgm(
     clusterInfo: ClusterInfo,
     resourceName: String,
-    mgmName: MemberX500Name = MemberX500Name.parse("O=Mgm, L=London, C=GB, OU=$testRunUniqueId"),
+    mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm_$testRunUniqueId.cpi"
     conditionallyUploadCordaPackage(mgmCpiName, resourceName, getMgmGroupPolicy())
-    val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName.toString(), mgmCpiName)
+    val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
 
     addSoftHsmFor(mgmHoldingId, CAT_SESSION_INIT)
     val sessionKeyId = createKeyFor(
@@ -148,12 +147,12 @@ private fun delete(
 fun createPreAuthToken(
     clusterInfo: ClusterInfo,
     mgmHoldingId: String,
-    ownerX500Name: MemberX500Name,
+    ownerX500Name: String,
     remark: String? = "Token created for automated test run $testRunUniqueId with default remark.",
     ttl: Duration? = null
 ) = cluster(clusterInfo) {
     val payload = mutableMapOf(
-        "ownerX500Name" to ownerX500Name.toString()
+        "ownerX500Name" to ownerX500Name
     ).apply {
         remark?.let { put("remarks", it) }
         ttl?.let { put("ttl", it.toString()) }
@@ -212,7 +211,7 @@ fun getPreAuthTokens(
 fun waitForPendingRegistrationReviews(
     clusterInfo: ClusterInfo,
     mgmHoldingId: String,
-    memberX500Name: MemberX500Name? = null,
+    memberX500Name: String? = null,
     registrationId: String?
 ) {
     cluster(clusterInfo) {

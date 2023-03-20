@@ -4,6 +4,7 @@ import net.corda.chunking.RequestId
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 
 interface CpiPersistence {
@@ -18,7 +19,7 @@ interface CpiPersistence {
      *
      * @return true if CPI exists
      */
-    fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean
+    fun cpiExists(cpiId: CpiIdentifier): Boolean
 
     /** Persist the CPI metadata and the CPKs
      *
@@ -56,7 +57,7 @@ interface CpiPersistence {
         cpiFileChecksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        changelogsExtractedFromCpi: List<CpkDbChangeLog>
+        changelogsExtractedFromCpi: Collection<CpkDbChangeLog>
     ): CpiMetadataEntity
 
     /**
@@ -64,7 +65,7 @@ interface CpiPersistence {
      *
      *  @return null if not found
      */
-    fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String?
+    fun getGroupId(cpiId: CpiIdentifier): String?
 
     /**
      * Can we insert (or update) this CPI into the database given its name and groupId?
@@ -81,7 +82,7 @@ interface CpiPersistence {
     @Suppress("LongParameterList")
     fun validateCanUpsertCpi(
         cpiName: String,
-        cpiSignerSummaryHash: String,
+        cpiSignerSummaryHash: SecureHash,
         cpiVersion: String,
         groupId: String,
         forceUpload: Boolean,

@@ -3,7 +3,7 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import net.corda.chunking.toAvro
+import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
@@ -17,6 +17,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.GroupParameters
@@ -31,6 +32,7 @@ import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.layeredpropertymap.toAvro
@@ -78,6 +80,7 @@ import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
@@ -91,7 +94,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -113,8 +116,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class SynchronisationIntegrationTest {
@@ -413,7 +414,8 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
 
@@ -478,42 +480,41 @@ class SynchronisationIntegrationTest {
         val members: List<MemberInfo> = mutableListOf(participantInfo)
         val signedMembers = members.map {
             val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val memberSignatureSpec = SignatureSpec.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
-                SignatureSpec.ECDSA_SHA256,
-                memberInfo!!,
-                mapOf(
-                    Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
-                )
+                memberSignatureSpec,
+                memberInfo!!
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
-                    ByteBuffer.wrap(withKey.bytes),
-                    withKey.context.toWire()
+                    ByteBuffer.wrap(withKey.bytes)
                 )
             }
+            val mgmSignatureSpec = SignatureSpec.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
-                SignatureSpec.ECDSA_SHA256,
-                merkleTreeGenerator.generateTree(listOf(it))
-                    .root.bytes,
-                mapOf(
-                    Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
-                )
+                mgmSignatureSpec,
+                merkleTreeGenerator.generateTree(listOf(it)).root.bytes
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
-                    ByteBuffer.wrap(withKey.bytes),
-                    withKey.context.toWire()
+                    ByteBuffer.wrap(withKey.bytes)
                 )
             }
             SignedMemberInfo.newBuilder()
                 .setMemberContext(ByteBuffer.wrap(memberInfo))
                 .setMgmContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())))
                 .setMemberSignature(memberSignature)
+                .setMemberSignatureSpec(
+                    CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                )
                 .setMgmSignature(mgmSignature)
+                .setMgmSignatureSpec(
+                    CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                )
                 .build()
         }
         val hash = merkleTreeGenerator.generateTree(members).root
@@ -534,18 +535,19 @@ class SynchronisationIntegrationTest {
             mgm.toCorda().shortHash.value,
             mgmSessionKey,
             SignatureSpec.ECDSA_SHA256,
-            serializedGroupParameters,
-            mapOf(
-                Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
-            )
+            serializedGroupParameters
         ).let { withKey ->
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
-                ByteBuffer.wrap(withKey.bytes),
-                withKey.context.toWire()
+                ByteBuffer.wrap(withKey.bytes)
             )
         }
-        val wireGroupParameters = WireGroupParameters(ByteBuffer.wrap(serializedGroupParameters), mgmSignatureGroupParameters)
+        val wireGroupParameters =
+            WireGroupParameters(
+                ByteBuffer.wrap(serializedGroupParameters),
+                mgmSignatureGroupParameters,
+                CryptoSignatureSpec(SignatureSpec.ECDSA_SHA256.signatureName, null, null)
+            )
 
         val membershipPackage = MembershipPackage.newBuilder()
             .setDistributionType(DistributionType.STANDARD)
@@ -595,7 +597,8 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(membershipPackageSerializer.serialize(membershipPackage))
         updatesSender.publish(

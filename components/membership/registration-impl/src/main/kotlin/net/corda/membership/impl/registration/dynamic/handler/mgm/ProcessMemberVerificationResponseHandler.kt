@@ -9,6 +9,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
@@ -102,7 +103,8 @@ internal class ProcessMemberVerificationResponseHandler(
                     registrationId,
                     status
                 ),
-                minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL)
+                minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
+                filter = MembershipStatusFilter.PENDING,
             )
             val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(

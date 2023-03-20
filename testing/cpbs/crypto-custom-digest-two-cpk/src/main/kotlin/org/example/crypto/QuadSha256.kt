@@ -7,8 +7,7 @@ import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
  * This class should show up in the jar manifest
  */
 class QuadSha256 : DigestAlgorithmFactory {
-    override val algorithm: String
-        get() = QuadSha256Digest.ALGORITHM
+    override fun getAlgorithm() = QuadSha256Digest.ALGORITHM
 
     override fun getInstance(): DigestAlgorithm = QuadSha256Digest()
 }

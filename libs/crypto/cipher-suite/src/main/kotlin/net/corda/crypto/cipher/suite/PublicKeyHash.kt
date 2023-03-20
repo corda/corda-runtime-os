@@ -2,7 +2,6 @@
 package net.corda.crypto.cipher.suite
 
 import net.corda.v5.base.types.ByteArrays.toHexString
-import net.corda.v5.crypto.sha256Bytes
 import java.security.PublicKey
 
 /**

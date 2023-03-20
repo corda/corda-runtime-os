@@ -8,7 +8,6 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -139,9 +138,8 @@ class CryptoFlowOpsTransformerImpl(
     private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
-            by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
-            bytes = resp.bytes.array(),
-            context = resp.context.toMap()
+            keyEncodingService.decodePublicKey(resp.publicKey.array()),
+            resp.bytes.array()
         )
     }
 
@@ -215,5 +213,5 @@ class CryptoFlowOpsTransformerImpl(
 private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): SecureHash =
     digestService.hash(
         keyEncodingService.encodeAsByteArray(this),
-        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+        DigestAlgorithmName.SHA2_256
     )

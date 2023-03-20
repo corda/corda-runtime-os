@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
@@ -8,7 +9,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -60,7 +60,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
 
         val transaction = mock<UtxoLedgerTransactionInternal>()
         val wireTransaction = mock<WireTransaction>()
-        val transactionMetadata = mock<TransactionMetadata>()
+        val transactionMetadata = mock<TransactionMetadataInternal>()
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
@@ -90,7 +90,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         val transactionId = mock<SecureHash>()
         val transaction = mock<UtxoLedgerTransactionInternal>()
         val wireTransaction = mock<WireTransaction>()
-        val transactionMetadata = mock<TransactionMetadata>()
+        val transactionMetadata = mock<TransactionMetadataInternal>()
         whenever(transaction.id).thenReturn(transactionId)
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)

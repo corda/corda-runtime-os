@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -131,6 +132,7 @@ class MembershipQueryClientImpl(
             protocolVersion = this.registrationProtocolVersion,
             memberContext = this.memberProvidedContext,
             reason = this.reason,
+            serial = this.serial,
         )
     }
 
@@ -164,11 +166,12 @@ class MembershipQueryClientImpl(
     override fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
-        statuses: List<RegistrationStatus>
+        statuses: List<RegistrationStatus>,
+        limit: Int?
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -192,7 +195,7 @@ class MembershipQueryClientImpl(
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> {
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
         if (holdingsIdentities.isEmpty()) {
             return MembershipQueryResult.Success(emptyMap())
         }
@@ -204,7 +207,8 @@ class MembershipQueryClientImpl(
             is MemberSignatureQueryResponse -> {
                 MembershipQueryResult.Success(
                     payload.membersSignatures.associate { memberSignature ->
-                        memberSignature.holdingIdentity.toCorda() to memberSignature.signature
+                        memberSignature.holdingIdentity.toCorda() to
+                                (memberSignature.signature to memberSignature.signatureSpec)
                     }
                 )
             }
@@ -217,7 +221,7 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()
@@ -225,7 +229,7 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is GroupPolicyQueryResponse -> {
                 MembershipQueryResult.Success(
-                    layeredPropertyMapFactory.createMap(payload.properties.toMap())
+                    layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
                 )
             }
             else -> {

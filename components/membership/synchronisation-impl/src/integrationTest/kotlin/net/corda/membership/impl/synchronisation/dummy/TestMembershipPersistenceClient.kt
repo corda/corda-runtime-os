@@ -1,11 +1,10 @@
 package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -68,8 +67,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
-        groupPolicy: LayeredPropertyMap
-    ): MembershipPersistenceResult<Int> {
+        groupPolicy: LayeredPropertyMap,
+        version: Long
+    ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -86,9 +86,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceResult<GroupParameters> {
         persistedGroupParameters = groupParameters
-        return MembershipPersistenceResult.Success(groupParameters.toAvro())
+        return MembershipPersistenceResult.Success(groupParameters)
     }
 
     override fun addNotaryToGroupParameters(
@@ -122,17 +122,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     }
 
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String
-    ): MembershipPersistenceResult<Unit> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
@@ -157,6 +146,24 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity, ruleId: String, ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

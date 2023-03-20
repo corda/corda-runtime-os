@@ -27,8 +27,7 @@ import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rest.RestProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
-import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -36,6 +35,12 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+
+
+// We use a different port for the combined worker since it is often run on Macs, which 
+// sometimes have our chosen container health port of 7000 used.
+
+const val COMBINED_WORKER_MONITOR_PORT = 7004
 
 /** A worker that starts all processors. */
 @Suppress("Unused", "LongParameterList")
@@ -103,22 +108,23 @@ class CombinedWorker @Activate constructor(
             // the combined worker may use SOFT HSM by default unlike the crypto worker
             params.hsmId = SOFT_HSM_ID
         }
-        val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+        val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
+        val cryptoConfig = PathAndConfig(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+        val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, cryptoConfig),
+            listOf(databaseConfig, cryptoConfig, restConfig),
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
-        val dbAdminPassword = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
+        val dbAdmin = if (config.getConfig(BootConfig.BOOT_DB).hasPath(DatabaseConfig.DB_USER))
+            config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_USER) else "user"
+        val dbAdminPassword = if (config.getConfig(BootConfig.BOOT_DB).hasPath(DatabaseConfig.DB_PASS))
+            config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_PASS) else "password"
 
         // Part of DB setup is to generate defaults for the crypto code. That currently includes a
         // default master wrapping key passphrase and salt, which we want to keep secret, and so
@@ -176,14 +182,15 @@ class CombinedWorker @Activate constructor(
 /** Additional parameters for the combined worker are added here. */
 private class CombinedWorkerParams {
     @Mixin
-    var defaultParams = DefaultWorkerParams()
+    var defaultParams = DefaultWorkerParams(COMBINED_WORKER_MONITOR_PORT)
 
-    @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
+    @Option(names = ["-d", "--${BootConfig.BOOT_DB}"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @Option(names = ["-r", "--rest-params"], description = ["REST parameters for the worker."])
+    @Option(names = ["-r", "--${BootConfig.BOOT_REST}"], description = ["REST parameters for the worker."])
     var restParams = emptyMap<String, String>()
 
+    // TODO - remove when reviewing crypto config
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 

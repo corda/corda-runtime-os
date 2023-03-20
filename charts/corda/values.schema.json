@@ -10,6 +10,25 @@
         "kafka"
     ],
     "properties": {
+        "corda-lib": {
+            "type": "object",
+            "default": {},
+            "title": "configuration for library sub-chart",
+            "additionalProperties": false,
+            "required": [
+                "global"
+            ],
+            "properties": {
+                "global": {
+                    "type": "object",
+                    "default": {},
+                    "title": "global configuration",
+                    "additionalProperties": false,
+                    "properties": {
+                    }
+                }
+            }
+        },
         "fullnameOverride": {
             "type": "string",
             "default": "",

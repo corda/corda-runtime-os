@@ -1,6 +1,7 @@
 package net.corda.membership.read
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -27,39 +28,58 @@ interface MembershipGroupReader {
 
     /**
      * Returns a list of all visible [MemberInfo]s for the member represented by [owningMember]
-     * having active membership status within the group represented by [groupId].
+     * within the group represented by [groupId] filtered by [filter].
+     * [filter] should be only used by the P2P and membership layers. Everywhere else we must use the default value.
+     *
+     * @param filter Indicate what statuses you are looking for. By default, it will return the latest
+     * active version.
      */
-    fun lookup(): Collection<MemberInfo>
+    fun lookup(filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE): Collection<MemberInfo>
 
     /**
      * Looks up a group member matching the public key SHA-256 hash as visible by the member represented
-     * by [owningMember] having active membership status within the group represented by [groupId].
+     * by [owningMember] within the group represented by [groupId] filtered by [filter].
+     * [filter] should be only used by the P2P and membership layers. Everywhere else we must use the default value.
      *
      * If the member is not found then the null value is returned.
      *
      * @param ledgerKeyHash Hash of the ledger key belonging to the member to be looked up.
+     * @param filter Indicates what statuses you are looking for. By default, it will return the latest
+     * active version.
      */
-    fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo?
+    fun lookupByLedgerKey(
+        ledgerKeyHash: PublicKeyHash,
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
+    ): MemberInfo?
 
     /**
      * Looks up a group member matching the [MemberX500Name] as visible by the member represented
-     * by [owningMember] having active membership status within the group represented by [groupId].
+     * by [owningMember] within the group represented by [groupId] filtered by [filter].
+     * [filter] should be only used by the P2P and membership layers. Everywhere else we must use the default value.
      *
      * If the member is not found then the null value is returned.
      *
      * @param name MemberX500Name of the member to lookup.
+     * @param filter Indicates what statuses you are looking for. By default, it will return the latest
+     * active version.
      */
-    fun lookup(name: MemberX500Name): MemberInfo?
+    fun lookup(name: MemberX500Name, filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE): MemberInfo?
 
     /**
      * Looks up a group member matching the public key SHA-256 hash as visible by the member represented
-     * by [owningMember] having active membership status within the group represented by [groupId].
+     * by [owningMember] within the group represented by [groupId] filtered by [filter].
+     * [filter] should be only used by the P2P and membership layers. Everywhere else we must use the default value.
      *
      * If the member is not found then the null value is returned.
      *
      * @param sessionKeyHash Hash of the session key belonging to the member to be looked up.
+     * @param filter Indicates what statuses you are looking for. By default, it will return the latest
+     * active version.
      */
-    fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo?
+    fun lookupBySessionKey(
+        sessionKeyHash: PublicKeyHash,
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
+    ): MemberInfo?
 
     /**
      * A service to lookup of a notary virtual nodes in the group.

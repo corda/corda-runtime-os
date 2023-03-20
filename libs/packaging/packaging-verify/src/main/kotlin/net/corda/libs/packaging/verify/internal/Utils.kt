@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.verify.internal
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.hash
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -32,16 +33,16 @@ internal fun Manifest.requireAttributeValueIn(name: String, vararg values: Strin
  * @return the resulting [SecureHash]
  */
 internal inline fun hash(
-    algorithm : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME,
+    algorithm : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
     withDigestAction : (MessageDigest) -> Unit
 ) : SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
     withDigestAction(md)
-    return SecureHash(algorithm.name, md.digest())
+    return SecureHashImpl(algorithm.name, md.digest())
 }
 
 internal val secureHashComparator = Comparator.nullsFirst(
-    Comparator.comparing(SecureHash::algorithm)
+    Comparator.comparing(SecureHash::getAlgorithm)
         .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
 
 internal fun Sequence<SecureHash>.sortedSequenceHash() : SecureHash {
@@ -65,7 +66,7 @@ internal fun hash(inputStream: InputStream, algorithm: String): SecureHash {
     DigestInputStream(inputStream, digest).use {
         it.readAllBytes()
     }
-    return SecureHash(algorithm, digest.digest())
+    return SecureHashImpl(algorithm, digest.digest())
 }
 
 internal fun <T> List<T>.firstOrThrow(noElementsException: Exception): T {

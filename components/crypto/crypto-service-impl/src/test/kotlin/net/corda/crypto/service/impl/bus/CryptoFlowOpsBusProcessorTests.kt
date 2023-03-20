@@ -2,8 +2,10 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -34,9 +36,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -166,7 +166,7 @@ class CryptoFlowOpsBusProcessorTests {
                 val bytesCaptor = argumentCaptor<ByteArray>()
                 whenever(it.hash(bytesCaptor.capture(), any())).thenAnswer {
                     val bytes = bytesCaptor.firstValue
-                    SecureHash(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
+                    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
                         capture()
                     }
                 }
@@ -205,7 +205,7 @@ class CryptoFlowOpsBusProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedList = it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
             }
             CryptoSigningKeys(
                 listOf(
@@ -291,18 +291,15 @@ class CryptoFlowOpsBusProcessorTests {
         var passedTenantId = UUID.randomUUID().toString()
         var passedPublicKey = ByteBuffer.allocate(1)
         var passedData = ByteBuffer.allocate(1)
-        var passedContext = KeyValuePairList()
         var passedSignatureSpec = CryptoSignatureSpec()
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedPublicKey = it.getArgument(1)
             passedSignatureSpec = it.getArgument(2)
             passedData = it.getArgument(3)
-            passedContext = it.getArgument(4)
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(signature),
-                passedContext
+                ByteBuffer.wrap(signature)
             )
         }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any(), any())
 
@@ -355,11 +352,6 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
         assertArrayEquals(data, passedData.array())
         assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
-        assertNotNull(passedContext.items)
-        assertEquals(1, passedContext.items.size)
-        assertTrue {
-            passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
-        }
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         assertInstanceOf(DigitalSignature.WithKey::class.java, transformed)
         val transformedSignature = transformed as DigitalSignature.WithKey
@@ -396,7 +388,7 @@ class CryptoFlowOpsBusProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedList = it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
             }
             CryptoSigningKeys(
                 listOf(
@@ -524,7 +516,7 @@ class CryptoFlowOpsBusProcessorTests {
         doAnswer {
             passedTenantIds.add(it.getArgument(0))
             passedLists.add(it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
             })
             CryptoSigningKeys(
                 listOf(
@@ -673,7 +665,7 @@ class CryptoFlowOpsBusProcessorTests {
             val tenantId = it.getArgument<String>(0)
             passedTenantIds.add(tenantId)
             passedLists.add(it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
             })
             if (tenantId == failingTenantId) {
                 throw NotImplementedError()

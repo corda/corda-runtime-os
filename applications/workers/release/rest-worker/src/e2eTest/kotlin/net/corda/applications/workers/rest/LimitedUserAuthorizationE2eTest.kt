@@ -2,10 +2,11 @@ package net.corda.applications.workers.rest
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
-import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
@@ -25,11 +26,11 @@ import org.junit.jupiter.api.Test
 class LimitedUserAuthorizationE2eTest {
 
     companion object {
-        private val testToolkit by TestToolkitProperty()
-        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, adminUser, adminPassword)
+        private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
+        private val adminTestHelper = RbacE2eClientRequestHelper(cordaCluster, adminUser, adminPassword)
         private lateinit var limitedUserTestHelper: RbacE2eClientRequestHelper
-        private var limitedUserLogin: String = testToolkit.uniqueName
-        private var limitedUserPassword: String = testToolkit.uniqueName
+        private var limitedUserLogin: String = cordaCluster.uniqueName
+        private var limitedUserPassword: String = cordaCluster.uniqueName
         private lateinit var creatorRoleId: String
         private lateinit var allowUserOperationsPermId: String
 
@@ -37,8 +38,8 @@ class LimitedUserAuthorizationE2eTest {
         @BeforeAll
         fun setup() {
             val passwordExpiry = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
-            val creatorRoleName = "creator-" + testToolkit.uniqueName
-            val readerRoleName = "reader-" + testToolkit.uniqueName
+            val creatorRoleName = "creator-" + cordaCluster.uniqueName
+            val readerRoleName = "reader-" + cordaCluster.uniqueName
 
             adminTestHelper.createUser(limitedUserLogin, limitedUserPassword, passwordExpiry)
 
@@ -56,14 +57,14 @@ class LimitedUserAuthorizationE2eTest {
             adminTestHelper.addRoleToUser(limitedUserLogin, creatorRoleId)
             adminTestHelper.addRoleToUser(limitedUserLogin, readerRoleId)
 
-            limitedUserTestHelper = RbacE2eClientRequestHelper(testToolkit, limitedUserLogin, limitedUserPassword)
+            limitedUserTestHelper = RbacE2eClientRequestHelper(cordaCluster, limitedUserLogin, limitedUserPassword)
         }
     }
 
     @Test
     fun `verify limited user can exercise ALLOW permission on user operations to create a user`() {
-        val newUser = testToolkit.uniqueName
-        val newPass = testToolkit.uniqueName
+        val newUser = cordaCluster.uniqueName
+        val newPass = cordaCluster.uniqueName
         val passwordExpiry = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
 
         limitedUserTestHelper.createUser(newUser, newPass, passwordExpiry)
@@ -102,13 +103,13 @@ class LimitedUserAuthorizationE2eTest {
 
     @Test
     fun `verify new user created by limited user will have no permissions`() {
-        val newUser = testToolkit.uniqueName
-        val newPass = testToolkit.uniqueName
+        val newUser = cordaCluster.uniqueName
+        val newPass = cordaCluster.uniqueName
         val passwordExpiry = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
 
         limitedUserTestHelper.createUser(newUser, newPass, passwordExpiry)
 
-        val newUserTestHelper = RbacE2eClientRequestHelper(testToolkit, newUser, newPass)
+        val newUserTestHelper = RbacE2eClientRequestHelper(cordaCluster, newUser, newPass)
         // now with new user try to create a permission
         Assertions.assertThatThrownBy {
             newUserTestHelper.getPermission(allowUserOperationsPermId)

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dummy
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -31,7 +32,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ) = MembershipPersistenceResult.Success(1)
+        version: Long
+    ) = MembershipPersistenceResult.success()
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
@@ -40,7 +42,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceResult<GroupParameters> = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
@@ -57,12 +59,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
     ): MembershipPersistenceResult<MemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
@@ -112,6 +108,14 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleId: String,
         ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
+
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
     override val isRunning = true
 

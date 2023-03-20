@@ -17,6 +17,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
@@ -99,14 +100,14 @@ class FlowFilterServiceIntegrationTest {
         republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
-        val version = listOf(1)
+        val flowHeader = AuthenticatedMessageHeader(
+            identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
+        )
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
                 testId,
-                version,
-                testId,
                 null,
+                emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
@@ -121,7 +122,9 @@ class FlowFilterServiceIntegrationTest {
             )
         )
 
-        val invalidHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "other")
+        val invalidHeader = AuthenticatedMessageHeader(
+            identity, identity, Instant.ofEpochMilli(1), "", "", "other", MembershipStatusFilter.ACTIVE
+        )
         val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(

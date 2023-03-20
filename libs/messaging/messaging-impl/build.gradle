@@ -11,6 +11,7 @@ dependencies {
 
     implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:crypto:cipher-suite")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")

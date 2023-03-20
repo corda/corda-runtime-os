@@ -1,7 +1,8 @@
 package net.corda.applications.workers.rest
 
-import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -18,11 +19,11 @@ import org.junit.jupiter.api.assertDoesNotThrow
 @SkipWhenRestEndpointUnavailable
 class CreatePermissionE2eTest {
 
-    private val testToolkit by TestToolkitProperty()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
 
     @Test
     fun testCreateAndGet() {
-        testToolkit.httpClientFor(PermissionEndpoint::class.java).use { client ->
+        cordaCluster.clusterHttpClientFor(PermissionEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
 
             // Check that permission does not exist yet
@@ -32,7 +33,7 @@ class CreatePermissionE2eTest {
             }
 
             // Create permission
-            val setPermString = testToolkit.uniqueName + "-PermissionString"
+            val setPermString = cordaCluster.uniqueName + "-PermissionString"
             val createPermType = CreatePermissionType(PermissionType.ALLOW, setPermString, null, null)
 
             fun PermissionResponseType.assertResponseType(): PermissionResponseType {

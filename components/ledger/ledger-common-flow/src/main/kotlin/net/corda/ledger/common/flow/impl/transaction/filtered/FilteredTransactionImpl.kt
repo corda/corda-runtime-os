@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.filtered
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
@@ -14,10 +15,10 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -83,7 +84,7 @@ class FilteredTransactionImpl(
                 topLevelMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
             val componentLeafHash =
-                SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
+                SecureHashImpl(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
             val providerToVerifyWith = when (filteredComponentGroup.merkleProof.proofType) {
                 MerkleProofType.AUDIT -> componentGroupAuditProofProvider

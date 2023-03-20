@@ -26,7 +26,7 @@ const val CODE_SIGNER_CERT = "/cordadevcodesign.pem"
 const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
 const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
 
-val CLUSTER_URI = URI(System.getProperty("rpcHost", "NONE"))
+val CLUSTER_URI = URI(System.getProperty("restEndpointUrl", "NONE"))
 
 // BUG:  Not sure if we should be requiring clients to use a method similar to this because we
 // return a full hash (64 chars?) but the same API only accepts the first 12 chars.

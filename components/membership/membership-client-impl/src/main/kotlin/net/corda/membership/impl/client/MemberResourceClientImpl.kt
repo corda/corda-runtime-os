@@ -6,6 +6,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
@@ -31,6 +32,7 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
@@ -226,7 +228,7 @@ class MemberResourceClientImpl @Activate constructor(
                     listOf(
                         Record(
                             MEMBERSHIP_ASYNC_REQUEST_TOPIC,
-                            requestId,
+                            memberRegistrationRequest.holdingIdentityShortHash.toString(),
                             MembershipAsyncRequest(
                                 RegistrationAsyncRequest(
                                     memberRegistrationRequest.holdingIdentityShortHash.toString(),
@@ -259,7 +261,7 @@ class MemberResourceClientImpl @Activate constructor(
             val sent = clock.instant()
             try {
                 val context = keyValuePairListSerializer.serialize(
-                    memberRegistrationRequest.context.toWire()
+                    memberRegistrationRequest.context.filterNot { it.key == SERIAL }.toWire()
                 )
                 membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
@@ -270,9 +272,11 @@ class MemberResourceClientImpl @Activate constructor(
                         ByteBuffer.wrap(context),
                         CryptoSignatureWithKey(
                             ByteBuffer.wrap(byteArrayOf()),
-                            ByteBuffer.wrap(byteArrayOf()),
-                            KeyValuePairList(emptyList())
+                            ByteBuffer.wrap(byteArrayOf())
                         ),
+                        CryptoSignatureSpec("", null, null),
+                        memberRegistrationRequest.context[SERIAL]?.toLong(),
+                        true
                     )
                 ).getOrThrow()
                 return RegistrationRequestProgressDto(
@@ -348,7 +352,8 @@ class MemberResourceClientImpl @Activate constructor(
                         *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
                     )
                 ),
-                this.reason
+                this.reason,
+                this.serial,
             )
     }
 
@@ -358,7 +363,6 @@ class MemberResourceClientImpl @Activate constructor(
             RegistrationStatus.SENT_TO_MGM -> RegistrationStatusDto.SENT_TO_MGM
             RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusDto.RECEIVED_BY_MGM
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
-            RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL
             RegistrationStatus.DECLINED -> RegistrationStatusDto.DECLINED

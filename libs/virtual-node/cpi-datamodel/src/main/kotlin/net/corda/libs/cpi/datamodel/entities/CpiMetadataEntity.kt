@@ -18,6 +18,9 @@ import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
 
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.crypto.SecureHash
+
 /**
  * Cpi entity
  *
@@ -84,22 +87,20 @@ class CpiMetadataEntity(
     companion object {
         // Create a [CpiMetadataEntity] with CPKs as filename/metadata pairs
         fun create(
-            name: String,
-            version: String,
-            signerSummaryHash: String,
+            id: CpiIdentifier,
             fileName: String,
-            fileChecksum: String,
+            fileChecksum: SecureHash,
             groupPolicy: String,
             groupId: String,
             fileUploadRequestId: String,
             cpks: Set<CpiCpkEntity>
         ): CpiMetadataEntity {
             return CpiMetadataEntity(
-                name,
-                version,
-                signerSummaryHash,
+                id.name,
+                id.version,
+                id.signerSummaryHash.toString(),
                 fileName,
-                fileChecksum,
+                fileChecksum.toString(),
                 groupPolicy,
                 groupId,
                 fileUploadRequestId,
@@ -183,7 +184,7 @@ class CpiMetadataEntity(
 
 /** The composite primary key for a CpiEntity. */
 @Embeddable
-data class CpiMetadataEntityKey(
+class CpiMetadataEntityKey(
     private val name: String,
     private val version: String,
     private val signerSummaryHash: String,

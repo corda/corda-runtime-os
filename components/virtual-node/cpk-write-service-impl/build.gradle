@@ -24,6 +24,7 @@ dependencies {
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:chunking:chunking-core')
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:db:db-orm')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")

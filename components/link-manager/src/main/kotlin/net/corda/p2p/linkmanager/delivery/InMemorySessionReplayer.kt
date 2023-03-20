@@ -20,7 +20,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -47,8 +46,13 @@ internal class InMemorySessionReplayer(
         messagingConfiguration
     )
 
-    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        false, ::replayMessage, clock = clock)
+    private val replayScheduler = ReplayScheduler<SessionManager.SessionCounterparties, SessionMessageReplay>(
+        coordinatorFactory,
+        configurationReaderService,
+        false,
+        ::replayMessage,
+        clock = clock
+    )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -65,8 +69,7 @@ internal class InMemorySessionReplayer(
     data class SessionMessageReplay(
         val message: Any,
         val sessionId: String,
-        val source: HoldingIdentity,
-        val dest: HoldingIdentity,
+        val sessionCounterparties: SessionManager.SessionCounterparties,
         val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
     )
 
@@ -94,26 +97,36 @@ internal class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val destinationMemberInfo = membershipGroupReaderProvider.lookup(messageReplay.source, messageReplay.dest)
-        if (destinationMemberInfo == null) {
+        val destinationMemberInfo = membershipGroupReaderProvider.lookup(
+            messageReplay.sessionCounterparties.ourId,
+            messageReplay.sessionCounterparties.counterpartyId
+        )
+        if (destinationMemberInfo == null || destinationMemberInfo.serial != messageReplay.sessionCounterparties.serial) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")
+                " with peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
+                    "serial ${messageReplay.sessionCounterparties.serial} " +
+                    "which is not in the members map. The message was not replayed.")
             return
         }
 
-        val networkType = groupPolicyProvider.getGroupPolicy(messageReplay.source)?.networkType
+        val networkType = groupPolicyProvider.getGroupPolicy(messageReplay.sessionCounterparties.ourId)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the GroupPolicyProvider for ${messageReplay.source}." +
+                " could not find the network type in the GroupPolicyProvider for ${messageReplay.sessionCounterparties.ourId}." +
                 " The message was not replayed.")
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, messageReplay.source, destinationMemberInfo, networkType)
+        val message = MessageConverter.createLinkOutMessage(
+            messageReplay.message,
+            messageReplay.sessionCounterparties.ourId,
+            destinationMemberInfo,
+            networkType
+        )
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
-            SessionManager.SessionCounterparties(messageReplay.source, messageReplay.dest),
+            messageReplay.sessionCounterparties,
             messageReplay.sessionId
         )
     }

@@ -98,6 +98,7 @@ import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -672,7 +673,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, "/", chipSslConfig, MAX_REQUEST_SIZE),
+                    GatewayConfiguration(serverUri.host, serverUri.port, "/", bobSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
                     null,
                 ).also {
@@ -802,7 +803,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             "/",
-                            chipSslConfig,
+                            aliceSslConfig,
                             MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
@@ -820,7 +821,7 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             "/",
-                            daleSslConfig,
+                            bobSslConfig,
                             MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory
@@ -1240,7 +1241,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             "/",
-                            chipSslConfig.copy(tlsType = TlsType.MUTUAL),
+                            aliceSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
@@ -1258,7 +1259,7 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             "/",
-                            daleSslConfig.copy(tlsType = TlsType.MUTUAL),
+                            bobSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory

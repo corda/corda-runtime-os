@@ -20,6 +20,7 @@ dependencies {
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
 

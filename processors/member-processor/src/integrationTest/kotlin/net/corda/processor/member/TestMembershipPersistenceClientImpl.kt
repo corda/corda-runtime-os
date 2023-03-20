@@ -1,7 +1,9 @@
 package net.corda.processor.member
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -43,7 +45,8 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ) = MembershipPersistenceResult.Success(1)
+        version: Long
+    ) = MembershipPersistenceResult.success()
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity) =
         MembershipPersistenceResult.Success(KeyValuePairList())
@@ -51,7 +54,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ) = MembershipPersistenceResult.Success(KeyValuePairList())
+    ) = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
@@ -68,12 +71,6 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
     ) = MembershipPersistenceResult.Failure<MemberInfo>("Unsupported!")
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ) = MembershipPersistenceResult.success()
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
@@ -123,6 +120,14 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         ruleType: ApprovalRuleType
     ) = MembershipPersistenceResult.success()
 
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Success(PersistentMemberInfo())
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Success(PersistentMemberInfo())
+
     private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()
@@ -157,14 +162,16 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
+        limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestStatus>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> = MembershipQueryResult.Success(emptyMap())
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> =
+        MembershipQueryResult.Success(emptyMap())
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> =
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> =
         MembershipQueryResult.Failure("Unsupported")
 
     override fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>> = MembershipQueryResult.Success(

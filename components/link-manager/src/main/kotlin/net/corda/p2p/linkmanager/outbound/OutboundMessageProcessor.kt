@@ -229,7 +229,13 @@ internal class OutboundMessageProcessor(
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else if (membershipGroupReaderProvider.lookup(source, destination) != null) {
+        } else if (
+            membershipGroupReaderProvider.lookup(
+                source,
+                destination,
+                messageAndKey.message.header.statusFilter
+            ) != null
+        ) {
             val markers = if (isReplay) {
                 emptyList()
             } else {
@@ -238,7 +244,8 @@ internal class OutboundMessageProcessor(
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
         } else {
             logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
-                    "but the destination is not part of the network. Message will be retried later.")
+                    "but the destination is not part of the network. Filter was " +
+                    "${messageAndKey.message.header.statusFilter} Message will be retried later.")
             return if (isReplay) {
                 emptyList()
             } else {
@@ -257,7 +264,7 @@ internal class OutboundMessageProcessor(
                     "No existing session with ${messageAndKey.message.header.destination}. " +
                         "Initiating a new one.."
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 recordsForNewSessions(state)
             }
             is SessionManager.SessionState.SessionEstablished -> {
@@ -272,7 +279,7 @@ internal class OutboundMessageProcessor(
                     "Session already pending with ${messageAndKey.message.header.destination}. " +
                         "Message queued until session is established."
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 emptyList()
             }
             is SessionManager.SessionState.CannotEstablishSession -> {
@@ -288,6 +295,7 @@ internal class OutboundMessageProcessor(
         return sessionManager.recordsForSessionEstablished(
             state.session,
             messageAndKey,
+            state.sessionCounterparties.serial
         )
     }
 

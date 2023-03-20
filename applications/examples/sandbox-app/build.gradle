@@ -48,6 +48,7 @@ dependencies {
     implementation project(':components:flow:flow-service')
     implementation project(":components:membership:membership-group-read")
     implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(":libs:crypto:crypto-core")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

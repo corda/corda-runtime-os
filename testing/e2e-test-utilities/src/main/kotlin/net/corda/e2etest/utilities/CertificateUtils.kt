@@ -7,7 +7,6 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.ResponseCode
-import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -43,13 +42,13 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
  */
 fun generateCsr(
     clusterInfo: ClusterInfo,
-    x500Name: MemberX500Name,
+    x500Name: String,
     keyId: String,
     tenantId: String = "p2p",
     addHostToSubjectAlternativeNames: Boolean = true
 ) = cluster(clusterInfo) {
     val payload = mutableMapOf<String, Any>(
-        "x500Name" to x500Name.toString()
+        "x500Name" to x500Name
     ).apply {
         if (addHostToSubjectAlternativeNames) {
             put("subjectAlternativeNames", listOf(clusterInfo.p2p.host))

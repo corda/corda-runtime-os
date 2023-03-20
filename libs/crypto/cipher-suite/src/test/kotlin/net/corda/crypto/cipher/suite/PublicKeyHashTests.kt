@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.mocks.generateKeyPair
 import net.corda.crypto.cipher.suite.mocks.specs
 import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource

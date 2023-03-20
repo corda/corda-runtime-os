@@ -1,6 +1,6 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
-import com.r3.corda.notary.plugin.common.NotarisationResponse
+import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -80,9 +80,9 @@ class NonValidatingNotaryClientFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary plugin client returns signature on successful notarisation`() {
+    fun `Non-validating notary plugin client returns signature on successful notarization`() {
         val mockSession = mock<FlowSession> {
-            on { sendAndReceive(eq(NotarisationResponse::class.java), any()) } doReturn NotarisationResponse(
+            on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 listOf(dummyUniquenessSignature),
                 null
             )
@@ -99,9 +99,9 @@ class NonValidatingNotaryClientFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary plugin client throws error on failed notarisation`() {
+    fun `Non-validating notary plugin client throws error on failed notarization`() {
         val mockSession = mock<FlowSession> {
-            on { sendAndReceive(eq(NotarisationResponse::class.java), any()) } doReturn NotarisationResponse(
+            on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 emptyList(),
                 NotaryExceptionReferenceStateUnknown(emptyList(), txId)
             )

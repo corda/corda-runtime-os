@@ -7,6 +7,7 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
@@ -20,13 +21,14 @@ import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
-import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
+import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -34,6 +36,7 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -62,6 +65,7 @@ class MembershipPersistenceClientImpl(
     publisherFactory: PublisherFactory,
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
+    private val groupParametersFactory: GroupParametersFactory,
     clock: Clock,
 ) : MembershipPersistenceClient, AbstractPersistenceClient(
     coordinatorFactory,
@@ -80,11 +84,14 @@ class MembershipPersistenceClientImpl(
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
+        @Reference(service = GroupParametersFactory::class)
+        groupParametersFactory: GroupParametersFactory,
     ) : this(
         coordinatorFactory,
         publisherFactory,
         configurationReadService,
         memberInfoFactory,
+        groupParametersFactory,
         UTCClock(),
     )
 
@@ -123,31 +130,33 @@ class MembershipPersistenceClientImpl(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ): MembershipPersistenceResult<Int> {
+        version: Long
+    ): MembershipPersistenceResult<Unit> {
         logger.info("Persisting group policy.")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
-            PersistGroupPolicy(groupPolicy.toAvro())
+            PersistGroupPolicy(groupPolicy.toAvro(), version)
         ).execute()
-        return when (val response = result.payload) {
-            is PersistGroupPolicyResponse -> MembershipPersistenceResult.Success(response.version)
-            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
-            else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
+        return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
+            null -> MembershipPersistenceResult.success()
+            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
     }
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceResult<GroupParameters> {
         logger.info("Persisting group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(groupParameters.toAvro())
         ).execute()
         return when (val response = result.payload) {
-            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.groupParameters)
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(
+                groupParametersFactory.create(response.groupParameters)
+            )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }
@@ -203,6 +212,9 @@ class MembershipPersistenceClientImpl(
                         registrationId,
                         memberContext,
                         signature,
+                        signatureSpec,
+                        isPending,
+                        serial,
                     )
                 }
             )
@@ -230,26 +242,6 @@ class MembershipPersistenceClientImpl(
             is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.Success(
                 memberInfoFactory.create(payload.memberInfo)
             )
-            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
-            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
-        }
-    }
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit> {
-        val result = MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            UpdateMemberAndRegistrationRequestToDeclined(
-                declinedMember.toAvro(),
-                registrationRequestId
-            )
-        ).execute()
-
-        return when (val payload = result.payload) {
-            null -> MembershipPersistenceResult.success()
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }
@@ -392,6 +384,34 @@ class MembershipPersistenceClientImpl(
         return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
             null -> MembershipPersistenceResult.success()
             else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
+        }
+    }
+
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            SuspendMember(memberX500Name.toString(), serialNumber, reason)
+        ).execute()
+        return when (val payload = result.payload) {
+            is SuspendMemberResponse -> MembershipPersistenceResult.Success(payload.memberInfo)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $payload")
+        }
+    }
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ): MembershipPersistenceResult<PersistentMemberInfo> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            ActivateMember(memberX500Name.toString(), serialNumber, reason)
+        ).execute()
+        return when (val payload = result.payload) {
+            is ActivateMemberResponse -> MembershipPersistenceResult.Success(payload.memberInfo)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $payload")
         }
     }
 }

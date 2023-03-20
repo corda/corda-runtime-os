@@ -2,6 +2,8 @@ package net.corda.flow.pipeline
 
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
+import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
 
 /**
  * [FlowGlobalPostProcessor] performs post-processing that should always execute as part of the [FlowEventPipeline].
@@ -18,6 +20,8 @@ interface FlowGlobalPostProcessor {
      * @param context The [FlowEventContext] that should be modified within this processing step.
      *
      * @return The modified [FlowEventContext].
+     *
+     * @throws [FlowPlatformException] if session counterparties can't be resolved within [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW]
      */
     fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any>
 }

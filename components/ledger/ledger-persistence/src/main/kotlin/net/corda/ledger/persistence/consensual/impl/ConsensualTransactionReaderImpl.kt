@@ -3,6 +3,7 @@ package net.corda.ledger.persistence.consensual.impl
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
@@ -46,5 +47,5 @@ class ConsensualTransactionReaderImpl(
         get() = signedTransaction.signatures
 
     override val cpkMetadata: List<CordaPackageSummary>
-        get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        get() = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 }

@@ -29,15 +29,15 @@ internal interface MigrationUtility {
     )
 
     /**
-     * Checks if the vault for the given connection ID requires migrations to be run to be in sync with the given list of CPK change logs.
+     * Checks if the [cpkChangelogs] have been successfully deployed on the virtual node's vault identified by [vaultDmlConnectionId].
      *
      * @param virtualNodeShortHash the virtual node identifier of which to perform diff function
-     * @param cpkChangelogs the changelogs with which to compare
+     * @param cpkChangelogs the list of changesets to check if are deployed
      * @param vaultDmlConnectionId the DML connection ID of the vault to be compared
      *
-     * @return Boolean indicating if the vault is in sync with the CPI
+     * @return Boolean indicating if the list of changelogs have been successfully executed on this vault schema
      */
-    fun isVaultSchemaAndTargetCpiInSync(
+    fun areChangesetsDeployedOnVault(
         virtualNodeShortHash: String,
         cpkChangelogs: List<CpkDbChangeLog>,
         vaultDmlConnectionId: UUID

@@ -1,12 +1,6 @@
 package net.corda.membership.impl.p2p
 
 import com.typesafe.config.ConfigFactory
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
@@ -20,6 +14,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -39,6 +34,7 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.sync.BloomFilter
@@ -83,13 +79,12 @@ import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -100,6 +95,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipP2PIntegrationTest {
@@ -305,9 +306,9 @@ class MembershipP2PIntegrationTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)))
         val fakeSigWithKey = CryptoSignatureWithKey(
             ByteBuffer.wrap(fakeKey.encodeToByteArray()),
-            ByteBuffer.wrap(fakeSig.encodeToByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(fakeSig.encodeToByteArray())
         )
+        val fakeSigSpec = CryptoSignatureSpec("", null, null)
         val messageHeader = UnauthenticatedMessageHeader(
             destination.toAvro(),
             source.toAvro(),
@@ -317,7 +318,10 @@ class MembershipP2PIntegrationTest {
         val message = MembershipRegistrationRequest(
             registrationId,
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
-            fakeSigWithKey
+            fakeSigWithKey,
+            fakeSigSpec,
+            true,
+            0L,
         )
 
         var latestHeader: UnauthenticatedRegistrationRequestHeader? = null
@@ -426,7 +430,8 @@ class MembershipP2PIntegrationTest {
             destination.toAvro(),
             source.toAvro(),
             requestTimestamp,
-            registrationId
+            registrationId,
+            MembershipStatusFilter.PENDING
         )
         val verificationRequest = VerificationRequest(registrationId, requestBody)
 
@@ -588,14 +593,16 @@ class MembershipP2PIntegrationTest {
         destination: HoldingIdentity,
         source: HoldingIdentity,
         timestamp: Instant,
-        id: String
+        id: String,
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ) = AuthenticatedMessageHeader(
         destination,
         source,
         timestamp.plusMillis(300000L),
         id,
         null,
-        MEMBERSHIP_P2P_SUBSYSTEM
+        MEMBERSHIP_P2P_SUBSYSTEM,
+        filter
     )
 
     private fun buildUnauthenticatedP2PRequest(

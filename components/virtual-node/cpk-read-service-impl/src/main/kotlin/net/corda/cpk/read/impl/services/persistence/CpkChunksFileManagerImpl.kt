@@ -1,6 +1,6 @@
 package net.corda.cpk.read.impl.services.persistence
 
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.utilities.debug

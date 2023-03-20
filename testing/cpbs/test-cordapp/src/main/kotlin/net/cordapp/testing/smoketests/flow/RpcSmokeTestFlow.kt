@@ -1,5 +1,7 @@
 package net.cordapp.testing.smoketests.flow
 
+import java.time.Instant
+import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -27,8 +29,6 @@ import net.cordapp.testing.smoketests.flow.messages.JsonSerializationOutput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
-import java.time.Instant
-import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -330,10 +330,10 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
         digitalSignatureVerificationService.verify(
-            publicKey,
-            SignatureSpec.ECDSA_SHA256,
+            bytesToSign,
             signedBytes.bytes,
-            bytesToSign
+            publicKey,
+            SignatureSpec.ECDSA_SHA256
         )
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
@@ -351,10 +351,10 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         log.info("Crypto - Signature $signedBytes received")
         return try {
             digitalSignatureVerificationService.verify(
-                publicKey,
-                SignatureSpec.RSA_SHA256,
+                bytesToSign,
                 signedBytes.bytes,
-                bytesToSign
+                publicKey,
+                SignatureSpec.RSA_SHA256
             )
             false
         } catch (e: CryptoSignatureException) {
@@ -449,7 +449,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     private fun execute(input: RpcSmokeTestInput): RpcSmokeTestOutput {
         return RpcSmokeTestOutput(
             checkNotNull(input.command) { "No smoke test command received" },
-            checkNotNull(commandMap[input.command]) { "command not recognised" }.invoke(input)
+            checkNotNull(commandMap[input.command]) { "command '${input.command}' not recognised" }.invoke(input)
         )
     }
 

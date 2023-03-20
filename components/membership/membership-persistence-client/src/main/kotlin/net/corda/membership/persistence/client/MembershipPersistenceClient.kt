@@ -1,6 +1,7 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -42,6 +43,7 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param groupPolicy The group policy.
+     * @param version The version of the group policy to persist.
      *
      * @return membership persistence result to indicate the result of the persistence operation.
      *  In the case of success the payload will include the newly created version number.
@@ -49,12 +51,15 @@ interface MembershipPersistenceClient : Lifecycle {
     fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-    ): MembershipPersistenceResult<Int>
+        version: Long
+    ): MembershipPersistenceResult<Unit>
 
     /**
      * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist
      * the initial snapshot that contains basic fields defined in [GroupParameters]. The group parameters persisted in
      * this method do not contain other properties such as notary service information.
+     *
+     * This operation is idempotent.
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      *
@@ -71,16 +76,17 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * The epoch of the new [groupParameters] to be persisted must be higher than that of previous group parameter versions.
      *
+     * This operation is idempotent.
+     *
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param groupParameters The group parameters to persist.
      *
-     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
-     * will include a [KeyValuePairList] of the newly persisted group parameters.
+     * @return The latest group parameters for that holding identity.
      */
     fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<KeyValuePairList>
+    ): MembershipPersistenceResult<GroupParameters>
 
     /**
      * Adds notary information to an existing set of group parameters. This method is expected to be used by an MGM to
@@ -90,6 +96,8 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * If adding a notary vnode to an existing notary service, the optional plugin name, if specified, must match
      * that of the notary service.
+     *
+     * This operation is idempotent.
      *
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param notary [MemberInfo] of the notary to be added.
@@ -132,22 +140,6 @@ interface MembershipPersistenceClient : Lifecycle {
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
     ): MembershipPersistenceResult<MemberInfo>
-
-    /**
-     * Set a member and registration request as declined
-     *
-     * @param viewOwningIdentity The holding identity of the owner of the view of data.
-     * @param declinedMember The member that had been declined
-     * @param registrationRequestId The ID of the registration request
-     *
-     * @return membership persistence result with the persisted member information to indicate the result of the
-     * persistence operation. No payload is returned in case of success.
-     */
-    fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit>
 
     /**
      * Set the status of an existing registration request.
@@ -273,4 +265,38 @@ interface MembershipPersistenceClient : Lifecycle {
         ruleId: String,
         ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Suspends a member.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param memberX500Name X.500 name of the member being suspended.
+     * @param serialNumber Serial number of the member's [MemberInfo].
+     * @param reason Reason for suspension.
+     *
+     * @return Membership persistence result with the updated [MemberInfo].
+     */
+    fun suspendMember(
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?,
+    ): MembershipPersistenceResult<PersistentMemberInfo>
+
+    /**
+     * Activates a previously suspended member.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param memberX500Name X.500 name of the member being activated.
+     * @param serialNumber Serial number of the member's [MemberInfo].
+     * @param reason Reason for activation.
+     *
+     * @return Membership persistence result with the updated [MemberInfo].
+     */
+    fun activateMember(
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?,
+    ): MembershipPersistenceResult<PersistentMemberInfo>
 }

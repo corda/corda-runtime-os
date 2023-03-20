@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -15,9 +16,10 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
@@ -27,8 +29,6 @@ import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
@@ -51,11 +51,9 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.sha256Bytes
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -102,9 +100,6 @@ class PersistenceTests {
         @InjectService(timeout = 5000)
         lateinit var signingKeyStore: SigningKeyStore
 
-        @InjectService(timeout = 5000)
-        lateinit var wrappingKeyStore: WrappingKeyStore
-
         private lateinit var publisher: Publisher
 
         private lateinit var tracker: TestDependenciesTracker
@@ -145,12 +140,11 @@ class PersistenceTests {
                     CryptoConnectionsFactory::class.java,
                     HSMStore::class.java,
                     SigningKeyStore::class.java,
-                    WrappingKeyStore::class.java
                 )
             )
             tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
             tracker.component<DbConnectionManager>().bootstrap(
-                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS)
+                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB)
             )
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
         }
@@ -603,53 +597,6 @@ class PersistenceTests {
         assertNotNull(association2.masterKeyAlias)
     }
 
-    @Test
-    fun `Should save and then retrieve wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
-        val alias1 = UUID.randomUUID().toString()
-        val alias2 = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key1.algorithm,
-            keyMaterial = masterKey.wrap(key1)
-        )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo2 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key2.algorithm,
-            keyMaterial = masterKey.wrap(key2)
-        )
-        wrappingKeyStore.saveWrappingKey(alias1, wrappingKeyInfo1)
-        wrappingKeyStore.saveWrappingKey(alias2, wrappingKeyInfo2)
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias1)!!.keyMaterial))
-        assertEquals(key2, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias2)!!.keyMaterial))
-    }
-
-    @Test
-    fun `Should fail override existing wrapping keys`() {
-        val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
-        val alias = UUID.randomUUID().toString()
-        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key1.algorithm,
-            keyMaterial = masterKey.wrap(key1)
-        )
-        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo2 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key2.algorithm,
-            keyMaterial = masterKey.wrap(key2)
-        )
-        wrappingKeyStore.saveWrappingKey(alias, wrappingKeyInfo1)
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias)!!.keyMaterial))
-        assertThrows(PersistenceException::class.java) {
-            wrappingKeyStore.saveWrappingKey(alias, wrappingKeyInfo2)
-        }
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias)!!.keyMaterial))
-    }
-
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should fail saving same public key`(tenantId: String) {
@@ -670,7 +617,7 @@ class PersistenceTests {
     fun `Should save same public keys for different tenants and lookup by id for each tenant`() {
         val hsmId = UUID.randomUUID().toString()
         val tenantId1 = CryptoTenants.P2P
-        val tenantId2 = CryptoTenants.RPC_API
+        val tenantId2 = CryptoTenants.REST
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId1, p1)
@@ -888,7 +835,7 @@ class PersistenceTests {
         val keyLookedUpByKeyId =
             signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
         val keyLookedUpByFullKeyId =
-            signingKeyStore.lookupByFullIds(tenantId, listOf(SecureHash.parse(fullKeyId)))
+            signingKeyStore.lookupByFullIds(tenantId, listOf(parseSecureHash(fullKeyId)))
         assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
     }
 
@@ -973,4 +920,4 @@ class PersistenceTests {
 }
 
 fun PublicKey.id(): ShortHash =
-    ShortHash.of(SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))
+    ShortHash.of(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))

@@ -5,6 +5,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -15,6 +16,8 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
+import net.corda.session.manager.impl.processor.SessionConfirmProcessorReceive
+import net.corda.session.manager.impl.processor.SessionConfirmProcessorSend
 import net.corda.session.manager.impl.processor.SessionDataProcessorReceive
 import net.corda.session.manager.impl.processor.SessionDataProcessorSend
 import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
@@ -55,6 +58,7 @@ class SessionEventProcessorFactory @Activate constructor(
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
             is SessionAck -> SessionAckProcessorReceive(key, sessionState, sessionEvent, instant)
+            is SessionConfirm -> SessionConfirmProcessorReceive(key, sessionState, sessionEvent, payload, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )
@@ -88,6 +92,7 @@ class SessionEventProcessorFactory @Activate constructor(
             }
             is SessionClose -> SessionCloseProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorSend(key, sessionState, sessionEvent, payload.errorMessage, instant)
+            is SessionConfirm -> SessionConfirmProcessorSend(key, sessionState, sessionEvent, payload, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )

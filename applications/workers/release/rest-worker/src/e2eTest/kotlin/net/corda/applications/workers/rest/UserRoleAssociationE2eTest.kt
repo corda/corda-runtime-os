@@ -2,8 +2,9 @@ package net.corda.applications.workers.rest
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
-import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
+import net.corda.applications.workers.rest.utils.E2eClusterBConfig
+import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.rest.exception.ResourceAlreadyExistsException
@@ -20,13 +21,13 @@ import org.junit.jupiter.api.assertDoesNotThrow
 @SkipWhenRestEndpointUnavailable
 class UserRoleAssociationE2eTest {
 
-    private val testToolkit by TestToolkitProperty()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig)
 
     @Test
     fun `test association of user and role`() {
 
-        val roleId = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
-            val name = testToolkit.uniqueName
+        val roleId = cordaCluster.clusterHttpClientFor(RoleEndpoint::class.java).use { client ->
+            val name = cordaCluster.uniqueName
             val proxy = client.start().proxy
 
             // Create role
@@ -61,12 +62,12 @@ class UserRoleAssociationE2eTest {
             roleId
         }
 
-        testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
-            val userName = testToolkit.uniqueName
+        cordaCluster.clusterHttpClientFor(UserEndpoint::class.java).use { client ->
+            val userName = cordaCluster.uniqueName
             val proxy = client.start().proxy
 
             // Create user
-            val password = testToolkit.uniqueName
+            val password = cordaCluster.uniqueName
             val passwordExpirySet = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
             val createUserType = CreateUserType(userName, userName, true, password, passwordExpirySet, null)
             with(proxy.createUser(createUserType)) {

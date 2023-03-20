@@ -48,10 +48,10 @@ internal class LiquibaseExtractorTest {
         assertThat(entities.isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
+        val fileChecksums = cpi.cpks.map { it.metadata.fileChecksum }
         assertThat(entities.size).isEqualTo(expectedLiquibaseFileCount)
-
         entities.forEach {
-            assertThat(it.id.cpkFileChecksum.isNotEmpty()).isTrue
+            assertThat(fileChecksums).contains(it.id.cpkFileChecksum)
             assertThat(it.id.filePath.isNotEmpty()).isTrue
             assertThat(it.content.isNotEmpty()).isTrue
 

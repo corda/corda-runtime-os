@@ -23,6 +23,7 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -44,7 +45,7 @@ import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.reconciliation.ReconcilerFactory
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
@@ -138,6 +139,7 @@ class DBProcessorImpl @Activate constructor(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val REGISTRATION = "REGISTRATION"
+        private const val CONFIG = "CONFIG"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -215,7 +217,7 @@ class DBProcessorImpl @Activate constructor(
         val instanceId = bootstrapConfig.getInt(INSTANCE_ID)
 
         log.info("Bootstrapping DB connection Manager")
-        dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+        dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
 
         log.info("Bootstrapping config publish service")
         configPublishService.bootstrapConfig(bootstrapConfig)
@@ -233,7 +235,7 @@ class DBProcessorImpl @Activate constructor(
     ) {
         log.info("DB processor is ${event.status}")
         if (event.status == LifecycleStatus.UP) {
-            coordinator.createManagedResource(REGISTRATION) {
+            coordinator.createManagedResource(CONFIG) {
                 configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
                         ConfigKeys.RECONCILIATION_CONFIG
@@ -255,6 +257,12 @@ class DBProcessorImpl @Activate constructor(
         // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
         // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
         reconcilers.updateConfigReconciler(3600000)
+
+        lifecycleCoordinator.createManagedResource(REGISTRATION) {
+            lifecycleCoordinator.followStatusChangesByName(
+                setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
+            )
+        }
     }
 
     private fun onStopEvent() {

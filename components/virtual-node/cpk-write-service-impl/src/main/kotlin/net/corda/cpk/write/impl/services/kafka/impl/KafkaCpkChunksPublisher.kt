@@ -1,6 +1,6 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId

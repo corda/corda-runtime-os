@@ -3,6 +3,7 @@ package net.corda.membership.impl.synchronisation.dummy
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -104,18 +105,18 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
         members = memberList
     }
 
-    override fun lookup(): Collection<MemberInfo> = members
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> = members
 
-    override fun lookup(name: MemberX500Name): MemberInfo? = members.firstOrNull { it.holdingIdentity.x500Name == name }
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? = members.firstOrNull { it.holdingIdentity.x500Name == name }
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

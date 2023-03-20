@@ -27,8 +27,8 @@ import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.assertj.core.api.Assertions.assertThat
@@ -234,20 +234,20 @@ class CryptoOperationsTests {
                 val signature = signingService.sign(tenantId, publicKey, spec, data)
                 assertEquals(publicKey, signature.by)
                 assertTrue(
-                    verifier.isValid(publicKey, digest, signature.bytes, data)
+                    verifier.isValid(data, signature.bytes, publicKey, digest)
                 )
-                verifier.verify(publicKey, digest, signature.bytes, data)
+                verifier.verify(data, signature.bytes, publicKey, digest)
                 assertFalse(
-                    verifier.isValid(publicKey, digest, signature.bytes, badData)
+                    verifier.isValid(badData, signature.bytes, publicKey, digest)
                 )
                 assertThrows<CryptoSignatureException> {
-                    verifier.verify(publicKey, digest, signature.bytes, badData)
+                    verifier.verify(badData, signature.bytes, publicKey, digest)
                 }
                 assertThrows<IllegalArgumentException> {
-                    verifier.verify(publicKey, digest, signature.bytes, ByteArray(0))
+                    verifier.verify(ByteArray(0), signature.bytes, publicKey, digest)
                 }
                 assertThrows<IllegalArgumentException> {
-                    verifier.verify(publicKey, digest, ByteArray(0), data)
+                    verifier.verify(data, ByteArray(0), publicKey, digest)
                 }
             }
         }
@@ -273,21 +273,21 @@ class CryptoOperationsTests {
         ) {
             val badData = UUID.randomUUID().toString().toByteArray()
             assertTrue(
-                verifier.isValid(publicKey, signatureSpec, signature, data),
+                verifier.isValid(data, signature, publicKey, signatureSpec),
                 "Should validate with ${signatureSpec.signatureName}"
             )
-            verifier.verify(publicKey, signatureSpec, signature, data)
+            verifier.verify(data, signature, publicKey, signatureSpec)
             assertFalse(
-                verifier.isValid(publicKey, signatureSpec, signature, badData)
+                verifier.isValid(badData, signature, publicKey, signatureSpec)
             )
             assertThrows<CryptoSignatureException> {
-                verifier.verify(publicKey, signatureSpec, signature, badData)
+                verifier.verify(badData, signature, publicKey, signatureSpec)
             }
             assertThrows<IllegalArgumentException> {
-                verifier.verify(publicKey, signatureSpec, signature, ByteArray(0))
+                verifier.verify(ByteArray(0), signature, publicKey, signatureSpec)
             }
             assertThrows<IllegalArgumentException> {
-                verifier.verify(publicKey, signatureSpec, ByteArray(0), data)
+                verifier.verify(data, ByteArray(0), publicKey, signatureSpec)
             }
         }
 

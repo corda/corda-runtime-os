@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
@@ -60,7 +61,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     private fun UtxoLedgerTransaction.getCpkMetadata() =
         (this as UtxoLedgerTransactionInternal).run {
-            wireTransaction.metadata.cpkMetadata
+            (wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)

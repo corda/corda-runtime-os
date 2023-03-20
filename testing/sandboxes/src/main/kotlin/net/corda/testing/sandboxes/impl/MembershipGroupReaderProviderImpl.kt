@@ -1,6 +1,7 @@
 package net.corda.testing.sandboxes.impl
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -41,19 +42,19 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         override val groupParameters: GroupParameters
             get() = TODO("groupParameters: Not yet implemented")
 
-        override fun lookup(): Collection<MemberInfo> {
+        override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
             throw IllegalStateException("TEST MODULE: Membership not supported")
         }
 
-        override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+        override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
             return null
         }
 
-        override fun lookup(name: MemberX500Name): MemberInfo? {
+        override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
             return null
         }
 
-        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
             return null
         }
         override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup

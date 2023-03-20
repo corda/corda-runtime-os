@@ -4,13 +4,13 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
@@ -27,7 +27,6 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -77,15 +76,10 @@ class DistributeMembershipPackageHandlerTest {
     private val activeMembersWithoutMgm = allActiveMembers - mgm
     private val signatures = activeMembersWithoutMgm.associate {
         val name = it.name.toString()
-        it.holdingIdentity to CryptoSignatureWithKey(
+        it.holdingIdentity to (CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
-            ByteBuffer.wrap("sig-$name".toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("name", name)
-                )
-            )
-        )
+            ByteBuffer.wrap("sig-$name".toByteArray())
+        ) to CryptoSignatureSpec("dummy", null, null))
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allActiveMembers + inactiveMember)
@@ -115,6 +109,7 @@ class DistributeMembershipPackageHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
+                any()
             )
         } doReturn record
     }
@@ -186,6 +181,7 @@ class DistributeMembershipPackageHandlerTest {
                 eq(allMembershipPackage),
                 anyOrNull(),
                 any(),
+                any(),
             )
         ).doReturn(allMemberPackage)
 
@@ -218,6 +214,7 @@ class DistributeMembershipPackageHandlerTest {
                     eq(memberAvro),
                     eq(memberPackage),
                     anyOrNull(),
+                    any(),
                     any(),
                 )
             ).doReturn(record)

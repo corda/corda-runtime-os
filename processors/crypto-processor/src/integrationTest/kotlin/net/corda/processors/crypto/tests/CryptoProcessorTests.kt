@@ -4,10 +4,12 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
@@ -67,11 +69,10 @@ import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.sha256Bytes
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -402,7 +403,7 @@ class CryptoProcessorTests {
             Arguments.of(CryptoConsts.Categories.LEDGER, vnodeId),
             Arguments.of(CryptoConsts.Categories.TLS, vnodeId),
             Arguments.of(CryptoConsts.Categories.SESSION_INIT, vnodeId),
-            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.RPC_API),
+            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.REST),
             Arguments.of(CryptoConsts.Categories.TLS, CryptoTenants.P2P)
         )
 
@@ -410,7 +411,7 @@ class CryptoProcessorTests {
         fun testTenants(): Stream<Arguments> = Stream.of(
             Arguments.of(vnodeId),
             Arguments.of(CryptoTenants.P2P),
-            Arguments.of(CryptoTenants.RPC_API)
+            Arguments.of(CryptoTenants.REST)
         )
     }
 
@@ -663,10 +664,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                signatureSpec = spec,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                signatureSpec = spec
             )
         }
     }
@@ -707,10 +708,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                digest = digest,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                digest = digest
             )
         }
     }
@@ -734,10 +735,10 @@ class CryptoProcessorTests {
         assertEquals(publicKey, signature.by)
         assertTrue(signature.bytes.isNotEmpty())
         verifier.verify(
-            publicKey = publicKey,
-            signatureSpec = signatureSpec,
+            originalData = data,
             signatureData = signature.bytes,
-            clearData = data
+            publicKey = publicKey,
+            signatureSpec = signatureSpec
         )
     }
 
@@ -778,10 +779,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                signatureSpec = spec,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                signatureSpec = spec
             )
         }
     }
@@ -824,10 +825,10 @@ class CryptoProcessorTests {
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
-                publicKey = publicKey,
-                digest = digest,
+                originalData = data,
                 signatureData = signature.bytes,
-                clearData = data
+                publicKey = publicKey,
+                digest = digest
             )
         }
     }
@@ -926,4 +927,4 @@ private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<B
             }
 
 fun PublicKey.fullId(): SecureHash =
-    SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())

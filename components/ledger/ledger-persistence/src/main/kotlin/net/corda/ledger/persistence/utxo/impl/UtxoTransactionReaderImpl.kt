@@ -4,6 +4,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -32,7 +33,7 @@ class UtxoTransactionReaderImpl(
     private val externalEventContext: ExternalEventContext,
     transaction: ByteArray,
     override val status: TransactionStatus,
-    override val relevantStatesIndexes: List<Int>
+    override val visibleStatesIndexes: List<Int>
 ) : UtxoTransactionReader {
 
     constructor(
@@ -44,7 +45,7 @@ class UtxoTransactionReaderImpl(
         externalEventContext,
         transaction.transaction.array(),
         transaction.status.toTransactionStatus(),
-        transaction.relevantStatesIndexes
+        transaction.visibleStatesIndexes
     )
 
     constructor(
@@ -84,14 +85,14 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.signatures
 
     override val cpkMetadata: List<CordaPackageSummary>
-        get() = signedTransaction.wireTransaction.metadata.cpkMetadata
+        get() = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
-        val relevantStatesSet = relevantStatesIndexes.toSet()
+        val visibleStatesSet = visibleStatesIndexes.toSet()
         return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
-            .filter { indexed -> relevantStatesSet.contains(indexed.index) }
+            .filter { indexed -> visibleStatesSet.contains(indexed.index) }
             .map { (index, value) ->
                 Triple(
                     index,

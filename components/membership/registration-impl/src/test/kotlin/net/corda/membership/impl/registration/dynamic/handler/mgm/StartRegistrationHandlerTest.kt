@@ -4,6 +4,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
@@ -16,16 +17,20 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -100,9 +105,11 @@ class StartRegistrationHandlerTest {
                         memberContext.toByteBuffer(),
                         CryptoSignatureWithKey(
                             ByteBuffer.wrap("456".toByteArray()),
-                            ByteBuffer.wrap("789".toByteArray()),
-                            KeyValuePairList(emptyList())
-                        )
+                            ByteBuffer.wrap("789".toByteArray())
+                        ),
+                        CryptoSignatureSpec("", null, null),
+                        true,
+                        0L,
                     )
                 )
             )
@@ -130,6 +137,7 @@ class StartRegistrationHandlerTest {
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
+        on { status } doReturn MEMBER_STATUS_PENDING
     }
     private val declinedMember: MemberInfo = mock {
         on { isActive } doReturn false
@@ -160,6 +168,9 @@ class StartRegistrationHandlerTest {
     }
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(mgmHoldingIdentity.toCorda()) } doReturn groupReader
+    }
+    private val registrationContextCustomFieldsVerifier = mock<RegistrationContextCustomFieldsVerifier> {
+        on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
 
     @BeforeEach
@@ -194,6 +205,7 @@ class StartRegistrationHandlerTest {
             membershipQueryClient,
             membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
+            registrationContextCustomFieldsVerifier
         )
     }
 
@@ -217,6 +229,7 @@ class StartRegistrationHandlerTest {
         verifyServices(
             persistRegistrationRequest = true,
             verify = true,
+            verifyCustomFields = true,
             queryMemberInfo = true,
             persistMemberInfo = true
         )
@@ -300,6 +313,26 @@ class StartRegistrationHandlerTest {
         )
     }
 
+
+    @Test
+    fun `declined if customs fields in member fail validation`() {
+        whenever(registrationContextCustomFieldsVerifier.verify(any()))
+            .thenReturn(RegistrationContextCustomFieldsVerifier.Result.Failure(""))
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
+
+            assertDeclinedRegistration()
+        }
+        verifyServices(
+            persistRegistrationRequest = true,
+            verify = true,
+            verifyCustomFields = true,
+        )
+    }
+
     @Test
     fun `declined if member name in context does not match the source member`() {
         val badHoldingIdentity = HoldingIdentity(MemberX500Name.parse("O=BadName,L=London,C=GB").toString(), groupId)
@@ -309,9 +342,7 @@ class StartRegistrationHandlerTest {
                 Record(
                     testTopic, testTopicKey, getStartRegistrationCommand(
                         badHoldingIdentity,
-                        KeyValuePairList(
-                            emptyList()
-                        )
+                        memberContext
                     )
                 )
             )
@@ -326,6 +357,7 @@ class StartRegistrationHandlerTest {
         verifyServices(
             persistRegistrationRequest = true,
             verify = true,
+            verifyCustomFields = true,
         )
     }
 
@@ -346,6 +378,7 @@ class StartRegistrationHandlerTest {
         verifyServices(
             persistRegistrationRequest = true,
             verify = true,
+            verifyCustomFields = true,
             queryMemberInfo = true,
         )
     }
@@ -380,6 +413,7 @@ class StartRegistrationHandlerTest {
         verifyServices(
             persistRegistrationRequest = true,
             verify = true,
+            verifyCustomFields = true,
             queryMemberInfo = true,
         )
     }
@@ -400,6 +434,7 @@ class StartRegistrationHandlerTest {
         verifyServices(
             persistRegistrationRequest = true,
             verify = true,
+            verifyCustomFields = true,
             queryMemberInfo = true,
             persistMemberInfo = true
         )
@@ -466,6 +501,23 @@ class StartRegistrationHandlerTest {
         val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if registering member's name is the same as an existing notary's service name`() {
+        val notaryDetails = MemberNotaryDetails(
+            notaryX500Name,
+            "pluginType",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val notaryResult = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        notaryResult.assertRegistrationStarted()
+
+        val memberStartRegistrationCommand = getStartRegistrationCommand(HoldingIdentity(notaryX500Name.toString(), groupId), memberContext)
+        val memberResult = handler.invoke(null, Record(testTopic, testTopicKey, memberStartRegistrationCommand))
+        memberResult.assertDeclinedRegistration()
     }
 
     @Test
@@ -652,6 +704,7 @@ class StartRegistrationHandlerTest {
     private fun verifyServices(
         persistRegistrationRequest: Boolean = false,
         verify: Boolean = false,
+        verifyCustomFields: Boolean = false,
         queryMemberInfo: Boolean = false,
         persistMemberInfo: Boolean = false
     ) {
@@ -665,6 +718,9 @@ class StartRegistrationHandlerTest {
 
         verify(membershipPersistenceClient, getVerificationMode(persistMemberInfo))
             .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
+
+        verify(registrationContextCustomFieldsVerifier, getVerificationMode(verifyCustomFields))
+            .verify(memberContext.toMap())
 
         verify(memberTypeChecker, getVerificationMode(verify))
             .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))

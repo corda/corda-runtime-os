@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.data.state
 
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
@@ -9,6 +10,7 @@ import net.corda.v5.ledger.utxo.TransactionState
 /**
  * Represents a transaction state, composed of a [ContractState] and associated information.
  */
+@CordaSerializable
 data class TransactionStateImpl<out T : ContractState>(
     private val contractState: T,
     private val notary: Party,

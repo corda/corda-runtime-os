@@ -122,6 +122,10 @@ bin/
 # Ignore node folders
 node_modules/
 
+# Ignore Helm chart dependencies
+charts/*/charts
+charts/corda/Chart.lock
+
 # testing
 /applications/workers/release/deploy/schemas/*
 /applications/workers/release/combined-worker/drivers/*

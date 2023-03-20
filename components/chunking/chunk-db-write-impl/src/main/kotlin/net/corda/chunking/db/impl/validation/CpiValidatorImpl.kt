@@ -4,7 +4,6 @@ import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.cpiupload.ValidationException
@@ -36,6 +35,7 @@ class CpiValidatorImpl(
     private val cpiInfoWriteService: CpiInfoWriteService,
     private val membershipSchemaValidator: MembershipSchemaValidator,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+    private val externalChannelsConfigValidator: ExternalChannelsConfigValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
@@ -91,7 +91,7 @@ class CpiValidatorImpl(
 
         cpiPersistence.validateCanUpsertCpi(
             cpiName = cpi.metadata.cpiId.name,
-            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHash,
             cpiVersion = cpi.metadata.cpiId.version,
             groupId = groupId,
             forceUpload = fileInfo.forceUpload,
@@ -100,6 +100,9 @@ class CpiValidatorImpl(
 
         publisher.update(requestId, "Extracting Liquibase scripts from CPKs in CPI")
         val liquibaseScripts = cpi.extractLiquibaseScripts()
+
+        publisher.update(requestId, "Validating configuration for external channels")
+        externalChannelsConfigValidator.validate(cpi.metadata.cpksMetadata)
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =

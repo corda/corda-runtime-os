@@ -15,11 +15,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoIdKey
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoStateRefKey
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -247,13 +242,15 @@ class JPABackingStoreImplTests {
         @Test
         fun `Throw if no error detail is available for a failed transaction`() {
             // Prepare a rejected transaction
-            txnDetails.add(UniquenessTransactionDetailEntity(
+            txnDetails.add(
+                UniquenessTransactionDetailEntity(
                 "SHA-256",
                 "0xA1".toByteArray(),
                 LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
                 LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
                 UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-            ))
+            )
+            )
 
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
@@ -267,21 +264,25 @@ class JPABackingStoreImplTests {
         fun `Retrieve correct failed status without exceptions when both tx details and rejection details are present`() {
             val txId = SecureHashUtils.randomSecureHash()
             // Prepare a rejected transaction
-            txnDetails.add(UniquenessTransactionDetailEntity(
+            txnDetails.add(
+                UniquenessTransactionDetailEntity(
                 "SHA-256",
                 txId.bytes,
                 LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
                 LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
                 UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-            ))
+            )
+            )
 
-            errorEntities.add(UniquenessRejectedTransactionEntity(
+            errorEntities.add(
+                UniquenessRejectedTransactionEntity(
                 "SHA-256",
                 txId.bytes,
                 jpaBackingStoreObjectMapper().writeValueAsBytes(
                     UniquenessCheckErrorMalformedRequestImpl("Error")
                 )
-            ))
+            )
+            )
 
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txResult = session.getTransactionDetails(listOf(txId))[txId]?.result!!

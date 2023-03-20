@@ -107,7 +107,7 @@ open class TestBase {
     )
     protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
         tlsType = TlsType.ONE_WAY,
     )
     protected val chipKeyStore = readKeyStore(Certificates.chipKeyStoreFile)

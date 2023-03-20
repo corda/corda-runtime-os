@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
 
     api project(":libs:rest:rest")
+    implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:rest:rest-common")
     implementation project(":libs:rest:rest-tools")
     implementation project(":libs:rest:json-serialization")
@@ -39,8 +40,8 @@ dependencies {
 
     integrationTestImplementation project(":libs:rest:rest-server")
     integrationTestImplementation project(":libs:rest:rest-server-impl")
-    integrationTestImplementation project(':libs:rest:rest-stubs-impl')
     integrationTestImplementation project(':libs:utilities')
     integrationTestImplementation project(':libs:rest:ssl-cert-read')
+    integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
 }
 

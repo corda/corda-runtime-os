@@ -1,9 +1,11 @@
 package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.getPrivacySalt
@@ -116,7 +118,7 @@ class ConsensualLedgerRepositoryTest {
         // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
         val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
-        val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        val cpks = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
         val existingCpks = cpks.take(2)
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
@@ -265,7 +267,7 @@ class ConsensualLedgerRepositoryTest {
         // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
         val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
-        val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        val cpks = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
         val existingCpks = cpks.take(2)
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
@@ -293,7 +295,7 @@ class ConsensualLedgerRepositoryTest {
             repository.persistTransactionCpk(
                 em,
                 signedTransaction.id.toString(),
-                signedTransaction.wireTransaction.metadata.getCpkMetadata()
+                (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
             )
         }
 
@@ -323,7 +325,7 @@ class ConsensualLedgerRepositoryTest {
     fun `can find file checksums of CPKs linked to transaction`() {
         val account = "Account"
         val signedTransaction = createSignedTransaction(Instant.now())
-        val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        val cpks = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
         val existingCpks = cpks.take(2)
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
@@ -352,7 +354,7 @@ class ConsensualLedgerRepositoryTest {
         val cpkChecksums = entityManagerFactory.transaction { em ->
             repository.findTransactionCpkChecksums(
                 em,
-                signedTransaction.wireTransaction.metadata.cpkMetadata
+                (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
             )
         }
 
@@ -397,9 +399,9 @@ class ConsensualLedgerRepositoryTest {
         override val signatures: List<DigitalSignatureAndMetadata>
             get() = transactionContainer.signatures
         override val cpkMetadata: List<CordaPackageSummary>
-            get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
+            get() = (transactionContainer.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
     }
 
     private fun digest(algorithm: String, data: ByteArray) =
-        SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(data))
+        SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(data))
 }

@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -9,9 +10,22 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class VirtualNodeDbChangeLogTest {
-    private val masterFile1 = CpkDbChangeLog(CpkDbChangeLogIdentifier("", VirtualNodeDbChangeLog.MASTER_CHANGE_LOG), "migration1")
-    private val otherFile1 = CpkDbChangeLog(CpkDbChangeLogIdentifier("", "another-one.xml"), "migration2")
-    private val masterFile2 = CpkDbChangeLog(CpkDbChangeLogIdentifier( "", VirtualNodeDbChangeLog.MASTER_CHANGE_LOG), "migration3")
+    private val masterFile1 = CpkDbChangeLog(
+        CpkDbChangeLogIdentifier(
+            SecureHashImpl("SHA-256", "abc".toByteArray()),
+            VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
+        ), "migration1"
+    )
+    private val otherFile1 = CpkDbChangeLog(
+        CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256", "abc".toByteArray()), "another-one.xml"),
+        "migration2"
+    )
+    private val masterFile2 = CpkDbChangeLog(
+        CpkDbChangeLogIdentifier(
+            SecureHashImpl("SHA-256", "abc".toByteArray()),
+            VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
+        ), "migration3"
+    )
 
     @Test
     fun `find all master changelog files`() {

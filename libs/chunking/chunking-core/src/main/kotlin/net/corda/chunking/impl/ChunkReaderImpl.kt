@@ -1,19 +1,20 @@
 package net.corda.chunking.impl
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunksCombined
 import net.corda.chunking.Constants.Companion.SECURE_HASH_VALIDATION_ERROR
 import net.corda.chunking.RequestId
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.toCorda
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 
 /**
  * Receives binary chunks and reassembles full binary under [destDir] and executes completed
@@ -47,7 +48,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             ChunksReceived(
                 mutableSetOf(),
                 0,
-                SecureHash("EMPTY", ByteArray(16))
+                SecureHashImpl("EMPTY", ByteArray(16))
             )
         }
 

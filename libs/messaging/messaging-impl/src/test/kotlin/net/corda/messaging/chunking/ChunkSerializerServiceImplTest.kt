@@ -1,8 +1,8 @@
 package net.corda.messaging.chunking
 
-import java.nio.ByteBuffer
 import net.corda.chunking.ChunkBuilderService
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
@@ -18,6 +18,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class ChunkSerializerServiceImplTest {
 
@@ -70,7 +71,7 @@ class ChunkSerializerServiceImplTest {
                 .setProperties(KeyValuePairList()).build()
         }.whenever(chunkBuilderService).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
 
-        whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(net.corda.v5.crypto.SecureHash("", someSmallBytes))
+        whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(SecureHashImpl("", someSmallBytes))
         whenever(producerRecord.topic).thenReturn("topic")
         whenever(producerRecord.key).thenReturn(key)
         whenever(producerRecord.value).thenReturn(value)

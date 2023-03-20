@@ -2,6 +2,8 @@ package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.impl.FlowRestExceptionConstants
@@ -37,9 +39,20 @@ import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.OperationNotAllowedException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.ws.DuplexChannel
+import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -117,7 +130,7 @@ class FlowRestResourceImpl @Activate constructor(
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
-        if (vNode.flowStartOperationalStatus == OperationalStatus.INACTIVE.name) {
+        if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
             throw OperationNotAllowedException("Flow start capabilities of virtual node $holdingIdentityShortHash are not operational.")
         }
 
