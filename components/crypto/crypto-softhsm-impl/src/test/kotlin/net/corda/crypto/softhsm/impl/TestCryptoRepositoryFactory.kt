@@ -23,9 +23,11 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 class TestCryptoRepositoryFactory {
 
     private val config = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("""
-        cache {
-          expireAfterAccessMins = 3
-          maximumSize = 2
+        signingService {
+          cache {
+            expireAfterAccessMins = 3
+            maximumSize = 2
+          }
         }
     """.trimIndent()))
 
