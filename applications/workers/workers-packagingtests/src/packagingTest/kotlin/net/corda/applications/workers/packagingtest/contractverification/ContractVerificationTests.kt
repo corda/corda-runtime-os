@@ -45,7 +45,7 @@ class ContractVerificationTests {
 
         val aliceHoldingId = clusterA.getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobHoldingId = clusterB.getOrCreateVirtualNodeFor(bobX500, cpiName)
-        val notaryHoldingId = clusterB.getOrCreateVirtualNodeFor(notaryX500, cpiName)
+        clusterB.getOrCreateVirtualNodeFor(notaryX500, cpiName)
 
         // Mint states as Bob the issuer, checks that Bob's v1 contract is verified correctly
 
