@@ -14,7 +14,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.orm.JpaEntitiesRegistry
@@ -113,7 +112,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             assertThat(items).containsAll(
                 listOf(
                     KeyValuePair(EPOCH_KEY, SNAPSHOT_EPOCH),
-                    KeyValuePair(MPV_KEY, MPV.toString())
                 )
             )
             assertDoesNotThrow { Instant.parse(this.toMap()[MODIFIED_TIME_KEY]) }
@@ -133,7 +131,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
-                    KeyValuePair(MPV_KEY, MPV.toString()),
                     KeyValuePair(MODIFIED_TIME_KEY, (clock.instant().epochSecond + 5L).toString()),
                 )
             )

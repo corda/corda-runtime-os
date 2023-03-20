@@ -7,7 +7,6 @@ import net.corda.data.membership.staticgroup.StaticGroupDefinition
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -79,7 +78,6 @@ class GroupParametersCacheTest {
             with(value as StaticGroupDefinition) {
                 val params = this.groupParameters.toMap()
                 assertThat(params[EPOCH_KEY]).isEqualTo("1")
-                assertThat(params[MPV_KEY]).isEqualTo("5000")
                 assertThat(Instant.parse(params[MODIFIED_TIME_KEY])).isBeforeOrEqualTo(Instant.now())
             }
         }
@@ -118,7 +116,6 @@ class GroupParametersCacheTest {
                 assertThat(this.groupParameters.items.containsAll(
                     listOf(
                         KeyValuePair(EPOCH_KEY, "2"),
-                        KeyValuePair(MPV_KEY, MPV.toString()),
                         KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
                         KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
                         KeyValuePair("corda.notary.service.0.keys.0", "test-key"),
@@ -153,7 +150,6 @@ class GroupParametersCacheTest {
         val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
         val existingGroupParameters = KeyValuePairList(mutableListOf(
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-            KeyValuePair(MPV_KEY, MPV.toString()),
             KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
             KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
             KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
@@ -168,7 +164,6 @@ class GroupParametersCacheTest {
                 assertThat(this.groupParameters.items.containsAll(
                     listOf(
                         KeyValuePair(EPOCH_KEY, "2"),
-                        KeyValuePair(MPV_KEY, MPV.toString()),
                         KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
                         KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
                         KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
