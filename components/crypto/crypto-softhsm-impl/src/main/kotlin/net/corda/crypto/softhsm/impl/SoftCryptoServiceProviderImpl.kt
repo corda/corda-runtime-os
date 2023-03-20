@@ -85,6 +85,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
