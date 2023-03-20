@@ -108,7 +108,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         val result = handler.invoke(context, request)
 
         with(result.groupParameters) {
-            assertThat(items.size).isEqualTo(3)
+            assertThat(items.size).isEqualTo(2)
             assertThat(items).containsAll(
                 listOf(
                     KeyValuePair(EPOCH_KEY, SNAPSHOT_EPOCH),
