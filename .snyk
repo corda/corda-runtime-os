@@ -61,6 +61,6 @@ ignore:
           where this dependency originates, this is used at compile / build time
           only for Kdoc generation and not shipped in any of our releasable
           artifacts.
-        expires: 2023-04-19T13:28:02.582Z
+        expires: 2023-06-19T13:28:02.582Z
         created: 2023-03-20T13:28:02.597Z
 patch: {}
