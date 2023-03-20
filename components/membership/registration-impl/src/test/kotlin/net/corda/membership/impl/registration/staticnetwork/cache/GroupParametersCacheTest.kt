@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.staticgroup.StaticGroupDefinition
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE

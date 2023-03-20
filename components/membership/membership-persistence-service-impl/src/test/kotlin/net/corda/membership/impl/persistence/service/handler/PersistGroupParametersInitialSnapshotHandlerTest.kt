@@ -10,7 +10,6 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
