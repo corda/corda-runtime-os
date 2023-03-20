@@ -89,7 +89,7 @@ class MultiClusterDynamicNetworkTest {
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.setSslConfiguration(mutualTls)
-            cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir) { certificatePem ->
+            cordaCluster.onboardMembers(mgm, clusterC, memberGroupPolicy, tempDir) { certificatePem ->
                 if (mutualTls) {
                     clusterC.allowClientCertificates(certificatePem, mgm)
                 }
