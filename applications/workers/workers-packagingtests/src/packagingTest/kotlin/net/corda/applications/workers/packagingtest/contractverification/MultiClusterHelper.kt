@@ -25,7 +25,7 @@ internal class MultiClusterHelper(private var tempDir: Path, mutualTls: Boolean)
         cluster.addMembers(
             listOf(
                 E2eClusterMember("O=Bob, L=London, C=GB, OU=${cluster.uniqueName}"),
-                E2eClusterMember("O=Notary, L=London, C=GB, OU=${cluster.uniqueName}", true)
+                // E2eClusterMember("O=Notary, L=London, C=GB, OU=${cluster.uniqueName}", true)
             )
         )
     }
