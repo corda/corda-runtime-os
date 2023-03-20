@@ -573,7 +573,16 @@ fun E2eCluster.assertAllMembersAreInMemberList(
                     assertThat(memberInfo.status).isEqualTo("ACTIVE")
                     assertThat(memberInfo.groupId).isEqualTo(groupId)
                 }
-            assertThat(result.map { memberInfo -> memberInfo.name })
+            val resultNames = result.map { memberInfo -> memberInfo.name }
+            fun List<String>.formatList(): String {
+                return joinToString(separator = ",", prefix = "[", postfix = "]")
+            }
+            assertThat(resultNames)
+                .withFailMessage {
+                    "${member.name} does not have visibility of the full member list.\n" +
+                            "Expected ${expectedList.formatList()}.\n" +
+                            "Found ${resultNames.formatList()}"
+                }
                 .hasSize(allMembers.size)
                 .containsExactlyInAnyOrderElementsOf(expectedList)
         }
