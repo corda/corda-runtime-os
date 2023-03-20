@@ -528,6 +528,10 @@ $REGISTRATION_CONTEXT = @{
 
 >__NOTE__: The name for the non-validating notary plugin has not yet been finalised, and is subject to change
 
+It is possible to add custom key value pairs to the registration context JSON. Both the key and the value must be a 
+string and the key must be prefixed with `ext.`. The custom key value pairs can be viewed by other members of the group 
+by doing a member lookup.
+
 ## Register members
 
 To register a member, run the following command.  
