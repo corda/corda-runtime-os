@@ -13,11 +13,11 @@
       "description": "The P2P connection URL protocol version. Can be multiple specified by index.",
       "type": "string"
     },
-    "^corda.group.truststore.session.[0-9]+$": {
+    "^corda.group.trustroot.session.[0-9]+$": {
       "description": "Session trust root certificates in PEM format for validating session certificates in the group. Can be multiple specified by index.",
       "type": "string"
     },
-    "^corda.group.truststore.tls.[0-9]+$": {
+    "^corda.group.trustroot.tls.[0-9]+$": {
       "description": "TLS trust root certificates in PEM format for validating TLS certificates in the group. Can be multiple specified by index.",
       "type": "string"
     }
