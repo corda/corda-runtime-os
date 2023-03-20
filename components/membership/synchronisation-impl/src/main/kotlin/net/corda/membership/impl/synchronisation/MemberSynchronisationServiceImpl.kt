@@ -1,12 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.crypto.core.toAvro
-import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.toCorda
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -345,14 +345,20 @@ class MemberSynchronisationServiceImpl internal constructor(
                     }
                 }
 
-                val groupParameters = parseGroupParameters(
-                    groupReader.lookup().first { it.isMgm },
-                    updates.membershipPackage
-                )
-                val latestGroupParameters =
-                    membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters).getOrThrow()
-                groupParametersWriterService.put(viewOwningMember, latestGroupParameters)
 
+                groupReader.lookup().firstOrNull { it.isMgm }?.let {
+                    val groupParameters = parseGroupParameters(
+                        it,
+                        updates.membershipPackage
+                    )
+                    val latestGroupParameters =
+                        membershipPersistenceClient
+                            .persistGroupParameters(viewOwningMember, groupParameters)
+                            .getOrThrow()
+                    groupParametersWriterService.put(viewOwningMember, latestGroupParameters)
+                } ?: throw CordaRuntimeException(
+                    "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
+                )
                 publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 logger.warn("Failed to process membership updates received by ${viewOwningMember.x500Name}.", e)

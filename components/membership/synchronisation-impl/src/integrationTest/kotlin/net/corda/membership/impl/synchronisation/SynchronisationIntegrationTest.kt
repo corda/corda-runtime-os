@@ -3,11 +3,11 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.toAvro
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -62,10 +62,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.synchronisation.SynchronisationProxy
@@ -262,7 +260,7 @@ class SynchronisationIntegrationTest {
             )
         }
         val mgmInfo: MemberInfo by lazy {
-            createTestMemberInfo(mgm, mgmSessionKey)
+            createTestMemberInfo(mgm, mgmSessionKey, isMgm = true)
         }
         val requesterSessionKey: PublicKey by lazy {
             cryptoOpsClient.generateKeyPair(
@@ -330,6 +328,9 @@ class SynchronisationIntegrationTest {
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
             }
+
+            membershipGroupReaderProvider.loadMembers(requester.toCorda(), listOf(mgmInfo, requesterInfo))
+            membershipGroupReaderProvider.loadMembers(participant.toCorda(), listOf(mgmInfo, participantInfo))
         }
 
         fun setupConfig() {
@@ -372,7 +373,11 @@ class SynchronisationIntegrationTest {
         }
 
         @Suppress("SpreadOperator")
-        private fun createTestMemberInfo(holdingIdentity: HoldingIdentity, sessionInitKey: PublicKey): MemberInfo =
+        private fun createTestMemberInfo(
+            holdingIdentity: HoldingIdentity,
+            sessionInitKey: PublicKey,
+            isMgm: Boolean = false
+        ): MemberInfo =
             memberInfoFactory.create(
                 sortedMapOf(
                     MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
@@ -387,6 +392,7 @@ class SynchronisationIntegrationTest {
                     MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
                     MemberInfoExtension.MODIFIED_TIME to clock.instant().toString(),
                     MemberInfoExtension.SERIAL to "1",
+                    MemberInfoExtension.IS_MGM to isMgm.toString()
                 )
 
             )
@@ -397,7 +403,10 @@ class SynchronisationIntegrationTest {
         groupPolicyProvider.putGroupPolicy(mgm.toCorda(), MgmTestGroupPolicy())
 
         // Create sync request to be published
-        membershipGroupReaderProvider.loadMembers(mgm.toCorda(), listOf(mgmInfo, requesterInfo, participantInfo))
+        membershipGroupReaderProvider.loadMembers(
+            mgm.toCorda(),
+            listOf(mgmInfo, requesterInfo, participantInfo)
+        )
         val requesterHash = merkleTreeGenerator.generateTree(listOf(requesterInfo)).root
         val byteBuffer = ByteBuffer.wrap("123".toByteArray())
         val secureHash = SecureHash("algorithm", byteBuffer)
