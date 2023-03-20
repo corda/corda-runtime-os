@@ -98,7 +98,7 @@ class MultiClusterDynamicNetworkTest {
 
         // Assert all members can see each other in their member lists.
         val allMembers = memberClusters.flatMap { it.members } + mgm
-        (memberClusters + clusterC).forEach { cordaCluster ->
+        (listOf(clusterC) + memberClusters).forEach { cordaCluster ->
             cordaCluster.members.forEach {
                 cordaCluster.assertAllMembersAreInMemberList(it, allMembers)
             }

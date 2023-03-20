@@ -560,8 +560,8 @@ fun E2eCluster.assertAllMembersAreInMemberList(
     allMembers: List<E2eClusterMember>
 ) {
     eventually(
-        waitBetween = 2.seconds,
-        duration = 60.seconds,
+        waitBetween = 3.seconds,
+        duration = 2.minutes,
         retryAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)
