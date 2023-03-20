@@ -159,14 +159,7 @@ class TestServicesFactory {
         }
     }
 
-    val wrappingKeyStore: TestWrappingKeyStore by lazy {
-        TestWrappingKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
+    val cryptoRepository = TestCryptoRepository()
 
     val signingService: SigningService by lazy {
         SigningServiceImpl(
@@ -211,7 +204,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
-                wrappingKeyStore = wrappingKeyStore,
+                cryptoRepository = cryptoRepository,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
                 digestService = PlatformDigestServiceImpl(schemeMetadata),
@@ -222,7 +215,7 @@ class TestServicesFactory {
                 },
                 wrappingKeyFactory = {
                     WrappingKeyImpl.generateWrappingKey(it)
-                }
+                },
             ),
             recordedCryptoContexts
         )

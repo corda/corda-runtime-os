@@ -7,7 +7,6 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyStore
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
@@ -49,8 +48,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = CryptoConnectionsFactory::class)
     private val cryptoConnectionsFactory: CryptoConnectionsFactory,
-    @Reference(service = WrappingKeyStore::class)
-    private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = SigningKeyStore::class)
     private val signingKeyStore: SigningKeyStore,
     @Reference(service = HSMStore::class)
@@ -90,7 +87,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::cryptoConnectionsFactory,
-        ::wrappingKeyStore,
         ::signingKeyStore,
         ::hsmStore,
         ::signingServiceFactory,
