@@ -21,7 +21,7 @@ class BootstrapConfigTest {
     }
     private val mockConfigurationValidator = mock<ConfigurationValidator>()
     private val defaultWorkerParams = DefaultWorkerParams(1234).also {
-        it.secretsParams = mapOf(
+        it.secrets = mapOf(
             "salt" to "foo",
             "passphrase" to "bar",
         )

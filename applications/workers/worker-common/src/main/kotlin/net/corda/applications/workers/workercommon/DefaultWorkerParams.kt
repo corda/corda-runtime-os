@@ -1,6 +1,7 @@
 package net.corda.applications.workers.workercommon
 
 import net.corda.applications.workers.workercommon.internal.WORKER_MONITOR_PORT
+import net.corda.schema.configuration.BootConfig
 import picocli.CommandLine.Option
 import java.nio.file.Path
 
@@ -28,12 +29,12 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     // This needs revision as arguably it belongs to the `messagingParams`. Defaulting to 1MB to match kafkas default and our config
     // schema default
     @Option(
-        names = ["-M", "--max-message-size"],
+        names = ["-M", "--max-allowed-message-size"],
         description = ["The maximum message size in bytes allowed to be sent to the message bus."]
     )
     var maxAllowedMessageSize: Int? = null
 
-    @Option(names = ["-n", "--no-worker-monitor"], description = ["Disables the worker monitor."])
+    @Option(names = ["-n", "--disable-worker-monitor"], description = ["Disables the worker monitor."])
     var disableWorkerMonitor = false
 
     @Option(
@@ -43,10 +44,10 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     var workerMonitorPort = healthPortOverride
 
     @Option(names = ["-m", "--messaging-params"], description = ["Messaging parameters for the worker."])
-    var messagingParams = emptyMap<String, String>()
+    var messaging = emptyMap<String, String>()
 
-    @Option(names = ["-s", "secrets"], description = ["Secrets parameters for the worker."], required = true)
-    var secretsParams = emptyMap<String, String>()
+    @Option(names = ["-s", "--${BootConfig.BOOT_SECRETS}"], description = ["Secrets parameters for the worker."], required = true)
+    var secrets = emptyMap<String, String>()
 
     @Option(names = ["--workspace-dir"], description = ["Corda workspace directory."])
     var workspaceDir: String? = null
@@ -55,7 +56,7 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     var tempDir: String? = null
 
     @Option(names = ["-a", "--addon"], description = ["Add-on configuration"])
-    var addonParams = emptyMap<String, String>()
+    var addon = emptyMap<String, String>()
 
     @Option(names = ["-f", "--values"], description = ["Load configuration from a file. " +
             "This configuration is merged in with the configuration set in the command line flags. " +

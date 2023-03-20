@@ -95,7 +95,7 @@ class WorkerHelpers {
                 .toMap()
 
             //if we've requested a db message bus use that. default use kafka when not set
-            val defaultMessagingParams = defaultParams.messagingParams
+            val defaultMessagingParams = defaultParams.messaging
             val messagingParams = if (defaultMessagingParams[BUS_TYPE] == BusType.DB.name) {
                 defaultMessagingParams.mapKeys { (key, _) -> "${BootConfig.BOOT_DB}.${key.trim()}" }
             } else {
@@ -103,7 +103,7 @@ class WorkerHelpers {
             }
 
             val secretsConfig =
-                defaultParams.secretsParams.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
+                defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
             val config = ConfigFactory
                 .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig)
