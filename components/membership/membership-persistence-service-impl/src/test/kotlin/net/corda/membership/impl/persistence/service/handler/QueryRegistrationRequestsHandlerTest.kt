@@ -38,6 +38,10 @@ import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 
 class QueryRegistrationRequestsHandlerTest {
+    private companion object {
+        const val SERIAL = 0L
+    }
+
     private val holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "groupId")
     private val shortHash = holdingIdentity.toCorda().shortHash
     private val entitySet = mock<JpaEntitiesSet>()
@@ -120,6 +124,7 @@ class QueryRegistrationRequestsHandlerTest {
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3),
+                    SERIAL,
                     "test reason"
                 )
             }
@@ -183,7 +188,8 @@ class QueryRegistrationRequestsHandlerTest {
                     "SENT_TO_MGM",
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
-                    byteArrayOf(1, 2, 3)
+                    byteArrayOf(1, 2, 3),
+                    SERIAL,
                 )
             }
         )

@@ -83,7 +83,8 @@ class MembershipP2PProcessorTest {
         memberContext,
         testSig,
         testSigSpec,
-        true
+        true,
+        0L,
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
     private val memberKey: PublicKey = mock()

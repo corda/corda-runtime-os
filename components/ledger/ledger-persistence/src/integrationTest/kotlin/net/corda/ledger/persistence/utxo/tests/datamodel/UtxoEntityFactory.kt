@@ -10,7 +10,7 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
     val utxoTransaction: Class<*> get() = classFor("UtxoTransactionEntity")
     val utxoTransactionComponent: Class<*> get() = classFor("UtxoTransactionComponentEntity")
     val utxoTransactionOutput: Class<*> get() = classFor("UtxoTransactionOutputEntity")
-    val utxoRelevantTransactionState: Class<*> get() = classFor("UtxoRelevantTransactionStateEntity")
+    val utxoVisibleTransactionState: Class<*> get() = classFor("UtxoVisibleTransactionStateEntity")
     val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
     val utxoTransactionStatus: Class<*> get() = classFor("UtxoTransactionStatusEntity")
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")

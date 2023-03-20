@@ -1,8 +1,9 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.persistence.v1schema.V1CryptoRepositoryImpl
+import net.corda.crypto.softhsm.CryptoRepository
+import net.corda.crypto.softhsm.CryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb

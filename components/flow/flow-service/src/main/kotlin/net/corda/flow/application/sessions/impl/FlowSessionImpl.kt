@@ -1,5 +1,6 @@
 package net.corda.flow.application.sessions.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
@@ -8,9 +9,12 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
+import net.corda.flow.utils.KeyValueStore
+import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.FlowContextProperties
+import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -32,6 +36,40 @@ class FlowSessionImpl(
     }
 
     override fun getCounterparty(): MemberX500Name = counterparty
+    @Suspendable
+    override fun getCounterpartyFlowInfo(): FlowInfo {
+        val counterPartyFlowInfo = getCounterpartySessionContext()
+        return if (counterPartyFlowInfo != null) {
+            counterPartyFlowInfo
+        } else {
+            val request = FlowIORequest.CounterPartyFlowInfo(getSessionInfo())
+            fiber.suspend(request)
+            //If we are able to receive counterparty info this means the session initiation has been completed.
+            setSessionConfirmed()
+            getCounterpartySessionContext() ?: throw CordaRuntimeException("Failed to get counterparties flow info. Session is in an " +
+                    "invalid state")
+        }
+    }
+
+    private fun getCounterpartySessionContext(): FlowInfo? {
+        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
+        val counterpartySessionProperties = sessionState?.counterpartySessionProperties
+        return if (counterpartySessionProperties != null) {
+            getFlowInfoFromSessionProps(counterpartySessionProperties)
+        } else {
+            null
+        }
+    }
+
+    private fun getFlowInfoFromSessionProps(counterpartySessionProperties: KeyValuePairList): FlowInfo {
+        val props = KeyValueStore(counterpartySessionProperties)
+        val protocol = props[Constants.FLOW_PROTOCOL]
+            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty protocol was set to null")
+        val protocolVersion = props[Constants.FLOW_PROTOCOL_VERSION_USED]?.toInt()
+            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty protocol version was set to null")
+        return FlowInfoImpl(protocol, protocolVersion)
+    }
 
     override fun getContextProperties(): FlowContextProperties = flowContext
 

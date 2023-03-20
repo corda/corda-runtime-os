@@ -11,7 +11,7 @@ import net.corda.v5.ledger.utxo.StateRef
  */
 interface UtxoLedgerStateQueryService {
     /**
-     * Find unconsumed relevant states of type [stateClass].
+     * Find unconsumed visible states of type [stateClass].
      *
      * @param stateClass The class of the aimed states.
      * @return The result [StateAndRef]s.

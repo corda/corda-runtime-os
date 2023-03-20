@@ -153,7 +153,8 @@ class MembershipPersistenceClientImplTest {
             ByteBuffer.wrap("456".toByteArray()),
             ByteBuffer.wrap("789".toByteArray()),
         ),
-        CryptoSignatureSpec(null, null, null)
+        CryptoSignatureSpec(null, null, null),
+        0L,
     )
 
     private val memberInfoFactory = mock<MemberInfoFactory>()

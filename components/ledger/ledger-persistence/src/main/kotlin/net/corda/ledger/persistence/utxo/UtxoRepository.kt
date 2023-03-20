@@ -24,8 +24,8 @@ interface UtxoRepository {
         transactionId: String
     ): Map<Int, List<ByteArray>>
 
-    /** Retrieves transaction component leafs related to relevant unspent states */
-    fun findUnconsumedRelevantStatesByType(
+    /** Retrieves transaction component leafs related to visible unspent states */
+    fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager,
         groupIndices: List<Int>
     ):  List<ComponentLeafDto>
@@ -49,8 +49,8 @@ interface UtxoRepository {
         id: String,
     ): String?
 
-    /** Marks relevant states of transactions consumed */
-    fun markTransactionRelevantStatesConsumed(
+    /** Marks visible states of transactions consumed */
+    fun markTransactionVisibleStatesConsumed(
         entityManager: EntityManager,
         stateRefs: List<StateRef>,
         timestamp: Instant
@@ -102,9 +102,9 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
-    /** Persists relevant transaction states (operation is idempotent) */
+    /** Persists visible transaction states (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionRelevantStates(
+    fun persistTransactionVisibleStates(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
