@@ -1,6 +1,7 @@
 package net.corda.crypto.merkle.impl
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService

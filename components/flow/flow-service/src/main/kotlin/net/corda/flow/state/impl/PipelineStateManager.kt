@@ -1,6 +1,7 @@
 package net.corda.flow.state.impl
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.PipelineState
