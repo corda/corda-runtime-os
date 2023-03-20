@@ -5,12 +5,11 @@ import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderFactory
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 
 @Suppress("unused")
-class UtxoVaultNamedQueryFactory : VaultNamedQueryFactory {
+class DummyUtxoVaultNamedQueryFactory : VaultNamedQueryFactory {
     @Suspendable
     override fun create(vaultNamedQueryBuilderFactory: VaultNamedQueryBuilderFactory) {
         vaultNamedQueryBuilderFactory.create("UTXO_DUMMY_QUERY")
-            // TODO This is just a dummy where clause for now and has absolutely no effect
-            .whereJson("WHERE custom ->> 'TestUtxoState.testField' = :testField")
+            .whereJson("WHERE custom_representation ->> 'temp' = :testField")
             .register()
     }
 }

@@ -59,11 +59,15 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent> {
+        val data = listOfNotNull(transactionContainer)
+            .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
         return responseFactory.successResponse(
             externalEventContext,
             EntityResponse(
-                listOfNotNull(transactionContainer)
-                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                0,
+                false,
+                data.size,
+                data
             )
         )
     }
@@ -93,7 +97,7 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(emptyList())
+            EntityResponse(0, false, 0, emptyList())
         )
     }
 

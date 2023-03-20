@@ -22,13 +22,18 @@ class ConsensualFindTransactionRequestHandler(
         // Find the transaction
         val transactionContainer = persistenceService.findTransaction(findTransaction.id)
 
+        val data = listOfNotNull(transactionContainer)
+            .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+
         // return output records
         return listOf(
             responseFactory.successResponse(
                 externalEventContext,
                 EntityResponse(
-                    listOfNotNull(transactionContainer)
-                        .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                    0,
+                    false,
+                    data.size,
+                    data
                 )
             )
         )

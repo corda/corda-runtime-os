@@ -22,11 +22,17 @@ class UtxoPersistTransactionIfDoesNotExistRequestHandler(
         // persist the transaction if it doesn't exist
         val result = persistenceService.persistTransactionIfDoesNotExist(transaction)
 
+        val data = listOf(ByteBuffer.wrap(serializationService.serialize(result).bytes))
         // should this do token related side effect things?
         return listOf(
             externalEventResponseFactory.success(
                 externalEventContext,
-                EntityResponse(listOf(ByteBuffer.wrap(serializationService.serialize(result).bytes)))
+                EntityResponse(
+                    0,
+                    false,
+                    data.size,
+                    data
+                )
             )
         )
     }

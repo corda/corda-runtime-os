@@ -14,7 +14,7 @@ import java.time.Clock
 
 abstract class AbstractUtxoLedgerExternalEventFactory<PARAMETERS : Any>(
     private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>> {
+) : ExternalEventFactory<PARAMETERS, EntityResponse, EntityResponseDto> {
 
     abstract fun createRequest(parameters: PARAMETERS): Any
 
@@ -37,7 +37,19 @@ abstract class AbstractUtxoLedgerExternalEventFactory<PARAMETERS : Any>(
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): List<ByteBuffer> {
-        return response.results
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): EntityResponseDto {
+        return EntityResponseDto(
+            response.newOffset,
+            response.hasNextPage,
+            response.size,
+            response.results
+        )
     }
 }
+
+data class EntityResponseDto(
+    val newOffset: Int,
+    val hasNextPage: Boolean,
+    val size: Int,
+    val results: List<ByteBuffer>
+)

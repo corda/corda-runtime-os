@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.ExecuteVaultNamedQueryRequest
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
@@ -11,6 +12,7 @@ import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
+import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
@@ -39,6 +41,9 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )
+
+        val vaultNamedQueryExecutor = sandbox.getSandboxSingletonService<VaultNamedQueryExecutor>()
+
         return when (val req = request.request) {
             is FindTransaction -> {
                 return UtxoFindTransactionRequestHandler(
@@ -94,6 +99,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     request.flowExternalEventContext,
                     externalEventResponseFactory,
                     persistenceService
+                )
+            }
+            is ExecuteVaultNamedQueryRequest -> {
+                UtxoExecuteCustomQueryHandler(
+                    request.flowExternalEventContext,
+                    request.holdingIdentity,
+                    req,
+                    vaultNamedQueryExecutor,
+                    externalEventResponseFactory
                 )
             }
             else -> {

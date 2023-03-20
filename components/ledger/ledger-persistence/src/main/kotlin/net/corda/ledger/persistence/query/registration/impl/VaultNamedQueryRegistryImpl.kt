@@ -1,6 +1,7 @@
-package net.corda.ledger.persistence.query.impl
+package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.VaultNamedQueryRegistry
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -19,18 +20,26 @@ import java.util.concurrent.ConcurrentHashMap
 class VaultNamedQueryRegistryImpl @Activate constructor(): VaultNamedQueryRegistry, UsedByPersistence {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(VaultNamedQueryRegistryImpl::class.java)
     }
+
     private val queryStorage = ConcurrentHashMap<String, VaultNamedQuery>()
 
+    init {
+        logger.info("VaultNamedQueryRegistryImpl created, storage: $queryStorage")
+    }
+
     override fun getQuery(name: String): VaultNamedQuery? {
+        logger.info("trying to fetch: $name, storage: $queryStorage")
         return queryStorage[name]
     }
 
     override fun registerQuery(query: VaultNamedQuery) {
+        logger.info("Registering query: ${query.name}")
         if (queryStorage.putIfAbsent(query.name, query) != null) {
             logger.warn("A query with name ${query.name} is already registered.")
             throw IllegalArgumentException("A query with name ${query.name} is already registered.")
         }
+        logger.info("storage query: $queryStorage")
     }
 }
