@@ -65,7 +65,6 @@ class MultiClusterDynamicNetworkTest {
         assertThat(clusterC.members).hasSize(1)
     }
 
-    @Disabled("temp - do no merge")
     @Test
     fun `Create mgm and allow members to join the group - one way TLS`() {
         onboardMultiClusterGroup(false)
@@ -90,7 +89,7 @@ class MultiClusterDynamicNetworkTest {
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.setSslConfiguration(mutualTls)
-            cordaCluster.onboardMembers(mgm, clusterC, memberGroupPolicy, tempDir) { certificatePem ->
+            cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir) { certificatePem ->
                 if (mutualTls) {
                     clusterC.allowClientCertificates(certificatePem, mgm)
                 }

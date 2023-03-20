@@ -259,8 +259,6 @@ fun E2eCluster.assignSoftHsm(
 
 fun E2eCluster.register(
     holdingId: String,
-    mgm: E2eClusterMember? = null,
-    mgmCluster: E2eCluster? = null,
     context: Map<String, String>
 ): RegistrationRequestProgress {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
@@ -285,24 +283,6 @@ fun E2eCluster.register(
                         registrationId
                     )
                     assertThat(registrationStatus.registrationStatus)
-                        .withFailMessage {
-                            // TEMP to debug test issue
-                            mgmCluster?.let {
-                                it.clusterHttpClientFor(MemberRegistrationRestResource::class.java)
-                                .use { mgmClient ->
-                                    val mgmRegStatusView = mgmClient
-                                        .start()
-                                        .proxy
-                                        .checkSpecificRegistrationProgress(
-                                            mgm!!.holdingId,
-                                            registrationId
-                                        )
-                                    "Member does not see [${RegistrationStatus.APPROVED}] status. " +
-                                            "MGM sees status [$mgmRegStatusView]"
-                                }
-                            }
-
-                        }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
             }
@@ -410,7 +390,6 @@ fun E2eCluster.disableLinkManagerCLRChecks() {
  */
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
-    mgmCluster: E2eCluster,
     memberGroupPolicy: String,
     tempDir: Path,
     useSessionCertificate: Boolean = false,
@@ -460,8 +439,6 @@ fun E2eCluster.onboardMembers(
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
             member.holdingId,
-            mgm,
-            mgmCluster,
             createMemberRegistrationContext(
                 member,
                 this,
@@ -525,8 +502,6 @@ fun E2eCluster.onboardMgm(
 
     register(
         mgm.holdingId,
-        null,
-        null,
         mgmRegistrationContext,
     )
 
@@ -567,8 +542,6 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
 
         register(
             member.holdingId,
-            null,
-            null,
             registrationContext
         )
 

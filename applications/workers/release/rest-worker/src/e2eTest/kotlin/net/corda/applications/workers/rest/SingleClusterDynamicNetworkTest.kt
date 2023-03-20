@@ -34,7 +34,6 @@ class SingleClusterDynamicNetworkTest {
         "O=Mgm, L=London, C=GB, OU=${cordaCluster.uniqueName}"
     )
 
-    @Disabled("temp - do no merge")
     @Test
     fun `Create mgm and allow members to join the group`() {
         onboardSingleClusterGroup()
@@ -66,7 +65,7 @@ class SingleClusterDynamicNetworkTest {
 
         val memberGroupPolicy = cordaCluster.generateGroupPolicy(mgm.holdingId)
 
-        cordaCluster.onboardMembers(mgm, cordaCluster, memberGroupPolicy, tempDir)
+        cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir)
 
         // Assert all members can see each other in their member lists
         val allMembers = cordaCluster.members + mgm

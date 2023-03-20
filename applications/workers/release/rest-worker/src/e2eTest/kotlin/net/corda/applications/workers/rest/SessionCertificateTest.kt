@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
-@Disabled("temp - do no merge")
 class SessionCertificateTest {
     @TempDir
     lateinit var tempDir: Path
@@ -79,7 +78,7 @@ class SessionCertificateTest {
         memberClusters.forEach { cordaCluster ->
             cordaCluster.setSslConfiguration(false)
             cordaCluster.disableLinkManagerCLRChecks()
-            cordaCluster.onboardMembers(mgm, clusterC, memberGroupPolicy, tempDir, useSessionCertificate = true)
+            cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir, useSessionCertificate = true)
         }
 
         // Assert all members can see each other in their member lists.
