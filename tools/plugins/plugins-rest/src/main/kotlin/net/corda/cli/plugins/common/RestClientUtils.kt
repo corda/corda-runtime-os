@@ -25,7 +25,7 @@ object RestClientUtils {
             restResource.java,
             RestClientConfig()
                 .enableSSL(true)
-                .secureSSL(false)
+                .secureSSL(!insecure)
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
                 .username(username)
                 .password(password),
