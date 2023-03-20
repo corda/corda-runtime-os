@@ -787,7 +787,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(6)
+            assertThat(deserialized.items.size).isEqualTo(5)
             assertThat(deserialized.items.containsAll(expectedGroupParameters))
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
@@ -862,7 +862,7 @@ class MembershipPersistenceTest {
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
-            assertThat(size).isEqualTo(7)
+            assertThat(size).isEqualTo(6)
             assertThat(containsAll(expectedGroupParameters))
         }
 
