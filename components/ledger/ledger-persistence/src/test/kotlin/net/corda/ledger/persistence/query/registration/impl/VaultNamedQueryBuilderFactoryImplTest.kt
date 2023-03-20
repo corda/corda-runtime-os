@@ -1,7 +1,7 @@
-package net.corda.ledger.persistence.query
+package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.impl.VaultNamedQuery
-import net.corda.ledger.persistence.query.impl.VaultNamedQueryBuilderFactoryImpl
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
@@ -53,7 +53,7 @@ class VaultNamedQueryBuilderFactoryImplTest {
 
         assertThat(storedQuery).isNotNull
         assertThat(storedQuery.name).isEqualTo(DUMMY_QUERY_NAME)
-        assertThat(storedQuery.jsonString).isEqualTo(DUMMY_WHERE_CLAUSE)
+        assertThat(storedQuery.whereJson).isEqualTo(DUMMY_WHERE_CLAUSE)
         assertThat(storedQuery.filter).isNotNull
         assertThat(storedQuery.mapper).isNotNull
         assertThat(storedQuery.collector).isNotNull
@@ -71,7 +71,7 @@ class VaultNamedQueryBuilderFactoryImplTest {
 
         assertThat(storedQuery).isNotNull
         assertThat(storedQuery.name).isEqualTo(DUMMY_QUERY_NAME)
-        assertThat(storedQuery.jsonString).isNull()
+        assertThat(storedQuery.whereJson).isNull()
         assertThat(storedQuery.filter).isNull()
         assertThat(storedQuery.mapper).isNull()
         assertThat(storedQuery.collector).isNull()

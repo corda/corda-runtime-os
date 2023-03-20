@@ -1,6 +1,6 @@
-package net.corda.ledger.persistence.query
+package net.corda.ledger.persistence.query.registration
 
-import net.corda.ledger.persistence.query.impl.VaultNamedQuery
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**

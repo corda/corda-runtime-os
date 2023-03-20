@@ -1,6 +1,7 @@
-package net.corda.ledger.persistence.query.impl
+package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.VaultNamedQueryRegistry
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

@@ -1,6 +1,7 @@
-package net.corda.ledger.persistence.query.impl
+package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.VaultNamedQueryRegistry
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilder
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderCollected
@@ -53,12 +54,14 @@ class VaultNamedQueryBuilderImpl(
     override fun register() {
         logger.debug { "Registering custom query with name: $name" }
 
-        vaultNamedQueryRegistry.registerQuery(VaultNamedQuery(
+        vaultNamedQueryRegistry.registerQuery(
+            VaultNamedQuery(
             name,
             whereJson,
             filter,
             mapper,
             null
-        ))
+        )
+        )
     }
 }

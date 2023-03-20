@@ -32,7 +32,7 @@ class PagedFindQuery<R : Any>(
     }
 
     @Suspendable
-    override fun execute(): List<R> {
+    override fun execute(): PagedQuery.ResultSet<R> {
         val deserialized = wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindAllExternalEventFactory::class.java,
@@ -40,6 +40,12 @@ class PagedFindQuery<R : Any>(
             )
         }.map { serializationService.deserialize(it.array(), entityClass) }
 
-        return deserialized
+        // TODO how to populate this
+        return ResultSetImpl(
+            0,
+            limit,
+            false,
+            deserialized
+        )
     }
 }

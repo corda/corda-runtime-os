@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.query.impl
+package net.corda.ledger.persistence.query.registration.impl
 
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByPersistence

@@ -1,7 +1,6 @@
-package net.corda.ledger.persistence.query
+package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.impl.VaultNamedQuery
-import net.corda.ledger.persistence.query.impl.VaultNamedQueryRegistryImpl
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -17,7 +16,7 @@ class VaultNamedQueryRegistryImplTest {
 
     private val mockNamedQuery = mock<VaultNamedQuery> {
         on { name } doReturn DUMMY_QUERY_NAME
-        on { jsonString } doReturn DUMMY_JSON_QUERY
+        on { whereJson } doReturn DUMMY_JSON_QUERY
     }
 
     @Test
@@ -31,7 +30,7 @@ class VaultNamedQueryRegistryImplTest {
         assertThat(storedNamedQuery).isNotNull
         assertThat(storedNamedQuery?.name).isNotNull
         assertThat(storedNamedQuery?.name).isEqualTo(DUMMY_QUERY_NAME)
-        assertThat(storedNamedQuery?.jsonString).isEqualTo(DUMMY_JSON_QUERY)
+        assertThat(storedNamedQuery?.whereJson).isEqualTo(DUMMY_JSON_QUERY)
     }
 
     @Test
