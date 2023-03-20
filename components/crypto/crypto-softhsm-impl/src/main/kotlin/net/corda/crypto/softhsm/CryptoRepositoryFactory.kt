@@ -1,14 +1,19 @@
 package net.corda.crypto.softhsm
 
+import javax.persistence.EntityManagerFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.softhsm.impl.V1CryptoRepositoryImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import javax.persistence.EntityManagerFactory
 
 /**
  * Get access to crypto repository a specific tenant
@@ -30,11 +35,16 @@ import javax.persistence.EntityManagerFactory
 // to override. That can be resolved by the calling code being taking a function
 // reference as an argument (i.e. being higher order).
 
+@Suppress("LongParameterList")
 fun cryptoRepositoryFactory(
     tenantId: String,
+    config: SmartConfig,
     dbConnectionManager: DbConnectionManager,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    keyEncodingService: KeyEncodingService,
+    digestService: PlatformDigestService,
+    layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ): CryptoRepository {
     val onCluster = CryptoTenants.isClusterTenant(tenantId)
     val entityManagerFactory = if (onCluster) {
@@ -64,11 +74,19 @@ fun cryptoRepositoryFactory(
         )
     }
 
+    val cache = V1CryptoRepositoryImpl.createCache(CryptoSigningServiceConfig(config))
+
 //        // somehow figure out which version we want, e.g.
 //        when (entityManagerFactory.getSchemaVersion()) {
 //            1 -> V1CryptoRepositoryImpl(entityManagerFactory)
 //            else -> V2CryptoRepositoryImpl(entityManagerFactory)
 //        }
 
-    return V1CryptoRepositoryImpl(entityManagerFactory)
+    return V1CryptoRepositoryImpl(
+        entityManagerFactory,
+        cache,
+        keyEncodingService,
+        digestService,
+        layeredPropertyMapFactory
+    )
 }

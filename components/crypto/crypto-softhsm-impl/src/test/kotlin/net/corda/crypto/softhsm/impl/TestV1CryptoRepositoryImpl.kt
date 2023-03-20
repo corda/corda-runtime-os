@@ -3,11 +3,6 @@ package net.corda.crypto.softhsm.impl
 import java.time.Instant
 import javax.persistence.EntityManager
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.db.model.SigningKeyEntity
-import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
-import net.corda.crypto.persistence.impl.toSigningCachedKey
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

@@ -35,11 +35,20 @@ class TestCryptoRepositoryFactory {
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
-        val repo = cryptoRepositoryFactory(CryptoTenants.CRYPTO, dbConnectionManager, mock(), mock())
+        val repo = cryptoRepositoryFactory(
+            CryptoTenants.CRYPTO,
+            config,
+            dbConnectionManager,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock()
+        )
         assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cryptoRepositoryFactory(CryptoTenants.P2P, dbConnectionManager, mock(), mock())
+        cryptoRepositoryFactory(CryptoTenants.P2P, config, dbConnectionManager, mock(), mock(), mock(), mock(), mock())
         verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
         repo.close()
@@ -66,9 +75,13 @@ class TestCryptoRepositoryFactory {
         verifyNoMoreInteractions(dbConnectionManager)
         cryptoRepositoryFactory(
             CryptoTenants.P2P,
+            config,
             dbConnectionManager,
             jpaEntitiesRegistry,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            mock(),
+            mock(),
+            mock(),
         ).use {
             verify(sharedEntityManagerFactory, times(0)).close()
         }
@@ -76,9 +89,13 @@ class TestCryptoRepositoryFactory {
         verifyNoMoreInteractions(dbConnectionManager)
         cryptoRepositoryFactory(
             "123456789012",
+            config,
             dbConnectionManager,
             jpaEntitiesRegistry,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            mock(),
+            mock(),
+            mock(),
         ).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
