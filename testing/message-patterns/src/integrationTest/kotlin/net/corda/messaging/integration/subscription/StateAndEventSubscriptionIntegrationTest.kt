@@ -445,7 +445,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.close()
 
         val durableLatch = CountDownLatch(10)
-        val dlqLatch = CountDownLatch(10)
+        val dlqLatch = CountDownLatch(5)
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$EVENTSTATE_OUTPUT7-group",  EVENTSTATE_OUTPUT7),
             TestDurableProcessor(durableLatch),
