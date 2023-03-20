@@ -1476,7 +1476,6 @@ class MembershipPersistenceTest {
         private val map: LayeredPropertyMap
     ) : LayeredPropertyMap by map, GroupParameters {
         override fun getEpoch() = 5
-        override fun getMinimumPlatformVersion() = 5000
         override fun getModifiedTime() = clock.instant()
         override fun getNotaries(): List<NotaryInfo> = emptyList()
     }
