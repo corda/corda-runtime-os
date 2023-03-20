@@ -94,9 +94,20 @@ class SessionEventExecutor(
     }
 
     private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
-        return if (messageDirection == MessageDirection.OUTBOUND) {
-            val facadeInvocation = sessionEvent.payload as FacadeInvocation
-            log.info("Received facade invocation: payload=${facadeInvocation.payload}")
+        val eventPayload = sessionEvent.payload
+
+        log.info("[CORE-10465] Processing interop session event of type ${eventPayload.javaClass}")
+        log.info("[CORE-10465] Payload direction: $messageDirection")
+        log.info("[CORE-10465] Payload toString(): ${sessionEvent.payload}")
+
+        if (messageDirection == MessageDirection.OUTBOUND) {
+            val facadeInvocation = if (eventPayload is FacadeInvocation) {
+                eventPayload
+            } else {
+                log.warn("[CORE-10465] Payload is not a facade invocation, ignoring event.")
+                return FlowMapperResult(flowMapperState, listOf())
+            }
+
             val returnEvent = SessionEvent(
                 MessageDirection.INBOUND,
                 instant,
@@ -108,17 +119,18 @@ class SessionEventExecutor(
                 emptyList(),
                 FacadeInvocationResult(facadeInvocation.payload)
             )
+
             val record = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
                 appMessageFactory(returnEvent, sessionEventSerializer, flowConfig)
             )
-            FlowMapperResult(flowMapperState, listOf(record))
+
+            return FlowMapperResult(flowMapperState, listOf(record))
         } else {
-            // CORE-10240, handle inbound events from the interop processor properly
-            log.warn("Flow mapper received inbound interop event from counterparty. This should not happen yet! " +
-                    "Ignoring event. Key: $eventKey, Event: $sessionEvent")
-            FlowMapperResult(flowMapperState, listOf())
+            log.info("[CORE-10465] Sending inbound interop event of type ${eventPayload.javaClass} to topic.")
+            val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+            return FlowMapperResult(flowMapperState, listOf(record))
         }
     }
 }
