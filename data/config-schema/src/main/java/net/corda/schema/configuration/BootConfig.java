@@ -19,17 +19,17 @@ public final class BootConfig {
     public static final String BOOT_CRYPTO = "crypto";
 
     public static final String BOOT_DB = "db";
-    public static final String BOOT_DB_PARAMS = BOOT_DB + ".params";
-    public static final String BOOT_JDBC_URL = BOOT_DB_PARAMS + ".database.jdbc.url";
-    public static final String BOOT_JDBC_USER = BOOT_DB_PARAMS + ".database.user";
-    public static final String BOOT_JDBC_PASS = BOOT_DB_PARAMS + ".database.pass";
+    public static final String BOOT_JDBC_URL = BOOT_DB + ".database.jdbc.url";
+    public static final String BOOT_JDBC_USER = BOOT_DB + ".database.user";
+    public static final String BOOT_JDBC_PASS = BOOT_DB + ".database.pass";
 
     public static final String BOOT_DIR = "dir";
     public static final String BOOT_WORKSPACE_DIR = BOOT_DIR + ".workspace";
     public static final String BOOT_TMP_DIR = BOOT_DIR + ".tmp";
 
     public static final String BOOT_REST = "rest";
-    public static final String BOOT_REST_PARAMS = BOOT_REST + ".params";
-    public static final String BOOT_REST_TLS_KEYSTORE_FILE_PATH = BOOT_REST_PARAMS + ".tls.keystore.path";
-    public static final String BOOT_REST_TLS_KEYSTORE_PASSWORD = BOOT_REST_PARAMS + ".tls.keystore.password";
+    public static final String BOOT_REST_TLS_KEYSTORE_FILE_PATH = BOOT_REST + ".tls.keystore.path";
+    public static final String BOOT_REST_TLS_KEYSTORE_PASSWORD = BOOT_REST + ".tls.keystore.password";
+
+    public static final String BOOT_SECRETS = "secrets";
 }
