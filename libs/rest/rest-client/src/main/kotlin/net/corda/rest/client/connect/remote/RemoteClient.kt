@@ -12,6 +12,7 @@ import kong.unirest.UnirestInstance
 import kong.unirest.apache.ApacheClient
 import kong.unirest.jackson.JacksonObjectMapper
 import net.corda.rest.client.auth.RequestContext
+import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.client.exceptions.InternalErrorException
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.PermissionException
@@ -29,6 +30,7 @@ import org.apache.http.ssl.SSLContexts
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLHandshakeException
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -122,12 +124,17 @@ internal class RemoteUnirestClient(
 
             return WebResponse(
                 response.body, response.headers.all().associateBy({ it.name }, { it.value }),
-                response.status, response.statusText
-            )
-                .also { log.debug { """Do call "$verb $path" completed.""" } }
+                response.status, response.statusText).also {
+                    log.debug { """Do call "$verb $path" completed.""" }
+                }
         } catch (e: UnirestException) {
             log.error("Unable to make HTTP call", e)
-            throw InternalErrorException(e.message ?: "No message provided")
+            when (val exceptionCause = e.cause) {
+                is SSLHandshakeException -> throw ClientSslHandshakeException(
+                    exceptionCause.message ?: "No message provided"
+                )
+                else -> throw InternalErrorException(e.message ?: "No message provided")
+            }
         }
     }
 

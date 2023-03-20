@@ -1,7 +1,7 @@
 package net.corda.rest.client
 
 import net.corda.rest.client.config.RestClientConfig
-import net.corda.rest.client.exceptions.InternalErrorException
+import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.server.config.models.RestSSLSettings
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.RestServerImpl
@@ -167,7 +167,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
         )
 
         client.use {
-            assertThatThrownBy { client.start() }.isInstanceOf(InternalErrorException::class.java)
+            assertThatThrownBy { client.start() }.isInstanceOf(ClientSslHandshakeException::class.java)
                 .hasMessageContaining("unable to find valid certification path to requested target")
         }
     }
