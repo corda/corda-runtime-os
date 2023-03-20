@@ -21,7 +21,7 @@ import net.corda.rest.client.processing.WebRequest
 import net.corda.rest.client.processing.WebResponse
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.tools.HttpVerb
-import net.corda.utilities.trace
+import net.corda.utilities.debug
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
@@ -41,7 +41,11 @@ internal interface RemoteClient {
     val baseAddress: String
 }
 
-internal class RemoteUnirestClient(override val baseAddress: String, private val enableSsl: Boolean = false) : RemoteClient {
+internal class RemoteUnirestClient(
+    override val baseAddress: String,
+    private val enableSsl: Boolean,
+    private val secureSsl: Boolean
+) : RemoteClient {
     internal companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -80,7 +84,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         remoteCallFn: HttpRequest<*>.() -> HttpResponse<R>
     ): WebResponse<R> where R : Any {
         val path = baseAddress + webRequest.path
-        log.trace { """Do call "$verb $path".""" }
+        log.debug { """Do call "$verb $path".""" }
 
         var request = when (verb) {
             HttpVerb.GET -> unirestInstance.get(path)
@@ -120,8 +124,9 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
                 response.body, response.headers.all().associateBy({ it.name }, { it.value }),
                 response.status, response.statusText
             )
-                .also { log.trace { """Do call "$verb $path" completed.""" } }
+                .also { log.debug { """Do call "$verb $path" completed.""" } }
         } catch (e: UnirestException) {
+            log.error("Unable to make HTTP call", e)
             throw InternalErrorException(e.message ?: "No message provided")
         }
     }
@@ -169,19 +174,28 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
 
     private fun Config.addSslParams() {
         if (enableSsl) {
-            log.trace { "Add Ssl params." }
-            val sslContext: SSLContext = SSLContexts.custom()
-                .loadTrustMaterial(TrustAllStrategy())
-                .build()
 
-            val httpClient = HttpClients.custom()
-                .setSSLContext(sslContext)
-                .setSSLHostnameVerifier(NoopHostnameVerifier())
-                .build()
+            log.debug { "Add Ssl params." }
 
-            val apacheClient = ApacheClient.builder(httpClient).apply(this)
+            val apacheClient = if (secureSsl) {
+                log.debug { "Creating secure SSL context" }
+                ApacheClient.builder().apply(this)
+            } else {
+                log.debug { "Creating insecure SSL context" }
+                val sslContext: SSLContext = SSLContexts.custom()
+                    .loadTrustMaterial(TrustAllStrategy())
+                    .build()
+
+                val httpClient = HttpClients.custom()
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier(NoopHostnameVerifier())
+                    .build()
+
+                ApacheClient.builder(httpClient).apply(this)
+            }
             this.httpClient(apacheClient)
-            log.trace { "Add Ssl params completed." }
+
+            log.debug { "Add Ssl params completed." }
         }
     }
 

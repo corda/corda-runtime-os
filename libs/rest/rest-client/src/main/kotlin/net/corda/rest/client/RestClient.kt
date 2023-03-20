@@ -92,7 +92,9 @@ class RestClient<I : RestResource> internal constructor(
         log.trace { "Start." }
         return log.logElapsedTime("REST client") {
             val proxyHandler = RestClientProxyHandler(
-                RemoteUnirestClient(baseAddress, clientConfig.enableSSL), clientConfig.authenticationConfig, restResourceClass
+                RemoteUnirestClient(baseAddress, clientConfig.enableSSL, clientConfig.secureSSL),
+                clientConfig.authenticationConfig,
+                restResourceClass
             )
             try {
                 ops = proxyGenerator(restResourceClass, proxyHandler)
