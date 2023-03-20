@@ -7,7 +7,7 @@ import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 
-class WrappingKeyStore(
+class V1WrappingKeyStore(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
     fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {

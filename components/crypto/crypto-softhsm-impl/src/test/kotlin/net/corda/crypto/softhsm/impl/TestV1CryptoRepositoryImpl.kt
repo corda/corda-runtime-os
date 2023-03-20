@@ -8,6 +8,7 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.impl.toSigningCachedKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -43,7 +44,6 @@ class TestV1CryptoRepositoryImpl {
             mock {
                 on { createEntityManager() } doReturn em
             },
-            mock(),
             mock(),
             mock(),
             mock(),

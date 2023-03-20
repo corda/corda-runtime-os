@@ -1,8 +1,11 @@
 package net.corda.crypto.softhsm.impl
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.PublicKey
+import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
-import net.corda.cache.caffeine.CacheFactory
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
@@ -17,36 +20,42 @@ import net.corda.crypto.persistence.impl.SigningKeysRepositoryImpl
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("LongParameterList")
 class V1CryptoRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
-    private val cacheFactory: CacheFactory,
+    cache: Cache<V1SigningKeyStore.CacheKey, SigningCachedKey>,
     keyEncodingService: KeyEncodingService,
     digestService: PlatformDigestService,
     layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    config: SmartConfig,
 ) : CryptoRepository {
 
-    private val wrappingKeyStore = WrappingKeyStore(entityManagerFactory)
+    companion object {
+        fun createCache(config: CryptoSigningServiceConfig): Cache<V1SigningKeyStore.CacheKey, SigningCachedKey> =
+            CacheFactoryImpl().build(
+                "Signing-Key-Cache",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(config.cache.maximumSize)
+            )
+    }
 
-    private val signingKeyStore = SigningKeyStore(
-        CryptoSigningServiceConfig(config),
+    private val wrappingKeyStore = V1WrappingKeyStore(entityManagerFactory)
+
+    private val signingKeyStore = V1SigningKeyStore(
+        cache,
         layeredPropertyMapFactory,
         keyEncodingService,
         entityManagerFactory,
         digestService,
         SigningKeysRepositoryImpl,
     )
-    private val hsmStore = HSMStore(entityManagerFactory)
+    private val hsmStore = V1HSMStore(entityManagerFactory)
 
     override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) = wrappingKeyStore.saveWrappingKey(alias, key)
     override fun findWrappingKey(alias: String): WrappingKeyInfo? = wrappingKeyStore.findWrappingKey(alias)
     override fun close() = entityManagerFactory.close()
-
-    data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
     /**
      * If short key id clashes with existing key for this [tenantId], [saveSigningKey] will fail. It will

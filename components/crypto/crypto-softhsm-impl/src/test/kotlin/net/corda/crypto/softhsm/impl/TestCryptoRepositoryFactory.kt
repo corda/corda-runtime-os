@@ -1,11 +1,13 @@
 package net.corda.crypto.softhsm.impl
 
+import com.typesafe.config.ConfigFactory
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -19,6 +21,14 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 
 class TestCryptoRepositoryFactory {
+
+    private val config = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("""
+        cache {
+          expireAfterAccessMins = 3
+          maximumSize = 2
+        }
+    """.trimIndent()))
+
     @Test
     fun `DML to Corda crypto DB for Crypto tenant and P2P`() {
         val entityManagerFactory = mock<EntityManagerFactory>()

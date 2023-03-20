@@ -21,11 +21,11 @@ import javax.persistence.EntityManagerFactory
  */
 
 // Since this function requires no state and there is no need to access it outside this
-// package it can be a simple static function.  It would be possible to make this an 
-// OSGi component with an interface. Since DbConnectionManager and 
-// VirtualNodeInfoReadService are lifecycle, this would have to be lifecycle as well. 
+// package it can be a simple static function.  It would be possible to make this an
+// OSGi component with an interface. Since DbConnectionManager and
+// VirtualNodeInfoReadService are lifecycle, this would have to be lifecycle as well.
 // That adds up to quite a bit of extra code, and makes this hard to test.
-// 
+//
 // A difficulty with testing this is that if it is called directly it is hard
 // to override. That can be resolved by the calling code being taking a function
 // reference as an argument (i.e. being higher order).
@@ -38,7 +38,7 @@ fun cryptoRepositoryFactory(
 ): CryptoRepository {
     val onCluster = CryptoTenants.isClusterTenant(tenantId)
     val entityManagerFactory = if (onCluster) {
-        // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database 
+        // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database
         val baseEMF = dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         object : EntityManagerFactory by baseEMF {
             override fun close() {

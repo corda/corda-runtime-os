@@ -13,7 +13,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 
-class HSMStoreTest {
+class V1HSMStoreTest {
 
     @Test
     fun `findTenantAssociation returns null when there are no results`() {
@@ -28,7 +28,7 @@ class HSMStoreTest {
                 }
             }
         }
-        val hsmStore = HSMStore(
+        val hsmStore = V1HSMStore(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
@@ -57,7 +57,7 @@ class HSMStoreTest {
                 }
             }
         }
-        val hsmStore = HSMStore(
+        val hsmStore = V1HSMStore(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },

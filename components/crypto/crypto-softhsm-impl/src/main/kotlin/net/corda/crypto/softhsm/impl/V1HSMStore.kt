@@ -14,7 +14,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
 
-class HSMStore(
+class V1HSMStore(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
     fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =

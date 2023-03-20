@@ -1,15 +1,11 @@
 package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.PublicKey
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
-import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
@@ -41,8 +37,8 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("LongParameterList")
-class SigningKeyStore(
-    config: CryptoSigningServiceConfig,
+class V1SigningKeyStore(
+    private val cache: Cache<CacheKey, SigningCachedKey>,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val keyEncodingService: KeyEncodingService,
     private val entityManagerFactory: EntityManagerFactory,
@@ -50,18 +46,7 @@ class SigningKeyStore(
     private val signingKeysRepository: SigningKeysRepository,
 ) {
 
-    private fun createCache(config: CryptoSigningServiceConfig): Cache<CacheKey, SigningCachedKey> =
-        CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.cache.maximumSize)
-        )
-
     data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
-
-    @Volatile
-    private var cache: Cache<CacheKey, SigningCachedKey> = createCache(config)
 
     /**
      * If short key id clashes with existing key for this [tenantId], [save] will fail. It will fail upon
