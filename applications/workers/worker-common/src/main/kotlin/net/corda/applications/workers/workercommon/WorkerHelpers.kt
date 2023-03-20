@@ -2,6 +2,8 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.io.InputStream
+import java.lang.management.ManagementFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -9,18 +11,19 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.schema.configuration.BootConfig.BOOT_JDBC_PASS
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.v5.base.util.debug
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.InputStream
-import java.lang.management.ManagementFactory
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
@@ -74,7 +77,6 @@ class WorkerHelpers {
             defaultParams: DefaultWorkerParams,
             validator: ConfigurationValidator,
             extraParams: List<PathAndConfig> = emptyList(),
-            busType: BusType = BusType.KAFKA
         ): SmartConfig {
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
@@ -86,26 +88,31 @@ class WorkerHelpers {
                 ConfigKeys.TEMP_DIR to defaultParams.tempDir
             )
 
-            val messagingParams = if (busType == BusType.KAFKA) {
-                defaultParams.messagingParams.mapKeys { (key, _) -> "$BOOT_KAFKA_COMMON.${key.trim()}" }
+            //if we've requested a db message bus use that. default use kafka when not set
+            val defaultMessagingParams = defaultParams.messagingParams
+            val messagingParams = if (defaultMessagingParams[BUS_TYPE] == BusType.DB.name) {
+                defaultMessagingParams.mapKeys { (key, _) -> "$BOOT_DB.${key.trim()}" }
             } else {
-                defaultParams.messagingParams.mapKeys { (key, _) -> "$BOOT_DB.${key.trim()}" }
+                defaultMessagingParams.mapKeys { (key, _) -> "$BOOT_KAFKA_COMMON.${key.trim()}" }
             }
 
             val config = ConfigFactory
                 .parseMap(messagingParams + dirsConfig + extraParamsMap)
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(defaultParams.maxAllowedMessageSize))
 
             val secretsConfig =
                 ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
             val smartConfigFactory = SmartConfigFactory
                 .createWith(secretsConfig, secretsServiceFactoryResolver.findAll())
+
             val bootConfig = smartConfigFactory.create(config)
+            val bootConfigWithSecrets = makeSecrets(smartConfigFactory, bootConfig)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
-            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
+            validator.validate(BOOT_CONFIG, bootConfigWithSecrets, loadResource(BOOT_CONFIG_PATH), true)
 
             // we now know bootConfig has:
             //
@@ -120,7 +127,22 @@ class WorkerHelpers {
             //  - have database configuration records applied
             //  - have unspecified fields filled in with defaults from the schema. (This part is handled later)
 
-            return bootConfig
+            return bootConfigWithSecrets
+        }
+
+        /**
+         * Hide any fields which should be hidden such as passwords.
+         * @param smartConfigFactory used to generate secrets
+         * @param config base config
+         * @return New config object with boot values such as passwords made secret.
+         */
+        private fun makeSecrets(smartConfigFactory: SmartConfigFactory, config: SmartConfig): SmartConfig {
+            return if (config.hasPath(BOOT_JDBC_PASS)) {
+                smartConfigFactory.makeSecret(config.getString(BOOT_JDBC_PASS), "boot-db-pass").atPath(BOOT_JDBC_PASS)
+                    .withFallback(config)
+            } else {
+                config
+            }
         }
 
         private fun loadResource(resource: String): InputStream {

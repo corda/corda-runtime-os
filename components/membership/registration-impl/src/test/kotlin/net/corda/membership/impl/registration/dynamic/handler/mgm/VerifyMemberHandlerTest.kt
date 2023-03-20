@@ -16,6 +16,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -25,6 +26,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -77,6 +79,7 @@ class VerifyMemberHandlerTest {
                 ),
                 eq(10),
                 any(),
+                eq(MembershipStatusFilter.PENDING),
             )
         } doReturn verificationRequestRecord
     }
@@ -116,6 +119,7 @@ class VerifyMemberHandlerTest {
             any(),
             any(),
             any(),
+            anyOrNull(),
         )
 
         assertThat(result.outputStates).hasSize(1)
@@ -133,6 +137,7 @@ class VerifyMemberHandlerTest {
             any(),
             any(),
             any(),
+            anyOrNull(),
         )
 
         assertThat(result.outputStates).hasSize(1)

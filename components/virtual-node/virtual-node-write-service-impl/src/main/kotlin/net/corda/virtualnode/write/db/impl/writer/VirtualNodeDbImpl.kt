@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -10,7 +11,6 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import org.slf4j.LoggerFactory
 

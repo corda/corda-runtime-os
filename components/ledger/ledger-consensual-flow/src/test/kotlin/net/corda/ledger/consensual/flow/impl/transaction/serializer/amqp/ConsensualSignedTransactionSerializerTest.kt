@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.consensual.test.ConsensualLedgerTest
-import net.corda.v5.application.serialization.deserialize
+import net.corda.utilities.serialization.deserialize
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.ledger.persistence.common.RequestHandler
@@ -7,7 +8,6 @@ import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 
 @Suppress("LongParameterList")
@@ -24,7 +24,7 @@ class UtxoResolveStateRefsRequestHandler(
         val stateAndRefs = persistenceService.resolveStateRefs(
             resolveStateRefs.stateRefs.map {
                 StateRef(
-                    SecureHash(it.transactionId.algorithm, it.transactionId.bytes.array()),
+                    SecureHashImpl(it.transactionId.algorithm, it.transactionId.bytes.array()),
                     it.index
                 )
             }

@@ -7,7 +7,7 @@ import net.corda.schema.configuration.ConfigDefaults
 import picocli.CommandLine.Option
 
 /** The startup parameters handled by all workers. */
-class DefaultWorkerParams {
+class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     @Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit."])
     var helpRequested = false
 
@@ -27,6 +27,14 @@ class DefaultWorkerParams {
     // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
+    // This needs revision as arguably it belongs to the `messagingParams`. Defaulting to 1MB to match kafkas default and our config
+    // schema default
+    @Option(
+        names = ["-M", "--max-message-size"],
+        description = ["The maximum message size in bytes allowed to be sent to the message bus."]
+    )
+    var maxAllowedMessageSize = 972800
+
     @Option(names = ["-n", "--no-worker-monitor"], description = ["Disables the worker monitor."])
     var disableWorkerMonitor = false
 
@@ -34,7 +42,7 @@ class DefaultWorkerParams {
         names = ["-p", "--worker-monitor-port"],
         description = ["The port the worker monitor should listen on. Defaults to $WORKER_MONITOR_PORT."]
     )
-    var workerMonitorPort = WORKER_MONITOR_PORT
+    var workerMonitorPort = healthPortOverride
 
     @Option(names = ["-m", "--messaging-params"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()

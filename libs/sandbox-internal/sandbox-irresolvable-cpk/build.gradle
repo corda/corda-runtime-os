@@ -18,6 +18,7 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     // Corda does not actually provide this dependency, so an error will be thrown at sandbox creation time.
     cordaProvided "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 }

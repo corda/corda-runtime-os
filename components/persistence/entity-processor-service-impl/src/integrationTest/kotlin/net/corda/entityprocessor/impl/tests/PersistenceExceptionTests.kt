@@ -120,6 +120,8 @@ class PersistenceExceptionTests {
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.name)
+
+        dbConnectionManager.stop()
     }
 
     @Test
@@ -156,6 +158,8 @@ class PersistenceExceptionTests {
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo(VirtualNodeException::class.java.name)
+
+        dbConnectionManager.stop()
     }
 
     @Test
@@ -191,6 +195,8 @@ class PersistenceExceptionTests {
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
+
+        dbConnectionManager.stop()
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes

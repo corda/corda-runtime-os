@@ -89,9 +89,23 @@ cpi_checksum() {
    echo $CPI_CHECKSUM
 }
 
+wait_for_vnode() {
+   n=0
+   until [ "$n" -ge 25 ];  do
+     cpi_status=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/virtualnode/$2 | jq -r '.flowP2pOperationalStatus')
+     if [[ $cpi_status == 'ACTIVE' ]]; then
+       break
+     else
+       echo "VNode $2 status is $cpi_status (is not ACTIVE), waiting a bit" >&2
+       n=$((n+1))
+       sleep 2
+     fi
+   done
+}
 create_vnode() {
-    local MGM_HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.["holdingIdentity"]|.["shortHash"]' | tr -d '"')
-    echo $MGM_HOLDING_ID_SHORT_HASH
+    local HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.requestId' | tr -d '"')
+    wait_for_vnode $1 $HOLDING_ID_SHORT_HASH
+    echo $HOLDING_ID_SHORT_HASH
 }
 
 assign_hsm_and_generate_session_key_pair() {
@@ -316,9 +330,9 @@ on_board_node() {
 ps -ef | grep port-forward | grep $A_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
 ps -ef | grep port-forward | grep $B_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
 ps -ef | grep port-forward | grep $MGM_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
-kubectl port-forward --namespace $A_CLUSTER_NAMESPACE deployment/corda-rpc-worker $A_RPC_PORT:8888 &
-kubectl port-forward --namespace $B_CLUSTER_NAMESPACE deployment/corda-rpc-worker $B_RPC_PORT:8888 &
-kubectl port-forward --namespace $MGM_CLUSTER_NAMESPACE deployment/corda-rpc-worker $MGM_RPC_PORT:8888 &
+kubectl port-forward --namespace $A_CLUSTER_NAMESPACE deployment/corda-rest-worker $A_RPC_PORT:8888 &
+kubectl port-forward --namespace $B_CLUSTER_NAMESPACE deployment/corda-rest-worker $B_RPC_PORT:8888 &
+kubectl port-forward --namespace $MGM_CLUSTER_NAMESPACE deployment/corda-rest-worker $MGM_RPC_PORT:8888 &
 
 sleep 15
 

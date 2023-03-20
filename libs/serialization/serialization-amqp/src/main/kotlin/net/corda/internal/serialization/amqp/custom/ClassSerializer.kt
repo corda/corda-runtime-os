@@ -6,7 +6,7 @@ import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
 import net.corda.serialization.SerializationContext
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
 /**

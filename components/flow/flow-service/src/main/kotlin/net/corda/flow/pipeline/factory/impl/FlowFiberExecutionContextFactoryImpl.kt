@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.factory.impl
 
 import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
@@ -27,9 +27,10 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
     ): FlowFiberExecutionContext {
         val checkpoint = context.checkpoint
         val sandbox = try {
-            flowSandboxService.get(checkpoint.flowStartContext.identity.toCorda())
+            flowSandboxService.get(checkpoint.flowStartContext.identity.toCorda(), checkpoint.cpkFileHashes)
         } catch (e: Exception) {
-            throw FlowTransientException("Failed to create the sandbox: ${e.message}", e)
+            throw FlowTransientException("Failed to create the sandbox: " +
+                    (e.message ?: "No exception message provided."), e)
         }
         return FlowFiberExecutionContext(
             checkpoint,

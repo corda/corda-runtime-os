@@ -3,15 +3,15 @@ package net.corda.crypto.impl
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
@@ -84,7 +84,7 @@ class WireUtilsTests {
 
     @Test
     fun `Should create wire request context for a given caller`() {
-        val tenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+        val tenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         val other = KeyValuePairList(
             listOf(
                 KeyValuePair("key1", "value1")
@@ -200,10 +200,7 @@ class WireUtilsTests {
         val serializer = mock<AlgorithmParameterSpecEncodingService> {
             on { serialize(any()) } doReturn SerializedAlgorithmParameterSpec("class1", paramBytes)
         }
-        val origin = ParameterizedSignatureSpec(
-            signatureName = "name1",
-            params = algSpec
-        )
+        val origin = ParameterizedSignatureSpec("name1", algSpec)
         val result = origin.toWire(serializer)
         assertEquals("name1", result.signatureName)
         assertNull(result.customDigestName)

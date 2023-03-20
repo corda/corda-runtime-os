@@ -14,6 +14,7 @@ dependencies {
 
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:schema-registry:schema-registry")
+    implementation project(':libs:utilities')
 
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

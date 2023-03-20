@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -51,7 +52,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
 
-class RegistrationProcessorTest {
+class  RegistrationProcessorTest {
 
     private companion object {
         val clock = TestClock(Instant.now())
@@ -69,10 +70,17 @@ class RegistrationProcessorTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value")))
         val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap("456".toByteArray()),
-            ByteBuffer.wrap("789".toByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap("789".toByteArray())
         )
-        val registrationRequest = MembershipRegistrationRequest(registrationId, memberContext.toByteBuffer(), signature)
+        val registrationRequest =
+            MembershipRegistrationRequest(
+                registrationId,
+                memberContext.toByteBuffer(),
+                signature,
+                CryptoSignatureSpec("", null, null),
+                true,
+                0L,
+            )
 
         val startRegistrationCommand = RegistrationCommand(
             StartRegistration(
@@ -150,7 +158,7 @@ class RegistrationProcessorTest {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
         }
         membershipGroupReader = mock {
-            on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
+            on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
         }
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader

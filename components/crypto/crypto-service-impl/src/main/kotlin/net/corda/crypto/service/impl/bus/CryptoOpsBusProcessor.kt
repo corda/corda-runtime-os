@@ -1,18 +1,24 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -33,7 +39,8 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
+import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -49,7 +56,7 @@ class CryptoOpsBusProcessor(
 
         private fun SigningKeyInfo.toAvro(): CryptoSigningKey =
             CryptoSigningKey(
-                this.id,
+                this.id.value,
                 this.tenantId,
                 this.category,
                 this.alias,
@@ -61,6 +68,16 @@ class CryptoOpsBusProcessor(
                 this.externalId,
                 this.created
             )
+
+        private fun avroShortHashesToDto(shortHashes: ShortHashes): List<ShortHash> =
+            shortHashes.hashes.map {
+                ShortHash.of(it)
+            }
+
+        private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
+            secureHashes.hashes.map {
+                SecureHashImpl(it.algorithm, it.bytes.array())
+            }
     }
 
     private val config = event.config.toCryptoConfig().opsBusProcessor()
@@ -105,8 +122,24 @@ class CryptoOpsBusProcessor(
         }
 
         fun handleByIdsRpcQuery(request: ByIdsRpcQuery): CryptoSigningKeys {
-            val found = signingService.lookup(context.tenantId, request.keys)
-            return CryptoSigningKeys(found.map { it.toAvro() })
+            val foundKeys =
+                when (val avroKeyIds = request.keyIds) {
+                    is ShortHashes -> {
+                        signingService.lookupByIds(
+                            context.tenantId,
+                            avroShortHashesToDto(avroKeyIds)
+                        )
+                    }
+                    is SecureHashes -> {
+                        signingService.lookupByFullIds(
+                            context.tenantId,
+                            avroSecureHashesToDto(avroKeyIds)
+                        )
+                    }
+                    else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
+                }
+
+            return CryptoSigningKeys(foundKeys.map { it.toAvro() })
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {
@@ -136,7 +169,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     alias = request.alias,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
@@ -145,7 +178,7 @@ class CryptoOpsBusProcessor(
                     category = request.category,
                     alias = request.alias,
                     externalId = request.externalId,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
@@ -157,7 +190,7 @@ class CryptoOpsBusProcessor(
                 signingService.freshKey(
                     tenantId = context.tenantId,
                     category = request.category,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
@@ -165,7 +198,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     externalId = request.externalId,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
@@ -193,8 +226,7 @@ class CryptoOpsBusProcessor(
             )
             return CryptoSignatureWithKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes),
-                signature.context.toWire()
+                ByteBuffer.wrap(signature.bytes)
             )
         }
 
@@ -219,4 +251,12 @@ class CryptoOpsBusProcessor(
         request.context.tenantId,
         request.context.other
     )
+
+    private fun CipherSchemeMetadata.findKeySchemeOrThrow(codeName: String): KeyScheme {
+        return try {
+            this.findKeyScheme(codeName)
+        } catch (exception: IllegalArgumentException) {
+            throw exception.message?.let { InvalidParamsException(it) } ?: exception
+        }
+    }
 }

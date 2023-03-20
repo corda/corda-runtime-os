@@ -1,0 +1,30 @@
+{
+  "facade-flow-mapping": [
+    {
+      "facade-id": "org.corda.interop/platform/hello-interop/v1.0",
+      "facade-method-mapping": [
+        {
+          "facade-method": "say-hello",
+          "flow-name": "com.net.corda.flow.SayHelloFlow"
+        },
+        {
+          "facade-method": "get-balance",
+          "flow-name": "com.net.corda.flow.GetBalanceFlow"
+        }
+      ]
+    },
+    {
+      "facade-id": "org.corda.interop/platform/tokens/v1.0",
+      "facade-method-mapping": [
+        {
+          "facade-method": "get-balance",
+          "flow-name": "com.net.corda.flow.GetBalanceFlow"
+        },
+        {
+          "facade-method": "reserve-token",
+          "flow-name": "com.net.corda.flow.ReserveTokenFlow"
+        }
+      ]
+    }
+  ]
+}

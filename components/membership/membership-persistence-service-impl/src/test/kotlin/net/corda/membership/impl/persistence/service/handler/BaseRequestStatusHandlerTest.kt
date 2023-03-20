@@ -20,6 +20,11 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class BaseRequestStatusHandlerTest {
+    private companion object {
+        const val REASON = "test reason"
+        const val SERIAL = 0L
+    }
+
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -51,7 +56,9 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
+            REASON,
         )
 
         val details = with(handler) {
@@ -72,6 +79,7 @@ class BaseRequestStatusHandlerTest {
                     )
                 )
             )
+            softly.assertThat(details.reason).isEqualTo(REASON)
         }
     }
 
@@ -92,7 +100,8 @@ class BaseRequestStatusHandlerTest {
             "Nop",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         assertThrows<MembershipPersistenceException> {
@@ -119,7 +128,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -146,7 +156,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -173,7 +184,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -199,7 +211,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -219,7 +232,8 @@ class BaseRequestStatusHandlerTest {
             "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
-            byteArrayOf(1, 2, 3)
+            byteArrayOf(1, 2, 3),
+            SERIAL,
         )
 
         val details = with(handler) {
@@ -227,5 +241,26 @@ class BaseRequestStatusHandlerTest {
         }
 
         assertThat(details.registrationProtocolVersion).isEqualTo(1)
+    }
+
+    @Test
+    fun `toDetails sets reason to null by default`() {
+        val context = byteArrayOf(1, 2, 3)
+        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(KeyValuePairList())
+        val entity = RegistrationRequestEntity(
+            "id",
+            "short-hash",
+            "SENT_TO_MGM",
+            Instant.ofEpochSecond(500),
+            Instant.ofEpochSecond(600),
+            byteArrayOf(1, 2, 3),
+            SERIAL,
+        )
+
+        val details = with(handler) {
+            entity.toDetails()
+        }
+
+        assertThat(details.reason).isNull()
     }
 }

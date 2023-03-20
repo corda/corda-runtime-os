@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime.persistence
 
 import net.corda.v5.application.persistence.CordaPersistenceException
-import net.corda.v5.application.persistence.find
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -117,7 +116,7 @@ class DbPersistenceServiceTest {
         val gutenAbend = GreetingEntity(gutentag.id, "Guten Abend!")
 
         val merged = persistence.merge(listOf(goodEve, gutenAbend))
-        val retrievedHellos : List<GreetingEntity> = persistence.find(listOf(hello.id, gutentag.id))
+        val retrievedHellos = persistence.find(GreetingEntity::class.java, listOf(hello.id, gutentag.id))
 
         // Then they should be the merged versions
         assertThat(retrievedHellos.toSet(), `is`(setOf(goodEve, gutenAbend)))

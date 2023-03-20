@@ -2,7 +2,6 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import net.corda.serialization.checkpoint.CheckpointSerializer
-import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 
@@ -11,7 +10,7 @@ class KryoCheckpointSerializer(
 ) : CheckpointSerializer {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun <T : Any> deserialize(
@@ -20,7 +19,8 @@ class KryoCheckpointSerializer(
     ): T {
         return try {
             kryoInput(ByteArrayInputStream(bytes)) {
-                uncheckedCast(kryo.readClassAndObject(this))
+                @Suppress("unchecked_cast")
+                kryo.readClassAndObject(this) as T
             }
         } catch (ex: Exception) {
             log.error("Failed to deserialize bytes", ex)

@@ -18,9 +18,8 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
     @Reference
     private val registry: LifecycleRegistryCoordinatorAccess,
     @Reference
-    private val schedulerFactory: LifecycleCoordinatorSchedulerFactory,
-
-    ) : LifecycleCoordinatorFactory {
+    private val schedulerFactory: LifecycleCoordinatorSchedulerFactory
+) : LifecycleCoordinatorFactory {
 
     override fun createCoordinator(
         name: LifecycleCoordinatorName,

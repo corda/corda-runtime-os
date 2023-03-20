@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
@@ -14,12 +15,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -41,7 +44,11 @@ class InteropService @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = InteropMemberRegistrationService::class)
-    private val registrationService: InteropMemberRegistrationService
+    private val registrationService: InteropMemberRegistrationService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = InteropFacadeToFlowMapperService::class)
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : Lifecycle {
 
     companion object {
@@ -50,6 +57,7 @@ class InteropService @Activate constructor(
         private const val SUBSCRIPTION = "SUBSCRIPTION"
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val GROUP_NAME = "interop_alias_translator"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
@@ -87,16 +95,6 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        coordinator.createManagedResource(SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
-                InteropProcessor(cordaAvroSerializationFactory),
-                messagingConfig,
-                null
-            ).also {
-                it.start()
-            }
-        }
         //TODO temporary code (commented and uncommented) to setup members of interop group,
         // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()
@@ -109,8 +107,31 @@ class InteropService @Activate constructor(
         publisher?.publish(registrationService.createDummyMemberInfo())
         logger.info("Publishing hosted identities")
         publisher?.publish(registrationService.createDummyHostedIdentity())
-        //logger.info("Publishing seed message")
-        //publisher?.publish(registrationService.seedMessage())
+
+        coordinator.createManagedResource(SUBSCRIPTION) {
+            subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(GROUP_NAME, Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
+                InteropAliasProcessor(),
+                messagingConfig).also {
+                it.start()
+            }
+        }
+        coordinator.createManagedResource(SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
+                InteropProcessor(
+                    cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
+                    subscriptionFactory, messagingConfig, facadeToFlowMapperService
+                ),
+                messagingConfig,
+                null
+            ).also {
+                it.start()
+            }
+        }
+
+        logger.info("Publishing seed message")
+        publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

@@ -2,7 +2,11 @@ package net.corda.membership.impl.registration
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -29,7 +33,9 @@ import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_ACTIVE_PLATFORM_VERSION
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.dummy.TestVirtualNodeInfoReadService
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
@@ -38,9 +44,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -51,16 +60,16 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -111,6 +120,12 @@ class MemberRegistrationIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var registrationProxy: RegistrationProxy
 
+        @InjectService(timeout = 5000)
+        lateinit var memberInfoFactory: MemberInfoFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var keyEncodingService: KeyEncodingService
+
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
         lateinit var requestDeserializer: CordaAvroDeserializer<MembershipRegistrationRequest>
         lateinit var unauthRequestDeserializer: CordaAvroDeserializer<UnauthenticatedRegistrationRequest>
@@ -125,11 +140,13 @@ class MemberRegistrationIntegrationTest {
                     """
                 ${BootConfig.INSTANCE_ID} = 1
                 ${MessagingConfig.Bus.BUS_TYPE} = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
                 """
                 )
             )
         const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -201,7 +218,7 @@ class MemberRegistrationIntegrationTest {
             testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
                 VirtualNodeInfo(
                     holdingIdentity = HoldingIdentity(memberName, groupId),
-                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, SecureHash.parse(CPI_SIGNER_HASH)),
+                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, parseSecureHash(CPI_SIGNER_HASH)),
                     cryptoDmlConnectionId = UUID.randomUUID(),
                     uniquenessDmlConnectionId = UUID.randomUUID(),
                     vaultDmlConnectionId = UUID.randomUUID(),
@@ -253,6 +270,7 @@ class MemberRegistrationIntegrationTest {
 
         val member = HoldingIdentity(memberName, groupId)
         val context = buildTestContext(member)
+        membershipGroupReaderProvider.loadMembers(member, createMemberList(context))
         val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message
         val registrationRequestSubscription = subscriptionFactory.createPubSubSubscription(
@@ -291,10 +309,12 @@ class MemberRegistrationIntegrationTest {
 
                 val deserializedUnauthenticatedRegistrationRequest =
                     unauthRequestDeserializer.deserialize(payload.array())!!
-                val deserializedContext =
+                val deserializedPayload =
                     requestDeserializer.deserialize(deserializedUnauthenticatedRegistrationRequest.payload.array())!!
-                        .run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
+                val deserializedContext =
+                    deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
 
+                assertThat(deserializedPayload.serial).isEqualTo(12)
                 with(deserializedContext.items) {
                     fun getValue(key: String) = first { pair -> pair.key == key }.value
 
@@ -322,6 +342,43 @@ class MemberRegistrationIntegrationTest {
                 }
             }
         }
+    }
+
+    private fun createMemberList(memberContext: Map<String, String>): List<MemberInfo> {
+        val mgmName = MemberX500Name("Corda MGM", "London", "GB")
+        val mgmId = HoldingIdentity(mgmName, groupId).shortHash.value
+        val ecdhKey = cryptoOpsClient.generateKeyPair(
+            mgmId,
+            CryptoConsts.Categories.PRE_AUTH,
+            mgmId + "ecdh",
+            ECDSA_SECP256R1_CODE_NAME
+        )
+        return listOf(
+            memberInfoFactory.create(
+                sortedMapOf(
+                    PARTY_NAME to mgmName.toString(),
+                    GROUP_ID to groupId,
+                    URL_KEY.format(0) to "localhost:1081",
+                    PROTOCOL_VERSION.format(0) to "1",
+                    PLATFORM_VERSION to "5000",
+                    SOFTWARE_VERSION to "5.0.0",
+                    ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
+                ),
+                sortedMapOf(
+                    IS_MGM to "true",
+                )
+            ),
+            memberInfoFactory.create(
+                memberContext = (memberContext +
+                        mapOf(
+                            PARTY_NAME to memberName.toString(),
+                            PLATFORM_VERSION to "5000",
+                            SOFTWARE_VERSION to "5.0.0.0",
+                        )
+                        ).toSortedMap(),
+                mgmContext = sortedMapOf(SERIAL to "12")
+            )
+        )
     }
 
     private fun buildTestContext(member: HoldingIdentity): Map<String, String> {

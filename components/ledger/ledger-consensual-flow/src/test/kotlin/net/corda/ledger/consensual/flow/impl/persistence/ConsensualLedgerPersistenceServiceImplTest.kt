@@ -1,11 +1,12 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -13,7 +14,8 @@ import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransac
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -46,7 +48,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
                 externalEventExecutor, serializationService, transactionSignatureService
         )
 
-        whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
                 argumentCaptor.capture(),
@@ -70,14 +72,18 @@ class ConsensualLedgerPersistenceServiceImplTest {
             )
         ).isEqualTo(listOf(expectedObj))
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<Any>())
         verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 
     @Test
     fun `find executes successfully`() {
+        val metadata = mock<TransactionMetadata>()
+        whenever(metadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.name)
         val wireTransaction = mock<WireTransaction>()
+        whenever(wireTransaction.metadata).thenReturn(metadata)
+
         val signatures = listOf(mock<DigitalSignatureAndMetadata>())
         val expectedObj = ConsensualSignedTransactionImpl(
             serializationService,
@@ -85,7 +91,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
             wireTransaction,
             signatures
         )
-        val testId = SecureHash.parse("SHA256:1234567890123456")
+        val testId = parseSecureHash("SHA256:1234567890123456")
         whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
             .thenReturn(SignedTransactionContainer(wireTransaction, signatures))
 

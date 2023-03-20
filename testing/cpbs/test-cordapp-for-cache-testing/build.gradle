@@ -3,7 +3,7 @@ plugins {
 }
 
 tasks.named("jar") {
-    baseName 'test-cordapp'
+    archiveBaseName = 'test-cordapp'
 }
 
 cordapp {

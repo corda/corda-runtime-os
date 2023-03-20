@@ -1,10 +1,10 @@
 package net.corda.membership.impl.synchronisation.dummy
 
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -75,7 +75,12 @@ class TestMembershipQueryClientImpl @Activate constructor(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<List<RegistrationRequestStatus>> {
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>,
+        limit: Int?,
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -85,23 +90,19 @@ class TestMembershipQueryClientImpl @Activate constructor(
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> {
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
         return MembershipQueryResult.Success(
             holdingsIdentities.associateWith {
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
-                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair("name", it.x500Name.toString())
-                        )
-                    )
-                )
+                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray())
+                ) to
+                        CryptoSignatureSpec("", null, null)
             }
         )
     }
 
-    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

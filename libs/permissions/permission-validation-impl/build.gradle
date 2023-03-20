@@ -20,6 +20,7 @@ dependencies {
     implementation project(":libs:permissions:permission-validation")
     implementation project(":libs:permissions:permission-validation-cache")
     implementation project(":libs:permissions:permission-password")
+    implementation project(':libs:utilities')
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
 

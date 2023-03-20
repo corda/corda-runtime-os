@@ -109,4 +109,3 @@ class DbConnectionsRepositoryImpl(
 
     override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
 }
-

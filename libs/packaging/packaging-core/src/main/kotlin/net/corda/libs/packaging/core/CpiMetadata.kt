@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.core
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -15,7 +16,7 @@ data class CpiMetadata(
     companion object {
         fun fromAvro(other: CpiMetadataAvro) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),
-            SecureHash(other.hash.algorithm, other.hash.bytes.array()),
+            SecureHashImpl(other.hash.algorithm, other.hash.bytes.array()),
             other.cpks.map { CpkMetadata.fromAvro(it) },
             other.groupPolicy,
             other.version,
@@ -37,4 +38,3 @@ data class CpiMetadata(
         )
     }
 }
-

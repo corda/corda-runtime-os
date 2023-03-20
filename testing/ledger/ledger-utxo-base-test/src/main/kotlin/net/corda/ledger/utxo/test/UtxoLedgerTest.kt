@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.test
 
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.mockTransactionSignatureService
@@ -14,12 +15,17 @@ import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTra
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.ledger.common.NotaryLookup
 import org.mockito.kotlin.mock
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
+    val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
+    val mockFlowSandboxService = mock<FlowSandboxService>()
+    val mockNotaryLookup = mock<NotaryLookup>()
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
             jsonMarshallingService,
@@ -47,7 +53,9 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         utxoSignedTransactionFactory,
         flowEngine,
         mockUtxoLedgerPersistenceService,
-        mockUtxoLedgerStateQueryService
+        mockUtxoLedgerStateQueryService,
+        mockCurrentSandboxGroupContext,
+        mockNotaryLookup
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,

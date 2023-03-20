@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,7 +10,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

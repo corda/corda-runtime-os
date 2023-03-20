@@ -1,14 +1,20 @@
 package net.corda.applications.workers.smoketest.ledger
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.crypto.core.parseSecureHash
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +34,10 @@ class ConsensualLedgerTests {
 
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
+            val module = SimpleModule()
+            module.addSerializer(SecureHash::class.java, SecureHashSerializer)
+            module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+            registerModule(module)
         }
     }
 
@@ -65,9 +75,9 @@ class ConsensualLedgerTests {
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
 
-        registerMember(aliceHoldingId)
-        registerMember(bobHoldingId)
-        registerMember(charlieHoldingId)
+        registerStaticMember(aliceHoldingId)
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(charlieHoldingId)
     }
 
     @Test
@@ -130,4 +140,16 @@ class ConsensualLedgerTests {
         val transaction: ConsensualTransactionResult?,
         val errorMessage: String?
     )
+}
+
+internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerializer<SecureHash>() {
+    override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+        generator.writeString(obj.toString())
+    }
+}
+
+internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
+    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
+        return parseSecureHash(parser.text)
+    }
 }

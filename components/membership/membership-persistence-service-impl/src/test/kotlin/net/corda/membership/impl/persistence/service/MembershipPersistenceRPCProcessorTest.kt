@@ -1,16 +1,18 @@
 package net.corda.membership.impl.persistence.service
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
@@ -18,20 +20,25 @@ import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
+import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
+import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
+import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -45,6 +52,8 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -52,7 +61,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -76,6 +84,7 @@ import javax.persistence.LockModeType
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
@@ -85,6 +94,7 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_ID = "rule-id"
         const val DUMMY_RULE = "corda.*"
         const val DUMMY_LABEL = "label1"
+        const val SERIAL = 0L
     }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
@@ -115,7 +125,8 @@ class MembershipPersistenceRPCProcessorTest {
         RegistrationStatus.PENDING_MEMBER_VERIFICATION.name,
         clock.instant(),
         clock.instant(),
-        context
+        context,
+        SERIAL,
     )
 
     private val groupPolicyQuery: TypedQuery<GroupPolicyEntity> = mock {
@@ -144,12 +155,35 @@ class MembershipPersistenceRPCProcessorTest {
         on { select(root) } doReturn mock
         on { where(predicate) } doReturn mock
     }
+    private val inStatus = mock<CriteriaBuilder.In<String>>()
+    private val statusPath = mock<Path<String>>()
+    private val shortHashPath = mock<Path<String>>()
+    private val createdPath = mock<Path<Instant>>()
+    private val registrationRequestRoot = mock<Root<RegistrationRequestEntity>> {
+        on { get<String>("status") } doReturn statusPath
+        on { get<Instant>("created") } doReturn createdPath
+        on { get<String>("holdingIdentityShortHash") } doReturn shortHashPath
+    }
+    private val order = mock<Order>()
+    private val registrationRequestsQuery = mock<CriteriaQuery<RegistrationRequestEntity>> {
+        on { from(RegistrationRequestEntity::class.java) } doReturn registrationRequestRoot
+        on { select(registrationRequestRoot) } doReturn mock
+        on { where() } doReturn mock
+        on { where(any()) } doReturn mock
+        on { orderBy(order) } doReturn mock
+    }
+    private val registrationRequestQuery = mock<TypedQuery<RegistrationRequestEntity>> {
+        on { resultList } doReturn emptyList()
+    }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(ApprovalRulesEntity::class.java) } doReturn query
         on { createQuery(PreAuthTokenEntity::class.java) } doReturn preAuthTokenQuery
+        on { createQuery(RegistrationRequestEntity::class.java) } doReturn registrationRequestsQuery
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
+        on { `in`(statusPath) } doReturn inStatus
+        on { asc(createdPath) } doReturn order
     }
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()
@@ -171,9 +205,17 @@ class MembershipPersistenceRPCProcessorTest {
         null,
         null
     )
+    private val memberEntity = mock<MemberInfoEntity> {
+        on { memberContext } doReturn byteArrayOf(1)
+        on { mgmContext } doReturn byteArrayOf(2)
+        on { serialNumber } doReturn 1L
+        on { groupId } doReturn "groupId"
+        on { memberX500Name } doReturn ourX500Name
+        on { isPending } doReturn false
+    }
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
-        on { find(RegistrationRequestEntity::class.java, ourRegistrationId) } doReturn registrationRequest
+        on { find(RegistrationRequestEntity::class.java, ourRegistrationId, LockModeType.PESSIMISTIC_WRITE) } doReturn registrationRequest
         on {
             find(PreAuthTokenEntity::class.java, preAuthTokenId, LockModeType.PESSIMISTIC_WRITE)
         } doReturn preAuthTokenEntity
@@ -182,6 +224,8 @@ class MembershipPersistenceRPCProcessorTest {
         on { createQuery(query) } doReturn approvalRulesQuery
         on { createQuery(preAuthTokenQuery) } doReturn typedPreAuthTokenQuery
         on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
+        on { createQuery(registrationRequestsQuery) } doReturn registrationRequestQuery
+        on { find(eq(MemberInfoEntity::class.java), any(), eq(LockModeType.PESSIMISTIC_WRITE)) } doReturn memberEntity
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -199,9 +243,13 @@ class MembershipPersistenceRPCProcessorTest {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
-    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn byteArrayOf(0)
+    }
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
@@ -272,9 +320,11 @@ class MembershipPersistenceRPCProcessorTest {
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray()),
-                        KeyValuePairList(emptyList())
-                    )
+                        ByteBuffer.wrap("456".toByteArray())
+                    ),
+                    CryptoSignatureSpec("", null, null),
+                    true,
+                    SERIAL,
                 )
             )
         )
@@ -341,8 +391,6 @@ class MembershipPersistenceRPCProcessorTest {
                 .isInstanceOf(MemberInfoQueryResponse::class.java)
             assertThat((payload as MemberInfoQueryResponse).members)
                 .isInstanceOf(List::class.java)
-            assertThat(uncheckedCast<Any, List<PersistentMemberInfo>>((payload as MemberInfoQueryResponse).members))
-                .isNotNull
                 .isEmpty()
 
             with(context) {
@@ -369,9 +417,11 @@ class MembershipPersistenceRPCProcessorTest {
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray()),
-                        KeyValuePairList(emptyList())
-                    )
+                        ByteBuffer.wrap("456".toByteArray())
+                    ),
+                    CryptoSignatureSpec("", null, null),
+                    false,
+                    SERIAL,
                 )
             )
         )
@@ -390,7 +440,8 @@ class MembershipPersistenceRPCProcessorTest {
             uRqContext,
             UpdateRegistrationRequestStatus(
                 ourRegistrationId,
-                RegistrationStatus.APPROVED
+                RegistrationStatus.APPROVED,
+                "test reason"
             )
         )
 
@@ -511,6 +562,29 @@ class MembershipPersistenceRPCProcessorTest {
     }
 
     @Test
+    fun `query registration requests returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(RegistrationRequestsQueryResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
     fun `query pre auth token rules returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
@@ -594,6 +668,56 @@ class MembershipPersistenceRPCProcessorTest {
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
             assertThat(payload).isNull()
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `suspend member returns success`() {
+        whenever(memberEntity.status).doReturn(MEMBER_STATUS_ACTIVE)
+        whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            SuspendMember(ourX500Name, null, null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(SuspendMemberResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `activate member returns success`() {
+        whenever(memberEntity.status).doReturn(MEMBER_STATUS_SUSPENDED)
+        whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            ActivateMember(ourX500Name, null, null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(ActivateMemberResponse::class.java)
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

@@ -13,7 +13,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_DB
 import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_RPC
 import net.corda.virtualnode.write.db.impl.writer.GROUP_NAME
@@ -57,10 +57,7 @@ class VirtualNodeWriterFactoryTests {
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock()
-        ) { _, _, _, _ ->
-            listOf()
-        }
+            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock())
         virtualNodeWriterFactory.create(expectedConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -82,9 +79,8 @@ class VirtualNodeWriterFactoryTests {
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock()) {
-                _, _, _, _ -> listOf()
-        }
+            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock()
+        )
 
         val processor = argumentCaptor<VirtualNodeAsyncOperationProcessor>()
         virtualNodeWriterFactory.create(expectedConfig)

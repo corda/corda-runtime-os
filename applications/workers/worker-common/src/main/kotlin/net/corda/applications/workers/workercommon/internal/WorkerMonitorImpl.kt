@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * An implementation of [WorkerMonitor].
@@ -44,6 +45,7 @@ internal class WorkerMonitorImpl @Activate constructor(
     private var server: Javalin? = null
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
@@ -66,9 +68,13 @@ internal class WorkerMonitorImpl @Activate constructor(
             .get(HTTP_HEALTH_ROUTE) { context ->
                 val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
                 val status = if (unhealthyComponents.isEmpty()) {
+                    clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
                     HTTP_OK_CODE
                 } else {
-                    logger.warn("Status is unhealthy. The status of $unhealthyComponents has error.")
+                    logIfDifferentFromLastMessage(
+                        HTTP_HEALTH_ROUTE,
+                        "Status is unhealthy. The status of $unhealthyComponents has error."
+                    )
                     HTTP_SERVICE_UNAVAILABLE_CODE
                 }
                 context.status(status)
@@ -77,9 +83,13 @@ internal class WorkerMonitorImpl @Activate constructor(
             .get(HTTP_STATUS_ROUTE) { context ->
                 val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
                 val status = if (notReadyComponents.isEmpty()) {
+                    clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
                     HTTP_OK_CODE
                 } else {
-                    logger.warn("There are components with error or down state: $notReadyComponents.")
+                    logIfDifferentFromLastMessage(
+                        HTTP_STATUS_ROUTE,
+                        "There are components with error or down state: $notReadyComponents."
+                    )
                     HTTP_SERVICE_UNAVAILABLE_CODE
                 }
                 context.status(status)
@@ -90,6 +100,17 @@ internal class WorkerMonitorImpl @Activate constructor(
                 context.result(prometheusRegistry.scrape())
                 context.header(Header.CACHE_CONTROL, NO_CACHE)
             }
+    }
+
+    private fun clearLastLogMessageForRoute(route: String) {
+        lastLogMessage[route] = ""
+    }
+
+    private fun logIfDifferentFromLastMessage(route: String, logMessage: String) {
+        val lastLogMessage = lastLogMessage.put(route, logMessage)
+        if (logMessage != lastLogMessage) {
+            logger.warn(logMessage)
+        }
     }
 
     override val port get() = server?.port()

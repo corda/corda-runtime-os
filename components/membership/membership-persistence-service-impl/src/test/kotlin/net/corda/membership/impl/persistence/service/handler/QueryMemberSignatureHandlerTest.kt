@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
@@ -136,8 +137,9 @@ class QueryMemberSignatureHandlerTest {
             MemberSignatureEntity(
                 memberKey.groupId,
                 memberKey.memberX500Name,
+                true,
                 "pk-${memberKey.memberX500Name}".toByteArray(),
-                "context-${memberKey.memberX500Name}".toByteArray(),
+                "dummySignatureSpec",
                 "sig-${memberKey.memberX500Name}".toByteArray(),
             )
         }
@@ -162,16 +164,9 @@ class QueryMemberSignatureHandlerTest {
                     member,
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("pk-${member.x500Name}".toByteArray()),
-                        ByteBuffer.wrap("sig-${member.x500Name}".toByteArray()),
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(
-                                    "key",
-                                    "context-${member.x500Name}",
-                                )
-                            )
-                        ),
-                    )
+                        ByteBuffer.wrap("sig-${member.x500Name}".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummySignatureSpec", null, null)
                 )
             }
         )
@@ -195,8 +190,9 @@ class QueryMemberSignatureHandlerTest {
             MemberSignatureEntity(
                 memberKey.groupId,
                 memberKey.memberX500Name,
+                true,
                 "pk-${memberKey.memberX500Name}".toByteArray(),
-                byteArrayOf(),
+                "dummySignatureSpec",
                 "sig-${memberKey.memberX500Name}".toByteArray(),
             )
         }
@@ -210,10 +206,8 @@ class QueryMemberSignatureHandlerTest {
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("pk-${member.x500Name}".toByteArray()),
                         ByteBuffer.wrap("sig-${member.x500Name}".toByteArray()),
-                        KeyValuePairList(
-                            emptyList()
-                        ),
-                    )
+                    ),
+                    CryptoSignatureSpec("dummySignatureSpec", null, null)
                 )
             }
         )

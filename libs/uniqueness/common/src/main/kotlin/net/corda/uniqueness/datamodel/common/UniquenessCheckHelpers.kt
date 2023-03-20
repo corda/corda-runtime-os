@@ -1,5 +1,6 @@
 package net.corda.uniqueness.datamodel.common
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
@@ -8,12 +9,14 @@ import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
+import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
@@ -27,10 +30,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.crypto.SecureHash
 import org.apache.avro.specific.SpecificRecord
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 import java.time.Instant
 
 /**
@@ -88,6 +88,15 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
                 Instant.now(),
                 UniquenessCheckErrorMalformedRequestImpl(
                     avroResult.errorText
+                )
+            )
+        }
+        is UniquenessCheckResultUnhandledExceptionAvro -> {
+            UniquenessCheckResultFailureImpl(
+                Instant.now(),
+                UniquenessCheckErrorUnhandledExceptionImpl(
+                    avroResult.exception.errorType,
+                    avroResult.exception.errorMessage
                 )
             )
         }
@@ -161,7 +170,7 @@ fun UniquenessCheckResult.toCharacterRepresentation() = if (this is UniquenessCh
 
 fun String.toStateRef() : UniquenessCheckStateRef {
     return UniquenessCheckStateRefImpl(
-        SecureHash.parse(substringBeforeLast(":")),
+        parseSecureHash(substringBeforeLast(":")),
         substringAfterLast(":").toInt()
     )
 }

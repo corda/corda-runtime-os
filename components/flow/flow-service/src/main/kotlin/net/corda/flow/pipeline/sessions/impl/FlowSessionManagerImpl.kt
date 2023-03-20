@@ -8,6 +8,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -57,20 +58,18 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
-        protocolName: String,
-        protocolVersions: List<Int>,
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList,
+        sessionProperties: KeyValuePairList,
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
-            .setProtocol(protocolName)
-            .setVersions(protocolVersions)
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(contextPlatformProperties)
             .setContextUserProperties(contextUserProperties)
+            .setContextSessionProperties(sessionProperties)
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -88,14 +87,29 @@ class FlowSessionManagerImpl @Activate constructor(
             key = checkpoint.flowId,
             sessionState = null,
             event = event,
-            instant = instant
+            instant = instant,
+            maxMsgSize = checkpoint.maxMessageSize
+        )
+    }
+
+    override fun sendConfirmMessage(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        contextSessionProperties: KeyValuePairList,
+        instant: Instant,
+    ): SessionState {
+        return sendSessionMessageToExistingSession(
+            checkpoint,
+            sessionId,
+            payload = SessionConfirm(contextSessionProperties),
+            instant
         )
     }
 
     override fun sendDataMessages(
         checkpoint: FlowCheckpoint,
         sessionToPayload: Map<String, ByteArray>,
-        instant: Instant
+        instant: Instant,
     ): List<SessionState> {
         validateSessionStates(checkpoint, sessionToPayload.keys, Operation.SENDING)
         return sessionToPayload.map { (sessionId, payload) ->
@@ -129,7 +143,7 @@ class FlowSessionManagerImpl @Activate constructor(
         throwable: Throwable,
         instant: Instant
     ): List<SessionState> {
-        val errorMessage = throwable.message ?: ""
+        val errorMessage = throwable.message ?: "No exception message provided."
         return sessionIds.map { sessionId ->
             sendSessionMessageToExistingSession(
                 checkpoint,
@@ -259,7 +273,8 @@ class FlowSessionManagerImpl @Activate constructor(
                 .setOutOfOrderSequenceNums(listOf(0))
                 .setPayload(payload)
                 .build(),
-            instant = instant
+            instant = instant,
+            maxMsgSize = checkpoint.maxMessageSize
         )
     }
 

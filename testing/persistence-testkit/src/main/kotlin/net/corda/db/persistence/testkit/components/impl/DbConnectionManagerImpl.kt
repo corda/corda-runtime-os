@@ -80,6 +80,10 @@ class DbConnectionManagerImpl @Activate constructor(
     override fun bootstrap(config: SmartConfig) {
     }
 
+    override fun testConnection(): Boolean {
+        return true
+    }
+
     override fun putConnection(
         name: String,
         privilege: DbPrivilege,

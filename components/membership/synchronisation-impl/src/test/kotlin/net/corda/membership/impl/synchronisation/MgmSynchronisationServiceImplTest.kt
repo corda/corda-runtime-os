@@ -1,13 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.crypto.core.toCorda
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
@@ -15,6 +14,8 @@ import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfig
@@ -54,7 +55,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -82,7 +82,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
@@ -166,10 +166,10 @@ class MgmSynchronisationServiceImplTest {
     private val groupParameters: GroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
-        on { lookup(eq(MemberX500Name.parse(mgmName))) } doReturn mgmInfo
-        on { lookup(eq(MemberX500Name.parse(aliceName))) } doReturn aliceInfo
-        on { lookup(eq(MemberX500Name.parse(bobName))) } doReturn bobInfo
-        on { lookup(eq(MemberX500Name.parse(daisyName))) } doReturn daisyInfo
+        on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
+        on { lookup(eq(MemberX500Name.parse(aliceName)), any()) } doReturn aliceInfo
+        on { lookup(eq(MemberX500Name.parse(bobName)), any()) } doReturn bobInfo
+        on { lookup(eq(MemberX500Name.parse(daisyName)), any()) } doReturn daisyInfo
         on { groupParameters } doReturn groupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -251,6 +251,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage1),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record1
         on {
@@ -260,20 +261,24 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage2),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record2
     }
+    private val services = mock<MgmSynchronisationServiceImpl.InjectedServices> {
+        on { publisherFactory } doReturn publisherFactory
+        on { coordinatorFactory } doReturn coordinatorFactory
+        on { configurationReadService } doReturn configurationReadService
+        on { membershipGroupReaderProvider } doReturn groupReaderProvider
+        on { membershipQueryClient } doReturn membershipQueryClient
+        on { merkleTreeGenerator } doReturn merkleTreeGenerator
+        on { membershipPackageFactory } doReturn membershipPackageFactory
+        on { signerFactory } doReturn signerFactory
+        on { p2pRecordsFactory } doReturn p2pRecordsFactory
+    }
 
     private val synchronisationService = MgmSynchronisationServiceImpl(
-        publisherFactory,
-        coordinatorFactory,
-        configurationReadService,
-        groupReaderProvider,
-        membershipQueryClient,
-        merkleTreeGenerator,
-        membershipPackageFactory,
-        signerFactory,
-        p2pRecordsFactory
+        services,
     )
 
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
@@ -310,15 +315,10 @@ class MgmSynchronisationServiceImplTest {
 
     private fun createSignatures(members: List<MemberInfo>) = members.associate {
         val name = it.name.toString()
-        it.holdingIdentity to CryptoSignatureWithKey(
+        it.holdingIdentity to (CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
-            ByteBuffer.wrap("sig-$name".toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("name", name)
-                )
-            )
-        )
+            ByteBuffer.wrap("sig-$name".toByteArray())
+        ) to CryptoSignatureSpec("dummy", null, null))
     }
 
     private fun postStartEvent() {

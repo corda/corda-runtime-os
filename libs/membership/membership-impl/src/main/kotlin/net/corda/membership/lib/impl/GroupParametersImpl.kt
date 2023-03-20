@@ -17,17 +17,10 @@ class GroupParametersImpl(
         require(epoch > 0) { "Epoch must be at least 1." }
     }
 
-    override val minimumPlatformVersion: Int
-        get() = map.parse(MPV_KEY, Int::class.java)
-
-    override val modifiedTime: Instant
-        get() = map.parse(MODIFIED_TIME_KEY, Instant::class.java)
-
-    override val epoch: Int
-        get() = map.parse(EPOCH_KEY, Int::class.java)
-
-    override val notaries: Collection<NotaryInfo>
-        get() = map.parseList(NOTARIES_KEY, NotaryInfo::class.java)
+    override fun getMinimumPlatformVersion(): Int = map.parse(MPV_KEY, Int::class.java)
+    override fun getModifiedTime(): Instant = map.parse(MODIFIED_TIME_KEY, Instant::class.java)
+    override fun getEpoch(): Int = map.parse(EPOCH_KEY, Int::class.java)
+    override fun getNotaries(): Collection<NotaryInfo> = map.parseList(NOTARIES_KEY, NotaryInfo::class.java)
 
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is GroupParametersImpl) return false

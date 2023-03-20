@@ -18,13 +18,14 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.cache.GroupParametersCache
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
@@ -80,7 +81,8 @@ class RegistrationServiceLifecycleHandler(
                 setOf(
                     LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
+                    LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
                 )
             )
         }

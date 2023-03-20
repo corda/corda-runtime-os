@@ -4,7 +4,11 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
 
-
-val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("EC")
+private val kpg = KeyPairGenerator.getInstance("EC")
     .apply { initialize(ECGenParameterSpec("secp256r1")) }
+
+val publicKeyExample: PublicKey = kpg
+    .generateKeyPair().public
+
+val anotherPublicKeyExample: PublicKey = kpg
     .generateKeyPair().public

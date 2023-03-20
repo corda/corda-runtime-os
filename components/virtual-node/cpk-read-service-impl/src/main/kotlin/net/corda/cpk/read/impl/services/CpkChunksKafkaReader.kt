@@ -1,6 +1,6 @@
 package net.corda.cpk.read.impl.services
 
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.cpk.read.impl.services.cache.CpkChunkIdsCache
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManager
 import net.corda.data.chunking.Chunk

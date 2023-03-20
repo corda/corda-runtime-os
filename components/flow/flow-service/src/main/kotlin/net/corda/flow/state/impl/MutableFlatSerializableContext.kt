@@ -2,7 +2,7 @@ package net.corda.flow.state.impl
 
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
-import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESERVED_PREFIX
+import net.corda.v5.application.flows.FlowContextProperties.CORDA_RESERVED_PREFIX
 
 /**
  * A [FlatSerializableContext] which supports put operations.
@@ -24,9 +24,6 @@ class MutableFlatSerializableContext(
 
     override val platformProperties: ContextPlatformProperties = object : ContextPlatformProperties {
         override fun put(key: String, value: String) {
-            require(platformPropertyMap[key] == null) {
-                "'${key}' is already a platform context property, it cannot be overwritten"
-            }
             platformPropertyMap[key] = value
         }
     }

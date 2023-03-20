@@ -6,7 +6,7 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RestRequestBodyImpl
+import net.corda.flow.fiber.ClientRequestBodyImpl
 import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
@@ -14,7 +14,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,21 +29,19 @@ class FlowFactoryImpl @Activate constructor(
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return try {
-            val flowClass: Class<ClientStartableFlow> =
-                uncheckedCast(
-                    sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
-                        startFlowEvent.startContext.flowClassName,
-                        ClientStartableFlow::class.java
-                    )
-                )
+            val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
+                startFlowEvent.startContext.flowClassName,
+                ClientStartableFlow::class.java
+            )
             val logic = flowClass.getDeclaredConstructor().newInstance()
-            val args = RestRequestBodyImpl(flowFiberService)
+            val args = ClientRequestBodyImpl(flowFiberService)
 
             ClientStartedFlow(logic, args)
         } catch (e: Exception) {
             throw FlowFatalException(
                 "Could not create ${startFlowEvent.startContext.flowClassName} for " +
-                        "virtual node ${startFlowEvent.startContext.identity}: ${e.message}", e
+                        "virtual node ${startFlowEvent.startContext.identity}: " +
+                        (e.message ?: "No exception message provided."), e
             )
         }
     }
@@ -55,11 +52,9 @@ class FlowFactoryImpl @Activate constructor(
         contextProperties: Map<String, String>
     ): FlowLogicAndArgs {
         return try {
-            val flowClass: Class<ResponderFlow> = uncheckedCast(
-                sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
-                    flowStartContext.flowClassName,
-                    ResponderFlow::class.java
-                )
+            val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
+                flowStartContext.flowClassName,
+                ResponderFlow::class.java
             )
 
             val flowSession = flowSessionFactory.createInitiatedFlowSession(

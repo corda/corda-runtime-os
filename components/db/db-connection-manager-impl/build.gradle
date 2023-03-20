@@ -14,6 +14,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:virtual-node:virtual-node-datamodel')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'

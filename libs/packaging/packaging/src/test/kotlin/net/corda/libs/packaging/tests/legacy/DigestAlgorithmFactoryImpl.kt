@@ -10,7 +10,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 // WARNING - "legacy" corda5 code *only* used to make tests pass.
 sealed class DigestAlgorithmFactoryImpl : DigestAlgorithmFactory {
-    private class MessageDigestFactory(override val algorithm: String) : DigestAlgorithmFactory {
+    private class MessageDigestFactory(private val algorithm: String) : DigestAlgorithmFactory {
+        override fun getAlgorithm() = algorithm
+
         override fun getInstance(): DigestAlgorithm {
             try {
                 val messageDigest = MessageDigest.getInstance(algorithm)
@@ -20,9 +22,12 @@ sealed class DigestAlgorithmFactoryImpl : DigestAlgorithmFactory {
             }
         }
 
-        private class MessageDigestWrapper(val messageDigest: MessageDigest, override val algorithm: String) :
+        private class MessageDigestWrapper(val messageDigest: MessageDigest, private val algorithm: String) :
             DigestAlgorithm {
-            override val digestLength = messageDigest.digestLength
+            override fun getDigestLength() = messageDigest.digestLength
+
+            override fun getAlgorithm() = algorithm
+
             override fun digest(bytes: ByteArray): ByteArray = messageDigest.digest(bytes)
             override fun digest(inputStream: InputStream): ByteArray {
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)

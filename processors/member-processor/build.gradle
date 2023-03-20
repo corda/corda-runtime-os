@@ -9,6 +9,7 @@ description 'Member Processor'
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
@@ -17,6 +18,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:utilities')
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:crypto:crypto-hes')

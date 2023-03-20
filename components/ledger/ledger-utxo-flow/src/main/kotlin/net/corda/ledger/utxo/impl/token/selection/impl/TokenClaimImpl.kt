@@ -11,9 +11,13 @@ import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 class TokenClaimImpl(
     private val claimId: String,
     private val poolKey: PoolKey,
-    override val claimedTokens: List<ClaimedToken>,
+    private val claimedTokens: List<ClaimedToken>,
     private val externalEventExecutor: ExternalEventExecutor
 ) : TokenClaim {
+
+    override fun getClaimedTokens(): List<ClaimedToken> {
+        return claimedTokens
+    }
 
     @Suspendable
     override fun useAndRelease(usedTokensRefs: List<StateRef>) {

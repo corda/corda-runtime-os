@@ -1,8 +1,8 @@
 package net.corda.virtualnode.read.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.toCorda
 import java.util.concurrent.ConcurrentHashMap
 

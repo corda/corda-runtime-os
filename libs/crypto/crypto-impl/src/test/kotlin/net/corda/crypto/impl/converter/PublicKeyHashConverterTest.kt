@@ -1,8 +1,8 @@
 package net.corda.crypto.impl.converter
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.crypto.PublicKeyHash
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

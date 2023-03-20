@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read
 
 import com.typesafe.config.ConfigFactory
+import kotlin.reflect.KFunction
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -14,6 +15,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -32,7 +34,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
-import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipGroupReaderProviderIntegrationTest {
@@ -59,10 +60,12 @@ class MembershipGroupReaderProviderIntegrationTest {
     private val bootConf = """
         $INSTANCE_ID=1
         $BUS_TYPE = INMEMORY
+        $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
         """.trimIndent()
 
     private val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

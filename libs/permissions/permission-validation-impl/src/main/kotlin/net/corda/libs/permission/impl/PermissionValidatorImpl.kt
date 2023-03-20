@@ -3,7 +3,7 @@ package net.corda.libs.permission.impl
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.permissions.PermissionType as AvroPermissionType

@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -9,7 +10,6 @@ import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,7 +41,7 @@ class SandboxGroupContextTest {
 
     private val virtualNodeContext = VirtualNodeContext(
         holdingIdentity,
-        cpksMetadata.map { SecureHash.parse("DUMMY:1234567890abcdef") }.toSet(),
+        cpksMetadata.map { parseSecureHash("DUMMY:1234567890abcdef") }.toSet(),
         SandboxGroupType.FLOW,
         null
     )

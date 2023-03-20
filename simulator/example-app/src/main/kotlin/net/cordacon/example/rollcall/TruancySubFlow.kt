@@ -8,14 +8,14 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 
-@InitiatingFlow("truancy-record")
+@InitiatingFlow(protocol = "truancy-record")
 class TruancySubFlow(
         private val truancyOffice: MemberX500Name,
         private val truancyRecord: TruancyRecord
     ) : SubFlow<String> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
 

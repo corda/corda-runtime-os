@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.persistence.SigningKeyStore
@@ -9,7 +10,7 @@ import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -24,7 +25,9 @@ class SigningServiceFactoryImpl @Activate constructor(
     @Reference(service = SigningKeyStore::class)
     private val store: SigningKeyStore,
     @Reference(service = CryptoServiceFactory::class)
-    private val cryptoServiceFactory: CryptoServiceFactory
+    private val cryptoServiceFactory: CryptoServiceFactory,
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService
 ) : AbstractComponent<SigningServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
@@ -39,7 +42,7 @@ class SigningServiceFactoryImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, store, cryptoServiceFactory)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, store, cryptoServiceFactory, digestService)
 
     override fun getInstance(): SigningService =
         impl.getInstance()
@@ -47,7 +50,8 @@ class SigningServiceFactoryImpl @Activate constructor(
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val store: SigningKeyStore,
-        private val cryptoServiceFactory: CryptoServiceFactory
+        private val cryptoServiceFactory: CryptoServiceFactory,
+        private val digestService: PlatformDigestService
     ) : AbstractImpl {
         private val lock = Any()
 
@@ -75,7 +79,8 @@ class SigningServiceFactoryImpl @Activate constructor(
                         signingService = SigningServiceImpl(
                             store = store,
                             cryptoServiceFactory = cryptoServiceFactory,
-                            schemeMetadata = schemeMetadata
+                            schemeMetadata = schemeMetadata,
+                            digestService = digestService
                         )
                         signingService!!
                     }

@@ -1,14 +1,14 @@
 package net.corda.libs.permissions.endpoints.v1.role
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 
@@ -52,7 +52,7 @@ interface RoleEndpoint : RestResource {
         groupVisibility: An optional group visibility of the role
         permissions: The list of permissions associated with the role""")
     fun createRole(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description =
             """
                 Details of the role to be created: 

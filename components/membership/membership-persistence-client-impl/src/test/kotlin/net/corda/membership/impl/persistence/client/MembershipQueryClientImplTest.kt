@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -47,7 +48,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -55,7 +56,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions.`as`
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -435,14 +435,15 @@ class MembershipQueryClientImplTest {
             CompletableFuture.completedFuture(
                 MembershipPersistenceResponse(
                     context,
-                    GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))))
+                    GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))), 101L)
                 )
             )
         }
 
         val result = membershipQueryClient.queryGroupPolicy(ourHoldingIdentity)
         assertThat(result.getOrThrow()).isNotNull
-        assertThat(result.getOrThrow().entries.size).isEqualTo(1)
+        assertThat(result.getOrThrow().first.entries.size).isEqualTo(1)
+        assertThat(result.getOrThrow().second).isEqualTo(101L)
     }
 
     @Test
@@ -461,14 +462,15 @@ class MembershipQueryClientImplTest {
             CompletableFuture.completedFuture(
                 MembershipPersistenceResponse(
                     context,
-                    GroupPolicyQueryResponse(KeyValuePairList(emptyList()))
+                    GroupPolicyQueryResponse(KeyValuePairList(emptyList()), 0L)
                 )
             )
         }
 
         val result = membershipQueryClient.queryGroupPolicy(ourHoldingIdentity)
         assertThat(result.getOrThrow()).isNotNull
-        assertThat(result.getOrThrow().entries).isEmpty()
+        assertThat(result.getOrThrow().first.entries).isEmpty()
+        assertThat(result.getOrThrow().second).isEqualTo(0L)
     }
 
     @Nested
@@ -481,28 +483,24 @@ class MembershipQueryClientImplTest {
         }
 
         @Test
-        fun `it will returns the correct data in case of successful result`() {
+        fun `it will return the correct data in case of successful result`() {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             val holdingId1 = createTestHoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
             val signature1 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk1".toByteArray()),
-                ByteBuffer.wrap("ct1".toByteArray()),
-                KeyValuePairList(emptyList()),
+                ByteBuffer.wrap("ct1".toByteArray())
             )
+            val signatureSpec1 = CryptoSignatureSpec("dummy", null, null)
             val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
-                ByteBuffer.wrap("ct2".toByteArray()),
-                KeyValuePairList(emptyList()),
+                ByteBuffer.wrap("ct2".toByteArray())
             )
+            val signatureSpec2 = CryptoSignatureSpec("dummy", null, null)
             val signatures = listOf(
-                MemberSignature(
-                    holdingId1.toAvro(), signature1
-                ),
-                MemberSignature(
-                    holdingId2.toAvro(), signature2
-                ),
+                MemberSignature(holdingId1.toAvro(), signature1, signatureSpec1),
+                MemberSignature(holdingId2.toAvro(), signature2, signatureSpec2),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -521,14 +519,15 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
+            val result =
+                membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
 
             assertThat(result.getOrThrow())
                 .containsEntry(
-                    holdingId1, signature1
+                    holdingId1, signature1 to signatureSpec1
                 )
                 .containsEntry(
-                    holdingId2, signature2
+                    holdingId2, signature2 to signatureSpec2
                 )
         }
 
@@ -596,7 +595,9 @@ class MembershipQueryClientImplTest {
                     RegistrationStatus.PENDING_APPROVAL_FLOW,
                     "id",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value")))
+                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    "test reason",
+                    0L,
                 )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -625,7 +626,9 @@ class MembershipQueryClientImplTest {
                         registrationSent = status.registrationSent,
                         registrationLastModified = status.registrationLastModified,
                         protocolVersion = status.registrationProtocolVersion,
-                        memberContext = status.memberProvidedContext
+                        memberContext = status.memberProvidedContext,
+                        reason = status.reason,
+                        serial = status.serial,
                     )
                 )
         }
@@ -740,7 +743,9 @@ class MembershipQueryClientImplTest {
                     RegistrationStatus.PENDING_APPROVAL_FLOW,
                     "id 1",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value")))
+                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    "test reason 1",
+                    0L,
                 ),
                 RegistrationStatusDetails(
                     clock.instant(),
@@ -748,7 +753,9 @@ class MembershipQueryClientImplTest {
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id 2",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2")))
+                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    "test reason 2",
+                    1L,
                 ),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
@@ -779,7 +786,9 @@ class MembershipQueryClientImplTest {
                             registrationSent = it.registrationSent,
                             registrationLastModified = it.registrationLastModified,
                             protocolVersion = it.registrationProtocolVersion,
-                            memberContext = it.memberProvidedContext
+                            memberContext = it.memberProvidedContext,
+                            reason = it.reason,
+                            serial = it.serial,
                         )
                     }
                 )

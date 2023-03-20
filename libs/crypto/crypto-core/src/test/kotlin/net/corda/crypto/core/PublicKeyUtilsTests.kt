@@ -1,6 +1,6 @@
 package net.corda.crypto.core
 
-import net.corda.v5.crypto.publicKeyId
+import net.corda.crypto.cipher.suite.publicKeyId
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock

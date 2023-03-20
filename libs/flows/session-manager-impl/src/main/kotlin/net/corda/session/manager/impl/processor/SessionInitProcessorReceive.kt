@@ -1,16 +1,16 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Instant
-import java.util.*
 
 /**
  * Process SessionInit messages.
@@ -52,6 +52,7 @@ class SessionInitProcessorReceive(
             }
         } else {
             val sessionId = sessionEvent.sessionId
+            val sessionInit: SessionInit = sessionEvent.payload as SessionInit
             val seqNum = sessionEvent.sequenceNum
             val newSessionState = SessionState.newBuilder()
                 .setSessionId(sessionId)
@@ -64,6 +65,7 @@ class SessionInitProcessorReceive(
                 .setSendEventsState(SessionProcessState(0, mutableListOf()))
                 .setStatus(SessionStateType.CONFIRMED)
                 .setHasScheduledCleanup(false)
+                .setCounterpartySessionProperties(sessionInit.contextSessionProperties)
                 .build()
 
             logger.trace { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }

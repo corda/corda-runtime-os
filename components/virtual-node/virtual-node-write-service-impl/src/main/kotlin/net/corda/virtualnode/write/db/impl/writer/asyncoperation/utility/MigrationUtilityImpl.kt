@@ -1,15 +1,16 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
+import net.corda.crypto.core.ShortHash
 import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.virtualnode.ShortHash
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.LiquibaseDiffCheckFailedException
 import org.slf4j.LoggerFactory
 
 internal class MigrationUtilityImpl(
@@ -23,7 +24,7 @@ internal class MigrationUtilityImpl(
 
     override fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationChangeLogs: List<CpkDbChangeLogEntity>,
+        migrationChangeLogs: List<CpkDbChangeLog>,
         vaultDdlConnectionId: UUID
     ) {
         migrationChangeLogs
@@ -35,18 +36,42 @@ internal class MigrationUtilityImpl(
             }
     }
 
-    override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean {
-        // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
-        return false
+    override fun areChangesetsDeployedOnVault(
+        virtualNodeShortHash: String,
+        cpkChangelogs: List<CpkDbChangeLog>,
+        vaultDmlConnectionId: UUID
+    ): Boolean {
+        return try {
+            val missingCpks = mutableListOf<String>()
+            cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
+                val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
+                dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+                    missingCpks.addAll(
+                        liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
+                    )
+                }
+            }
+
+            if (missingCpks.size > 0) {
+                logger.warn(
+                    "Found ${missingCpks.size} changelogs missing from virtual node vault $virtualNodeShortHash: " +
+                            missingCpks.joinToString()
+                )
+            }
+            missingCpks.size == 0
+        } catch (e: Exception) {
+            val msg = e.message ?: "Error during Liquibase vault schema diff with CPI for virtual node $virtualNodeShortHash"
+            throw LiquibaseDiffCheckFailedException(msg, e)
+        }
     }
 
     private fun runCpkMigrations(
-        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLogEntity>
+        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: SecureHash, changeLogs: List<CpkDbChangeLog>
     ) {
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
-        val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+        val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
         try {
-            liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum)
+            liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum.toString())
         } catch (e: Exception) {
             val msg =
                 "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +

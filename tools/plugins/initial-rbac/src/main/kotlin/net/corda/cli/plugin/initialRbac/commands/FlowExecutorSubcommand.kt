@@ -2,7 +2,7 @@ package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.wildcardMatch
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.rbac.schema.RbacKeys.CLIENT_REQ_REGEX
 import net.corda.rbac.schema.RbacKeys.FLOW_NAME_REGEX
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
@@ -20,7 +20,7 @@ private const val FLOW_EXECUTOR_ROLE = "FlowExecutorRole"
         - Enquire about the status of the running flow"""]
 )
 @Suppress("unused")
-class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
+class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
 
     @CommandLine.Option(
         names = ["-v", "--v-node-id"],

@@ -23,7 +23,8 @@ class SigningServiceFactoryTests {
             factory.coordinatorFactory,
             factory.schemeMetadata,
             factory.signingKeyStore,
-            factory.cryptoServiceFactory
+            factory.cryptoServiceFactory,
+            factory.platformDigest
         )
     }
 

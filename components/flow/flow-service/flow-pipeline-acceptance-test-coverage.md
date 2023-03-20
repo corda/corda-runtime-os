@@ -22,6 +22,8 @@ This document should be maintained so that we can ensure that we have quick visi
 - Receiving a session init event for a flow that does not exist within the sandbox sends a session error event
 - Receiving a session error event resumes the flow with an error ✅
 - Open multiple sessions, receiving ack for only one session does not resume or set output events ✅
+- Requesting counterparty info flow sends a session init event ✅
+- Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit ✅
 
 ## Sending
 - Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event ✅
@@ -146,6 +148,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Receiving an external event response with the wrong request id does not resume the flow and ignores the response ✅
 - Given a flow has already received its external event response the flow can send another event and receive a response ✅
 - Receiving an event does not resend the external event unless a 'transient' error is received ✅
+- Receiving an event resends the external event if status is OK but the retry window has been surpassed ✅
 - Receiving a 'transient' error response resends the external event if the retry window has been surpassed ✅
 - Receiving a 'transient' error response does not resend the external event if the retry window has not been surpassed ✅
 - Given a 'transient' error response has been received receiving an event will resend the external event if the retry window has been surpassed ✅

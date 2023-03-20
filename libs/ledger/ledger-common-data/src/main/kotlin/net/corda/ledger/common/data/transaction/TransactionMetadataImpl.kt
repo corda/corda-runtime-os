@@ -2,12 +2,10 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 @CordaSerializable
-class TransactionMetadataImpl (private val properties: Map<String, Any>) : TransactionMetadata {
+class TransactionMetadataImpl(private val properties: Map<String, Any>) : TransactionMetadataInternal {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -63,7 +61,7 @@ class TransactionMetadataImpl (private val properties: Map<String, Any>) : Trans
 
     override fun getNumberOfComponentGroups(): Int {
         val value = this[NUMBER_OF_COMPONENT_GROUPS]
-        return value?.let { uncheckedCast(it) } ?: throw CordaRuntimeException(
+        return value as? Int ?: throw CordaRuntimeException(
             "Transaction metadata representation error: expected int representing the number of component groups but found [$value]"
         )
     }
@@ -83,4 +81,16 @@ class TransactionMetadataImpl (private val properties: Map<String, Any>) : Trans
                 "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
         }
     }
+
+    override fun getPlatformVersion(): Int {
+        val version = this[PLATFORM_VERSION_KEY].toString()
+
+        return try {
+            version.toInt()
+        } catch (e: NumberFormatException) {
+            throw CordaRuntimeException(
+                "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version")
+        }
+    }
+
 }

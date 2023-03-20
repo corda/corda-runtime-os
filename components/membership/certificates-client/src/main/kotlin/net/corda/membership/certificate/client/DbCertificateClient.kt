@@ -1,7 +1,7 @@
 package net.corda.membership.certificate.client
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
-import net.corda.virtualnode.ShortHash
 
 /**
  * A client that handles persistence related certificates requests.

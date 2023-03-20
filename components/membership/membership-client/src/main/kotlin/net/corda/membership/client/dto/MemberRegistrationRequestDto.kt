@@ -1,6 +1,6 @@
 package net.corda.membership.client.dto
 
-import net.corda.virtualnode.ShortHash
+import net.corda.crypto.core.ShortHash
 
 /**
  * Request sent during member registration.

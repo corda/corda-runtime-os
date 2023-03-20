@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:utilities')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"

@@ -1,11 +1,12 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
+import java.nio.ByteBuffer
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionData
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -77,7 +78,7 @@ class SessionDataWaitingForHandler @Activate constructor(
             when (val sessionPayload = event.payload) {
                 is net.corda.data.flow.event.session.SessionData -> Pair(
                     event.sessionId,
-                    sessionPayload.payload.array()
+                    (sessionPayload.payload as ByteBuffer).array()
                 )
                 else -> throw IllegalStateException(
                     "Received events should be data messages but got a ${sessionPayload::class.java.name} instead"

@@ -14,6 +14,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -33,6 +34,7 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.sync.BloomFilter
@@ -71,8 +73,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -81,7 +84,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -151,11 +154,13 @@ class MembershipP2PIntegrationTest {
                     """
                 $INSTANCE_ID = 1
                 $BUS_TYPE = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 100000
                 """
                 )
             )
         private const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -301,9 +306,9 @@ class MembershipP2PIntegrationTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)))
         val fakeSigWithKey = CryptoSignatureWithKey(
             ByteBuffer.wrap(fakeKey.encodeToByteArray()),
-            ByteBuffer.wrap(fakeSig.encodeToByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(fakeSig.encodeToByteArray())
         )
+        val fakeSigSpec = CryptoSignatureSpec("", null, null)
         val messageHeader = UnauthenticatedMessageHeader(
             destination.toAvro(),
             source.toAvro(),
@@ -313,7 +318,10 @@ class MembershipP2PIntegrationTest {
         val message = MembershipRegistrationRequest(
             registrationId,
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
-            fakeSigWithKey
+            fakeSigWithKey,
+            fakeSigSpec,
+            true,
+            0L,
         )
 
         var latestHeader: UnauthenticatedRegistrationRequestHeader? = null
@@ -422,7 +430,8 @@ class MembershipP2PIntegrationTest {
             destination.toAvro(),
             source.toAvro(),
             requestTimestamp,
-            registrationId
+            registrationId,
+            MembershipStatusFilter.PENDING
         )
         val verificationRequest = VerificationRequest(registrationId, requestBody)
 
@@ -584,14 +593,16 @@ class MembershipP2PIntegrationTest {
         destination: HoldingIdentity,
         source: HoldingIdentity,
         timestamp: Instant,
-        id: String
+        id: String,
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ) = AuthenticatedMessageHeader(
         destination,
         source,
         timestamp.plusMillis(300000L),
         id,
         null,
-        MEMBERSHIP_P2P_SUBSYSTEM
+        MEMBERSHIP_P2P_SUBSYSTEM,
+        filter
     )
 
     private fun buildUnauthenticatedP2PRequest(

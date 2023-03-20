@@ -3,8 +3,7 @@ package net.cordapp.testing.testflows
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
@@ -22,10 +21,10 @@ class FacadeInvocationFlow : ClientStartableFlow {
     }
 
     private val alterEgoX500Name = MemberX500Name(
-        commonName = "Alice",
-        organization = "Other Alice Corp",
-        locality = "LDN",
-        country = "GB"
+        "Bob",
+        "Other Bob Corp",
+        "LDN",
+        "GB"
     )
 
     @CordaInject
@@ -35,10 +34,10 @@ class FacadeInvocationFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("FacadeInfocationFlow.call() starting")
 
-        val args = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
+        val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val facadeName = getArgument(args, "facadeName")
         val methodName = getArgument(args, "methodName")
@@ -46,12 +45,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         log.info("Calling facade method '$methodName@$facadeName' with payload '$payload'")
 
-        val response = flowMessaging.callFacade(
-            memberName = alterEgoX500Name,
-            facadeName = facadeName,
-            methodName = methodName,
-            payload = payload
-        )
+        val response = flowMessaging.callFacade(alterEgoX500Name, facadeName, methodName, payload)
 
         log.info("Facade responded with '$response'")
         log.info("FacadeInvocationFlow.call() ending")

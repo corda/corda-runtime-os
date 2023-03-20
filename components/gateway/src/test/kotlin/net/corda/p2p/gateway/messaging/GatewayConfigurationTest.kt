@@ -1,9 +1,9 @@
 package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
-import net.corda.v5.base.util.hours
-import net.corda.v5.base.util.minutes
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.hours
+import net.corda.utilities.minutes
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn

@@ -2,7 +2,6 @@ package net.corda.e2etest.utilities
 
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
-import net.corda.e2etest.utilities.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.readAll
 import java.io.FileNotFoundException
@@ -17,20 +16,30 @@ object CpiLoader {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
-    fun get(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String, cpiVersion: String) =
-        cpbToCpi(getInputStream(resourceName), groupId, staticMemberNames, cpiName, cpiVersion)
+    fun get(
+        resourceName: String,
+        groupPolicy: String,
+        cpiName: String,
+        cpiVersion: String,
+        signOptions: SignOptions = SignOptions(
+            keyStore = "cordadevcodesign.p12",
+            keyAlias = "cordacodesign",
+            keyStorePassword = "cordacadevpass"
+        )
+    ) = cpbToCpi(getInputStream(resourceName), groupPolicy, cpiName, cpiVersion, signOptions)
 
     fun getRawResource(resourceName: String) = getInputStream(resourceName)
 
-    /** Returns a new input stream
+    /**
+     * Returns a new input stream.
      * Don't use this method when we have actual CPIs
      */
-    private fun cpbToCpi(
+    fun cpbToCpi(
         inputStream: InputStream,
-        groupId: String,
-        staticMemberNames: List<String>,
+        networkPolicy: String,
         cpiNameValue: String,
-        cpiVersionValue: String
+        cpiVersionValue: String,
+        signOptions: SignOptions
     ): InputStream {
 
         val tempDirectory = createTempDirectory()
@@ -43,15 +52,14 @@ object CpiLoader {
 
             // Save group policy to disk
             val groupPolicyPath = tempDirectory.resolve("groupPolicy")
-            val networkPolicyStr = getStaticNetworkPolicy(groupId, staticMemberNames)
             Files.newBufferedWriter(groupPolicyPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-                it.write(networkPolicyStr)
+                it.write(networkPolicy)
             }
 
             // Save keystore to disk
-            val keyStorePath = tempDirectory.resolve("cordadevcodesign.p12")
+            val keyStorePath = tempDirectory.resolve(signOptions.keyStore)
             Files.newOutputStream(keyStorePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-                it.write(getKeyStore())
+                it.write(getKeyStore(signOptions.keyStore))
             }
 
             // Create CPI
@@ -65,8 +73,8 @@ object CpiLoader {
                 outputFileName = cpiPath.toString()
                 signingOptions = SigningOptions().apply {
                     keyStoreFileName = keyStorePath.toString()
-                    keyStorePass = "cordacadevpass"
-                    keyAlias = "cordacodesign"
+                    keyStorePass = signOptions.keyStorePassword
+                    keyAlias = signOptions.keyAlias
                 }
             }.run()
 
@@ -77,9 +85,15 @@ object CpiLoader {
         }
     }
 
-    private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
-        ?: throw FileNotFoundException("cordadevcodesign.p12 not found")
-
-    private fun getStaticNetworkPolicy(groupId: String, staticMemberNames: List<String>) =
-        getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames)
+    private fun getKeyStore(keyStoreResource: String) =
+        javaClass.classLoader.getResourceAsStream(keyStoreResource)?.use { it.readAllBytes() }
+            ?: throw FileNotFoundException("$keyStoreResource not found")
 }
+
+data class SignOptions(
+    val keyStore: String,
+    val keyAlias: String,
+    val keyStorePassword: String,
+    val signatureFile: String? = null,
+    val timeStampingAuthorityUrl: String? = null,
+)

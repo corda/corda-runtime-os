@@ -78,10 +78,12 @@ class DbReconcilerReaderTest {
         }
 
     private val postEventCaptor = argumentCaptor<LifecycleEvent>()
+    private val lambdaCapture = argumentCaptor<() -> RegistrationHandle>()
     private val dependencyRegistrationHandle: RegistrationHandle = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependenciesMock)) } doReturn dependencyRegistrationHandle
         on { postEvent(postEventCaptor.capture()) } doAnswer {}
+        on { createManagedResource(any(), lambdaCapture.capture()) } doAnswer { lambdaCapture.lastValue() }
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on {
@@ -137,15 +139,6 @@ class DbReconcilerReaderTest {
             verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
             verify(dependencyRegistrationHandle, never()).close()
         }
-
-        @Test
-        fun `start event called again closes registration handle and follows dependencies`() {
-            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-
-            verify(coordinator, times(2)).followStatusChangesByName(eq(dependenciesMock))
-            verify(dependencyRegistrationHandle).close()
-        }
     }
 
     @Nested
@@ -162,16 +155,6 @@ class DbReconcilerReaderTest {
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
             verify(dependencyRegistrationHandle, never()).close()
-        }
-
-        @Test
-        fun `stop event after start event closes registration handle`() {
-            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-            verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
-
-            lifecycleEventHandler.processEvent(StopEvent(), coordinator)
-
-            verify(dependencyRegistrationHandle).close()
         }
     }
 
@@ -219,7 +202,7 @@ class DbReconcilerReaderTest {
 
         @Test
         @Suppress("MaxLineLength")
-        fun `lifecycle status DOWN after start event closes registration handle and sets coordinator status`() {
+        fun `lifecycle status DOWN after start event keeps registration handle open and sets coordinator status`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
@@ -230,7 +213,7 @@ class DbReconcilerReaderTest {
             )
 
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-            verify(dependencyRegistrationHandle).close()
+            verify(dependencyRegistrationHandle, never()).close()
         }
 
         @Test
@@ -248,7 +231,7 @@ class DbReconcilerReaderTest {
         }
 
         @Test
-        fun `lifecycle status ERROR after start event closes registration handle, and sets coordinator status`() {
+        fun `lifecycle status ERROR after start event keeps registration handle open, and sets coordinator status`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
@@ -259,7 +242,7 @@ class DbReconcilerReaderTest {
             )
 
             verify(coordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
-            verify(dependencyRegistrationHandle).close()
+            verify(dependencyRegistrationHandle, never()).close()
         }
     }
 

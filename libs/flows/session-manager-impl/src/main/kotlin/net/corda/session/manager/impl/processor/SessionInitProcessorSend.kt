@@ -1,14 +1,14 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 /**
  * Process SessionInit messages to be sent to a counterparty.
@@ -58,6 +58,7 @@ class SessionInitProcessorSend(
             .setCounterpartyIdentity(sessionEvent.initiatedIdentity)
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
             .setSendEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
+            .setCounterpartySessionProperties(null)
             .setStatus(SessionStateType.CREATED)
             .setHasScheduledCleanup(false)
             .build()

@@ -53,7 +53,7 @@ fun generateErrorEvent(
     initiatedIdentity: HoldingIdentity,
     errorMessage: String,
     errorType: String,
-    instant: Instant
+    instant: Instant,
 ): SessionEvent {
     val sessionId = sessionState.sessionId
     val errorEnvelope = ExceptionEnvelope(errorType, errorMessage)
@@ -92,6 +92,7 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
         .setSendEventsState(SessionProcessState(0, listOf()))
         .setStatus(SessionStateType.ERROR)
         .setHasScheduledCleanup(false)
+        .setCounterpartySessionProperties(null)
         .build()
 
     val errorEvent = generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)
@@ -101,23 +102,44 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
 }
 
 /**
- * Update and return the received events session state. Set the last processed sequence number to the last
+ * Recalculate the last processed sequence number to the last
  * contiguous event in the sequence of [undeliveredMessages].
  */
-fun recalcReceivedProcessState(receivedEventsState: SessionProcessState): SessionProcessState {
-    var nextSeqNum = receivedEventsState.lastProcessedSequenceNum + 1
-    val undeliveredMessages = receivedEventsState.undeliveredMessages
-
-    val sortedEvents = undeliveredMessages.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
+fun recalcHighWatermark(sortedEvents: List<SessionEvent>, lastProcessedSeqNum: Int): Int {
+    var nextSeqNum = lastProcessedSeqNum + 1
     for (undeliveredMessage in sortedEvents) {
         if (undeliveredMessage.sequenceNum == nextSeqNum) {
             nextSeqNum++
         } else if (undeliveredMessage.sequenceNum < nextSeqNum) {
             continue
-        } else {
+        }  else {
             break
         }
     }
 
-    return SessionProcessState(nextSeqNum - 1, sortedEvents)
+    return nextSeqNum-1
+}
+
+/**
+ * Convert a session state to an error state which a queued error message
+ * @param sessionState input session state
+ * @param sessionEvent input session event to get indentity info from
+ * @param instant to generate timestamps for
+ * @param errorMessage error message
+ * @param errorType error type
+ * @return session state updated to error state
+ */
+fun setErrorState(
+    sessionState: SessionState,
+    sessionEvent: SessionEvent,
+    instant: Instant,
+    errorMessage: String,
+    errorType: String,
+): SessionState {
+    return sessionState.apply {
+        status = SessionStateType.ERROR
+        sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
+            generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)
+        )
+    }
 }

@@ -1,9 +1,7 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
-import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryErrorInputStateConflict
-import com.r3.corda.notary.plugin.common.NotaryErrorInputStateConflictImpl
-import com.r3.corda.notary.plugin.common.NotaryException
+import com.r3.corda.notary.plugin.common.NotarizationResponse
+import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -82,9 +80,9 @@ class NonValidatingNotaryClientFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary plugin client returns signature on successful notarisation`() {
+    fun `Non-validating notary plugin client returns signature on successful notarization`() {
         val mockSession = mock<FlowSession> {
-            on { sendAndReceive(eq(NotarisationResponse::class.java), any()) } doReturn NotarisationResponse(
+            on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 listOf(dummyUniquenessSignature),
                 null
             )
@@ -101,11 +99,11 @@ class NonValidatingNotaryClientFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary plugin client throws error on failed notarisation`() {
+    fun `Non-validating notary plugin client throws error on failed notarization`() {
         val mockSession = mock<FlowSession> {
-            on { sendAndReceive(eq(NotarisationResponse::class.java), any()) } doReturn NotarisationResponse(
+            on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 emptyList(),
-                NotaryErrorInputStateConflictImpl(emptyList())
+                NotaryExceptionReferenceStateUnknown(emptyList(), txId)
             )
         }
         val mockFlowMessaging = mock<FlowMessaging> {
@@ -114,11 +112,10 @@ class NonValidatingNotaryClientFlowImplTest {
 
         val client = createClient(mockFlowMessaging)
 
-        val ex = assertThrows<NotaryException> {
+        val ex = assertThrows<NotaryExceptionReferenceStateUnknown> {
             client.call()
         }
 
-        assertThat(ex.error).isInstanceOf(NotaryErrorInputStateConflict::class.java)
         assertThat(ex.txId).isEqualTo(txId)
     }
 
@@ -145,7 +142,7 @@ class NonValidatingNotaryClientFlowImplTest {
                 on { myInfo() } doReturn mockMemberInfo
             },
             mock {
-                on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
+                on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
             },
             mock {
                 on { sign(any(), any(), any()) } doReturn mockRequestSignature

@@ -1,5 +1,7 @@
 package net.corda.virtualnode
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -26,7 +28,7 @@ data class HoldingIdentity(val x500Name: MemberX500Name, val groupId: String) {
         val s = (x500Name.toString() + groupId)
         val digest: MessageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
         val hash: ByteArray = digest.digest(s.toByteArray())
-        SecureHash(DigestAlgorithmName.SHA2_256.name, hash)
+        SecureHashImpl(DigestAlgorithmName.SHA2_256.name, hash)
     }
 
     /**

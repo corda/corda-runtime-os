@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -29,9 +30,9 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.toSortedMap
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.v5.base.exceptions.ValueNotFoundException
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import org.apache.avro.file.DataFileReader
@@ -172,9 +173,10 @@ class MemberInfoTest {
 
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
-            ByteBuffer.wrap(byteArrayOf()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(byteArrayOf())
         )
+
+        private val signatureSpec = CryptoSignatureSpec("", null, null)
 
         @BeforeAll
         @JvmStatic
@@ -201,7 +203,9 @@ class MemberInfoTest {
             memberInfo?.memberProvidedContext?.toAvro()?.toByteBuffer(),
             memberInfo?.mgmProvidedContext?.toAvro()?.toByteBuffer(),
             signature,
-            signature
+            signatureSpec,
+            signature,
+            signatureSpec
         )
 
         dataFileWriter.create(signedMemberInfo.schema, avroMemberInfo)

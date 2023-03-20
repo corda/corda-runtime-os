@@ -9,6 +9,7 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -74,6 +75,7 @@ internal class VerifyMemberHandler(
                     ),
                     membershipConfig.getTtlMinutes(VERIFY_MEMBER_REQUEST),
                     id = ttlIdsFactory.createId(key),
+                    MembershipStatusFilter.PENDING,
                 )
             )
         } catch (e: Exception) {

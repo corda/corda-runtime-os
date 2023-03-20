@@ -12,7 +12,7 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
@@ -22,10 +22,10 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-rbac-schema'
 
-    implementation project(":tools:plugins:plugins-http-rpc")
+    implementation project(":tools:plugins:plugins-rest")
     implementation project(':libs:permissions:permission-endpoint')
 
-    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
 }
 
 cliPlugin {

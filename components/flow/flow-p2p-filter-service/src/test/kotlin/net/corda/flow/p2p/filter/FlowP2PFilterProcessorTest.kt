@@ -1,5 +1,7 @@
 package net.corda.flow.p2p.filter
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
@@ -7,21 +9,19 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class FlowP2PFilterProcessorTest {
 
@@ -41,8 +41,9 @@ class FlowP2PFilterProcessorTest {
         val testValue = "test"
         val identity = HoldingIdentity(testValue, testValue)
         val flowHeader =
-            AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession")
-        val version = listOf(1)
+            AuthenticatedMessageHeader(
+                identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession", MembershipStatusFilter.ACTIVE
+            )
         val flowEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(),
@@ -54,9 +55,8 @@ class FlowP2PFilterProcessorTest {
             listOf(),
             SessionInit(
                 testValue,
-                version,
-                testValue,
                 null,
+                emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
@@ -72,7 +72,9 @@ class FlowP2PFilterProcessorTest {
             AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(flowEventMockData)))
         )
         val otherHeader =
-            AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other")
+            AuthenticatedMessageHeader(
+                identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other", MembershipStatusFilter.ACTIVE
+            )
         val otherRecord = Record(
             Schemas.P2P.P2P_IN_TOPIC,
             testValue,
@@ -85,8 +87,8 @@ class FlowP2PFilterProcessorTest {
 
         assertThat(output.size).isEqualTo(1)
         val first = output.first()
-        val flowMapperEvent: FlowMapperEvent = uncheckedCast(first.value)
-        val sessionEvent: SessionEvent = uncheckedCast(flowMapperEvent.payload)
+        val flowMapperEvent = first.value as FlowMapperEvent
+        val sessionEvent = flowMapperEvent.payload as SessionEvent
         assertThat(first.key).isEqualTo("$testValue-INITIATED")
         assertThat(sessionEvent.sessionId).isEqualTo("$testValue-INITIATED")
         assertThat(sessionEvent.messageDirection).isEqualTo(MessageDirection.INBOUND)

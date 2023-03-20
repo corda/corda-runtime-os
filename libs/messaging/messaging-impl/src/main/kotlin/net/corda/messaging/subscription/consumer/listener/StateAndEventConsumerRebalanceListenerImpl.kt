@@ -6,8 +6,8 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.factory.MapFactory
-import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
-import net.corda.v5.base.util.debug
+import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")

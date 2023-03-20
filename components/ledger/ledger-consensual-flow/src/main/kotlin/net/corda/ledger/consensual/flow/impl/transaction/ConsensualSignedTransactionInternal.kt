@@ -3,8 +3,9 @@ package net.corda.ledger.consensual.flow.impl.transaction
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 
@@ -13,6 +14,7 @@ import java.security.PublicKey
  * to and from [SignedTransactionContainer].
  * And some methods what the Finality flows use internally.
  */
+@CordaSerializable
 interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
     val wireTransaction: WireTransaction
 
@@ -46,7 +48,7 @@ interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
     /**
      * Verify all available signatures and whether there are any missing ones.
      *
-     * @throws TransactionVerificationException if any signatures are invalid or missing.
+     * @throws TransactionSignatureException if any signatures are invalid or missing.
      */
     @Suspendable
     fun verifySignatures()

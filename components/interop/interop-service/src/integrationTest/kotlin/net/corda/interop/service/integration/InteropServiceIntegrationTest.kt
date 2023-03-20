@@ -3,7 +3,6 @@ package net.corda.interop.service.integration
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.MessageDirection
@@ -14,27 +13,31 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.interop.InteropService
-import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -51,8 +54,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 // To run the test outside Intellij:
-// ./gradlew :components:interop:interop-service:integrationTest
-// ./gradlew :components:interop:interop-service:testOSGi
+// ./gradlew clean :components:interop:interop-service:integrationTest
+// ./gradlew clean :components:interop:interop-service:testOSGi
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {
@@ -76,11 +79,15 @@ class InteropServiceIntegrationTest {
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
     @InjectService(timeout = 4000)
+    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+
+    @InjectService(timeout = 4000)
     lateinit var interopService: InteropService
 
     private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+        .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -95,42 +102,42 @@ class InteropServiceIntegrationTest {
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
-        val testId = "test1"
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+        val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(aliceX500Name), bootConfig)
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
 
         // Test config updates don't break Interop Service
         republishConfig(publisher)
-
-        val identity = HoldingIdentity(testId, testId)
-        val header = UnauthenticatedMessageHeader(identity, identity, "interop" , "1")
-        val version = listOf(1)
+        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
+        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
+        val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
+        val header = UnauthenticatedMessageHeader(destinationIdentity, sourceIdentity, "interop" , "1")
         val sessionEvent = SessionEvent(
-            MessageDirection.INBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
-                testId,
-                version,
-                testId,
+            MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
+                aliceX500Name,
                 null,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList()),
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
             )
         )
         val interopMessage = InteropMessage("InteropMessageID-01", payload)
 
         val interopRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(
+            P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 UnauthenticatedMessage(
                     header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
                 )
             )
         )
 
-        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
+        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE)
         val nonInteropSessionRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(
+            P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 AuthenticatedMessage(
                     nonInteropFlowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
                 )
@@ -141,9 +148,9 @@ class InteropServiceIntegrationTest {
 
         val expectedOutputMessages = 2
         val mapperLatch = CountDownLatch(expectedOutputMessages)
-        val testProcessor = P2POutMessageCounter(testId, mapperLatch, expectedOutputMessages)
+        val testProcessor = P2POutMessageCounter(aliceX500Name, mapperLatch, expectedOutputMessages)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            SubscriptionConfig("$aliceX500Name-p2p-out", P2P_OUT_TOPIC),
             testProcessor,
             bootConfig,
             null
@@ -179,7 +186,7 @@ class InteropServiceIntegrationTest {
         clearHostedIdsSub.close()
 
         interopService.start()
-        val memberExpectedOutputMessages = 4
+        val memberExpectedOutputMessages = 5
         val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
         val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
         val memberOutSub = subscriptionFactory.createDurableSubscription(
@@ -194,7 +201,7 @@ class InteropServiceIntegrationTest {
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
 
-        val hostedIdsExpected = 2
+        val hostedIdsExpected = 8
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
@@ -216,6 +223,7 @@ class InteropServiceIntegrationTest {
         publishConfig(publisher)
         configService.start()
         configService.bootstrapConfig(bootConfig)
+        membershipGroupReaderProvider.start()
     }
 
     private fun publishConfig(publisher: Publisher) {

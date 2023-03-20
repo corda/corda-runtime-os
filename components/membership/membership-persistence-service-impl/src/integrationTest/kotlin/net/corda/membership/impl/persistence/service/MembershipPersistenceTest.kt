@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -10,6 +11,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -38,6 +40,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
@@ -45,8 +48,8 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_DECLINED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
@@ -58,6 +61,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
@@ -74,6 +78,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -81,10 +86,9 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.seconds
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
@@ -99,6 +103,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -122,16 +127,20 @@ class MembershipPersistenceTest {
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
 
+        private const val REGISTRATION_SERIAL = 0L
+
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = INMEMORY
+            $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
         """
         private const val MEMBER_CONTEXT_KEY = "key"
         private const val MEMBER_CONTEXT_VALUE = "value"
         private const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -212,8 +221,9 @@ class MembershipPersistenceTest {
             override fun persistGroupPolicy(
                 viewOwningIdentity: HoldingIdentity,
                 groupPolicy: LayeredPropertyMap,
+                version: Long
             ) = safeCall {
-                membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
+                membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy, version)
             }
 
             override fun persistGroupParameters(
@@ -253,23 +263,14 @@ class MembershipPersistenceTest {
                 )
             }
 
-            override fun setMemberAndRegistrationRequestAsDeclined(
-                viewOwningIdentity: HoldingIdentity,
-                declinedMember: HoldingIdentity,
-                registrationRequestId: String
-            ) = safeCall {
-                membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
-                    viewOwningIdentity, declinedMember, registrationRequestId
-                )
-            }
-
             override fun setRegistrationRequestStatus(
                 viewOwningIdentity: HoldingIdentity,
                 registrationId: String,
-                registrationRequestStatus: RegistrationStatus
+                registrationRequestStatus: RegistrationStatus,
+                reason: String?,
             ) = safeCall {
                 membershipPersistenceClient.setRegistrationRequestStatus(
-                    viewOwningIdentity, registrationId, registrationRequestStatus
+                    viewOwningIdentity, registrationId, registrationRequestStatus, reason
                 )
             }
 
@@ -337,6 +338,22 @@ class MembershipPersistenceTest {
             ) = safeCall {
                 membershipPersistenceClient.deleteApprovalRule(
                     viewOwningIdentity, ruleId, ruleType
+                )
+            }
+
+            override fun suspendMember(
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+            ) = safeCall {
+                membershipPersistenceClient.suspendMember(
+                    viewOwningIdentity, memberX500Name, serialNumber, reason
+                )
+            }
+
+            override fun activateMember(
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+            ) = safeCall {
+                membershipPersistenceClient.activateMember(
+                    viewOwningIdentity, memberX500Name, serialNumber, reason
                 )
             }
 
@@ -499,9 +516,11 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
+                REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -522,18 +541,32 @@ class MembershipPersistenceTest {
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
     }
+
     @Test
-    fun `persistGroupPolicy will increase the version every persistance`() {
+    fun `persistGroupPolicy can persist over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ${GroupPolicyEntity::class.java.simpleName}").executeUpdate()
+        }
         val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
-        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1)
+        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1, 1)
         assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val version1 = (persisted1 as? MembershipPersistenceResult.Success<Int>)?.payload !!
 
         val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
-        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2)
+        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2, 2)
         assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val version2 = (persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload
-        assertThat(version2).isEqualTo(version1 + 1)
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(GroupPolicyEntity::class.java, 1L)
+        }
+        assertThat(cordaAvroDeserializer.deserialize(persistedEntity.properties)!!.toMap()).isEqualTo(
+            groupPolicy1.entries.associate { it.key to it.value }
+        )
+        val secondPersistedEntity = vnodeEmf.use {
+            it.find(GroupPolicyEntity::class.java, 2L)
+        }
+        assertThat(cordaAvroDeserializer.deserialize(secondPersistedEntity.properties)!!.toMap()).isEqualTo(
+            groupPolicy2.entries.associate { it.key to it.value }
+        )
     }
 
     @Test
@@ -897,7 +930,7 @@ class MembershipPersistenceTest {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
-                    groupId, memberx500Name.toString()
+                    groupId, memberx500Name.toString(), false
                 )
             )
         }
@@ -925,14 +958,14 @@ class MembershipPersistenceTest {
     @Test
     fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
         // 1. Persist a member
-        val memberPersistentResult = persistMember(registeringX500Name)
+        val memberPersistentResult = persistMember(registeringX500Name, MEMBER_STATUS_PENDING)
 
         assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val memberEntity = vnodeEmf.use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
-                    groupId, registeringX500Name.toString()
+                    groupId, registeringX500Name.toString(), true
                 )
             )
         }
@@ -962,7 +995,7 @@ class MembershipPersistenceTest {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
-                    groupId, registeringX500Name.toString()
+                    groupId, registeringX500Name.toString(), false
                 )
             )
         }
@@ -974,65 +1007,18 @@ class MembershipPersistenceTest {
     }
 
     @Test
-    fun `setMemberAndRegistrationRequestAsDeclined updates the member and registration request`() {
-        // 1. Persist a member
-        val registeringX500Name = MemberX500Name.parse("O=Charlie, C=GB, L=London")
-        val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)
-        val memberPersistentResult = persistMember(registeringX500Name)
-
-        assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val memberEntity = vnodeEmf.use {
-            it.find(
-                MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(
-                    groupId, registeringX500Name.toString()
-                )
-            )
-        }
-        assertThat(memberEntity.status).isEqualTo(MEMBER_STATUS_PENDING)
-
-        // 2. Persist a request
-        val registrationId = randomUUID().toString()
-        val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId)
-
-        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-
-        val requestEntity = vnodeEmf.use {
-            it.find(RegistrationRequestEntity::class.java, registrationId)
-        }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
-
-        membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsDeclined(
-            viewOwningHoldingIdentity,
-            registeringHoldingIdentity,
-            registrationId,
-        ).getOrThrow()
-
-        val newMemberEntity = vnodeEmf.use {
-            it.find(
-                MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(
-                    groupId, registeringX500Name.toString()
-                )
-            )
-        }
-        assertThat(newMemberEntity.status).isEqualTo(MEMBER_STATUS_DECLINED)
-        val newRequestEntity = vnodeEmf.use {
-            it.find(RegistrationRequestEntity::class.java, registrationId)
-        }
-        assertThat(newRequestEntity.status).isEqualTo(RegistrationStatus.DECLINED.toString())
-    }
-
-    @Test
     fun `queryMembersSignatures returns the member signatures`() {
         membershipQueryClient.start()
         eventually {
             assertThat(membershipPersistenceClient.isRunning).isTrue
         }
 
+        val memberAndRegistrationId = mutableMapOf<HoldingIdentity, String>()
+
         val signatures = (1..5).associate { index ->
             val registrationId = randomUUID().toString()
             val holdingId = createTestHoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
+            memberAndRegistrationId.put(holdingId, registrationId)
             val publicKey = ByteBuffer.wrap("pk-$index".toByteArray())
             val signature = ByteBuffer.wrap("signature-$index".toByteArray())
             val context = KeyValuePairList(
@@ -1040,11 +1026,7 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
-            val signatureContext = KeyValuePairList(
-                listOf(
-                    KeyValuePair("key", "value")
-                )
-            )
+            persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING)
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
@@ -1058,23 +1040,38 @@ class MembershipPersistenceTest {
                     ),
                     CryptoSignatureWithKey(
                         publicKey,
-                        signature,
-                        signatureContext,
-                    )
+                        signature
+                    ),
+                    CryptoSignatureSpec("", null, null),
+                    REGISTRATION_SERIAL,
+                    true,
                 )
             ).getOrThrow()
-            val cryptoSignatureWithKey = CryptoSignatureWithKey(
-                publicKey, signature, signatureContext
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
+            holdingId to (
+                    cryptoSignatureWithKey to CryptoSignatureSpec("", null, null)
             )
-            holdingId to cryptoSignatureWithKey
         }
 
-        val results = membershipQueryClient.queryMembersSignatures(
+        // before approval only non-pending information is available
+        assertThrows<MembershipPersistenceException> {
+            membershipQueryClient.queryMembersSignatures(
+            viewOwningHoldingIdentity,
+            signatures.keys
+            ).getOrThrow()
+        }
+
+        memberAndRegistrationId.forEach {
+            membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
+                viewOwningHoldingIdentity, it.key, it.value
+            ).getOrThrow()
+        }
+
+        val resultsAfterApproval = membershipQueryClient.queryMembersSignatures(
             viewOwningHoldingIdentity,
             signatures.keys
         ).getOrThrow()
-
-        assertThat(results).containsAllEntriesOf(signatures)
+        assertThat(resultsAfterApproval).containsAllEntriesOf(signatures)
     }
 
     @Test
@@ -1097,9 +1094,11 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
+                REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -1211,12 +1210,208 @@ class MembershipPersistenceTest {
         assertThat(result).containsAll(listOf(rule1, rule2))
     }
 
+    @Test
+    fun `queryRegistrationRequests retrieves the expected registration requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId1 = randomUUID().toString()
+        val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a completed request
+        val registrationId2 = randomUUID().toString()
+        val requestPersistentResult2 = persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
+        assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a new request
+        val registrationId3 = randomUUID().toString()
+        val requestPersistentResult3 = persistRequest(
+            HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId), registrationId3
+        )
+        assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val result1 = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            null,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+        ).getOrThrow()
+        assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
+
+        val result2 = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            viewOwningHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+        ).getOrThrow()
+        assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
+
+        val result3 = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            null,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        ).getOrThrow()
+        assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
+
+        val result4 = membershipQueryClient.queryRegistrationRequestsStatus(viewOwningHoldingIdentity).getOrThrow()
+        assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
+    }
+
+    @Test
+    fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        // Persist 3 requests with NEW (queue 3 requests)
+        val queuedRegistrationIds = mutableListOf<String>()
+        (1..3).forEach {
+            val id = randomUUID().toString()
+            queuedRegistrationIds.add(id)
+            persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
+        }
+
+        val result = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.NEW),
+            1
+        ).getOrThrow()
+        assertThat(result.singleOrNull()?.registrationId).isEqualTo(queuedRegistrationIds.first())
+    }
+
+    @Test
+    fun `queryRegistrationRequest returns empty list when there were no queued requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+
+        val result = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.NEW),
+            1
+        ).getOrThrow()
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `suspendMember can persist suspended member info over RPC topic`() {
+        val member1 = MemberX500Name.parse("O=Suspend1, C=GB, L=London")
+        val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_ACTIVE)
+        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended1 = membershipPersistenceClientWrapper.suspendMember(
+            viewOwningHoldingIdentity, member1, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity1 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
+            )
+        }
+        assertThat(persistedEntity1).isNotNull
+        assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
+        assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
+        with(suspended1.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+
+        val member2 = MemberX500Name.parse("O=Suspend2, C=GB, L=London")
+        val memberPersistenceResult2 = persistMember(member2, MEMBER_STATUS_ACTIVE)
+        assertThat(memberPersistenceResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        // Test without specifying serial number
+        val suspended2 = membershipPersistenceClientWrapper.suspendMember(
+            viewOwningHoldingIdentity, member2, null, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity2 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
+            )
+        }
+        assertThat(persistedEntity2).isNotNull
+        assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
+        assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
+        with(suspended2.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+    }
+
+    @Test
+    fun `activateMember can persist activated member info over RPC topic`() {
+        val member1 = MemberX500Name.parse("O=Activate1, C=GB, L=London")
+        val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_SUSPENDED)
+        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended1 = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, member1, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity1 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
+            )
+        }
+        assertThat(persistedEntity1).isNotNull
+        assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
+        with(suspended1.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+
+        // Test without specifying serial number
+        val member2 = MemberX500Name.parse("O=Activate2, C=GB, L=London")
+        val memberPersistenceResult2 = persistMember(member2, MEMBER_STATUS_SUSPENDED)
+        assertThat(memberPersistenceResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val suspended2 = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, member2, 1L, "test-reason"
+        ).getOrThrow()
+
+        val persistedEntity2 = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
+            )
+        }
+        assertThat(persistedEntity2).isNotNull
+        assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
+        with(suspended2.mgmContext.toMap()) {
+            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(this[SERIAL]).isEqualTo("2")
+        }
+    }
+
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
         cordaAvroDeserializer.deserialize(this)
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
 
-    private fun persistMember(memberName: MemberX500Name): MembershipPersistenceResult<Unit> {
+    private fun persistMember(memberName: MemberX500Name, memberStatus: String): MembershipPersistenceResult<Unit> {
         val endpointUrl = "http://localhost:8080"
         val memberContext = KeyValuePairList(
             listOf(
@@ -1230,7 +1425,7 @@ class MembershipPersistenceTest {
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
+                KeyValuePair(STATUS, memberStatus),
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
@@ -1246,11 +1441,15 @@ class MembershipPersistenceTest {
         )
     }
 
-    private fun persistRequest(member: HoldingIdentity, registrationId: String): MembershipPersistenceResult<Unit> {
+    private fun persistRequest(
+        member: HoldingIdentity,
+        registrationId: String,
+        status: RegistrationStatus = RegistrationStatus.SENT_TO_MGM,
+    ): MembershipPersistenceResult<Unit> {
         return membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.SENT_TO_MGM,
+                status,
                 registrationId,
                 member,
                 ByteBuffer.wrap(
@@ -1264,9 +1463,11 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList()),
+                    ByteBuffer.wrap(byteArrayOf())
                 ),
+                CryptoSignatureSpec("", null, null),
+                REGISTRATION_SERIAL,
+                true,
             )
         )
     }
@@ -1274,13 +1475,9 @@ class MembershipPersistenceTest {
     private class TestGroupParametersImpl(
         private val map: LayeredPropertyMap
     ) : LayeredPropertyMap by map, GroupParameters {
-        override val epoch: Int
-            get() = 5
-        override val minimumPlatformVersion: Int
-            get() = 5000
-        override val modifiedTime: Instant
-            get() = clock.instant()
-        override val notaries: List<NotaryInfo>
-            get() = emptyList()
+        override fun getEpoch() = 5
+        override fun getMinimumPlatformVersion() = 5000
+        override fun getModifiedTime() = clock.instant()
+        override fun getNotaries(): List<NotaryInfo> = emptyList()
     }
 }

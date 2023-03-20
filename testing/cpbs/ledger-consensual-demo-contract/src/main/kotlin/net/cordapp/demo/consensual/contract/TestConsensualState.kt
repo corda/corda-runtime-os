@@ -4,9 +4,11 @@ import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 
-class TestConsensualState(
-    val testField: String,
-    override val participants: List<PublicKey>
-) : ConsensualState {
+class TestConsensualState(val testField: String, private val participants: List<PublicKey>) : ConsensualState {
+
+    override fun getParticipants(): List<PublicKey> {
+        return participants
+    }
+
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
 }

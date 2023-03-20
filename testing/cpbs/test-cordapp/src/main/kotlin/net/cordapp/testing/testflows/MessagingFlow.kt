@@ -6,15 +6,12 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -41,9 +38,9 @@ class MessagingFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Hello world is starting... [${flowEngine.flowId}]")
-        val input = requestBody.getRequestBodyAs<MessageFlowInput>(jsonMarshallingService)
+        val input = requestBody.getRequestBodyAs(jsonMarshallingService, MessageFlowInput::class.java)
         val counterparty = MemberX500Name.parse(input.counterparty.toString())
         log.info("Looking up member $counterparty in the network.")
         val findCounterparty = memberLookupService.lookup(counterparty)
@@ -52,7 +49,7 @@ class MessagingFlow : ClientStartableFlow {
 
         val session = flowMessaging.initiateFlow(findCounterparty.name)
 
-        val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
+        val received = session.sendAndReceive(MyClass::class.java, MyClass("Serialize me please", 1))
 
         log.info("Received data from initiated flow 1: $received")
 
@@ -62,7 +59,7 @@ class MessagingFlow : ClientStartableFlow {
 
         log.info("Finished initiating subflow")
 
-        val received3 = session.receive<MyClass>()
+        val received3 = session.receive(MyClass::class.java)
 
         log.info("Received data from initiated flow 3: $received3")
 
@@ -89,13 +86,13 @@ class MessagingInitiatedFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         log.info("I have been called [${flowEngine.flowId}]")
 
-        val received = session.receive<MyClass>()
+        val received = session.receive(MyClass::class.java)
 
         log.info("Received data from peer: $received")
 
         session.send(received.copy(string = "this is a new object", int = 2))
 
-        val received2 = session.receive<MyClass>()
+        val received2 = session.receive(MyClass::class.java)
 
         log.info("Received data from peer 2: $received2")
 
@@ -129,7 +126,7 @@ class InlineSubFlow(private val session: FlowSession) : SubFlow<Unit> {
     @Suspendable
     override fun call() {
         log.info("Inline subFlow is starting...")
-        val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
+        val received = session.sendAndReceive(MyClass::class.java, MyClass("Serialize me please", 1))
 
         log.info("Received data from initiated flow 2 (inlined subFlow): $received")
     }
@@ -150,7 +147,7 @@ class InitiatingSubFlow(private val counterparty: MemberX500Name) : SubFlow<Unit
         log.info("Initiating subFlow is starting...")
         val session = flowMessaging.initiateFlow(counterparty)
 
-        val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
+        val received = session.sendAndReceive(MyClass::class.java, MyClass("Serialize me please", 1))
 
         log.info("Received data from initiated subFlow: $received")
     }
@@ -170,7 +167,7 @@ class InitiatingSubFlowInitiatedFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         log.info("I have been called [${flowEngine.flowId}]")
 
-        val received = session.receive<MyClass>()
+        val received = session.receive(MyClass::class.java)
 
         log.info("Received data from peer: $received")
 

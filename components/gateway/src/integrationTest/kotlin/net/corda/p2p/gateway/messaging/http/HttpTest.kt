@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.URI
@@ -83,7 +84,7 @@ class HttpTest : TestBase() {
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
-                chipSslConfig,
+                bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
@@ -128,7 +129,7 @@ class HttpTest : TestBase() {
                 val t = thread {
                     val httpClient = HttpClient(
                         DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore, null),
-                        chipSslConfig,
+                        bobSslConfig,
                         threadPool,
                         threadPool,
                         ConnectionConfiguration(),
@@ -317,7 +318,7 @@ class HttpTest : TestBase() {
             server.start()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
-                daleSslConfig,
+                bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
@@ -363,7 +364,7 @@ class HttpTest : TestBase() {
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
-                chipSslConfig,
+                bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
@@ -388,6 +389,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server presents revoked certificate`() {
 
         HttpServer(

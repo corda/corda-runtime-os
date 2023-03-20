@@ -16,7 +16,7 @@ import java.util.ServiceLoader
 class CordaSerializationMagic(bytes: ByteArray) : OpaqueBytes(bytes) {
     private val bufferView = slice()
     fun consume(data: ByteSequence): ByteBuffer? {
-        return if (data.slice(start = 0, end = size) == bufferView) data.slice(size) else null
+        return if (data.slice(0, size) == bufferView) data.slice(size) else null
     }
 }
 

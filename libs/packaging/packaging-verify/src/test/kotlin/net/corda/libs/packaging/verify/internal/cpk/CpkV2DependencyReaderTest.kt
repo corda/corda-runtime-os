@@ -1,7 +1,7 @@
 package net.corda.libs.packaging.verify.internal.cpk
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -13,7 +13,7 @@ import java.util.Base64
 
 class CpkV2DependencyReaderTest {
     private fun hash(base64Hash: String, algorithm: String) =
-        SecureHash(algorithm, Base64.getDecoder().decode(base64Hash))
+        SecureHashImpl(algorithm, Base64.getDecoder().decode(base64Hash))
 
     @Test
     fun `parses dependencies correctly`() {

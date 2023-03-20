@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 
-@Component(service = [LifecycleCoordinatorSchedulerFactory::class], immediate = true)
+@Component(service = [ LifecycleCoordinatorSchedulerFactory::class ])
 class LifecycleCoordinatorSchedulerFactoryImpl @Activate constructor(): LifecycleCoordinatorSchedulerFactory {
     /**
      * The executor on which events are processed. Note that all events should be processed on an executor thread,

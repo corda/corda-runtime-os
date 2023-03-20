@@ -4,9 +4,9 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
-import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.OID_COMPOSITE_KEY
+import net.corda.v5.crypto.CordaOID.OID_COMPOSITE_KEY
+import net.corda.v5.crypto.KeySchemeCodes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.DERNull

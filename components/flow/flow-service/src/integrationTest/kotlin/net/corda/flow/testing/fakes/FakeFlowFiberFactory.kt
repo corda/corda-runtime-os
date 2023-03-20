@@ -26,7 +26,7 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         }
     }
 
-    val fiber = FakeFiber(UUID(0, 0), ClientStartedFlow(FakeFlow(), FakeRestRequestBody()))
+    val fiber = FakeFiber(UUID(0, 0), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()))
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,

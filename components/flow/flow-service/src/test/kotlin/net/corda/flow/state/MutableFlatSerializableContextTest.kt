@@ -3,10 +3,10 @@ package net.corda.flow.state
 import net.corda.flow.state.impl.FlatSerializableContext
 import net.corda.flow.state.impl.MutableFlatSerializableContext
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.set
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
@@ -30,13 +30,13 @@ class MutableFlatSerializableContextTest {
     fun `simple user context put and get`() {
         assertThat(flowContext["key1"]).isNull()
 
-        flowContext["key1"] = "value1"
-        flowContext["key2"] = "value2"
+        flowContext.put("key1", "value1")
+        flowContext.put("key2", "value2")
 
         assertThat(flowContext["key1"]).isEqualTo("value1")
         assertThat(flowContext["key2"]).isEqualTo("value2")
 
-        flowContext["key1"] = "value1-overwritten"
+        flowContext.put("key1", "value1-overwritten")
 
         assertThat(flowContext["key1"]).isEqualTo("value1-overwritten")
         assertThat(flowContext["key2"]).isEqualTo("value2")
@@ -60,27 +60,27 @@ class MutableFlatSerializableContextTest {
 
     @Test
     fun `user writing over platform property throws`() {
-        assertThrows<IllegalArgumentException> { flowContext["p-key1"] = "value" }
+        assertThrows<IllegalArgumentException> { flowContext.put("p-key1", "value") }
     }
 
     @Test
     fun `using reserved corda prefix for user property throws`() {
-        assertThrows<IllegalArgumentException> { flowContext["corda.property"] = "value" }
-        assertThrows<IllegalArgumentException> { flowContext["CORDA.property"] = "value" }
+        assertThrows<IllegalArgumentException> { flowContext.put("corda.property", "value") }
+        assertThrows<IllegalArgumentException> { flowContext.put("CORDA.property", "value") }
     }
 
     @Test
-    fun `platform writing over platform property throws`() {
-        assertThrows<IllegalArgumentException> { flowContext.platformProperties["p-key1"] = "value" }
+    fun `platform writing over platform property does not throw`() {
+        assertDoesNotThrow { flowContext.platformProperties["p-key1"] = "value" }
     }
 
     @Test
     fun `flatten properties`() {
-        flowContext["userkey1"] = "uservalue1"
+        flowContext.put("userkey1", "uservalue1")
         flowContext.platformProperties["platformkey1"] = "platformvalue1"
-        flowContext["userkey2"] = "uservalue2"
+        flowContext.put("userkey2", "uservalue2")
         flowContext.platformProperties["platformkey2"] = "platformvalue2"
-        flowContext["u-key1"] = "u-value1-overwritten-by-context-api"
+        flowContext.put("u-key1", "u-value1-overwritten-by-context-api")
 
         val platformMap = flowContext.flattenPlatformProperties()
         val userMap = flowContext.flattenUserProperties()

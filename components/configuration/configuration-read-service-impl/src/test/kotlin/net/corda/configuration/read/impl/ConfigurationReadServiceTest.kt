@@ -10,8 +10,10 @@ import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -23,9 +25,11 @@ internal class ConfigurationReadServiceTest {
     companion object {
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
+            $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
         """
 
         private const val MESSAGING_CONFIG_STRING = """
+            $MAX_ALLOWED_MSG_SIZE = 1000000
             ${MessagingConfig.Bus.BUS_TYPE} = INMEMORY
             ${MessagingConfig.Bus.JDBC_USER} = ""
             ${MessagingConfig.Bus.JDBC_PASS} = ""

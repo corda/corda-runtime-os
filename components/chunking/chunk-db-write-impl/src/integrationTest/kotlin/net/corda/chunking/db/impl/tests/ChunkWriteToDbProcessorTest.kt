@@ -5,10 +5,10 @@ import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -39,7 +39,7 @@ internal class ChunkWriteToDbProcessorTest {
 
     @BeforeEach
     fun beforeEach() {
-        val checksum = SecureHash("SHA-256", ByteArray(16))
+        val checksum = SecureHashImpl("SHA-256", ByteArray(16))
         val validator = { _: RequestId -> checksum }
         publisher = mock<StatusPublisher>()
         processor = ChunkWriteToDbProcessor(publisher, persistence, validator)

@@ -1,7 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.chunking.toCorda
+import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroDeserializer
@@ -9,6 +9,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
@@ -50,13 +51,14 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.minutes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.minutes
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
@@ -176,12 +178,16 @@ class MemberSynchronisationServiceImplTest {
         on { array() } doReturn MGM_CONTEXT_BYTES
     }
     private val memberSignature = mock<CryptoSignatureWithKey>()
+    private val memberSignatureSpec = mock<CryptoSignatureSpec>()
     private val mgmSignature = mock<CryptoSignatureWithKey>()
+    private val mgmSignatureSpec = mock<CryptoSignatureSpec>()
     private val signedMemberInfo: SignedMemberInfo = mock {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
         on { memberSignature } doReturn memberSignature
+        on { memberSignatureSpec } doReturn memberSignatureSpec
         on { mgmSignature } doReturn mgmSignature
+        on { mgmSignatureSpec } doReturn mgmSignatureSpec
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
@@ -191,6 +197,7 @@ class MemberSynchronisationServiceImplTest {
     private val mgmSignatureGroupParameters = mock<CryptoSignatureWithKey>()
     private val wireGroupParameters = mock<WireGroupParameters> {
         on { mgmSignature } doReturn mgmSignatureGroupParameters
+        on { mgmSignatureSpec } doReturn mgmSignatureSpec
         on { groupParameters } doReturn ByteBuffer.wrap(GROUP_PARAMETERS_BYTES)
     }
     private val membershipPackage: MembershipPackage = mock {
@@ -215,6 +222,7 @@ class MemberSynchronisationServiceImplTest {
                 synchRequest.capture(),
                 isNull(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn synchronisationRequest
     }
@@ -228,7 +236,7 @@ class MemberSynchronisationServiceImplTest {
     private val memberInfo = mock<MemberInfo>()
     private val groupReader = mock<MembershipGroupReader> {
         on { lookup() } doReturn emptyList()
-        on { lookup(any()) } doReturn memberInfo
+        on { lookup(name = any(), filter = any()) } doReturn memberInfo
     }
     private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(member) } doReturn groupReader
@@ -238,7 +246,11 @@ class MemberSynchronisationServiceImplTest {
     }
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val verifier = mock<Verifier>()
-    private val persistenceClient = mock<MembershipPersistenceClient>()
+    private val persistenceClient = mock<MembershipPersistenceClient> {
+        on { persistGroupParameters(any(), any()) } doAnswer {
+            MembershipPersistenceResult.Success(it.getArgument<GroupParameters>(1))
+        }
+    }
     private val groupParameters = mock<GroupParameters>()
     private val groupParametersFactory = mock<GroupParametersFactory> {
         on { create(any()) } doReturn groupParameters
@@ -372,7 +384,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed member signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(memberSignature), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(memberSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -383,7 +395,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(mgmSignature), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -394,7 +406,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not persist the group parameters`() {
-        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -405,7 +417,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will not publish the group parameters to Kafka`() {
-        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -421,8 +433,8 @@ class MemberSynchronisationServiceImplTest {
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(verifier).verify(memberSignature, MEMBER_CONTEXT_BYTES)
-        verify(verifier).verify(mgmSignature, byteArrayOf(1, 2, 3))
+        verify(verifier).verify(memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
     }
 
     @Test

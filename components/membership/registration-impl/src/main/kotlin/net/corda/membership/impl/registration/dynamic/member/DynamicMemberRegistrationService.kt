@@ -4,16 +4,20 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
@@ -53,6 +57,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
@@ -67,7 +72,6 @@ import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
-import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -88,7 +92,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -284,22 +287,28 @@ class DynamicMemberRegistrationService @Activate constructor(
                     member.shortHash.value,
                     publicKey,
                     SignatureSpec(signatureSpec),
-                    serializedMemberContext,
-                    mapOf(SIGNATURE_SPEC to signatureSpec),
+                    serializedMemberContext
                 ).let {
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
-                        ByteBuffer.wrap(it.bytes),
-                        it.context.toWire()
+                        ByteBuffer.wrap(it.bytes)
                     )
                 }
-                val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
+
+                val serialInfo = context[SERIAL]?.toLong()
+                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: 0
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
-                    memberSignature
+                    memberSignature,
+                    CryptoSignatureSpec(signatureSpec, null, null),
+                    true,
+                    serialInfo,
                 )
 
                 val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
@@ -347,6 +356,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
+                        signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
+                        serial = serialInfo,
+                        isPending = true,
                     )
                 ).getOrThrow()
 
@@ -386,7 +398,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
-                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) || it.key.startsWith(SERIAL)
             }
             val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
@@ -446,13 +458,19 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
         }
 
-        @Suppress("NestedBlockDepth")
+        @Suppress("NestedBlockDepth", "ThrowsCount")
         private fun getKeysFromIds(
             keyIds: List<String>,
             tenantId: String,
             expectedCategory: String,
-        ): List<CryptoSigningKey> =
-            cryptoOpsClient.lookup(tenantId, keyIds).also { keys ->
+        ): List<CryptoSigningKey> {
+            val parsedKeyIds =
+                try {
+                    keyIds.map { ShortHash.parse(it) }
+                } catch (e: ShortHashException) {
+                    throw IllegalArgumentException(e)
+                }
+            return cryptoOpsClient.lookupKeysByIds(tenantId, parsedKeyIds).also { keys ->
                 val ids = keys.onEach { key ->
                     if (key.category != expectedCategory) {
                         throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")
@@ -467,6 +485,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     throw IllegalArgumentException("No keys found for tenant: $tenantId under $missingKeys.")
                 }
             }
+        }
 
         private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
             if (specFromContext != null) {
