@@ -33,7 +33,6 @@ import java.util.concurrent.CompletableFuture
 
 class GroupParametersCacheTest {
     private companion object {
-        const val MPV = 5000
         const val EPOCH = 1
         const val KNOWN_NOTARY_SERVICE = "O=NotaryA, L=LDN, C=GB"
         const val KNOWN_NOTARY_PLUGIN = "net.corda.notary.MyNotaryService"
@@ -41,9 +40,6 @@ class GroupParametersCacheTest {
 
     private val knownGroupId = UUID.randomUUID().toString()
     private val knownIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), knownGroupId)
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn MPV
-    }
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsString(any()) } doReturn "test-key"
     }
@@ -60,7 +56,7 @@ class GroupParametersCacheTest {
             KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
             KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
         ))
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
 
         groupParametersCache.set(knownGroupId, groupParameters)
 
@@ -69,7 +65,7 @@ class GroupParametersCacheTest {
 
     @Test
     fun `when cache is empty, getOrCreateGroupParameters publishes snapshot`() {
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
 
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
@@ -105,7 +101,7 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
         groupParametersCache.addNotary(notary)
@@ -147,7 +143,7 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
         val existingGroupParameters = KeyValuePairList(mutableListOf(
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
             KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),

@@ -120,7 +120,6 @@ class MembershipPersistenceTest {
     companion object {
 
         private const val EPOCH_KEY = "corda.epoch"
-        private const val MPV_KEY = "corda.minimumPlatformVersion"
         private const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 
         private const val RULE_ID = "rule-id"
@@ -587,10 +586,9 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.epoch).isEqualTo(1)
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(3)
+            assertThat(deserialized.size).isEqualTo(2)
             assertThat(deserialized[EPOCH_KEY]).isEqualTo("1")
             assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
         }
     }
 
@@ -605,7 +603,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "1"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000")
                         )
                     )
                 )!!
@@ -614,7 +611,6 @@ class MembershipPersistenceTest {
         }
         val groupParameters = layeredPropertyMapFactory.create<TestGroupParametersImpl>(mapOf(
             EPOCH_KEY to "2",
-            MPV_KEY to "5000",
             MODIFIED_TIME_KEY to clock.instant().toString()
         ))
         val persisted = membershipPersistenceClientWrapper.persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
@@ -632,7 +628,6 @@ class MembershipPersistenceTest {
             assertThat(deserialized.size).isEqualTo(3)
             assertThat(deserialized[EPOCH_KEY]).isEqualTo("2")
             assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
         }
     }
 
@@ -647,7 +642,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "50"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000")
                         )
                     )
                 )!!
@@ -689,7 +683,6 @@ class MembershipPersistenceTest {
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair("corda.notary.service.0.name", notaryServiceName),
             KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
             KeyValuePair("corda.notary.service.0.keys.0", keyEncodingService.encodeAsString(notaryKey)),
@@ -762,7 +755,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "100"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000"),
                             KeyValuePair("corda.notary.service.0.name", notaryServiceName),
                             KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin)
                             )
@@ -773,7 +765,6 @@ class MembershipPersistenceTest {
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "101"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair("corda.notary.service.0.name", notaryServiceName),
             KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
             KeyValuePair("corda.notary.service.0.keys.0", notaryKeyAsString),
@@ -850,7 +841,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "150"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000"),
                             KeyValuePair("corda.notary.service.0.name", notaryServiceName),
                             KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
                             KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey)
@@ -862,7 +852,6 @@ class MembershipPersistenceTest {
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "151"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair("corda.notary.service.0.name", notaryServiceName),
             KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
             KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey),

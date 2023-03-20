@@ -42,7 +42,6 @@ import javax.persistence.LockModeType
 
 class PersistGroupParametersInitialSnapshotHandlerTest {
     private companion object {
-        const val MPV = 5000
         const val SNAPSHOT_EPOCH = "1"
     }
 
@@ -85,16 +84,12 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         } doReturn entityManagerFactory
     }
     private val clock = TestClock(Instant.ofEpochMilli(10))
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn MPV
-    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
-        on { platformInfoProvider } doReturn platformInfoProvider
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
 
