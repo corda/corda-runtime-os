@@ -168,7 +168,8 @@ class FlowServiceTestContext @Activate constructor(
             CpkType.UNKNOWN,
             cpkChecksum,
             setOf(),
-            timestamp
+            timestamp,
+            null
         )
 
         val cpiMeta = CpiMetadata(
