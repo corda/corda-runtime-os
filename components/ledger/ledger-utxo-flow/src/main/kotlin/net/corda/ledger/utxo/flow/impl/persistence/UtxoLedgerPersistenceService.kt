@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.application.persistence.CordaPersistenceException
+import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -12,6 +13,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  * by the platform.
  */
 interface UtxoLedgerPersistenceService {
+
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id].
      *
