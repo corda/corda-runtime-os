@@ -72,6 +72,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
@@ -97,6 +98,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             CustomSerializationAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
@@ -118,6 +120,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
@@ -144,6 +147,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(3)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))

@@ -8,7 +8,7 @@ data class RestClientConfig internal constructor(
     val minimumServerProtocolVersion: Int,
     val authenticationConfig: AuthenticationConfig
 ) {
-    constructor() : this(false, secureSSL = false, 1, EmptyAuthenticationConfig)
+    constructor() : this(false, secureSSL = true, 1, EmptyAuthenticationConfig)
 
     fun enableSSL(enableSSL: Boolean) = copy(enableSSL = enableSSL)
 
