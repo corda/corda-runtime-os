@@ -738,7 +738,7 @@ class StaticMemberRegistrationServiceTest {
                 assertThat(notaryDetails).isNotNull
                 assertThat(notaryDetails?.serviceName)
                     .isEqualTo(MemberX500Name.parse(notary.toString()))
-                assertThat(notaryDetails?.servicePlugin).isEqualTo("net.corda.notary.MyNotaryService")
+                assertThat(notaryDetails?.serviceProtocol).isEqualTo("net.corda.notary.MyNotaryService")
 
                 assertThat(notaryDetails?.keys?.toList())
                     .hasSize(1)

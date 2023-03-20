@@ -9,7 +9,7 @@ import net.corda.utilities.time.UTCClock
 import org.slf4j.Logger
 
 const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"
-const val NOTARY_SERVICE_PROTOCOL_KEY = "corda.notary.service.%s.protocol"
+const val NOTARY_SERVICE_PROTOCOL_KEY = "corda.notary.service.%s.flow.protocol.name"
 const val NOTARY_SERVICE_KEYS_KEY = "corda.notary.service.%s.keys.%s"
 const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
 const val EPOCH_KEY = "corda.epoch"
@@ -29,7 +29,7 @@ fun updateExistingNotaryService(
 ): Pair<Int?, KeyValuePairList?> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
-    notaryDetails.servicePlugin?.let {
+    notaryDetails.serviceProtocol?.let {
         require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
             throw MembershipPersistenceException("Cannot add notary to notary service " +
                     "'$notaryServiceName' - plugin types do not match.")
@@ -79,7 +79,7 @@ fun addNewNotaryService(
 ): Pair<Int, KeyValuePairList> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
-    requireNotNull(notaryDetails.servicePlugin) {
+    requireNotNull(notaryDetails.serviceProtocol) {
         throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
                 " specified to create new notary service '$notaryServiceName'.")
     }
@@ -93,7 +93,7 @@ fun addNewNotaryService(
             )
         } + listOf(
         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName),
-        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.servicePlugin)
+        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.serviceProtocol)
     )
     val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
     val parametersWithUpdatedEpoch = with(currentParameters) {

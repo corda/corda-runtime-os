@@ -22,9 +22,9 @@ class NotaryInfoConverterTest {
     @Suppress("SpreadOperator")
     private companion object {
         val notaryService = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
-        const val NOTARY_PLUGIN = "testPlugin"
+        const val NOTARY_PROTOCOL = "testProtocol"
         const val NAME = "name"
-        const val PLUGIN = "plugin"
+        const val PROTOCOL = "flow.protocol.name"
         const val KEYS = "keys.%s"
         const val KEY_VALUE = "encoded_key"
         val key: PublicKey = mock()
@@ -45,12 +45,12 @@ class NotaryInfoConverterTest {
 
         val correctContext = sortedMapOf(
             NAME to notaryService.toString(),
-            PLUGIN to NOTARY_PLUGIN,
+            PROTOCOL to NOTARY_PROTOCOL,
             *convertNotaryKeys().toTypedArray()
         )
 
         val contextWithoutName = sortedMapOf(
-            PLUGIN to NOTARY_PLUGIN,
+            PROTOCOL to NOTARY_PROTOCOL,
             *convertNotaryKeys().toTypedArray()
         )
 
@@ -61,7 +61,7 @@ class NotaryInfoConverterTest {
 
         val contextWithoutKeys = sortedMapOf(
             NAME to notaryService.toString(),
-            PLUGIN to NOTARY_PLUGIN
+            PROTOCOL to NOTARY_PROTOCOL
         )
 
         val converters = listOf(
@@ -92,7 +92,7 @@ class NotaryInfoConverterTest {
         val result = convertToNotaryInfo(correctContext)
         assertSoftly {
             it.assertThat(result.name).isEqualTo(notaryService)
-            it.assertThat(result.pluginClass).isEqualTo(NOTARY_PLUGIN)
+            it.assertThat(result.protocol).isEqualTo(NOTARY_PROTOCOL)
             it.assertThat(result.publicKey).isEqualTo(compositeKeyForNonEmptyKeys)
         }
     }
@@ -102,7 +102,7 @@ class NotaryInfoConverterTest {
         val result = convertToNotaryInfo(contextWithoutKeys)
         assertSoftly {
             it.assertThat(result.name).isEqualTo(notaryService)
-            it.assertThat(result.pluginClass).isEqualTo(NOTARY_PLUGIN)
+            it.assertThat(result.protocol).isEqualTo(NOTARY_PROTOCOL)
             it.assertThat(result.publicKey).isEqualTo(compositeKeyForEmptyKeys)
         }
     }
@@ -120,6 +120,6 @@ class NotaryInfoConverterTest {
         val ex = assertThrows<ValueNotFoundException> {
             convertToNotaryInfo(contextWithoutPlugin)
         }
-        assertThat(ex.message).contains("plugin")
+        assertThat(ex.message).contains("flow.protocol.name")
     }
 }

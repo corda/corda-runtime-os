@@ -75,7 +75,7 @@ class MemberRoleTest {
                 it is MemberRole.Notary
             }
             .allSatisfy {
-                assertThat((it as? MemberRole.Notary)?.plugin).isNull()
+                assertThat((it as? MemberRole.Notary)?.protocol).isNull()
             }
     }
 

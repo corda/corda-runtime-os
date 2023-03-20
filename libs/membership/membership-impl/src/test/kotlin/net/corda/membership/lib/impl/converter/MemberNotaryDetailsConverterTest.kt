@@ -35,7 +35,7 @@ class MemberNotaryDetailsConverterTest {
     private val hashTwo = PublicKeyHash.calculate(publicKeyTwo).value
     private val context = mock<ConversionContext> {
         on { value(SERVICE_NAME) } doReturn "O=Service, L=London, C=GB"
-        on { value(SERVICE_PROTOCOL) } doReturn "net.corda.membership.Plugin"
+        on { value(SERVICE_PROTOCOL) } doReturn "net.corda.membership.Protocol"
         on { value("keys.0.hash") } doReturn hashOne
         on { value("keys.0.pem") } doReturn "PEM1"
         on { value("keys.0.signature.spec") } doReturn SignatureSpec.ECDSA_SHA512.signatureName
@@ -52,7 +52,7 @@ class MemberNotaryDetailsConverterTest {
 
         assertSoftly { softly ->
             softly.assertThat(notaryDetails.serviceName).isEqualTo(MemberX500Name.parse("O=Service, L=London, C=GB"))
-            softly.assertThat(notaryDetails.servicePlugin).isEqualTo("net.corda.membership.Plugin")
+            softly.assertThat(notaryDetails.serviceProtocol).isEqualTo("net.corda.membership.Protocol")
             softly.assertThat(notaryDetails.keys.toList())
                 .hasSize(2)
                 .anySatisfy {
@@ -89,7 +89,7 @@ class MemberNotaryDetailsConverterTest {
     fun `convert return null plugin if plugin is not set`() {
         whenever(context.value(SERVICE_PROTOCOL)).doReturn(null)
 
-        assertThat(converter.convert(context).servicePlugin).isNull()
+        assertThat(converter.convert(context).serviceProtocol).isNull()
     }
 
     @Test

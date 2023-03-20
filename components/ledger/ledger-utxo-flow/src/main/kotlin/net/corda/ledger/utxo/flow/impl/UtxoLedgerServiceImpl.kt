@@ -139,7 +139,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suppress("ThrowsCount")
     internal fun getPluggableNotaryClientFlow(notary: Party): Class<PluggableNotaryClientFlow> {
 
-        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass
+        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.protocol
             ?: throw CordaRuntimeException(
                 "Plugin class not found for notary service " +
                         "${notary.name} . This means that no notary service matching this name " +

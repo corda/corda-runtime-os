@@ -53,7 +53,7 @@ internal sealed class MemberRole {
             val plugin = context[NOTARY_SERVICE_PROTOCOL]
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
-                plugin = plugin,
+                protocol = plugin,
             )
         }
     }
@@ -65,7 +65,7 @@ internal sealed class MemberRole {
 
     data class Notary(
         val serviceName: MemberX500Name,
-        val plugin: String?,
+        val protocol: String?,
     ) : MemberRole() {
         override fun toMemberInfo(
             notariesKeysFactory: () -> List<KeyDetails>,
@@ -81,11 +81,11 @@ internal sealed class MemberRole {
             return keys + listOf(
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-            ) + if (plugin == null) {
+            ) + if (protocol == null) {
                 emptyList()
             } else {
                 listOf(
-                    NOTARY_SERVICE_PROTOCOL to plugin,
+                    NOTARY_SERVICE_PROTOCOL to protocol,
                 )
             }
         }

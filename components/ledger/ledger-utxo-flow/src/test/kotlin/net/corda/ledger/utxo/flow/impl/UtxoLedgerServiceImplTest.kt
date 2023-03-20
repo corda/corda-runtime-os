@@ -113,7 +113,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
         val notaryService = mock<NotaryInfo>().apply {
             whenever(this.name).thenReturn(utxoNotaryExample.name)
-            whenever(this.pluginClass).thenReturn("my-client-flow")
+            whenever(this.protocol).thenReturn("my-client-flow")
         }
 
         val sandboxGroup = mock<SandboxGroup>().apply {
@@ -157,7 +157,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
         val notaryService = mock<NotaryInfo>().apply {
             whenever(this.name).thenReturn(utxoNotaryExample.name)
-            whenever(this.pluginClass).thenReturn("my-client-flow")
+            whenever(this.protocol).thenReturn("my-client-flow")
         }
 
         val sandboxGroup = mock<SandboxGroup>().apply {

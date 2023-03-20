@@ -227,7 +227,7 @@ internal class StartRegistrationHandler(
             validateRegistrationRequest(
                 notary.keys.isNotEmpty()
             ) { "Registering member has role set to 'notary', but has missing notary key details." }
-            notary.servicePlugin?.let {
+            notary.serviceProtocol?.let {
                 validateRegistrationRequest(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }

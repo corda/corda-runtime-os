@@ -96,7 +96,7 @@ class GroupParametersCacheTest {
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { servicePlugin } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("${ROLES_PREFIX}.0" to NOTARY_ROLE).entries
@@ -139,7 +139,7 @@ class GroupParametersCacheTest {
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { servicePlugin } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("${ROLES_PREFIX}.0" to NOTARY_ROLE).entries
