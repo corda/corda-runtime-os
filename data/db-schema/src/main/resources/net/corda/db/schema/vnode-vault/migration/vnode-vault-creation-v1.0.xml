@@ -80,7 +80,7 @@
                 <constraints nullable="true"/>
             </column>
             <column name="serial" type="BIGINT">
-                <constraints nullable="false"/>
+                <constraints nullable="true"/>
             </column>
         </createTable>
         <addPrimaryKey columnNames="registration_id"
