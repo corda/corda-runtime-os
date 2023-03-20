@@ -40,7 +40,8 @@ data class CpkMetadata(
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
     val cordappCertificates: Set<Certificate>,
-    val timestamp: Instant
+    val timestamp: Instant,
+    val externalChannelsConfig: String?
 ) {
     companion object {
         fun fromAvro(other: CpkMetadataAvro): CpkMetadata {
@@ -59,7 +60,8 @@ data class CpkMetadata(
                             .use(crtFactory::generateCertificate)
                     }.collect(Collectors.toUnmodifiableSet())
                 },
-                other.timestamp
+                other.timestamp,
+                other.externalChannelsConfig
             )
         }
 
@@ -91,6 +93,7 @@ data class CpkMetadata(
                         )
                 )
                 .setTimestamp(timestamp)
+                .setExternalChannelsConfig(externalChannelsConfig)
                 .build()
     }
 

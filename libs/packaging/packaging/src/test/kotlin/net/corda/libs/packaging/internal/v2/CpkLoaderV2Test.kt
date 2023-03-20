@@ -39,6 +39,7 @@ class CpkLoaderV2Test {
                 )
             },
             { assertEquals(CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER, cpk.metadata.mainBundle) },
+            { assertEquals( TestUtils.EXTERNAL_CHANNELS_CONFIG_FILE_CONTENT, cpk.metadata.externalChannelsConfig) }
         )
     }
 }
