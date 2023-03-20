@@ -5,7 +5,7 @@ public final class TestSchema {
     }
 
     /**
-     * P2P Topic Test Schema.
+     * P2P topic test schema.
      */
     public static final String APP_RECEIVED_MESSAGES_TOPIC = "p2p.app.received_msg";
 }

@@ -3,7 +3,7 @@ package net.corda.schema.configuration;
 import static net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE;
 
 /**
- * Configuration paths for values used to bootstrap the worker
+ * Configuration paths for values used to bootstrap the worker.
  */
 @SuppressWarnings("unused")
 public final class BootConfig {

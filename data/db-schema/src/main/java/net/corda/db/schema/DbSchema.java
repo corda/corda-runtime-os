@@ -1,9 +1,9 @@
 package net.corda.db.schema;
 
 /**
- * Explicitly lists DB schema names to be used for applying Liquibase scripts.
- * Since Liquibase does not allow specifying schema as part of change set definition.
- * For more information, please see <a href="https://docs.liquibase.com/concepts/advanced/liquibase-schema-name-parameter.html">here</a>.
+ * Explicitly lists database schema names to be used for applying Liquibase scripts
+ * since Liquibase does not allow specifying schema as part of the changeset definition.
+ * For more information, see <a href="https://docs.liquibase.com/concepts/advanced/liquibase-schema-name-parameter.html">Liquibase documentation</a>.
  */
 public final class DbSchema {
     private DbSchema() {
