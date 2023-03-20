@@ -4,12 +4,16 @@ import net.corda.rest.client.auth.credentials.BearerTokenProvider
 
 data class RestClientConfig internal constructor(
     val enableSSL: Boolean,
+    val secureSSL: Boolean,
     val minimumServerProtocolVersion: Int,
     val authenticationConfig: AuthenticationConfig
 ) {
-    constructor() : this(false, 1, EmptyAuthenticationConfig)
+    constructor() : this(false, secureSSL = true, 1, EmptyAuthenticationConfig)
 
     fun enableSSL(enableSSL: Boolean) = copy(enableSSL = enableSSL)
+
+    fun secureSSL(secureSSL: Boolean) = copy(secureSSL = secureSSL)
+
     fun minimumServerProtocolVersion(minimumServerProtocolVersion: Int) = copy(minimumServerProtocolVersion = minimumServerProtocolVersion)
     fun username(username: String) = copy(
         authenticationConfig = if (authenticationConfig is BasicAuthenticationConfig)
