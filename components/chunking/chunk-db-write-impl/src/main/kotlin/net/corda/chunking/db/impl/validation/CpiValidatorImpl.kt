@@ -35,6 +35,7 @@ class CpiValidatorImpl(
     private val cpiInfoWriteService: CpiInfoWriteService,
     private val membershipSchemaValidator: MembershipSchemaValidator,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+    private val externalChannelsConfigValidator: ExternalChannelsConfigValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
@@ -99,6 +100,9 @@ class CpiValidatorImpl(
 
         publisher.update(requestId, "Extracting Liquibase scripts from CPKs in CPI")
         val liquibaseScripts = cpi.extractLiquibaseScripts()
+
+        publisher.update(requestId, "Validating configuration for external channels")
+        externalChannelsConfigValidator.validate(cpi.metadata.cpksMetadata)
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =

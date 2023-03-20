@@ -48,7 +48,7 @@ object CryptoConfigurationSetup {
 
     val boostrapConfig = makeBootstrapConfig(
         mapOf(
-            BootConfig.BOOT_DB_PARAMS to CryptoDBSetup.clusterDb.config
+            BootConfig.BOOT_DB to CryptoDBSetup.clusterDb.config
         )
     )
 

@@ -168,7 +168,8 @@ internal class DatabaseCpiPersistenceTest {
             type = CpkType.UNKNOWN,
             fileChecksum = fileChecksum,
             cordappCertificates = emptySet(),
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            externalChannelsConfig = "{}"
         )
         whenever(cpk.path).thenReturn(mockCpkContent.writeToPath())
         whenever(cpk.originalFileName).thenReturn("$name.cpk")
@@ -725,6 +726,7 @@ internal class DatabaseCpiPersistenceTest {
 
             assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum?.toString() ?: cpk.metadata.fileChecksum.toString())
             assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
+            assertThat(cpkMetadata.serializedMetadata).isEqualTo(cpk.metadata.toJsonAvro())
 
             assertThat(cpkMetadata.entityVersion)
                 .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")
