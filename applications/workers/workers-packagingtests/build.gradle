@@ -77,7 +77,7 @@ dependencies {
 
     // But building a cpb for use in a test is ok.
     cpis project(path: ':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server', configuration: 'cordaCPB')
-    cpis project(path: ':testing:cpbs:packaging-verification-contract-v1', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:packaging-verification-app-v1', configuration: 'cordaCPB')
 
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
