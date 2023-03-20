@@ -625,7 +625,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(3)
+            assertThat(deserialized.size).isEqualTo(2)
             assertThat(deserialized[EPOCH_KEY]).isEqualTo("2")
             assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
         }
@@ -692,7 +692,7 @@ class MembershipPersistenceTest {
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
-            assertThat(size).isEqualTo(6)
+            assertThat(size).isEqualTo(5)
             assertThat(containsAll(expectedGroupParameters))
         }
 
@@ -705,7 +705,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(6)
+            assertThat(deserialized.items.size).isEqualTo(5)
             assertThat(deserialized.items.containsAll(expectedGroupParameters))
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
@@ -774,7 +774,7 @@ class MembershipPersistenceTest {
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
-            assertThat(size).isEqualTo(6)
+            assertThat(size).isEqualTo(5)
             assertThat(containsAll(expectedGroupParameters))
         }
 
@@ -875,7 +875,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(7)
+            assertThat(deserialized.items.size).isEqualTo(6)
             assertThat(deserialized.items.containsAll(expectedGroupParameters))
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
