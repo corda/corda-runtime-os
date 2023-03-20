@@ -10,6 +10,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
@@ -26,6 +27,10 @@ class SessionInitExecutorTest {
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
     private val flowConfig = SmartConfigImpl.empty().withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
 
+    private val dummyAppMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage = { _, _, _ ->
+        throw IllegalArgumentException("Dummy app message factory cannot generate messages.")
+    }
+
     @Test
     fun `Outbound session init creates new state and forwards to P2P`() {
         val bytes = "bytes".toByteArray()
@@ -34,8 +39,16 @@ class SessionInitExecutorTest {
         val flowId = "id1"
         val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList(),emptyKeyValuePairList(), null)
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
-        val result =
-            SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
+        val result = SessionInitExecutor(
+            "sessionId",
+            payload,
+            sessionInit,
+            null,
+            sessionEventSerializer,
+            dummyAppMessageFactory,
+            flowConfig
+        ).execute()
+
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -62,6 +75,7 @@ class SessionInitExecutorTest {
             sessionInit,
             null,
             sessionEventSerializer,
+            dummyAppMessageFactory,
             flowConfig
         ).execute()
 
@@ -91,6 +105,7 @@ class SessionInitExecutorTest {
             sessionInit,
             FlowMapperState(),
             sessionEventSerializer,
+            dummyAppMessageFactory,
             flowConfig
         ).execute()
 

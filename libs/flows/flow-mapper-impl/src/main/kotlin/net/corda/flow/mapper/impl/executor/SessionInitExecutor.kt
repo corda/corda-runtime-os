@@ -4,15 +4,19 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
+import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -21,6 +25,7 @@ class SessionInitExecutor(
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
+    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     private val flowConfig: SmartConfig,
 ) : FlowMapperEventExecutor {
 
@@ -49,13 +54,34 @@ class SessionInitExecutor(
                 sessionInit
             )
 
-        // Don't propagate interop session init events.
+        // Send a session confirm message in response to the session init.
         // This will need to be changed for CORE-10420
         if (sessionEvent.isInteropEvent()) {
-            log.info("[CORE-10465] Received interop session init event, ignoring for now.")
+            log.info("[CORE-10465] Received interop session init event, sending session confirmation.")
+
+            val sessionConfirm = Record(
+                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                sessionEvent.sessionId,
+                appMessageFactory(
+                    SessionEvent(
+                        MessageDirection.INBOUND,
+                        Instant.now(),
+                        sessionEvent.sessionId,
+                        null,
+                        sessionEvent.initiatingIdentity,
+                        sessionEvent.initiatedIdentity,
+                        1,
+                        emptyList(),
+                        SessionConfirm()
+                    ),
+                    sessionEventSerializer,
+                    flowConfig
+                )
+            )
+
             return FlowMapperResult(
                 FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
-                emptyList()
+                listOf(sessionConfirm)
             )
         }
 

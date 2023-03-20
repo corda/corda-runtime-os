@@ -108,27 +108,29 @@ class SessionEventExecutor(
                 return FlowMapperResult(flowMapperState, listOf())
             }
 
-            val returnEvent = SessionEvent(
-                MessageDirection.INBOUND,
-                instant,
-                sessionEvent.sessionId,
-                null,
-                sessionEvent.initiatingIdentity,
-                sessionEvent.initiatedIdentity,
-                0,
-                emptyList(),
-                FacadeInvocationResult(facadeInvocation.payload)
-            )
-
-            val record = Record(
+            val reply = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
-                appMessageFactory(returnEvent, sessionEventSerializer, flowConfig)
+                appMessageFactory(
+                    SessionEvent(
+                        MessageDirection.INBOUND,
+                        instant,
+                        sessionEvent.sessionId,
+                        null,
+                        sessionEvent.initiatingIdentity,
+                        sessionEvent.initiatedIdentity,
+                        1,
+                        emptyList(),
+                        FacadeInvocationResult(facadeInvocation.payload)
+                    ),
+                    sessionEventSerializer,
+                    flowConfig
+                )
             )
 
-            return FlowMapperResult(flowMapperState, listOf(record))
+            return FlowMapperResult(flowMapperState, listOf(reply))
         } else {
-            log.info("[CORE-10465] Sending inbound interop event of type ${eventPayload.javaClass} to topic.")
+            log.info("[CORE-10465] Sending inbound interop event of type ${eventPayload.javaClass} to flow event topic.")
             val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
             return FlowMapperResult(flowMapperState, listOf(record))
         }
