@@ -14,8 +14,11 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.Duration
@@ -73,12 +76,12 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 }
             }
 
-            val signedTransaction = utxoLedgerService.getTransactionBuilder()
+            val signedTransaction = utxoLedgerService.transactionBuilder
                 .addCommand(TestCommand())
                 .addOutputState(output)
                 .addInputState(input.ref)
                 .setNotary(input.state.notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
+                .setTimeWindowUntil(Instant.now().plus(Duration.ofDays(1)))
                 .addSignatories(output.participants)
                 .toSignedTransaction()
 
@@ -114,17 +117,21 @@ class UtxoEvolveResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
-                val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
-                if (state.testField == "fail") {
-                    log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
-                    throw IllegalStateException("Failed verification")
-                }
-                log.info("Verified the transaction- ${ledgerTransaction.id}")
-            }
+            val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session, Validator(log))
             log.info("Finished responder flow - ${finalizedSignedTransaction.id}")
         } catch (e: Exception) {
             log.warn("Exceptionally finished responder flow", e)
+        }
+    }
+
+    private class Validator(private val log: Logger) : UtxoTransactionValidator {
+        override fun checkTransaction(ledgerTransaction: UtxoLedgerTransaction) {
+            val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
+            if (state.testField == "fail") {
+                log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
+                throw IllegalStateException("Failed verification")
+            }
+            log.info("Verified the transaction- ${ledgerTransaction.id}")
         }
     }
 }
