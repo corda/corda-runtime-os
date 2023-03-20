@@ -2,6 +2,7 @@ package net.corda.cli.plugins.common
 
 import net.corda.rest.RestResource
 import net.corda.rest.client.RestClient
+import net.corda.rest.client.RestConnectionListener
 import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
@@ -34,18 +35,24 @@ object RestClientUtils {
             healthCheckInterval = 500
         )
 
-        // Check that it is usable against endpoint provided and report errors early on
-        val errOut: Logger = LoggerFactory.getLogger("SystemErr")
-        restClient.use {
-            try {
-                it.start()
-            } catch (ex: ClientSslHandshakeException) {
-                errOut.error("Unable to verify server's SSL certificate. Please check the target parameter or use '--insecure' option.")
-                exitProcess(1)
+        restClient.addConnectionListener(ConnectionListener())
+        return restClient
+    }
+
+    private class ConnectionListener<I : RestResource> : RestConnectionListener<I> {
+        override fun onConnect(context: RestConnectionListener.RestConnectionContext<I>) {}
+
+        override fun onDisconnect(context: RestConnectionListener.RestConnectionContext<I>) {}
+
+        override fun onPermanentFailure(context: RestConnectionListener.RestConnectionContext<I>) {
+            when (context.throwableOpt) {
+                is ClientSslHandshakeException -> {
+                    errOut.error("Unable to verify server's SSL certificate. " +
+                            "Please check the target parameter or use '--insecure' option.")
+                    exitProcess(1)
+                }
             }
         }
-
-        return restClient
     }
 
     fun <T> executeWithRetry(
