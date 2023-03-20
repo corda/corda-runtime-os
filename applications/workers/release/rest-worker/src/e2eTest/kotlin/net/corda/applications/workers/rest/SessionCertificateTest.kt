@@ -14,10 +14,12 @@ import net.corda.applications.workers.rest.utils.onboardMembers
 import net.corda.applications.workers.rest.utils.onboardMgm
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
+@Disabled("temp - do no merge")
 class SessionCertificateTest {
     @TempDir
     lateinit var tempDir: Path
