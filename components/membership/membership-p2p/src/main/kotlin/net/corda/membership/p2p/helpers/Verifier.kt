@@ -6,13 +6,30 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SignatureSpec
+import java.security.PublicKey
 
 class Verifier(
     private val signatureVerificationService: SignatureVerificationService,
     private val keyEncodingService: KeyEncodingService,
 ) {
-    fun verify(signature: CryptoSignatureWithKey, signatureSpecAvro: CryptoSignatureSpec, data: ByteArray) {
-        val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
+    fun verify(
+        signature: CryptoSignatureWithKey,
+        signatureSpecAvro: CryptoSignatureSpec,
+        data: ByteArray
+    ) = verify(
+        keyEncodingService.decodePublicKey(signature.publicKey.array()),
+        signature,
+        signatureSpecAvro,
+        data
+    )
+
+
+    fun verify(
+        publicKey: PublicKey,
+        signature: CryptoSignatureWithKey,
+        signatureSpecAvro: CryptoSignatureSpec,
+        data: ByteArray
+    ) {
         val signatureSpec = signatureSpecAvro.signatureName?.let {
             SignatureSpec(it)
         } ?: throw CordaRuntimeException("Can not find signature spec")

@@ -58,6 +58,7 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -254,9 +255,11 @@ class MemberSynchronisationServiceImpl internal constructor(
         }
 
         private fun parseGroupParameters(
+            mgm: MemberInfo,
             membershipPackage: MembershipPackage
         ) = with(membershipPackage.groupParameters) {
             verifier.verify(
+                mgm.sessionInitiationKey,
                 mgmSignature,
                 mgmSignatureSpec,
                 groupParameters.array()
@@ -342,7 +345,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                     }
                 }
 
-                val groupParameters = parseGroupParameters(updates.membershipPackage)
+                val groupParameters = parseGroupParameters(
+                    groupReader.lookup().first { it.isMgm },
+                    updates.membershipPackage
+                )
                 val latestGroupParameters =
                     membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters).getOrThrow()
                 groupParametersWriterService.put(viewOwningMember, latestGroupParameters)

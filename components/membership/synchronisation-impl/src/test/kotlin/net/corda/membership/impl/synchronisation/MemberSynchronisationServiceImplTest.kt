@@ -36,6 +36,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
@@ -234,9 +235,21 @@ class MemberSynchronisationServiceImplTest {
         on { generateTree(any()) } doReturn tree
         on { createTree(any()) } doReturn tree
     }
-    private val memberInfo = mock<MemberInfo>()
+    private val memberMgmContext = mock<MGMContext> {
+        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn null
+    }
+    private val memberInfo = mock<MemberInfo> {
+        on { mgmProvidedContext } doReturn memberMgmContext
+    }
+    private val mgmMgmContext = mock<MGMContext> {
+        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn true
+    }
+    private val mgmInfo = mock<MemberInfo> {
+        on { sessionInitiationKey } doReturn mock()
+        on { mgmProvidedContext } doReturn mgmMgmContext
+    }
     private val groupReader = mock<MembershipGroupReader> {
-        on { lookup() } doReturn emptyList()
+        on { lookup() } doReturn listOf(memberInfo, mgmInfo)
         on { lookup(name = any(), filter = any()) } doReturn memberInfo
     }
     private val groupReaderProvider = mock<MembershipGroupReaderProvider> {

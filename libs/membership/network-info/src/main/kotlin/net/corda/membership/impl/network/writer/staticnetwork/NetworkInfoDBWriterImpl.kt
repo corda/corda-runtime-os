@@ -1,6 +1,5 @@
 package net.corda.membership.impl.network.writer.staticnetwork
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -154,15 +153,7 @@ class NetworkInfoDBWriterImpl(
                 IS_STATIC_MGM to true.toString()
             )
 
-            val newMgmInfo = if (groupPolicy.has(MGM_INFO)) {
-                mapper.convertValue(
-                    groupPolicy.get(MGM_INFO),
-                    object : TypeReference<Map<String, String>>() {}
-                ) + staticMgmInfo
-            } else {
-                staticMgmInfo
-            }
-            groupPolicy.replace(MGM_INFO, mapper.readTree(mapper.writeValueAsString(newMgmInfo)))
+            groupPolicy.replace(MGM_INFO, mapper.readTree(mapper.writeValueAsString(staticMgmInfo)))
 
             mapper.writeValueAsString(groupPolicy)
         } catch (ex: Exception) {

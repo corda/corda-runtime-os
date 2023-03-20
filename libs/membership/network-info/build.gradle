@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Static network management components.'
+description 'Network management library code'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

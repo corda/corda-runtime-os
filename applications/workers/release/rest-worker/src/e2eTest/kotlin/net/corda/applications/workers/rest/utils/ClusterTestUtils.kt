@@ -259,6 +259,8 @@ fun E2eCluster.assignSoftHsm(
 
 fun E2eCluster.register(
     holdingId: String,
+    mgm: E2eClusterMember? = null,
+    mgmCluster: E2eCluster? = null,
     context: Map<String, String>
 ): RegistrationRequestProgress {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
@@ -283,6 +285,24 @@ fun E2eCluster.register(
                         registrationId
                     )
                     assertThat(registrationStatus.registrationStatus)
+                        .withFailMessage {
+                            // TEMP to debug test issue
+                            mgmCluster?.let {
+                                it.clusterHttpClientFor(MemberRegistrationRestResource::class.java)
+                                .use { mgmClient ->
+                                    val mgmRegStatusView = mgmClient
+                                        .start()
+                                        .proxy
+                                        .checkSpecificRegistrationProgress(
+                                            mgm!!.holdingId,
+                                            registrationId
+                                        )
+                                    "Member does not see [${RegistrationStatus.APPROVED}] status. " +
+                                            "MGM sees status [$mgmRegStatusView]"
+                                }
+                            }
+
+                        }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
             }
@@ -390,6 +410,7 @@ fun E2eCluster.disableLinkManagerCLRChecks() {
  */
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
+    mgmCluster: E2eCluster,
     memberGroupPolicy: String,
     tempDir: Path,
     useSessionCertificate: Boolean = false,
@@ -402,7 +423,7 @@ fun E2eCluster.onboardMembers(
 
         assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
         assignSoftHsm(member.holdingId, HSM_CAT_LEDGER)
-        if(member.isNotary()) {
+        if (member.isNotary()) {
             assignSoftHsm(member.holdingId, HSM_CAT_NOTARY)
         }
 
@@ -425,7 +446,7 @@ fun E2eCluster.onboardMembers(
 
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
-        val memberNotaryKeyId = if(member.isNotary()) {
+        val memberNotaryKeyId = if (member.isNotary()) {
             generateKeyPairIfNotExists(member.holdingId, HSM_CAT_NOTARY)
         } else null
 
@@ -439,6 +460,8 @@ fun E2eCluster.onboardMembers(
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
             member.holdingId,
+            mgm,
+            mgmCluster,
             createMemberRegistrationContext(
                 member,
                 this,
@@ -502,6 +525,8 @@ fun E2eCluster.onboardMgm(
 
     register(
         mgm.holdingId,
+        null,
+        null,
         mgmRegistrationContext,
     )
 
@@ -527,7 +552,7 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
     members.forEach { member ->
         createVirtualNode(member, cpiCheckSum)
 
-        val registrationContext = if(member.isNotary()) {
+        val registrationContext = if (member.isNotary()) {
             mapOf(
                 "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
@@ -542,6 +567,8 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
 
         register(
             member.holdingId,
+            null,
+            null,
             registrationContext
         )
 

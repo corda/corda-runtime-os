@@ -17,6 +17,9 @@ import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser.Companion.isStaticNetwork
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
@@ -24,8 +27,6 @@ import java.nio.file.Files
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
-import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.network.writer.NetworkInfoWriter
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated
@@ -66,8 +67,7 @@ class DatabaseCpiPersistence(
         changelogsExtractedFromCpi: List<CpkDbChangeLog>
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
-
-            networkInfoWriter.parseAndPersistStaticNetworkInfo(em, cpi)
+            val groupPolicy = getGroupPolicy(em, cpi)
 
             val cpiMetadataEntity = createCpiMetadataEntity(
                 cpi,
@@ -75,7 +75,7 @@ class DatabaseCpiPersistence(
                 cpiFileChecksum,
                 requestId,
                 groupId,
-                networkInfoWriter.injectStaticNetworkMgm(em, cpi.metadata.groupPolicy!!),
+                groupPolicy,
                 createCpiCpkRelationships(em, cpi)
             )
 
@@ -347,6 +347,22 @@ class DatabaseCpiPersistence(
                 "CPI upload $requestId contains a CPI with the same name ($cpiName) and " +
                         "signer ($cpiSignerSummaryHash) as an existing CPI, but a different Group ID."
             )
+        }
+    }
+
+    /**
+     * Process CPI network data and return the processed group policy.
+     */
+    private fun getGroupPolicy(
+        em: EntityManager,
+        cpi: Cpi
+    ): String {
+        val groupPolicy = cpi.metadata.groupPolicy!!
+        return if (isStaticNetwork(groupPolicy)) {
+            networkInfoWriter.parseAndPersistStaticNetworkInfo(em, cpi)
+            networkInfoWriter.injectStaticNetworkMgm(em, groupPolicy)
+        } else {
+            groupPolicy
         }
     }
 }

@@ -13,5 +13,8 @@ interface SignedGroupParameters : InternalGroupParameters {
      */
     val signature: DigitalSignature.WithKey
 
+    /**
+     * The signature spec for the MGM's signature.
+     */
     val signatureSpec: SignatureSpec
 }
