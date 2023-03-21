@@ -47,6 +47,16 @@ object CordaMetrics {
         object FlowRunTime : Metric<Timer>("flow.run.time", Metrics::timer)
 
         /**
+         * Metric for flow fiber serialization.
+         */
+        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", Metrics::timer)
+
+        /**
+         * Metric for flow fiber deserialization.
+         */
+        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", Metrics::timer)
+
+        /**
          * Number of outbound peer-to-peer data messages sent.
          */
         object OutboundMessageCount: Metric<Counter>("p2p.message.outbound", Metrics::counter)

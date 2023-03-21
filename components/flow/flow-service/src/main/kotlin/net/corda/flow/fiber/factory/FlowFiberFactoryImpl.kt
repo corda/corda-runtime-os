@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import java.util.UUID
@@ -46,10 +47,16 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
         flowFiberExecutionContext: FlowFiberExecutionContext,
         suspensionOutcome: FlowContinuation
     ): FiberFuture {
-        val fiber = flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
-            flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
-            FlowFiberImpl::class.java
-        )
+        val fiber = CordaMetrics.Metric.FlowFiberDeserializationTime.builder()
+            .forVirtualNode(flowFiberExecutionContext.flowCheckpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowId, flowFiberExecutionContext.flowCheckpoint.flowId)
+            .build()
+            .recordCallable {
+                flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
+                    flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
+                    FlowFiberImpl::class.java
+                )
+            }!!
 
         return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentScheduler))
     }
