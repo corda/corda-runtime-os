@@ -105,7 +105,7 @@ class FlowRestResourceImpl @Activate constructor(
         startFlow: StartFlowParameters
     ): ResponseEntity<FlowStatusResponse> {
         if (publisher == null) {
-            throw ServiceUnavailableException("FlowRestResource has not been initialised ")
+            throw ServiceUnavailableException(FlowRestExceptionConstants.UNINITIALIZED_ERROR)
         }
         if (fatalErrorOccurred) {
             // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
@@ -113,13 +113,16 @@ class FlowRestResourceImpl @Activate constructor(
             // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
             // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
             // closing us down soon. There are other fatal error types, but none are recoverable by definition.
-            throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
+            throw ServiceUnavailableException(FlowRestExceptionConstants.TEMPORARY_INTERNAL_FAILURE)
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
         if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
-            throw OperationNotAllowedException("Flow start capabilities of virtual node $holdingIdentityShortHash are not operational.")
+            throw OperationNotAllowedException(
+                FlowRestExceptionConstants.NOT_OPERATIONAL
+                    .format(holdingIdentityShortHash)
+            )
         }
 
         val clientRequestId = startFlow.clientRequestId
@@ -128,7 +131,7 @@ class FlowRestResourceImpl @Activate constructor(
         validateClientRequestId(clientRequestId)
 
         if (flowStatus != null) {
-            throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
+            throw ResourceAlreadyExistsException(FlowRestExceptionConstants.ALREADY_EXISTS_ERROR)
         }
 
         val flowClassName = startFlow.flowClassName
@@ -157,7 +160,7 @@ class FlowRestResourceImpl @Activate constructor(
                 "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}"
             )
         ) {
-            throw ForbiddenException("User $principal is not allowed to start a flow: ${startFlow.flowClassName}")
+            throw ForbiddenException(FlowRestExceptionConstants.FORBIDDEN.format(principal, startFlow.flowClassName))
         }
 
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
@@ -193,7 +196,11 @@ class FlowRestResourceImpl @Activate constructor(
             if (failureIsFatal) {
                 throw markFatalAndReturnFailureException(ex)
             } else {
-                throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
+                val msg = ex.message ?: ""
+                throw InternalServerException(
+                    FlowRestExceptionConstants.NON_FATAL_ERROR,
+                    mapOf("cause" to ex::class.java.simpleName, "reason" to msg)
+                )
             }
         }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
@@ -260,10 +267,14 @@ class FlowRestResourceImpl @Activate constructor(
                 flowStatusFeedRegistration.close()
             }
         } catch (e: WebSocketValidationException) {
-            log.warn("Validation error while registering flow status listener - ${e.message ?: "No exception message provided."}")
+            log.warn(
+                FlowRestExceptionConstants.VALIDATION_ERROR.format(
+                    e.cause?.message ?: FlowRestExceptionConstants.NO_EXCEPTION_MESSAGE
+                )
+            )
             error(e)
         } catch (e: Exception) {
-            log.error("Unexpected error at registerFlowStatusListener")
+            log.error(FlowRestExceptionConstants.UNEXPECTED_ERROR)
             error(e)
         }
     }
