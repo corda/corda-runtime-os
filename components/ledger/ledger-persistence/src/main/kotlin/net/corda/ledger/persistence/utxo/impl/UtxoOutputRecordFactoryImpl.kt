@@ -103,7 +103,7 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
             .setShortHolderId(holdingIdentity.shortHash.value)
             .setTokenType(token.poolKey.tokenType)
             .setIssuerHash(token.poolKey.issuerHash.toString())
-            .setNotaryX500Name(stateAndRef.state.notary.name.toString())
+            .setNotaryX500Name(stateAndRef.state.notaryName.toString())
             .setSymbol(token.poolKey.symbol)
             .build()
     }
