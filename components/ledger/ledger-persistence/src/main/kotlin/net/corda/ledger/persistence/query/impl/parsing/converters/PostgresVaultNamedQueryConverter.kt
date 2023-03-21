@@ -30,7 +30,7 @@ import net.corda.ledger.persistence.query.impl.parsing.Where
 
 class PostgresVaultNamedQueryConverter : VaultNamedQueryConverter {
 
-    override fun convert(output: StringBuilder, expression: List<Token>): StringBuilder {
+    override fun convert(output: StringBuilder, expression: List<Token>) {
         for (token in expression) {
             when (token) {
                 is PathReference -> output.append(token.ref)
@@ -67,6 +67,5 @@ class PostgresVaultNamedQueryConverter : VaultNamedQueryConverter {
                 else -> throw IllegalArgumentException("Invalid token in expression - $token")
             }
         }
-        return output
     }
 }
