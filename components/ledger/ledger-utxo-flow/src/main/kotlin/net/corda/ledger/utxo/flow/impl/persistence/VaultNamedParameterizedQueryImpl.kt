@@ -1,11 +1,13 @@
-package net.corda.ledger.persistence.query.execution.impl
+package net.corda.ledger.utxo.flow.impl.persistence
 
-import net.corda.flow.application.persistence.query.ResultSetImpl
-import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.persistence.query.execution.impl.LedgerResultSetImpl
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -46,25 +48,24 @@ class VaultNamedParameterizedQueryImpl<T>(
         return this
     }
 
+    @Suspendable
     override fun execute(): PagedQuery.ResultSet<T> {
         val offsetValue = offset
         val limitValue = limit
-        require(offsetValue != null && offsetValue > 0) {
+
+        require(offsetValue != null && offsetValue >= 0) {
             "Offset needs to be provided and needs to be a positive number to execute the query."
         }
         require(limitValue != null && limitValue > 0) {
             "Limit needs to be provided and needs to be a positive number to execute the query."
         }
 
-        val deserialized = wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                VaultNamedQueryExternalEventFactory::class.java,
-                VaultNamedQueryEventParams(queryName, getSerializedParameters(queryParams), offsetValue, limitValue)
-            )
-        }.map { serializationService.deserialize(it.array(), resultClass) }
+        val deserialized = externalEventExecutor.execute(
+            VaultNamedQueryExternalEventFactory::class.java,
+            VaultNamedQueryEventParams(queryName, getSerializedParameters(queryParams), offsetValue, limitValue)
+        ).map { serializationService.deserialize(it.array(), resultClass) }
 
-        // TODO how to populate this
-        return ResultSetImpl(
+        return LedgerResultSetImpl(
             0,
             deserialized.size,
             false,

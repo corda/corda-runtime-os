@@ -177,7 +177,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suspendable
     private fun persistenceFindAllDogs(): String {
         val dogs = persistenceService.findAll(Dog::class.java).execute()
-        return if (dogs.isEmpty()) {
+        return if (dogs.results.isEmpty()) {
             "no dog found"
         } else {
             "found one or more dogs"
@@ -187,7 +187,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suspendable
     private fun persistenceQueryDogs(): String {
         val dogs = persistenceService.query("Dog.all", Dog::class.java).execute()
-        return if (dogs.isEmpty()) {
+        return if (dogs.results.isEmpty()) {
             "no dog found"
         } else {
             "found one or more dogs"

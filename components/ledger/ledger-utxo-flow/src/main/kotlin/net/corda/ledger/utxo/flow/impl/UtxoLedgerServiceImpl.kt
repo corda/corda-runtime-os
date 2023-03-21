@@ -3,13 +3,13 @@ package net.corda.ledger.utxo.flow.impl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.query.execution.impl.VaultNamedParameterizedQueryImpl
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
+import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl

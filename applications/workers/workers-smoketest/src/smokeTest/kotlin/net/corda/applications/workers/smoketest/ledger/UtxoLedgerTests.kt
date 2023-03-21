@@ -92,6 +92,23 @@ class UtxoLedgerTests {
     }
 
     @Test
+    fun `Utxo Ledger - custom query can be executed and results are returned`() {
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            emptyMap(),
+            "net.cordapp.demo.utxo.UtxoCustomQueryDemoFlow"
+        )
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
+
+        val parsedResponse = objectMapper.readValue(utxoFlowResult.flowResult!!, CustomQueryResponse::class.java)
+
+        assertThat(parsedResponse.results).isNotEmpty
+    }
+
+    @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`() {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
@@ -195,5 +212,6 @@ class UtxoLedgerTests {
         val errorMessage: String?
     )
 
+    data class CustomQueryResponse( val results: List<String>)
 }
 

@@ -16,6 +16,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.ledger.persistence.LedgerPersistenceService
+import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
@@ -116,6 +117,8 @@ class DBProcessorImpl @Activate constructor(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = VaultNamedQueryExecutor::class)
+    private val vaultNamedQueryExecutor: VaultNamedQueryExecutor,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -166,6 +169,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
         ::allowedCertificatesReaderWriterService,
+        ::vaultNamedQueryExecutor,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
