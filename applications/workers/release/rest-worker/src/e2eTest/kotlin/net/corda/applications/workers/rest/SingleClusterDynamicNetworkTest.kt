@@ -1,8 +1,10 @@
 package net.corda.applications.workers.rest
 
+import net.corda.applications.workers.rest.utils.E2eCluster
 import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.applications.workers.rest.utils.E2eClusterMember
 import net.corda.applications.workers.rest.utils.E2eClusterMemberRole
+import net.corda.applications.workers.rest.utils.E2eClusterMemberRole.NOTARY
 import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rest.utils.assertP2pConnectivity
 import net.corda.applications.workers.rest.utils.generateGroupPolicy
@@ -20,23 +22,13 @@ class SingleClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path
 
-    private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
-        cluster.addMembers(
-            (1..4).map {
-                E2eClusterMember(
-                    cluster.getMemberName("Member$it", this::class.java.simpleName)
-                )
-            }
-        )
-        cluster.addMember(
-            E2eClusterMember(
-                cluster.getMemberName("Notary", this::class.java.simpleName),
-                E2eClusterMemberRole.NOTARY
-            )
-        )
+    private val cordaCluster = E2eClusterFactory.getE2eCluster().apply {
+        addMembers((1..2).map { createTestMember("Member$it") })
+        addMember(createTestMember("Notary", NOTARY))
+        addMembers((3..4).map { createTestMember("Member$it") })
     }
 
-    private val mgm = E2eClusterMember(cordaCluster.getMemberName("Mgm", this::class.java.simpleName))
+    private val mgm = cordaCluster.createTestMember("Mgm")
 
     @Test
     fun `Create mgm and allow members to join the group`() {
@@ -77,5 +69,15 @@ class SingleClusterDynamicNetworkTest {
             cordaCluster.assertAllMembersAreInMemberList(it, allMembers)
         }
         return cordaCluster.getGroupId(mgm.holdingId)
+    }
+
+    private fun E2eCluster.createTestMember(
+        namePrefix: String,
+        role: E2eClusterMemberRole? = null
+    ): E2eClusterMember {
+        val memberName = getMemberName<SingleClusterDynamicNetworkTest>(namePrefix)
+        return role?.let {
+            E2eClusterMember(memberName, it)
+        } ?: E2eClusterMember(memberName)
     }
 }

@@ -188,12 +188,11 @@ fun E2eCluster.lookupMembers(
         }
 }
 
-fun E2eCluster.getMemberName(
-    prefix: String,
-    className: String
+inline fun <reified T> E2eCluster.getMemberName(
+    prefix: String
 ): String {
     return mapOf(
-        "O" to "$prefix-${className}",
+        "O" to "$prefix-${T::class.java.simpleName}",
         "L" to "London",
         "C" to "GB",
         "OU" to uniqueName

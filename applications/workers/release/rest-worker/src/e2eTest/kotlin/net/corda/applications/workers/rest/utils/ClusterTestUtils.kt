@@ -258,14 +258,14 @@ fun E2eCluster.assignSoftHsm(
 }
 
 fun E2eCluster.register(
-    holdingId: String,
+    member: E2eClusterMember,
     context: Map<String, String>
 ): RegistrationRequestProgress {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
             proxy.startRegistration(
-                holdingId,
+                member.holdingId,
                 MemberRegistrationRequest(
                     action = "requestJoin",
                     context = context
@@ -273,16 +273,13 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(
-                    duration = 3.minutes,
-                    retryAllExceptions = true,
-                    waitBetween = 4.seconds
-                ) {
-                    val registrationStatus = proxy.checkSpecificRegistrationProgress(
-                        holdingId,
-                        registrationId
-                    )
+                eventually(duration = 1.minutes, retryAllExceptions = true, waitBetween = 2.seconds) {
+                    val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
+                        .withFailMessage {
+                            "${member.name} failed to get to approved registration state. " +
+                                    "Last state was ${registrationStatus.registrationStatus}"
+                        }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
             }
@@ -438,7 +435,7 @@ fun E2eCluster.onboardMembers(
 
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
-            member.holdingId,
+            member,
             createMemberRegistrationContext(
                 member,
                 this,
@@ -501,7 +498,7 @@ fun E2eCluster.onboardMgm(
     }
 
     register(
-        mgm.holdingId,
+        mgm,
         mgmRegistrationContext,
     )
 
@@ -541,7 +538,7 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
         }
 
         register(
-            member.holdingId,
+            member,
             registrationContext
         )
 
@@ -560,8 +557,8 @@ fun E2eCluster.assertAllMembersAreInMemberList(
     allMembers: List<E2eClusterMember>
 ) {
     eventually(
-        waitBetween = 3.seconds,
-        duration = 2.minutes,
+        waitBetween = 2.seconds,
+        duration = 60.seconds,
         retryAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)
