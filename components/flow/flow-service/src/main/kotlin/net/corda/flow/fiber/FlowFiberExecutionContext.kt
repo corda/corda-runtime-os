@@ -18,7 +18,6 @@ class FlowFiberExecutionContext(
     val currentSandboxGroupContext: CurrentSandboxGroupContext,
     val mdcLoggingData: Map<String, String>
 ) : NonSerializable {
-    val memberX500Name: MemberX500Name = holdingIdentity.x500Name
-    val flowStackService: FlowStack = flowCheckpoint.flowStack
+    val memberX500Name: MemberX500Name get() = holdingIdentity.x500Name
+    val flowStackService: FlowStack get() = flowCheckpoint.flowStack
 }
-

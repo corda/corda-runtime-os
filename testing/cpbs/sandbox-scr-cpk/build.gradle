@@ -8,7 +8,7 @@ group 'com.example.sandbox'
 version ''
 
 cordapp {
-    targetPlatformVersion 999 as Integer
+    targetPlatformVersion = 999
     workflow {
         name 'Sandbox SCR-Using-CPK'
         versionId 1
@@ -19,7 +19,6 @@ cordapp {
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    cordaProvided 'org.jetbrains:annotations'
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'

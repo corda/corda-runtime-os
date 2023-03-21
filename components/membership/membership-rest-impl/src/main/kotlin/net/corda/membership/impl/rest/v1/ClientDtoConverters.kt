@@ -47,6 +47,7 @@ fun RegistrationRequestStatusDto.fromDto() = RestRegistrationRequestStatus(
     this.registrationStatus.fromDto(),
     this.memberInfoSubmitted.fromDto(),
     this.reason,
+    this.serial,
 )
 
 fun RegistrationStatusDto.fromDto() = when (this) {
@@ -54,7 +55,6 @@ fun RegistrationStatusDto.fromDto() = when (this) {
     RegistrationStatusDto.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
     RegistrationStatusDto.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
     RegistrationStatusDto.PENDING_MEMBER_VERIFICATION -> RegistrationStatus.PENDING_MEMBER_VERIFICATION
-    RegistrationStatusDto.PENDING_APPROVAL_FLOW -> RegistrationStatus.PENDING_APPROVAL_FLOW
     RegistrationStatusDto.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
     RegistrationStatusDto.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
     RegistrationStatusDto.DECLINED -> RegistrationStatus.DECLINED

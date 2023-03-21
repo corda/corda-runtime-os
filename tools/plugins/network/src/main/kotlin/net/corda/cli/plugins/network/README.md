@@ -17,5 +17,5 @@ This is a sub-command under the `network` plugin to view the member list via HTT
 For example,
 
 ```shell
-./corda-cli.sh network --user=admin --password=admin --target=https://localhost:8888 members-list -h=<holding-identity-short-hash>
+./corda-cli.sh network --user=admin --password=admin --target=https://localhost:8888 --insecure members-list -h=<holding-identity-short-hash>
 ```

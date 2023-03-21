@@ -8,6 +8,7 @@ import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -31,6 +32,7 @@ import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfigFactory
@@ -48,6 +50,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -164,7 +168,8 @@ class FlowServiceTestContext @Activate constructor(
             CpkType.UNKNOWN,
             cpkChecksum,
             setOf(),
-            timestamp
+            timestamp,
+            null
         )
 
         val cpiMeta = CpiMetadata(
@@ -248,17 +253,23 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionInit.newBuilder()
-                .setProtocol(protocol)
-                .setVersions(listOf(1))
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
+                .setContextSessionProperties(getContextSessionProps(protocol))
                 .build(),
             sequenceNum = 0,
             receivedSequenceNum = 1,
         )
+    }
+
+    private fun getContextSessionProps(protocol: String): KeyValuePairList {
+        return KeyValueStore().apply {
+            put(FLOW_PROTOCOL, protocol)
+            put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
+        }.avro
     }
 
     override fun sessionAckEventReceived(

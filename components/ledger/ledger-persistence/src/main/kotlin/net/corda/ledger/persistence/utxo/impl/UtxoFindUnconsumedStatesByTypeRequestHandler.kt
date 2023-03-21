@@ -27,15 +27,15 @@ class UtxoFindUnconsumedStatesByTypeRequestHandler(
             "Provided ${findUnconsumedStatesByType.stateClassName} is not type of ContractState"
         }
 
-        // Find the relevant states of transaction
-        val relevantStates = persistenceService.findUnconsumedRelevantStatesByType(
+        // Find the visible states of transaction
+        val visibleStates = persistenceService.findUnconsumedVisibleStatesByType(
             stateType as Class<out ContractState>
         )
 
         // Return output records
         return listOf(
             utxoOutputRecordFactory.getStatesSuccessRecord(
-                relevantStates,
+                visibleStates,
                 externalEventContext,
                 serializationService
             )

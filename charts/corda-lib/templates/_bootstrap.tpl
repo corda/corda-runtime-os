@@ -409,7 +409,7 @@ spec:
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
-            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443"]
+            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443", '--insecure']
           volumeMounts:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
@@ -422,7 +422,7 @@ spec:
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
-            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443"]
+            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443", '--insecure']
           volumeMounts:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
@@ -435,7 +435,7 @@ spec:
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
-            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443"]
+            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443", '--insecure']
           volumeMounts:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:

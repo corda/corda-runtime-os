@@ -22,7 +22,6 @@ import kotlin.concurrent.scheduleAtFixedRate
  * [RestResource] interface should be used.
  *
  * @property baseAddress The base address of the server.
- * @property restResource The [RestResource] interface for which the proxy will be created.
  * @property restResourceClass The [RestResource] interface for which the proxy will be created.
  * @property clientConfig The configuration for the client to use.
  * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring
@@ -93,7 +92,9 @@ class RestClient<I : RestResource> internal constructor(
         log.trace { "Start." }
         return log.logElapsedTime("REST client") {
             val proxyHandler = RestClientProxyHandler(
-                RemoteUnirestClient(baseAddress, clientConfig.enableSSL), clientConfig.authenticationConfig, restResourceClass
+                RemoteUnirestClient(baseAddress, clientConfig.enableSSL, clientConfig.secureSSL),
+                clientConfig.authenticationConfig,
+                restResourceClass
             )
             try {
                 ops = proxyGenerator(restResourceClass, proxyHandler)

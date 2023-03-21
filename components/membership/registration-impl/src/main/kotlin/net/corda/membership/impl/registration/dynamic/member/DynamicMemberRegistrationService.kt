@@ -43,6 +43,7 @@ import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -57,6 +58,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
@@ -192,6 +194,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize registration request.") }
 
     private var impl: InnerRegistrationService = InactiveImpl
+    private val registrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -265,6 +268,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ex,
                 )
             }
+            val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
+            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
+                    logger.info(customFieldsValid.reason)
+                    throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+            }
             try {
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
@@ -293,15 +301,21 @@ class DynamicMemberRegistrationService @Activate constructor(
                         ByteBuffer.wrap(it.bytes)
                     )
                 }
-                val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
+
+                val serialInfo = context[SERIAL]?.toLong()
+                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: 0
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature,
                     CryptoSignatureSpec(signatureSpec, null, null),
-                    true
+                    true,
+                    serialInfo,
                 )
 
                 val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
@@ -350,7 +364,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
-                        isPending = true
+                        serial = serialInfo,
+                        isPending = true,
                     )
                 ).getOrThrow()
 
@@ -390,7 +405,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
-                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) || it.key.startsWith(SERIAL)
             }
             val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)

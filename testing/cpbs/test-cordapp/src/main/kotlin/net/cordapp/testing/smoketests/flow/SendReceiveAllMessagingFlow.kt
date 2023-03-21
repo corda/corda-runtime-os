@@ -44,6 +44,9 @@ class SendReceiveAllMessagingFlow(
         val sessionTwo = flowMessaging.initiateFlow(x500Name)
         log.info("Called initiate sessions")
 
+        val flowInfo = sessionOne.counterpartyFlowInfo
+        log.info("Received FlowInfo from sessionOne: $flowInfo")
+
         val sendMap: Map<FlowSession, Any> = mapOf(sessionOne to MyClass("Serialize me please", 1), sessionTwo to MyClass("Serialize me " +
                 "please", 2)
         )

@@ -1,5 +1,7 @@
 package net.corda.flow.application.sessions
 
+import net.corda.data.KeyValuePairList
+import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
@@ -8,6 +10,9 @@ import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.serialization.SerializedBytesImpl
+import net.corda.flow.utils.KeyValueStore
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -27,7 +33,6 @@ class FlowSessionImplTest {
         const val SESSION_ID = "session id"
         const val HI = "hi"
         const val HELLO_THERE = "hello there"
-
         val received = mapOf(SESSION_ID to HELLO_THERE.toByteArray())
     }
 
@@ -42,6 +47,7 @@ class FlowSessionImplTest {
     private val flowFiber = mockFlowFiberService.flowFiber.apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
         whenever(suspend(any<FlowIORequest.Receive>())).thenReturn(received)
+        whenever(suspend(any<FlowIORequest.CounterPartyFlowInfo>())).thenReturn(Unit)
     }
 
     private val userKey = "userKey"
@@ -163,6 +169,55 @@ class FlowSessionImplTest {
 
         assertEquals(platformValue, session.contextProperties[platformKey])
         assertEquals(userValue, session.contextProperties[userKey])
+    }
+
+    @Test
+    fun `Get counterparty info does a suspension when it is not available in the fiber`() {
+        val checkpoint = mockFlowFiberService.flowCheckpoint
+        var firstCall = true
+
+        whenever(checkpoint.getSessionState(SESSION_ID)).doAnswer {
+            if (firstCall) {
+                firstCall = false
+                SessionState()
+            } else {
+                SessionState().apply {
+                    counterpartySessionProperties =
+                        testSessionProps()
+                }
+            }
+        }
+
+        val session = createInitiatingSession()
+        val info = session.counterpartyFlowInfo
+
+        verify(flowFiber).suspend(any<FlowIORequest.CounterPartyFlowInfo>())
+
+        assertEquals("protocol", info.protocol())
+        assertEquals(1, info.protocolVersion())
+    }
+
+    @Test
+    fun `Get counterparty info retrieves data when it is available in the fiber`() {
+        val checkpoint = mockFlowFiberService.flowCheckpoint
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { counterpartySessionProperties =
+            testSessionProps() })
+        val session = createInitiatingSession()
+
+        val info = session.counterpartyFlowInfo
+        verify(flowFiber, times(0)).suspend(any<FlowIORequest.CounterPartyFlowInfo>())
+
+        assertEquals("protocol", info.protocol())
+        assertEquals(1, info.protocolVersion())
+    }
+
+    private fun testSessionProps(): KeyValuePairList {
+        val sessionProps = KeyValueStore().apply {
+            put(FLOW_PROTOCOL, "protocol")
+            put(FLOW_PROTOCOL_VERSION_USED, "1")
+        }
+
+        return sessionProps.avro
     }
 
     private fun createInitiatedSession() = FlowSessionImpl(
