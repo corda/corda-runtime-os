@@ -141,7 +141,7 @@ class FlowFiberImpl(
         setCurrentSandboxGroupContext()
 
         @Suppress("unchecked_cast")
-        return when (val outcome = suspensionOutcome!!) {
+        return when (val outcome = suspensionOutcome ?: throw IllegalStateException("FlowFiber suspensionOutcome is missing!")) {
             is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
             is FlowContinuation.Error -> throw FlowContinuationErrorException(
                 // We populate the container exception message in case user code has a try/catch around the failing statement.

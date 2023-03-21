@@ -2,6 +2,7 @@ package net.corda.kryoserialization.impl
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
+import com.esotericsoftware.kryo.ClassResolver
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -25,12 +26,15 @@ import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
 import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import java.security.PrivateKey
 import java.security.PublicKey
+import java.util.function.Function
 import javax.security.auth.x500.X500Principal
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
     private val sandboxGroup: SandboxGroup,
-    private val kryo: Kryo = (Fiber.getFiberSerializer(false) as KryoSerializer).kryo
+    private val kryoFunction: Function<ClassResolver, Kryo> = Function { classResolver ->
+        (Fiber.getFiberSerializer(classResolver, false) as KryoSerializer).kryo
+    }
 ) : CheckpointSerializerBuilder {
 
     private val serializers: MutableMap<Class<*>, Serializer<*>> = mutableMapOf()
@@ -79,10 +83,9 @@ class KryoCheckpointSerializerBuilderImpl(
         )
 
         val kryo = DefaultKryoCustomizer.customize(
-            kryo,
+            kryoFunction.apply(classResolver),
             serializers + publicKeySerializers + otherCustomSerializers,
-            classResolver,
-            classSerializer,
+            classSerializer
         )
 
         return KryoCheckpointSerializer(kryo).also {
