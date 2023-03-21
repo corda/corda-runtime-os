@@ -1,5 +1,6 @@
 package net.corda.kryoserialization
 
+import co.paralleluniverse.io.serialization.kryo.ExternalizableKryoSerializer
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -14,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.Externalizable
 import java.util.concurrent.Executors
 
 internal class KryoCheckpointSerializerTest {
@@ -52,7 +54,12 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(FlowStackItem::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver())
+                    .apply {
+                        isRegistrationRequired = false
+                        // This serializer shouldn't be used
+                        addDefaultSerializer(Externalizable::class.java, ExternalizableKryoSerializer<Externalizable>())
+                    },
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
             )

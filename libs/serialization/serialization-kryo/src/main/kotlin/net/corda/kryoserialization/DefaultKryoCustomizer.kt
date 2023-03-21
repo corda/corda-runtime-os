@@ -34,11 +34,13 @@ import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
+import java.util.Collections.unmodifiableSet
 
 class DefaultKryoCustomizer {
 
     companion object {
         private const val LOGGER_ID = Int.MAX_VALUE
+        private val FORBIDDEN_TYPES = unmodifiableSet(setOf(NonSerializable::class.java, SpecificRecord::class.java))
 
         internal fun customize(
             kryo: Kryo,
@@ -62,10 +64,14 @@ class DefaultKryoCustomizer {
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
-                // Default serializers added below will be searched in a reverse order
+                // Serializers for more specific types have higher precedence, and
+                // so we cannot add serializers for extensions of forbidden types.
+                val externalSerializers = serializers.filterNot { serializer ->
+                    FORBIDDEN_TYPES.any { type -> type.isAssignableFrom(serializer.key) }
+                }.toSortedMap(compareBy(Class<*>::getName))
 
                 // Add external serializers
-                for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
+                for ((clazz, serializer) in externalSerializers) {
                     addDefaultSerializer(clazz, serializer)
                 }
 
@@ -108,26 +114,9 @@ class DefaultKryoCustomizer {
 
                 // Register a serializer to reject the serialization of Avro generated classes
                 addDefaultSerializer(SpecificRecord::class.java, AvroRecordRejectSerializer)
-
-                addDefaultSerializerAsFirst(NonSerializable::class.java, NonSerializableSerializer)
+                // Register a serializer to reject the serialization of NonSerializable classes
+                addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
             }
-        }
-
-        private val defaultSerializerEntryCtor =
-            Class.forName("com.esotericsoftware.kryo.Kryo\$DefaultSerializerEntry")
-                .getDeclaredConstructor(Class::class.java, SerializerFactory::class.java)
-                .apply { isAccessible = true }
-
-        private val defaultSerializersField =
-            Kryo::class.java.getDeclaredField("defaultSerializers")
-                .apply { isAccessible = true }
-
-        @Suppress("unchecked_cast")
-        private fun Kryo.addDefaultSerializerAsFirst(type: Class<*>, serializer: Serializer<*>) {
-            val serializerFactory = SerializerFactory.SingletonSerializerFactory(serializer)
-            val entry = defaultSerializerEntryCtor.newInstance(type, serializerFactory)
-            val defaultSerializers = defaultSerializersField.get(this) as ArrayList<Any>
-            defaultSerializers.add(0, entry)
         }
     }
 
