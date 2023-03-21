@@ -28,6 +28,7 @@ class NotaryInfoConverter @Activate constructor(
     private companion object {
         const val NAME = "name"
         const val PROTOCOL = "flow.protocol.name"
+        const val PROTOCOL_VERSIONS_PREFIX = "flow.protocol.versions"
         const val KEYS_PREFIX = "keys"
     }
 
@@ -36,12 +37,16 @@ class NotaryInfoConverter @Activate constructor(
     override fun convert(context: ConversionContext): NotaryInfo {
         val name = context.map.parse(NAME, MemberX500Name::class.java)
         val protocol = context.value(PROTOCOL) ?: throw ValueNotFoundException("'$PROTOCOL' is null or missing.")
+        val protocolVersions = context.map.parseList(PROTOCOL_VERSIONS_PREFIX, Int::class.java).toSet().apply {
+            require(isNotEmpty()) { throw ValueNotFoundException("'$PROTOCOL_VERSIONS_PREFIX' is empty.") }
+        }
         val keysWithWeight = context.map.parseList(KEYS_PREFIX, PublicKey::class.java).map {
             CompositeKeyNodeAndWeight(it, 1)
         }
         return NotaryInfoImpl(
             name,
             protocol,
+            protocolVersions,
             compositeKeyProvider.create(keysWithWeight, null)
         )
     }
@@ -50,12 +55,11 @@ class NotaryInfoConverter @Activate constructor(
 private data class NotaryInfoImpl(
     private val name: MemberX500Name,
     private val protocol: String,
+    private val protocolVersions: Collection<Int>,
     private val publicKey: PublicKey,
 ) : NotaryInfo {
     override fun getName() = name
     override fun getProtocol() = protocol
-    override fun getProtocolVersions(): MutableCollection<Int> {
-        TODO("Not yet implemented")
-    }
+    override fun getProtocolVersions() = protocolVersions
     override fun getPublicKey() = publicKey
 }

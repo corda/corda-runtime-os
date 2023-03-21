@@ -616,6 +616,7 @@ class StaticMemberRegistrationServiceTest {
             val mockNotaryDetails = MemberNotaryDetails(
                 notary,
                 null,
+                emptyList(),
                 emptyList()
             )
             val mockMemberContext: MemberContext = mock {

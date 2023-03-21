@@ -129,6 +129,7 @@ class MemberInfoExtension {
         const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
         const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
+        const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.versions.%s"
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"

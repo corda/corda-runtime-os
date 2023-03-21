@@ -24,6 +24,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
     private companion object {
         const val SERVICE_NAME = "service.name"
         const val SERVICE_PROTOCOL = "service.flow.protocol.name"
+        const val PROTOCOL_VERSIONS_PREFIX = "service.flow.protocol.versions."
         const val KEYS_PREFIX = "keys."
         const val HASH = ".hash"
         const val PEM = ".pem"
@@ -36,6 +37,15 @@ class MemberNotaryDetailsConverter @Activate constructor(
     override fun convert(context: ConversionContext): MemberNotaryDetails {
         val serviceName = context.value(SERVICE_NAME) ?: throw ValueNotFoundException("'$SERVICE_NAME' is null or absent.")
         val serviceProtocol = context.value(SERVICE_PROTOCOL)
+        val serviceProtocolVersions = generateSequence(0) {
+            it + 1
+        }.map { index ->
+            context.value(PROTOCOL_VERSIONS_PREFIX + index)?.toInt()
+        }.takeWhile { it != null }
+            .filterNotNull()
+            .toList()
+            .distinct()
+
         val keys = generateSequence(0) {
             it + 1
         }.map { index ->
@@ -59,6 +69,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
         return MemberNotaryDetails(
             serviceName = MemberX500Name.parse(serviceName),
             serviceProtocol = serviceProtocol,
+            serviceProtocolVersions = serviceProtocolVersions,
             keys = keys
         )
     }
