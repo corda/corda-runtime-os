@@ -968,6 +968,37 @@
                     "examples": [{
                         "enabled": true
                     }]
+                },
+                "rest": {
+                    "type": "object",
+                    "default": {},
+                    "title": "REST configuration",
+                    "properties": {
+                        "tls": {
+                            "type": "object",
+                            "title": "TLS configuration",
+                            "properties": {
+                                "keystore": {
+                                    "type": "object",
+                                    "title": "Keystore configuration",
+                                    "properties": {
+                                        "password": {
+                                            "$ref": "#/$defs/config"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "examples": [{
+                        "tls": {
+                            "keystore": {
+                                "password": {
+                                    "value": "mySecretPassword!"
+                                }
+                            }
+                        }
+                    }]
                 }
             }
         },

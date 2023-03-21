@@ -61,7 +61,7 @@ db:
   # Cluster database configuration
   cluster:
     # -- the cluster database host (required)
-    host: ""
+    host: "to-be-changed-db-cluster-host.com"
     # -- the cluster database type
     type: "postgresql"
     # -- the cluster database port
@@ -97,7 +97,7 @@ db:
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
-  bootstrapServers: ""
+  bootstrapServers: "to-be-changed-kafka:9092"
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
   # TLS configuration for client connections to Kafka
@@ -297,6 +297,25 @@ bootstrap:
   rbac:
     # -- Indicates whether RBAC roles bootstrapping is enabled as part of installation
     enabled: true
+
+  # Configuration for REST bootstrap
+  rest:
+    # TLS configuration
+    tls:
+      # Keystore configuration
+      keystore:
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
 
   # Configuration for Kafka bootstrap
   kafka:

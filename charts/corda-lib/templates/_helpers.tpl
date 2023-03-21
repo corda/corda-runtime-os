@@ -120,6 +120,20 @@ Initial admin user password secret name
 {{- end }}
 
 {{/*
+Initial REST TLS keystore secret name
+*/}}
+{{- define "corda.initialRestTlsKeystoreSecretName" -}}
+{{ default (printf "%s-rest-tls-keystore" (include "corda.fullname" .)) }}
+{{- end }}
+
+{{/*
+REST TLS keystore secret name
+*/}}
+{{- define "corda.restTlsKeystoreSecretName" -}}
+{{ .Values.bootstrap.rest.tls.keystore.password.valueFrom.secretKeyRef.name | default (include "corda.initialRestTlsKeystoreSecretName" .) }}
+{{- end }}
+
+{{/*
 Initial admin user secret username key
 */}}
 {{- define "corda.initialAdminUserSecretUsernameKey" -}}
