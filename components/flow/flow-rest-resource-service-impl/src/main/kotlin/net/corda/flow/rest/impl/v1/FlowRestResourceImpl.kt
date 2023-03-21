@@ -94,8 +94,9 @@ class FlowRestResourceImpl @Activate constructor(
     private fun validateClientRequestId(clientRequestId: String) {
         if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
             throw BadRequestException(
-                """Supplied Client Request ID "$clientRequestId" is invalid,""" +
-                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}"."""
+                FlowRestExceptionConstants.INVALID_ID.format(
+                    clientRequestId, RbacKeys.CLIENT_REQ_REGEX
+                )
             )
         }
     }
@@ -215,7 +216,7 @@ class FlowRestResourceImpl @Activate constructor(
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
         val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holdingIdentityShortHash}'")
+            ?: throw ResourceNotFoundException(FlowRestExceptionConstants.CPI_NOT_FOUND.format(holdingIdentityShortHash))
         return cpiMeta.cpksMetadata.flatMap {
             it.cordappManifest.clientStartableFlows
         }
@@ -225,8 +226,9 @@ class FlowRestResourceImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
-                "Failed to find the flow status for holding identity='${holdingIdentityShortHash} " +
-                        "and Client Request ID='${clientRequestId}"
+                FlowRestExceptionConstants.FLOW_STATUS_NOT_FOUND.format(
+                    holdingIdentityShortHash, clientRequestId
+                )
             )
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
