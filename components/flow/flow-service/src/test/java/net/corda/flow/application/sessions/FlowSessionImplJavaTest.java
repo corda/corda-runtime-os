@@ -110,7 +110,7 @@ public class FlowSessionImplJavaTest {
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{1, 2, 3});
-        when(serializationService.serialize(any())).thenReturn(new SerializedBytesImpl<>(new byte[]{1, 2, 3}));
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytesImpl(new byte[]{1, 2, 3}));
         when(serializationService.deserializeAndCheckType(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
