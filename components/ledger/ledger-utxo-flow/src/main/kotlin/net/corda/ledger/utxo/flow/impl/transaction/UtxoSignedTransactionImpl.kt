@@ -114,7 +114,7 @@ data class UtxoSignedTransactionImpl(
         )
     }
 
-    private fun getSignatoryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
+    private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
         val keyIdsToSignatories = signatories.associateBy {// todo cache this
             transactionSignatureServiceInternal.getIdOfPublicKey(
                 it,
@@ -128,7 +128,7 @@ data class UtxoSignedTransactionImpl(
     @Suspendable // TODO: are these need to be suspendable?
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedRequiredSignatures = signatures.mapNotNull {
-            val publicKey = getSignatoryPublicKeyByKeyId(it.by)
+            val publicKey = getSignatoryKeyFromKeyId(it.by)
             if (publicKey == null) {
                 null
             } else {
@@ -149,7 +149,7 @@ data class UtxoSignedTransactionImpl(
     @Suspendable
     override fun verifySignatorySignatures() {
         val appliedSignatories = signatures.mapNotNull {
-            val publicKey = getSignatoryPublicKeyByKeyId(it.by)
+            val publicKey = getSignatoryKeyFromKeyId(it.by)
             if (publicKey == null) {
                 null// We do not care about non-notary/non-signatory keys
             } else {
@@ -250,7 +250,7 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun verifySignatorySignature(signature: DigitalSignatureAndMetadata) {
-        val publicKey = getSignatoryPublicKeyByKeyId(signature.by)
+        val publicKey = getSignatoryKeyFromKeyId(signature.by)
             ?: return // We do not care about non-notary/non-signatory signatures.
 
         try {
