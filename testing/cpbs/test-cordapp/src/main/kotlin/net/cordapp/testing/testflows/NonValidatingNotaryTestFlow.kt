@@ -171,7 +171,8 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             it.name.commonName?.contains("notary", ignoreCase = true) ?: false
         }
 
-        return Party(notary.name, notary.sessionInitiationKey)
+        // CORE-11837: Use ledger key
+        return Party(notary.name, notary.sessionInitiationKeys.first())
     }
 
     /**
@@ -186,7 +187,8 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         referenceStateRefs: List<String>,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
-        val myKey = memberLookup.myInfo().sessionInitiationKey
+        // CORE-11837: Use ledger key
+        val myKey = memberLookup.myInfo().sessionInitiationKeys.first()
         return utxoLedgerService.getTransactionBuilder()
                 .setNotary(notaryServerParty)
                 .addCommand(TestCommand())

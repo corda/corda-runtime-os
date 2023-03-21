@@ -10,6 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKey
 import net.corda.p2p.linkmanager.common.GroupIdWithPublicKeyHash
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
@@ -65,7 +66,6 @@ internal class LinkManagerHostingMapImpl(
         managedChildren = setOf(subscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
-
     override fun isHostedLocally(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo.containsKey(identity)
 
@@ -105,7 +105,9 @@ internal class LinkManagerHostingMapImpl(
             currentData: Map<String, HostedIdentityEntry>,
         ) {
             if (oldValue != null) {
-                publicHashToIdentityInfo.remove(oldValue.toGroupIdWithPublicKeyHash())
+                oldValue.toGroupIdWithPublicKeyHash().forEach {
+                    publicHashToIdentityInfo.remove(it)
+                }
                 locallyHostedIdentityToIdentityInfo.remove(oldValue.holdingIdentity.toCorda())
             }
             val newIdentity = newRecord.value
@@ -115,12 +117,10 @@ internal class LinkManagerHostingMapImpl(
         }
     }
 
-    private fun HostedIdentityEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
-        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
-        return GroupIdWithPublicKeyHash(
-            this.holdingIdentity.groupId,
-            ByteBuffer.wrap(keyHasher.hash(publicKey)),
-        )
+    private fun HostedIdentityEntry.toGroupIdWithPublicKeyHash(): Collection<GroupIdWithPublicKeyHash> {
+        return this.alternativeSessionKeys.map {
+            it.toGroupIdWithPublicKeyHash(this.holdingIdentity.groupId)
+        } + this.prefferedSessionKey.toGroupIdWithPublicKeyHash(this.holdingIdentity.groupId)
     }
 
     private fun addEntry(entry: HostedIdentityEntry) {
@@ -128,13 +128,29 @@ internal class LinkManagerHostingMapImpl(
             holdingIdentity = entry.holdingIdentity.toCorda(),
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
-            sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey),
-            sessionCertificates = entry.sessionCertificates
+            preferredSessionKey = entry.prefferedSessionKey.toData(),
         )
         locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toCorda()] = info
-        publicHashToIdentityInfo[entry.toGroupIdWithPublicKeyHash()] = info
+        entry.toGroupIdWithPublicKeyHash().forEach {
+            publicHashToIdentityInfo[it] = info
+        }
         listeners.forEach {
             it.identityAdded(info)
         }
+    }
+
+    private fun HostedIdentitySessionKey.toData(): HostingMapListener.SessionKey {
+        return HostingMapListener.SessionKey(
+            sessionPublicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey),
+            sessionCertificates = this.sessionCertificates,
+        )
+    }
+
+    private fun HostedIdentitySessionKey.toGroupIdWithPublicKeyHash(groupId: String): GroupIdWithPublicKeyHash {
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
+        return GroupIdWithPublicKeyHash(
+            groupId,
+            ByteBuffer.wrap(keyHasher.hash(publicKey)),
+        )
     }
 }

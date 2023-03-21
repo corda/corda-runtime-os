@@ -33,6 +33,7 @@ class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
             it.notaryDetails?.serviceName == serviceIdentity.name
         }.random()
 
-        return Party(selectedMember.name, selectedMember.sessionInitiationKey)
+        // CORE-11837: This should be the notary key
+        return Party(selectedMember.name, selectedMember.sessionInitiationKeys.first())
     }
 }

@@ -6,8 +6,11 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKey
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.rest.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
@@ -47,28 +50,33 @@ internal class HostedIdentityEntryFactory(
             ?: throw CertificatesResourceNotFoundException("No node with ID $holdingIdentityShortHash")
     }
 
-    private fun getKey(
+    private fun getSessionKey(
         tenantId: String,
-        sessionKeyId: ShortHash?,
+        sessionKeyId: ShortHash,
     ): String {
-        val sessionKey = if (sessionKeyId != null) {
-            cryptoOpsClient.lookupKeysByIds(
-                tenantId = tenantId,
-                keyIds = listOf(sessionKeyId)
-            )
-        } else {
-            cryptoOpsClient.lookup(
-                tenantId = tenantId,
-                0,
-                1,
-                CryptoKeyOrderBy.NONE,
-                mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT),
-            )
-        }.firstOrNull()
-            ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
+        return cryptoOpsClient.lookupKeysByIds(
+            tenantId = tenantId,
+            keyIds = listOf(sessionKeyId)
+        ).toPem(tenantId)
+    }
 
-        val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
-        return keyEncodingService.encodeAsString(sessionPublicKey)
+    private fun getFirstSessionKey(tenantId: String): String {
+        return cryptoOpsClient.lookup(
+            tenantId = tenantId,
+            0,
+            1,
+            CryptoKeyOrderBy.NONE,
+            mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT),
+        ).toPem(tenantId)
+    }
+    private fun Collection<CryptoSigningKey>.toPem(tenantId: String): String {
+        val key = this.firstOrNull()
+            ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
+        return keyEncodingService.encodeAsString(
+            keyEncodingService.decodePublicKey(
+                key.publicKey.array()
+            )
+        )
     }
 
     private fun getCertificates(
@@ -97,13 +105,12 @@ internal class HostedIdentityEntryFactory(
         }
     }
 
-    @Suppress("LongParameterList")
     fun createIdentityRecord(
         holdingIdentityShortHash: ShortHash,
         tlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionCertificateChainAlias: String?,
-        sessionKeyId: ShortHash?,
+        preferredSessionKey: CertificatesClient.SessionKey?,
+        alternativeSessionKeys: Collection<CertificatesClient.SessionKey>,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
         val policy = try {
@@ -112,7 +119,34 @@ internal class HostedIdentityEntryFactory(
             logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
             null
         } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
-        val sessionPublicKey = getKey(holdingIdentityShortHash.value, sessionKeyId)
+        val avroPreferredSessionKey = if (preferredSessionKey == null) {
+            val sessionPublicKey = getFirstSessionKey(holdingIdentityShortHash.value)
+            val certificates = getAndValidateSessionCertificate(
+                holdingIdentityShortHash,
+                null,
+                nodeInfo,
+                policy
+            )
+            HostedIdentitySessionKey.newBuilder()
+                .setSessionPublicKey(sessionPublicKey)
+                .setSessionCertificates(certificates)
+                .build()
+        } else {
+            buildHostedIdentitySessionKey(
+                preferredSessionKey,
+                holdingIdentityShortHash,
+                nodeInfo,
+                policy
+            )
+        }
+        val avroAlternativeSessionKeys = alternativeSessionKeys.map { sessionKey ->
+            buildHostedIdentitySessionKey(
+                sessionKey,
+                holdingIdentityShortHash,
+                nodeInfo,
+                policy
+            )
+        }
         val (tlsKeyTenantId, tlsCertificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
             P2P to null
         } else {
@@ -130,25 +164,41 @@ internal class HostedIdentityEntryFactory(
             policy,
             tlsCertificates.first(),
         )
-        val sessionCertificate = getAndValidateSessionCertificate(
-            holdingIdentityShortHash,
-            sessionCertificateChainAlias,
-            nodeInfo,
-            policy
-        )
 
         val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
-            .setSessionPublicKey(sessionPublicKey)
             .setTlsCertificates(tlsCertificates)
             .setTlsTenantId(tlsKeyTenantId)
-            .setSessionCertificates(sessionCertificate)
-        sessionCertificate?.let { hostedIdentityBuilder.setSessionCertificates(it) }
+            .setPrefferedSessionKey(avroPreferredSessionKey)
+            .setAlternativeSessionKeys(avroAlternativeSessionKeys)
         return Record(
             topic = Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
             key = nodeInfo.holdingIdentity.shortHash.value,
             value = hostedIdentityBuilder.build(),
         )
+    }
+
+    private fun buildHostedIdentitySessionKey(
+        sessionKey: CertificatesClient.SessionKey,
+        sessionCertificateHoldingId: ShortHash,
+        nodeInfo: VirtualNodeInfo,
+        policy: GroupPolicy,
+    ): HostedIdentitySessionKey {
+        val sessionCertificate = getAndValidateSessionCertificate(
+            sessionCertificateHoldingId,
+            sessionKey.sessionCertificateChainAlias,
+            nodeInfo,
+            policy
+        )
+        return HostedIdentitySessionKey.newBuilder()
+            .setSessionPublicKey(
+                getSessionKey(
+                    sessionCertificateHoldingId.value,
+                    sessionKey.sessionKeyId,
+                )
+            )
+            .setSessionCertificates(sessionCertificate)
+            .build()
     }
 
     private fun getAndValidateSessionCertificate(

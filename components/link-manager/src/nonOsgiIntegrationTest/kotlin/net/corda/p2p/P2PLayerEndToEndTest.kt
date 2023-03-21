@@ -28,6 +28,7 @@ import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKey
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
@@ -463,7 +464,7 @@ class P2PLayerEndToEndTest {
             return mock {
                 on { name } doReturn identity.name
                 on { memberProvidedContext } doReturn context
-                on { sessionInitiationKey } doReturn keyPair.public
+                on { sessionInitiationKeys } doReturn listOf(keyPair.public)
 
             }
         }
@@ -690,8 +691,11 @@ class P2PLayerEndToEndTest {
                         info.identity.id.toAvro(),
                         TLS_KEY_TENANT_ID,
                         info.tlsCertificatesPem,
-                        info.keyPair.public.toPem(),
-                        null
+                        HostedIdentitySessionKey(
+                            info.keyPair.public.toPem(),
+                            null
+                        ),
+                        emptyList()
                     )
                 )
             }.toList()

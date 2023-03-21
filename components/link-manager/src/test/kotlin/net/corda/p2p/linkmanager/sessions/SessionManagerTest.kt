@@ -215,8 +215,10 @@ class SessionManagerTest {
         holdingIdentity = OUR_PARTY,
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
-        sessionPublicKey = OUR_KEY.public,
-        sessionCertificates = null
+        HostingMapListener.SessionKey(
+            sessionPublicKey = OUR_KEY.public,
+            sessionCertificates = null
+        ),
     )
 
     private val counterparties = SessionManager.SessionCounterparties(

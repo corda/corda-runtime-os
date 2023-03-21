@@ -15,6 +15,7 @@ import net.corda.membership.certificate.client.CertificatesResourceNotFoundExcep
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKey
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
@@ -41,13 +42,27 @@ class NetworkRestResourceImpl @Activate constructor(
         request: HostedIdentitySetupRequest
     ) {
         val operation = "set up locally hosted identities"
+        val preferredSessionKeys = request.sessionKeys.filter {
+            it.preferred
+        }
+        if (preferredSessionKeys.size > 1) {
+            throw BadRequestException("Can not have more than one preferred  session key.")
+        }
+        val preferredSessionKey = if (preferredSessionKeys.isEmpty()) {
+            request.sessionKeys.firstOrNull()
+        } else {
+            preferredSessionKeys.first()
+        }
+        val alternativeSessionKeys = request.sessionKeys.filter {
+            it != preferredSessionKey && !it.preferred
+        }
         try {
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.parseOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
-                request.sessionKeyId?.let { createKeyIdOrHttpThrow(it) },
-                request.sessionCertificateChainAlias
+                preferredSessionKey?.toSessionKey(),
+                alternativeSessionKeys.map { it.toSessionKey() },
             )
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)
@@ -104,4 +119,10 @@ class NetworkRestResourceImpl @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
+
+    private fun HostedIdentitySessionKey.toSessionKey(): CertificatesClient.SessionKey =
+        CertificatesClient.SessionKey(
+            createKeyIdOrHttpThrow(this.sessionKeyId),
+            this.sessionCertificateChainAlias,
+        )
 }

@@ -73,7 +73,6 @@ class TlsCertificatesPublisherTest {
         listOf("one", "two"),
         "id1",
         mock(),
-        mock()
     )
 
     private val publisher = TlsCertificatesPublisher(

@@ -27,6 +27,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -159,7 +160,7 @@ class CertificatesClientImplTest {
                 "Alias",
                 true,
                 null,
-                null,
+                emptyList(),
             )
 
             verify(
@@ -169,7 +170,7 @@ class CertificatesClientImplTest {
                 "Alias",
                 true,
                 null,
-                null,
+                emptyList(),
             )
         }
 
@@ -204,7 +205,7 @@ class CertificatesClientImplTest {
                     "Alias",
                     true,
                     null,
-                    null
+                    emptyList()
                 )
             }
         }
@@ -224,7 +225,7 @@ class CertificatesClientImplTest {
                     "Alias",
                     false,
                     null,
-                    null
+                    emptyList()
                 )
             }
         }
@@ -246,8 +247,11 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 false,
-                null,
-                "chain",
+                CertificatesClient.SessionKey(
+                    ShortHash.of("123412341234"),
+                    "chain",
+                ),
+                emptyList(),
             )
 
             verify(publisher).publish(listOf(record))

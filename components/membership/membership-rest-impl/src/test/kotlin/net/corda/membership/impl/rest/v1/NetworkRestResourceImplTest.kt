@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKey
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -86,7 +87,7 @@ class NetworkRestResourceImplTest {
                 HostedIdentitySetupRequest(
                     "alias",
                     true,
-                    null
+                    emptyList()
                 )
             )
 
@@ -95,9 +96,10 @@ class NetworkRestResourceImplTest {
                 "alias",
                 true,
                 null,
-                null
+                emptyList(),
             )
         }
+
         @Test
         fun `it catches resource not found exception`() {
             whenever(
@@ -105,8 +107,8 @@ class NetworkRestResourceImplTest {
                     any(),
                     any(),
                     any(),
-                    any(),
-                    anyOrNull()
+                    anyOrNull(),
+                    any()
                 )
             ).doThrow(CertificatesResourceNotFoundException("Mock failure"))
 
@@ -116,10 +118,159 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        "1234567890ac"
+                        listOf(
+                            HostedIdentitySessionKey(
+                                "1234567890ac"
+                            )
+                        )
                     )
                 )
             }
+        }
+
+        @Test
+        fun `it throws an exception if there are two preferred keys`() {
+            assertThrows<BadRequestException> {
+                networkRestResource.setupHostedIdentities(
+                    "1234567890ab",
+                    HostedIdentitySetupRequest(
+                        "alias",
+                        false,
+                        listOf(
+                            HostedIdentitySessionKey(
+                                "1234567890ac",
+                                preferred = true,
+                            ),
+                            HostedIdentitySessionKey(
+                                "1234567890ac",
+                                preferred = false,
+                            ),
+                            HostedIdentitySessionKey(
+                                "1234567890ac",
+                                preferred = true,
+                            ),
+                        )
+                    )
+                )
+            }
+        }
+
+        @Test
+        fun `it uses the first key if there are no preferred keys`() {
+            val preferredKey = argumentCaptor<CertificatesClient.SessionKey>()
+            whenever(
+                certificatesClient.setupLocallyHostedIdentity(
+                    any(),
+                    any(),
+                    any(),
+                    preferredKey.capture(),
+                    any()
+                )
+            ).doAnswer { }
+
+            networkRestResource.setupHostedIdentities(
+                "1234567890ab",
+                HostedIdentitySetupRequest(
+                    "alias",
+                    false,
+                    listOf(
+                        HostedIdentitySessionKey(
+                            "1234567890aa",
+                            preferred = false,
+                        ),
+                        HostedIdentitySessionKey(
+                            "1234567890ac",
+                            preferred = false,
+                        ),
+                        HostedIdentitySessionKey(
+                            "1234567890ad",
+                            preferred = false,
+                        ),
+                    )
+                )
+            )
+
+            assertThat(preferredKey.firstValue.sessionKeyId).isEqualTo(ShortHash.of("1234567890aa"))
+        }
+
+        @Test
+        fun `it uses the preferred key`() {
+            val preferredKey = argumentCaptor<CertificatesClient.SessionKey>()
+            whenever(
+                certificatesClient.setupLocallyHostedIdentity(
+                    any(),
+                    any(),
+                    any(),
+                    preferredKey.capture(),
+                    any()
+                )
+            ).doAnswer { }
+
+            networkRestResource.setupHostedIdentities(
+                "1234567890ab",
+                HostedIdentitySetupRequest(
+                    "alias",
+                    false,
+                    listOf(
+                        HostedIdentitySessionKey(
+                            "1234567890aa",
+                            preferred = false,
+                        ),
+                        HostedIdentitySessionKey(
+                            "1234567890ac",
+                            preferred = true,
+                        ),
+                        HostedIdentitySessionKey(
+                            "1234567890ad",
+                            preferred = false,
+                        ),
+                    )
+                )
+            )
+
+            assertThat(preferredKey.firstValue.sessionKeyId).isEqualTo(ShortHash.of("1234567890ac"))
+        }
+
+
+        @Test
+        fun `it uses the alternative keys`() {
+            val alternativeKeys = argumentCaptor<List<CertificatesClient.SessionKey>>()
+            whenever(
+                certificatesClient.setupLocallyHostedIdentity(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    alternativeKeys.capture(),
+                )
+            ).doAnswer { }
+
+            networkRestResource.setupHostedIdentities(
+                "1234567890ab",
+                HostedIdentitySetupRequest(
+                    "alias",
+                    false,
+                    listOf(
+                        HostedIdentitySessionKey(
+                            "1234567890aa",
+                            preferred = false,
+                        ),
+                        HostedIdentitySessionKey(
+                            "1234567890ac",
+                            preferred = true,
+                        ),
+                        HostedIdentitySessionKey(
+                            "1234567890ad",
+                            preferred = false,
+                        ),
+                    )
+                )
+            )
+
+            assertThat(alternativeKeys.firstValue.map { it.sessionKeyId })
+                .contains(ShortHash.of("1234567890ad"))
+                .contains(ShortHash.of("1234567890aa"))
+                .doesNotContain(ShortHash.of("1234567890ac"))
         }
 
         @Test
@@ -130,7 +281,6 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        null
                     )
                 )
             }
@@ -154,7 +304,6 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        null
                     )
                 )
             }
@@ -167,8 +316,8 @@ class NetworkRestResourceImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull(),
                     any(),
-                    anyOrNull()
                 )
             ).doThrow(RuntimeException("Mock failure"))
 
@@ -178,7 +327,11 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         true,
-                        "79ED40726774"
+                        listOf(
+                            HostedIdentitySessionKey(
+                                "79ED40726774"
+                            )
+                        )
                     )
                 )
             }

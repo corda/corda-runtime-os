@@ -20,6 +20,9 @@ class PartyConverter @Activate constructor(
 ) : CustomPropertyConverter<Party> {
     companion object {
         private const val NAME = "name"
+        // CORE-11837: This should be the notary keys
+        private const val SESSION_KEYS = "session.keys.0"
+        // CORE-11837: This should be the notary key
         private const val SESSION_KEY = "session.key"
     }
 
@@ -29,9 +32,10 @@ class PartyConverter @Activate constructor(
         val name = context.value(NAME)?.let { MemberX500Name.parse(it) }
             ?: throw ValueNotFoundException("'$NAME' is null or missing")
 
-        val key = context.value(SESSION_KEY)?.let { keyEncodingService.decodePublicKey(it) }
+        val key = context.value(SESSION_KEYS)
+            ?: context.value(SESSION_KEY)
             ?: throw ValueNotFoundException("'$SESSION_KEY' is null or missing")
 
-        return Party(name, key)
+        return Party(name, keyEncodingService.decodePublicKey(key))
     }
 }

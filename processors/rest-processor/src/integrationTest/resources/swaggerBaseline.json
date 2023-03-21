@@ -4117,6 +4117,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4302,6 +4303,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4402,14 +4404,14 @@
           }
         }
       },
-      "HostedIdentitySetupRequest" : {
-        "required" : [ "p2pTlsCertificateChainAlias" ],
+      "HostedIdentitySessionKey" : {
+        "required" : [ "preferred", "sessionKeyId" ],
         "type" : "object",
         "properties" : {
-          "p2pTlsCertificateChainAlias" : {
-            "type" : "string",
+          "preferred" : {
+            "type" : "boolean",
             "nullable" : false,
-            "example" : "string"
+            "example" : true
           },
           "sessionCertificateChainAlias" : {
             "type" : "string",
@@ -4418,8 +4420,27 @@
           },
           "sessionKeyId" : {
             "type" : "string",
-            "nullable" : true,
+            "nullable" : false,
             "example" : "string"
+          }
+        }
+      },
+      "HostedIdentitySetupRequest" : {
+        "required" : [ "p2pTlsCertificateChainAlias", "sessionKeys" ],
+        "type" : "object",
+        "properties" : {
+          "p2pTlsCertificateChainAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sessionKeys" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/HostedIdentitySessionKey"
+            }
           },
           "useClusterLevelTlsCertificateAndKey" : {
             "type" : "boolean",
@@ -4582,6 +4603,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4625,6 +4647,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4661,6 +4684,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -4814,6 +4838,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
@@ -5124,16 +5149,19 @@
             "example" : "string"
           },
           "flowOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -5162,6 +5190,7 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]

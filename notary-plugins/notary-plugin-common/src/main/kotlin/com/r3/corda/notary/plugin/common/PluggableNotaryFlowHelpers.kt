@@ -72,7 +72,8 @@ fun generateRequestSignature(notarizationRequest: NotarizationRequest,
                              signingService: SigningService
 ): NotarizationRequestSignature {
     val serializedRequest = serializationService.serialize(notarizationRequest).bytes
-    val myLegalIdentity = memberInfo.sessionInitiationKey
+    // CORE-11837: Use notary key instead
+    val myLegalIdentity = memberInfo.sessionInitiationKeys.first()
     val signature = signingService.sign(
         serializedRequest,
         myLegalIdentity,

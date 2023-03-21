@@ -12,7 +12,7 @@ class SignerFactory(
     ): Signer =
         Signer(
             mgm.id,
-            mgm.sessionInitiationKey,
+            mgm.sessionInitiationKeys.first(),
             cryptoOpsClient,
         )
 }

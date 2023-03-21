@@ -105,7 +105,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
 
-            val otherParty = Party(otherMemberInfo.name, otherMemberInfo.sessionInitiationKey)
+            // CORE-11837: Use ledger key
+            val otherParty = Party(otherMemberInfo.name, otherMemberInfo.sessionInitiationKeys.first())
 
             validateRequestSignature(
                 request,

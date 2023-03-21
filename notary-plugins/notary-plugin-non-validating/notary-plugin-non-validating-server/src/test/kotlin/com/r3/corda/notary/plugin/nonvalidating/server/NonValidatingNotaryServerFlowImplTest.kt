@@ -82,7 +82,8 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val memberCharlieMemberInfo = mock<MemberInfo> {
             on { name } doReturn memberCharlieParty.name
-            on { sessionInitiationKey } doReturn memberCharlieParty.owningKey
+            // CORE-11837: Use ledger key
+            on { sessionInitiationKeys } doReturn listOf(memberCharlieParty.owningKey)
         }
 
         // Default signature verifier, no verification

@@ -89,8 +89,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
         } else {
             "OneWay"
         }
+        val sessionKeys = sessionKeyIds.mapIndexed { index, keyId ->
+            "corda.session.keys.$index.id" to keyId
+        }
         mapOf(
-            "corda.session.key.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
@@ -105,7 +107,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.endpoints.0.connectionURL" to p2pUrl,
             "corda.endpoints.0.protocolVersion" to "1",
             "corda.group.truststore.tls.0" to tlsTrustRoot,
-        )
+        ) + sessionKeys
     }
 
     private val cpi by lazy {

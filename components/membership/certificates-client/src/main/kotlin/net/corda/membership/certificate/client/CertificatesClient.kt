@@ -9,6 +9,18 @@ import net.corda.lifecycle.Lifecycle
 interface CertificatesClient : Lifecycle, DbCertificateClient {
 
     /**
+     * A session key and certificate.
+     *
+     * @param sessionKeyId The session key ID.
+     * @param sessionCertificateChainAlias The certificate chain alias of the Session Key.
+     *   Should be null if no PKI is used for sessions.
+     */
+    data class SessionKey(
+        val sessionKeyId: ShortHash,
+        val sessionCertificateChainAlias: String?,
+    )
+
+    /**
      * Set up locally hosted identity.
      *
      *
@@ -16,8 +28,8 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
      * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
      *   the virtual node certificate and key.
-     * @param sessionKeyId The session key ID (will use the first one if null).
-     * @param sessionCertificateChainAlias The certificate chain alias of the Session Key. Should be null if no PKI is used for sessions.
+     * @param preferredSessionKey The preferred session keys. If null the first session key will be used.
+     * @param alternativeSessionKeys Alternative session keys.
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
     @Suppress("LongParameterList")
@@ -25,7 +37,7 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionKeyId: ShortHash?,
-        sessionCertificateChainAlias: String?,
+        preferredSessionKey: SessionKey?,
+        alternativeSessionKeys: List<SessionKey>,
     )
 }

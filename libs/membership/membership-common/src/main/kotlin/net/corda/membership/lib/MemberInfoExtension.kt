@@ -38,13 +38,15 @@ class MemberInfoExtension {
 
         /** Key name for party property. */
         const val PARTY_NAME = "corda.name"
-        const val PARTY_SESSION_KEY = "corda.session.key"
+        const val SESSION_KEYS = "corda.session.keys"
+        const val PARTY_SESSION_KEYS = "corda.session.keys.%s"
+        const val PARTY_SESSION_KEYS_PEM = "corda.session.keys.%s.pem"
 
         /** Key name for the session key hash **/
-        const val SESSION_KEY_HASH = "corda.session.key.hash"
+        const val SESSION_KEYS_HASH = "corda.session.keys.%s.hash"
 
         /** Key name for the session key signature spec **/
-        const val SESSION_KEY_SIGNATURE_SPEC = "corda.session.key.signature.spec"
+        const val SESSION_KEYS_SIGNATURE_SPEC = "corda.session.keys.%s.signature.spec"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
@@ -73,9 +75,6 @@ class MemberInfoExtension {
 
         /** Key name for ECDH key property. */
         const val ECDH_KEY = "corda.ecdh.key"
-
-        /** Key name for certificate property. */
-        const val CERTIFICATE = "corda.session.certificate"
 
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
@@ -136,11 +135,6 @@ class MemberInfoExtension {
         /** Key name for TLS certificate subject. */
         const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"
 
-        /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
-        @JvmStatic
-        val MemberInfo.certificate: List<String>
-            get() = memberProvidedContext.parseList(CERTIFICATE)
-
         /** Group identifier. UUID as a String. */
         @JvmStatic
         val MemberInfo.groupId: String
@@ -200,14 +194,20 @@ class MemberInfoExtension {
          * It is preferable to always store this in the member context to avoid the repeated calculation.
          */
         @JvmStatic
-        val MemberInfo.sessionKeyHash: PublicKeyHash
-            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: PublicKeyHash.calculate(sessionInitiationKey)
-                .also {
+        val MemberInfo.sessionKeysHash: Collection<PublicKeyHash>
+            get() = memberProvidedContext.parseSet<PublicKeyHash>(SESSION_KEYS_HASH).let { storedKeys ->
+                if (storedKeys.isNotEmpty()) {
+                    storedKeys
+                } else {
                     logger.warn(
                         "Calculating the session key hash for $name in group $groupId. " +
                                 "It is preferable to store this hash in the member context to avoid calculating on each access."
                     )
+                    sessionInitiationKeys.map {
+                        PublicKeyHash.calculate(it)
+                    }
                 }
+            }
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic

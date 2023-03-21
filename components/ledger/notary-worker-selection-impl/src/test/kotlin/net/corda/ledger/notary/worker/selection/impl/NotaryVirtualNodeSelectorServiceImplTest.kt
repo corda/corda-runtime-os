@@ -53,7 +53,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
             }
             return mock {
                 on { name } doReturn MemberX500Name.parse(memberName)
-                on { sessionInitiationKey } doReturn mock()
+                on { sessionInitiationKeys } doReturn listOf(mock())
                 on { memberProvidedContext } doReturn mockMemberContext
             }
         }
@@ -95,12 +95,12 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         }
 
         assertThat(selectedVirtualNodesForFirstService).containsOnlyKeys(
-            Party(NOTARY_WORKER_1.name, NOTARY_WORKER_1.sessionInitiationKey),
-            Party(NOTARY_WORKER_3.name, NOTARY_WORKER_3.sessionInitiationKey)
+            Party(NOTARY_WORKER_1.name, NOTARY_WORKER_1.sessionInitiationKeys.first()),
+            Party(NOTARY_WORKER_3.name, NOTARY_WORKER_3.sessionInitiationKeys.first())
         )
         assertThat(selectedVirtualNodesForSecondService).containsOnlyKeys(
-            Party(NOTARY_WORKER_2.name, NOTARY_WORKER_2.sessionInitiationKey),
-            Party(NOTARY_WORKER_4.name, NOTARY_WORKER_4.sessionInitiationKey)
+            Party(NOTARY_WORKER_2.name, NOTARY_WORKER_2.sessionInitiationKeys.first()),
+            Party(NOTARY_WORKER_4.name, NOTARY_WORKER_4.sessionInitiationKeys.first())
         )
     }
 }

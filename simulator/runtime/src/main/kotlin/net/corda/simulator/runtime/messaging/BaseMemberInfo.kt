@@ -39,7 +39,7 @@ data class BaseMemberInfo(
         TODO("Not yet implemented")
     }
 
-    override fun getSessionInitiationKey(): PublicKey {
+    override fun getSessionInitiationKeys(): List<PublicKey> {
         TODO("Not yet implemented")
     }
 }

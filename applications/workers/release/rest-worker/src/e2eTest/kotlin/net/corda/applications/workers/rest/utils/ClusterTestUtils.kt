@@ -17,6 +17,7 @@ import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKey
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
@@ -295,8 +296,13 @@ fun E2eCluster.setUpNetworkIdentity(
             HostedIdentitySetupRequest(
                 p2pTlsCertificateChainAlias = TLS_CERT_ALIAS,
                 useClusterLevelTlsCertificateAndKey = true,
-                sessionKeyId = sessionKeyId,
-                sessionCertificateChainAlias = sessionCertificateChainAlias
+                listOf(
+                    HostedIdentitySessionKey(
+                        sessionKeyId = sessionKeyId,
+                        sessionCertificateChainAlias = sessionCertificateChainAlias,
+                        preferred = true,
+                    )
+                )
             )
         )
     }

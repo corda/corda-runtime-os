@@ -62,10 +62,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.synchronisation.SynchronisationProxy
@@ -375,7 +373,7 @@ class SynchronisationIntegrationTest {
         private fun createTestMemberInfo(holdingIdentity: HoldingIdentity, sessionInitKey: PublicKey): MemberInfo = memberInfoFactory.create(
             sortedMapOf(
                 MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
-                MemberInfoExtension.PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionInitKey),
+                String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to keyEncodingService.encodeAsString(sessionInitKey),
                 MemberInfoExtension.GROUP_ID to groupId,
                 String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
                 String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",

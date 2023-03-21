@@ -10,6 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKey
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -56,19 +57,33 @@ class LinkManagerHostingMapImplTest {
     private val publicKeyOne = mock<PublicKey> {
         on { encoded } doReturn byteArrayOf(0, 1, 2)
     }
+    private val publicKeyTwo = mock<PublicKey> {
+        on { encoded } doReturn byteArrayOf(3)
+    }
+    private val publicKeyThree = mock<PublicKey> {
+        on { encoded } doReturn byteArrayOf(4, 5)
+    }
     private val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
     private val entryOne = HostedIdentityEntry(
         createTestHoldingIdentity(bobX500Name, "group").toAvro(),
         "id1",
         listOf("cert1", "cert2"),
-        "pem",
-        listOf("certificate")
+        HostedIdentitySessionKey(
+            "pem",
+            listOf("certificate")
+        ),
+        emptyList()
     )
     private val publicKeyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
         whenever(mock.loadPublicKey("pem")).thenReturn(publicKeyOne)
+        whenever(mock.loadPublicKey("pem1")).thenReturn(publicKeyOne)
+        whenever(mock.loadPublicKey("pem2")).thenReturn(publicKeyTwo)
+        whenever(mock.loadPublicKey("pem3")).thenReturn(publicKeyThree)
     }
     private val keyHasher = mockConstruction(KeyHasher::class.java) { mock, _ ->
         whenever(mock.hash(publicKeyOne)).thenReturn(byteArrayOf(5, 6, 7))
+        whenever(mock.hash(publicKeyTwo)).thenReturn(byteArrayOf(8, 9))
+        whenever(mock.hash(publicKeyThree)).thenReturn(byteArrayOf(10))
     }
 
     private val testObject = LinkManagerHostingMapImpl(
@@ -180,7 +195,7 @@ class LinkManagerHostingMapImplTest {
     }
 
     @Test
-    fun `getInfo by public key hashreturn the correct data`() {
+    fun `getInfo by public key hash return the correct data`() {
         processor.firstValue.onSnapshot(
             mapOf(
                 "key" to entryOne
@@ -198,8 +213,89 @@ class LinkManagerHostingMapImplTest {
                     holdingIdentity = entryOne.holdingIdentity.toCorda(),
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
-                    sessionPublicKey = publicKeyOne,
-                    sessionCertificates = listOf("certificate")
+                    HostingMapListener.SessionKey(
+                        sessionPublicKey = publicKeyOne,
+                        sessionCertificates = listOf("certificate")
+                    ),
+                )
+            )
+            it.assertThat(testObject.getInfo(byteArrayOf(1, 2, 2), "nop")).isNull()
+        }
+    }
+
+    @Test
+    fun `getInfo by public key hash return the correct data for alternative key`() {
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key" to HostedIdentityEntry(
+                    createTestHoldingIdentity(bobX500Name, "group").toAvro(),
+                    "id1",
+                    listOf("cert1", "cert2"),
+                    HostedIdentitySessionKey(
+                        "pem1",
+                        listOf("certificate1")
+                    ),
+                    listOf(
+                        HostedIdentitySessionKey(
+                            "pem2",
+                            listOf("certificate2")
+                        ),
+                        HostedIdentitySessionKey(
+                            "pem3",
+                            listOf("certificate3")
+                        ),
+                    )
+                )
+            )
+        )
+
+        assertSoftly {
+            it.assertThat(
+                testObject.getInfo(
+                    byteArrayOf(10),
+                    entryOne.holdingIdentity.groupId,
+                )
+            ).isEqualTo(
+                HostingMapListener.IdentityInfo(
+                    holdingIdentity = entryOne.holdingIdentity.toCorda(),
+                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsTenantId = "id1",
+                    HostingMapListener.SessionKey(
+                        sessionPublicKey = publicKeyOne,
+                        sessionCertificates = listOf("certificate1")
+                    ),
+                )
+            )
+            it.assertThat(
+                testObject.getInfo(
+                    byteArrayOf(8, 9),
+                    entryOne.holdingIdentity.groupId,
+                )
+            ).isEqualTo(
+                HostingMapListener.IdentityInfo(
+                    holdingIdentity = entryOne.holdingIdentity.toCorda(),
+                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsTenantId = "id1",
+                    HostingMapListener.SessionKey(
+                        sessionPublicKey = publicKeyOne,
+                        sessionCertificates = listOf("certificate1")
+                    ),
+                )
+            )
+            it.assertThat(
+                testObject.getInfo(
+                    byteArrayOf(5, 6, 7),
+                    entryOne.holdingIdentity.groupId,
+                )
+            ).isEqualTo(
+                HostingMapListener.IdentityInfo(
+                    holdingIdentity = entryOne.holdingIdentity.toCorda(),
+                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsTenantId = "id1",
+                    HostingMapListener.SessionKey(
+                        sessionPublicKey = publicKeyOne,
+                        sessionCertificates = listOf("certificate1")
+                    ),
                 )
             )
             it.assertThat(testObject.getInfo(byteArrayOf(1, 2, 2), "nop")).isNull()
@@ -220,8 +316,10 @@ class LinkManagerHostingMapImplTest {
                     holdingIdentity = entryOne.holdingIdentity.toCorda(),
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
-                    sessionPublicKey = publicKeyOne,
-                    sessionCertificates = listOf("certificate")
+                    HostingMapListener.SessionKey(
+                        sessionPublicKey = publicKeyOne,
+                        sessionCertificates = listOf("certificate")
+                    ),
                 )
             )
             it.assertThat(testObject.getInfo(createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"))).isNull()
@@ -248,8 +346,10 @@ class LinkManagerHostingMapImplTest {
                 entryOne.holdingIdentity.toCorda(),
                 entryOne.tlsCertificates,
                 entryOne.tlsTenantId,
-                publicKeyOne,
-                entryOne.sessionCertificates
+                HostingMapListener.SessionKey(
+                    publicKeyOne,
+                    entryOne.prefferedSessionKey.sessionCertificates
+                ),
             )
         )
     }
