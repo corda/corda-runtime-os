@@ -122,7 +122,6 @@ class FlowGlobalPostProcessorImplTest {
         whenever(checkpoint.flowKey).thenReturn(FlowKey(FLOW_ID_1, ALICE_X500_HOLDING_IDENTITY))
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply { initiatorType = FlowInitiatorType.P2P })
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
         whenever(
             sessionManager.getMessagesToSend(
                 eq(sessionState1),
