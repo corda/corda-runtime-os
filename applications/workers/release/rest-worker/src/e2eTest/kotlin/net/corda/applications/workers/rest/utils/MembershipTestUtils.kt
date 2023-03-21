@@ -1,7 +1,6 @@
 package net.corda.applications.workers.rest.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.applications.workers.rest.SessionCertificateTest
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MemberLookupRestResource
@@ -115,7 +114,7 @@ fun createMemberRegistrationContext(
     "corda.endpoints.0.connectionURL" to memberE2eCluster.p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1"
 ).also {
-    if(member.isNotary()) {
+    if (member.isNotary()) {
         assertThat(notaryKeyId)
             .withFailMessage {
                 "Tried to create registration context for notary member without providing notary key info."
@@ -189,9 +188,12 @@ fun E2eCluster.lookupMembers(
         }
 }
 
-fun E2eCluster.getMemberName(prefix: String): String {
+fun E2eCluster.getMemberName(
+    prefix: String,
+    className: String
+): String {
     return mapOf(
-        "O" to "$prefix-${SessionCertificateTest::class.java.simpleName}",
+        "O" to "$prefix-${className}",
         "L" to "London",
         "C" to "GB",
         "OU" to uniqueName

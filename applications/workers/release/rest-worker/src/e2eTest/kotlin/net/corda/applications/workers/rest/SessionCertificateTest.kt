@@ -27,19 +27,23 @@ class SessionCertificateTest {
 
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember(cluster.getMemberName("Alice")))
+            listOf(
+                E2eClusterMember(
+                    cluster.getMemberName("Alice", SessionCertificateTest::class.java.simpleName)
+                )
+            )
         )
     }
 
     private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember(cluster.getMemberName("Bob")))
+            listOf(E2eClusterMember(cluster.getMemberName("Bob", this::class.java.simpleName)))
         )
     }
 
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember(cluster.getMemberName("Mgm")))
+            listOf(E2eClusterMember(cluster.getMemberName("Mgm", this::class.java.simpleName)))
         )
     }
 

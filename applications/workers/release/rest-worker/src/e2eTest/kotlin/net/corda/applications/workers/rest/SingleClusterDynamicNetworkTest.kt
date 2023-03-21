@@ -24,19 +24,19 @@ class SingleClusterDynamicNetworkTest {
         cluster.addMembers(
             (1..4).map {
                 E2eClusterMember(
-                    cluster.getMemberName("Member$it")
+                    cluster.getMemberName("Member$it", this::class.java.simpleName)
                 )
             }
         )
         cluster.addMember(
             E2eClusterMember(
-                cluster.getMemberName("Notary"),
+                cluster.getMemberName("Notary", this::class.java.simpleName),
                 E2eClusterMemberRole.NOTARY
             )
         )
     }
 
-    private val mgm = E2eClusterMember(cordaCluster.getMemberName("Mgm"))
+    private val mgm = E2eClusterMember(cordaCluster.getMemberName("Mgm", this::class.java.simpleName))
 
     @Test
     fun `Create mgm and allow members to join the group`() {

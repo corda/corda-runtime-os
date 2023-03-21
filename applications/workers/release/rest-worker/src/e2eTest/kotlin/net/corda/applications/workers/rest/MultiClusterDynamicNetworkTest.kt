@@ -5,15 +5,14 @@ import net.corda.applications.workers.rest.utils.E2eClusterBConfig
 import net.corda.applications.workers.rest.utils.E2eClusterCConfig
 import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.applications.workers.rest.utils.E2eClusterMember
-import net.corda.applications.workers.rest.utils.E2eClusterMemberRole
 import net.corda.applications.workers.rest.utils.allowClientCertificates
 import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
-import net.corda.applications.workers.rest.utils.setSslConfiguration
 import net.corda.applications.workers.rest.utils.generateGroupPolicy
 import net.corda.applications.workers.rest.utils.getGroupId
 import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardMembers
 import net.corda.applications.workers.rest.utils.onboardMgm
+import net.corda.applications.workers.rest.utils.setSslConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -30,7 +29,11 @@ class MultiClusterDynamicNetworkTest {
 
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember(cluster.getMemberName("Alice")))
+            listOf(
+                E2eClusterMember(
+                    cluster.getMemberName("Alice", this::class.java.simpleName)
+                )
+            )
         )
 //        cluster.addMember(
 //            E2eClusterMember(cluster.getMemberName("Notary"), E2eClusterMemberRole.NOTARY)
@@ -39,13 +42,21 @@ class MultiClusterDynamicNetworkTest {
 
     private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember(cluster.getMemberName("Bob")))
+            listOf(
+                E2eClusterMember(
+                    cluster.getMemberName("Bob", this::class.java.simpleName)
+                )
+            )
         )
     }
 
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember(cluster.getMemberName("Charlie")))
+            listOf(
+                E2eClusterMember(
+                    cluster.getMemberName("Charlie", this::class.java.simpleName)
+                )
+            )
         )
     }
 
