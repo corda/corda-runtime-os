@@ -42,8 +42,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
             is SessionEvent -> {
                 val eventPayload = sessionEvent.payload
                 if (eventPayload is SessionInit) {
-                    SessionInitExecutor(
-                        eventKey, sessionEvent, eventPayload, state, sessionEventSerializer, ::generateAppMessage, flowConfig)
+                    SessionInitExecutor(eventKey, sessionEvent, eventPayload, state, sessionEventSerializer, flowConfig)
                 } else {
                     SessionEventExecutor(eventKey, sessionEvent, state, instant, sessionEventSerializer, ::generateAppMessage, flowConfig)
                 }

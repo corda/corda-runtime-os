@@ -113,20 +113,16 @@ class SessionEventExecutor(
             val reply = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
-                appMessageFactory(
-                    SessionEvent(
-                        MessageDirection.INBOUND,
-                        instant,
-                        sessionEvent.sessionId,
-                        null,
-                        sessionEvent.initiatingIdentity,
-                        sessionEvent.initiatedIdentity,
-                        1,
-                        emptyList(),
-                        SessionData(FacadeInvocationResult(facadeInvocation.payload))
-                    ),
-                    sessionEventSerializer,
-                    flowConfig
+                SessionEvent(
+                    MessageDirection.INBOUND,
+                    instant,
+                    sessionEvent.sessionId,
+                    null,
+                    sessionEvent.initiatingIdentity,
+                    sessionEvent.initiatedIdentity,
+                    1,
+                    emptyList(),
+                    SessionData(FacadeInvocationResult(facadeInvocation.payload))
                 )
             )
 

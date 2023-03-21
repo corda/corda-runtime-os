@@ -9,7 +9,6 @@ import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
@@ -26,7 +25,6 @@ class SessionInitExecutor(
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     private val flowConfig: SmartConfig,
 ) : FlowMapperEventExecutor {
 
@@ -63,20 +61,16 @@ class SessionInitExecutor(
             val sessionConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
-                appMessageFactory(
-                    SessionEvent(
-                        MessageDirection.INBOUND,
-                        Instant.now(),
-                        sessionEvent.sessionId,
-                        null,
-                        sessionEvent.initiatingIdentity,
-                        sessionEvent.initiatedIdentity,
-                        1,
-                        emptyList(),
-                        SessionConfirm(KeyValuePairList(emptyList()))
-                    ),
-                    sessionEventSerializer,
-                    flowConfig
+                SessionEvent(
+                    MessageDirection.INBOUND,
+                    Instant.now(),
+                    sessionEvent.sessionId,
+                    null,
+                    sessionEvent.initiatingIdentity,
+                    sessionEvent.initiatedIdentity,
+                    1,
+                    emptyList(),
+                    SessionConfirm(KeyValuePairList(emptyList()))
                 )
             )
 
