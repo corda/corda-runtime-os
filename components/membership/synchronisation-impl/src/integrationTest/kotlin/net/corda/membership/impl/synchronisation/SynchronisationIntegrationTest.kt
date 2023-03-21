@@ -54,7 +54,6 @@ import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistence
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -524,7 +523,6 @@ class SynchronisationIntegrationTest {
         val groupParameters = KeyValuePairList(
             listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH),
-                KeyValuePair(MPV_KEY, PLATFORM_VERSION),
                 KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
             ).sorted()
         )
