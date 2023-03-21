@@ -395,6 +395,7 @@ class MGMRegistrationServiceTest {
                 it.assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
                 it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
                 it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+                it.assertThat(statusUpdate.firstValue.serial).isEqualTo(0L)
 
 
                 val membershipEvent = publishedEvent.value as MembershipEvent

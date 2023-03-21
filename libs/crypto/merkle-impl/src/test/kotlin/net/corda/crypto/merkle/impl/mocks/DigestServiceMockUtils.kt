@@ -2,6 +2,7 @@
 
 package net.corda.crypto.merkle.impl.mocks
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -19,7 +20,7 @@ private fun DigestService.getConstantsFor(digestAlgorithmName: DigestAlgorithmNa
     return hashConstants.getOrPut(algorithm) {
         val digestLength = digestLength(digestAlgorithmName)
         HashConstants(
-            zero = SecureHash(algorithm, ByteArray(digestLength) { 0.toByte() })
+            zero = SecureHashImpl(algorithm, ByteArray(digestLength) { 0.toByte() })
         )
     }
 }

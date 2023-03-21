@@ -19,6 +19,8 @@ dependencies {
     api 'net.corda:corda-avro-schema'
     api 'net.corda:corda-crypto'
 
+    implementation project(':libs:crypto:crypto-core')
+
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

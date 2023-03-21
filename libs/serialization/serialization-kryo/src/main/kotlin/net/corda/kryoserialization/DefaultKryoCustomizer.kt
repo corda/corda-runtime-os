@@ -9,7 +9,6 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
-import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
 import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
@@ -44,18 +43,9 @@ class DefaultKryoCustomizer {
         internal fun customize(
             kryo: Kryo,
             serializers: Map<Class<*>, Serializer<*>>,
-            classResolver: CordaClassResolver,
-            classSerializer: ClassSerializer,
+            classSerializer: ClassSerializer
         ): Kryo {
             return kryo.apply {
-
-                classResolver.setKryo(this)
-
-                // The ClassResolver can only be set in the Kryo constructor and Quasar doesn't
-                // provide us with a way of doing that
-                Kryo::class.java.getDeclaredField("classResolver").apply {
-                    isAccessible = true
-                }.set(this, classResolver)
 
                 isRegistrationRequired = false
                 references = true
@@ -86,8 +76,8 @@ class DefaultKryoCustomizer {
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,
                     LinkedHashMapIteratorSerializer
                 )
-                addDefaultSerializer(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
-                addDefaultSerializer(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
+                addDefaultSerializer(LinkedHashMapEntrySerializer.serializedType, LinkedHashMapEntrySerializer)
+                addDefaultSerializer(LinkedListItrSerializer.serializedType, LinkedListItrSerializer)
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
 

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -131,6 +132,7 @@ class MembershipQueryClientImpl(
             protocolVersion = this.registrationProtocolVersion,
             memberContext = this.memberProvidedContext,
             reason = this.reason,
+            serial = this.serial,
         )
     }
 
@@ -193,7 +195,7 @@ class MembershipQueryClientImpl(
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> {
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
         if (holdingsIdentities.isEmpty()) {
             return MembershipQueryResult.Success(emptyMap())
         }
@@ -205,7 +207,8 @@ class MembershipQueryClientImpl(
             is MemberSignatureQueryResponse -> {
                 MembershipQueryResult.Success(
                     payload.membersSignatures.associate { memberSignature ->
-                        memberSignature.holdingIdentity.toCorda() to memberSignature.signature
+                        memberSignature.holdingIdentity.toCorda() to
+                                (memberSignature.signature to memberSignature.signatureSpec)
                     }
                 )
             }

@@ -95,7 +95,7 @@ internal class TestCryptoOpsClient(
         signature.initSign(privateKey)
         (signatureSpec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
         signature.update(data)
-        return DigitalSignature.WithKey(publicKey, signature.sign(), context)
+        return DigitalSignature.WithKey(publicKey, signature.sign())
     }
 
     override fun sign(

@@ -1,6 +1,7 @@
 package net.corda.kryoserialization.serializers
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
@@ -16,8 +17,6 @@ import org.junit.jupiter.api.Test
 internal class SingletonSerializeAsTokenSerializerTest {
 
     class Tester(val someInt: Int) : SingletonSerializeAsToken
-
-    private fun createKryo() = Kryo().apply { isRegistrationRequired = false }
 
     @Test
     fun `singleton serializer returns the correct instance back`() {
@@ -37,9 +36,8 @@ internal class SingletonSerializeAsTokenSerializerTest {
 
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                createKryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
                 mapOf(SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(emptyMap())),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )
@@ -58,9 +56,8 @@ internal class SingletonSerializeAsTokenSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(Tester::class.java))
         val deserializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                createKryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )

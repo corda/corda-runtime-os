@@ -1,6 +1,7 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
@@ -16,8 +17,6 @@ import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.Executors
 
 internal class KryoCheckpointSerializerTest {
-
-    private fun createKryo() = Kryo().apply { isRegistrationRequired = false }
 
     @Test
     fun `serialization of a simple object back a forth`() {
@@ -53,9 +52,8 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(FlowStackItem::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                createKryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )
@@ -93,9 +91,8 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                createKryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )

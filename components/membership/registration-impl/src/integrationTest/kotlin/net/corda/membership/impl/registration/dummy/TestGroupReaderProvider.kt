@@ -1,26 +1,15 @@
 package net.corda.membership.impl.registration.dummy
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -30,23 +19,18 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 
-interface TestGroupReaderProvider : MembershipGroupReaderProvider
+interface TestGroupReaderProvider : MembershipGroupReaderProvider {
+    fun loadMembers(holdingIdentity: HoldingIdentity, memberList: List<MemberInfo>)
+}
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipGroupReaderProvider::class, TestGroupReaderProvider::class])
 class TestGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
 ) : TestGroupReaderProvider {
-    companion object {
+    private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
 
     private val coordinator = coordinatorFactory.createCoordinator(
@@ -57,8 +41,14 @@ class TestGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader =
-        TestGroupReader(memberInfoFactory, cryptoOpsClient, keyEncodingService)
+    private val groupReader = TestGroupReader()
+
+    override fun loadMembers(holdingIdentity: HoldingIdentity, memberList: List<MemberInfo>) {
+        val reader = getGroupReader(holdingIdentity) as TestGroupReader
+        reader.loadMembers(memberList)
+    }
+
+    override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader = groupReader
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
@@ -74,18 +64,12 @@ class TestGroupReaderProviderImpl @Activate constructor(
     }
 }
 
-class TestGroupReader @Activate constructor(
-    @Reference(service = MemberInfoFactory::class)
-    private val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
-) : MembershipGroupReader {
-    companion object {
+class TestGroupReader @Activate constructor() : MembershipGroupReader {
+    private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
+        const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
+    private val cache = mutableListOf<MemberInfo>()
 
     override val groupId: String
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
@@ -94,34 +78,9 @@ class TestGroupReader @Activate constructor(
     override val groupParameters: GroupParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
-    private val name = MemberX500Name("Corda MGM", "London", "GB")
-    private val group = "dummy_group"
-    private val id = HoldingIdentity(name, group).shortHash.value
+    fun loadMembers(members: List<MemberInfo>) = cache.addAll(members)
 
-    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
-        val ecdhKey = cryptoOpsClient.generateKeyPair(
-            id,
-            PRE_AUTH,
-            id + "ecdh",
-            ECDSA_SECP256R1_CODE_NAME
-        )
-        return listOf(
-            memberInfoFactory.create(
-                sortedMapOf(
-                    PARTY_NAME to name.toString(),
-                    GROUP_ID to group,
-                    "corda.endpoints.0.connectionURL" to "localhost:1081",
-                    "corda.endpoints.0.protocolVersion" to "1",
-                    PLATFORM_VERSION to "5000",
-                    SOFTWARE_VERSION to "5.0.0",
-                    ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
-                ),
-                sortedMapOf(
-                    IS_MGM to "true",
-                )
-            )
-        )
-    }
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> = cache
 
     override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
@@ -130,12 +89,8 @@ class TestGroupReader @Activate constructor(
         }
     }
 
-    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? =
+        cache.find { it.name == name }
 
     override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {

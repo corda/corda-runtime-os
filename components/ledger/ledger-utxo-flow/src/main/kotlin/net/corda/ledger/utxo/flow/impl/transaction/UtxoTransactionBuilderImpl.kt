@@ -28,11 +28,14 @@ class UtxoTransactionBuilderImpl(
     override val inputStateRefs: MutableList<StateRef> = mutableListOf(),
     override val referenceStateRefs: MutableList<StateRef> = mutableListOf(),
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
-) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
+) : UtxoTransactionBuilderInternal {
 
     private var alreadySigned = false
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
+        require(attachmentId !in attachments) {
+            "Duplicating attachments is not allowed."
+        }
         this.attachments += attachmentId
         return this
     }
@@ -43,6 +46,12 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
+        require(
+            this.signatories.intersect(signatories.toSet()).isEmpty()
+                    && signatories.distinct().size == signatories.count()
+        ) {
+            "Duplicating signatories is not allowed."
+        }
         this.signatories += signatories
         return this
     }
@@ -52,11 +61,20 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        require(stateRef !in inputStateRefs) {
+            "Duplicating input StateRefs is not allowed."
+        }
         this.inputStateRefs += stateRef
         return this
     }
 
     override fun addInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        require(
+            this.inputStateRefs.intersect(stateRefs.toSet()).isEmpty()
+                    && stateRefs.distinct().size == stateRefs.count()
+        ) {
+            "Duplicating input StateRefs is not allowed."
+        }
         this.inputStateRefs += stateRefs
         return this
     }
@@ -66,11 +84,20 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addReferenceState(stateRef: StateRef): UtxoTransactionBuilder {
+        require(stateRef !in referenceStateRefs) {
+            "Duplicating reference StateRefs is not allowed."
+        }
         this.referenceStateRefs += stateRef
         return this
     }
 
     override fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        require(
+            this.referenceStateRefs.intersect(stateRefs.toSet()).isEmpty()
+                    && stateRefs.distinct().size == stateRefs.count()
+        ) {
+            "Duplicating reference StateRefs is not allowed."
+        }
         this.referenceStateRefs += stateRefs
         return this
     }
@@ -143,6 +170,19 @@ class UtxoTransactionBuilderImpl(
         return sign()
     }
 
+    override fun copy(): UtxoTransactionBuilderContainer {
+        return UtxoTransactionBuilderContainer(
+            notary,
+            timeWindow,
+            attachments.toMutableList(),
+            commands.toMutableList(),
+            signatories.toMutableList(),
+            inputStateRefs.toMutableList(),
+            referenceStateRefs.toMutableList(),
+            outputStates.toMutableList()
+        )
+    }
+
     @Suspendable
     private fun sign(): UtxoSignedTransaction {
         check(!alreadySigned) { "The transaction cannot be signed twice." }
@@ -192,5 +232,30 @@ class UtxoTransactionBuilderImpl(
                 "referenceStateRefs=$referenceStateRefs, " +
                 "outputStates=$outputStates" +
                 ")"
+    }
+
+    /**
+     * Appends transaction builder components to a transaction builder.
+     * Also, notary and time window of the original takes precedence.
+     * Those will not be overwritten regardless of there are new values.
+     * It de-duplicates the
+     *  - attachments
+     *  - signatories
+     *  - inputStateRefs
+     *  - referenceStateRefs
+     * But keeps potential duplications in user-defined types. (commands and output states)
+     */
+    override fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderImpl {
+        return UtxoTransactionBuilderImpl(
+            this.utxoSignedTransactionFactory,
+            this.notary ?: other.getNotary(),
+            this.timeWindow ?: other.timeWindow,
+            (this.attachments + other.attachments).distinct().toMutableList(),
+            (this.commands + other.commands).toMutableList(),
+            (this.signatories + other.signatories).distinct().toMutableList(),
+            (this.inputStateRefs + other.inputStateRefs).distinct().toMutableList(),
+            (this.referenceStateRefs + other.referenceStateRefs).distinct().toMutableList(),
+            (this.outputStates + other.outputStates).toMutableList()
+        )
     }
 }

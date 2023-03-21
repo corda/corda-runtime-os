@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.crypto.core.parseSecureHash
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckErrorTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateDetailsTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateRefTypeMixin
@@ -44,6 +45,6 @@ internal object SecureHashSerializer : JsonSerializer<SecureHash>() {
 
 internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
-        return SecureHash.parse(parser.text)
+        return parseSecureHash(parser.text)
     }
 }

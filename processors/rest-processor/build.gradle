@@ -55,7 +55,7 @@ dependencies {
     runtimeOnly project(':libs:configuration:configuration-endpoints')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:rest:rest-server-impl')
-    runtimeOnly project(':libs:rest:rest-stubs-impl')
+    runtimeOnly project(':libs:rest:ssl-cert-read-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')

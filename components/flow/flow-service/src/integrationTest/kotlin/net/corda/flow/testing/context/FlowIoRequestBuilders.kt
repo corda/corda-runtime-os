@@ -1,5 +1,6 @@
 package net.corda.flow.testing.context
 
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.tests.ALICE_HOLDING_IDENTITY
 import net.corda.flow.testing.tests.CPI1
@@ -16,7 +17,7 @@ import net.corda.flow.testing.tests.SESSION_ID_2
  */
 fun initiateSingleFlow(setup: StepSetup, receivedAckSeqNum: Int = 1): FlowIoRequestSetup {
     setup.startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-        .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, setup.initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+        .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, setup.initiatedIdentityMemberName) to DATA_MESSAGE_0)))
 
     return setup.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = receivedAckSeqNum)
 }
@@ -31,8 +32,8 @@ fun initiateSingleFlow(setup: StepSetup, receivedAckSeqNum: Int = 1): FlowIoRequ
 fun initiateTwoFlows(setup: StepSetup, receivedAckSeqNumSecondSesion: Int = 1): FlowIoRequestSetup {
     setup.startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
         .suspendsWith(FlowIORequest.Send(mapOf(
-            FlowIORequest.SessionInfo(SESSION_ID_1, setup.initiatedIdentityMemberName) to DATA_MESSAGE_0,
-            FlowIORequest.SessionInfo(SESSION_ID_2, setup.initiatedIdentityMemberName) to DATA_MESSAGE_0),
+            SessionInfo(SESSION_ID_1, setup.initiatedIdentityMemberName) to DATA_MESSAGE_0,
+            SessionInfo(SESSION_ID_2, setup.initiatedIdentityMemberName) to DATA_MESSAGE_0),
         ))
 
     setup.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)

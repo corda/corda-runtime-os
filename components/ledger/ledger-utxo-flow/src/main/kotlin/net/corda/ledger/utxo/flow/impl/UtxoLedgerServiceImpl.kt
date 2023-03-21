@@ -4,10 +4,14 @@ import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
@@ -41,7 +45,7 @@ import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoFilteredTransactionFactory::class) private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
@@ -55,7 +59,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun getTransactionBuilder(): UtxoTransactionBuilder =
+    override fun getTransactionBuilder() =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
 
     @Suppress("UNCHECKED_CAST")
@@ -163,5 +167,53 @@ class UtxoLedgerServiceImpl @Activate constructor(
         }
 
         @Suppress("UNCHECKED_CAST") return flowClass as Class<PluggableNotaryClientFlow>
+    }
+
+    @Suspendable
+    override fun receiveTransactionBuilder(session: FlowSession): UtxoTransactionBuilder {
+        val receivedTransactionBuilder = flowEngine.subFlow(
+            ReceiveAndUpdateTransactionBuilderFlow(
+                session,
+                getTransactionBuilder()
+            )
+        )
+        return UtxoBaselinedTransactionBuilder(
+            receivedTransactionBuilder as UtxoTransactionBuilderInternal
+        )
+    }
+
+    @Suspendable
+    override fun sendUpdatedTransactionBuilder(
+        transactionBuilder: UtxoTransactionBuilder,
+        session: FlowSession,
+    ) {
+        if (transactionBuilder !is UtxoBaselinedTransactionBuilder) {
+            throw UnsupportedOperationException("Only received transaction builder proposals can be used in replies.")
+        }
+        flowEngine.subFlow(
+            SendTransactionBuilderDiffFlow(
+                transactionBuilder,
+                session
+            )
+        )
+    }
+
+    @Suspendable
+    override fun sendAndReceiveTransactionBuilder(
+        transactionBuilder: UtxoTransactionBuilder,
+        session: FlowSession
+    ): UtxoTransactionBuilder {
+        flowEngine.subFlow(
+            SendTransactionBuilderDiffFlow(
+                transactionBuilder as UtxoTransactionBuilderInternal,
+                session
+            )
+        )
+        return flowEngine.subFlow(
+            ReceiveAndUpdateTransactionBuilderFlow(
+                session,
+                transactionBuilder
+            )
+        )
     }
 }

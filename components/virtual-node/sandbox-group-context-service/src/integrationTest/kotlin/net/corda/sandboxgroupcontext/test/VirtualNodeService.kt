@@ -44,7 +44,7 @@ class VirtualNodeService @Activate constructor(
     }
     init {
         // setting cache size to 2 as some tests require 2 concurrent sandboxes for validating they don't overlap
-        sandboxGroupContextComponent.initCache(2)
+        sandboxGroupContextComponent.initCaches(2)
     }
 
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()

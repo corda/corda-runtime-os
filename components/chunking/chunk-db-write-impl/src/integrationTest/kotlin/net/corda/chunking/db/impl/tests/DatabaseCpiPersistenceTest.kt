@@ -3,6 +3,8 @@ package net.corda.chunking.db.impl.tests
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -159,7 +161,8 @@ internal class DatabaseCpiPersistenceTest {
             type = CpkType.UNKNOWN,
             fileChecksum = fileChecksum,
             cordappCertificates = emptySet(),
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            externalChannelsConfig = "{}"
         )
         whenever(cpk.path).thenReturn(mockCpkContent.writeToPath())
         whenever(cpk.originalFileName).thenReturn("$name.cpk")
@@ -168,7 +171,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun mockCpi(
         vararg cpks: Cpk,
-        signerSummaryHash: SecureHash = SecureHash("SHA-256", ByteArray(12)),
+        signerSummaryHash: SecureHash = SecureHashImpl("SHA-256", ByteArray(12)),
         name: String = UUID.randomUUID().toString(),
         version: String = "1.0",
         fileChecksum: SecureHash? = newRandomSecureHash()
@@ -632,7 +635,7 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
-        cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, SecureHash.parse(cpiEntity.signerSummaryHash)))
+        cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, parseSecureHash(cpiEntity.signerSummaryHash)))
     }
 
     private fun findAuditLogs(cpkFileChecksums: Collection<SecureHash>) = entityManagerFactory.createEntityManager().transaction {
@@ -666,7 +669,7 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun newRandomSecureHash(): SecureHash {
         val random = Random()
-        return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
     private fun genChangeLogs(
@@ -716,6 +719,7 @@ internal class DatabaseCpiPersistenceTest {
 
             assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum?.toString() ?: cpk.metadata.fileChecksum.toString())
             assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
+            assertThat(cpkMetadata.serializedMetadata).isEqualTo(cpk.metadata.toJsonAvro())
 
             assertThat(cpkMetadata.entityVersion)
                 .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")

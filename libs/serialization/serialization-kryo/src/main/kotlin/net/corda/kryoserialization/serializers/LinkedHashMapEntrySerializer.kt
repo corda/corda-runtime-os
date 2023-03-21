@@ -16,10 +16,10 @@ import java.lang.reflect.Constructor
  */
 internal object LinkedHashMapEntrySerializer : Serializer<Map.Entry<*, *>>() {
     // Create a dummy map so that we can get the LinkedHashMap$Entry from it
-    // The element type of the map doesn't matter.  The entry is all we want
-    private val DUMMY_MAP = linkedMapOf(1L to 1)
-    fun getEntry(): Any = DUMMY_MAP.entries.first()
-    private val constr: Constructor<*> = getEntry()::class.java.declaredConstructors.single().apply { isAccessible = true }
+    // The element type of the map doesn't matter. The entry is all we want.
+    val serializedType: Class<out Map.Entry<*,*>> = linkedMapOf(Any() to Any()).entries.first()::class.java
+
+    private val constr: Constructor<*> = serializedType.declaredConstructors.single().apply { isAccessible = true }
 
     /**
      * Kryo would end up serialising "this" entry, then serialise "this.after" recursively, leading to a very large stack.
