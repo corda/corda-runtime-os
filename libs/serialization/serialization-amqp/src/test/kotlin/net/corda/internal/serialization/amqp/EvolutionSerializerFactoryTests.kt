@@ -1,10 +1,10 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testName
-import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout

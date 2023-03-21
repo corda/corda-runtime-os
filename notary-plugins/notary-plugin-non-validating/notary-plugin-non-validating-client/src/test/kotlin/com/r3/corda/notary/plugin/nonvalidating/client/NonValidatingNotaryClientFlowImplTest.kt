@@ -3,7 +3,7 @@ package com.r3.corda.notary.plugin.nonvalidating.client
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.serialization.SerializedBytesImpl
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.messaging.FlowMessaging

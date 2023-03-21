@@ -1,13 +1,12 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
-import net.corda.serialization.SerializedBytesImpl;
-import net.corda.v5.base.annotations.CordaSerializable;
-import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
+import net.corda.v5.base.annotations.CordaSerializable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.io.NotSerializableException;

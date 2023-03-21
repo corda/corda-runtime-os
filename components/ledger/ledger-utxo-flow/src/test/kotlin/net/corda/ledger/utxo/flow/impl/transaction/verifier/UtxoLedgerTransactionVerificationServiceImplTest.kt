@@ -1,13 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
-import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat

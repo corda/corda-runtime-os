@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.NotSerializableDetailedException
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults

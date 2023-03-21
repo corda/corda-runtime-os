@@ -12,7 +12,7 @@ import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowS
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.utils.mutableKeyValuePairList
-import net.corda.serialization.SerializedBytesImpl
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException

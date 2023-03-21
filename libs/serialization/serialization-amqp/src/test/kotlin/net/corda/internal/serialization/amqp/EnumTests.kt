@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
@@ -8,7 +9,6 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.serialization.SerializedBytesImpl
 import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotSame

@@ -30,6 +30,7 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
+    implementation project(':libs:serialization:serialization-amqp')
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:sandbox-group-context")
@@ -62,7 +63,6 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
-    testImplementation project(':libs:serialization:serialization-internal')
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(':testing:test-utilities')
 

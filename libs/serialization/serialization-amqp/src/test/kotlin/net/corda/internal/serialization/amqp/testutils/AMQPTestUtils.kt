@@ -13,6 +13,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.internal.serialization.unwrap
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
 import net.corda.utilities.copyTo
@@ -140,7 +141,7 @@ inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
 @Throws(NotSerializableException::class)
 inline fun <reified T : Any> DeserializationInput.deserialize(
     bytes: SerializedBytes<T>
-): T = deserialize(OpaqueBytes(bytes.bytes), T::class.java, testSerializationContext)
+): T = deserialize(bytes.unwrap(), T::class.java, testSerializationContext)
 
 @Throws(NotSerializableException::class)
 fun <T : Any> SerializationOutput.serializeAndReturnSchema(

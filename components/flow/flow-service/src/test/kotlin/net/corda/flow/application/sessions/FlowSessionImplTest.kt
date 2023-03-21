@@ -9,10 +9,10 @@ import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
-import net.corda.serialization.SerializedBytesImpl
 import net.corda.flow.utils.KeyValueStore
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

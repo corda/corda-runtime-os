@@ -3,7 +3,7 @@ package net.corda.flow.application.versioning.impl.sessions
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.versioning.impl.AgreedVersion
 import net.corda.flow.application.versioning.impl.AgreedVersionAndPayload
-import net.corda.serialization.SerializedBytesImpl
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.serialization.SerializationService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

@@ -1,14 +1,14 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.testutils.serialize
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.testutils.deserialize
+import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
-import net.corda.serialization.SerializedBytesImpl
+import net.corda.internal.serialization.unwrap
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
-import net.corda.v5.base.types.OpaqueBytes
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -76,7 +76,12 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      */
     @TestBelongsToContract(TemplateContract::class)
     @CordaSerializable
-    data class TemplateState(val cordappVersion: Int, val data: String, val y: String?, override val participants: List<TestParty> = listOf()) : TestContractState {
+    data class TemplateState(
+        val cordappVersion: Int,
+        val data: String,
+        val y: String?,
+        override val participants: List<TestParty> = listOf()
+    ) : TestContractState {
         @DeprecatedConstructorForDeserialization(version = 1)
         constructor(
             cordappVersion: Int,
@@ -112,8 +117,6 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * Write serialized object to resources folder
      */
     @Suppress("unused")
-    fun <T : Any> saveSerializedObject(obj: T) {
-        val serializedBytes = SerializationOutput(testDefaultFactory()).serialize(obj)
-        writeTestResource(OpaqueBytes(serializedBytes.bytes))
-    }
+    fun <T : Any> saveSerializedObject(obj: T) =
+        writeTestResource(SerializationOutput(testDefaultFactory()).serialize(obj).unwrap())
 }

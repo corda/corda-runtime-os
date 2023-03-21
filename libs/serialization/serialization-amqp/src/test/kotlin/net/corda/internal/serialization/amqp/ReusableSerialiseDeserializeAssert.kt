@@ -5,8 +5,8 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.internal.serialization.unwrap
 import net.corda.serialization.SerializationContext
-import net.corda.v5.base.types.OpaqueBytes
 import kotlin.test.assertEquals
 
 class ReusableSerialiseDeserializeAssert {
@@ -47,7 +47,7 @@ class ReusableSerialiseDeserializeAssert {
             val bytes = SerializationOutput(withFactory).serialize(instance)
 
             // Extract Envelope
-            val envelope = DeserializationInput(withFactory).getEnvelope(OpaqueBytes(bytes.bytes), context)
+            val envelope = DeserializationInput(withFactory).getEnvelope(bytes.unwrap(), context)
 
             // Run validation function
             streamValidation?.invoke(envelope)

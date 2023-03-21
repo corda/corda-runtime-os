@@ -1,15 +1,15 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.serialization.SerializedBytesImpl
+import net.corda.internal.serialization.unwrap
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.OpaqueBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -97,6 +97,6 @@ class ThrowableEvolutionTests {
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val serializedBytes = SerializationOutput(sf).serialize(obj)
-        writeTestResource(OpaqueBytes(serializedBytes.bytes))
+        writeTestResource(serializedBytes.unwrap())
     }
 }

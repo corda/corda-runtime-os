@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp;
 
 import com.google.common.collect.ImmutableList;
+import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
-import net.corda.v5.base.types.OpaqueBytes;
 import net.corda.v5.serialization.SerializedBytes;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -52,16 +52,16 @@ class OuterClass1 {
 
     public void run() throws NotSerializableException {
         SerializedBytes b = ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext);
-        desExisting.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
-        desRegen.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
+        desExisting.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
 class Inherator1 extends OuterClass1 {
     public void iRun() throws NotSerializableException {
         SerializedBytes b = ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext);
-        desExisting.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
-        desRegen.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
+        desExisting.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
@@ -96,16 +96,16 @@ class OuterClass2 {
 
     public void run() throws NotSerializableException {
         SerializedBytes b = ser.serialize(new DummyState(12), TestSerializationContext.testSerializationContext);
-        desExisting.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
-        desRegen.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
+        desExisting.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
 class Inherator2 extends OuterClass2 {
     public void iRun() throws NotSerializableException {
         SerializedBytes b = ser.serialize(new DummyState(12), TestSerializationContext.testSerializationContext);
-        desExisting.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
-        desRegen.deserialize(new OpaqueBytes(b.getBytes()), DummyState.class, TestSerializationContext.testSerializationContext);
+        desExisting.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize((SerializedBytesImpl) b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
