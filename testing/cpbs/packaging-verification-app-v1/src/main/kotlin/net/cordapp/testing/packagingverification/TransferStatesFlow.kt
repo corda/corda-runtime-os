@@ -17,7 +17,6 @@ import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
-import net.cordapp.testing.packagingverification.contract.ISSUER
 import net.cordapp.testing.packagingverification.contract.STATE_NAME
 import net.cordapp.testing.packagingverification.contract.STATE_SYMBOL
 import net.cordapp.testing.packagingverification.contract.SimpleCommand
@@ -68,9 +67,15 @@ class TransferStatesFlow : ClientStartableFlow {
 
         val notary = notaryLookup.notaryServices.single()
 
+        val myInfo = memberLookup.myInfo()
+        // Tests use dynamic names for vnodes to avoid clashes so we have to treat the vnode running this flow as the
+        // issuer, we cannot know it in advance. This means this flow will only work executed as the same vnode the mint
+        // flow was executed in. If the test was ever extended the issuer would have to be passed to the flow request body.
+        val issuerName = myInfo.name
+
         val selectionCriteria = TokenClaimCriteria(
             STATE_NAME,
-            ISSUER.toSecureHash(digestService),
+            issuerName.toSecureHash(digestService),
             notary.name,
             STATE_SYMBOL,
             BigDecimal(transferRequest.value)
@@ -82,7 +87,6 @@ class TransferStatesFlow : ClientStartableFlow {
             tokenClaim = tokenSelection.tryClaim(selectionCriteria) ?: throw CordaRuntimeException("Cannot claim tokens.")
             log.info("Got token claim, ${tokenClaim.claimedTokens.size} tokens")
 
-            val myInfo = memberLookup.myInfo()
             val myPublicKey = myInfo.ledgerKeys.first()
 
             val totalAmount = tokenClaim.claimedTokens.fold(0L) { acc, claimedToken ->
@@ -95,10 +99,10 @@ class TransferStatesFlow : ClientStartableFlow {
             }
 
             if (change != 0L) {
-                outputStates += SimpleState(change, listOf(myPublicKey))
+                outputStates += SimpleState(change, listOf(myPublicKey), issuerName)
             }
 
-            outputStates += SimpleState(transferRequest.value, listOf(counterpartyMember.ledgerKeys.first()))
+            outputStates += SimpleState(transferRequest.value, listOf(counterpartyMember.ledgerKeys.first()), issuerName)
 
             log.info("Creating transaction")
             val signedTransaction = utxoLedgerService.transactionBuilder.setNotary(Party(notary.name, notary.publicKey))

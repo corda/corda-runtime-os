@@ -7,11 +7,11 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.NotaryInfo
-import net.cordapp.testing.packagingverification.contract.ISSUER
 import net.cordapp.testing.packagingverification.contract.SimpleCommand
 import net.cordapp.testing.packagingverification.contract.SimpleState
 import org.slf4j.LoggerFactory
@@ -43,9 +43,6 @@ class MintFlow : ClientStartableFlow {
 
         val myInfo = memberLookup.myInfo()
 
-        if (myInfo.name != ISSUER) {
-            throw CordaRuntimeException("Mint flow must be executed by ${ISSUER.commonName}")
-        }
         val mintRequest = requestBody.getRequestBodyAs(jsonMarshallingService, MintRequest::class.java)
         if (mintRequest.stateValues.isEmpty()) {
             throw CordaRuntimeException("No state values to mint")
@@ -56,7 +53,7 @@ class MintFlow : ClientStartableFlow {
 
         mintRequest.stateValues.forEach { stateValue ->
             log.info("Minting state with value $stateValue")
-            mintState(stateValue, myPublicKey, notary)
+            mintState(stateValue, myPublicKey, notary, myInfo.name)
         }
 
         log.info("Finished minting ${mintRequest.stateValues.size} states")
@@ -64,8 +61,10 @@ class MintFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    fun mintState(value: Long, publicKey: PublicKey, notary: NotaryInfo) {
-        val state = SimpleState(value, listOf(publicKey))
+    fun mintState(value: Long, publicKey: PublicKey, notary: NotaryInfo, issuer: MemberX500Name) {
+        val state = SimpleState(value, listOf(publicKey), issuer)
+
+        log.info("Creating signed transaction")
 
         val signedTransaction = utxoLedgerService.transactionBuilder
             .setNotary(Party(notary.name, notary.publicKey))
@@ -75,9 +74,13 @@ class MintFlow : ClientStartableFlow {
             .addCommand(SimpleCommand())
             .toSignedTransaction()
 
+        log.info("Finalizing signed transaction")
+
         utxoLedgerService.finalize(
             signedTransaction,
             emptyList() // minting coins, no counterparty
         )
+
+        log.info("Done finalizing")
     }
 }

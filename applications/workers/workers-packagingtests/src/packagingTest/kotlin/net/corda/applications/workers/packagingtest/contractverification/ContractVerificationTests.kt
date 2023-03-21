@@ -2,8 +2,12 @@ package net.corda.applications.workers.packagingtest.contractverification
 
 import net.corda.e2etest.utilities.ClusterAInfo
 import net.corda.e2etest.utilities.ClusterBInfo
+import net.corda.e2etest.utilities.ClusterInfo
+import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.MultiClusterNode
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.testRunUniqueId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -11,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
+import java.net.URI
 import java.nio.file.Path
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -36,20 +41,45 @@ class ContractVerificationTests {
         }
     }
 
+    object ClusterAInfo {
+        object rest {
+            val uri = URI("https://localhost:8888")
+        }
+    }
+
+    object ClusterBInfo {
+        object rest {
+            val uri = URI("https://localhost:8888")
+        }
+    }
+    private val staticMemberList = listOf(
+        aliceX500,
+        bobX500,
+        notaryX500
+    )
+
     @Test
     fun `contract verification across two clusters succeeds`() {
-        val multiClusterHelper = MultiClusterHelper(tempDir, mutualTls = false)
+//        val multiClusterHelper = MultiClusterHelper(tempDir, mutualTls = false)
 
-        // Clusters A and B have the same CPI uploaded, the is the happy flow test
+        // Clusters A and B have the same CPI uploaded, this is the happy flow test
 
         val clusterA = MultiClusterNode(ClusterAInfo.rest.uri)
-        clusterA.conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, multiClusterHelper.memberGroupPolicy)
+        //clusterA.conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, multiClusterHelper.memberGroupPolicy)
+        conditionallyUploadCordaPackage(
+            cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList
+        )
         val clusterB = MultiClusterNode(ClusterBInfo.rest.uri)
-        clusterB.conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, multiClusterHelper.memberGroupPolicy)
+        //clusterB.conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, multiClusterHelper.memberGroupPolicy)
 
         val aliceHoldingId = clusterA.getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobHoldingId = clusterB.getOrCreateVirtualNodeFor(bobX500, cpiName)
-        clusterB.getOrCreateVirtualNodeFor(notaryX500, cpiName)
+        val nholdinId = clusterB.getOrCreateVirtualNodeFor(notaryX500, cpiName)
+
+        // TODO remove
+        registerStaticMember(aliceHoldingId)
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(nholdinId, true)
 
         // Mint states as Bob the issuer, checks that Bob's v1 contract is verified correctly
 
@@ -79,7 +109,7 @@ class ContractVerificationTests {
         val transferStatesFlowId = clusterB.startRpcFlow(
             bobHoldingId,
             mapOf("recipientX500Name" to aliceX500, "value" to statesValueList[0]),
-            "net.cordapp.testing.packagingverification.MintFlow"
+            "net.cordapp.testing.packagingverification.TransferStatesFlow"
         )
         val transferStatesResult = clusterB.awaitRpcFlowFinished(bobHoldingId, transferStatesFlowId)
         assertThat(transferStatesResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -87,7 +117,7 @@ class ContractVerificationTests {
         // Get states for Alice
 
         val aliceGetStatesFlowId = clusterA.startRpcFlow(
-            bobHoldingId,
+            aliceHoldingId,
             emptyMap(),
             "net.cordapp.testing.packagingverification.ReportStatesFlow"
         )
