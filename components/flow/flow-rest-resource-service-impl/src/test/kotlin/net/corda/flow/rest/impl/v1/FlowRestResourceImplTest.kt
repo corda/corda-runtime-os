@@ -443,7 +443,7 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThrows<InternalServerException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -480,7 +480,7 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThrows<InternalServerException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
