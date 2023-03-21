@@ -192,5 +192,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun isInterop(context: FlowEventContext<Any>) : Boolean =
-        context.checkpoint.flowStartContext.initiatorType == FlowInitiatorType.INTEROP
+        context
+            .checkpoint
+            .flowStartContext
+            .initiatorType == FlowInitiatorType.INTEROP
  }
