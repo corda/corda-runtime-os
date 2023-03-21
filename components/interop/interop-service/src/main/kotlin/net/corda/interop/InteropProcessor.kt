@@ -5,11 +5,10 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.interop.InteropMessage
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.interop.service.InteropFacadeToFlowMapperService
-import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.MemberInfoExtension
@@ -17,6 +16,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.interop.FacadeInvocation
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
@@ -69,7 +69,12 @@ class InteropProcessor(
         key: String
     ): Record<String, FlowMapperEvent>? {
         val sessionEvent = sessionAvroDeserializer.deserialize(payload.array())
-        val interopMessage = sessionEvent?.payload as? InteropMessage?
+
+        if (sessionEvent!!.payload is SessionData) {
+            return generateAppMessage(key, sessionEvent)
+        }
+
+        val interopMessage = sessionEvent.payload as? FacadeInvocation
 
         if (interopMessage == null) {
             logger.warn("Fail to converted interop message to facade request: empty payload")
@@ -78,15 +83,14 @@ class InteropProcessor(
             logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, " +
                     "facade request: $interopMessage, header $header.")
         }
-
-        val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
-        logger.info("Converted interop message to facade request : $facadeRequest")
+        logger.info("Converted interop message to facade request: facade=${interopMessage.facadeName}, " +
+                "method=${interopMessage.methodName}")
 
         val flowName = facadeToFlowMapperService.getFlowName(
             HoldingIdentity(
                 MemberX500Name.parse(header.destination.x500Name),
                 header.destination.groupId
-            ), facadeRequest.facadeId.toString(), facadeRequest.methodName
+            ), interopMessage.facadeName, interopMessage.methodName
         )
         logger.info("Flow name associated with facade request : $flowName")
 
