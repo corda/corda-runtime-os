@@ -6,7 +6,6 @@ import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.impl.converter.NotaryInfoConverter
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -45,7 +44,6 @@ class GroupParametersTest {
     ) : LayeredPropertyMap by map
 
     private fun createTestParams(
-        mpv: Int = VALID_VALUE,
         epoch: Int = VALID_VALUE,
         time: Instant = modifiedTime
     ) = UnsignedGroupParametersImpl(
@@ -53,7 +51,6 @@ class GroupParametersTest {
     ) {
         LayeredPropertyMapMocks.create<TestLayeredPropertyMap>(
             sortedMapOf(
-                MPV_KEY to mpv.toString(),
                 EPOCH_KEY to epoch.toString(),
                 MODIFIED_TIME_KEY to time.toString(),
                 "corda.notary.service.0.name" to notaryName.toString(),
@@ -68,7 +65,6 @@ class GroupParametersTest {
     fun `group parameters are created successfully`() {
         val params = createTestParams()
         assertSoftly {
-            it.assertThat(params.minimumPlatformVersion).isEqualTo(VALID_VALUE)
             it.assertThat(params.epoch).isEqualTo(VALID_VALUE)
             it.assertThat(params.modifiedTime).isEqualTo(modifiedTime)
             it.assertThat(params.notaries).hasSize(1)

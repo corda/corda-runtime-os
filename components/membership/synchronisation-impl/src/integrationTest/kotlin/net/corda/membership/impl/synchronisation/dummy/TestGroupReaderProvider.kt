@@ -11,7 +11,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
@@ -83,7 +82,6 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
         private const val EPOCH = "5"
-        private const val PLATFORM_VERSION = "5000"
     }
 
     override val groupId: String
@@ -95,7 +93,6 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
             KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, EPOCH),
-                    KeyValuePair(MPV_KEY, PLATFORM_VERSION),
                     KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
                 )
             )

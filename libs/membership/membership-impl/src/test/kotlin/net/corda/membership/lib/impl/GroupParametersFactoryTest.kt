@@ -11,7 +11,6 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -30,7 +29,6 @@ import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class GroupParametersFactoryTest {
     private companion object {
-        const val MPV = "5000"
         const val EPOCH = "1"
     }
 
@@ -38,12 +36,10 @@ class GroupParametersFactoryTest {
 
     private val groupParametersValues = mapOf(
         EPOCH_KEY to EPOCH,
-        MPV_KEY to MPV,
         MODIFIED_TIME_KEY to clock.instant().toString()
     )
     private val mockLayeredPropertyMap: LayeredPropertyMap = mock {
         on { it.parse(EPOCH_KEY, Int::class.java) } doReturn EPOCH.toInt()
-        on { it.parse(MPV_KEY, Int::class.java) } doReturn MPV.toInt()
         on { it.parse(MODIFIED_TIME_KEY, Instant::class.java) } doReturn clock.instant()
         on { entries } doReturn groupParametersValues.entries
     }

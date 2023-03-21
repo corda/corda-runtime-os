@@ -11,11 +11,9 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -42,7 +40,6 @@ import javax.persistence.LockModeType
 
 class PersistGroupParametersInitialSnapshotHandlerTest {
     private companion object {
-        const val MPV = 5000
         const val SNAPSHOT_EPOCH = "1"
     }
 
@@ -89,9 +86,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         } doReturn entityManagerFactory
     }
     private val clock = TestClock(Instant.ofEpochMilli(10))
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn MPV
-    }
     private val keyEncodingService: KeyEncodingService = mock {
         on { encodeAsByteArray(any()) } doReturn "test-key".toByteArray()
     }
@@ -101,7 +95,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
-        on { platformInfoProvider } doReturn platformInfoProvider
         on { keyEncodingService } doReturn keyEncodingService
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
@@ -119,7 +112,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, SNAPSHOT_EPOCH),
-                    KeyValuePair(MPV_KEY, MPV.toString()),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
             )
@@ -139,7 +131,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
-                    KeyValuePair(MPV_KEY, MPV.toString()),
                     KeyValuePair(MODIFIED_TIME_KEY, (clock.instant().epochSecond + 5L).toString()),
                 )
             )

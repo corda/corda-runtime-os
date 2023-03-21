@@ -10,7 +10,6 @@ import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
@@ -35,12 +34,10 @@ class GroupParametersProcessorTest {
         val time = clock.instant()
         val testEntries = mapOf(
             EPOCH_KEY to "1",
-            MPV_KEY to "1",
             MODIFIED_TIME_KEY to time.toString()
         )
         val updatedTestEntries = mapOf(
             EPOCH_KEY to "2",
-            MPV_KEY to "2",
             MODIFIED_TIME_KEY to clock.instant().toString()
         )
 
