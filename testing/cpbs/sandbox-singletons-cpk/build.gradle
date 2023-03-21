@@ -8,7 +8,7 @@ description 'Corda Sandbox Singletons CPK'
 group 'com.example.sandbox'
 
 cordapp {
-    targetPlatformVersion 999
+    targetPlatformVersion = 999
     workflow {
         name 'Sandbox Singletons CPK'
         versionId 1
@@ -20,7 +20,6 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
-    cordaProvided 'org.jetbrains:annotations'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided project(':testing:sandboxes:test-api')
     cordaProvided 'net.corda:corda-application'

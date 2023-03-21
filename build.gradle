@@ -93,7 +93,7 @@ allprojects {
     }
 
     pluginManager.withPlugin('biz.aQute.bnd.builder') {
-        tasks.withType(aQute.bnd.gradle.Bndrun).configureEach {
+        tasks.withType(aQute.bnd.gradle.TestOSGi).configureEach {
             javaLauncher = javaToolchains.launcherFor {
                 languageVersion = of(javaVersion.getMajorVersion().toInteger())
             }
@@ -410,19 +410,17 @@ subprojects {
         }
     }
 
-    configurations {
-        all {
-            resolutionStrategy {
-                // FORCE Gradle to use latest dynamic versions.
-                cacheDynamicVersionsFor 0, 'seconds'
+    configurations.configureEach {
+        resolutionStrategy {
+            // FORCE Gradle to use latest dynamic versions.
+             cacheDynamicVersionsFor 0, 'seconds'
 
-                // FORCE Gradle to use latest SNAPSHOT versions.
-                cacheChangingModulesFor 0, 'seconds'
+            // FORCE Gradle to use latest SNAPSHOT versions.
+            cacheChangingModulesFor 0, 'seconds'
 
-                dependencySubstitution {
-                    substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
-                    substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
-                }
+            dependencySubstitution {
+                substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
+                substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
             }
         }
     }

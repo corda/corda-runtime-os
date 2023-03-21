@@ -11,7 +11,6 @@ import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -53,7 +52,6 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             val groupParameters = KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
-                    KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
             )
