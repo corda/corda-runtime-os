@@ -60,7 +60,9 @@ class SoftCryptoServiceOperationsTests {
                     knownWrappingKeyAlias to WrappingKeyInfo(
                         WRAPPING_KEY_ENCODING_VERSION,
                         knownWrappingKey.algorithm,
-                        knownWrappingKeyMaterial
+                        knownWrappingKeyMaterial,
+                        1,
+                        "woo",
                     )
                 ).toMap()
             )
@@ -364,12 +366,17 @@ class SoftCryptoServiceOperationsTests {
         val info1 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected1.algorithm,
-            rootWrappingKey.wrap(expected1)
+            rootWrappingKey.wrap(expected1),
+            1,
+            "woo"
+
         )
         val info2 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected2.algorithm,
-            rootWrappingKey.wrap(expected2)
+            rootWrappingKey.wrap(expected2),
+            1,
+            "Enoch"
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
@@ -409,7 +416,8 @@ class SoftCryptoServiceOperationsTests {
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
-                rootWrappingKey.wrap(knownWrappingKey)
+                rootWrappingKey.wrap(knownWrappingKey),
+                1, "enoch"
             )
         )
         assertThrows<IllegalArgumentException> {
@@ -425,7 +433,9 @@ class SoftCryptoServiceOperationsTests {
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
-                rootWrappingKey.wrap(knownWrappingKey)
+                rootWrappingKey.wrap(knownWrappingKey),
+                1,
+                "Enoch"
             )
         )
         assertThrows<IllegalArgumentException> {
@@ -448,7 +458,7 @@ class SoftCryptoServiceOperationsTests {
         val unknownAlias = UUID.randomUUID().toString()
         assertNull(wrappingRepository.findKey(storeAlias))
         assertNull(wrappingRepository.findKey(unknownAlias))
-        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
+        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
         assertNotNull(wrappingRepository.findKey(storeAlias))
         assertNull(wrappingRepository.findKey(unknownAlias))
     }

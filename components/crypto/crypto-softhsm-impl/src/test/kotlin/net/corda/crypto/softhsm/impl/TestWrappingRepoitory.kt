@@ -10,6 +10,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.util.UUID
+import kotlin.collections.ArrayList
 import kotlin.test.assertNotNull
 
 
@@ -17,9 +19,11 @@ class TestWrappingRepoitory {
 
     @Test
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
-        val alpha1 = WrappingKeyEntity("alpha", Instant.now(), 1, "DES", byteArrayOf())
-        val alpha2 = WrappingKeyEntity("alpha", Instant.now(), 2, "AES", byteArrayOf())
-        val beta = WrappingKeyEntity("beta", Instant.now(), 42, "DES", byteArrayOf())
+        val uuidAlpha = UUID.randomUUID()
+        val uuidBeta = UUID.randomUUID()
+        val alpha1 = WrappingKeyEntity(uuidAlpha, "a1", 1, Instant.now(), Instant.now(), 1, "DES", byteArrayOf(),null,   false, "root")
+        val alpha2 = WrappingKeyEntity(uuidAlpha, "a1", 1, Instant.now(),Instant.now(), 2, "AES", byteArrayOf(), null,  false, "root")
+        val beta = WrappingKeyEntity(uuidBeta, "a1", 1, Instant.now(),Instant.now(), 42, "DES",  byteArrayOf(), null, false, "root")
         assertThat(alpha1).isEqualTo(alpha2)
         assertThat(alpha1).isNotEqualTo(beta)
     }
@@ -40,7 +44,7 @@ class TestWrappingRepoitory {
                 on { createEntityManager() } doReturn em
             }
         )
-        val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf())
+        val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf(), 1, "Enoch")
         repo.saveKey("a", wrappingKeyInfo)
         val retrievedWrappingKeyInfo = repo.findKey("a")
         assertNotNull(retrievedWrappingKeyInfo)

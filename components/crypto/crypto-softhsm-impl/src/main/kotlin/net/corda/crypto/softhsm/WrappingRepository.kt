@@ -8,7 +8,7 @@ import java.io.Closeable
  * Database operations for wrapping keys. Implementation of this interface will
  * cover access to specific databases for specific tenants.
  *
- * Follows the JPA repostiory pattern.
+ * Follows the JPA repository pattern.
  */
 interface WrappingRepository : Closeable {
     /**

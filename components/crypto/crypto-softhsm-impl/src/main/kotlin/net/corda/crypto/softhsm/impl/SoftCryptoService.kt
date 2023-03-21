@@ -45,7 +45,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param wrappingRepositoryFactory which provides a factory for [WrappingRepository], which provides save and
  *        find operations for wrapping keys on a specific tenant.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
- * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
+ * @param defaultUnmanagedWrappingKeyName The unmanaged wrapping key that will be used by default for new wrapping keys
  * @param digestService supply a platform digest service instance; if not one will be constructed
  * @param wrappingKeyCache an optional [Cache] which optimises access to wrapping keys, or null for no caching
  * @param privateKeyCache an optional [Cache] which optimises access to private keys, or null for no caching
@@ -60,7 +60,8 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 class SoftCryptoService(
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val rootWrappingKey: WrappingKey,
+    private val defaultUnmanagedWrappingKeyName: String,
+    private val unmanagedWrappingKeys: Map<String, WrappingKey>,
     private val digestService: PlatformDigestService,
     private val wrappingKeyCache: Cache<String, WrappingKey>?,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>?,
@@ -95,9 +96,20 @@ class SoftCryptoService(
             return
         }
         val wrappingKey = wrappingKeyFactory(schemeMetadata)
-        val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
+        val parentKeyName = context.get("wrappingKey") ?: defaultUnmanagedWrappingKeyName
+        val parentKey = unmanagedWrappingKeys.get(parentKeyName)
+        if (parentKey == null) {
+            throw IllegalStateException("No wrapping key $parentKeyName found")
+        }
+        val wrappingKeyEncrypted = parentKey.wrap(wrappingKey)
         val wrappingKeyInfo =
-            WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
+            WrappingKeyInfo(
+                WRAPPING_KEY_ENCODING_VERSION,
+                wrappingKey.algorithm,
+                wrappingKeyEncrypted,
+                1,
+                parentKeyName
+            )
         wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use {
             it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
         }
@@ -205,14 +217,18 @@ class SoftCryptoService(
         val wrappingKeyInfo =
             wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use { it.findKey(alias) }
                 ?: throw IllegalStateException("Wrapping key with alias $alias not found")
-                require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-                    "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-                }
-                // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-                require(rootWrappingKey.algorithm == wrappingKeyInfo.algorithmName) {
-                    "Expected algorithm is ${rootWrappingKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
-                }
-                return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
+        require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+            "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+        }
+        val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
+        if (parentKey == null) {
+            throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
+        }
+        // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+        require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
+            "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+        }
+        return parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
     private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
