@@ -1,5 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
+import java.time.Instant
+import javax.persistence.EntityManager
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import org.assertj.core.api.Assertions.assertThat
@@ -8,8 +10,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.time.Instant
-import javax.persistence.EntityManager
 import kotlin.test.assertNotNull
 
 
@@ -35,9 +35,15 @@ class TestV1CryptoRepositoryImpl {
             on { find<WrappingKeyEntity>(any(), any()) } doAnswer { stored.first() }
             on { transaction } doReturn mock()
         }
-        val repo = V1CryptoRepositoryImpl(mock {
-            on { createEntityManager() } doReturn em
-        })
+        val repo = V1CryptoRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em
+            },
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+        )
         val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf())
         repo.saveWrappingKey("a", wrappingKeyInfo)
         val retrievedWrappingKeyInfo = repo.findWrappingKey("a")

@@ -132,8 +132,8 @@ fun buildPersistedProperties(layeredPropertyMapFactory: LayeredPropertyMapFactor
             "key.session.policy" to "Distinct",
             "pki.session" to "StandardEV3",
             "pki.tls" to "StandardEV3",
-            "truststore.session.0" to TEST_CERT,
-            "truststore.tls.0" to TEST_CERT,
+            "trustroot.session.0" to TEST_CERT,
+            "trustroot.tls.0" to TEST_CERT,
             "tls.version" to "1.2",
             "tls.type" to "OneWay",
         )
