@@ -2,13 +2,13 @@ package net.corda.interop
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.interop.InteropMessage
+import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.interop.service.InteropFacadeToFlowMapperService
-import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.MemberInfoExtension
@@ -16,14 +16,15 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
+import net.corda.messaging.interop.FacadeInvocation
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
 
 //Based on FlowP2PFilter
 @Suppress("LongParameterList", "Unused")
@@ -41,91 +42,78 @@ class InteropProcessor(
         const val SUBSYSTEM = "interop"
     }
 
-    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
-        cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
-    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
+  //  private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
+  //      cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
+  //  private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
+
+    private val sessionAvroDeserializer: CordaAvroDeserializer<SessionEvent> = cordaAvroSerializationFactory.createAvroDeserializer({},
+        SessionEvent::class.java)
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
-        val unAuthMessage = value?.message
-        //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
-        if (unAuthMessage == null ||
-            unAuthMessage !is UnauthenticatedMessage ||
-            unAuthMessage.header.subsystem != SUBSYSTEM
-        ) return@mapNotNull null
-        //TODO consider checking SUBSYSTEM for other message types and log warning if they have SUBSYSTEM=Interop but
-        // they are of not the expected type (not UnauthenticatedMessage)
-
-        val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
+        val authMessage = value?.message as AuthenticatedMessage
+         val header = with(authMessage.header) { CommonHeader(source, destination, null, messageId) }
         val realHoldingIdentity = InteropAliasProcessor.getRealHoldingIdentity(
-            getRealHoldingIdentityFromAliasMapping(unAuthMessage.header.destination.toCorda())
+            getRealHoldingIdentityFromAliasMapping(authMessage.header.destination.toCorda())
         )
         logger.info(
-            "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity $realHoldingIdentity"
+            "The alias ${authMessage.header.destination.x500Name} is mapped to the real holding identity $realHoldingIdentity"
         )
-        getOutputRecord(header, unAuthMessage.payload, key)
+        getOutputRecord(header, authMessage.payload, key)
     }
 
-    // Returns an OUTBOUND message to P2P layer, in the future it will pass a message to FlowProcessor
     private fun getOutputRecord(
         header: CommonHeader,
         payload: ByteBuffer,
         key: String
-    ): Record<String, AppMessage>? {
-        val interopMessage = cordaAvroDeserializer.deserialize(payload.array())
+    ): Record<String, FlowMapperEvent>? {
+        val sessionEvent = sessionAvroDeserializer.deserialize(payload.array())
 
-        //following logging is added just check serialisation/de-serialisation result and can be removed later
-        logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage, header $header.")
+        if (sessionEvent!!.payload is SessionData) {
+            return generateAppMessage(key, sessionEvent)
+        }
+
+        val interopMessage = sessionEvent.payload as? FacadeInvocation
+
         if (interopMessage == null) {
             logger.warn("Fail to converted interop message to facade request: empty payload")
             return null
+        } else {
+            logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, " +
+                    "facade request: $interopMessage, header $header.")
         }
-
-        //TODO temporary logic for seed messages only, to process the first 10 messages as more is not required
-        // this check will be phased out as part of eliminating seed messages in CORE-10446
-        if (interopMessage.messageId.startsWith("seed-message")
-            && ((interopMessage.messageId.extractInt() ?: 0) > 10)) return null
-
-        val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
-        logger.info("Converted interop message to facade request : $facadeRequest")
+        logger.info("Converted interop message to facade request: facade=${interopMessage.facadeName}, " +
+                "method=${interopMessage.methodName}")
 
         val flowName = facadeToFlowMapperService.getFlowName(
             HoldingIdentity(
                 MemberX500Name.parse(header.destination.x500Name),
                 header.destination.groupId
-            ), facadeRequest.facadeId.toString(), facadeRequest.methodName
+            ), interopMessage.facadeName, interopMessage.methodName
         )
         logger.info("Flow name associated with facade request : $flowName")
 
-        val message: InteropMessage = InteropMessageTransformer.getInteropMessage(
-                interopMessage.messageId.incrementOrUuid(), facadeRequest)
-        logger.info("Converted facade request to interop message : $message")
-        val result = generateAppMessage(header, message, cordaAvroSerializer)
-        return Record(Schemas.P2P.P2P_OUT_TOPIC, key, result)
+        return generateAppMessage(key, sessionEvent)
     }
 
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
 
     private fun generateAppMessage(
-        header: CommonHeader,
-        interopMessage: InteropMessage,
-        interopMessageSerializer: CordaAvroSerializer<InteropMessage>
-    ): AppMessage {
-        val responseHeader = UnauthenticatedMessageHeader(
-            header.source,
-            header.destination,
-            SUBSYSTEM,
-            header.messageId.incrementOrUuid()
-        )
-        logger.info("Generating output message: header=$responseHeader, payload=$interopMessage")
-        return AppMessage(
-            UnauthenticatedMessage(
-                responseHeader,
-                ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
-            )
-        )
+        key: String,
+        sessionEvent: SessionEvent?
+    ): Record<String, FlowMapperEvent>? {
+
+        logger.info("Generating output message: key: $key, Event: $sessionEvent")
+        return if (sessionEvent != null) {
+            sessionEvent.messageDirection = MessageDirection.INBOUND
+            val sessionId = toggleSessionId(key)
+            sessionEvent.sessionId = sessionId
+            Record(FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
+        } else {
+            null
+        }
     }
 
     private fun getRealHoldingIdentityFromAliasMapping(fakeHoldingIdentity: HoldingIdentity): String? {
@@ -133,30 +121,6 @@ class InteropProcessor(
         val memberInfo = groupReader.lookup(fakeHoldingIdentity.x500Name)
         return memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
     }
-
-    //Temporary function to increment message id to debug the lifecycle of seed messages
-    private fun String.incrementOrUuid(): String =
-        if (this.contains("-")) {
-            val text = this.substringBeforeLast('-')
-            val number = this.substringAfterLast('-')
-            try {
-                "$text-${number.toInt() + 1}"
-            } catch (e: NumberFormatException) {
-                "${UUID.randomUUID()}"
-            }
-        } else
-            "${toInt() + 1}"
-
-    //Temporary function to filter number from messageId to debug the lifecycle of seed messages
-    private fun String.extractInt(): Int? =
-        if (this.contains("-"))
-            try {
-                this.substringAfterLast('-').toInt()
-            } catch (e: NumberFormatException) {
-                null
-            }
-        else
-            null
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
     data class CommonHeader(
@@ -167,4 +131,19 @@ class InteropProcessor(
         val traceId: String? = null,
         val subsystem: String = SUBSYSTEM
     )
+
+
+    /**
+     * Toggle the [sessionId] to that of the other party and return it.
+     * Initiating party sessionId will be a random UUID.
+     * Initiated party sessionId will be the initiating party session id with a suffix of "-INITIATED" added.
+     * @return the toggled session id
+     */
+    private fun toggleSessionId(sessionId: String): String {
+        return if (sessionId.endsWith(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            sessionId.removeSuffix(Constants.INITIATED_SESSION_ID_SUFFIX)
+        } else {
+            "$sessionId${Constants.INITIATED_SESSION_ID_SUFFIX}"
+        }
+    }
 }

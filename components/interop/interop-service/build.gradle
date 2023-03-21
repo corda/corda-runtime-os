@@ -20,6 +20,7 @@ dependencies {
     implementation project(':components:domino-logic')
     implementation project(':components:membership:membership-group-read')
     implementation project(":libs:membership:membership-impl")
+    implementation project(':libs:utilities')
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"

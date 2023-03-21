@@ -17,6 +17,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.interop.FacadeInvocation
 import net.corda.messaging.interop.FacadeInvocationResult
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Interop.INTEROP_EVENT_TOPIC
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -111,7 +112,7 @@ class SessionEventExecutor(
             }
 
             val reply = Record(
-                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                INTEROP_EVENT_TOPIC,
                 sessionEvent.sessionId,
                 appMessageFactory(
                     SessionEvent(
