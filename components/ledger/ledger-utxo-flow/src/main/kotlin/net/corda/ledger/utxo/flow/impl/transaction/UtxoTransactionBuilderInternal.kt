@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import java.security.PublicKey
 
 interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransactionBuilderData {
     /**
