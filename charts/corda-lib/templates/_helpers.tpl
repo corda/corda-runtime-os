@@ -134,6 +134,13 @@ REST TLS keystore secret name
 {{- end }}
 
 {{/*
+REST TLS keystore password key
+*/}}
+{{- define "corda.restTlsKeystorePasswordKey" -}}
+{{ .Values.bootstrap.rest.tls.keystore.password.valueFrom.secretKeyRef.key | default "password" }}
+{{- end }}
+
+{{/*
 Initial admin user secret username key
 */}}
 {{- define "corda.initialAdminUserSecretUsernameKey" -}}
@@ -285,6 +292,19 @@ Kafka TLS truststore password
 - name: TRUSTSTORE_PASSWORD
   value: {{ .Values.kafka.tls.truststore.password.value | quote }}
   {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+REST TLS keystore password
+*/}}
+{{- define "corda.restTlsKeystorePassword" -}}
+{{- if .Values.bootstrap.rest.enabled -}}
+- name: REST_TLS_KEYSTORE_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "corda.restTlsKeystoreSecretName" . | quote }}
+      key: {{ include "corda.restTlsKeystorePasswordKey" . | quote }}
 {{- end -}}
 {{- end -}}
 

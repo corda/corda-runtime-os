@@ -300,6 +300,8 @@ bootstrap:
 
   # Configuration for REST bootstrap
   rest:
+    # -- Indicates whether REST bootstrapping is enabled as part of installation
+    enabled: true
     # TLS configuration
     tls:
       # Keystore configuration

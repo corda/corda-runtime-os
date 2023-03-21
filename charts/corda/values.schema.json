@@ -973,7 +973,19 @@
                     "type": "object",
                     "default": {},
                     "title": "REST configuration",
+                    "required": [
+                        "enabled"
+                    ],
                     "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Enables REST bootstrapping as part of installation",
+                            "examples": [
+                                false,
+                                true
+                            ]
+                        },
                         "tls": {
                             "type": "object",
                             "title": "TLS configuration",

@@ -1,3 +1,4 @@
 {{- include "corda.bootstrapDbJob" . }}
 {{- include "corda.bootstrapKafkaJob" . }}
 {{- include "corda.bootstrapRbacJob" . }}
+{{- include "corda.bootstrapRestTlsJob" . }}

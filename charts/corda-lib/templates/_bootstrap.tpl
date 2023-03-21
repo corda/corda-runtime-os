@@ -376,6 +376,60 @@ spec:
 {{- end }}
 
 {{/*
+REST bootstrap job
+*/}}
+{{- define "corda.bootstrapRestTlsJob" -}}
+{{- if .Values.bootstrap.rest.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "corda.fullname" . }}-create-rest-tls-keystore
+  labels:
+    {{- include "corda.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: create-keystore
+          image: {{ include "corda.bootstrapCliImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          env:
+          {{- include "corda.restTlsKeystorePassword" . | nindent 12 }}
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                openssl version
+                echo $REST_TLS_KEYSTORE_PASSWORD
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+      volumes:
+        - name: working-volume
+          emptyDir: {}
+        {{ include "corda.log4jVolume" . | nindent 8 }}
+      restartPolicy: Never
+      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+  backoffLimit: 0
+{{- end }}
+{{- end }}
+
+{{/*
 RBAC bootstrap job
 */}}
 {{- define "corda.bootstrapRbacJob" -}}
