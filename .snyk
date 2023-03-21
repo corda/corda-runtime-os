@@ -54,4 +54,13 @@ ignore:
           the components affected.
         expires: 2023-06-19T15:49:59.760Z
         created: 2023-02-24T15:49:59.763Z
+  SNYK-JAVA-COMFASTERXMLWOODSTOX-3091135:
+    - '*':
+        reason: >-
+          Corda5 Shippable artifacts do not make use of dokka-core, which is
+          where this dependency originates, this is used at compile / build time
+          only for Kdoc generation and not shipped in any of our releasable
+          artifacts.
+        expires: 2023-06-19T13:28:02.582Z
+        created: 2023-03-20T13:28:02.597Z
 patch: {}
