@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
+import net.corda.chunking.db.impl.validation.ExternalChannelsConfigValidatorImpl
 
 @Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -120,6 +121,7 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
+        val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl()
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,
@@ -127,6 +129,7 @@ class ChunkDbWriterFactoryImpl(
             cpiInfoWriteService,
             membershipSchemaValidator,
             membershipGroupPolicyValidator,
+            externalChannelsConfigValidator,
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,

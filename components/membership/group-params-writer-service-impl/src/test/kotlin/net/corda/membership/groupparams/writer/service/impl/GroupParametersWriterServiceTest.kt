@@ -18,7 +18,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.impl.GroupParametersImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -247,7 +246,6 @@ class GroupParametersWriterServiceTest {
             val ownerId = viewOwner.shortHash.toString()
             val params = LayeredPropertyMapMocks.create<GroupParametersImpl>(
                 sortedMapOf(
-                    MPV_KEY to "1",
                     EPOCH_KEY to "2",
                     MODIFIED_TIME_KEY to clock.instant().toString()
                 ),

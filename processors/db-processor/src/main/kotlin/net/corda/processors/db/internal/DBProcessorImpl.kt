@@ -46,7 +46,7 @@ import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.reconciliation.ReconcilerFactory
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
@@ -221,7 +221,7 @@ class DBProcessorImpl @Activate constructor(
         val instanceId = bootstrapConfig.getInt(INSTANCE_ID)
 
         log.info("Bootstrapping DB connection Manager")
-        dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+        dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
 
         log.info("Bootstrapping config publish service")
         configPublishService.bootstrapConfig(bootstrapConfig)
