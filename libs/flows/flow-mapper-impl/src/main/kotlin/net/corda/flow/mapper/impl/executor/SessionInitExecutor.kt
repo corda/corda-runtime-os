@@ -73,7 +73,7 @@ class SessionInitExecutor(
                         sessionEvent.initiatedIdentity,
                         1,
                         emptyList(),
-                        SessionConfirm(KeyValuePairList())
+                        SessionConfirm(KeyValuePairList(emptyList()))
                     ),
                     sessionEventSerializer,
                     flowConfig
