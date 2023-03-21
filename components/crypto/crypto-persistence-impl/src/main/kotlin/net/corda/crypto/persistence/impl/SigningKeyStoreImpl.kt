@@ -94,7 +94,7 @@ class SigningKeyStoreImpl @Activate constructor(
         keyEncodingService,
         digestService,
         SigningKeysRepositoryImpl,
-        ::entityManager,
+        ::createEntityManager,
     )
 
     override fun save(tenantId: String, context: SigningKeySaveContext) =
@@ -121,7 +121,7 @@ class SigningKeyStoreImpl @Activate constructor(
     override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
         impl.lookupByFullKeyIds(tenantId, fullKeyIds.toSet())
 
-    private fun entityManager(tenantId: String) = getEntityManagerFactory(
+    private fun createEntityManager(tenantId: String) = getEntityManagerFactory(
         tenantId,
         dbConnectionManager,
         virtualNodeInfoReadService,
