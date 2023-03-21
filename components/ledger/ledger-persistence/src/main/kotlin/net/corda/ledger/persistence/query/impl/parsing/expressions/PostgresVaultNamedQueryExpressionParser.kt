@@ -1,15 +1,33 @@
 package net.corda.ledger.persistence.query.impl.parsing.expressions
 
+import net.corda.ledger.persistence.query.impl.parsing.And
+import net.corda.ledger.persistence.query.impl.parsing.As
+import net.corda.ledger.persistence.query.impl.parsing.Equals
+import net.corda.ledger.persistence.query.impl.parsing.From
+import net.corda.ledger.persistence.query.impl.parsing.GreaterThan
+import net.corda.ledger.persistence.query.impl.parsing.GreaterThanEquals
+import net.corda.ledger.persistence.query.impl.parsing.In
+import net.corda.ledger.persistence.query.impl.parsing.IsNotNull
+import net.corda.ledger.persistence.query.impl.parsing.IsNull
+import net.corda.ledger.persistence.query.impl.parsing.JsonArrayOrObjectAsText
 import net.corda.ledger.persistence.query.impl.parsing.JsonCast
+import net.corda.ledger.persistence.query.impl.parsing.JsonKeyExists
+import net.corda.ledger.persistence.query.impl.parsing.Keyword
 import net.corda.ledger.persistence.query.impl.parsing.LeftParentheses
+import net.corda.ledger.persistence.query.impl.parsing.LessThan
+import net.corda.ledger.persistence.query.impl.parsing.LessThanEquals
+import net.corda.ledger.persistence.query.impl.parsing.Like
+import net.corda.ledger.persistence.query.impl.parsing.NotEquals
 import net.corda.ledger.persistence.query.impl.parsing.Number
+import net.corda.ledger.persistence.query.impl.parsing.Or
 import net.corda.ledger.persistence.query.impl.parsing.Parameter
 import net.corda.ledger.persistence.query.impl.parsing.ParameterEnd
 import net.corda.ledger.persistence.query.impl.parsing.PathReference
 import net.corda.ledger.persistence.query.impl.parsing.PathReferenceWithSpaces
 import net.corda.ledger.persistence.query.impl.parsing.RightParentheses
+import net.corda.ledger.persistence.query.impl.parsing.Select
 import net.corda.ledger.persistence.query.impl.parsing.Token
-import net.corda.ledger.persistence.query.impl.parsing.operatorFactory
+import net.corda.ledger.persistence.query.impl.parsing.Where
 
 class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser {
     private val stringPattern = Regex(
@@ -74,7 +92,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
             if (opsMatch != null && opsMatch.range.first == index) {
                 val ops = opsMatch.groups["op"]
                 if (ops != null) {
-                    outputTokens += operatorFactory(ops.value)
+                    outputTokens += toKeyword(ops.value)
                     index = opsMatch.range.last + 1
                     continue
                 }
@@ -118,5 +136,29 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
             throw IllegalArgumentException("Unexpected input index: $index, value: (${query[index]}), query: ($query)")
         }
         return outputTokens
+    }
+
+    private fun toKeyword(keyword: String): Keyword {
+        return when (keyword.uppercase()) {
+            "!=" -> NotEquals()
+            ">" -> GreaterThan()
+            ">=" -> GreaterThanEquals()
+            "<" -> LessThan()
+            "<=" -> LessThanEquals()
+            "IS NULL" -> IsNull()
+            "IS NOT NULL" -> IsNotNull()
+            "->>" -> JsonArrayOrObjectAsText()
+            "AS" -> As()
+            "FROM" -> From()
+            "SELECT" -> Select()
+            "WHERE" -> Where()
+            "OR" -> Or()
+            "AND" -> And()
+            "=" -> Equals()
+            "IN" -> In()
+            "?" -> JsonKeyExists()
+            "LIKE" -> Like()
+            else -> throw IllegalArgumentException("Unknown keyword $keyword")
+        }
     }
 }
