@@ -16,6 +16,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
         """(?<str>('[^']*)'|("[^"]*)")"""
     )
 
+    @Suppress("MaxLineLength")
     private val pathPattern = Regex(
         """(?<path>(\$?[a-zA-Z_][a-zA-Z0-9_]*(\[([0-9]+|"[a-zA-Z_][a-zA-Z0-9_]*")])?)(\.[a-zA-Z_][a-zA-Z0-9_]*(\[([0-9]+|"[a-zA-Z_][a-zA-Z0-9_]*")])?)*)"""
     )
@@ -24,7 +25,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
         """(?<num>[0-9]+(\.[0-9]+)?([eE]-?[0-9]+)?)"""
     )
 
-    // like? need to keep % in that case
+    @Suppress("MaxLineLength")
     private val opsPattern = Regex(
         """(?<op>(->>)|[+-/*=?]|<(=)?|>(=)?|==|!(=)?|(?i)\bas\b|(?i)\bfrom\b|(?i)\bselect\b|(?i)\bwhere\b|(?i)\band\b|(?i)\bor\b|(?i)\bis null\b|(?i)\bis not null\b|(?i)\bin\b|(?i)\blike\b)"""
     )
@@ -33,6 +34,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
 
     private val parameterPattern = Regex("""(?<parameter>:[^:]\S+)""")
 
+    @Suppress("NestedBlockDepth")
     override fun parse(query: String): List<Token> {
         val outputTokens = mutableListOf<Token>()
         var index = 0
