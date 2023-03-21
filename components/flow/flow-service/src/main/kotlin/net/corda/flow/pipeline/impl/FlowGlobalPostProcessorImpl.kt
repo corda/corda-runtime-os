@@ -191,9 +191,11 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         return listOf(flowRecordFactory.createFlowStatusRecord(status))
     }
 
-    private fun isInterop(context: FlowEventContext<Any>) : Boolean =
-        context
+    private fun isInterop(context: FlowEventContext<Any>) : Boolean {
+        val initiator: FlowInitiatorType? = context
             .checkpoint
             .flowStartContext
-            .initiatorType == FlowInitiatorType.INTEROP
+            .initiatorType
+        return FlowInitiatorType.INTEROP == initiator
+    }
  }
