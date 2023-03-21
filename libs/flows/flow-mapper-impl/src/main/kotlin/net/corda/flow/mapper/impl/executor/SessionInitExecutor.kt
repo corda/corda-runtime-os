@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -61,16 +62,18 @@ class SessionInitExecutor(
             val sessionConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
-                SessionEvent(
-                    MessageDirection.INBOUND,
-                    Instant.now(),
-                    sessionEvent.sessionId,
-                    null,
-                    sessionEvent.initiatingIdentity,
-                    sessionEvent.initiatedIdentity,
-                    1,
-                    emptyList(),
-                    SessionConfirm(KeyValuePairList(emptyList()))
+                FlowMapperEvent(
+                    SessionEvent(
+                        MessageDirection.INBOUND,
+                        Instant.now(),
+                        sessionEvent.sessionId,
+                        null,
+                        sessionEvent.initiatingIdentity,
+                        sessionEvent.initiatedIdentity,
+                        1,
+                        emptyList(),
+                        SessionConfirm(KeyValuePairList(emptyList()))
+                    )
                 )
             )
 
