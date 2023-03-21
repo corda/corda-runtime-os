@@ -15,6 +15,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.virtualnode.HoldingIdentity
@@ -99,7 +100,14 @@ class FlowRunnerImpl @Activate constructor(
                     localContext.counterpartySessionProperties
                 )
             },
-            updateFlowStackItem = { fsi -> fsi.sessions.add(FlowStackItemSession(flowStartContext.statusKey.id, true)) },
+            updateFlowStackItem = { fsi ->
+                fsi.sessions.add(
+                    FlowStackItemSession(
+                        flowStartContext.statusKey.id,
+                        true
+                    )
+                )
+            },
             contextUserProperties = localContext.userProperties,
             contextPlatformProperties = localContext.platformProperties
         )
@@ -140,13 +148,17 @@ class FlowRunnerImpl @Activate constructor(
         return virtualNodeInfoReadService.get(holdingIdentity).let {
             if (it == null) contextProperties
             else {
-                cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
-                    contextProperties.put("corda.cpiName", metadata.cpiId.name)
-                    contextProperties.put("corda.cpiVersion", metadata.version)
-                    contextProperties.put("corda.cpiSignerSummaryHash", metadata.cpiId.signerSummaryHash)
-                    contextProperties.put("corda.cpiFileChecksum", metadata.fileChecksum)
-                }
-                contextProperties
+                return KeyValueStore().apply {
+                    cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
+                        this["corda.cpiName"] = metadata.cpiId.name
+                        this["corda.cpiVersion"] = metadata.version.toString()
+                        this["corda.cpiSignerSummaryHash"] = metadata.cpiId.signerSummaryHash.toHexString()
+                        this["corda.cpiFileChecksum"] = metadata.fileChecksum.toHexString()
+                        contextProperties.items.forEach { prop ->
+                            this[prop.key] = prop.value
+                        }
+                    }
+                }.avro
             }
         }
     }
