@@ -18,7 +18,7 @@ import java.util.List;
  *     <li>
  *         Provide a constructor which takes exactly two arguments: a
  *        {@link net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction UtxoSignedTransaction}
- *        representing the transaction, and a {@link net.corda.v5.ledger.common.Party Party} which is
+ *        representing the transaction, and a {@link net.corda.v5.base.types.MemberX500Name> MemberX500Name} which is
  *        populated with the notary virtual node representing the notary service.
  *     </li>
  *     <li>

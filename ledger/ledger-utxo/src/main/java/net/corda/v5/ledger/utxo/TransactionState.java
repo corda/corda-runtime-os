@@ -2,9 +2,11 @@ package net.corda.v5.ledger.utxo;
 
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
-import net.corda.v5.ledger.common.Party;
+import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.security.PublicKey;
 
 /**
  * Defines a transaction state, composed of a {@link ContractState} and associated transaction state information.
@@ -40,12 +42,21 @@ public interface TransactionState<T extends ContractState> {
     Class<? extends Contract> getContractType();
 
     /**
-     * Gets the notary of the current {@link TransactionState} instance.
+     * Gets the notary service name of the current {@link TransactionState} instance.
      *
-     * @return Returns the notary of the current {@link TransactionState} instance.
+     * @return Returns the notary service of the current {@link TransactionState} instance.
      */
     @NotNull
-    Party getNotary();
+    MemberX500Name getNotaryName();
+
+    /**
+     * Gets the notary service key of the current {@link TransactionState} instance.
+     *
+     * @return Returns the notary service key of the current {@link TransactionState} instance.
+     */
+    @NotNull
+    PublicKey getNotaryKey();
+
 
     /**
      * Gets the encumbrance of the current {@link TransactionState} instance.
