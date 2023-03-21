@@ -1,6 +1,7 @@
 package net.corda.applications.workers.rest.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.applications.workers.rest.SessionCertificateTest
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MemberLookupRestResource
@@ -186,4 +187,13 @@ fun E2eCluster.lookupMembers(
         .use { client ->
             client.start().proxy.lookup(holdingId).members
         }
+}
+
+fun E2eCluster.getMemberName(prefix: String): String {
+    return mapOf(
+        "O" to "$prefix-${SessionCertificateTest::class.java.simpleName}",
+        "L" to "London",
+        "C" to "GB",
+        "OU" to uniqueName
+    ).map { "${it.key}=${it.value}" }.joinToString(separator = ", ")
 }

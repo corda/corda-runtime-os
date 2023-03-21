@@ -7,6 +7,7 @@ import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rest.utils.assertP2pConnectivity
 import net.corda.applications.workers.rest.utils.generateGroupPolicy
 import net.corda.applications.workers.rest.utils.getGroupId
+import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardMembers
 import net.corda.applications.workers.rest.utils.onboardMgm
 import net.corda.data.identity.HoldingIdentity
@@ -22,17 +23,20 @@ class SingleClusterDynamicNetworkTest {
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
             (1..4).map {
-                E2eClusterMember("C=GB, L=London, O=Member-${cluster.uniqueName}")
+                E2eClusterMember(
+                    cluster.getMemberName("Member$it")
+                )
             }
         )
         cluster.addMember(
-            E2eClusterMember("C=GB, L=London, O=Notary-${cluster.uniqueName}", E2eClusterMemberRole.NOTARY)
+            E2eClusterMember(
+                cluster.getMemberName("Notary"),
+                E2eClusterMemberRole.NOTARY
+            )
         )
     }
 
-    private val mgm = E2eClusterMember(
-        "O=Mgm, L=London, C=GB, OU=${cordaCluster.uniqueName}"
-    )
+    private val mgm = E2eClusterMember(cordaCluster.getMemberName("Mgm"))
 
     @Test
     fun `Create mgm and allow members to join the group`() {

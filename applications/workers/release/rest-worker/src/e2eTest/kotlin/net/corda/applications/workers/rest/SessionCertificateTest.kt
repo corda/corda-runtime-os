@@ -1,5 +1,6 @@
 package net.corda.applications.workers.rest
 
+import net.corda.applications.workers.rest.utils.E2eCluster
 import net.corda.applications.workers.rest.utils.E2eClusterAConfig
 import net.corda.applications.workers.rest.utils.E2eClusterBConfig
 import net.corda.applications.workers.rest.utils.E2eClusterCConfig
@@ -10,6 +11,7 @@ import net.corda.applications.workers.rest.utils.setSslConfiguration
 import net.corda.applications.workers.rest.utils.disableLinkManagerCLRChecks
 import net.corda.applications.workers.rest.utils.generateGroupPolicy
 import net.corda.applications.workers.rest.utils.getGroupId
+import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardMembers
 import net.corda.applications.workers.rest.utils.onboardMgm
 import org.assertj.core.api.Assertions
@@ -25,19 +27,19 @@ class SessionCertificateTest {
 
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Alice, L=London, C=GB, OU=${cluster.uniqueName}"))
+            listOf(E2eClusterMember(cluster.getMemberName("Alice")))
         )
     }
 
     private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Bob, L=London, C=GB, OU=${cluster.uniqueName}"))
+            listOf(E2eClusterMember(cluster.getMemberName("Bob")))
         )
     }
 
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Mgm, L=London, C=GB, OU=${cluster.uniqueName}"))
+            listOf(E2eClusterMember(cluster.getMemberName("Mgm")))
         )
     }
 
