@@ -20,12 +20,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.*
 import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -540,6 +535,22 @@ class LifecycleProcessorTest {
         verify(resource1).close()
         verify(resource2).close()
         verify(resource3).close()
+    }
+
+    @Test
+    fun `null argument works correctly when passed to closeManagedResources`(){
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
+        val resource1 = mock<Resource>()
+        processor.addManagedResource<Resource>("TEST1") { resource1 }
+
+        processor.closeManagedResources(emptySet())
+        verifyNoInteractions(resource1)
+
+        processor.closeManagedResources(null)
+        verify(resource1).close()
+
     }
 
     @Test
