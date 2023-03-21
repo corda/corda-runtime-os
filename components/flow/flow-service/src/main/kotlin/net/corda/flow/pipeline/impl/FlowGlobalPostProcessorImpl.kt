@@ -80,10 +80,24 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
+    /**
+     * Returns true if a session state belongs to an interop session. This is currently
+     * signaled by the presence of the interop suffix in the session ID.
+     * @return True if the event is an interop event, false otherwise.
+     */
+    private fun SessionState.isInteropSessionState(): Boolean {
+        return this.sessionId.contains("-INTEROP")
+    }
+
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
+
+        /** For interop sessions, the counterparty is not expected to exist on the local network. */
+        if (sessionState.isInteropSessionState()) {
+            return true
+        }
 
         /**
          * If the counterparty doesn't exist in our network, don't send our queued messages yet.
