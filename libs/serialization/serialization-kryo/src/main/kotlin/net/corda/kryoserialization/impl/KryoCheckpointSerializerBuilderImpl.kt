@@ -32,7 +32,7 @@ import javax.security.auth.x500.X500Principal
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
     private val sandboxGroup: SandboxGroup,
-    private val kryoFunction: Function<ClassResolver, Kryo> = Function { classResolver ->
+    private val kryoFactory: Function<ClassResolver, Kryo> = Function { classResolver ->
         (Fiber.getFiberSerializer(classResolver, false) as KryoSerializer).kryo
     }
 ) : CheckpointSerializerBuilder {
@@ -83,7 +83,7 @@ class KryoCheckpointSerializerBuilderImpl(
         )
 
         val kryo = DefaultKryoCustomizer.customize(
-            kryoFunction.apply(classResolver),
+            kryoFactory.apply(classResolver),
             serializers + publicKeySerializers + otherCustomSerializers,
             classSerializer
         )
