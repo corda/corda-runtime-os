@@ -115,19 +115,19 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getSignatoryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
-        val keyIdToSignatory = signatories.associateBy {// todo cache this
+        val keyIdsToSignatories = signatories.associateBy {// todo cache this
             transactionSignatureServiceInternal.getIdOfPublicKey(
                 it,
                 keyId.algorithm
             )
         }
-        return keyIdToSignatory[keyId]
+        return keyIdsToSignatories[keyId]
     }
 
     // Against signatories. Notary/Unknown signatures are ignored.
     @Suspendable // TODO: are these need to be suspendable?
     override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.mapNotNull {
+        val appliedRequiredSignatures = signatures.mapNotNull {
             val publicKey = getSignatoryPublicKeyByKeyId(it.by)
             if (publicKey == null) {
                 null
@@ -142,7 +142,7 @@ data class UtxoSignedTransactionImpl(
         }.toSet()
 
         // isFulfilledBy() helps to make this working with CompositeKeys.
-        return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
+        return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedRequiredSignatures) }.toSet()
     }
 
     // Against signatories. Notary/unknown signatures are ignored
