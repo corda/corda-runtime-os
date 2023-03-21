@@ -41,7 +41,7 @@ curl -k -u admin:admin -X PUT -d '{"section":"corda.p2p.linkManager", "version":
 ```
 ## Build registration context (only for MGM registration)
 
-You must add an extra json field `corda.group.trustroot.session.0` with the trust store of the CA to the registration context (in the same way as `corda.group.trustroot.tls.0`).
+You must add an extra json field `corda.group.trustroot.session.0` with the certificate of the CA to the registration context (in the same way as `corda.group.trustroot.tls.0`).
 To enable session certificates you must set the json field `corda.group.pki.session` to be "Standard" instead of "NoPKI".
 
 ## Configure virtual node as network participant
