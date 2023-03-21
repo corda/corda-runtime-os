@@ -51,6 +51,7 @@ public final class DbSchema {
     public static final String CRYPTO = "CRYPTO";
     public static final String CRYPTO_WRAPPING_KEY_TABLE = "crypto_wrapping_key";
     public static final String CRYPTO_SIGNING_KEY_TABLE = "crypto_signing_key";
+    public static final String CRYPTO_SIGNING_KEY_MATERIAL_TABLE = "crypto_signing_key_material";
     public static final String CRYPTO_HSM_CONFIG_TABLE = "crypto_hsm_config";
     public static final String CRYPTO_HSM_CATEGORY_MAP_TABLE = "crypto_hsm_category_map";
     public static final String CRYPTO_HSM_ASSOCIATION_TABLE = "crypto_hsm_association";

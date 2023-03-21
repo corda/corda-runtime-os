@@ -1,10 +1,37 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://corda.r3.com/net/corda/schema/configuration/cryptoLibrary/1.0/corda.cryptoLibrary.json",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/crypto/1.0/corda.crypto.json",
   "title": "Corda Crypto Library Configuration Schema",
   "description": "Configuration schema for the crypto library subsection.",
   "type": "object",
   "properties": {
+    "wrappingKeys": {
+      "description" : "Key derivation parameters for wrapping keys supplied in config",
+      "type": "array",
+      "properties": {
+        "alias" : {
+          "description": "The alias for the wrapping key.",
+          "type" : "string"
+        },
+        "algorithm": {
+          "description": "Key derivation function and wrapping key algorithm selection",
+          "type": "string",
+          "default": "PBKDF2WithHmacSHA256"
+        },
+        "salt": {
+          "description": "Salt for the key derivation function",
+          "type": "string"
+        },
+        "passphrase": {
+          "description": "Passphrase for the key derivation function",
+          "type": "string"
+        }
+      }
+    },
+    "defaultWrappingKey": {
+      "description": "The default wrapping key, which must be in the wrappingKeys array.",
+      "type": "string"
+    },
     "cryptoConnectionFactory": {
       "description": "Settings for database connections factory's cache of EntityManagerFactory(s)",
       "type": "object",
@@ -279,6 +306,42 @@
                         },
                         "additionalProperties": false
                       },
+                      "wrappingKeys": {
+                        "description" : "Key derivation parameters for wrapping keys supplied in config",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "alias": {
+                              "description": "The alias for the wrapping key.",
+                              "type": "string"
+                            },
+                            "algorithm": {
+                              "description": "Key derivation function and wrapping key algorithm selection",
+                              "type": "string",
+                              "default": "PBKDF2WithHmacSHA256"
+                            },
+                            "salt": {
+                              "description": "Salt for the key derivation function",
+                              "type": "string"
+                            },
+                            "passphrase": {
+                              "description": "Passphrase for the key derivation function",
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "alias",
+                            "salt",
+                            "passphrase"
+                          ]
+                        }
+                      },
+                      "defaultWrappingKey": {
+                        "description": "The default wrapping key, which must be in the wrappingKeys array.",
+                        "type": "string"
+                      },
                       "wrappingKeyMap": {
                         "description": "Settings for the wrapping keys map",
                         "type": "object",
@@ -291,14 +354,6 @@
                               "TRANSIENT"
                             ],
                             "default": "CACHING"
-                          },
-                          "salt": {
-                            "description": "Salt for the root master wrapping key",
-                            "type": "string"
-                          },
-                          "passphrase": {
-                            "description": "Passphrase for the root master wrapping key",
-                            "type": "string"
                           },
                           "cache": {
                             "description": "Settings for the cache if the type is CACHING",
@@ -319,11 +374,7 @@
                             "additionalProperties": false
                           }
                         },
-                        "additionalProperties": false,
-                        "required": [
-                          "salt",
-                          "passphrase"
-                        ]
+                        "additionalProperties": false
                       },
                       "wrapping": {
                         "description": "Number of keys which can be handled by the HSM, -1 means unlimited capacity",
