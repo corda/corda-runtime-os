@@ -43,7 +43,7 @@ export REGISTRATION_CONTEXT='{
   "corda.group.tls.version": "1.3",
   "corda.endpoints.0.connectionURL": "https://'$P2P_GATEWAY_HOST':'$P2P_GATEWAY_PORT'",
   "corda.endpoints.0.protocolVersion": "1",
-  "corda.group.truststore.tls.0" : "'$TLS_CA_CERT'"
+  "corda.group.trustroot.tls.0" : "'$TLS_CA_CERT'"
 }'
 
 ```

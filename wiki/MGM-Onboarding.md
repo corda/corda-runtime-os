@@ -465,7 +465,7 @@ export REGISTRATION_CONTEXT='{
   "corda.group.tls.version": "1.3",
   "corda.endpoints.0.connectionURL": "https://'$P2P_GATEWAY_HOST':'$P2P_GATEWAY_PORT'",
   "corda.endpoints.0.protocolVersion": "1",
-  "corda.group.truststore.tls.0" : "'$TLS_CA_CERT'"
+  "corda.group.trustroot.tls.0" : "'$TLS_CA_CERT'"
 }'
 ```
 </details>
@@ -489,7 +489,7 @@ $REGISTRATION_CONTEXT = @{
   'corda.group.tls.type' = "OneWay"
   'corda.endpoints.0.connectionURL' = "https://$P2P_GATEWAY_HOST`:$P2P_GATEWAY_PORT"
   'corda.endpoints.0.protocolVersion' = "1"
-  'corda.group.truststore.tls.0'  =  [IO.File]::ReadAllText($TLS_CA_CERT_PATH)
+  'corda.group.trustroot.tls.0'  =  [IO.File]::ReadAllText($TLS_CA_CERT_PATH)
 }
 ```
 </details>
@@ -517,7 +517,7 @@ curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "r
   "corda.group.tls.version": "1.3",
   "corda.endpoints.0.connectionURL": "https://corda-p2p-gateway-worker.corda-cluster-a:8080",
   "corda.endpoints.0.protocolVersion": "1",
-  "corda.group.truststore.tls.0" : "-----BEGIN CERTIFICATE-----\nMIIBLjCB1aADAgECAgECMAoGCCqGSM49BAMCMBAxDjAMBgNVBAYTBVVLIENOMB4X\nDTIyMDgyMzA4MDUzN1oXDTIyMDkyMjA4MDUzN1owEDEOMAwGA1UEBhMFVUsgQ04w\nWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASG6ijAvbmaIaIwKpZZqTeKmMKfoOPb\ncCK/BqdtKXVTt5AjJtiP/Uoq+481UEQyaUZYXGf5rC1owjT40U2B71qdoyAwHjAP\nBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBrjAKBggqhkjOPQQDAgNIADBFAiEA\n1h6WEfdWUXSjBcenf5ycXPkYQQzI92I54q2WaVVjQHwCIEBk1ov/hYp9RCCDPnJx\nk8WgCZIyhFe0pEmow7MuI/Zk\n-----END CERTIFICATE-----"
+  "corda.group.trustroot.tls.0" : "-----BEGIN CERTIFICATE-----\nMIIBLjCB1aADAgECAgECMAoGCCqGSM49BAMCMBAxDjAMBgNVBAYTBVVLIENOMB4X\nDTIyMDgyMzA4MDUzN1oXDTIyMDkyMjA4MDUzN1owEDEOMAwGA1UEBhMFVUsgQ04w\nWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASG6ijAvbmaIaIwKpZZqTeKmMKfoOPb\ncCK/BqdtKXVTt5AjJtiP/Uoq+481UEQyaUZYXGf5rC1owjT40U2B71qdoyAwHjAP\nBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBrjAKBggqhkjOPQQDAgNIADBFAiEA\n1h6WEfdWUXSjBcenf5ycXPkYQQzI92I54q2WaVVjQHwCIEBk1ov/hYp9RCCDPnJx\nk8WgCZIyhFe0pEmow7MuI/Zk\n-----END CERTIFICATE-----"
 } } }' https://localhost:8888/api/v1/membership/EF19BF67E77C
 ```
 
@@ -537,7 +537,7 @@ jq -n '.memberRegistrationRequest.action="requestJoin"' | \
   jq '.memberRegistrationRequest.context."corda.group.key.session.policy"="Combined"' | \
   jq --arg p2p_url "https://$P2P_GATEWAY_HOST:$P2P_GATEWAY_PORT" '.memberRegistrationRequest.context."corda.endpoints.0.connectionURL"=$p2p_url' | \
   jq '.memberRegistrationRequest.context."corda.endpoints.0.protocolVersion"="1"' | \
-  jq --rawfile root_certicicate /tmp/ca/ca/root-certificate.pem '.memberRegistrationRequest.context."corda.group.truststore.tls.0"=$root_certicicate' \
+  jq --rawfile root_certicicate /tmp/ca/ca/root-certificate.pem '.memberRegistrationRequest.context."corda.group.trustroot.tls.0"=$root_certicicate' \
 ) $API_URL/membership/$MGM_HOLDING_ID
 ```
 </details>
