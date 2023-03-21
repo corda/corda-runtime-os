@@ -39,13 +39,10 @@ import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
@@ -99,7 +96,9 @@ class InteropServiceIntegrationTest {
             setupConfig(publisher)
         }
     }
-    //@Test
+
+    @Disabled("Temporarily disabled as part of CORE-10465")
+    @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
@@ -164,7 +163,8 @@ class InteropServiceIntegrationTest {
         interopService.stop()
     }
 
-    //@Test
+    @Disabled("Temporarily disabled as part of CORE-10465")
+    @Test
     fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
