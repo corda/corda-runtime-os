@@ -3,6 +3,7 @@
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -271,6 +272,10 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                     CryptoHSMServiceConfig::downstreamMaxAttempts.name to 3
                 )
             )
+        )
+        .withValue("defaultWrappingKey", ConfigValueFactory.fromAnyRef("root1"))
+        .withValue(
+            "wrappingKeys", ConfigValueFactory.fromIterable(listOf(mapOf("alias" to "root1", "salt" to "A", "passphrase" to "B")))
         )
         .withValue(
             DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
