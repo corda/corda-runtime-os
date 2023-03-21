@@ -20,14 +20,12 @@ import java.util.Collection;
  * <ul>
  * <li>Java:<pre>{@code
  * GroupParameters groupParameters = fullTransaction.getMembershipParameters();
- * int minimumPlatformVersion = groupParameters.getMinimumPlatformVersion();
  * Instant modifiedTime = groupParameters.getModifiedTime();
  * int epoch = groupParameters.getEpoch();
  * Collection<NotaryInfo> notaries = groupParameters.getNotaries();
  * }</pre></li>
  * <li>Kotlin:<pre>{@code
  * val groupParameters = fullTransaction.membershipParameters
- * val minimumPlatformVersion = groupParameters?.minimumPlatformVersion
  * val modifiedTime = groupParameters?.modifiedTime
  * val epoch = groupParameters?.epoch
  * val notaries = groupParameters?.notaries
@@ -36,11 +34,6 @@ import java.util.Collection;
  */
 @CordaSerializable
 public interface GroupParameters extends LayeredPropertyMap {
-
-    /**
-     * @return The minimum platform version required to be running on in order to transact within a group.
-     */
-    int getMinimumPlatformVersion();
 
     /**
      * @return The {@link Instant} representing the last time the group parameters were modified.
