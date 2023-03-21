@@ -93,6 +93,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
+            "net.cordapp.testing.testflows.FacadeInvocationFlow",
             "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
@@ -1122,6 +1123,24 @@ class FlowTests {
             """.trimJson()
 
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
+    }
+
+    @Test
+    fun `Interoperability - facade call returns payload back to caller`() {
+        val payload = "Hello world!"
+
+        val args = mapOf(
+            "facadeName" to "None",
+            "methodName" to "None",
+            "payload" to payload
+        )
+
+        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowStatus.flowError).isNull()
+        assertThat(flowStatus.flowResult).isEqualTo(payload)
     }
 
     /**

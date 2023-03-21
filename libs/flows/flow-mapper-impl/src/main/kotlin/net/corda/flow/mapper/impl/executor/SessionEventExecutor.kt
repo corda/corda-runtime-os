@@ -6,6 +6,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
@@ -13,6 +14,8 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.interop.FacadeInvocation
+import net.corda.messaging.interop.FacadeInvocationResult
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 
@@ -37,6 +40,8 @@ class SessionEventExecutor(
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             handleNullState()
+        } else if (sessionEvent.isInteropEvent()) {
+            processOtherSessionEventsInterop(flowMapperState)
         } else {
             processOtherSessionEvents(flowMapperState)
         }
@@ -87,5 +92,49 @@ class SessionEventExecutor(
         }
 
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
+    }
+
+    private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
+        val sessionData = sessionEvent.payload as SessionData
+        val payload = sessionData.payload
+
+        log.info("[CORE-10465] Processing interop session event of type ${payload.javaClass}")
+        log.info("[CORE-10465] Payload direction: $messageDirection")
+        log.info("[CORE-10465] Payload toString(): $payload")
+
+        if (messageDirection == MessageDirection.OUTBOUND) {
+            val facadeInvocation = if (payload is FacadeInvocation) {
+                payload
+            } else {
+                log.warn("[CORE-10465] Payload is not a facade invocation, ignoring event.")
+                return FlowMapperResult(flowMapperState, listOf())
+            }
+
+            val reply = Record(
+                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                sessionEvent.sessionId,
+                appMessageFactory(
+                    SessionEvent(
+                        MessageDirection.INBOUND,
+                        instant,
+                        sessionEvent.sessionId,
+                        null,
+                        sessionEvent.initiatingIdentity,
+                        sessionEvent.initiatedIdentity,
+                        1,
+                        emptyList(),
+                        SessionData(FacadeInvocationResult(facadeInvocation.payload))
+                    ),
+                    sessionEventSerializer,
+                    flowConfig
+                )
+            )
+
+            return FlowMapperResult(flowMapperState, listOf(reply))
+        } else {
+            log.info("[CORE-10465] Sending inbound interop event of type ${payload.javaClass} to flow event topic.")
+            val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+            return FlowMapperResult(flowMapperState, listOf(record))
+        }
     }
 }
