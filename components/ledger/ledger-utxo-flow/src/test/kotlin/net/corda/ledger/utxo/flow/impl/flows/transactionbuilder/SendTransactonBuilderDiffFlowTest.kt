@@ -57,7 +57,6 @@ class SendTransactonBuilderDiffFlowTest {
         whenever(currentTransactionBuilder.copy()).thenReturn(originalTransactionalBuilder)
 
         whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(null)
-        whenever(originalTransactionalBuilder.getNotaryKey()).thenReturn(null)
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(null)
         whenever(originalTransactionalBuilder.attachments).thenReturn(listOf())
         whenever(originalTransactionalBuilder.commands).thenReturn(listOf())
@@ -82,14 +81,13 @@ class SendTransactonBuilderDiffFlowTest {
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(notaryName = notaryX500Name, notaryKey = publicKeyExample))
+        verify(session).send(UtxoTransactionBuilderContainer(notaryName = notaryX500Name))
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
     fun `called with old notary and a different new notary sends back a builder without notary`() {
         whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(anotherNotaryX500Name)
-        whenever(originalTransactionalBuilder.getNotaryKey()).thenReturn(anotherPublicKeyExample)
         whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
         whenever(currentTransactionBuilder.notaryKey).thenReturn(publicKeyExample)
 

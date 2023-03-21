@@ -46,8 +46,7 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     fun `Sets new notary if old is null`() {
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
-                notaryName = notaryX500Name,
-                notaryKey = publicKeyExample
+                notaryName = notaryX500Name
             )
         )
         assertEquals(notaryX500Name, result.notaryName)

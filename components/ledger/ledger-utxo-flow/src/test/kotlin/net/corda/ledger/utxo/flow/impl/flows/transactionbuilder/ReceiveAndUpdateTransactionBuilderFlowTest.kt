@@ -67,7 +67,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     @Test
     fun `called with original notary null and receives new notary returns a builder with the new notary`() {
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notaryName = notaryX500Name, notaryKey = publicKeyExample)
+            UtxoTransactionBuilderContainer(notaryName = notaryX500Name )
         )
 
         val returnedTransactionBuilder = callSendFlow()
@@ -81,7 +81,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     fun `called with original notary and receives a different new notary returns with the original notary`() {
         originalTransactionalBuilder.setNotary(notaryX500Name)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(notaryName = anotherNotaryX500Name, notaryKey = anotherPublicKeyExample)
+            UtxoTransactionBuilderContainer(notaryName = anotherNotaryX500Name)
         )
 
         val returnedTransactionBuilder = callSendFlow()

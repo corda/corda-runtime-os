@@ -153,9 +153,9 @@ class UtxoTransactionBuilderImpl(
         return notaryName
     }
 
-    override fun setNotary(notary: MemberX500Name): UtxoTransactionBuilder {
-        this.notaryName = notary
-        notaryKey = notaryLookup.lookup(notary)?.publicKey
+    override fun setNotary(notaryName: MemberX500Name): UtxoTransactionBuilder {
+        this.notaryName = notaryName
+        this.notaryKey = lookUpNotaryKey(notaryName)
 
         return this
     }
@@ -182,7 +182,6 @@ class UtxoTransactionBuilderImpl(
     override fun copy(): UtxoTransactionBuilderContainer {
         return UtxoTransactionBuilderContainer(
             notaryName,
-            notaryKey,
             timeWindow,
             attachments.toMutableList(),
             commands.toMutableList(),
@@ -263,7 +262,7 @@ class UtxoTransactionBuilderImpl(
             this.utxoSignedTransactionFactory,
             this.notaryLookup,
             this.notaryName ?: other.getNotaryName(),
-            this.notaryKey ?: other.getNotaryKey(),
+            this.notaryKey ?: lookUpNotaryKey(other.getNotaryName()),
             this.timeWindow ?: other.timeWindow,
             (this.attachments + other.attachments).distinct().toMutableList(),
             (this.commands + other.commands).toMutableList(),
@@ -272,5 +271,11 @@ class UtxoTransactionBuilderImpl(
             (this.referenceStateRefs + other.referenceStateRefs).distinct().toMutableList(),
             (this.outputStates + other.outputStates).toMutableList()
         )
+    }
+
+    private fun lookUpNotaryKey(notaryName: MemberX500Name?): PublicKey? {
+        if (notaryName == null )
+            return null
+        return notaryLookup.lookup(notaryName)?.publicKey
     }
 }

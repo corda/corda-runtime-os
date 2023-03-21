@@ -220,7 +220,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
     fun diff(): UtxoTransactionBuilderContainer =
         UtxoTransactionBuilderContainer(
             if (baselineTransactionBuilder.getNotaryName() == null) notaryName else null,
-            if (baselineTransactionBuilder.getNotaryKey() == null) notaryKey else null,
             if (baselineTransactionBuilder.timeWindow == null) timeWindow else null,
             attachments - baselineTransactionBuilder.attachments.toSet(),
             commands.drop(baselineTransactionBuilder.commands.size),
