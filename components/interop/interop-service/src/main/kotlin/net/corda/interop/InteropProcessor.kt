@@ -117,8 +117,8 @@ class InteropProcessor(
             header.source,
             header.destination,
             SUBSYSTEM,
-            header.messageId.incrementOrUuid())
-
+            header.messageId.incrementOrUuid()
+        )
         logger.info("Generating output message: header=$responseHeader, payload=$interopMessage")
         return AppMessage(
             UnauthenticatedMessage(

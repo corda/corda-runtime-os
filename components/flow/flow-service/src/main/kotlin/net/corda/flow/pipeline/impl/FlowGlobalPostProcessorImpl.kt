@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -77,10 +78,14 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 }
             }
             .flatMap { (_, events) -> events }
+            .map { if (isInterop(context)) { it /*wrap payload intoInterop, add Interop FLage etc*/ } else { it } }
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
+        if (isInterop(context)) {
+            return true
+        }
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
@@ -185,4 +190,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
         return listOf(flowRecordFactory.createFlowStatusRecord(status))
     }
-}
+
+    private fun isInterop(context: FlowEventContext<Any>) : Boolean = context.checkpoint.flowStartContext.initiatorType == FlowInitiatorType.INTEROP
+ }
