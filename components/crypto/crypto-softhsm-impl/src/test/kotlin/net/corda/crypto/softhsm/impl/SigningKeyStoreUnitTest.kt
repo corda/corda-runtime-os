@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.impl.tests
+package net.corda.crypto.softhsm.impl
 
 /**  TODO Port this to new code
 // TODO This is to be renamed to SigningKeyStoreTest once `SigningKeyStoreTests` gets ported/ removed
