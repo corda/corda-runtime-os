@@ -31,7 +31,7 @@ inline fun <reified T : Any> ByteSequence.deserializeWithCompatibleContext(seria
  */
 inline fun <reified T : Any> SerializedBytes<T>.deserialize(serializationFactory: SerializationFactory,
                                                             context: SerializationContext): T {
-    return serializationFactory.deserialize(OpaqueBytes(this.bytes), T::class.java, context)
+    return serializationFactory.deserialize(this.unwrap(), T::class.java, context)
 }
 
 /**
