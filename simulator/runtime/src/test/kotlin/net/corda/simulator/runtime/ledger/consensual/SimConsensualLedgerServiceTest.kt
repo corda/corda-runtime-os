@@ -122,7 +122,7 @@ class SimConsensualLedgerServiceTest {
 
         // Then the transaction should get signed by the counterparty
         Assertions.assertNotNull(finalSignedTx)
-        assertThat(finalSignedTx.signatures.map { it.by }.toSet(), `is`(publicKeys.toSet()))
+        assertThat(finalSignedTx.signatures.map { it.by }.toSet(), `is`(publicKeys.map { it.fullIdHash() }.toSet()))
 
         // And it should have been persisted
         verify(persistenceService, times(1)).persist(

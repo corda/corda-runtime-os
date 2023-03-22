@@ -51,7 +51,7 @@ class ConsensualTransactionBuilderBaseTest {
         )
 
         val tx = builder.toSignedTransaction()
-        assertThat(tx.signatures.map { it.by }, `is`(listOf(myLedgerKey)))
+        assertThat(tx.signatures.map { it.by }, `is`(listOf(myLedgerKey.fullIdHash())))
     }
 
     @Test
@@ -80,7 +80,7 @@ class ConsensualTransactionBuilderBaseTest {
 
         // And the signatures should have come from the signing service, with timestamp from our clock
         assertThat(tx.signatures.size, `is`(1))
-        assertThat(tx.signatures[0].by, `is`(publicKeys[0]))
+        assertThat(tx.signatures[0].by, `is`(publicKeys[0].fullIdHash()))
         assertThat(String(tx.signatures[0].signature.bytes), `is`("My fake signed things"))
         assertThat(tx.signatures[0].metadata.timestamp, `is`(Instant.EPOCH))
 
