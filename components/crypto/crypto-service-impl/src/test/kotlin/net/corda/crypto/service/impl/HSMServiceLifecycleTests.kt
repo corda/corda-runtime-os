@@ -6,6 +6,7 @@ import net.corda.test.util.eventually
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -22,7 +23,12 @@ class HSMServiceLifecycleTests {
         component = HSMServiceImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
-            factory.hsmStore,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             factory.signingServiceFactory
         )
     }
@@ -53,11 +59,11 @@ class HSMServiceLifecycleTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(component.impl)
-        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

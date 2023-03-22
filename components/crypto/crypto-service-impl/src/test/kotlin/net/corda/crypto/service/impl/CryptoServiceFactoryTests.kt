@@ -1,17 +1,15 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.cipher.suite.CryptoService
+import java.util.UUID
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.softhsm.CryptoServiceProvider
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.UUID
+import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -44,11 +42,13 @@ class CryptoServiceFactoryTests {
         component = CryptoServiceFactoryImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
-            factory.hsmStore,
-            object : CryptoServiceProvider {
-                override fun getInstance(config: SmartConfig): CryptoService = factory.cryptoService
-            }
-        )
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock()
+        ) { factory.cryptoService }
     }
 
     @Test
@@ -94,14 +94,14 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertThrows<IllegalStateException> {
             component.impl
         }
-        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

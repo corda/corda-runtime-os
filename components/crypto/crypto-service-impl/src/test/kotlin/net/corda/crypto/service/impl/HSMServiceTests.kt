@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl
 
+import java.util.UUID
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
@@ -11,7 +12,6 @@ import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -92,19 +92,19 @@ class HSMServiceTests {
         val tenantId2 = UUID.randomUUID().toString()
 
         factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.LEDGER, emptyMap())
-        val usage1 = factory.hsmStore.getHSMUsage()
+        val usage1 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage1).hasSize(1)
         assertThat(usage1.first().usages).isEqualTo(1)
         assertThat(usage1.first().hsmId).isIn(CUSTOM1_HSM_ID, CUSTOM2_HSM_ID)
 
         factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.TLS, emptyMap())
-        val usage2 = factory.hsmStore.getHSMUsage()
+        val usage2 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage2).hasSize(2)
         assertThat(usage2).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 1 }
         assertThat(usage2).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
 
         factory.hsmService.assignHSM(tenantId2, CryptoConsts.Categories.LEDGER, emptyMap())
-        val usage3 = factory.hsmStore.getHSMUsage()
+        val usage3 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage3).hasSize(2)
         assertThat(usage3).anyMatch { it.hsmId == CUSTOM1_HSM_ID }
         assertThat(usage3).anyMatch { it.hsmId == CUSTOM2_HSM_ID }
@@ -124,7 +124,7 @@ class HSMServiceTests {
                 PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_ALIASED
             )
         )
-        val usage1 = factory.hsmStore.getHSMUsage()
+        val usage1 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage1).hasSize(1)
         assertThat(usage1.first().usages).isEqualTo(1)
         assertThat(usage1.first().hsmId).isEqualTo(CUSTOM1_HSM_ID)
@@ -134,7 +134,7 @@ class HSMServiceTests {
                 PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_ALIASED
             )
         )
-        val usage2 = factory.hsmStore.getHSMUsage()
+        val usage2 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage2).hasSize(1)
         assertThat(usage2).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 2 }
 
@@ -144,7 +144,7 @@ class HSMServiceTests {
                 PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_ALIASED
             )
         )
-        val usage3 = factory.hsmStore.getHSMUsage()
+        val usage3 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage3).hasSize(2)
         assertThat(usage3).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 2 }
         assertThat(usage3).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
@@ -159,20 +159,20 @@ class HSMServiceTests {
         val tenantId2 = UUID.randomUUID().toString()
 
         factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.LEDGER, emptyMap())
-        val usage1 = factory.hsmStore.getHSMUsage()
+        val usage1 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage1).hasSize(2)
         assertThat(usage1).anyMatch { it.hsmId == SOFT_HSM_ID && it.usages == 1 }
         assertThat(usage1).anyMatch { (it.hsmId == CUSTOM1_HSM_ID || it.hsmId == CUSTOM2_HSM_ID) && it.usages == 1 }
 
         factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.TLS, emptyMap())
-        val usage2 = factory.hsmStore.getHSMUsage()
+        val usage2 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage2).hasSize(3)
         assertThat(usage1).anyMatch { it.hsmId == SOFT_HSM_ID && it.usages == 1 }
         assertThat(usage2).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 1 }
         assertThat(usage2).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
 
         factory.hsmService.assignHSM(tenantId2, CryptoConsts.Categories.LEDGER, emptyMap())
-        val usage3 = factory.hsmStore.getHSMUsage()
+        val usage3 = factory.cryptoRepository.getHSMUsage()
         assertThat(usage3).hasSize(3)
         assertThat(usage1).anyMatch { it.hsmId == SOFT_HSM_ID && it.usages == 1 }
         assertThat(usage3).anyMatch { it.hsmId == CUSTOM1_HSM_ID }

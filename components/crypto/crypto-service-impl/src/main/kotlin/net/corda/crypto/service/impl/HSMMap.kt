@@ -4,19 +4,19 @@ import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.hsmMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.libs.configuration.SmartConfig
 
 class HSMMap(
     cryptoConfig: SmartConfig,
-    private val store: HSMStore
+    private val cryptoRepository: CryptoRepository
 ) {
     private val hsms: Map<String, CryptoHSMConfig> = cryptoConfig.hsmMap()
 
     val isOnlySoftHSM: Boolean get() = hsms.size == 1 && hsms.keys.first() == SOFT_HSM_ID
 
     fun getHSMStats(category: String): List<HSMStats> {
-        val usages = store.getHSMUsage()
+        val usages = cryptoRepository.getHSMUsage()
         return hsms.filter {
             it.key != SOFT_HSM_ID && it.value.hsm.categories.any { c ->
                 c.category == category || c.category == "*"

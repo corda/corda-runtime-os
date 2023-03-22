@@ -1,5 +1,6 @@
 package net.corda.crypto.persistence.impl.tests
 
+import com.typesafe.config.ConfigFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PublicKey
@@ -12,6 +13,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.MasterKeyPolicy
@@ -29,7 +32,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
@@ -46,9 +48,13 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
+import net.corda.crypto.softhsm.CryptoRepository
+import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -101,7 +107,13 @@ class PersistenceTests {
         lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
         @InjectService(timeout = 5000)
-        lateinit var hsmStore: HSMStore
+        lateinit var keyEncodingService: KeyEncodingService
+
+        @InjectService(timeout = 5000)
+        lateinit var digestService: PlatformDigestService
+
+        @InjectService(timeout = 5000)
+        lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
 
         @InjectService(timeout = 5000)
         lateinit var signingKeyStore: SigningKeyStore
@@ -109,6 +121,18 @@ class PersistenceTests {
         private lateinit var publisher: Publisher
 
         private lateinit var tracker: TestDependenciesTracker
+
+        private lateinit var cryptoRepository: CryptoRepository
+
+        private val config = SmartConfigFactory.createWithoutSecurityServices().create(
+            ConfigFactory.parseString("""
+        signingService {
+          cache {
+            expireAfterAccessMins = 3
+            maximumSize = 2
+          }
+        }
+    """.trimIndent()))
 
         @JvmStatic
         @BeforeAll
@@ -120,6 +144,16 @@ class PersistenceTests {
             CryptoDBSetup.setup()
             CryptoConfigurationSetup.setup(publisher)
             setupDependencies()
+            cryptoRepository = cryptoRepositoryFactory(
+                CryptoTenants.CRYPTO,
+                config,
+                dbConnectionManager,
+                jpaEntitiesRegistry,
+                virtualNodeInfoReadService,
+                keyEncodingService,
+                digestService,
+                layeredPropertyMapFactory,
+            )
             waitForVirtualNodeInfoReady()
         }
 
@@ -140,7 +174,6 @@ class PersistenceTests {
                     ConfigurationReadService::class.java,
                     DbConnectionManager::class.java,
                     VirtualNodeInfoReadService::class.java,
-                    HSMStore::class.java,
                     SigningKeyStore::class.java,
                 )
             )
@@ -522,7 +555,7 @@ class PersistenceTests {
             masterKeyPolicy = MasterKeyPolicy.UNIQUE,
             deprecatedAt = Instant.now().toEpochMilli()
         )
-        assertNull(hsmStore.findTenantAssociation(tenantId, CryptoConsts.Categories.LEDGER))
+        assertNull(cryptoRepository.findTenantAssociation(tenantId, CryptoConsts.Categories.LEDGER))
         val activeAssociation1 = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
@@ -534,7 +567,7 @@ class PersistenceTests {
         cryptoDbEmf().transaction { em ->
             em.persist(activeAssociation1)
         }
-        val result1 = hsmStore.findTenantAssociation(tenantId, CryptoConsts.Categories.LEDGER)
+        val result1 = cryptoRepository.findTenantAssociation(tenantId, CryptoConsts.Categories.LEDGER)
         assertAssociation(activeAssociation1, result1)
         val activeAssociation2 = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
@@ -547,7 +580,7 @@ class PersistenceTests {
         cryptoDbEmf().transaction { em ->
             em.persist(activeAssociation2)
         }
-        val result2 = hsmStore.findTenantAssociation(tenantId, CryptoConsts.Categories.TLS)
+        val result2 = cryptoRepository.findTenantAssociation(tenantId, CryptoConsts.Categories.TLS)
         assertAssociation(activeAssociation2, result2)
     }
 
@@ -556,10 +589,10 @@ class PersistenceTests {
         val tenantId = randomTenantId()
         createAndPersistHSMCategoryAssociationEntity(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.UNIQUE)
         assertNull(
-            hsmStore.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION_INIT)
+            cryptoRepository.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION_INIT)
         )
         assertNull(
-            hsmStore.findTenantAssociation(randomTenantId(), CryptoConsts.Categories.LEDGER)
+            cryptoRepository.findTenantAssociation(randomTenantId(), CryptoConsts.Categories.LEDGER)
         )
     }
 
@@ -573,17 +606,17 @@ class PersistenceTests {
         val tenantId3 = randomTenantId()
         val tenantId4 = randomTenantId()
         val tenantId5 = randomTenantId()
-        hsmStore.associate(tenantId1, CryptoConsts.Categories.LEDGER, hsmId1, MasterKeyPolicy.NONE)
-        hsmStore.associate(tenantId2, CryptoConsts.Categories.LEDGER, hsmId2, MasterKeyPolicy.UNIQUE)
-        hsmStore.associate(tenantId3, CryptoConsts.Categories.LEDGER, hsmId2, MasterKeyPolicy.NONE)
-        hsmStore.associate(tenantId4, CryptoConsts.Categories.TLS, hsmId2, MasterKeyPolicy.NONE)
-        hsmStore.associate(tenantId5, CryptoConsts.Categories.TLS, hsmId1, MasterKeyPolicy.NONE)
-        val usages = hsmStore.getHSMUsage()
+        cryptoRepository.associate(tenantId1, CryptoConsts.Categories.LEDGER, hsmId1, MasterKeyPolicy.NONE)
+        cryptoRepository.associate(tenantId2, CryptoConsts.Categories.LEDGER, hsmId2, MasterKeyPolicy.UNIQUE)
+        cryptoRepository.associate(tenantId3, CryptoConsts.Categories.LEDGER, hsmId2, MasterKeyPolicy.NONE)
+        cryptoRepository.associate(tenantId4, CryptoConsts.Categories.TLS, hsmId2, MasterKeyPolicy.NONE)
+        cryptoRepository.associate(tenantId5, CryptoConsts.Categories.TLS, hsmId1, MasterKeyPolicy.NONE)
+        val usages = cryptoRepository.getHSMUsage()
         assertTrue(usages.size >= 2)
         assertEquals(2, usages.first { it.hsmId == hsmId1 }.usages)
         assertEquals(3, usages.first { it.hsmId == hsmId2 }.usages)
 
-        val association1 = hsmStore.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER)
+        val association1 = cryptoRepository.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER)
         assertNotNull(association1)
         assertEquals(tenantId1, association1!!.tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, association1.category)
@@ -591,7 +624,7 @@ class PersistenceTests {
         assertEquals(hsmId1, association1.hsmId)
         assertNull(association1.masterKeyAlias)
 
-        val association2 = hsmStore.findTenantAssociation(tenantId2, CryptoConsts.Categories.LEDGER)
+        val association2 = cryptoRepository.findTenantAssociation(tenantId2, CryptoConsts.Categories.LEDGER)
         assertNotNull(association2)
         assertEquals(tenantId2, association2!!.tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, association2.category)

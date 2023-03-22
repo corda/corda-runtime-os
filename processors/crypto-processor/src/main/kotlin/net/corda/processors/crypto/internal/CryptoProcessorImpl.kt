@@ -5,7 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoFlowOpsBusService
@@ -47,8 +46,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SigningKeyStore::class)
     private val signingKeyStore: SigningKeyStore,
-    @Reference(service = HSMStore::class)
-    private val hsmStore: HSMStore,
     @Reference(service = SigningServiceFactory::class)
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
@@ -84,7 +81,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::signingKeyStore,
-        ::hsmStore,
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
