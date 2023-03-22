@@ -17,7 +17,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
@@ -52,7 +51,6 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     private var groupParameters = KeyValuePairList(
         listOf(
             KeyValuePair(EPOCH_KEY, "1"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
         )
     )

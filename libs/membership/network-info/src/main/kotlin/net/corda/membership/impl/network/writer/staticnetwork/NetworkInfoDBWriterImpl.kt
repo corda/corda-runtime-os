@@ -12,7 +12,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -104,7 +103,6 @@ class NetworkInfoDBWriterImpl(
                 KeyValuePairList(
                     listOf(
                         KeyValuePair(EPOCH_KEY, "1"),
-                        KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
                         KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                     )
                 )
