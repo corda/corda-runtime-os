@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
@@ -11,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtils.unwrapSerializedBytes;
 import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.testDefaultFactory;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -135,7 +135,7 @@ public class ListsSerializationJavaTest {
         SerializationOutput ser = new SerializationOutput(factory1);
         SerializedBytes<Object> bytes = ser.serialize(container, TestSerializationContext.testSerializationContext);
         DeserializationInput des = new DeserializationInput(factory1);
-        T deserialized = des.deserialize((SerializedBytesImpl) bytes, clazz, TestSerializationContext.testSerializationContext);
+        T deserialized = des.deserialize(unwrapSerializedBytes(bytes), clazz, TestSerializationContext.testSerializationContext);
         assertThat(deserialized).isEqualTo(container);
     }
 }

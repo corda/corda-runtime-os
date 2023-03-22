@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
@@ -12,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtils.unwrapSerializedBytes;
 import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.testDefaultFactory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -223,7 +223,7 @@ public class SetterConstructorTests {
 
         SerializedBytes bytes = new SerializationOutput(factory1).serialize(cPre1, TestSerializationContext.testSerializationContext);
 
-        C cPost1 = new DeserializationInput(factory1).deserialize((SerializedBytesImpl) bytes, C.class, TestSerializationContext.testSerializationContext);
+        C cPost1 = new DeserializationInput(factory1).deserialize(unwrapSerializedBytes(bytes), C.class, TestSerializationContext.testSerializationContext);
 
         assertEquals(a, cPost1.a);
         assertEquals(b, cPost1.b);
@@ -233,7 +233,7 @@ public class SetterConstructorTests {
         cPre2.setA(1);
         cPre2.setB(2);
 
-        C2 cPost2 = new DeserializationInput(factory1).deserialize((SerializedBytesImpl) new SerializationOutput(factory1).serialize(cPre2, TestSerializationContext.testSerializationContext),
+        C2 cPost2 = new DeserializationInput(factory1).deserialize(unwrapSerializedBytes(new SerializationOutput(factory1).serialize(cPre2, TestSerializationContext.testSerializationContext)),
                 C2.class, TestSerializationContext.testSerializationContext);
 
         assertEquals(a, cPost2.a);
@@ -249,7 +249,7 @@ public class SetterConstructorTests {
         cPre3.setC(3);
 
         C3 cPost3 = new DeserializationInput(factory1).deserialize(
-                (SerializedBytesImpl) new SerializationOutput(factory1).serialize(cPre3, TestSerializationContext.testSerializationContext),
+                unwrapSerializedBytes(new SerializationOutput(factory1).serialize(cPre3, TestSerializationContext.testSerializationContext)),
                 C3.class, TestSerializationContext.testSerializationContext);
 
         assertEquals(a, cPost3.a);
@@ -264,8 +264,8 @@ public class SetterConstructorTests {
         cPre4.setC(3);
 
         C4 cPost4 = new DeserializationInput(factory1).deserialize(
-                (SerializedBytesImpl) new SerializationOutput(factory1).serialize(cPre4,
-                        TestSerializationContext.testSerializationContext),
+                unwrapSerializedBytes(new SerializationOutput(factory1).serialize(cPre4,
+                        TestSerializationContext.testSerializationContext)),
                 C4.class,
                 TestSerializationContext.testSerializationContext);
 
@@ -288,8 +288,8 @@ public class SetterConstructorTests {
         o.setC(i2);
 
         Outer post = new DeserializationInput(factory1).deserialize(
-                (SerializedBytesImpl) new SerializationOutput(factory1).serialize(
-                        o, TestSerializationContext.testSerializationContext),
+                unwrapSerializedBytes(new SerializationOutput(factory1).serialize(
+                        o, TestSerializationContext.testSerializationContext)),
                 Outer.class, TestSerializationContext.testSerializationContext);
 
         assertEquals("Hello", post.a.a);
@@ -341,8 +341,8 @@ public class SetterConstructorTests {
         // if we've got super / sub types on the setter vs the underlying type the wrong way around this will
         // explode. See CORDA-1229 (https://r3-cev.atlassian.net/browse/CORDA-1229)
         new DeserializationInput(factory1).deserialize(
-                (SerializedBytesImpl) new SerializationOutput(factory1).serialize(
-                        cil, TestSerializationContext.testSerializationContext),
+                unwrapSerializedBytes(new SerializationOutput(factory1).serialize(
+                        cil, TestSerializationContext.testSerializationContext)),
                 CIntList.class,
                 TestSerializationContext.testSerializationContext);
     }
