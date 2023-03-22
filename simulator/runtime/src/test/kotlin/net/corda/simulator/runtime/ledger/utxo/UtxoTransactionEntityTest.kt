@@ -21,7 +21,7 @@ class UtxoTransactionEntityTest {
         // Given Simulator's persistence service
         DbPersistenceService(member).use {
             val transaction = UtxoTransactionEntity(
-                "myId", "commandData".toByteArray(), "inputData".toByteArray(), "notaryData".toByteArray(),
+                "myId", "commandData".toByteArray(), "inputData".toByteArray(),
                 "referenceStateDate".toByteArray(), "sigData".toByteArray(), "twData".toByteArray(),
                 "outputData".toByteArray(), "attachmentData".toByteArray()
             )
@@ -44,7 +44,6 @@ class UtxoTransactionEntityTest {
             assertThat(retrievedTransaction.id, `is`("myId"))
             assertThat(String(retrievedTransaction.commandData), `is`("commandData"))
             assertThat(String(retrievedTransaction.inputData), `is`("inputData"))
-            assertThat(String(retrievedTransaction.notaryData), `is`("notaryData"))
             assertThat(String(retrievedTransaction.referenceStateDate), `is`("referenceStateDate"))
             assertThat(String(retrievedTransaction.signatoriesData), `is`("sigData"))
             assertThat(String(retrievedTransaction.timeWindowData), `is`("twData"))

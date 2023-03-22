@@ -16,7 +16,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.time.Instant
 import java.time.LocalDateTime
@@ -69,17 +68,13 @@ class IssueLandTitleFlow: ClientStartableFlow {
             myInfo.ledgerKeys.first()
         )
 
-        // CORE-6173 Cannot use proper notary key
         val notary = notaryLookup.notaryServices.first()
-        val notaryKey = memberLookup.lookup().first {
-            it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
-        }.ledgerKeys.first()
 
         // Setting time-window is mandatory
         val transaction = utxoLedgerService
             .transactionBuilder
             .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
-            .setNotary(Party(notary.name, notaryKey))
+            .setNotary(notary.name)
             .addOutputState(landTitleState)
             .addCommand(LandTitleContract.Issue)
             .addSignatories(listOf(landTitleState.issuer))

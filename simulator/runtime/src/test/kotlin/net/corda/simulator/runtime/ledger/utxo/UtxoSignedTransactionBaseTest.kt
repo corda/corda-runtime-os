@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
+import net.corda.simulator.runtime.notary.BaseNotaryInfo
 import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
@@ -8,7 +9,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
@@ -22,9 +22,9 @@ import kotlin.time.Duration.Companion.days
 
 class UtxoSignedTransactionBaseTest {
     private val notaryX500 = MemberX500Name.parse("O=Notary,L=London,C=GB")
+    private val notaryKey = generateKey()
     private val config = SimulatorConfigurationBuilder.create().build()
     private val publicKeys = generateKeys(2)
-    private val notary = Party(notaryX500, generateKey())
 
     @Test
     fun `should be able to provide ledger transaction`(){
@@ -38,7 +38,6 @@ class UtxoSignedTransactionBaseTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
@@ -46,7 +45,9 @@ class UtxoSignedTransactionBaseTest {
                     ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                     ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -73,7 +74,6 @@ class UtxoSignedTransactionBaseTest {
         val ledgerInfo1 = UtxoStateLedgerInfo(
             listOf(TestUtxoCommand()),
             emptyList(),
-            notary,
             emptyList(),
             publicKeys,
             timeWindow,
@@ -81,12 +81,13 @@ class UtxoSignedTransactionBaseTest {
                 ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                 ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
             ),
-            emptyList()
+            emptyList(),
+            notaryX500,
+            notaryKey
         )
         val ledgerInfo2 = UtxoStateLedgerInfo(
             listOf(TestUtxoCommand()),
             emptyList(),
-            notary,
             emptyList(),
             publicKeys,
             timeWindow,
@@ -94,7 +95,9 @@ class UtxoSignedTransactionBaseTest {
                 ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                 ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
             ),
-            emptyList()
+            emptyList(),
+            notaryX500,
+            notaryKey
         )
 
         // When we build two different transaction with them
@@ -133,7 +136,6 @@ class UtxoSignedTransactionBaseTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
@@ -141,7 +143,9 @@ class UtxoSignedTransactionBaseTest {
                     ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                     ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -152,7 +156,8 @@ class UtxoSignedTransactionBaseTest {
         // When we convert to the entity and back again
         val entity = tx.toEntity()
         val txFromEntity = UtxoSignedTransactionBase.fromEntity(
-            entity, signingService, serializationService, persistenceService, config
+            entity, BaseNotaryInfo(notaryX500, "", notaryKey),
+            signingService, serializationService, persistenceService, config
         )
 
         // We should receive the transaction back
@@ -176,7 +181,6 @@ class UtxoSignedTransactionBaseTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
@@ -184,7 +188,9 @@ class UtxoSignedTransactionBaseTest {
                     ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
                     ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,

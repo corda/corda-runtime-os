@@ -33,9 +33,6 @@ class UtxoTransactionEntity(
     @Column(name="input_data")
     val inputData: ByteArray,
 
-    @Column(name="notary_data")
-    val notaryData: ByteArray,
-
     @Column(name="reference_state_data")
     val referenceStateDate: ByteArray,
 

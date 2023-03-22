@@ -6,8 +6,10 @@ import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -16,6 +18,7 @@ import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import net.corda.v5.membership.NotaryInfo
 import java.security.PublicKey
 import java.time.Instant
 
@@ -24,7 +27,8 @@ import java.time.Instant
  */
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderBase(
-    private val notary: Party? = null,
+    private var notaryName: MemberX500Name? = null,
+    private var notaryKey: PublicKey? = null,
     val timeWindow: TimeWindow? = null,
     val attachments: List<SecureHash> = emptyList(),
     val commands: List<Command> = emptyList(),
@@ -35,6 +39,7 @@ data class UtxoTransactionBuilderBase(
     private val signingService: SigningService,
     private val configuration: SimulatorConfiguration,
     private val persistenceService: PersistenceService,
+    private val notaryLookup: NotaryLookup
 ): UtxoTransactionBuilder {
 
     private val serializer = BaseSerializationService()
@@ -117,12 +122,18 @@ data class UtxoTransactionBuilderBase(
             .toMap()
     }
 
-    override fun getNotary(): Party? {
-        return notary
+    override fun getNotaryName(): MemberX500Name? {
+        return notaryName
     }
 
-    override fun setNotary(notary: Party): UtxoTransactionBuilder {
-        return copy(notary = notary)
+    override fun getNotaryKey(): PublicKey? {
+        return notaryKey
+    }
+
+    override fun setNotary(notary: MemberX500Name): UtxoTransactionBuilder {
+        // Always sets simulator notary irrespective of what notary is passed
+        val notaryInfo = lookupNotary() ?: throw CordaRuntimeException("Cannot find notary service.")
+        return copy(notaryName = notaryInfo.name, notaryKey= notaryInfo.publicKey)
     }
 
     override fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder {
@@ -145,12 +156,13 @@ data class UtxoTransactionBuilderBase(
             UtxoStateLedgerInfo(
                 commands,
                 inputStateRefs,
-                notary!!,
                 referenceStateRefs,
                 signatories,
                 timeWindow!!,
                 outputStates,
-                attachments
+                attachments,
+                notaryName!!,
+                notaryKey!!
             ),
             signingService,
             serializer,
@@ -163,7 +175,7 @@ data class UtxoTransactionBuilderBase(
     }
 
     private fun verifyTx() {
-        checkNotNull(notary) {
+        checkNotNull(notaryName) {
             "The notary of UtxoTransactionBuilder must not be null."
         }
         checkNotNull(timeWindow) {
@@ -190,6 +202,10 @@ data class UtxoTransactionBuilderBase(
         return ContractStateAndEncumbranceTag(this, tag)
     }
 
+    private fun lookupNotary(): NotaryInfo? {
+        return notaryLookup.notaryServices.firstOrNull()
+    }
+
 }
 
 /**
@@ -198,8 +214,8 @@ data class UtxoTransactionBuilderBase(
 @CordaSerializable
 data class ContractStateAndEncumbranceTag(val contractState: ContractState, val encumbranceTag: String?) {
 
-    fun toTransactionState(notary: Party, encumbranceGroupSize: Int?): TransactionState<*> {
-        return SimTransactionState(contractState, notary, encumbranceTag?.let{
+    fun toTransactionState(notaryName: MemberX500Name, notaryKey: PublicKey, encumbranceGroupSize: Int?): TransactionState<*> {
+        return SimTransactionState(contractState, notaryName, notaryKey, encumbranceTag?.let{
             requireNotNull(encumbranceGroupSize)
             SimEncumbranceGroup(encumbranceGroupSize, it)
         })

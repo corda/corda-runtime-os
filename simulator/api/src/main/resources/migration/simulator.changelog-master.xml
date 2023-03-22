@@ -50,9 +50,6 @@
             <column name="input_data" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>
-            <column name="notary_data" type="VARBINARY(1048576)">
-                <constraints nullable="false"/>
-            </column>
             <column name="reference_state_data" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>

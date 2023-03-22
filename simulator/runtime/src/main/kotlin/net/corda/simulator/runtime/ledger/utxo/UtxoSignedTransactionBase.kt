@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.bytes
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -12,10 +13,10 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
@@ -25,6 +26,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.membership.NotaryInfo
 import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
@@ -58,6 +60,7 @@ class UtxoSignedTransactionBase(
         @Suppress("UNCHECKED_CAST")
         internal fun fromEntity(
             entity: UtxoTransactionEntity,
+            notaryInfo: NotaryInfo,
             signingService: SigningService,
             serializer: SerializationService,
             persistenceService: PersistenceService,
@@ -72,12 +75,13 @@ class UtxoSignedTransactionBase(
                 UtxoStateLedgerInfo(
                     serializer.deserialize(entity.commandData, List::class.java) as List<Command>,
                     serializer.deserialize(entity.inputData, List::class.java) as List<StateRef>,
-                    serializer.deserialize(entity.notaryData, Party::class.java),
                     serializer.deserialize(entity.referenceStateDate, List::class.java) as List<StateRef>,
                     serializer.deserialize(entity.signatoriesData, List::class.java) as List<PublicKey>,
                     serializer.deserialize(entity.timeWindowData, TimeWindow::class.java),
                     serializer.deserialize(entity.outputData, List::class.java) as List<ContractStateAndEncumbranceTag>,
-                    serializer.deserialize(entity.attachmentData, List::class.java) as List<SecureHash>
+                    serializer.deserialize(entity.attachmentData, List::class.java) as List<SecureHash>,
+                    notaryInfo.name,
+                    notaryInfo.publicKey
                 ),
                 signingService,
                 serializer,
@@ -97,7 +101,6 @@ class UtxoSignedTransactionBase(
             String(id.bytes),
             serializer.serialize(ledgerInfo.commands).bytes,
             serializer.serialize(ledgerInfo.inputStateRefs).bytes,
-            serializer.serialize(ledgerInfo.notary).bytes,
             serializer.serialize(ledgerInfo.referenceStateRefs).bytes,
             serializer.serialize(ledgerInfo.signatories).bytes,
             serializer.serialize(ledgerInfo.timeWindow).bytes,
@@ -131,7 +134,7 @@ class UtxoSignedTransactionBase(
             ledgerInfo.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
         val outputEntities = ledgerInfo.outputStates.mapIndexed{ index, contractStateAndTag ->
             val stateData = serializer.serialize(contractStateAndTag.contractState).bytes
-            val encumbrance = contractStateAndTag.toTransactionState(notary,
+            val encumbrance = contractStateAndTag.toTransactionState(notaryName, notaryKey,
                 contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]}).encumbranceGroup
             val encumbranceData = serializer.serialize(listOf(encumbrance)).bytes
             UtxoTransactionOutputEntity(
@@ -194,7 +197,8 @@ class UtxoSignedTransactionBase(
             val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)
             val encumbrance = serializer
                 .deserialize(entity.encumbranceData, List::class.java).firstOrNull()
-            val transactionState = SimTransactionState(contractState, notary, encumbrance as? EncumbranceGroup)
+            val transactionState = SimTransactionState(
+                contractState, notaryName, notaryKey, encumbrance as? EncumbranceGroup)
             SimStateAndRef(transactionState, it)
         }
     }
@@ -266,8 +270,12 @@ class UtxoSignedTransactionBase(
         return ledgerTransaction.outputStateAndRefs
     }
 
-    override fun getNotary(): Party {
-        return ledgerInfo.notary
+    override fun getNotaryName(): MemberX500Name {
+        return ledgerInfo.notaryName
+    }
+
+    override fun getNotaryKey(): PublicKey {
+        return ledgerInfo.notaryKey
     }
 
     override fun getTimeWindow(): TimeWindow {

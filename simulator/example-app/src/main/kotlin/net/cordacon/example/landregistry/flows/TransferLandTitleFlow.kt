@@ -66,7 +66,7 @@ class TransferLandTitleFlow : ClientStartableFlow {
         val transaction = utxoLedgerService
             .transactionBuilder
             .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
-            .setNotary(oldStateAndRef.state.notary)
+            .setNotary(oldStateAndRef.state.notaryName)
             .addInputState(oldStateAndRef.ref)
             .addOutputState(landTitleState)
             .addCommand(LandTitleContract.Transfer)

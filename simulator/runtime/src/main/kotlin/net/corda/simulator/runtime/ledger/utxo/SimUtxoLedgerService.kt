@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
 
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
@@ -11,7 +12,6 @@ import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -22,6 +22,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
+import net.corda.v5.membership.NotaryInfo
 
 /**
  * Simulator implementation of [UtxoLedgerService]
@@ -38,15 +39,16 @@ class SimUtxoLedgerService(
     private val notarySigningService = fiber.createNotarySigningService()
     private val persistenceService = fiber.getOrCreatePersistenceService(member)
     private val memberLookup = fiber.createMemberLookup(member)
+    private val notaryLookup = fiber.createNotaryLookup()
     private val serializationService = BaseSerializationService()
     private val backchainHandler = TransactionBackchainHandlerBase(
-        persistenceService, signingService, memberLookup, configuration)
+        persistenceService, signingService, memberLookup, configuration, fiber.getNotary())
     private val finalityHandler = UtxoTransactionFinalityHandler(
         memberLookup, signingService, notarySigningService, persistenceService, backchainHandler)
 
     override fun getTransactionBuilder(): UtxoTransactionBuilder {
         return utxoTransactionBuilderFactory.createUtxoTransactionBuilder(
-            signingService, persistenceService, configuration)
+            signingService, persistenceService, configuration, notaryLookup)
     }
 
     override fun finalize(
@@ -82,7 +84,7 @@ class SimUtxoLedgerService(
     override fun findSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
         val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(id.bytes))?: return null
         return UtxoSignedTransactionBase
-            .fromEntity(entity, signingService, serializationService, persistenceService, configuration)
+            .fromEntity(entity, fiber.getNotary(), signingService, serializationService, persistenceService, configuration)
     }
 
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
@@ -104,7 +106,6 @@ class SimUtxoLedgerService(
             .setParameter("type", type.canonicalName)
             .execute()
         val notaryInfo = fiber.getNotary()
-        val notary = Party(notaryInfo.name, notaryInfo.publicKey)
 
         // For each entity fetched, convert it to StateAndRef
         val stateAndRefs = result.map { utxoTransactionOutputEntity ->
@@ -115,7 +116,8 @@ class SimUtxoLedgerService(
                 utxoTransactionOutputEntity.stateData, ContractState::class.java)
             val encumbrance = serializationService
                 .deserialize(utxoTransactionOutputEntity.encumbranceData, List::class.java).firstOrNull()
-            val transactionState = SimTransactionState(contractState as T, notary, encumbrance as? EncumbranceGroup)
+            val transactionState = SimTransactionState(contractState as T,
+                notaryInfo.name, notaryInfo.publicKey, encumbrance as? EncumbranceGroup)
             SimStateAndRef(transactionState, stateRef)
         }
         return stateAndRefs
@@ -127,8 +129,7 @@ class SimUtxoLedgerService(
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
         val serializer = BaseSerializationService()
         val notaryInfo = fiber.getNotary()
-        val notary = Party(notaryInfo.name, notaryInfo.publicKey)
-        return stateRefs.map { getStateAndRef(it, notary, serializer)}
+        return stateRefs.map { getStateAndRef(it, notaryInfo, serializer)}
     }
 
     override fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T> {
@@ -147,7 +148,7 @@ class SimUtxoLedgerService(
     @Suppress("UNCHECKED_CAST")
     private fun <T : ContractState> getStateAndRef(
         stateRef: StateRef,
-        notary: Party,
+        notaryInfo: NotaryInfo,
         serializer: BaseSerializationService
     ): StateAndRef<T> {
         //Fetch output state based in txid
@@ -161,7 +162,8 @@ class SimUtxoLedgerService(
         val contractState = serializer.deserialize(entity.stateData, ContractState::class.java)
         val encumbrance = serializer
             .deserialize(entity.encumbranceData, List::class.java).firstOrNull()
-        val transactionState = SimTransactionState(contractState as T, notary, encumbrance as? EncumbranceGroup)
+        val transactionState = SimTransactionState(contractState as T,
+            notaryInfo.name, notaryInfo.publicKey, encumbrance as? EncumbranceGroup)
         return SimStateAndRef(transactionState, stateRef)
     }
 }

@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -37,9 +37,16 @@ class UtxoFilteredTransactionBase(
         return null
     }
 
-    override fun getNotary(): Party? {
+    override fun getNotaryName(): MemberX500Name? {
         if(builder.notary){
-            return signedTransaction.notary
+            return signedTransaction.notaryName
+        }
+        return null
+    }
+
+    override fun getNotaryKey(): PublicKey? {
+        if(builder.notary){
+            return signedTransaction.notaryKey
         }
         return null
     }
@@ -133,12 +140,7 @@ private class FilteredDataAuditImpl<T>(
 }
 
 enum class UtxoComponentGroup {
-    METADATA,
-    NOTARY,
     SIGNATORIES,
-    OUTPUTS_INFO,
-    COMMANDS_INFO,
-    DATA_ATTACHMENTS,
     INPUTS,
     REFERENCES,
     OUTPUTS,

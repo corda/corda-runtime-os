@@ -3,8 +3,8 @@ package net.corda.simulator.runtime.ledger.utxo
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
@@ -36,7 +36,6 @@ data class UtxoLedgerTransactionBase(
         val serializer = BaseSerializationService()
         serializer.serialize(ledgerInfo.commands).bytes
             .plus(serializer.serialize(ledgerInfo.inputStateRefs).bytes)
-            .plus(serializer.serialize(ledgerInfo.notary).bytes)
             .plus(serializer.serialize(ledgerInfo.referenceStateRefs).bytes)
             .plus(serializer.serialize(ledgerInfo.signatories).bytes)
             .plus(serializer.serialize(ledgerInfo.timeWindow).bytes)
@@ -98,7 +97,7 @@ data class UtxoLedgerTransactionBase(
         //Convert output contract states to StateAndRef
         return ledgerInfo.outputStates.mapIndexed { index, contractStateAndTag ->
             val stateRef = StateRef(id, index)
-            val transactionState = contractStateAndTag.toTransactionState(notary,
+            val transactionState = contractStateAndTag.toTransactionState(notaryName, notaryKey,
                 contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
             SimStateAndRef(transactionState, stateRef)
         }
@@ -128,8 +127,12 @@ data class UtxoLedgerTransactionBase(
         return SecureHashImpl(digest.algorithm, digest.digest(bytes))
     }
 
-    override fun getNotary(): Party {
-        return ledgerInfo.notary
+    override fun getNotaryName(): MemberX500Name {
+        return ledgerInfo.notaryName
+    }
+
+    override fun getNotaryKey(): PublicKey {
+        return ledgerInfo.notaryKey
     }
 
     override fun getMetadata(): TransactionMetadata {
@@ -186,7 +189,7 @@ fun <T : ContractState> ContractState.cast(type: Class<T>): T {
  * @throws IllegalArgumentException if the current [TransactionState] cannot be cast to the specified type.
  */
 fun <T : ContractState> TransactionState<*>.cast(type: Class<T>): TransactionState<T> {
-    return SimTransactionState(contractState.cast(type), notary, encumbranceGroup)
+    return SimTransactionState(contractState.cast(type), notaryName, notaryKey, encumbranceGroup)
 }
 
 /**

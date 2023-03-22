@@ -4,6 +4,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
+import net.corda.simulator.runtime.notary.BaseNotaryInfo
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
@@ -12,7 +13,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hamcrest.MatcherAssert.assertThat
@@ -30,7 +31,7 @@ class UtxoTransactionBuilderBaseTest {
 
     private val notaryX500 = MemberX500Name.parse("O=Notary,L=London,C=GB")
     private val publicKeys = generateKeys(2)
-    private val notary = Party(notaryX500, generateKey())
+    private val notaryKey =  generateKey()
 
     @Test
     fun `should be able to build a utxo transaction and sign it with a key`() {
@@ -39,6 +40,9 @@ class UtxoTransactionBuilderBaseTest {
         whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
             .thenReturn(DigitalSignature.WithKey(publicKeys[0], "My fake signed things".toByteArray()))
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
+
+        val notaryLookup = mock<NotaryLookup>()
+        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", notaryKey)))
 
         // And our configuration has a special clock
         val clock = mock<Clock>()
@@ -50,7 +54,8 @@ class UtxoTransactionBuilderBaseTest {
         val builder = UtxoTransactionBuilderBase(
             signingService = signingService,
             persistenceService = persistenceService,
-            configuration = clockConfig
+            configuration = clockConfig,
+            notaryLookup = notaryLookup
         )
         val command = TestUtxoCommand()
         val output = TestUtxoState("StateData", publicKeys)
@@ -76,12 +81,13 @@ class UtxoTransactionBuilderBaseTest {
         val tx = builder.addCommand(command)
             .addSignatories(listOf(publicKeys[0]))
             .addOutputState(output)
-            .setNotary(notary)
+            .setNotary(notaryX500)
             .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .addReferenceState(refStateRef)
             .toSignedTransaction()
 
-        assertThat(tx.notary, `is`(notary))
+        assertThat(tx.notaryName, `is`(notaryX500))
+        assertThat(tx.notaryKey, `is`(notaryKey))
 
         // Then the ledger transaction should have the data in it
         val ledgerTx = tx.toLedgerTransaction()
@@ -99,22 +105,25 @@ class UtxoTransactionBuilderBaseTest {
 
     @Test
     fun `should fail when mandatory fields are missing in the transactions`() {
+        val notaryLookup = mock<NotaryLookup>()
+        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", notaryKey)))
         val builder = UtxoTransactionBuilderBase(
             signingService = mock(),
             persistenceService = mock(),
-            configuration = mock()
+            configuration = mock(),
+            notaryLookup = notaryLookup
         )
 
         assertThatThrownBy { builder.toSignedTransaction() }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("The notary of UtxoTransactionBuilder must not be null.")
 
-        assertThatThrownBy { builder.setNotary(notary).toSignedTransaction() }
+        assertThatThrownBy { builder.setNotary(notaryX500).toSignedTransaction() }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("The time window of UtxoTransactionBuilder must not be null.")
 
         assertThatThrownBy {
-            builder.setNotary(notary)
+            builder.setNotary(notaryX500)
             .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .toSignedTransaction()
         }
@@ -122,7 +131,7 @@ class UtxoTransactionBuilderBaseTest {
             .hasMessageContaining("At least one signatory signing key must be applied to the current transaction.")
 
         assertThatThrownBy {
-            builder.setNotary(notary)
+            builder.setNotary(notaryX500)
                 .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
                 .addSignatories(publicKeys)
                 .toSignedTransaction()
@@ -132,7 +141,7 @@ class UtxoTransactionBuilderBaseTest {
                     "one output state must be applied to the current transaction.")
 
         assertThatThrownBy {
-            builder.setNotary(notary)
+            builder.setNotary(notaryX500)
                 .setTimeWindowUntil(Instant.now().plusMillis(1.days.inWholeMilliseconds))
                 .addSignatories(publicKeys)
                 .addOutputState(TestUtxoState("StateData", publicKeys))

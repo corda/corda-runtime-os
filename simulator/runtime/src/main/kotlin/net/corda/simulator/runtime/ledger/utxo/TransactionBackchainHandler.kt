@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.bytes
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -11,6 +12,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.membership.NotaryInfo
 
 
 interface TransactionBackchainHandler{
@@ -26,7 +28,8 @@ class TransactionBackchainHandlerBase(
     val persistenceService: PersistenceService,
     val signingService: SigningService,
     val memberLookup: MemberLookup,
-    val configuration: SimulatorConfiguration
+    val configuration: SimulatorConfiguration,
+    private val notaryInfo: NotaryInfo
 ):TransactionBackchainHandler {
 
     /**
@@ -46,7 +49,7 @@ class TransactionBackchainHandlerBase(
                     }
                     // Converts transaction entity to signed transaction and send to requesting party
                     transactions.map { session.send(listOf(
-                        UtxoSignedTransactionBase.fromEntity(it,
+                        UtxoSignedTransactionBase.fromEntity(it, notaryInfo,
                             signingService, serializationService, persistenceService, configuration)
                     )) }
                 }

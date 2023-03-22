@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
@@ -16,7 +17,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.membership.NotaryInfo
@@ -38,17 +39,20 @@ class SimUtxoLedgerServiceTest {
     private val notaryX500 = MemberX500Name.parse("O=Notary,L=London,C=GB")
     private val config = SimulatorConfigurationBuilder.create().build()
     private val publicKeys = generateKeys(2)
-    private val notary = Party(notaryX500, generateKey())
+    private val notaryKey = generateKey()
     private val fiber = mock<SimFiber>()
     private val persistenceService = mock<PersistenceService>()
     private val signingService = mock<SigningService>()
+    private val notaryLookup = mock<NotaryLookup>()
 
     @BeforeEach
     fun `setup ledgerService`(){
         whenever(fiber.createSigningService(any())).thenReturn(signingService)
         whenever(fiber.getOrCreatePersistenceService(any())).thenReturn(persistenceService)
+        whenever(fiber.createNotaryLookup()).thenReturn(notaryLookup)
         whenever(fiber.createMemberLookup(alice)).thenReturn(mock())
         whenever(fiber.createNotarySigningService()).thenReturn(mock())
+        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", notaryKey))
     }
 
     @Test
@@ -56,9 +60,9 @@ class SimUtxoLedgerServiceTest {
         // Given a factory for building UTBs that and something to capture what we build it with
         val builder = mock<UtxoTransactionBuilder>()
 
-        lateinit var capture : Triple<SigningService, PersistenceService, SimulatorConfiguration>
-        val builderFactory = UtxoTransactionBuilderFactory { ss, per, c->
-            capture = Triple(ss, per, c)
+        lateinit var capture : Quad<SigningService, PersistenceService, SimulatorConfiguration, NotaryLookup>
+        val builderFactory = UtxoTransactionBuilderFactory { ss, per, c, nl->
+            capture = Quad(ss, per, c, nl)
             builder
         }
 
@@ -77,7 +81,7 @@ class SimUtxoLedgerServiceTest {
         assertThat(createdBuilder, `is`(builder))
 
         // Using the same services we passed in
-        assertThat(capture, `is`(Triple(signingService, persistenceService, config)))
+        assertThat(capture, `is`(Quad(signingService, persistenceService, config, notaryLookup)))
     }
 
     @Test
@@ -89,12 +93,13 @@ class SimUtxoLedgerServiceTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), null)),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -139,8 +144,8 @@ class SimUtxoLedgerServiceTest {
 
         val notaryInfo = mock<NotaryInfo>()
         whenever(fiber.getNotary()).thenReturn(notaryInfo)
-        whenever(notaryInfo.name).thenReturn(notary.name)
-        whenever(notaryInfo.publicKey).thenReturn(notary.owningKey)
+        whenever(notaryInfo.name).thenReturn(notaryX500)
+        whenever(notaryInfo.publicKey).thenReturn(notaryKey)
 
         // When we retrieve the unconsumed state from the ledger service
         val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
@@ -149,7 +154,7 @@ class SimUtxoLedgerServiceTest {
         // Then it should be converted into StateAndRef
         assertThat(stateAndRefs.size, `is`(1))
         assertThat(stateAndRefs[0].state.contractState, `is`(testState))
-        assertThat(stateAndRefs[0].state.notary, `is`(notary))
+        assertThat(stateAndRefs[0].state.notaryName, `is`(notaryX500))
         assertThat(stateAndRefs[0].ref.transactionId, `is`(parseSecureHash(utxoTxOutputEntity.transactionId)))
         assertThat(stateAndRefs[0].ref.index, `is`(utxoTxOutputEntity.index))
 
@@ -158,7 +163,7 @@ class SimUtxoLedgerServiceTest {
     @Test
     fun `should be able to resolve stateRef to stateAndRef`(){
         val serializationService = BaseSerializationService()
-        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", notary.owningKey))
+        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", notaryKey))
         val entityId = UtxoTransactionOutputEntityId(
             "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
             0
@@ -185,9 +190,7 @@ class SimUtxoLedgerServiceTest {
 
         assertThat(returnedStateAndRef.ref, `is`(stateRef))
         assertThat(returnedStateAndRef.state.contractState, `is`(testState))
-        assertThat(returnedStateAndRef.state.notary, `is`(notary))
+        assertThat(returnedStateAndRef.state.notaryName, `is`(notaryX500))
         assertThat(returnedStateAndRef.state.encumbranceGroup, `is`(encumbrance))
-
     }
-
 }

@@ -16,7 +16,6 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -37,9 +36,9 @@ import kotlin.time.Duration.Companion.days
 class UtxoTransactionFinalityHandlerTest {
     private val alice = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val notaryX500 = MemberX500Name.parse("CN=SimulatorNotaryService, OU=Simulator, O=R3, L=London, C=GB")
+    private val notaryKey = generateKey()
     private val config = SimulatorConfigurationBuilder.create().build()
     private val publicKeys = generateKeys(3)
-    private val notary = Party(notaryX500, generateKey())
 
     @Test
     fun `should be able to collect signature and notarize a transaction`() {
@@ -52,14 +51,15 @@ class UtxoTransactionFinalityHandlerTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(
                     ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), ""),
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -78,9 +78,9 @@ class UtxoTransactionFinalityHandlerTest {
         }
 
         val memberLookup = mock<MemberLookup>()
-        whenever(memberLookup.lookup(eq(notaryX500))).thenReturn(BaseMemberInfo(notaryX500, listOf(notary.owningKey)))
-        whenever(signingService.sign(any(), eq(notary.owningKey), any()))
-            .thenReturn(toSignatureWithMetadata(notary.owningKey).signature)
+        whenever(memberLookup.lookup(eq(notaryX500))).thenReturn(BaseMemberInfo(notaryX500, listOf(notaryKey)))
+        whenever(signingService.sign(any(), eq(notaryKey), any()))
+            .thenReturn(toSignatureWithMetadata(notaryKey).signature)
         whenever(memberLookup.myInfo()).thenReturn(BaseMemberInfo(alice, listOf( publicKeys[0])))
 
         //When we call finality on the transaction
@@ -91,7 +91,7 @@ class UtxoTransactionFinalityHandlerTest {
         // Then the transaction should get signed by the counterparties and notary
         assertThat(finalTx.id, `is`(transaction.id))
         assertThat(finalTx.signatures.size, `is`(4))
-        assertThat(finalTx.signatures.map { it.by }.toSet(), `is`(publicKeys.plus(notary.owningKey).toSet()))
+        assertThat(finalTx.signatures.map { it.by }.toSet(), `is`(publicKeys.plus(notaryKey).toSet()))
 
         // And it should have been persisted
         verify(persistenceService, times(1)).persist(
@@ -117,14 +117,15 @@ class UtxoTransactionFinalityHandlerTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(
                     ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), ""),
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -144,9 +145,9 @@ class UtxoTransactionFinalityHandlerTest {
 
         //When receive finality is called
         val memberLookup = mock<MemberLookup>()
-        whenever(memberLookup.lookup(eq(notaryX500))).thenReturn(BaseMemberInfo(notaryX500, listOf(notary.owningKey)))
-        whenever(signingService.sign(any(), eq(notary.owningKey), any()))
-            .thenReturn(toSignatureWithMetadata(notary.owningKey).signature)
+        whenever(memberLookup.lookup(eq(notaryX500))).thenReturn(BaseMemberInfo(notaryX500, listOf(notaryKey)))
+        whenever(signingService.sign(any(), eq(notaryKey), any()))
+            .thenReturn(toSignatureWithMetadata(notaryKey).signature)
         whenever(memberLookup.myInfo()).thenReturn(BaseMemberInfo(alice, listOf( publicKeys[0])))
 
         //When we call finality on the transaction
@@ -182,14 +183,15 @@ class UtxoTransactionFinalityHandlerTest {
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds)),
                 listOf(
                     ContractStateAndEncumbranceTag(faultyState, null),
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -214,7 +216,8 @@ class UtxoTransactionFinalityHandlerTest {
                 SimStateAndRef(
                     SimTransactionState(
                         TestUtxoState("S1", publicKeys),
-                        notary,
+                        notaryX500,
+                        notaryKey,
                         SimEncumbranceGroup(
                             1, "some-tag"
                         )),
@@ -222,7 +225,8 @@ class UtxoTransactionFinalityHandlerTest {
                 SimStateAndRef(
                     SimTransactionState(
                         TestUtxoState("S1", publicKeys),
-                        notary,
+                        notaryX500,
+                        notaryKey,
                         SimEncumbranceGroup(
                             1, "some-tag"
                         )),
@@ -257,7 +261,8 @@ class UtxoTransactionFinalityHandlerTest {
             SimStateAndRef(
                 SimTransactionState(
                     TestUtxoState("S1", publicKeys),
-                    notary,
+                    notaryX500,
+                    notaryKey,
                     SimEncumbranceGroup(
                         3, "some-tag"
                     )),
@@ -265,7 +270,8 @@ class UtxoTransactionFinalityHandlerTest {
             SimStateAndRef(
                 SimTransactionState(
                     TestUtxoState("S2", publicKeys),
-                    notary,
+                    notaryX500,
+                    notaryKey,
                     SimEncumbranceGroup(
                         3, "some-tag"
                     )),

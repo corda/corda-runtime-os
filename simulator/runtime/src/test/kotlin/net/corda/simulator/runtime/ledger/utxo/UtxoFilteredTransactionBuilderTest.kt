@@ -8,7 +8,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import org.hamcrest.MatcherAssert.assertThat
@@ -25,9 +24,9 @@ import kotlin.time.Duration.Companion.days
 class UtxoFilteredTransactionBuilderTest {
 
     private val notaryX500 = MemberX500Name.parse("O=Notary,L=London,C=GB")
+    private val notaryKey = generateKey()
     private val config = SimulatorConfigurationBuilder.create().build()
     private val publicKeys = generateKeys(2)
-    private val notary = Party(notaryX500, generateKey())
     private val timeWindow = SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
     private lateinit var signedTx : UtxoSignedTransactionBase
     private val command = TestUtxoCommand()
@@ -42,7 +41,6 @@ class UtxoFilteredTransactionBuilderTest {
             UtxoStateLedgerInfo(
                 listOf(command),
                 emptyList(),
-                notary,
                 emptyList(),
                 publicKeys,
                 timeWindow,
@@ -52,7 +50,9 @@ class UtxoFilteredTransactionBuilderTest {
                     ContractStateAndEncumbranceTag(
                         TestUtxoState("State2", publicKeys), "")
                 ),
-                emptyList()
+                emptyList(),
+                notaryX500,
+                notaryKey
             ),
             signingService,
             serializationService,
@@ -75,7 +75,8 @@ class UtxoFilteredTransactionBuilderTest {
         val filteredTxBuilder = UtxoFilteredTransactionBuilderBase(signedTx)
         val filteredTx = filteredTxBuilder.build()
 
-        assertNull(filteredTx.notary)
+        assertNull(filteredTx.notaryName)
+        assertNull(filteredTx.notaryKey)
         assertNull(filteredTx.timeWindow)
     }
 
@@ -84,7 +85,8 @@ class UtxoFilteredTransactionBuilderTest {
         val filteredTxBuilder = UtxoFilteredTransactionBuilderBase(signedTx)
         val filteredTx = filteredTxBuilder.withNotary().withTimeWindow().build()
 
-        assertThat(filteredTx.notary, `is`(signedTx.notary))
+        assertThat(filteredTx.notaryName, `is`(signedTx.notaryName))
+        assertThat(filteredTx.notaryKey, `is`(signedTx.notaryKey))
         assertThat(filteredTx.timeWindow, `is`(signedTx.timeWindow))
     }
 
@@ -93,14 +95,16 @@ class UtxoFilteredTransactionBuilderTest {
         val filteredTxBuilder = UtxoFilteredTransactionBuilderBase(signedTx)
         val filteredTx = filteredTxBuilder.withNotary().build()
 
-        assertThat(filteredTx.notary, `is`(signedTx.notary))
+        assertThat(filteredTx.notaryName, `is`(signedTx.notaryName))
+        assertThat(filteredTx.notaryKey, `is`(signedTx.notaryKey))
         assertNull(filteredTx.timeWindow)
 
         val anotherFilteredTxBuilder = UtxoFilteredTransactionBuilderBase(signedTx)
         val anotherFilteredTx = anotherFilteredTxBuilder.withTimeWindow().build()
 
         assertThat(anotherFilteredTx.timeWindow, `is`(signedTx.timeWindow))
-        assertNull(anotherFilteredTx.notary)
+        assertNull(anotherFilteredTx.notaryName)
+        assertNull(anotherFilteredTx.notaryKey)
     }
 
     @Test
