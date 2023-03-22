@@ -96,6 +96,7 @@ class BatchedUniquenessCheckerImpl(
 
     private companion object {
         const val GROUP_NAME = "uniqueness.checker"
+        const val UNHANDLED_EXCEPTION = "UniquenessCheckResultUnhandledException"
 
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
         const val SUBSCRIPTION = "SUBSCRIPTION"
@@ -248,7 +249,7 @@ class BatchedUniquenessCheckerImpl(
                         CordaMetrics.Metric.UniquenessCheckerRequestCount
                             .builder()
                             .withTag(CordaMetrics.Tag.SourceVirtualNode, cordaHoldingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.ResultType, "UniquenessCheckResultUnhandledException")
+                            .withTag(CordaMetrics.Tag.ResultType, UNHANDLED_EXCEPTION)
                             .withTag(CordaMetrics.Tag.ErrorType, e::class.java.simpleName)
                             .build()
                             .increment()
