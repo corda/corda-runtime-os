@@ -15,4 +15,5 @@ data class RegistrationRequestStatus(
     val registrationLastModified: Instant,
     val protocolVersion: Int,
     val reason: String? = null,
+    val serial: Long?,
 )

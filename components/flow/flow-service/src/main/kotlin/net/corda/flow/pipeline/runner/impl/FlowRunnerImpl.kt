@@ -79,6 +79,7 @@ class FlowRunnerImpl @Activate constructor(
         sessionInitEvent: SessionInit
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
+        val sessionId = flowStartContext.statusKey.id
 
         val remotePlatformProperties =
             getPropertiesWithCpiMetadata(
@@ -100,17 +101,14 @@ class FlowRunnerImpl @Activate constructor(
                     localContext.counterpartySessionProperties
                 )
             },
-            updateFlowStackItem = { fsi ->
-                fsi.sessions.add(
-                    FlowStackItemSession(
-                        flowStartContext.statusKey.id,
-                        true
-                    )
-                )
-            },
+            updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },
             contextUserProperties = localContext.userProperties,
             contextPlatformProperties = localContext.platformProperties
         )
+    }
+
+    private fun addFlowStackItemSession(fsi: FlowStackItem, sessionId: String) {
+        fsi.sessions.add(FlowStackItemSession(sessionId, true))
     }
 
     private fun startFlow(

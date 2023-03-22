@@ -1,16 +1,18 @@
 package net.corda.rest.client.connect.remote
 
+import kong.unirest.Config
 import kong.unirest.GenericType
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
 import kong.unirest.HttpResponse
 import kong.unirest.HttpStatus
 import kong.unirest.MultipartBody
-import kong.unirest.Unirest
 import kong.unirest.UnirestException
+import kong.unirest.UnirestInstance
 import kong.unirest.apache.ApacheClient
 import kong.unirest.jackson.JacksonObjectMapper
 import net.corda.rest.client.auth.RequestContext
+import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.client.exceptions.InternalErrorException
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.rest.client.exceptions.PermissionException
@@ -18,10 +20,9 @@ import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.rest.client.processing.RestClientFileUpload
 import net.corda.rest.client.processing.WebRequest
 import net.corda.rest.client.processing.WebResponse
-import net.corda.rest.client.serialization.objectMapper
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.tools.HttpVerb
-import net.corda.utilities.trace
+import net.corda.utilities.debug
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
@@ -29,6 +30,7 @@ import org.apache.http.ssl.SSLContexts
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLHandshakeException
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -41,14 +43,20 @@ internal interface RemoteClient {
     val baseAddress: String
 }
 
-internal class RemoteUnirestClient(override val baseAddress: String, private val enableSsl: Boolean = false) : RemoteClient {
+internal class RemoteUnirestClient(
+    override val baseAddress: String,
+    private val enableSsl: Boolean,
+    private val secureSsl: Boolean
+) : RemoteClient {
     internal companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    init {
-        Unirest.config().objectMapper = JacksonObjectMapper(objectMapper)
+    private val config = Config().apply {
+        objectMapper = JacksonObjectMapper(net.corda.rest.client.serialization.objectMapper)
+        addSslParams()
     }
+    private val unirestInstance = UnirestInstance(config)
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, responseType: Type, context: RequestContext): WebResponse<Any> {
 
@@ -78,14 +86,13 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         remoteCallFn: HttpRequest<*>.() -> HttpResponse<R>
     ): WebResponse<R> where R : Any {
         val path = baseAddress + webRequest.path
-        log.trace { """Do call "$verb $path".""" }
-        addSslParams()
+        log.debug { """Do call "$verb $path".""" }
 
         var request = when (verb) {
-            HttpVerb.GET -> Unirest.get(path)
-            HttpVerb.POST -> Unirest.post(path)
-            HttpVerb.PUT -> Unirest.put(path)
-            HttpVerb.DELETE -> Unirest.delete(path)
+            HttpVerb.GET -> unirestInstance.get(path)
+            HttpVerb.POST -> unirestInstance.post(path)
+            HttpVerb.PUT -> unirestInstance.put(path)
+            HttpVerb.DELETE -> unirestInstance.delete(path)
         }
 
         request = if(isMultipartFormRequest(webRequest)) {
@@ -101,7 +108,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         try {
             val response = request.remoteCallFn()
             if (!response.isSuccess || response.parsingError.isPresent) {
-                val mapper = Unirest.config().objectMapper
+                val mapper = config.objectMapper
                 val errorResponseJson = mapper.writeValue(response.mapError(String::class.java))
                 when (response.status) {
                     HttpStatus.BAD_REQUEST -> throw RequestErrorException(errorResponseJson)
@@ -117,11 +124,17 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
 
             return WebResponse(
                 response.body, response.headers.all().associateBy({ it.name }, { it.value }),
-                response.status, response.statusText
-            )
-                .also { log.trace { """Do call "$verb $path" completed.""" } }
+                response.status, response.statusText).also {
+                    log.debug { """Do call "$verb $path" completed.""" }
+                }
         } catch (e: UnirestException) {
-            throw InternalErrorException(e.message ?: "No message provided")
+            log.error("Unable to make HTTP call", e)
+            when (val exceptionCause = e.cause) {
+                is SSLHandshakeException -> throw ClientSslHandshakeException(
+                    exceptionCause.message ?: "No message provided"
+                )
+                else -> throw InternalErrorException(e.message ?: "No message provided")
+            }
         }
     }
 
@@ -166,23 +179,31 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         return requestBuilder
     }
 
-    private fun addSslParams() {
-        log.trace { "Add Ssl params." }
+    private fun Config.addSslParams() {
         if (enableSsl) {
-            val sslContext: SSLContext = SSLContexts.custom()
-                .loadTrustMaterial(TrustAllStrategy())
-                .build()
 
-            val httpClient = HttpClients.custom()
-                .setSSLContext(sslContext)
-                .setSSLHostnameVerifier(NoopHostnameVerifier())
-                .build()
+            log.debug { "Add Ssl params." }
 
-            Unirest.config().let { config ->
-                config.httpClient(ApacheClient.builder(httpClient).apply(config))
+            val apacheClient = if (secureSsl) {
+                log.debug { "Creating secure SSL context" }
+                ApacheClient.builder().apply(this)
+            } else {
+                log.debug { "Creating insecure SSL context" }
+                val sslContext: SSLContext = SSLContexts.custom()
+                    .loadTrustMaterial(TrustAllStrategy())
+                    .build()
+
+                val httpClient = HttpClients.custom()
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier(NoopHostnameVerifier())
+                    .build()
+
+                ApacheClient.builder(httpClient).apply(this)
             }
+            this.httpClient(apacheClient)
+
+            log.debug { "Add Ssl params completed." }
         }
-        log.trace { "Add Ssl params completed." }
     }
 
     private fun isMultipartFormRequest(webRequest: WebRequest<*>) =

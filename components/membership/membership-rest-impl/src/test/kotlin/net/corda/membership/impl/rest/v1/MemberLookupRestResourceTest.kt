@@ -12,7 +12,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -177,7 +176,6 @@ class MemberLookupRestResourceTest {
     }
 
     private val testEntries = mapOf(
-        MPV_KEY to "1",
         EPOCH_KEY to "1",
         MODIFIED_TIME_KEY to clock.instant().toString(),
     )
@@ -485,7 +483,6 @@ class MemberLookupRestResourceTest {
         @Test
         fun `viewGroupParameters correctly returns group parameters as JSON string`() {
             val expectedGroupParamsMap = mapOf(
-                MPV_KEY to "1",
                 EPOCH_KEY to "1",
                 MODIFIED_TIME_KEY to clock.instant().toString(),
             )

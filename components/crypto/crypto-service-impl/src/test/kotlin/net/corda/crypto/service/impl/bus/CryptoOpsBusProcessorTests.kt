@@ -330,7 +330,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(context.items[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(context.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertThat(factory.wrappingKeyStore.keys).containsKey(masterKeyAlias)
+        assertThat(factory.cryptoRepository.keys).containsKey(masterKeyAlias)
     }
 
     @Test

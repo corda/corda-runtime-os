@@ -1,6 +1,7 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
@@ -51,9 +52,8 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(FlowStackItem::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )
@@ -91,9 +91,8 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )

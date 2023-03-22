@@ -5,6 +5,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.merkle.impl.mocks.getZeroHash
 import net.corda.v5.application.crypto.DigestService

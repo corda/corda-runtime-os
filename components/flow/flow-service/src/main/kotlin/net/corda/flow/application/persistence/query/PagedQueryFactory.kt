@@ -1,6 +1,7 @@
 package net.corda.flow.application.persistence.query
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
@@ -46,7 +47,11 @@ interface PagedQueryFactory {
  * be able to contain its own [PagedQueryFactory] instance which uses that
  * [SerializationService].
  */
-@Component(service = [ PagedQueryFactory::class, UsedByFlow::class ], scope = PROTOTYPE)
+@Component(
+    service = [ PagedQueryFactory::class, UsedByFlow::class ],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
+    scope = PROTOTYPE
+)
 internal class PagedQueryFactoryImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,

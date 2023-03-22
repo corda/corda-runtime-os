@@ -17,12 +17,11 @@ internal object RegistrationStatusHelper {
             RegistrationStatus.SENT_TO_MGM -> 1
             RegistrationStatus.RECEIVED_BY_MGM -> 1
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> 2
-            RegistrationStatus.PENDING_APPROVAL_FLOW -> 3
-            RegistrationStatus.PENDING_MANUAL_APPROVAL -> 4
-            RegistrationStatus.PENDING_AUTO_APPROVAL -> 4
-            RegistrationStatus.DECLINED -> 5
-            RegistrationStatus.INVALID -> 5
-            RegistrationStatus.APPROVED -> 5
+            RegistrationStatus.PENDING_MANUAL_APPROVAL -> 3
+            RegistrationStatus.PENDING_AUTO_APPROVAL -> 3
+            RegistrationStatus.DECLINED -> 4
+            RegistrationStatus.INVALID -> 4
+            RegistrationStatus.APPROVED -> 4
         }
     }
 

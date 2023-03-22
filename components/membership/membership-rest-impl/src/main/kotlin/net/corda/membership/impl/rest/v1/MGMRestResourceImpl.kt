@@ -610,6 +610,7 @@ class MGMRestResourceImpl internal constructor(
                 status.fromAvro(),
                 MemberInfoSubmitted(memberContext.toMap()),
                 reason,
+                serial,
             )
 
         private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
@@ -618,7 +619,6 @@ class MGMRestResourceImpl internal constructor(
             net.corda.data.membership.common.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
             net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
-            net.corda.data.membership.common.RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatus.PENDING_APPROVAL_FLOW
             net.corda.data.membership.common.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
             net.corda.data.membership.common.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
             net.corda.data.membership.common.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED

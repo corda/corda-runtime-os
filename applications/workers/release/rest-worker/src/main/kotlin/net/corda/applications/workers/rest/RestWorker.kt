@@ -3,6 +3,7 @@ package net.corda.applications.workers.rest
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -15,10 +16,12 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.rest.RestProcessor
+import net.corda.schema.configuration.BootConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import picocli.CommandLine.Mixin
 
 /** The worker for handling REST requests. */
@@ -58,11 +61,12 @@ class RestWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val config =
-            getBootstrapConfig(
+        val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
+        val config = getBootstrapConfig(
                 secretsServiceFactoryResolver,
                 params.defaultParams,
-                configurationValidatorFactory.createConfigValidator(), listOf())
+                configurationValidatorFactory.createConfigValidator(),
+                listOf(restConfig))
 
         processor.start(config)
     }
@@ -78,4 +82,7 @@ class RestWorker @Activate constructor(
 private class RestWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @CommandLine.Option(names = ["-r", "--${BootConfig.BOOT_REST}"], description = ["REST worker specific params."])
+    var restParams = emptyMap<String, String>()
 }
