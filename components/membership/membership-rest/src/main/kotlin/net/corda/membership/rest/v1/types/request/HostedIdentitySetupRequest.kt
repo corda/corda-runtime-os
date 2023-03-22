@@ -18,8 +18,7 @@ data class HostedIdentitySetupRequest(
  * @param sessionKeyId The session key identifier.
  * @param sessionCertificateChainAlias The certificate chain alias of the Session Key.
  *   Should be null if no PKI is used for sessions.
- * @param preferred true if this key is the preferred key. If no key is preferred the
- *    first one will be assumed as preferred.
+ * @param preferred true if this key is the preferred key.
  */
 data class HostedIdentitySessionKeyAndCertificate(
     val sessionKeyId: String,

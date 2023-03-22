@@ -42,19 +42,23 @@ class NetworkRestResourceImpl @Activate constructor(
         request: HostedIdentitySetupRequest
     ) {
         val operation = "set up locally hosted identities"
-        val preferredSessionKeys = request.sessionKeysAndCertificates.filter {
-            it.preferred
-        }
-        if (preferredSessionKeys.size > 1) {
-            throw BadRequestException("Can not have more than one preferred  session key.")
-        }
-        val preferredSessionKey = if (preferredSessionKeys.isEmpty()) {
-            request.sessionKeysAndCertificates.firstOrNull()
+        val (preferredSessionKey, alternativeSessionKeys) = if (request.sessionKeysAndCertificates.isNotEmpty()) {
+            val preferredSessionKeys = request.sessionKeysAndCertificates.filter {
+                it.preferred
+            }
+            if (preferredSessionKeys.isEmpty()) {
+                throw BadRequestException("No preferred session key was selected.")
+            }
+            if (preferredSessionKeys.size > 1) {
+                throw BadRequestException("Can not have more than one preferred session key.")
+            }
+            val preferredSessionKey = preferredSessionKeys.first()
+            val alternativeSessionKeys = request.sessionKeysAndCertificates.filter {
+                it != preferredSessionKey && !it.preferred
+            }
+            preferredSessionKey to alternativeSessionKeys
         } else {
-            preferredSessionKeys.first()
-        }
-        val alternativeSessionKeys = request.sessionKeysAndCertificates.filter {
-            it != preferredSessionKey && !it.preferred
+            null to emptyList()
         }
         try {
             certificatesClient.setupLocallyHostedIdentity(

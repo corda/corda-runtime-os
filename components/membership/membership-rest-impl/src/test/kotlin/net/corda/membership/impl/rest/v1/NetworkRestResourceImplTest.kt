@@ -120,7 +120,9 @@ class NetworkRestResourceImplTest {
                         false,
                         listOf(
                             HostedIdentitySessionKeyAndCertificate(
-                                "1234567890ac"
+                                "1234567890ac",
+                                null,
+                                true,
                             )
                         )
                     )
@@ -156,41 +158,32 @@ class NetworkRestResourceImplTest {
         }
 
         @Test
-        fun `it uses the first key if there are no preferred keys`() {
-            val preferredKey = argumentCaptor<CertificatesClient.SessionKeyAndCertificate>()
-            whenever(
-                certificatesClient.setupLocallyHostedIdentity(
-                    any(),
-                    any(),
-                    any(),
-                    preferredKey.capture(),
-                    any()
-                )
-            ).doAnswer { }
-
-            networkRestResource.setupHostedIdentities(
-                "1234567890ab",
-                HostedIdentitySetupRequest(
-                    "alias",
-                    false,
-                    listOf(
-                        HostedIdentitySessionKeyAndCertificate(
-                            "1234567890aa",
-                            preferred = false,
-                        ),
-                        HostedIdentitySessionKeyAndCertificate(
-                            "1234567890ac",
-                            preferred = false,
-                        ),
-                        HostedIdentitySessionKeyAndCertificate(
-                            "1234567890ad",
-                            preferred = false,
-                        ),
+        fun `it throws an exception if there are no preferred keys`() {
+            val exception = assertThrows<BadRequestException> {
+                networkRestResource.setupHostedIdentities(
+                    "1234567890ab",
+                    HostedIdentitySetupRequest(
+                        "alias",
+                        false,
+                        listOf(
+                            HostedIdentitySessionKeyAndCertificate(
+                                "1234567890aa",
+                                preferred = false,
+                            ),
+                            HostedIdentitySessionKeyAndCertificate(
+                                "1234567890ac",
+                                preferred = false,
+                            ),
+                            HostedIdentitySessionKeyAndCertificate(
+                                "1234567890ad",
+                                preferred = false,
+                            ),
+                        )
                     )
                 )
-            )
+            }
 
-            assertThat(preferredKey.firstValue.sessionKeyId).isEqualTo(ShortHash.of("1234567890aa"))
+            assertThat(exception).hasMessageContaining("No preferred session key was selected")
         }
 
         @Test
@@ -329,7 +322,9 @@ class NetworkRestResourceImplTest {
                         true,
                         listOf(
                             HostedIdentitySessionKeyAndCertificate(
-                                "79ED40726774"
+                                "79ED40726774",
+                                null,
+                                true,
                             )
                         )
                     )

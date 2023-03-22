@@ -57,7 +57,9 @@ internal class HostedIdentityEntryFactory(
         return cryptoOpsClient.lookupKeysByIds(
             tenantId = tenantId,
             keyIds = listOf(sessionKeyId)
-        ).toPem(tenantId)
+        ).firstOrNull()
+            ?.toPem()
+            ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
     }
 
     private fun getFirstSessionKey(tenantId: String): String {
@@ -67,14 +69,14 @@ internal class HostedIdentityEntryFactory(
             1,
             CryptoKeyOrderBy.NONE,
             mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT),
-        ).toPem(tenantId)
-    }
-    private fun Collection<CryptoSigningKey>.toPem(tenantId: String): String {
-        val key = this.firstOrNull()
+        ).firstOrNull()
+            ?.toPem()
             ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
+    }
+    private fun CryptoSigningKey.toPem(): String {
         return keyEncodingService.encodeAsString(
             keyEncodingService.decodePublicKey(
-                key.publicKey.array()
+                this.publicKey.array()
             )
         )
     }
