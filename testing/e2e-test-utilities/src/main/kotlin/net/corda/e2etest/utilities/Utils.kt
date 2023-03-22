@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 const val USERNAME = "admin"
-val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"
+val PASSWORD = System.getenv("REST_API_ADMIN") ?: "admin"
 const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 val testRunUniqueId: UUID = UUID.randomUUID()
 

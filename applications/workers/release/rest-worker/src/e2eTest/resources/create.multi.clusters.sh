@@ -63,7 +63,7 @@ telepresence connect
 E2E_CLUSTER_A_REST_PASSWORD=$(kubectl get secret corda-initial-admin-user -n "$USER-$clusterA" -o go-template='{{ .data.password | base64decode }}')
 E2E_CLUSTER_B_REST_PASSWORD=$(kubectl get secret corda-initial-admin-user -n "$USER-$clusterB" -o go-template='{{ .data.password | base64decode }}')
 E2E_CLUSTER_C_REST_PASSWORD=$(kubectl get secret corda-initial-admin-user -n "$USER-$clusterC" -o go-template='{{ .data.password | base64decode }}')
-INITIAL_ADMIN_USER_PASSWORD=$E2E_CLUSTER_B_RPC_PASSWORD
+REST_API_ADMIN_PASSWORD=$E2E_CLUSTER_B_RPC_PASSWORD
 
 export E2E_CLUSTER_A_REST_HOST=corda-rest-worker.$USER-$clusterA
 export E2E_CLUSTER_A_REST_PORT=443
@@ -82,6 +82,6 @@ export E2E_CLUSTER_C_P2P_PORT=8080
 export E2E_CLUSTER_A_REST_PASSWORD
 export E2E_CLUSTER_B_REST_PASSWORD
 export E2E_CLUSTER_C_REST_PASSWORD
-export INITIAL_ADMIN_USER_PASSWORD
+export REST_API_ADMIN_PASSWORD
 
 ./gradlew :applications:workers:release:rest-worker:e2eTest
