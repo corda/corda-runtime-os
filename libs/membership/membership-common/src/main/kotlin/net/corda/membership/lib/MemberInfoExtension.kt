@@ -39,14 +39,14 @@ class MemberInfoExtension {
         /** Key name for party property. */
         const val PARTY_NAME = "corda.name"
         const val SESSION_KEYS = "corda.session.keys"
-        const val PARTY_SESSION_KEYS = "corda.session.keys.%s"
-        const val PARTY_SESSION_KEYS_PEM = "corda.session.keys.%s.pem"
+        const val PARTY_SESSION_KEYS = "$SESSION_KEYS.%s"
+        const val PARTY_SESSION_KEYS_PEM = "$SESSION_KEYS.%s.pem"
 
         /** Key name for the session key hash **/
-        const val SESSION_KEYS_HASH = "corda.session.keys.%s.hash"
+        const val SESSION_KEYS_HASH = "$SESSION_KEYS.%s.hash"
 
         /** Key name for the session key signature spec **/
-        const val SESSION_KEYS_SIGNATURE_SPEC = "corda.session.keys.%s.signature.spec"
+        const val SESSION_KEYS_SIGNATURE_SPEC = "$SESSION_KEYS.%s.signature.spec"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"

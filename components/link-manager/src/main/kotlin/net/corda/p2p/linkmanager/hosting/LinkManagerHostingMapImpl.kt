@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.HostedIdentitySessionKey
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.p2p.linkmanager.common.GroupIdWithPublicKeyHash
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
@@ -118,17 +118,19 @@ internal class LinkManagerHostingMapImpl(
     }
 
     private fun HostedIdentityEntry.toGroupIdWithPublicKeyHash(): Collection<GroupIdWithPublicKeyHash> {
-        return this.alternativeSessionKeys.map {
+        return this.alternativeSessionKeysAndCerts.map {
             it.toGroupIdWithPublicKeyHash(this.holdingIdentity.groupId)
-        } + this.prefferedSessionKey.toGroupIdWithPublicKeyHash(this.holdingIdentity.groupId)
+        } + this.preferredSessionKeyAndCert.toGroupIdWithPublicKeyHash(this.holdingIdentity.groupId)
     }
 
     private fun addEntry(entry: HostedIdentityEntry) {
+        val preferredSessionKey = entry.preferredSessionKeyAndCert.toCorda()
         val info = HostingMapListener.IdentityInfo(
             holdingIdentity = entry.holdingIdentity.toCorda(),
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
-            preferredSessionKey = entry.prefferedSessionKey.toData(),
+            preferredSessionKeyAndCertificates = preferredSessionKey,
+            alternativeSessionKeysAndCertificates = entry.alternativeSessionKeysAndCerts.map { it.toCorda() }
         )
         locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toCorda()] = info
         entry.toGroupIdWithPublicKeyHash().forEach {
@@ -139,14 +141,14 @@ internal class LinkManagerHostingMapImpl(
         }
     }
 
-    private fun HostedIdentitySessionKey.toData(): HostingMapListener.SessionKey {
-        return HostingMapListener.SessionKey(
+    private fun HostedIdentitySessionKeyAndCert.toCorda(): HostingMapListener.SessionKeyAndCertificates {
+        return HostingMapListener.SessionKeyAndCertificates(
             sessionPublicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey),
-            sessionCertificates = this.sessionCertificates,
+            sessionCertificateChain = this.sessionCertificates,
         )
     }
 
-    private fun HostedIdentitySessionKey.toGroupIdWithPublicKeyHash(groupId: String): GroupIdWithPublicKeyHash {
+    private fun HostedIdentitySessionKeyAndCert.toGroupIdWithPublicKeyHash(groupId: String): GroupIdWithPublicKeyHash {
         val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return GroupIdWithPublicKeyHash(
             groupId,

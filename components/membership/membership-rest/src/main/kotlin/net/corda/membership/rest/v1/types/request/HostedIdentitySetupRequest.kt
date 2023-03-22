@@ -6,12 +6,12 @@ package net.corda.membership.rest.v1.types.request
  * @param p2pTlsCertificateChainAlias The certificates chain alias.
  * @param useClusterLevelTlsCertificateAndKey Should the cluster-level P2P TLS certificate type and key be used or
  *     the virtual node certificate and key.
- * @param sessionKeys The list of session keys and certificates. If empty the first session key will be used.
+ * @param sessionKeysAndCertificates The list of session keys and certificates. If empty the first session key will be used.
  */
 data class HostedIdentitySetupRequest(
     val p2pTlsCertificateChainAlias: String,
     val useClusterLevelTlsCertificateAndKey: Boolean?,
-    val sessionKeys: List<HostedIdentitySessionKey> = emptyList(),
+    val sessionKeysAndCertificates: List<HostedIdentitySessionKeyAndCertificate> = emptyList(),
 )
 
 /**
@@ -21,7 +21,7 @@ data class HostedIdentitySetupRequest(
  * @param preferred true if this key is the preferred key. If no key is preferred the
  *    first one will be assumed as preferred.
  */
-data class HostedIdentitySessionKey(
+data class HostedIdentitySessionKeyAndCertificate(
     val sessionKeyId: String,
     val sessionCertificateChainAlias: String? = null,
     val preferred: Boolean = false,

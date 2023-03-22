@@ -15,7 +15,7 @@ import net.corda.membership.certificate.client.CertificatesResourceNotFoundExcep
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKey
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
@@ -42,18 +42,18 @@ class NetworkRestResourceImpl @Activate constructor(
         request: HostedIdentitySetupRequest
     ) {
         val operation = "set up locally hosted identities"
-        val preferredSessionKeys = request.sessionKeys.filter {
+        val preferredSessionKeys = request.sessionKeysAndCertificates.filter {
             it.preferred
         }
         if (preferredSessionKeys.size > 1) {
             throw BadRequestException("Can not have more than one preferred  session key.")
         }
         val preferredSessionKey = if (preferredSessionKeys.isEmpty()) {
-            request.sessionKeys.firstOrNull()
+            request.sessionKeysAndCertificates.firstOrNull()
         } else {
             preferredSessionKeys.first()
         }
-        val alternativeSessionKeys = request.sessionKeys.filter {
+        val alternativeSessionKeys = request.sessionKeysAndCertificates.filter {
             it != preferredSessionKey && !it.preferred
         }
         try {
@@ -120,8 +120,8 @@ class NetworkRestResourceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    private fun HostedIdentitySessionKey.toSessionKey(): CertificatesClient.SessionKey =
-        CertificatesClient.SessionKey(
+    private fun HostedIdentitySessionKeyAndCertificate.toSessionKey(): CertificatesClient.SessionKeyAndCertificate =
+        CertificatesClient.SessionKeyAndCertificate(
             createKeyIdOrHttpThrow(this.sessionKeyId),
             this.sessionCertificateChainAlias,
         )

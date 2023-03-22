@@ -3,7 +3,7 @@ package net.corda.membership.locally.hosted.identities.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.HostedIdentitySessionKey
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -82,7 +82,7 @@ class LocallyHostedIdentitiesServiceImplTest {
         identity.toAvro(),
         "tlsTenantId",
         listOf("tlsCertificate"),
-        HostedIdentitySessionKey(
+        HostedIdentitySessionKeyAndCert(
             "sessionPublicKey",
             listOf("sessionCertificate"),
         ),

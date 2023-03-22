@@ -15,7 +15,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.HostedIdentitySessionKey
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -447,7 +447,7 @@ class StaticMemberRegistrationService @Activate constructor(
             net.corda.data.identity.HoldingIdentity(memberName.toString(), groupId),
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
-            HostedIdentitySessionKey(
+            HostedIdentitySessionKeyAndCert(
                 DUMMY_PUBLIC_SESSION_KEY,
                 null
             ),

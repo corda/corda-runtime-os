@@ -247,7 +247,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 false,
-                CertificatesClient.SessionKey(
+                CertificatesClient.SessionKeyAndCertificate(
                     ShortHash.of("123412341234"),
                     "chain",
                 ),

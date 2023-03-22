@@ -78,7 +78,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.time.Clock
 import net.corda.utilities.trace
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -429,7 +428,7 @@ internal class SessionManagerImpl(
                 sessionId,
                 groupPolicy.protocolModes,
                 sessionManagerConfig.maxMessageSize,
-                ourIdentityInfo.preferredSessionKey.sessionPublicKey,
+                ourIdentityInfo.preferredSessionKeyAndCertificates.sessionPublicKey,
                 ourIdentityInfo.holdingIdentity.groupId,
                 pkiMode
             )
@@ -561,7 +560,7 @@ internal class SessionManagerImpl(
         }
 
         val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
-        val ourIdentitySessionKey = ourIdentityInfo.preferredSessionKey
+        val ourIdentitySessionKey = ourIdentityInfo.preferredSessionKeyAndCertificates
 
         val signWithOurGroupId = { data: ByteArray ->
             cryptoOpsClient.sign(
@@ -574,7 +573,7 @@ internal class SessionManagerImpl(
         val payload = try {
             session.generateOurHandshakeMessage(
                 responderMemberInfo.sessionInitiationKeys.first(),
-                ourIdentitySessionKey.sessionCertificates,
+                ourIdentitySessionKey.sessionCertificateChain,
                 signWithOurGroupId
             )
         } catch (exception: Exception) {
@@ -789,7 +788,9 @@ internal class SessionManagerImpl(
         }
 
         val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
-        val ourIdentitySessionKey = ourIdentityInfo.preferredSessionKey
+        val ourIdentitySessionKey = ourIdentityInfo.allSessionKeysAndCertificates.first {
+            session.hash(it.sessionPublicKey).contentEquals(ourIdentityData.responderPublicKeyHash)
+        }
 
         val response = try {
             val ourPublicKey = ourIdentitySessionKey.sessionPublicKey
@@ -801,7 +802,7 @@ internal class SessionManagerImpl(
                     data
                 ).bytes
             }
-            session.generateOurHandshakeMessage(ourPublicKey, ourIdentitySessionKey.sessionCertificates, signData)
+            session.generateOurHandshakeMessage(ourPublicKey, ourIdentitySessionKey.sessionCertificateChain, signData)
         } catch (exception: Exception) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
@@ -829,33 +830,22 @@ internal class SessionManagerImpl(
         message: InitiatorHandshakeMessage,
         peer: MemberInfo
     ): HandshakeIdentityData? {
-        val exception = peer.sessionInitiationKeys.map { sessionInitiationKey ->
-            try {
-                return@validatePeerHandshakeMessageHandleError this.validatePeerHandshakeMessage(
-                    message,
-                    peer.holdingIdentity.x500Name,
-                    sessionInitiationKey,
-                    sessionInitiationKey.toKeyAlgorithm().getSignatureSpec(),
-                )
-            } catch (e: CordaRuntimeException) {
-                e
-            }
-        }.first()
-
-        when (exception) {
-            is WrongPublicKeyHashException ->
-                logger.error("The message was discarded. ${exception.message}")
-            is InvalidHandshakeMessageException -> {
-                logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            }
-            is InvalidPeerCertificate -> {
-                logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            }
-            else -> {
-                throw exception
-            }
+        return try {
+            validatePeerHandshakeMessage(
+                message,
+                peer.holdingIdentity.x500Name,
+                peer.sessionInitiationKeys.map { it to it.toKeyAlgorithm().getSignatureSpec() }
+            )
+        } catch (exception: WrongPublicKeyHashException) {
+            logger.error("The message was discarded. ${exception.message}")
+            null
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
         }
-        return null
     }
 
     private fun AuthenticationProtocolInitiator.validatePeerHandshakeMessageHandleError(
@@ -863,32 +853,21 @@ internal class SessionManagerImpl(
         memberInfo: MemberInfo,
         sessionCounterparties: SessionCounterparties,
     ): Boolean {
-        val exception = memberInfo.sessionInitiationKeys.map { sessionInitiationKey ->
-            try {
-                this.validatePeerHandshakeMessage(
-                    message,
-                    sessionCounterparties.counterpartyId.x500Name,
-                    sessionInitiationKey,
-                    sessionInitiationKey.toKeyAlgorithm().getSignatureSpec(),
-                )
-                return@validatePeerHandshakeMessageHandleError true
-            } catch (e: CordaRuntimeException) {
-                e
-            }
-        }.first()
-        when (exception) {
-            is InvalidHandshakeResponderKeyHash -> {
-                logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            }
-            is InvalidHandshakeMessageException -> {
-                logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            }
-            is InvalidPeerCertificate -> {
-                logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            }
-            else -> {
-                throw exception
-            }
+        try {
+            this.validatePeerHandshakeMessage(
+                message,
+                sessionCounterparties.counterpartyId.x500Name,
+                memberInfo.sessionInitiationKeys.map {
+                    it to it.toKeyAlgorithm().getSignatureSpec()
+                },
+            )
+            return true
+        } catch (exception: InvalidHandshakeResponderKeyHash) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         }
         return false
     }

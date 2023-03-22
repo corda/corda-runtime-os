@@ -358,7 +358,7 @@ abstract class BaseOnboard : Runnable {
                     return
                 }
                 "DECLINED", "INVALID" -> {
-                    throw OnboardException("Registration has been $registrationStatus.")
+                    throw OnboardException("Status of registration is $registrationStatus.")
                 }
                 else -> {
                     println("Status of $x500Name registration is $registrationStatus")

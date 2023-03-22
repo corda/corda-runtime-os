@@ -15,7 +15,7 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
      * @param sessionCertificateChainAlias The certificate chain alias of the Session Key.
      *   Should be null if no PKI is used for sessions.
      */
-    data class SessionKey(
+    data class SessionKeyAndCertificate(
         val sessionKeyId: ShortHash,
         val sessionCertificateChainAlias: String?,
     )
@@ -28,8 +28,8 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
      * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
      *   the virtual node certificate and key.
-     * @param preferredSessionKey The preferred session keys. If null the first session key will be used.
-     * @param alternativeSessionKeys Alternative session keys.
+     * @param preferredSessionKeyAndCertificate The preferred session keys. If null the first session key will be used.
+     * @param alternativeSessionKeyAndCertificates Alternative session keys.
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
     @Suppress("LongParameterList")
@@ -37,7 +37,7 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        preferredSessionKey: SessionKey?,
-        alternativeSessionKeys: List<SessionKey>,
+        preferredSessionKeyAndCertificate: SessionKeyAndCertificate?,
+        alternativeSessionKeyAndCertificates: List<SessionKeyAndCertificate>,
     )
 }

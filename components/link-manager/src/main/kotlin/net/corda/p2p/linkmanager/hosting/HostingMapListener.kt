@@ -9,12 +9,17 @@ interface HostingMapListener {
         val holdingIdentity: HoldingIdentity,
         val tlsCertificates: List<PemCertificate>,
         val tlsTenantId: String,
-        val preferredSessionKey: SessionKey,
-    )
+        val preferredSessionKeyAndCertificates: SessionKeyAndCertificates,
+        val alternativeSessionKeysAndCertificates: Collection<SessionKeyAndCertificates>,
+    ) {
+        val allSessionKeysAndCertificates by lazy {
+            listOf(preferredSessionKeyAndCertificates) + alternativeSessionKeysAndCertificates
+        }
+    }
 
-    data class SessionKey(
+    data class SessionKeyAndCertificates(
         val sessionPublicKey: PublicKey,
-        val sessionCertificates: List<PemCertificate>?
+        val sessionCertificateChain: List<PemCertificate>?
     )
     fun identityAdded(identityInfo: IdentityInfo)
 }

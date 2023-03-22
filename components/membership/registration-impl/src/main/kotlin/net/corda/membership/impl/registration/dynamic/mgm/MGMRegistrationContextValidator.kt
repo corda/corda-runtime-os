@@ -87,7 +87,7 @@ internal class MGMRegistrationContextValidator(
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
         }
         context.keys.filter { SESSION_KEY_IDS.format("[0-9]+").toRegex().matches(it) }.apply {
-            require(isNotEmpty()) { "No session was provided." }
+            require(isNotEmpty()) { "No session key was provided." }
             require(orderVerifier.isOrdered(this, 3)) { "Provided session keys are incorrectly numbered." }
         }
         val contextRegistrationTlsType = context[TLS_TYPE]?.let { tlsType ->

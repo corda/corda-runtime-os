@@ -11,7 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKey
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -119,7 +119,7 @@ class NetworkRestResourceImplTest {
                         "alias",
                         false,
                         listOf(
-                            HostedIdentitySessionKey(
+                            HostedIdentitySessionKeyAndCertificate(
                                 "1234567890ac"
                             )
                         )
@@ -137,15 +137,15 @@ class NetworkRestResourceImplTest {
                         "alias",
                         false,
                         listOf(
-                            HostedIdentitySessionKey(
+                            HostedIdentitySessionKeyAndCertificate(
                                 "1234567890ac",
                                 preferred = true,
                             ),
-                            HostedIdentitySessionKey(
+                            HostedIdentitySessionKeyAndCertificate(
                                 "1234567890ac",
                                 preferred = false,
                             ),
-                            HostedIdentitySessionKey(
+                            HostedIdentitySessionKeyAndCertificate(
                                 "1234567890ac",
                                 preferred = true,
                             ),
@@ -157,7 +157,7 @@ class NetworkRestResourceImplTest {
 
         @Test
         fun `it uses the first key if there are no preferred keys`() {
-            val preferredKey = argumentCaptor<CertificatesClient.SessionKey>()
+            val preferredKey = argumentCaptor<CertificatesClient.SessionKeyAndCertificate>()
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
@@ -174,15 +174,15 @@ class NetworkRestResourceImplTest {
                     "alias",
                     false,
                     listOf(
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890aa",
                             preferred = false,
                         ),
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890ac",
                             preferred = false,
                         ),
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890ad",
                             preferred = false,
                         ),
@@ -195,7 +195,7 @@ class NetworkRestResourceImplTest {
 
         @Test
         fun `it uses the preferred key`() {
-            val preferredKey = argumentCaptor<CertificatesClient.SessionKey>()
+            val preferredKey = argumentCaptor<CertificatesClient.SessionKeyAndCertificate>()
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
@@ -212,15 +212,15 @@ class NetworkRestResourceImplTest {
                     "alias",
                     false,
                     listOf(
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890aa",
                             preferred = false,
                         ),
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890ac",
                             preferred = true,
                         ),
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890ad",
                             preferred = false,
                         ),
@@ -234,7 +234,7 @@ class NetworkRestResourceImplTest {
 
         @Test
         fun `it uses the alternative keys`() {
-            val alternativeKeys = argumentCaptor<List<CertificatesClient.SessionKey>>()
+            val alternativeKeys = argumentCaptor<List<CertificatesClient.SessionKeyAndCertificate>>()
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
@@ -251,15 +251,15 @@ class NetworkRestResourceImplTest {
                     "alias",
                     false,
                     listOf(
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890aa",
                             preferred = false,
                         ),
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890ac",
                             preferred = true,
                         ),
-                        HostedIdentitySessionKey(
+                        HostedIdentitySessionKeyAndCertificate(
                             "1234567890ad",
                             preferred = false,
                         ),
@@ -328,7 +328,7 @@ class NetworkRestResourceImplTest {
                         "alias",
                         true,
                         listOf(
-                            HostedIdentitySessionKey(
+                            HostedIdentitySessionKeyAndCertificate(
                                 "79ED40726774"
                             )
                         )

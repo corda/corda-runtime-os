@@ -118,15 +118,15 @@ class CertificatesClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        preferredSessionKey: CertificatesClient.SessionKey?,
-        alternativeSessionKeys: List<CertificatesClient.SessionKey>,
+        preferredSessionKeyAndCertificate: CertificatesClient.SessionKeyAndCertificate?,
+        alternativeSessionKeyAndCertificates: List<CertificatesClient.SessionKeyAndCertificate>,
     ) {
         val record = hostedIdentityEntryFactory.createIdentityRecord(
             holdingIdentityShortHash = holdingIdentityShortHash,
             tlsCertificateChainAlias = p2pTlsCertificateChainAlias,
             useClusterLevelTlsCertificateAndKey = useClusterLevelTlsCertificateAndKey,
-            preferredSessionKey = preferredSessionKey,
-            alternativeSessionKeys = alternativeSessionKeys,
+            preferredSessionKeyAndCertificate = preferredSessionKeyAndCertificate,
+            alternativeSessionKeyAndCertificates = alternativeSessionKeyAndCertificates,
         )
 
         val futures = publisher?.publish(
