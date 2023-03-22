@@ -4,7 +4,8 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.SerializerFactory
+import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer
@@ -61,7 +62,7 @@ class DefaultKryoCustomizer {
                 // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
                 // their parents after deserialization.
                 defaultFactoryConfig.ignoreSyntheticFields = false
-                kryo.setDefaultSerializer(SerializerFactory.FieldSerializerFactory(defaultFactoryConfig))
+                kryo.setDefaultSerializer(FieldSerializerFactory(defaultFactoryConfig))
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
@@ -93,12 +94,12 @@ class DefaultKryoCustomizer {
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
-                addDefaultSerializer(Iterator::class.java, object: BaseSerializerFactory<IteratorSerializer> {
+                addDefaultSerializer(Iterator::class.java, object: BaseSerializerFactory<IteratorSerializer>() {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) =
                         IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
                 })
 
-                addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>> {
+                addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>>() {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
                 })
 
