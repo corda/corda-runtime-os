@@ -94,10 +94,10 @@ class SessionEventExecutor(
     }
 
     private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
-        val sessionData = sessionEvent.payload as SessionData
-        val payload = sessionData.payload
-
         if (messageDirection == MessageDirection.OUTBOUND) {
+            val sessionData = sessionEvent.payload as SessionData
+            val payload = sessionData.payload
+
             log.info("[CORE-10465] Processing outbound interop session event of type ${payload.javaClass}")
 
             // Echo the whole payload back to the flow fibre.
@@ -122,7 +122,7 @@ class SessionEventExecutor(
 
             return FlowMapperResult(flowMapperState, listOf(reply))
         } else {
-            log.info("[CORE-10465] Sending inbound interop event of type ${payload.javaClass} to flow event topic.")
+            log.info("[CORE-10465] Sending inbound interop event of type ${sessionEvent.payload.javaClass} to flow event topic.")
             val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
             return FlowMapperResult(flowMapperState, listOf(record))
         }
