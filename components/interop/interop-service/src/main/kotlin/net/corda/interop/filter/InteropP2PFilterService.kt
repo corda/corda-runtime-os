@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [InteropP2PFilterService::class], immediate = true)
 class InteropP2PFilterService @Activate constructor(
@@ -32,6 +33,7 @@ class InteropP2PFilterService @Activate constructor(
 ) : Lifecycle {
 
     private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "InteropFilterConsumer"
         private const val SUBSCRIPTION = "SUBSCRIPTION"
         private const val REGISTRATION = "REGISTRATION"
@@ -64,7 +66,7 @@ class InteropP2PFilterService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                restartFlowP2PFilterService(event)
+                restartInteropP2PFilterService(event)
             }
         }
     }
@@ -72,7 +74,8 @@ class InteropP2PFilterService @Activate constructor(
     /**
      * Recreate the Flow P2P Filter service in response to new config [event]
      */
-    private fun restartFlowP2PFilterService(event: ConfigChangedEvent) {
+    private fun restartInteropP2PFilterService(event: ConfigChangedEvent) {
+        logger.info("restartInteropP2PFilterService")
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
         coordinator.createManagedResource(SUBSCRIPTION) {
