@@ -7,7 +7,7 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
@@ -38,9 +38,10 @@ internal class UtxoLedgerTransactionImplTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val signedTransaction = UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory
+            utxoSignedTransactionFactory,
+            mockNotaryLookup
         )
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)

@@ -13,7 +13,7 @@ import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
+import java.security.PublicKey
 
 @Component(
     service = [UtxoFilteredTransactionFactory::class, UsedByFlow::class],
@@ -41,7 +42,8 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
     ): UtxoFilteredTransaction {
         val notaryAndTimeWindow = if (filteredTransactionBuilder.notary || filteredTransactionBuilder.timeWindow) {
             ComponentGroupFilterParameters.AuditProof(NOTARY.ordinal, Any::class.java) {
-                filteredTransactionBuilder.notary && it is Party || filteredTransactionBuilder.timeWindow && it is TimeWindow
+                filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey ) // notary components
+                        || filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
             }
         } else {
             null

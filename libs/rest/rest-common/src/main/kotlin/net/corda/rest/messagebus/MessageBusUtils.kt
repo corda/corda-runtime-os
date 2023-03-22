@@ -3,6 +3,7 @@ package net.corda.rest.messagebus
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.HttpApiException
 import org.slf4j.Logger
 
 object MessageBusUtils {
@@ -34,6 +35,9 @@ object MessageBusUtils {
                 untranslatedExceptions.contains(ex::class.java) -> {
                     throw ex
                 }
+
+                ex  is HttpApiException ->
+                    throw ex
 
                 ex is CordaRPCAPIPartitionException -> {
                     logger.warn("Could not $operation", ex)

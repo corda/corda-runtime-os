@@ -10,8 +10,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuild
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
-import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
@@ -45,7 +45,8 @@ class SendTransactonBuilderDiffFlowTest {
     fun beforeEach() {
         whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
 
-        whenever(currentTransactionBuilder.notary).thenReturn(null)
+        whenever(currentTransactionBuilder.notaryName).thenReturn(null)
+        whenever(currentTransactionBuilder.notaryKey).thenReturn(null)
         whenever(currentTransactionBuilder.timeWindow).thenReturn(null)
         whenever(currentTransactionBuilder.attachments).thenReturn(listOf())
         whenever(currentTransactionBuilder.commands).thenReturn(listOf())
@@ -55,7 +56,7 @@ class SendTransactonBuilderDiffFlowTest {
         whenever(currentTransactionBuilder.outputStates).thenReturn(listOf())
         whenever(currentTransactionBuilder.copy()).thenReturn(originalTransactionalBuilder)
 
-        whenever(originalTransactionalBuilder.getNotary()).thenReturn(null)
+        whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(null)
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(null)
         whenever(originalTransactionalBuilder.attachments).thenReturn(listOf())
         whenever(originalTransactionalBuilder.commands).thenReturn(listOf())
@@ -75,18 +76,20 @@ class SendTransactonBuilderDiffFlowTest {
 
     @Test
     fun `called with old notary null and new notary sends back a builder with the new notary`() {
-        whenever(currentTransactionBuilder.notary).thenReturn(utxoNotaryExample)
+        whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
+        whenever(currentTransactionBuilder.notaryKey).thenReturn(publicKeyExample)
 
         callSendFlow()
 
-        verify(session).send(UtxoTransactionBuilderContainer(notary = utxoNotaryExample))
+        verify(session).send(UtxoTransactionBuilderContainer(notaryName = notaryX500Name))
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
     fun `called with old notary and a different new notary sends back a builder without notary`() {
-        whenever(originalTransactionalBuilder.getNotary()).thenReturn(anotherUtxoNotaryExample)
-        whenever(currentTransactionBuilder.notary).thenReturn(utxoNotaryExample)
+        whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(anotherNotaryX500Name)
+        whenever(currentTransactionBuilder.notaryName).thenReturn(notaryX500Name)
+        whenever(currentTransactionBuilder.notaryKey).thenReturn(publicKeyExample)
 
         callSendFlow()
 
