@@ -1,9 +1,9 @@
 package net.corda.rest.messagebus
 
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.HttpApiException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ServiceUnavailableException
 import org.slf4j.Logger
 
 object MessageBusUtils {
@@ -36,7 +36,7 @@ object MessageBusUtils {
                     throw ex
                 }
 
-                ex  is HttpApiException ->
+                ex is HttpApiException ->
                     throw ex
 
                 ex is CordaRPCAPIPartitionException -> {
