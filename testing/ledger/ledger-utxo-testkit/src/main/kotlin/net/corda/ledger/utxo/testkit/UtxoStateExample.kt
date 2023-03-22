@@ -13,11 +13,11 @@ private fun getUtxoInvalidStateExample(testField: String = "test") =
     UtxoInvalidStateClassExample(testField, listOf(publicKeyExample))
 
 fun getExampleStateAndRefImpl(seed: Int = 1, testField: String = "test") = StateAndRefImpl(
-    state = TransactionStateImpl(getUtxoStateExample(testField), utxoNotaryExample, null),
+    state = TransactionStateImpl(getUtxoStateExample(testField), notaryX500Name, publicKeyExample, null),
     ref = StateRef(SecureHashImpl("SHA", seed.toByteArray()), 0)
 )
 
 fun getExampleInvalidStateAndRefImpl(seed: Int = 1, testField: String = "test") = StateAndRefImpl(
-    state = TransactionStateImpl(getUtxoInvalidStateExample(testField), utxoNotaryExample, null),
+    state = TransactionStateImpl(getUtxoInvalidStateExample(testField), notaryX500Name, publicKeyExample, null),
     ref = StateRef(SecureHashImpl("SHA", seed.toByteArray()), 0)
 )

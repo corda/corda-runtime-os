@@ -7,8 +7,8 @@ import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,21 +46,23 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     fun `Sets new notary if old is null`() {
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
-                notary = utxoNotaryExample
+                notaryName = notaryX500Name
             )
         )
-        assertEquals(utxoNotaryExample, result.notary)
+        assertEquals(notaryX500Name, result.notaryName)
+        assertEquals(publicKeyExample, result.notaryKey)
     }
 
     @Test
     fun `Does not set new notary if old exists`() {
-        originalTransactionalBuilder.setNotary(utxoNotaryExample)
+        originalTransactionalBuilder.setNotary(notaryX500Name)
         val result = originalTransactionalBuilder.append(
             UtxoTransactionBuilderContainer(
-                notary = anotherUtxoNotaryExample
+                notaryName = anotherNotaryX500Name
             )
         )
-        assertEquals(utxoNotaryExample, result.notary)
+        assertEquals(notaryX500Name, result.notaryName)
+        assertEquals(publicKeyExample, result.notaryKey)
     }
 
     @Test
