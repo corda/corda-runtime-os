@@ -1,6 +1,6 @@
 1. Extract the username and password for the REST API admin created during bootstrap:
 kubectl get secret {{ include "corda.restApiAdminUsernameSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminSecretUsernameKey" . }} | base64decode {{ `}}` }}'
-kubectl get secret {{ include "corda.restApiAdminPasswordSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminPasswordKey" . }} | base64decode {{ `}}` }}'
+kubectl get secret {{ include "corda.restApiAdminPasswordSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminSecretPasswordKey" . }} | base64decode {{ `}}` }}'
 
 2. Expose the API endpoint on localhost by running this command:
 kubectl port-forward --namespace {{ .Release.Namespace }} deployment/{{ include "corda.fullname" . }}-rest-worker 8888 &
