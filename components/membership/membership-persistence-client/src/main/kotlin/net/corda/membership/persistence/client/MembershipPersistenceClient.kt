@@ -101,8 +101,6 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param notary [MemberInfo] of the notary to be added.
-     * @param currentProtocolVersions Notary service protocol versions listed under notary vnodes other than the [notary]
-     * being added.
      *
      * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
      * will include a [KeyValuePairList] of the newly persisted group parameters.
@@ -110,7 +108,6 @@ interface MembershipPersistenceClient : Lifecycle {
     fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-        currentProtocolVersions: Collection<Int>
     ): MembershipPersistenceResult<KeyValuePairList>
 
     /**

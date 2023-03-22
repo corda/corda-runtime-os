@@ -77,17 +77,9 @@ internal class ApproveRegistrationHandler(
 
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
             // Otherwise, retrieve epoch of current group parameters from the group reader.
-            val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-            val approvedNotary = memberInfo.notaryDetails
-            val epoch = if (approvedNotary != null) {
+            val epoch = if (memberInfo.notaryDetails != null) {
                 val mgmHoldingIdentity = mgm.holdingIdentity
-                val currentProtocolVersions = reader.lookup()
-                    .filter { (it.notaryDetails?.serviceName == approvedNotary.serviceName) && (it.name != memberInfo.name) }
-                    .flatMap { it.notaryDetails!!.serviceProtocolVersions }
-                    .toSet()
-                val result = membershipPersistenceClient.addNotaryToGroupParameters(
-                    mgmHoldingIdentity, memberInfo, currentProtocolVersions
-                )
+                val result = membershipPersistenceClient.addNotaryToGroupParameters(mgmHoldingIdentity, memberInfo)
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +
@@ -98,6 +90,7 @@ internal class ApproveRegistrationHandler(
                 groupParametersWriterService.put(mgmHoldingIdentity, persistedGroupParameters)
                 persistedGroupParameters.epoch
             } else {
+                val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
                 reader.groupParameters?.epoch
             } ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
 

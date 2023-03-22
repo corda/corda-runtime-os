@@ -14,6 +14,7 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
@@ -104,23 +105,34 @@ class AddNotaryToGroupParametersHandlerTest {
         on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
         on { setMaxResults(1) } doReturn previousEntry
     }
+    private val membersQuery: TypedQuery<MemberInfoEntity> = mock {
+        on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
+        on { resultList } doReturn emptyList()
+    }
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
     }
+    private val memberRoot = mock<Root<MemberInfoEntity>>()
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<GroupParametersEntity>> {
         on { from(GroupParametersEntity::class.java) } doReturn root
         on { select(root) } doReturn mock
         on { orderBy(order) } doReturn mock
     }
+    private val memberCriteriaQuery = mock<CriteriaQuery<MemberInfoEntity>> {
+        on { from(MemberInfoEntity::class.java) } doReturn memberRoot
+        on { select(memberRoot) } doReturn mock
+    }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(GroupParametersEntity::class.java) } doReturn query
+        on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
     }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(eq(query)) } doReturn groupParametersQuery
+        on { createQuery(eq(memberCriteriaQuery)) } doReturn membersQuery
         on { transaction } doReturn transaction
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
@@ -273,11 +285,11 @@ class AddNotaryToGroupParametersHandlerTest {
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(8)
-            assertThat(persistedParameters.items.containsAll(
+            val parametersList = persistedParameters.items
+            assertThat(parametersList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(parametersList.filterNot { it.key == MODIFIED_TIME_KEY }).containsExactlyInAnyOrderElementsOf(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "2"),
-                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
@@ -285,7 +297,7 @@ class AddNotaryToGroupParametersHandlerTest {
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
                 )
-            ))
+            )
             assertThat(result).isEqualTo(PersistGroupParametersResponse(persistedParameters))
         }
     }

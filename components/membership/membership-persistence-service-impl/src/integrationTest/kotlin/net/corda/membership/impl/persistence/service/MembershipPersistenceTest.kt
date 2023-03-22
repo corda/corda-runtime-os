@@ -55,6 +55,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
@@ -69,6 +70,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -680,6 +682,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
                 KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
                 KeyValuePair("${ROLES_PREFIX}.0", "notary"),
                 KeyValuePair(String.format(NOTARY_KEY_PEM, 0), keyEncodingService.encodeAsString(notaryKey)),
                 KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
@@ -699,14 +702,16 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
-            assertThat(size).isEqualTo(6)
-            assertThat(containsAll(expectedGroupParameters))
+            assertThat(this).anyMatch { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
         }
 
         val persistedEntity = vnodeEmf.use {
@@ -718,8 +723,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(6)
-            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
@@ -746,6 +753,8 @@ class MembershipPersistenceTest {
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
                 KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1), "2"),
                 KeyValuePair("${ROLES_PREFIX}.0", "notary"),
                 KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
                 KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
@@ -770,7 +779,8 @@ class MembershipPersistenceTest {
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                             KeyValuePair(MPV_KEY, "5000"),
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin)
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                             )
                         )
                     )!!
@@ -783,14 +793,17 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
-            assertThat(size).isEqualTo(6)
-            assertThat(containsAll(expectedGroupParameters))
+            assertThat(this).anyMatch { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
         }
 
         val persistedEntity = vnodeEmf.use {
@@ -802,8 +815,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(6)
-            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
@@ -831,6 +846,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
                 KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
                 KeyValuePair("${ROLES_PREFIX}.0", "notary"),
                 KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
                 KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
@@ -859,6 +875,7 @@ class MembershipPersistenceTest {
                             KeyValuePair(MPV_KEY, "5000"),
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey)
                         )
                     )
@@ -871,6 +888,7 @@ class MembershipPersistenceTest {
             KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
         )
@@ -879,8 +897,9 @@ class MembershipPersistenceTest {
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
-            assertThat(size).isEqualTo(7)
-            assertThat(containsAll(expectedGroupParameters))
+            assertThat(this).anyMatch { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
         }
 
         val persistedEntity = vnodeEmf.use {
@@ -892,8 +911,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(7)
-            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == net.corda.membership.lib.MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }

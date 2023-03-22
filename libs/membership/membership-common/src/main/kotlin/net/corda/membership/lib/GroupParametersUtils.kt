@@ -21,6 +21,7 @@ const val NOTARIES_KEY = "corda.notary.service"
 private val clock = UTCClock()
 private val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
 
+@Suppress("LongParameterList")
 fun updateExistingNotaryService(
     currentParameters: Map<String, String>,
     notaryDetails: MemberNotaryDetails,
@@ -37,12 +38,18 @@ fun updateExistingNotaryService(
                     "'$notaryServiceName' - protocols do not match.")
         }
         require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
-            throw MembershipPersistenceException("Cannot add notary to notary service '$notaryServiceName' - protocol versions are missing.")
+            throw MembershipPersistenceException("Cannot add notary to notary service '$notaryServiceName' - protocol" +
+                    "  versions are missing.")
         }
     }
     val versionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY.format(notaryServiceNumber, "([0-9]+)").toRegex()
     val updatedVersions = notaryDetails.serviceProtocolVersions.let {
-        (currentProtocolVersions + it).toSortedSet().mapIndexed { index, version ->
+        val versionIntersection = if (currentProtocolVersions.isEmpty()) {
+            it
+        } else {
+            it.intersect(currentProtocolVersions.toSet())
+        }
+        versionIntersection.toSortedSet().mapIndexed { index, version ->
             KeyValuePair(
                 String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, notaryServiceNumber, index),
                 version.toString()

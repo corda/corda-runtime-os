@@ -10,6 +10,7 @@ import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.impl.converter.NotaryInfoConverter
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
@@ -31,7 +32,8 @@ class GroupParametersTest {
         val modifiedTime = clock.instant()
         const val VALID_VALUE = 1
         const val INVALID_VALUE = 0
-        val notaryName = MemberX500Name.parse("C=GB, L=London, O=NotaryService")
+        val notaryAName = MemberX500Name.parse("C=GB, L=London, O=NotaryServiceA")
+        val notaryBName = MemberX500Name.parse("C=GB, L=London, O=NotaryServiceB")
         const val NOTARY_PROTOCOL = "notaryPlugin"
         const val KEY = "key"
     }
@@ -55,9 +57,15 @@ class GroupParametersTest {
             MPV_KEY to mpv.toString(),
             EPOCH_KEY to epoch.toString(),
             MODIFIED_TIME_KEY to time.toString(),
-            String.format(NOTARY_SERVICE_NAME_KEY, 0) to notaryName.toString(),
+            String.format(NOTARY_SERVICE_NAME_KEY, 0) to notaryAName.toString(),
             String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0) to NOTARY_PROTOCOL,
-            String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0) to KEY
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0) to "1",
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1) to "2",
+            String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0) to KEY,
+            String.format(NOTARY_SERVICE_NAME_KEY, 1) to notaryBName.toString(),
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 1) to NOTARY_PROTOCOL,
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 1, 0) to "2",
+            String.format(NOTARY_SERVICE_KEYS_KEY, 1, 0) to KEY
         ),
         listOf(NotaryInfoConverter(compositeKeyProvider), PublicKeyConverter(keyEncodingService))
     )
@@ -69,11 +77,20 @@ class GroupParametersTest {
             it.assertThat(params.minimumPlatformVersion).isEqualTo(VALID_VALUE)
             it.assertThat(params.epoch).isEqualTo(VALID_VALUE)
             it.assertThat(params.modifiedTime).isEqualTo(modifiedTime)
-            it.assertThat(params.notaries).hasSize(1)
-            val notary = params.notaries.single()
-            it.assertThat(notary.name).isEqualTo(notaryName)
-            it.assertThat(notary.protocol).isEqualTo(NOTARY_PROTOCOL)
-            it.assertThat(notary.publicKey).isEqualTo(compositeKey)
+            it.assertThat(params.notaries)
+                .hasSize(2)
+                .anySatisfy { notary ->
+                    it.assertThat(notary.name).isEqualTo(notaryAName)
+                    it.assertThat(notary.protocol).isEqualTo(NOTARY_PROTOCOL)
+                    it.assertThat(notary.publicKey).isEqualTo(compositeKey)
+                    it.assertThat(notary.protocolVersions).containsExactlyInAnyOrder(1, 2)
+                }
+                .anySatisfy { notary ->
+                    it.assertThat(notary.name).isEqualTo(notaryBName)
+                    it.assertThat(notary.protocol).isEqualTo(NOTARY_PROTOCOL)
+                    it.assertThat(notary.publicKey).isEqualTo(compositeKey)
+                    it.assertThat(notary.protocolVersions).containsExactlyInAnyOrder(2)
+                }
         }
     }
 

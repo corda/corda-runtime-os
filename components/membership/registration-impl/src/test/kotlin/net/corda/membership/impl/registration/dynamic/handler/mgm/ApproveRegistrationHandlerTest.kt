@@ -95,7 +95,6 @@ class ApproveRegistrationHandlerTest {
             addNotaryToGroupParameters(
                 mgm.holdingIdentity,
                 notaryInfo,
-                emptySet()
             )
         } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
     }
@@ -239,9 +238,8 @@ class ApproveRegistrationHandlerTest {
         verify(membershipPersistenceClient).addNotaryToGroupParameters(
             viewOwningIdentity = mgm.holdingIdentity,
             notary = notaryInfo,
-            emptySet()
         )
-        verify(groupReaderProvider).getGroupReader(any())
+        verify(groupReaderProvider, never()).getGroupReader(any())
         assertThat(results.outputStates)
             .hasSize(3)
             .anySatisfy {
@@ -263,7 +261,6 @@ class ApproveRegistrationHandlerTest {
         verify(membershipPersistenceClient, never()).addNotaryToGroupParameters(
             viewOwningIdentity = mgm.holdingIdentity,
             notary = memberInfo,
-            emptySet()
         )
         verify(groupReaderProvider, times(1)).getGroupReader(any())
         assertThat(results.outputStates)

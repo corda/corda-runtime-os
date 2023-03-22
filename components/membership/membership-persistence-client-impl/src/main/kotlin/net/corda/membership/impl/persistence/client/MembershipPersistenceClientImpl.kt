@@ -178,7 +178,6 @@ class MembershipPersistenceClientImpl(
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-        currentProtocolVersions: Collection<Int>
     ): MembershipPersistenceResult<KeyValuePairList> {
         logger.info("Adding notary to persisted group parameters.")
         val result = MembershipPersistenceRequest(
@@ -188,8 +187,7 @@ class MembershipPersistenceClientImpl(
                     viewOwningIdentity.toAvro(),
                     notary.memberProvidedContext.toAvro(),
                     notary.mgmProvidedContext.toAvro()
-                ),
-                currentProtocolVersions.toList()
+                )
             )
         ).execute()
         return when (val response = result.payload) {

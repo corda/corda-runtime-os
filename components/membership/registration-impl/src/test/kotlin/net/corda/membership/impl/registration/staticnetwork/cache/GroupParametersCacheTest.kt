@@ -118,11 +118,12 @@ class GroupParametersCacheTest {
 
         groupParametersCache.addNotary(notary, emptySet())
 
-        with(publishCaptor.firstValue.first()) {
+        with(publishCaptor.secondValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
             with(value as StaticGroupDefinition) {
-                assertThat(this.groupParameters.items.containsAll(
-                    listOf(
+                val params = this.groupParameters.items
+                assertThat(params).anyMatch { it.key == MODIFIED_TIME_KEY }
+                assertThat(params.filterNot { it.key == MODIFIED_TIME_KEY }).containsExactlyInAnyOrder(
                         KeyValuePair(EPOCH_KEY, "2"),
                         KeyValuePair(MPV_KEY, MPV.toString()),
                         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), KNOWN_NOTARY_SERVICE),
@@ -130,8 +131,8 @@ class GroupParametersCacheTest {
                         KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                         KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
                         KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), "test-key"),
-                    )
-                ))
+
+                        )
             }
         }
     }
@@ -175,18 +176,17 @@ class GroupParametersCacheTest {
         with(publishCaptor.firstValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
             with(value as StaticGroupDefinition) {
-                assertThat(this.groupParameters.items.containsAll(
-                    listOf(
-                        KeyValuePair(EPOCH_KEY, "2"),
-                        KeyValuePair(MPV_KEY, MPV.toString()),
-                        KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
-                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
-                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "2"),
-                        KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
-                        KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
-                    )
-                ))
+                val params = this.groupParameters.items
+                assertThat(params).anyMatch { it.key == MODIFIED_TIME_KEY }
+                assertThat(params.filterNot { it.key == MODIFIED_TIME_KEY }).containsExactlyInAnyOrder(
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MPV_KEY, MPV.toString()),
+                    KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
+                )
             }
         }
     }
