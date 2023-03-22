@@ -1,5 +1,8 @@
-package net.corda.serialization
+package net.corda.internal.serialization
 
+import net.corda.serialization.ObjectWithCompatibleContext
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationFactory
 import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.types.OpaqueBytes
