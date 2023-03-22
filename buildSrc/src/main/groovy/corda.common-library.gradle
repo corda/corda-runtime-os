@@ -19,7 +19,7 @@ configurations {
     integrationTestCompileOnly.extendsFrom testCompileOnly
     integrationTestImplementation.extendsFrom testImplementation
 
-    all {
+    configureEach {
         resolutionStrategy {
             dependencySubstitution {
                 substitute module('de.javakaffee:kryo-serializers') with project(':libs:serialization:kryo-serializers')
