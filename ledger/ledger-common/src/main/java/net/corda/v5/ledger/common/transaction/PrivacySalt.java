@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Defines a mechanism for implementing a privacy salt.
- * A privacy salt is required to compute  a nonce per transaction component in order to ensure that an adversary cannot
+ * A privacy salt is required to compute a nonce per transaction component in order to ensure that an adversary cannot
  * use brute force techniques and reveal the content of a Merkle-leaf hashed value.
  */
 @CordaSerializable

@@ -13,7 +13,7 @@ import java.util.Objects;
 public final class UtxoTokenFilterFields {
 
     /**
-     * Optional user defined string that can be used for regular expression filters.
+     * Optional user-defined string that can be used for regular expression filters.
      */
     @Nullable
     private final String tag;
@@ -27,7 +27,7 @@ public final class UtxoTokenFilterFields {
     /**
      * Creates a new instance of the {@link UtxoTokenFilterFields} class.
      *
-     * @param tag Optional user defined string that can be used for regular expression filters.
+     * @param tag Optional user-defined string that can be used for regular expression filters.
      * @param ownerHash Optional token owner hash.
      */
     public UtxoTokenFilterFields(@Nullable final String tag, @Nullable final SecureHash ownerHash) {
@@ -43,9 +43,9 @@ public final class UtxoTokenFilterFields {
     }
 
     /**
-     * Gets an optional user defined string that can be used for regular expression filters.
+     * Gets an optional user-defined string that can be used for regular expression filters.
      *
-     * @return Returns an optional user defined string that can be used for regular expression filters.
+     * @return Returns an optional user-defined string that can be used for regular expression filters.
      */
     @Nullable
     public String getTag() {

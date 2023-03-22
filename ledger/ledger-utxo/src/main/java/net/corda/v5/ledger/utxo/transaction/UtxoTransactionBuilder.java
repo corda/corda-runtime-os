@@ -220,7 +220,7 @@ public interface UtxoTransactionBuilder {
      * signs the transaction with any required signatories that belong to the current node.
      * <p>
      * Calling this function once consumes the {@link UtxoTransactionBuilder}, so it cannot be used again.
-     * Therefore, if you want to build two transactions you need two builders.
+     * Therefore, if you want to build two transactions, you need two builders.
      *
      * @return Returns a {@link UtxoSignedTransaction} with signatures for any required signatories that belong to the current node.
      * @throws IllegalStateException               when called a second time on the same object to prevent unintentional duplicate transactions.

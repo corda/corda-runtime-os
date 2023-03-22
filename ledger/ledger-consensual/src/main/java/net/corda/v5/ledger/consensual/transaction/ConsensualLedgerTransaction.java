@@ -23,11 +23,11 @@ import java.util.Set;
  * running outside the secure enclave. Also, it might need to deserialize states with code that might not be available
  * on the classpath.
  * <p>
- * Because of this, trying to create or use a {@link ConsensualLedgerTransaction} for any other purpose then transaction
+ * Because of this, trying to create or use a {@link ConsensualLedgerTransaction} for any other purpose than transaction
  * verification can result in unexpected exceptions, which need de be handled.
  * <p>
  * {@link ConsensualLedgerTransaction} should never be instantiated directly from client code, but rather via
- * {@link ConsensualSignedTransaction#toLedgerTransaction()}
+ * {@link ConsensualSignedTransaction#toLedgerTransaction()}.
  */
 @DoNotImplement
 public interface ConsensualLedgerTransaction {
@@ -44,7 +44,7 @@ public interface ConsensualLedgerTransaction {
      * Gets a set of signatories that are required for transaction validity;
      * essentially the union of the participants of the current transaction's states.
      *
-     * @return Return a set of signatories that are required for transaction validity.
+     * @return Returns a set of signatories that are required for transaction validity.
      */
     @NotNull
     Set<PublicKey> getRequiredSignatories();

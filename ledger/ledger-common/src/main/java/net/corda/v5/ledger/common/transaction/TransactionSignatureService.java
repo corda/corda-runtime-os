@@ -16,7 +16,7 @@ import java.util.List;
 public interface TransactionSignatureService {
 
     /**
-     * Signs a transaction id with all the available keys.
+     * Signs a transaction ID with all the available keys.
      *
      * @param transaction The transaction to be signed.
      * @param publicKeys Public keys that correspond to the private keys which should be attempted to sign with.

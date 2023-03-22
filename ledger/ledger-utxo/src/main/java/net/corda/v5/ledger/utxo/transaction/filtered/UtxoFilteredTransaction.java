@@ -18,10 +18,10 @@ import java.security.PublicKey;
 /**
  * Defines a filtered UTXO transaction.
  * <p>
- * This wraps a signed transaction that has been filtered using merkle proofs. This means that we can still calculate
+ * This wraps a signed transaction that has been filtered using Merkle proofs. This means that we can still calculate
  * and verify the transaction ID as a Merkle hash, but do not have access to all data in the original transaction.
  * <p>
- * For the list based data properties, there are three possibilities:
+ * For the list-based data properties, there are three possibilities:
  * - The whole entry is filtered out - no further information about this data is available.
  * This will be signified by returning an object implementing {@link UtxoFilteredData.Removed}.
  * - Only the number of original entries is revealed, but not the actual data. In this case,
@@ -30,7 +30,7 @@ import java.security.PublicKey;
  * {@link UtxoFilteredData.Audit} is returned.
  * <p>
  * There are a few special cases:
- * - {@link #getId()} and {@link #getMetadata()} cannot be filtered and are always returned
+ * - {@link #getId()} and {@link #getMetadata()} cannot be filtered and are always returned.
  * - {@link #getNotary()} and {@link #getTimeWindow()} are always unique - they are either revealed,
  * or the filtered transaction will return null when accessing them.
  */
