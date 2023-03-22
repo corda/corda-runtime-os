@@ -11,6 +11,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
@@ -98,10 +99,19 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
                 findNotaryVNodeName()
             ))
 
+            // TODO Needs reviewing
+            val signatoryKey = stx.signatories.single()
+            val signature = signatures.single()
+            val algo = signature.by.algorithm
+            val signatoryKeyId = digestService.hash(signatoryKey.encoded, DigestAlgorithmName(algo))
+            if (signatoryKeyId != signature.by) {
+                throw IllegalStateException("Signatory key id doesn't match received signature key id")
+            }
+
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
             signatures.forEach {
-                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(it.by))) {
+                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(signatoryKey))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }

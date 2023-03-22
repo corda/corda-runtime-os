@@ -29,8 +29,8 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -149,7 +149,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+        whenever(transactionSignatureService.verifySignature(any(), any(), any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -241,7 +241,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary), eq(publicKeyNotary))).thenThrow(
             CryptoSignatureException("Verifying notary signature failed!!")
         )
 
@@ -430,7 +430,6 @@ class UtxoReceiveFinalityFlowV1Test {
         val flow = UtxoReceiveFinalityFlowV1(session, validator)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
-        flow.transactionSignatureService = transactionSignatureService
         flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
         flow.visibilityChecker = visibilityChecker

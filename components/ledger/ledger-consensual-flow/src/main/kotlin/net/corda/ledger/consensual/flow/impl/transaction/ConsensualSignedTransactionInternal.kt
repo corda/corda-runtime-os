@@ -52,4 +52,6 @@ interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
      */
     @Suspendable
     fun verifySignatures()
+
+    fun verifySignature(signature: DigitalSignatureAndMetadata)
 }

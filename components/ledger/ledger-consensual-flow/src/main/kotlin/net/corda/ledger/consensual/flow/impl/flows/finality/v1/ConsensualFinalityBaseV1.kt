@@ -2,11 +2,10 @@ package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
-import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -15,6 +14,7 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.slf4j.Logger
 
@@ -36,7 +36,7 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
         sessionToNotify: FlowSession? = null
     ) {
         try {
-            transactionSignatureService.verifySignature(transaction, signature)
+            transaction.verifySignature(signature)
             log.debug { "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id" }
         } catch (e: Exception) {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +

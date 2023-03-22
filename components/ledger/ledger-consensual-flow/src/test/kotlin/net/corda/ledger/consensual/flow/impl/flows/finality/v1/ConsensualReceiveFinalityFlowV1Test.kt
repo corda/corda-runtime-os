@@ -117,7 +117,7 @@ class ConsensualReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+        whenever(transactionSignatureService.verifySignature(any(), any(), any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callReceiveFinalityFlow() }
