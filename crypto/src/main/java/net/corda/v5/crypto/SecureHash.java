@@ -18,13 +18,6 @@ public interface SecureHash {
     String getAlgorithm();
 
     /**
-     * The result bytes of the hashing operation with the specified digest algorithm. The specified digest algorithm
-     * can be acquired through {@link SecureHash#getAlgorithm()}
-     */
-    @NotNull
-    byte[] getBytes();
-
-    /**
      * Returns hexadecimal representation of the hash value.
      */
     @NotNull
