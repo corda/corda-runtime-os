@@ -30,11 +30,15 @@ fun generateFlowId(): String {
  * Outbound records should be directed to the p2p out topic.
  * @return the output topic based on [messageDirection].
  */
-fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
+fun getSessionEventOutputTopic(messageDirection: MessageDirection, sessionEvent: SessionEvent): String {
     return if (messageDirection == MessageDirection.INBOUND) {
         Schemas.Flow.FLOW_EVENT_TOPIC
     } else {
-        Schemas.P2P.P2P_OUT_TOPIC
+        if (sessionEvent.isInteropEvent()) {
+            Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
+        } else {
+            Schemas.P2P.P2P_OUT_TOPIC
+        }
     }
 }
 
@@ -76,3 +80,11 @@ fun generateAppMessage(
     return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
 }
 
+/**
+ * Returns true if a session event is an interop event. This is currently
+ * signaled by the presence of the interop suffix to the session ID.
+ * @return True if the event is an interop event, false otherwise.
+ */
+fun SessionEvent.isInteropEvent(): Boolean {
+    return this.sessionId.contains("INTEROP")
+}
