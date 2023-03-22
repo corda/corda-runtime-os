@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
+import net.corda.messaging.interop.FacadeInvocation
 import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -99,7 +100,13 @@ class FlowSessionImpl(
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
         setSessionConfirmed()
-        return deserializeReceivedPayload(received, receiveType)
+        val response = deserializeReceivedPayload(received, receiveType)
+        if (getSessionId().contains("-INTEROP")) {
+            if (response is FacadeInvocation) {
+                log.info("[CORE-10465] Got response from flow mapper message processor! Payload: ${response.payload}")
+            }
+        }
+        return response
     }
 
     @Suspendable
