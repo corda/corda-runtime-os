@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.SerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
+import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
@@ -54,13 +55,13 @@ class DefaultKryoCustomizer {
                 // Needed because of https://github.com/EsotericSoftware/kryo/issues/864
                 setOptimizedGenerics(false)
 
-                val defaultFactory = SerializerFactory.FieldSerializerFactory()
+                val defaultFactoryConfig = FieldSerializer.FieldSerializerConfig()
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
-                defaultFactory.config.extendedFieldNames = true
+                defaultFactoryConfig.extendedFieldNames = true
                 // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
                 // their parents after deserialization.
-                defaultFactory.config.ignoreSyntheticFields = false
-                kryo.setDefaultSerializer(defaultFactory)
+                defaultFactoryConfig.ignoreSyntheticFields = false
+                kryo.setDefaultSerializer(SerializerFactory.FieldSerializerFactory(defaultFactoryConfig))
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
@@ -92,15 +93,13 @@ class DefaultKryoCustomizer {
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
-                addDefaultSerializer(Iterator::class.java, object: SerializerFactory<IteratorSerializer> {
+                addDefaultSerializer(Iterator::class.java, object: BaseSerializerFactory<IteratorSerializer> {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) =
                         IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
-                    override fun isSupported(type: Class<*>) = type == Iterator::class.java
                 })
 
-                addDefaultSerializer(Throwable::class.java, object: SerializerFactory<ThrowableSerializer<*>> {
+                addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>> {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
-                    override fun isSupported(type: Class<*>) = type == Throwable::class.java
                 })
 
                 //register loggers using an int ID to reduce information saved in kryo
