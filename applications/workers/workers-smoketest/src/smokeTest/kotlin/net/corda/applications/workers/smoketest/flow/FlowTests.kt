@@ -440,6 +440,19 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
     }
 
+    @Test
+    fun `CPI metadata is available in a flow`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "get_cpi_metadata"
+            data = emptyMap()
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        assertThat(result.flowResult).contains(applicationCpiName)
+    }
+
     private fun persistDog(id: UUID): FlowStatus {
         val requestBody = RpcSmokeTestInput().apply {
             command = "persistence_persist"

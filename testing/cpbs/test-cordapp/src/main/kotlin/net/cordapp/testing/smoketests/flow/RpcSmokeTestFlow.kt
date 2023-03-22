@@ -64,7 +64,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
-        "json_serialization" to this::jsonSerialization
+        "json_serialization" to this::jsonSerialization,
+        "get_cpi_metadata" to { getCpiMetadata() }
     )
 
     @CordaInject
@@ -439,6 +440,16 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         checkNotNull(memberInfo) { IllegalStateException("Failed to find MemberInfo for $memberX500Name") }
 
         return memberInfo.name.toString()
+    }
+
+    @Suspendable
+    private fun getCpiMetadata(): String {
+        return """
+            cpi name: ${flowEngine.flowContextProperties["corda.cpiName"]}
+            cpi version: ${flowEngine.flowContextProperties["corda.cpiVersion"]}
+            cpi signer summary hash: ${flowEngine.flowContextProperties["corda.cpiSignerSummaryHash"]}
+            cpi file checksum: ${flowEngine.flowContextProperties["corda.cpiFileChecksum"]}
+        """.trimIndent()
     }
 
     private fun RpcSmokeTestInput.getValue(key: String): String {
