@@ -49,7 +49,7 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
     ): FiberFuture {
         val fiber = CordaMetrics.Metric.FlowFiberDeserializationTime.builder()
             .forVirtualNode(flowFiberExecutionContext.flowCheckpoint.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowId, flowFiberExecutionContext.flowCheckpoint.flowId)
+            .withTag(CordaMetrics.Tag.FlowClass, flowFiberExecutionContext.flowCheckpoint.flowStartContext.flowClassName)
             .build()
             .recordCallable {
                 flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(

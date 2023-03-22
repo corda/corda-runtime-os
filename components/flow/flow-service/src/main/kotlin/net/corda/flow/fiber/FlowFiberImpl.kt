@@ -136,7 +136,7 @@ class FlowFiberImpl(
             log.trace { "Parking..." }
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
                 .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
-                .withTag(CordaMetrics.Tag.FlowId, getExecutionContext().flowCheckpoint.flowId)
+                .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
                 .build()
                 .recordCallable {
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
