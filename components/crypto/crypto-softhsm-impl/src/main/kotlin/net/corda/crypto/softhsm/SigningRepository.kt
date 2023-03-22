@@ -1,27 +1,43 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.softhsm
 
-import net.corda.crypto.core.ShortHash
-import net.corda.lifecycle.Lifecycle
-import net.corda.v5.crypto.SecureHash
 import java.security.PublicKey
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.v5.crypto.SecureHash
+import java.io.Closeable
 
-interface SigningKeyStore : Lifecycle {
+/**
+ * Crypto JPA repository
+ *
+ * See https://thorben-janssen.com/implementing-the-repository-pattern-with-jpa-and-hibernate/
+ */
+interface SigningRepository : Closeable {
+    /**
+     * Saving a new key information for the tenant associated with this repository instance.
+     *
+     * @throws [IllegalStateException] if the key already exists.
+     */
+    fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo
+
     /**
      * Saving a new key information.
      *
      * @throws [IllegalStateException] if the key already exists.
      */
-    fun save(tenantId: String, context: SigningKeySaveContext)
+    fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo
 
     /**
      * Find a key record by its alias.
      */
-    fun find(tenantId: String, alias: String): SigningCachedKey?
+    fun findKey(alias: String): SigningKeyInfo?
 
     /**
      * Find a key record by the public key.
      */
-    fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey?
+    fun findKey(publicKey: PublicKey): SigningKeyInfo?
 
     /**
      * Returns list of keys satisfying the filter condition. All filter values are combined as AND.
@@ -39,31 +55,26 @@ interface SigningKeyStore : Lifecycle {
      * createdAfter (specifies inclusive time after which a key was created),
      * createdBefore (specifies inclusive time before which a key was created).
      */
-    fun lookup(
-        tenantId: String,
+    fun query(
         skip: Int,
         take: Int,
         orderBy: SigningKeyOrderBy,
-        filter: Map<String, String>
-    ): Collection<SigningCachedKey>
+        filter: Map<String, String>,
+    ): Collection<SigningKeyInfo>
 
     /**
      * Looks for keys by key ids.
      *
      * @param keyIds Key ids to look keys for.
      */
-    fun lookupByIds(
-        tenantId: String,
-        keyIds: List<ShortHash>
-    ): Collection<SigningCachedKey>
+    fun lookupByPublicKeyShortHashes(keyIds: Set<ShortHash>): Collection<SigningKeyInfo>
 
     /**
      * Looks for keys by full key ids.
      *
      * @param fullKeyIds Key ids to look keys for.
      */
-    fun lookupByFullIds(
-        tenantId: String,
-        fullKeyIds: List<SecureHash>
-    ): Collection<SigningCachedKey>
+    fun lookupByPublicKeyHashes(fullKeyIds: Set<SecureHash>): Collection<SigningKeyInfo>
+
+
 }

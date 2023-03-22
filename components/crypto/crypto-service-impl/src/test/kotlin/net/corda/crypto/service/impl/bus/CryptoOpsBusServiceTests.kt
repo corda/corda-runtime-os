@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.component.test.utils.reportDownComponents
-import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -47,18 +46,6 @@ class CryptoOpsBusServiceTests {
         component = CryptoOpsBusServiceImpl(
             factory.coordinatorFactory,
             subscriptionFactory,
-            SigningServiceFactoryImpl(
-                factory.coordinatorFactory,
-                factory.schemeMetadata,
-                factory.signingKeyStore,
-                factory.cryptoServiceFactory,
-                factory.platformDigest
-            ).also {
-                it.start()
-                eventually {
-                    assertTrue(it.isRunning)
-                }
-            },
             factory.configurationReadService
         )
     }

@@ -1,5 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.crypto.core.CryptoTenants
 import java.time.Instant
 import javax.persistence.EntityManager
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
@@ -13,7 +15,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 
-class V1HSMStoreTest {
+class HSMRepositoryImplTest {
 
     @Test
     fun `findTenantAssociation returns null when there are no results`() {
@@ -28,13 +30,14 @@ class V1HSMStoreTest {
                 }
             }
         }
-        val hsmStore = V1HSMStore(
+        val hsmRepository = HSMRepositoryImpl(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
+            CRYPTO_TENANT_ID
         )
 
-        val test = hsmStore.findTenantAssociation("tenant", "category")
+        val test = hsmRepository.findTenantAssociation("tenant", "category")
         assertThat(test).isNull()
         assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
         assertThat(categoryCap.allValues.single()).isEqualTo("category")
@@ -57,10 +60,11 @@ class V1HSMStoreTest {
                 }
             }
         }
-        val hsmStore = V1HSMStore(
+        val hsmStore = HSMRepositoryImpl(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
+            CryptoTenants.CRYPTO
         )
 
         val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)

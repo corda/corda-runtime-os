@@ -16,7 +16,6 @@ import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
@@ -96,7 +95,6 @@ class CryptoOpsBusProcessorTests {
 
     private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
-    private lateinit var signingFactory: SigningServiceFactory
     private lateinit var processor: CryptoOpsBusProcessor
 
 
@@ -330,7 +328,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(context.items[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(context.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertThat(factory.cryptoRepository.keys).containsKey(masterKeyAlias)
+        assertThat(factory.cryptoWrappingRepository.keys).containsKey(masterKeyAlias)
     }
 
     @Test

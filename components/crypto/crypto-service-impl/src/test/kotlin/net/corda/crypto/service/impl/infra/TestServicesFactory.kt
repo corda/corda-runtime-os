@@ -20,10 +20,8 @@ import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
-import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SoftCryptoService
@@ -159,7 +157,7 @@ class TestServicesFactory {
         }
     }
 
-    val cryptoRepository = TestCryptoRepository()
+    val cryptoWrappingRepository = TestWrappingRepository()
 
     val signingService: SigningService by lazy {
         SigningServiceImpl(
@@ -169,22 +167,7 @@ class TestServicesFactory {
             platformDigest
         )
     }
-
-    val signingServiceFactory: SigningServiceFactory by lazy {
-        SigningServiceFactoryImpl(
-            coordinatorFactory,
-            schemeMetadata,
-            signingKeyStore,
-            cryptoServiceFactory,
-            platformDigest
-        ).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
-
+    
     val hsmService: HSMServiceImpl by lazy {
         HSMServiceImpl(
             coordinatorFactory,
@@ -204,7 +187,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
-                cryptoRepository = cryptoRepository,
+                wrappingRepository = cryptoWrappingRepository,
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
                 digestService = PlatformDigestServiceImpl(schemeMetadata),

@@ -15,13 +15,13 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -57,7 +57,7 @@ class SigningServiceGeneralTests {
     @Test
     fun `Should throw original exception failing signing`() {
         val exception = RuntimeException("")
-        val store = mock<SigningKeyStore> {
+        val store = mock<SigningRepository> {
             on { find(any(), any<PublicKey>()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
@@ -160,7 +160,7 @@ class SigningServiceGeneralTests {
 
     @Test
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
-        val existingKey = SigningCachedKey(
+        val existingKey = SigningKeyInfo(
             id = ShortHash.of("0123456789AB"),
             fullId = parseSecureHash("SHA-256:0123456789ABCDEF"),
             tenantId = UUID.randomUUID().toString(),
@@ -394,4 +394,97 @@ class SigningServiceGeneralTests {
             }
         )
     }
+//
+//    @Test
+//    fun `repository can correctly looks up a signing key by short ids`() {
+//        val hashA = ShortHash.of("0123456789AB")
+//        val hashB = ShortHash.of("123456789ABC")
+//        val keys = setOf(hashA, hashB)
+//        val mockCachedKey = mock<SigningKeyInfo> { on { id } doReturn hashA }
+//        val queryCap = argumentCaptor<Iterable<SigningKeyRe.CacheKey>>()
+//        val cache = mock<Cache<V1SigningKeyStore.CacheKey, SigningKeyInfo>> {
+//            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
+//                V1SigningKeyStore.CacheKey(
+//                    "tenant",
+//                    hashA
+//                ) to mockCachedKey
+//            )
+//        }
+//        val tenantCap = argumentCaptor<String>()
+//        val keyIdsCap = argumentCaptor<List<String>>()
+//        val em = mock<EntityManager> {
+//            on { createQuery(any(), eq(SigningKeyEntity::class.java)) } doAnswer {
+//                mock {
+//                    on { setParameter(eq("tenantId"), tenantCap.capture()) } doReturn it
+//                    on { setParameter(eq("keyIds"), keyIdsCap.capture()) } doReturn it
+//                    on { resultList } doReturn listOf(signingKey)
+//                }
+//            }
+//        }
+//
+//        val repo = V1CryptoRepositoryImpl(
+//            mock { on { createEntityManager() } doReturn em },
+//            cache,
+//            mock { on { encodeAsByteArray(any()) } doReturn "2".toByteArray() },
+//            mock { on { hash(any<ByteArray>(), any()) } doReturn hash },
+//            mock(),
+//        )
+//
+//        repo.lookupSigningKeysByPublicKeyShortHash("tenant", keys)
+//
+//        val cacheKeys = setOf(V1SigningKeyStore.CacheKey("tenant", hashA), V1SigningKeyStore.CacheKey("tenant", hashB))
+//        queryCap.allValues.single().forEach {
+//            assertThat(it in cacheKeys)
+//        }
+//        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
+//        assertThat(keyIdsCap.allValues.single()).isEqualTo(listOf(hashB.value))
+//    }
+
+//    @Test
+//    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
+//        val hashA = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "0123456789AB".toByteArray())
+//        val hashB = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "123456789ABC".toByteArray())
+//        val shortA = ShortHash.of(hashA)
+//        val shortB = ShortHash.of(hashB)
+//        val keys = setOf(hashA, hashB)
+//        val queryCap = argumentCaptor<Iterable<V1SigningKeyStore.CacheKey>>()
+//        val mockCachedKey = mock<SigningKeyInfo> { on { fullId } doReturn hashA }
+//        val cache = mock<Cache<V1SigningKeyStore.CacheKey, SigningKeyInfo>> {
+//            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
+//                V1SigningKeyStore.CacheKey(
+//                    "tenant",
+//                    shortA
+//                ) to mockCachedKey
+//            )
+//        }
+//        val tenantCap = argumentCaptor<String>()
+//        val fullIdsCap = argumentCaptor<List<String>>()
+//        val em = mock<EntityManager> {
+//            on { createQuery(any(), eq(SigningKeyEntity::class.java)) } doAnswer {
+//                mock {
+//                    on { setParameter(eq("tenantId"), tenantCap.capture()) } doReturn it
+//                    on { setParameter(eq("fullKeyIds"), fullIdsCap.capture()) } doReturn it
+//                    on { resultList } doReturn listOf(signingKey)
+//                }
+//            }
+//        }
+//
+//        val repo = V1CryptoRepositoryImpl(
+//            mock { on { createEntityManager() } doReturn em },
+//            cache,
+//            mock { on { encodeAsByteArray(any()) } doReturn "2".toByteArray() },
+//            mock { on { hash(any<ByteArray>(), any()) } doReturn hash },
+//            mock(),
+//        )
+//
+//        repo.lookupSigningKeysByPublicKeyHashes("tenant", keys)
+//
+//        val cacheKeys = setOf(V1SigningKeyStore.CacheKey("tenant", shortA), V1SigningKeyStore.CacheKey("tenant", shortB))
+//        queryCap.allValues.single().forEach {
+//            assertThat(it in cacheKeys)
+//        }
+//        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
+//        assertThat(fullIdsCap.allValues.single()).isEqualTo(listOf(hashB.toString()))
+//    }
+
 }

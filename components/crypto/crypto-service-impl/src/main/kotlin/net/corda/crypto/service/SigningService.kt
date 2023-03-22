@@ -7,6 +7,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.crypto.persistence.SigningKeyInfo
 import java.security.KeyPair
 import java.security.PublicKey
 
@@ -48,12 +49,12 @@ interface SigningService {
      * createdAfter (specifies inclusive time after which a key was created),
      * createdBefore (specifies inclusive time before which a key was created).
      */
-    fun lookup(
+    fun querySigningKeys(
         tenantId: String,
         skip: Int,
         take: Int,
         orderBy: KeyOrderBy,
-        filter: Map<String, String>
+        filter: Map<String, String>,
     ): Collection<SigningKeyInfo>
 
     /**
@@ -62,9 +63,9 @@ interface SigningService {
      * @param tenantId The tenant's id which the keys belong to.
      * @param keyIds Key ids to look keys for.
      */
-    fun lookupByIds(
+    fun lookupSigningKeysByPublicKeyShortHash(
         tenantId: String,
-        keyIds: List<ShortHash>
+        keyIds: List<ShortHash>,
     ): Collection<SigningKeyInfo>
 
     /**
@@ -73,9 +74,9 @@ interface SigningService {
      * @param tenantId The tenant's id which the keys belong to.
      * @param fullKeyIds Key ids to look keys for.
      */
-    fun lookupByFullIds(
+    fun lookupSigingKeysByPublicKeyHashes(
         tenantId: String,
-        fullKeyIds: List<SecureHash>
+        fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo>
 
     /**

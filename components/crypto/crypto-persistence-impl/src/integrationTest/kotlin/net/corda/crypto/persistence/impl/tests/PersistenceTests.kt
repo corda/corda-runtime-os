@@ -9,9 +9,12 @@ import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.MasterKeyPolicy
@@ -30,10 +33,9 @@ import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
@@ -46,9 +48,12 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
+import net.corda.crypto.softhsm.SigningRepository
+import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -101,10 +106,16 @@ class PersistenceTests {
         lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
         @InjectService(timeout = 5000)
-        lateinit var hsmStore: HSMStore
+        lateinit var keyEncodingService: KeyEncodingService
 
         @InjectService(timeout = 5000)
-        lateinit var signingKeyStore: SigningKeyStore
+        lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var digestService: PlatformDigestService
+
+        @InjectService(timeout = 5000)
+        lateinit var hsmStore: HSMStore
 
         private lateinit var publisher: Publisher
 
@@ -144,7 +155,6 @@ class PersistenceTests {
                     DbConnectionManager::class.java,
                     VirtualNodeInfoReadService::class.java,
                     HSMStore::class.java,
-                    SigningKeyStore::class.java,
                 )
             )
             tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
@@ -280,7 +290,7 @@ class PersistenceTests {
         private fun assertSigningCachedKey(
             tenantId: String,
             expected: SigningPublicKeySaveContext,
-            actual: SigningCachedKey?
+            actual: SigningKeyInfo?,
         ) {
             assertNotNull(actual)
             assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
@@ -304,7 +314,7 @@ class PersistenceTests {
         private fun assertSigningCachedKey(
             tenantId: String,
             expected: SigningWrappedKeySaveContext,
-            actual: SigningCachedKey?
+            actual: SigningKeyInfo?,
         ) {
             assertNotNull(actual)
             assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
@@ -614,15 +624,25 @@ class PersistenceTests {
         val hsmId = UUID.randomUUID().toString()
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-        signingKeyStore.save(tenantId, p1)
-        assertThrows(PersistenceException::class.java) {
-            signingKeyStore.save(tenantId, p1)
-        }
-        signingKeyStore.save(tenantId, w1)
-        assertThrows(PersistenceException::class.java) {
-            signingKeyStore.save(tenantId, w1)
+        makeSigningRepo(tenantId).use {
+            it.savePublicKey(p1)
+            assertThrows(PersistenceException::class.java) {
+                it.savePublicKey(p1)
+            }
+            it.savePrivateKey(w1)
+            assertThrows(PersistenceException::class.java) {
+                it.savePrivateKey(w1)
+            }
         }
     }
+
+    private fun makeSigningRepo(tenantId: String) = SigningRepositoryImpl(
+        getEntityManagerFactory(tenantId, dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry),
+        tenantId,
+        keyEncodingService,
+        digestService,
+        layeredPropertyMapFactory
+    )
 
     @Test
     fun `Should save same public keys for different tenants and lookup by id for each tenant`() {
@@ -631,303 +651,306 @@ class PersistenceTests {
         val tenantId2 = CryptoTenants.REST
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-        signingKeyStore.save(tenantId1, p1)
-        signingKeyStore.save(tenantId2, p1)
-        signingKeyStore.save(tenantId1, w1)
-        signingKeyStore.save(tenantId2, w1)
-        val keyP11 =
-            signingKeyStore.lookupByIds(tenantId1, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
-        assertEquals(1, keyP11.size)
-        assertSigningCachedKey(tenantId1, p1, keyP11.first())
-        val keyP12 =
-            signingKeyStore.lookupByIds(tenantId2, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
-        assertEquals(1, keyP12.size)
-        assertSigningCachedKey(tenantId2, p1, keyP12.first())
-        val keyW11 =
-            signingKeyStore.lookupByIds(tenantId1, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
-        assertEquals(1, keyW11.size)
-        assertSigningCachedKey(tenantId1, w1, keyW11.first())
-        val keyW12 =
-            signingKeyStore.lookupByIds(tenantId2, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
-        assertEquals(1, keyW12.size)
-        assertSigningCachedKey(tenantId2, w1, keyW12.first())
-    }
-
-    @ParameterizedTest
-    @MethodSource("signingTenants")
-    fun `Should find existing signing keys by alias`(tenantId: String) {
-        val hsmId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        signingKeyStore.save(tenantId, p1)
-        signingKeyStore.save(tenantId, p2)
-        assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
-        assertSigningCachedKey(tenantId, p1, signingKeyStore.find(tenantId, p1.alias!!))
-        assertSigningCachedKey(tenantId, p2, signingKeyStore.find(tenantId, p2.alias!!))
-        assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
-    }
-
-    @ParameterizedTest
-    @MethodSource("signingTenants")
-    fun `Should looup existing signing keys by ids`(tenantId: String) {
-        val hsmId = UUID.randomUUID().toString()
-        val p0 = generateKeyPair(EDDSA_ED25519_CODE_NAME).public
-        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
-        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
-        signingKeyStore.save(tenantId, p1)
-        signingKeyStore.save(tenantId, p2)
-        signingKeyStore.save(tenantId, p3)
-        signingKeyStore.save(tenantId, p4)
-        signingKeyStore.save(tenantId, w1)
-        signingKeyStore.save(tenantId, w2)
-        signingKeyStore.save(tenantId, w3)
-        val keys = signingKeyStore.lookupByIds(
-            tenantId,
-            listOf(
-                ShortHash.of(p1.key.publicKey.publicKeyId()),
-                ShortHash.of(p0.publicKeyId()),
-                ShortHash.of(p3.key.publicKey.publicKeyId()),
-                ShortHash.of(w2.key.publicKey.publicKeyId())
-            )
-        )
-        assertEquals(3, keys.size)
-        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.id() })
-        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.id() })
-        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.id() })
-    }
-
-    @ParameterizedTest
-    @MethodSource("signingTenants")
-    fun `Should find existing signing keys by public keys`(tenantId: String) {
-        val hsmId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-        signingKeyStore.save(tenantId, p1)
-        signingKeyStore.save(tenantId, w1)
-        assertNull(signingKeyStore.find(tenantId, generateKeyPair(EDDSA_ED25519_CODE_NAME).public))
-        assertSigningCachedKey(tenantId, p1, signingKeyStore.find(tenantId, p1.key.publicKey))
-        assertSigningCachedKey(tenantId, w1, signingKeyStore.find(tenantId, w1.key.publicKey))
-    }
-
-    /**
-     * The test does post lookup filtering to ensure that only keys generated by this test are considered.
-     */
-    @ParameterizedTest
-    @MethodSource("signingTenants")
-    fun `Should do various lookups for signing keys`(tenantId: String) {
-        val hsmId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
-        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
-        val thisTestKeys = setOf(
-            p1.key.publicKey.publicKeyId(),
-            p2.key.publicKey.publicKeyId(),
-            p3.key.publicKey.publicKeyId(),
-            p4.key.publicKey.publicKeyId(),
-            w1.key.publicKey.publicKeyId(),
-            w2.key.publicKey.publicKeyId(),
-            w3.key.publicKey.publicKeyId()
-        )
-        signingKeyStore.save(tenantId, p1)
-        signingKeyStore.save(tenantId, p2)
-        signingKeyStore.save(tenantId, p3)
-        signingKeyStore.save(tenantId, p4)
-        signingKeyStore.save(tenantId, w1)
-        signingKeyStore.save(tenantId, w2)
-        signingKeyStore.save(tenantId, w3)
-        val result1 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 10,
-            SigningKeyOrderBy.ALIAS,
-            mapOf(
-                CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
-            )
-        ).filter { thisTestKeys.contains(it.id.value) }
-        assertEquals(2, result1.size)
-        listOf(p1, p4).sortedBy { it.alias }.forEachIndexed { i, o ->
-            assertSigningCachedKey(tenantId, o, result1.elementAt(i))
-        }
-        val result2 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 10,
-            SigningKeyOrderBy.ALIAS_DESC,
-            mapOf(
-                CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
-            )
-        ).filter { thisTestKeys.contains(it.id.value) }
-        assertEquals(2, result2.size)
-        listOf(p1, p4).sortedByDescending { it.alias }.forEachIndexed { i, o ->
-            assertSigningCachedKey(tenantId, o, result2.elementAt(i))
-        }
-        val result3 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 10,
-            SigningKeyOrderBy.ALIAS_DESC,
-            mapOf(
-                CATEGORY_FILTER to CryptoConsts.Categories.CI,
-                SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
-            )
-        ).filter { thisTestKeys.contains(it.id.value) }
-        assertEquals(1, result3.size)
-        assertSigningCachedKey(tenantId, w1, result3.first())
-        val result4 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 10,
-            SigningKeyOrderBy.NONE,
-            mapOf(
-                ALIAS_FILTER to p2.alias!!,
-                SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
-                CATEGORY_FILTER to CryptoConsts.Categories.TLS
-            )
-        ).filter { thisTestKeys.contains(it.id.value) }
-        assertEquals(1, result4.size)
-        assertSigningCachedKey(tenantId, p2, result4.first())
-        val result5 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 10,
-            SigningKeyOrderBy.CATEGORY_DESC,
-            mapOf(
-                MASTER_KEY_ALIAS_FILTER to w3.masterKeyAlias!!,
-                SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
-                CATEGORY_FILTER to CryptoConsts.Categories.CI,
-                EXTERNAL_ID_FILTER to w3.externalId!!
-            )
-        ).filter { thisTestKeys.contains(it.id.value) }
-        assertEquals(1, result5.size)
-        assertSigningCachedKey(tenantId, w3, result5.first())
-        val result6 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 20,
-            SigningKeyOrderBy.ID,
-            mapOf(
-                CREATED_AFTER_FILTER to Instant.now().minusSeconds(300).toString(),
-                CREATED_BEFORE_FILTER to Instant.now().minusSeconds(-1).toString()
-            )
-        ).filter { thisTestKeys.contains(it.id.value) }
-        assertEquals(7, result6.size)
-        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
-            when (it) {
-                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
-                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
-                else -> throw IllegalArgumentException()
-            }
-        }.forEachIndexed { i, o ->
-            when (o) {
-                is SigningPublicKeySaveContext -> assertSigningCachedKey(tenantId, o, result6.elementAt(i))
-                is SigningWrappedKeySaveContext -> assertSigningCachedKey(tenantId, o, result6.elementAt(i))
-                else -> throw IllegalArgumentException()
+        makeSigningRepo(tenantId1).use { r1 ->
+            makeSigningRepo(tenantId2).use { r2 ->
+                r1.savePublicKey(p1)
+                r2.savePublicKey(p1)
+                r1.savePrivateKey(w1)
+                r2.savePrivateKey(w1)
+                val keyP11 =
+                    r1.lookupByPublicKeyShortHashes(setOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
+                assertEquals(1, keyP11.size)
+                assertSigningCachedKey(tenantId1, p1, keyP11.first())
+                val keyP12 = r2.lookupByPublicKeyShortHashes(setOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
+                assertEquals(1, keyP12.size)
+                assertSigningCachedKey(tenantId2, p1, keyP12.first())
+                val keyW11 =
+                    r1.lookupByPublicKeyShortHashes(setOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
+                assertEquals(1, keyW11.size)
+                assertSigningCachedKey(tenantId1, w1, keyW11.first())
+                val keyW12 =
+                    r2.lookupByPublicKeyShortHashes(setOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
+                assertEquals(1, keyW12.size)
+                assertSigningCachedKey(tenantId2, w1, keyW12.first())
             }
         }
     }
 
-    @Test
-    fun `Key lookup works for both short and full key ids`() {
-        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
-        val hsmId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        signingKeyStore.save(tenantId, p1)
-        val keyId = p1.key.publicKey.publicKeyId()
-        val fullKeyId = p1.key.publicKey.fullId()
-        val keyLookedUpByKeyId =
-            signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
-        val keyLookedUpByFullKeyId =
-            signingKeyStore.lookupByFullIds(tenantId, listOf(parseSecureHash(fullKeyId)))
-        assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
-    }
+//    @ParameterizedTest
+//    @MethodSource("signingTenants")
+//    fun `Should find existing signing keys by alias`(tenantId: String) {
+//        val hsmId = UUID.randomUUID().toString()
+//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+//        signingKeyStore.save(tenantId, p1)
+//        signingKeyStore.save(tenantId, p2)
+//        assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
+//        assertSigningCachedKey(tenantId, p1, signingKeyStore.find(tenantId, p1.alias!!))
+//        assertSigningCachedKey(tenantId, p2, signingKeyStore.find(tenantId, p2.alias!!))
+//        assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
+//    }
+//
+//    @ParameterizedTest
+//    @MethodSource("signingTenants")
+//    fun `Should looup existing signing keys by ids`(tenantId: String) {
+//        val hsmId = UUID.randomUUID().toString()
+//        val p0 = generateKeyPair(EDDSA_ED25519_CODE_NAME).public
+//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+//        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
+//        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+//        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+//        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+//        signingKeyStore.save(tenantId, p1)
+//        signingKeyStore.save(tenantId, p2)
+//        signingKeyStore.save(tenantId, p3)
+//        signingKeyStore.save(tenantId, p4)
+//        signingKeyStore.save(tenantId, w1)
+//        signingKeyStore.save(tenantId, w2)
+//        signingKeyStore.save(tenantId, w3)
+//        val keys = signingKeyStore.lookupByIds(
+//            tenantId,
+//            listOf(
+//                ShortHash.of(p1.key.publicKey.publicKeyId()),
+//                ShortHash.of(p0.publicKeyId()),
+//                ShortHash.of(p3.key.publicKey.publicKeyId()),
+//                ShortHash.of(w2.key.publicKey.publicKeyId())
+//            )
+//        )
+//        assertEquals(3, keys.size)
+//        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.id() })
+//        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.id() })
+//        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.id() })
+//    }
+//
+//    @ParameterizedTest
+//    @MethodSource("signingTenants")
+//    fun `Should find existing signing keys by public keys`(tenantId: String) {
+//        val hsmId = UUID.randomUUID().toString()
+//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+//        signingKeyStore.save(tenantId, p1)
+//        signingKeyStore.save(tenantId, w1)
+//        assertNull(signingKeyStore.find(tenantId, generateKeyPair(EDDSA_ED25519_CODE_NAME).public))
+//        assertSigningCachedKey(tenantId, p1, signingKeyStore.find(tenantId, p1.key.publicKey))
+//        assertSigningCachedKey(tenantId, w1, signingKeyStore.find(tenantId, w1.key.publicKey))
+//    }
+//
+//    /**
+//     * The test does post lookup filtering to ensure that only keys generated by this test are considered.
+//     */
+//    @ParameterizedTest
+//    @MethodSource("signingTenants")
+//    fun `Should do various lookups for signing keys`(tenantId: String) {
+//        val hsmId = UUID.randomUUID().toString()
+//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+//        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
+//        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+//        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+//        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+//        val thisTestKeys = setOf(
+//            p1.key.publicKey.publicKeyId(),
+//            p2.key.publicKey.publicKeyId(),
+//            p3.key.publicKey.publicKeyId(),
+//            p4.key.publicKey.publicKeyId(),
+//            w1.key.publicKey.publicKeyId(),
+//            w2.key.publicKey.publicKeyId(),
+//            w3.key.publicKey.publicKeyId()
+//        )
+//        signingKeyStore.save(tenantId, p1)
+//        signingKeyStore.save(tenantId, p2)
+//        signingKeyStore.save(tenantId, p3)
+//        signingKeyStore.save(tenantId, p4)
+//        signingKeyStore.save(tenantId, w1)
+//        signingKeyStore.save(tenantId, w2)
+//        signingKeyStore.save(tenantId, w3)
+//        val result1 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 10,
+//            SigningKeyOrderBy.ALIAS,
+//            mapOf(
+//                CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
+//            )
+//        ).filter { thisTestKeys.contains(it.id.value) }
+//        assertEquals(2, result1.size)
+//        listOf(p1, p4).sortedBy { it.alias }.forEachIndexed { i, o ->
+//            assertSigningCachedKey(tenantId, o, result1.elementAt(i))
+//        }
+//        val result2 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 10,
+//            SigningKeyOrderBy.ALIAS_DESC,
+//            mapOf(
+//                CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
+//            )
+//        ).filter { thisTestKeys.contains(it.id.value) }
+//        assertEquals(2, result2.size)
+//        listOf(p1, p4).sortedByDescending { it.alias }.forEachIndexed { i, o ->
+//            assertSigningCachedKey(tenantId, o, result2.elementAt(i))
+//        }
+//        val result3 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 10,
+//            SigningKeyOrderBy.ALIAS_DESC,
+//            mapOf(
+//                CATEGORY_FILTER to CryptoConsts.Categories.CI,
+//                SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
+//            )
+//        ).filter { thisTestKeys.contains(it.id.value) }
+//        assertEquals(1, result3.size)
+//        assertSigningCachedKey(tenantId, w1, result3.first())
+//        val result4 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 10,
+//            SigningKeyOrderBy.NONE,
+//            mapOf(
+//                ALIAS_FILTER to p2.alias!!,
+//                SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
+//                CATEGORY_FILTER to CryptoConsts.Categories.TLS
+//            )
+//        ).filter { thisTestKeys.contains(it.id.value) }
+//        assertEquals(1, result4.size)
+//        assertSigningCachedKey(tenantId, p2, result4.first())
+//        val result5 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 10,
+//            SigningKeyOrderBy.CATEGORY_DESC,
+//            mapOf(
+//                MASTER_KEY_ALIAS_FILTER to w3.masterKeyAlias!!,
+//                SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
+//                CATEGORY_FILTER to CryptoConsts.Categories.CI,
+//                EXTERNAL_ID_FILTER to w3.externalId!!
+//            )
+//        ).filter { thisTestKeys.contains(it.id.value) }
+//        assertEquals(1, result5.size)
+//        assertSigningCachedKey(tenantId, w3, result5.first())
+//        val result6 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 20,
+//            SigningKeyOrderBy.ID,
+//            mapOf(
+//                CREATED_AFTER_FILTER to Instant.now().minusSeconds(300).toString(),
+//                CREATED_BEFORE_FILTER to Instant.now().minusSeconds(-1).toString()
+//            )
+//        ).filter { thisTestKeys.contains(it.id.value) }
+//        assertEquals(7, result6.size)
+//        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
+//            when (it) {
+//                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
+//                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
+//                else -> throw IllegalArgumentException()
+//            }
+//        }.forEachIndexed { i, o ->
+//            when (o) {
+//                is SigningPublicKeySaveContext -> assertSigningCachedKey(tenantId, o, result6.elementAt(i))
+//                is SigningWrappedKeySaveContext -> assertSigningCachedKey(tenantId, o, result6.elementAt(i))
+//                else -> throw IllegalArgumentException()
+//            }
+//        }
+//    }
 
-    /**
-     * To ensure test validity the test uses only vnode tenant as its tenant id is unique.
-     */
-    @Test
-    fun `Should do paged lookups for signing keys`() {
-        val hsmId = UUID.randomUUID().toString()
-        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
-        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, X25519_CODE_NAME)
-        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, X25519_CODE_NAME)
-        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
-        val w2 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
-        val w3 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
-        signingKeyStore.save(tenantId, p1)
-        signingKeyStore.save(tenantId, p2)
-        signingKeyStore.save(tenantId, p3)
-        signingKeyStore.save(tenantId, p4)
-        signingKeyStore.save(tenantId, w1)
-        signingKeyStore.save(tenantId, w2)
-        signingKeyStore.save(tenantId, w3)
-        val page1 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 0,
-            take = 4,
-            SigningKeyOrderBy.ID,
-            mapOf(
-                SCHEME_CODE_NAME_FILTER to X25519_CODE_NAME
-            )
-        )
-        assertEquals(4, page1.size)
-        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
-            when (it) {
-                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
-                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
-                else -> throw IllegalArgumentException()
-            }
-        }.drop(0).take(4).forEachIndexed { i, o ->
-            when (o) {
-                is SigningPublicKeySaveContext -> assertSigningCachedKey(tenantId, o, page1.elementAt(i))
-                is SigningWrappedKeySaveContext -> assertSigningCachedKey(tenantId, o, page1.elementAt(i))
-                else -> throw IllegalArgumentException()
-            }
-        }
-        val page2 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 4,
-            take = 4,
-            SigningKeyOrderBy.ID,
-            mapOf(
-                SCHEME_CODE_NAME_FILTER to X25519_CODE_NAME
-            )
-        )
-        assertEquals(3, page2.size)
-        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
-            when (it) {
-                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
-                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
-                else -> throw IllegalArgumentException()
-            }
-        }.drop(4).take(3).forEachIndexed { i, o ->
-            when (o) {
-                is SigningPublicKeySaveContext -> assertSigningCachedKey(tenantId, o, page2.elementAt(i))
-                is SigningWrappedKeySaveContext -> assertSigningCachedKey(tenantId, o, page2.elementAt(i))
-                else -> throw IllegalArgumentException()
-            }
-        }
-        val page3 = signingKeyStore.lookup(
-            tenantId = tenantId,
-            skip = 7,
-            take = 4,
-            SigningKeyOrderBy.ID,
-            mapOf(
-                SCHEME_CODE_NAME_FILTER to X25519_CODE_NAME
-            )
-        )
-        assertEquals(0, page3.size)
-    }
+//    @Test
+//    fun `Key lookup works for both short and full key ids`() {
+//        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
+//        val hsmId = UUID.randomUUID().toString()
+//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+//        signingKeyStore.save(tenantId, p1)
+//        val keyId = p1.key.publicKey.publicKeyId()
+//        val fullKeyId = p1.key.publicKey.fullId()
+//        val keyLookedUpByKeyId =
+//            signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
+//        val keyLookedUpByFullKeyId =
+//            signingKeyStore.lookupByFullIds(tenantId, listOf(parseSecureHash(fullKeyId)))
+//        assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
+//    }
+
+//    /**
+//     * To ensure test validity the test uses only vnode tenant as its tenant id is unique.
+//     */
+//    @Test
+//    fun `Should do paged lookups for signing keys`() {
+//        val hsmId = UUID.randomUUID().toString()
+//        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
+//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
+//        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, X25519_CODE_NAME)
+//        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, X25519_CODE_NAME)
+//        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
+//        val w1 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
+//        val w2 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
+//        val w3 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
+//        signingKeyStore.save(tenantId, p1)
+//        signingKeyStore.save(tenantId, p2)
+//        signingKeyStore.save(tenantId, p3)
+//        signingKeyStore.save(tenantId, p4)
+//        signingKeyStore.save(tenantId, w1)
+//        signingKeyStore.save(tenantId, w2)
+//        signingKeyStore.save(tenantId, w3)
+//        val page1 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 0,
+//            take = 4,
+//            SigningKeyOrderBy.ID,
+//            mapOf(
+//                SCHEME_CODE_NAME_FILTER to X25519_CODE_NAME
+//            )
+//        )
+//        assertEquals(4, page1.size)
+//        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
+//            when (it) {
+//                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
+//                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
+//                else -> throw IllegalArgumentException()
+//            }
+//        }.drop(0).take(4).forEachIndexed { i, o ->
+//            when (o) {
+//                is SigningPublicKeySaveContext -> assertSigningCachedKey(tenantId, o, page1.elementAt(i))
+//                is SigningWrappedKeySaveContext -> assertSigningCachedKey(tenantId, o, page1.elementAt(i))
+//                else -> throw IllegalArgumentException()
+//            }
+//        }
+//        val page2 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 4,
+//            take = 4,
+//            SigningKeyOrderBy.ID,
+//            mapOf(
+//                SCHEME_CODE_NAME_FILTER to X25519_CODE_NAME
+//            )
+//        )
+//        assertEquals(3, page2.size)
+//        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
+//            when (it) {
+//                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
+//                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
+//                else -> throw IllegalArgumentException()
+//            }
+//        }.drop(4).take(3).forEachIndexed { i, o ->
+//            when (o) {
+//                is SigningPublicKeySaveContext -> assertSigningCachedKey(tenantId, o, page2.elementAt(i))
+//                is SigningWrappedKeySaveContext -> assertSigningCachedKey(tenantId, o, page2.elementAt(i))
+//                else -> throw IllegalArgumentException()
+//            }
+//        }
+//        val page3 = signingKeyStore.lookup(
+//            tenantId = tenantId,
+//            skip = 7,
+//            take = 4,
+//            SigningKeyOrderBy.ID,
+//            mapOf(
+//                SCHEME_CODE_NAME_FILTER to X25519_CODE_NAME
+//            )
+//        )
+//        assertEquals(0, page3.size)
+//    }
 }
 
 fun PublicKey.id(): ShortHash =

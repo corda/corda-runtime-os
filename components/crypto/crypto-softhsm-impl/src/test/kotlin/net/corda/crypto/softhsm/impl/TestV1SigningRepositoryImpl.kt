@@ -13,7 +13,7 @@ import org.mockito.kotlin.mock
 import kotlin.test.assertNotNull
 
 
-class TestV1CryptoRepositoryImpl {
+class TestV1SigningRepositoryImpl {
 
     @Test
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
@@ -35,18 +35,14 @@ class TestV1CryptoRepositoryImpl {
             on { find<WrappingKeyEntity>(any(), any()) } doAnswer { stored.first() }
             on { transaction } doReturn mock()
         }
-        val repo = V1CryptoRepositoryImpl(
+        val repo = WrappingRepositoryImpl(
             mock {
                 on { createEntityManager() } doReturn em
-            },
-            mock(),
-            mock(),
-            mock(),
-            mock(),
+            }
         )
         val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf())
-        repo.saveWrappingKey("a", wrappingKeyInfo)
-        val retrievedWrappingKeyInfo = repo.findWrappingKey("a")
+        repo.saveKey("a", wrappingKeyInfo)
+        val retrievedWrappingKeyInfo = repo.findKey("a")
         assertNotNull(retrievedWrappingKeyInfo)
         assertThat(wrappingKeyInfo.encodingVersion).isEqualTo(retrievedWrappingKeyInfo.encodingVersion)
     }

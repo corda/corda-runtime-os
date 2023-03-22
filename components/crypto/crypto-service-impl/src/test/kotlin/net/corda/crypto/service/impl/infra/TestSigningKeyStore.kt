@@ -3,12 +3,11 @@ package net.corda.crypto.service.impl.infra
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
@@ -38,14 +37,14 @@ class TestSigningKeyStore(
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
     private val lock = ReentrantLock()
-    private val keys = mutableMapOf<Pair<String, ShortHash>, SigningCachedKey>()
+    private val keys = mutableMapOf<Pair<String, ShortHash>, SigningKeyInfo>()
 
     override fun save(tenantId: String, context: SigningKeySaveContext) = lock.withLock {
         val now = Instant.now()
         val record = when (context) {
             is SigningPublicKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
-                SigningCachedKey(
+                SigningKeyInfo(
                     id = keyIdFromBytes(encodedKey),
                     fullId = fullKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
@@ -65,7 +64,7 @@ class TestSigningKeyStore(
             }
             is SigningWrappedKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
-                SigningCachedKey(
+                SigningKeyInfo(
                     id = keyIdFromBytes(encodedKey),
                     fullId = fullKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
@@ -90,11 +89,11 @@ class TestSigningKeyStore(
         }
     }
 
-    override fun find(tenantId: String, alias: String): SigningCachedKey? = lock.withLock {
+    override fun find(tenantId: String, alias: String): SigningKeyInfo? = lock.withLock {
         keys.values.firstOrNull { it.tenantId == tenantId && it.alias == alias }
     }
 
-    override fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? = lock.withLock {
+    override fun find(tenantId: String, publicKey: PublicKey): SigningKeyInfo? = lock.withLock {
         keys[Pair(tenantId, keyIdFromKey(publicKey))]
     }
 
@@ -104,21 +103,21 @@ class TestSigningKeyStore(
         skip: Int,
         take: Int,
         orderBy: SigningKeyOrderBy,
-        filter: Map<String, String>
-    ): Collection<SigningCachedKey> = lock.withLock {
+        filter: Map<String, String>,
+    ): Collection<SigningKeyInfo> = lock.withLock {
         val map = SigningKeyFilterMapImpl(LayeredPropertyMapImpl(filter, PropertyConverter(emptyMap())))
         val filtered = keys.values.filter {
-            if(it.tenantId != tenantId) {
+            if (it.tenantId != tenantId) {
                 false
-            } else if(map.category != null && it.category != map.category) {
+            } else if (map.category != null && it.category != map.category) {
                 false
-            } else if(map.schemeCodeName != null && it.schemeCodeName != map.schemeCodeName) {
+            } else if (map.schemeCodeName != null && it.schemeCodeName != map.schemeCodeName) {
                 false
-            } else if(map.alias != null && it.alias != map.alias) {
+            } else if (map.alias != null && it.alias != map.alias) {
                 false
-            } else if(map.masterKeyAlias != null && it.masterKeyAlias != map.masterKeyAlias) {
+            } else if (map.masterKeyAlias != null && it.masterKeyAlias != map.masterKeyAlias) {
                 false
-            } else if(map.createdAfter != null && it.timestamp < map.createdAfter) {
+            } else if (map.createdAfter != null && it.timestamp < map.createdAfter) {
                 false
             } else !(map.createdBefore != null && it.timestamp > map.createdBefore)
         }
@@ -141,18 +140,18 @@ class TestSigningKeyStore(
         }.drop(skip).take(take)
     }
 
-    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningCachedKey> {
-        val result = mutableListOf<SigningCachedKey>()
+    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningKeyInfo> {
+        val result = mutableListOf<SigningKeyInfo>()
         keyIds.forEach {
             val found = keys[Pair(tenantId, it)]
-            if(found != null) {
+            if (found != null) {
                 result.add(found)
             }
         }
         return result
     }
 
-    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningKeyInfo> {
         val keyIds = fullKeyIds.map {
             ShortHash.of(it)
         }

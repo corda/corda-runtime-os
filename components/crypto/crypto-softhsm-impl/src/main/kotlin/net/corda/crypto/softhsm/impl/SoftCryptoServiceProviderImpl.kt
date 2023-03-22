@@ -12,20 +12,17 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.softhsm.CryptoRepository
+import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.softhsm.CryptoServiceProvider
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getStringOrDefault
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -67,16 +64,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val configReadService: ConfigurationReadService,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
-    @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : AbstractConfigurableComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -96,15 +89,13 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        cryptoRepositoryFactory(
-            CryptoTenants.CRYPTO,
-            event.config.toCryptoConfig(),
-            dbConnectionManager,
-            jpaEntitiesRegistry,
-            virtualNodeInfoReadService,
-            keyEncodingService,
-            digestService,
-            layeredPropertyMapFactory,
+        WrappingRepositoryImpl(
+            getEntityManagerFactory(
+                CryptoTenants.CRYPTO, // TODO review this
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry
+            )
         ),
         schemeMetadata, digestService, CacheFactoryImpl()
     )
@@ -114,7 +105,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 
     class Impl(
-        private val cryptoRepository: CryptoRepository,
+        private val wrappingRepository: WrappingRepository,
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: PlatformDigestService,
         private val cacheFactoryImpl: CacheFactoryImpl,
@@ -156,7 +147,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                     )
             )
             return SoftCryptoService(
-                cryptoRepository = cryptoRepository,
+                wrappingRepository = wrappingRepository,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 rootWrappingKey = rootWrappingKey,
@@ -176,7 +167,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
         override fun close() {
             super.close()
-            cryptoRepository.close()
+            wrappingRepository.close()
         }
     }
 }

@@ -1,6 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import com.github.benmanes.caffeine.cache.Cache
 import java.time.Instant
 import java.util.Random
 import javax.persistence.EntityManager
@@ -9,11 +8,12 @@ import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -29,7 +29,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import kotlin.test.assertNotNull
 
-class V1SigningKeyStoreTest {
+class SigningRepositoryTest {
 
     private val random = Random(0)
     private val hash = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
@@ -63,9 +63,9 @@ class V1SigningKeyStoreTest {
                 stored = it.getArgument(0)
             }
         }
-        val repo = V1CryptoRepositoryImpl(
+        val repo = SigningRepositoryImpl(
             mock { on { createEntityManager() } doReturn em },
-            mock(),
+            "a",
             mock { on { encodeAsByteArray(any()) } doReturn "2".toByteArray() },
             mock { on { hash(any<ByteArray>(), any()) } doReturn secureHash },
             mock(),
@@ -93,8 +93,11 @@ class V1SigningKeyStoreTest {
             }
         }
 
-        repo.saveSigningKey("a", context)
-
+        when (context) {
+            is SigningPublicKeySaveContext -> repo.savePublicKey(context)
+            is SigningWrappedKeySaveContext -> repo.savePrivateKey(context)
+        }
+        
         verify(em).persist(any())
         assertThat(stored!!.tenantId).isEqualTo("a")
         assertThat(stored!!.fullKeyId).isEqualTo(secureHash.toString())
@@ -112,30 +115,24 @@ class V1SigningKeyStoreTest {
             }
         }
 
-        val repo = V1CryptoRepositoryImpl(
+        val repo = SigningRepositoryImpl(
             mock { on { createEntityManager() } doReturn em },
-            mock(),
+            "123",
             mock { on { encodeAsByteArray(any()) } doReturn "2".toByteArray() },
             mock { on { hash(any<ByteArray>(), any()) } doReturn hash },
             mock(),
         )
 
-        val ret = repo.findSigningKey("tenant", "alias")
+        val ret = repo.findKey("alias")
         assertNotNull(ret)
-        assertThat(ret).usingRecursiveComparison().isEqualTo(signingKey.toSigningCachedKey())
+        assertThat(ret).usingRecursiveComparison().isEqualTo(signingKey.toSigningKeyInfo())
     }
 
-    // Note some keys will be in the cache and some in the database.  We expect all to be returned
     @Test
     fun `repository can correctly looks up a signing key by short ids`() {
         val hashA = ShortHash.of("0123456789AB")
         val hashB = ShortHash.of("123456789ABC")
         val keys = setOf(hashA, hashB)
-        val mockCachedKey = mock<SigningCachedKey> { on { id } doReturn hashA }
-        val queryCap = argumentCaptor<Iterable<V1SigningKeyStore.CacheKey>>()
-        val cache = mock<Cache<V1SigningKeyStore.CacheKey, SigningCachedKey>> {
-            on { getAllPresent(queryCap.capture()) } doReturn mapOf(V1SigningKeyStore.CacheKey("tenant", hashA) to mockCachedKey)
-        }
         val tenantCap = argumentCaptor<String>()
         val keyIdsCap = argumentCaptor<List<String>>()
         val em = mock<EntityManager> {
@@ -148,38 +145,25 @@ class V1SigningKeyStoreTest {
             }
         }
 
-        val repo = V1CryptoRepositoryImpl(
+        val repo = SigningRepositoryImpl(
             mock { on { createEntityManager() } doReturn em },
-            cache,
+            "t",
             mock { on { encodeAsByteArray(any()) } doReturn "2".toByteArray() },
             mock { on { hash(any<ByteArray>(), any()) } doReturn hash },
             mock(),
         )
 
-        repo.lookupSigningKeysByIds("tenant", keys)
-
-        val cacheKeys = setOf(V1SigningKeyStore.CacheKey("tenant", hashA), V1SigningKeyStore.CacheKey("tenant", hashB))
-        queryCap.allValues.single().forEach {
-            assertThat(it in cacheKeys)
-        }
-        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
-        assertThat(keyIdsCap.allValues.single()).isEqualTo(listOf(hashB.value))
+        repo.lookupByPublicKeyShortHashes(keys)
     }
 
     @Test
-    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
+    fun `repository correctly looks up a signing key by full ids`() {
         val hashA = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "0123456789AB".toByteArray())
         val hashB = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "123456789ABC".toByteArray())
-        val shortA = ShortHash.of(hashA)
-        val shortB = ShortHash.of(hashB)
         val keys = setOf(hashA, hashB)
-        val queryCap = argumentCaptor<Iterable<V1SigningKeyStore.CacheKey>>()
-        val mockCachedKey = mock<SigningCachedKey> { on { fullId } doReturn hashA }
-        val cache = mock<Cache<V1SigningKeyStore.CacheKey, SigningCachedKey>> {
-            on { getAllPresent(queryCap.capture()) } doReturn mapOf(V1SigningKeyStore.CacheKey("tenant", shortA) to mockCachedKey)
-        }
-        val tenantCap = argumentCaptor<String>()
         val fullIdsCap = argumentCaptor<List<String>>()
+        val tenantCap = argumentCaptor<String>()
+
         val em = mock<EntityManager> {
             on { createQuery(any(), eq(SigningKeyEntity::class.java)) } doAnswer {
                 mock {
@@ -190,22 +174,18 @@ class V1SigningKeyStoreTest {
             }
         }
 
-        val repo = V1CryptoRepositoryImpl(
+        val repo = SigningRepositoryImpl(
             mock { on { createEntityManager() } doReturn em },
-            cache,
+            "tenant",
             mock { on { encodeAsByteArray(any()) } doReturn "2".toByteArray() },
             mock { on { hash(any<ByteArray>(), any()) } doReturn hash },
             mock(),
         )
 
-        repo.lookupSigningKeysByFullIds("tenant", keys)
+        repo.lookupByPublicKeyHashes(keys)
 
-        val cacheKeys = setOf(V1SigningKeyStore.CacheKey("tenant", shortA), V1SigningKeyStore.CacheKey("tenant", shortB))
-        queryCap.allValues.single().forEach {
-            assertThat(it in cacheKeys)
-        }
         assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
-        assertThat(fullIdsCap.allValues.single()).isEqualTo(listOf(hashB.toString()))
+        assertThat(fullIdsCap.allValues.single()).isEqualTo(listOf(hashA.toString(), hashB.toString()))
     }
 
 

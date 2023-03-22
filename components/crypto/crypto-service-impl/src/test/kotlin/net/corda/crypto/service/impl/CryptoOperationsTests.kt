@@ -16,8 +16,8 @@ import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.impl.infra.TestCryptoOpsClient
 import net.corda.crypto.service.impl.infra.TestServicesFactory
@@ -351,7 +351,7 @@ class CryptoOperationsTests {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
         val key2 = signingFreshKeys.values.first().publicKey
-        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
             listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
@@ -367,7 +367,7 @@ class CryptoOperationsTests {
         val key2 = mock<PublicKey> {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
-        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
             listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
@@ -381,7 +381,10 @@ class CryptoOperationsTests {
     ) {
         val info = signingAliasedKeys.getValue(scheme)
         val returned =
-            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
+            info.signingService.lookupSigningKeysByPublicKeyShortHash(
+                tenantId,
+                listOf(ShortHash.of(info.publicKey.publicKeyId()))
+            )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
@@ -394,7 +397,10 @@ class CryptoOperationsTests {
     ) {
         val info = signingFreshKeys.getValue(scheme)
         val returned =
-            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
+            info.signingService.lookupSigningKeysByPublicKeyShortHash(
+                tenantId,
+                listOf(ShortHash.of(info.publicKey.publicKeyId()))
+            )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, null, info.externalId, scheme)
@@ -406,7 +412,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookupByIds(
+        val returned = info.signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
             listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
@@ -419,7 +425,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(
+        val returned = info.signingService.querySigningKeys(
             tenantId = tenantId,
             skip = 0,
             take = 50,
@@ -439,7 +445,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(
+        val returned = info.signingService.querySigningKeys(
             tenantId = tenantId,
             skip = 0,
             take = 50,
@@ -460,7 +466,10 @@ class CryptoOperationsTests {
         val unknownPublicKey = unknownKeyPairs.getValue(scheme).public
         val info = signingFreshKeys.getValue(scheme)
         val returned =
-            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(unknownPublicKey.publicKeyId())))
+            info.signingService.lookupSigningKeysByPublicKeyShortHash(
+                tenantId,
+                listOf(ShortHash.of(unknownPublicKey.publicKeyId()))
+            )
         assertEquals(0, returned.size)
     }
 
