@@ -88,8 +88,11 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
             log.warn(
                 "Using default self-signed TLS certificate for REST endpoint. To stop seeing this message, please use bootstrap " +
                         "parameters: " +
-                        "('-r${BOOT_REST_TLS_KEYSTORE_FILE_PATH.withoutPrefix}' and '-r${BOOT_REST_TLS_KEYSTORE_PASSWORD.withoutPrefix}') or " +
-                        "('-r${BOOT_REST_TLS_CRT_PATH.withoutPrefix}', '-r${BOOT_REST_TLS_KEY_PATH.withoutPrefix}' and '-r${BOOT_REST_TLS_CA_CRT_PATH.withoutPrefix}')."
+                        "('-r${BOOT_REST_TLS_KEYSTORE_FILE_PATH.withoutPrefix}' and " +
+                            "'-r${BOOT_REST_TLS_KEYSTORE_PASSWORD.withoutPrefix}')" +
+                        " or " +
+                        "('-r${BOOT_REST_TLS_CRT_PATH.withoutPrefix}', '-r${BOOT_REST_TLS_KEY_PATH.withoutPrefix}' " +
+                            "and '-r${BOOT_REST_TLS_CA_CRT_PATH.withoutPrefix}')."
             )
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)
