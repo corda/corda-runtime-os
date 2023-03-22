@@ -110,7 +110,7 @@ class SessionEventExecutor(
                         MessageDirection.INBOUND,
                         instant,
                         sessionEvent.sessionId,
-                        null,
+                        2,
                         sessionEvent.initiatingIdentity,
                         sessionEvent.initiatedIdentity,
                         1,

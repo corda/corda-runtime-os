@@ -67,10 +67,10 @@ class SessionInitExecutor(
                         MessageDirection.INBOUND,
                         Instant.now(),
                         sessionEvent.sessionId,
-                        null,
+                        1,
                         sessionEvent.initiatingIdentity,
                         sessionEvent.initiatedIdentity,
-                        1,
+                        0,
                         emptyList(),
                         SessionConfirm(KeyValuePairList(emptyList()))
                     )
