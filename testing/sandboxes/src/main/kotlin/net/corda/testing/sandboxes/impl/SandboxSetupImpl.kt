@@ -134,7 +134,9 @@ class SandboxSetupImpl @Activate constructor(
     override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T {
         val bundleContext = componentContext.bundleContext
         var remainingMillis = timeout.coerceAtLeast(0)
+        var attempts = 0
         while (true) {
+            ++attempts
             bundleContext.getServiceReferences(serviceType, filter).maxOrNull()?.let { ref ->
                 val service = bundleContext.getService(ref)
                 if (service != null) {
@@ -150,7 +152,9 @@ class SandboxSetupImpl @Activate constructor(
             remainingMillis -= waitMillis
         }
         val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
-        throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds")
+        throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds. " +
+                "Made $attempts to find service. " +
+                "Bundles loaded: [${bundleContext.bundles.joinToString { it.symbolicName }}]")
     }
 
     override fun withCleanup(closeable: AutoCloseable) {
