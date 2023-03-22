@@ -1,10 +1,10 @@
 package net.corda.processors.crypto.internal
 
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -37,7 +37,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("LongParameterList")
 @Component(service = [CryptoProcessor::class])
@@ -46,8 +45,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = CryptoConnectionsFactory::class)
-    private val cryptoConnectionsFactory: CryptoConnectionsFactory,
     @Reference(service = SigningKeyStore::class)
     private val signingKeyStore: SigningKeyStore,
     @Reference(service = HSMStore::class)
@@ -86,7 +83,6 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::cryptoConnectionsFactory,
         ::signingKeyStore,
         ::hsmStore,
         ::signingServiceFactory,

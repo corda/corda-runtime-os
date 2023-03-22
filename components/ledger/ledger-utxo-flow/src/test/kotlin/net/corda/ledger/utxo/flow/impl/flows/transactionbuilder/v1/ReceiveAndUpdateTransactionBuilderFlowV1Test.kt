@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
+package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
@@ -30,7 +30,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 @Suppress("MaxLineLength")
-class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
+class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     private lateinit var originalTransactionalBuilder: UtxoTransactionBuilder
     private val session = mock<FlowSession>()
 
@@ -342,7 +342,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest : UtxoLedgerTest() {
     }
 
     private fun callSendFlow(): UtxoTransactionBuilderInternal {
-        val flow = ReceiveAndUpdateTransactionBuilderFlow(
+        val flow = ReceiveAndUpdateTransactionBuilderFlowV1(
             session,
             originalTransactionalBuilder as UtxoTransactionBuilderInternal
         )

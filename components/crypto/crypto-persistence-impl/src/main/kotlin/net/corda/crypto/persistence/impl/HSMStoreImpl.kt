@@ -1,43 +1,59 @@
 package net.corda.crypto.persistence.impl
 
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.Tuple
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.persistence.CryptoConnectionsFactory
-import net.corda.crypto.persistence.db.model.HSMAssociationEntity
-import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.HSMUsage
+import net.corda.crypto.persistence.db.model.HSMAssociationEntity
+import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
+import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.Tuple
 
 @Component(service = [HSMStore::class])
 class HSMStoreImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CryptoConnectionsFactory::class)
-    private val connectionsFactory: CryptoConnectionsFactory
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : AbstractComponent<HSMStoreImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMStore>(),
     upstream = DependenciesTracker.Default(
-        setOf(LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>())
+        setOf(
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+        )
     )
 ), HSMStore {
 
-    override fun createActiveImpl(): Impl = Impl(connectionsFactory)
+    override fun createActiveImpl(): Impl = Impl(getEntityManagerFactory(
+        CryptoTenants.CRYPTO,
+        dbConnectionManager,
+        virtualNodeInfoReadService,
+        jpaEntitiesRegistry,
+    ))
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
         impl.findTenantAssociation(tenantId, category)
@@ -52,10 +68,10 @@ class HSMStoreImpl @Activate constructor(
     ): HSMAssociationInfo = impl.associate(tenantId, category, hsmId, masterKeyPolicy)
 
     class Impl(
-        private val connectionsFactory: CryptoConnectionsFactory
+        private val entityManagerFactory: EntityManagerFactory,
     ) : AbstractImpl {
         fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-            entityManagerFactory().use {
+            entityManagerFactory.createEntityManager().use {
                 val result = it.createQuery(
                     """
             SELECT ca FROM HSMCategoryAssociationEntity ca
@@ -74,7 +90,7 @@ class HSMStoreImpl @Activate constructor(
                 }
             }
 
-        fun getHSMUsage(): List<HSMUsage> = entityManagerFactory().use {
+        fun getHSMUsage(): List<HSMUsage> = entityManagerFactory.createEntityManager().use {
             it.createQuery(
                 """
             SELECT ha.hsmId as hsmId, COUNT(*) as usages 
@@ -95,7 +111,7 @@ class HSMStoreImpl @Activate constructor(
             category: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
-        ): HSMAssociationInfo = entityManagerFactory().use {
+        ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
             it.transaction { em ->
                 val association =
                     findHSMAssociationEntity(em, tenantId, hsmId)
@@ -162,7 +178,5 @@ class HSMStoreImpl @Activate constructor(
             hsmAssociation.masterKeyAlias,
             deprecatedAt
         )
-
-        private fun entityManagerFactory() = connectionsFactory.getEntityManagerFactory(CryptoTenants.CRYPTO)
     }
 }

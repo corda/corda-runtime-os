@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
+package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
@@ -26,7 +26,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 
 @Suppress("MaxLineLength")
-class SendTransactonBuilderDiffFlowTest {
+class SendTransactionBuilderDiffFlowV1Test {
     private val currentTransactionBuilder = mock<UtxoTransactionBuilderInternal>()
     private val originalTransactionalBuilder = mock<UtxoTransactionBuilderContainer>()
     private val session = mock<FlowSession>()
@@ -295,8 +295,8 @@ class SendTransactonBuilderDiffFlowTest {
     }
 
     private fun callSendFlow() {
-        val flow = SendTransactionBuilderDiffFlow(
-            UtxoBaselinedTransactionBuilder(currentTransactionBuilder),
+        val flow = SendTransactionBuilderDiffFlowV1(
+            UtxoBaselinedTransactionBuilder(currentTransactionBuilder).diff(),
             session
         )
 

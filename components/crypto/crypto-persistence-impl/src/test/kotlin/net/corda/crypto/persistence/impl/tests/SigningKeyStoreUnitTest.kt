@@ -1,6 +1,7 @@
 package net.corda.crypto.persistence.impl.tests
 
 import com.github.benmanes.caffeine.cache.Cache
+import javax.persistence.EntityManager
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.configuration.read.ConfigChangedEvent
@@ -9,7 +10,6 @@ import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl.Impl.CacheKey
@@ -21,6 +21,7 @@ import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -28,8 +29,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -61,7 +60,7 @@ class SigningKeyStoreUnitTest {
     val tenantId = "123"
 
     val cipherSchemeMetadataImpl = CipherSchemeMetadataImpl()
-    lateinit var connectionsFactory: CryptoConnectionsFactory
+    val entityManager = mock<EntityManager>()
 
     lateinit var signingKeysRepository: SigningKeysRepository
     lateinit var signingKeyStore: SigningKeyStoreImpl.Impl
@@ -72,9 +71,9 @@ class SigningKeyStoreUnitTest {
                 signingServiceConfig,
                 mock(),
                 cipherSchemeMetadataImpl,
-                connectionsFactory,
                 PlatformDigestServiceImpl(cipherSchemeMetadataImpl),
                 signingKeysRepository,
+                { entityManager },
                 cacheFactory
             )
     }
@@ -82,14 +81,6 @@ class SigningKeyStoreUnitTest {
     @BeforeEach
     fun setUp() {
         signingKeysRepository = mock()
-        // resetting this state for verify
-        connectionsFactory = mock<CryptoConnectionsFactory>().also {
-            val entityManagerFactory = mock<EntityManagerFactory>().also {
-                val entityManager = mock<EntityManager>()
-                whenever(it.createEntityManager()).thenReturn(entityManager)
-            }
-            whenever(it.getEntityManagerFactory(tenantId)).thenReturn(entityManagerFactory)
-        }
     }
 
     @Test
@@ -114,7 +105,7 @@ class SigningKeyStoreUnitTest {
             signingKeyStore.lookupByKeyIds(tenantId, setOf(shortKeyId0, shortKeyId1)).map { it.fullId }.toSet()
         )
         // verify it didn't go to the database
-        verify(connectionsFactory, times(0)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(0)).findKeysByIds(any(), anyString(), any())
     }
 
     @Test
@@ -146,7 +137,7 @@ class SigningKeyStoreUnitTest {
         val expectedNotFoundInCache = setOf(shortKeyId1)
         assertEquals(expectedNotFoundInCache, keysCaptor.firstValue)
         assertEquals(setOf(shortKeyId0, shortKeyId1), lookedUpByKeyIdsKeys.mapTo(mutableSetOf()) { it.id })
-        verify(connectionsFactory, times(1)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(1)).findKeysByIds(any(), anyString(), any())
     }
 
     @Test
@@ -173,7 +164,7 @@ class SigningKeyStoreUnitTest {
             signingKeyStore.lookupByFullKeyIds(tenantId, setOf(fullKeyId0, fullKeyId1)).map { it.fullId }.toSet()
         )
         // verify it didn't go to the database
-        verify(connectionsFactory, times(0)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(0)).findKeysByFullIds(any(), anyString(), any())
     }
 
     @Test
@@ -209,7 +200,7 @@ class SigningKeyStoreUnitTest {
         val expectedNotFoundInCache = setOf(fullKeyId1)
         assertEquals(expectedNotFoundInCache, keysCaptor.firstValue)
         assertEquals(setOf(fullKeyId0, fullKeyId1), lookedUpByFullKeyIdsKeys.mapTo(mutableSetOf()) { it.fullId })
-        verify(connectionsFactory, times(1)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(1)).findKeysByFullIds(any(), anyString(), any())
     }
 
     @Test
@@ -242,7 +233,7 @@ class SigningKeyStoreUnitTest {
         val keysLookedUpInDb = setOf(requestedFullKeyId)
         assertEquals(keysLookedUpInDb, keysCaptor.firstValue)
         assertEquals(setOf(), lookedUpByFullKeyIdsKeys.mapTo(mutableSetOf()) { it.fullId })
-        verify(connectionsFactory, times(1)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(1)).findKeysByFullIds(any(), anyString(), any())
     }
 
     @Test
@@ -265,7 +256,7 @@ class SigningKeyStoreUnitTest {
         val lookedUpByFullKeyIdKey = signingKeyStore.lookupByFullKeyId(tenantId, fullKeyId)
 
         assertEquals(fullKeyId, lookedUpByFullKeyIdKey!!.fullId)
-        verify(connectionsFactory, times(0)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(0)).findKeysByFullIds(any(), anyString(), any())
     }
 
 
@@ -290,6 +281,6 @@ class SigningKeyStoreUnitTest {
         val lookedUpByFullKeyIdKey = signingKeyStore.lookupByFullKeyId(tenantId, requestedFullKeyId)
 
         assertNull(lookedUpByFullKeyIdKey)
-        verify(connectionsFactory, times(0)).getEntityManagerFactory(any())
+        verify(signingKeysRepository, times(0)).findKeysByFullIds(any(), anyString(), any())
     }
 }
