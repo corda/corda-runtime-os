@@ -50,7 +50,6 @@ class TruancyResponderFlow : ResponderFlow {
 
         val record = session.receive(TruancyRecord::class.java)
 
-        // TODO Need to get the key out of key id.
         val knownKeysByIds = memberLookup.lookup().flatMap {
             it.ledgerKeys
         }.associateBy {
