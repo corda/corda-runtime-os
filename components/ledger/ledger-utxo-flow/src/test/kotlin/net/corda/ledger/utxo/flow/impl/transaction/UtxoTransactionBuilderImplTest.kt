@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
@@ -43,7 +43,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
@@ -56,7 +56,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         assertEquals(inputStateRef, tx.inputStateRefs.single())
         assertEquals(referenceStateRef, tx.referenceStateRefs.single())
         assertEquals(getUtxoStateExample(), tx.outputStateAndRefs.single().state.contractState)
-        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(notaryX500Name, tx.notaryName)
+        assertEquals(publicKeyExample, tx.notaryKey)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
         assertEquals(publicKeyExample, tx.signatories.first())
     }
@@ -64,7 +65,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction with empty component groups`() {
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
@@ -74,7 +75,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         assertThat(tx.inputStateRefs).isEmpty()
         assertThat(tx.referenceStateRefs).isEmpty()
         assertEquals(getUtxoStateExample(), tx.outputStateAndRefs.single().state.contractState)
-        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(notaryX500Name, tx.notaryName)
+        assertEquals(publicKeyExample, tx.notaryKey)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
         assertEquals(publicKeyExample, tx.signatories.first())
     }
@@ -82,7 +84,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `includes CPI and CPK information in metadata`() {
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
@@ -122,7 +124,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `can't sign twice`() {
         assertThrows(IllegalStateException::class.java) {
             val builder = utxoTransactionBuilder
-                .setNotary(utxoNotaryExample)
+                .setNotary(notaryX500Name)
                 .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
                 .addOutputState(getUtxoStateExample())
                 .addSignatories(listOf(publicKeyExample))
@@ -145,7 +147,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addEncumberedOutputStates(
                 "encumbranceGroup 1",
@@ -201,8 +203,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `setting the notary mutates and returns the current builder`() {
         val originalTransactionBuilder = utxoTransactionBuilder
-        val mutatedTransactionBuilder = utxoTransactionBuilder.setNotary(utxoNotaryExample)
-        assertThat(mutatedTransactionBuilder.notary).isEqualTo(utxoNotaryExample)
+        val mutatedTransactionBuilder = utxoTransactionBuilder.setNotary(notaryX500Name)
+        assertThat(mutatedTransactionBuilder.notaryName).isEqualTo(notaryX500Name)
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
             System.identityHashCode(
