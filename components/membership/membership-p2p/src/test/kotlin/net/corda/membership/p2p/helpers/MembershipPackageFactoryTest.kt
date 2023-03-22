@@ -1,6 +1,8 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -16,7 +18,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.GroupParameters
@@ -72,10 +73,7 @@ class MembershipPackageFactoryTest {
         members.associateWith { member ->
             val hashBytes = "root-${member.name}".toByteArray()
             val alg = "alg-${member.name}"
-            val treeRoot = mock<SecureHash> {
-                on { bytes } doReturn hashBytes
-                on { algorithm } doReturn alg
-            }
+            val treeRoot = SecureHashImpl(alg, hashBytes)
             mock<MerkleTree> {
                 on { root } doReturn treeRoot
             }
@@ -105,10 +103,7 @@ class MembershipPackageFactoryTest {
                 )
     }
     private val allAlg = "all-alg"
-    private val checkHash = mock<SecureHash> {
-        on { bytes } doReturn "all".toByteArray()
-        on { algorithm } doReturn allAlg
-    }
+    private val checkHash = SecureHashImpl(allAlg, "all".toByteArray())
 
     private val factory = MembershipPackageFactory(
         clock,
