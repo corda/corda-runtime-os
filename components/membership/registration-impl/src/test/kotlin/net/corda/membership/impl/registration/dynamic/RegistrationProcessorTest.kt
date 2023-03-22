@@ -78,7 +78,6 @@ class  RegistrationProcessorTest {
                 memberContext.toByteBuffer(),
                 signature,
                 CryptoSignatureSpec("", null, null),
-                true,
                 0L,
             )
 

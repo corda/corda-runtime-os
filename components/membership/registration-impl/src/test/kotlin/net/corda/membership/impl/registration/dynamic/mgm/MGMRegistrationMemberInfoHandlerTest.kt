@@ -5,9 +5,8 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
@@ -32,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.test.util.TestRandom
@@ -44,6 +44,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -73,9 +74,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
-    private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
-        on { serialize(any()) } doReturn "".toByteArray()
-    }
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
@@ -97,6 +95,13 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn mockMemberContext
     }
+    private val signature: CryptoSignatureWithKey = mock()
+    private val signatureSpec: CryptoSignatureSpec = mock()
+    private val signedMemberInfo: SignedMemberInfo = mock {
+        on { memberInfo } doReturn memberInfo
+        on { memberSignature } doReturn signature
+        on { signatureSpec } doReturn signatureSpec
+    }
     private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
     private val memberContext
         get() = assertDoesNotThrow { memberContextCaptor.firstValue }
@@ -105,9 +110,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         get() = assertDoesNotThrow { mgmContextCaptor.firstValue }
 
     private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
-    }
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
             lookupKeysByIds(
@@ -163,7 +165,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
-            persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
+            persistMemberInfo(eq(holdingIdentity), eq(listOf(signedMemberInfo)))
         } doReturn MembershipPersistenceResult.success()
     }
 
@@ -177,7 +179,6 @@ class MGMRegistrationMemberInfoHandlerTest {
 
     private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
         clock,
-        cordaAvroSerializationFactory,
         cryptoOpsClient,
         keyEncodingService,
         memberInfoFactory,
@@ -215,7 +216,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(result).isEqualTo(memberInfo)
+        assertThat(result).isEqualTo(signedMemberInfo)
     }
 
     @Test
@@ -290,6 +291,23 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
+    fun `Signature is built as expected`() {
+        val result = assertDoesNotThrow {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext
+            )
+        }
+
+        SoftAssertions.assertSoftly {
+            it.assertThat(result.memberSignature)
+                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())))
+            it.assertThat(result.memberSignatureSpec)
+                .isEqualTo(CryptoSignatureSpec("", null, null))
+        }
+    }
+
+    @Test
     fun `expected exception thrown if CPI info cannot be found for holding identity`() {
         whenever(
             virtualNodeInfoReadService.get(
@@ -350,7 +368,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     fun `expected exception thrown if member info persistence fails`() {
         whenever(
             membershipPersistenceClient.persistMemberInfo(
-                eq(holdingIdentity), eq(listOf(memberInfo))
+                eq(holdingIdentity), eq(listOf(signedMemberInfo))
             )
         ).doReturn(MembershipPersistenceResult.Failure(""))
 
@@ -362,7 +380,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(holdingIdentity),
-            eq(listOf(memberInfo))
+            eq(listOf(signedMemberInfo))
         )
     }
 

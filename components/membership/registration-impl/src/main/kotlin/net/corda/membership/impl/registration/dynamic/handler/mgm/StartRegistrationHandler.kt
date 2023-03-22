@@ -231,7 +231,6 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.memberSignature,
             memberRegistrationRequest.memberSignatureSpec,
             memberRegistrationRequest.serial,
-            true,
         )
     }
 

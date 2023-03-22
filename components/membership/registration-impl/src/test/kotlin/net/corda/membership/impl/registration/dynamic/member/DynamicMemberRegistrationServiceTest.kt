@@ -17,6 +17,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.app.AppMessage
@@ -447,6 +448,23 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.register(registrationResultId, member, context)
             verify(registrationRequestSerializer).serialize(capturedRequest.capture())
             assertThat(capturedRequest.firstValue.serial).isEqualTo(12)
+        }
+
+        @Test
+        fun `registration request contains the signature`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val capturedRequest = argumentCaptor<RegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture())
+            assertThat(capturedRequest.firstValue.signature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(mockSignature.by)),
+                    ByteBuffer.wrap(mockSignature.bytes)
+                )
+            )
+            assertThat(capturedRequest.firstValue.signatureSpec.signatureName)
+                .isEqualTo(SignatureSpec.ECDSA_SHA512.signatureName)
         }
 
         @Test

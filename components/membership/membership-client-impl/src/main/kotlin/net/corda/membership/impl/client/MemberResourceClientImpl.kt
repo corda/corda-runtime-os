@@ -276,7 +276,6 @@ class MemberResourceClientImpl @Activate constructor(
                         ),
                         CryptoSignatureSpec("", null, null),
                         memberRegistrationRequest.context[SERIAL]?.toLong(),
-                        true
                     )
                 ).getOrThrow()
                 return RegistrationRequestProgressDto(

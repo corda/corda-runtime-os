@@ -2,7 +2,6 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
@@ -39,21 +38,11 @@ internal class PersistRegistrationRequestHandler(
                     lastModified = now,
                     context = request.registrationRequest.memberContext.array(),
                     signatureKey = request.registrationRequest.memberSignature.publicKey.array(),
-                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
                     signatureContent = request.registrationRequest.memberSignature.bytes.array(),
+                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
                     serial = request.registrationRequest.serial,
                 )
             )
-            /*em.merge(
-                MemberSignatureEntity(
-                    groupId = request.registeringHoldingIdentity.groupId,
-                    memberX500Name = request.registeringHoldingIdentity.x500Name,
-                    publicKey = request.registrationRequest.memberSignature.publicKey.array(),
-                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
-                    content = request.registrationRequest.memberSignature.bytes.array(),
-                    isPending = request.registrationRequest.isPending
-                )
-            )*/
         }
     }
 }

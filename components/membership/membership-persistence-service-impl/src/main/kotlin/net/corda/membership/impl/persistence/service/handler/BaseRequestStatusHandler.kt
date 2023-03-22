@@ -2,9 +2,11 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
+import java.nio.ByteBuffer
 
 internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<REQUEST, RESPONSE>(persistenceHandlerServices) {
@@ -32,6 +34,13 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             .setRegistrationId(this.registrationId)
             .setRegistrationProtocolVersion(registrationProtocolVersion)
             .setMemberProvidedContext(context)
+            .setMemberSignature(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(this.signatureKey),
+                    ByteBuffer.wrap(this.signatureContent)
+                )
+            )
+            .setMemberSignatureSpec(retrieveSignatureSpec(this.signatureSpec))
             .setReason(this.reason)
             .setSerial(this.serial)
             .build()

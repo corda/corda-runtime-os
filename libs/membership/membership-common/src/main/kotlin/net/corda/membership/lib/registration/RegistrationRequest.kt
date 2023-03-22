@@ -17,5 +17,4 @@ data class RegistrationRequest(
     val signature: CryptoSignatureWithKey,
     val signatureSpec: CryptoSignatureSpec,
     val serial: Long?,
-    val isPending: Boolean = false,
 )

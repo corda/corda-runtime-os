@@ -3,7 +3,6 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.membership.datamodel.MemberInfoEntity
@@ -81,8 +80,8 @@ internal class PersistMemberInfoHandler(
                         clock.instant(),
                         serializeContext(it.persistentMemberInfo.memberContext),
                         it.memberSignature.publicKey.array(),
-                        it.memberSignatureSpec.signatureName,
                         it.memberSignature.bytes.array(),
+                        it.memberSignatureSpec.signatureName,
                         serializeContext(it.persistentMemberInfo.mgmContext),
                         memberInfo.serial,
                     )

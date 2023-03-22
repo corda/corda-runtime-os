@@ -169,7 +169,6 @@ class MGMRegistrationService @Activate constructor(
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,
-            cordaAvroSerializationFactory,
             cryptoOpsClient,
             keyEncodingService,
             memberInfoFactory,
@@ -211,7 +210,7 @@ class MGMRegistrationService @Activate constructor(
                 val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
                 groupParametersWriterService.put(member, groupParameters)
 
-                mgmRegistrationOutputPublisher.publish(mgmInfo)
+                mgmRegistrationOutputPublisher.publish(mgmInfo.memberInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {

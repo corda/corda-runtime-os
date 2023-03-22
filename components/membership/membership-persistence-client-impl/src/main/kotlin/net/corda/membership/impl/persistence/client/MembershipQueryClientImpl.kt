@@ -131,6 +131,8 @@ class MembershipQueryClientImpl(
             registrationLastModified = this.registrationLastModified,
             protocolVersion = this.registrationProtocolVersion,
             memberContext = this.memberProvidedContext,
+            memberSignature = this.memberSignature,
+            memberSignatureSpec = this.memberSignatureSpec,
             reason = this.reason,
             serial = this.serial,
         )

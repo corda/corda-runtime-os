@@ -95,6 +95,7 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_RULE = "corda.*"
         const val DUMMY_LABEL = "label1"
         const val SERIAL = 0L
+        const val SIGNATURE_SPEC = "signatureSpec"
     }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
@@ -108,6 +109,8 @@ class MembershipPersistenceRPCProcessorTest {
     private val preAuthTokenId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
     private val context = "context".toByteArray()
+    private val signatureKey = "signatureKey".toByteArray()
+    private val signatureContent = "signatureContent".toByteArray()
     private val vaultDmlConnectionId = UUID(30, 0)
 
     private val virtualNodeInfo = VirtualNodeInfo(
@@ -126,6 +129,9 @@ class MembershipPersistenceRPCProcessorTest {
         clock.instant(),
         clock.instant(),
         context,
+        signatureKey,
+        signatureContent,
+        SIGNATURE_SPEC,
         SERIAL,
     )
 
@@ -212,6 +218,9 @@ class MembershipPersistenceRPCProcessorTest {
         on { groupId } doReturn "groupId"
         on { memberX500Name } doReturn ourX500Name
         on { isPending } doReturn false
+        on { memberSignatureKey } doReturn signatureKey
+        on { memberSignatureContent } doReturn signatureContent
+        on { memberSignatureSpec } doReturn SIGNATURE_SPEC
     }
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
@@ -319,11 +328,10 @@ class MembershipPersistenceRPCProcessorTest {
                     ourRegistrationId,
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
-                        ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray())
+                        ByteBuffer.wrap(signatureKey),
+                        ByteBuffer.wrap(signatureContent)
                     ),
-                    CryptoSignatureSpec("", null, null),
-                    true,
+                    CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
                     SERIAL,
                 )
             )
@@ -416,11 +424,10 @@ class MembershipPersistenceRPCProcessorTest {
                     ourRegistrationId,
                     ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
-                        ByteBuffer.wrap("123".toByteArray()),
-                        ByteBuffer.wrap("456".toByteArray())
+                        ByteBuffer.wrap(signatureKey),
+                        ByteBuffer.wrap(signatureContent)
                     ),
-                    CryptoSignatureSpec("", null, null),
-                    false,
+                    CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
                     SERIAL,
                 )
             )

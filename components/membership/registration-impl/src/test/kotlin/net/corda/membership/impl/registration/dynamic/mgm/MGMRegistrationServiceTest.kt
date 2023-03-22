@@ -14,6 +14,8 @@ import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -454,8 +456,17 @@ class MGMRegistrationServiceTest {
                 eq(mgm),
                 argThat {
                     this.size == 1 &&
-                            this.first().isMgm &&
-                            this.first().name == mgmName
+                            this.first().memberInfo.isMgm &&
+                            this.first().memberInfo.name == mgmName &&
+                            this.first().memberSignature == CryptoSignatureWithKey(
+                                ByteBuffer.wrap(byteArrayOf()),
+                                ByteBuffer.wrap(byteArrayOf())
+                            ) &&
+                            this.first().memberSignatureSpec == CryptoSignatureSpec(
+                                "",
+                                null,
+                                null
+                            )
                 }
             )
         }

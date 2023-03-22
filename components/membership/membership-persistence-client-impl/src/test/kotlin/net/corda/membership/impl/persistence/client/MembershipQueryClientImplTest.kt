@@ -596,6 +596,11 @@ class MembershipQueryClientImplTest {
                     "id",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk1".toByteArray()),
+                        ByteBuffer.wrap("ct1".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy", null, null),
                     "test reason",
                     0L,
                 )
@@ -627,6 +632,8 @@ class MembershipQueryClientImplTest {
                         registrationLastModified = status.registrationLastModified,
                         protocolVersion = status.registrationProtocolVersion,
                         memberContext = status.memberProvidedContext,
+                        memberSignature = status.memberSignature,
+                        memberSignatureSpec = status.memberSignatureSpec,
                         reason = status.reason,
                         serial = status.serial,
                     )
@@ -744,6 +751,11 @@ class MembershipQueryClientImplTest {
                     "id 1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk1".toByteArray()),
+                        ByteBuffer.wrap("ct1".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy1", null, null),
                     "test reason 1",
                     0L,
                 ),
@@ -754,6 +766,11 @@ class MembershipQueryClientImplTest {
                     "id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk2".toByteArray()),
+                        ByteBuffer.wrap("ct2".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy2", null, null),
                     "test reason 2",
                     1L,
                 ),
@@ -787,6 +804,8 @@ class MembershipQueryClientImplTest {
                             registrationLastModified = it.registrationLastModified,
                             protocolVersion = it.registrationProtocolVersion,
                             memberContext = it.memberProvidedContext,
+                            memberSignature = it.memberSignature,
+                            memberSignatureSpec = it.memberSignatureSpec,
                             reason = it.reason,
                             serial = it.serial,
                         )

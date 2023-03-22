@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.membership.lib.impl.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -35,10 +36,10 @@ internal class MGMRegistrationRequestHandler (
     fun persistRegistrationRequest(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
-        mgmInfo: MemberInfo
+        mgmInfo: SignedMemberInfo
     ) {
         val serializedMemberContext = keyValuePairListSerializer.serialize(
-            mgmInfo.memberProvidedContext.toWire()
+            mgmInfo.memberInfo.memberProvidedContext.toWire()
         ) ?: throw InvalidMembershipRegistrationException(
             "Failed to serialize the member context for this request."
         )
@@ -49,11 +50,8 @@ internal class MGMRegistrationRequestHandler (
                 registrationId = registrationId.toString(),
                 requester = holdingIdentity,
                 memberContext = ByteBuffer.wrap(serializedMemberContext),
-                signature = CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf())
-                ),
-                signatureSpec = CryptoSignatureSpec("", null, null),
+                signature = mgmInfo.memberSignature,
+                signatureSpec = mgmInfo.memberSignatureSpec,
                 serial = 0L,
             )
         )

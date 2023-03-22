@@ -17,7 +17,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
-import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -126,6 +125,9 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         memberX500Name = member.x500Name,
         true
     )
+    private val signatureContentBytes = byteArrayOf(1, 5)
+    private val signatureSpec = "dummySignatureSpec"
+    private val publicKey = byteArrayOf(1, 2)
 
     private val memberInfoEntity = mock<MemberInfoEntity> {
         on { mgmContext } doReturn mgmContextBytes
@@ -133,17 +135,9 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         on { groupId } doReturn member.groupId
         on { memberX500Name } doReturn member.x500Name
         on { serialNumber } doReturn serial
-    }
-
-    private val signatureContentBytes = byteArrayOf(1, 5)
-    private val signatureSpec = "dummySignatureSpec"
-    private val publicKey = byteArrayOf(1, 2)
-    private val memberSignatureEntity = mock<MemberSignatureEntity> {
-        on { groupId } doReturn member.groupId
-        on { memberX500Name } doReturn member.x500Name
-        on { publicKey } doReturn publicKey
-        on { content } doReturn signatureContentBytes
-        on { signatureSpec } doReturn signatureSpec
+        on { memberSignatureKey } doReturn publicKey
+        on { memberSignatureContent } doReturn signatureContentBytes
+        on { memberSignatureSpec } doReturn signatureSpec
     }
 
     private val requestId = "requestId"
@@ -157,12 +151,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private fun mockRegistrationRequestEntity(entity: RegistrationRequestEntity? = requestEntity) {
         whenever(
             entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId), eq(LockModeType.PESSIMISTIC_WRITE))
-        ).doReturn(entity)
-    }
-
-    private fun mockMemberSignatureEntity(entity: MemberSignatureEntity? = memberSignatureEntity) {
-        whenever(
-            entityManager.find(eq(MemberSignatureEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
         ).doReturn(entity)
     }
 
@@ -190,19 +178,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     @Test
-    fun `invoke throws exception if signature cannot be found`() {
-        mockMemberInfoEntity()
-        mockRegistrationRequestEntity()
-        mockMemberSignatureEntity(null)
-        val context = MembershipRequestContext(clock.instant(), requestId, member,)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
-
-        assertThrows<MembershipPersistenceException> {
-            handler.invoke(context, request)
-        }
-    }
-
-    @Test
     fun `invoke will insert non-pending information for the member`() {
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
@@ -210,7 +185,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val entityCapture = argumentCaptor<MemberInfoEntity>()
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         whenever(entityManager.merge(entityCapture.capture())).doReturn(mock())
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
@@ -223,6 +197,9 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             assertThat(this.modifiedTime).isEqualTo(Instant.ofEpochMilli(500))
             assertThat(this.mgmContext).isEqualTo(byteArrayOf(0))
             assertThat(this.isPending).isEqualTo(false)
+            assertThat(this.memberSignatureKey).isEqualTo(publicKey)
+            assertThat(this.memberSignatureContent).isEqualTo(signatureContentBytes)
+            assertThat(this.memberSignatureSpec).isEqualTo(signatureSpec)
         }
     }
 
@@ -240,7 +217,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
@@ -254,32 +230,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     @Test
-    fun `invoke will insert non-pending signature for the member`() {
-        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
-            KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
-        )
-        val entityCapture = argumentCaptor<Any>()
-        mockMemberInfoEntity()
-        mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
-        whenever(entityManager.merge(entityCapture.capture())).doReturn(mock())
-        val requestContext = MembershipRequestContext(clock.instant(), requestId, member,)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
-
-        clock.setTime(Instant.ofEpochMilli(500))
-        handler.invoke(requestContext, request)
-
-        with(entityCapture.secondValue as MemberSignatureEntity) {
-            assertThat(this.publicKey).isEqualTo(publicKey)
-            assertThat(this.isPending).isEqualTo(false)
-            assertThat(this.memberX500Name).isEqualTo(member.x500Name)
-            assertThat(this.groupId).isEqualTo(member.groupId)
-            assertThat(this.content).isEqualTo(content)
-            assertThat(this.signatureSpec).isEqualTo(signatureSpec)
-        }
-    }
-
-    @Test
     fun `invoke will throw an exception if MGM context can not be serialize`() {
         whenever(keyValuePairListSerializer.serialize(any())).doReturn(null)
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
@@ -287,7 +237,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         )
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
@@ -302,7 +251,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(null)
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
@@ -320,7 +268,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         mockMemberInfoEntity()
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
@@ -339,7 +286,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         )
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
@@ -358,7 +304,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         }
         mockMemberInfoEntity(memberInfoEntity)
         mockRegistrationRequestEntity()
-        mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
         val mgmContext = KeyValuePairList(

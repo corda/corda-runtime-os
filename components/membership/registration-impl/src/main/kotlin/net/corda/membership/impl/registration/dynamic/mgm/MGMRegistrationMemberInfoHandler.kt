@@ -7,8 +7,8 @@ import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
@@ -35,12 +36,12 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.security.PublicKey
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(
     private val clock: Clock,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val memberInfoFactory: MemberInfoFactory,
@@ -55,17 +56,20 @@ internal class MGMRegistrationMemberInfoHandler(
         val keyIdList = listOf(SESSION_KEY_ID, ECDH_KEY_ID)
     }
 
-    private val keyValuePairListSerializer =
-        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
-            logger.error("Failed to serialize key value pair list.")
-        }
-
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
     fun buildAndPersistMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): MemberInfo {
-        return buildMgmInfo(holdingIdentity, context).also {
+    ): SignedMemberInfo {
+        logger.info("Started building mgm member info.")
+        return SignedMemberInfo(
+            buildMgmInfo(holdingIdentity, context),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf()),
+                ByteBuffer.wrap(byteArrayOf())
+            ),
+            CryptoSignatureSpec("", null, null)
+        ).also {
             persistMemberInfo(holdingIdentity, it)
         }
     }
@@ -103,7 +107,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: MemberInfo) {
+    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SignedMemberInfo) {
         val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
         if (persistenceResult is MembershipPersistenceResult.Failure) {
             throw MGMRegistrationMemberInfoHandlingException(
