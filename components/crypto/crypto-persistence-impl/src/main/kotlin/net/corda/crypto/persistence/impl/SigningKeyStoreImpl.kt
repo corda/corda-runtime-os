@@ -14,7 +14,6 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningKeyStore
-import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.cryptoRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
@@ -99,13 +98,6 @@ class SigningKeyStoreImpl @Activate constructor(
     override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
         impl.lookupByFullKeyIds(tenantId, fullKeyIds.toSet())
 
-    private fun createEntityManager(tenantId: String) = getEntityManagerFactory(
-        tenantId,
-        dbConnectionManager,
-        virtualNodeInfoReadService,
-        jpaEntitiesRegistry,
-    ).createEntityManager()
-
     class Impl(
         private val cryptoRepository: CryptoRepository,
     ) : DownstreamAlwaysUpAbstractImpl() {
@@ -133,5 +125,10 @@ class SigningKeyStoreImpl @Activate constructor(
 
         fun lookupByFullKeyIds(tenantId: String, requestedFullKeyIds: Set<SecureHash>): Collection<SigningCachedKey> =
             cryptoRepository.lookupSigningKeysByFullIds(tenantId, requestedFullKeyIds)
+
+        override fun close() {
+            super.close()
+            cryptoRepository.close()
+        }
     }
 }

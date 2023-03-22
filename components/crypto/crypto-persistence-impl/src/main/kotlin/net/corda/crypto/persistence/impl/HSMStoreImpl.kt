@@ -97,5 +97,10 @@ class HSMStoreImpl @Activate constructor(
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy,
         ): HSMAssociationInfo = cryptoRepository.associate(tenantId, category, hsmId, masterKeyPolicy)
+
+        override fun close() {
+            super.close()
+            cryptoRepository.close()
+        }
     }
 }
