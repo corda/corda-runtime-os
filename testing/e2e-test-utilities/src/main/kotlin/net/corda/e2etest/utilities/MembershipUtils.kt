@@ -1,12 +1,9 @@
 package net.corda.e2etest.utilities
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.rest.ResponseCode
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import java.io.File
-
-private val mapper = ObjectMapper()
 
 const val REGISTRATION_KEY_PRE_AUTH = "corda.auth.token"
 const val REGISTRATION_DECLINED = "DECLINED"
@@ -152,7 +149,7 @@ fun register(
     )
 
     assertWithRetry {
-        command { register(holdingIdentityShortHash, mapper.writeValueAsString(payload)) }
+        command { register(holdingIdentityShortHash, objectMapper.writeValueAsString(payload)) }
         condition {
             it.code == ResponseCode.OK.statusCode
                     && it.toJson().get("registrationStatus")?.textValue() == REGISTRATION_SUBMITTED

@@ -2,7 +2,6 @@
 
 package net.corda.e2etest.utilities
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.ResponseCode
 import net.corda.utilities.seconds
@@ -105,7 +104,7 @@ private fun createApprovalRuleCommon(
     )
 
     assertWithRetry {
-        command { post(url, ObjectMapper().writeValueAsString(payload)) }
+        command { post(url, objectMapper.writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
 }
@@ -159,7 +158,7 @@ fun createPreAuthToken(
     }
 
     assertWithRetry {
-        command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", ObjectMapper().writeValueAsString(payload)) }
+        command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", objectMapper.writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["id"].textValue()
 }

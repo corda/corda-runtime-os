@@ -1,7 +1,6 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import java.time.Duration
 import java.util.UUID
@@ -11,7 +10,7 @@ const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
-    ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
+    objectMapper.readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(
     holdingId: String,
@@ -33,7 +32,7 @@ fun startRpcFlow(
                     holdingId,
                     requestId,
                     SMOKE_TEST_CLASS_NAME,
-                    escapeJson(ObjectMapper().writeValueAsString(args))
+                    escapeJson(objectMapper.writeValueAsString(args))
                 )
             }
             condition { it.code == expectedCode }
@@ -59,7 +58,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, ex
                     holdingId,
                     requestId,
                     flowName,
-                    escapeJson(ObjectMapper().writeValueAsString(args))
+                    escapeJson(objectMapper.writeValueAsString(args))
                 )
             }
             condition { it.code == expectedCode }
@@ -77,7 +76,7 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
             PASSWORD
         )
 
-        ObjectMapper().readValue(
+        objectMapper.readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
                 //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
@@ -100,7 +99,7 @@ fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): Flow
             PASSWORD
         )
 
-        ObjectMapper().readValue(
+        objectMapper.readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
                 timeout(Duration.ofMinutes(6))

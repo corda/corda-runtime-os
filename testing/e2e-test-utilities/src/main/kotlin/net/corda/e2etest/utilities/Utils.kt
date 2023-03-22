@@ -28,15 +28,17 @@ const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-ser
 
 val CLUSTER_URI = URI(System.getProperty("restEndpointUrl", "NONE"))
 
+internal val objectMapper by lazy { ObjectMapper() }
+
 // BUG:  Not sure if we should be requiring clients to use a method similar to this because we
 // return a full hash (64 chars?) but the same API only accepts the first 12 chars.
 fun truncateLongHash(shortHash:String):String {
     return shortHash.substring(0,12)
 }
 
-fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
+fun String.toJson(): JsonNode = objectMapper.readTree(this)
 
-fun <K, V> Map<K, V>.toJsonString(): String = ObjectMapper().writeValueAsString(this)
+fun <K, V> Map<K, V>.toJsonString(): String = objectMapper.writeValueAsString(this)
 
 fun Any.contextLogger(): Logger = LoggerFactory.getLogger(javaClass.enclosingClass)
 

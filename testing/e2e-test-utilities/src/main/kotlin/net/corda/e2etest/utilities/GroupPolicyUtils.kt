@@ -1,7 +1,5 @@
 package net.corda.e2etest.utilities
 
-import com.fasterxml.jackson.databind.ObjectMapper
-
 private fun createCertificate(certificateResource: String) = CpiLoader::class.java.classLoader.getResource(certificateResource)!!
     .readText()
     .replace("\r", "")
@@ -55,7 +53,7 @@ fun getDefaultStaticNetworkGroupPolicy(
             "corda.cryptoservice.provider" to "default"
         )
     )
-    return ObjectMapper().writeValueAsString(groupPolicy)
+    return objectMapper.writeValueAsString(groupPolicy)
 }
 
 fun getMgmGroupPolicy(): String {
@@ -67,5 +65,5 @@ fun getMgmGroupPolicy(): String {
         "synchronisationProtocol"
                 to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
     )
-    return ObjectMapper().writeValueAsString(groupPolicy)
+    return objectMapper.writeValueAsString(groupPolicy)
 }

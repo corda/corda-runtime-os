@@ -1,6 +1,5 @@
 package net.corda.e2etest.utilities
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.Algorithm.Companion.toAlgorithm
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
@@ -56,7 +55,7 @@ fun generateCsr(
     }
 
     assertWithRetry {
-        command { post("/api/v1/certificates/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
+        command { post("/api/v1/certificates/$tenantId/$keyId", objectMapper.writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }
