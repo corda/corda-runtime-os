@@ -9,6 +9,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import kotlin.math.abs
@@ -17,7 +18,8 @@ import kotlin.math.abs
 class CordaAtomicDBProducerImpl(
     private val serializer: CordaAvroSerializer<Any>,
     private val dbAccess: DBAccess,
-    private val writeOffsets: WriteOffsets
+    private val writeOffsets: WriteOffsets,
+    private val headerSerializer: MessageHeaderSerializer
 ) : CordaProducer {
 
     init {
@@ -54,12 +56,14 @@ class CordaAtomicDBProducerImpl(
             } else {
                 null
             }
+            val serializedHeaders = headerSerializer.serialize(record.headers)
             TopicRecordEntry(
                 record.topic,
                 partition,
                 offset,
                 serializedKey,
                 serializedValue,
+                serializedHeaders,
                 ATOMIC_TRANSACTION,
             )
         }
