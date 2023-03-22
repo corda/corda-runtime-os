@@ -419,7 +419,7 @@ spec:
                 openssl req -x509 -sha256 -newkey rsa:4096 -keyout ca.key -out ca.crt -days 10000 -nodes -subj '/CN={{ include "corda.fullname" . }} Certificate Authority'
 
                 echo "Generate CSR for server certificate"
-                openssl req -new -newkey rsa:4096 -keyout server.key -out server.csr -nodes -subj '/CN=localhost'
+                openssl req -new -newkey rsa:4096 -keyout server.key -out server.csr -nodes -subj '/CN=*.c5.r3.com'
 
                 echo "Process CSR and issue a certificate"
                 openssl x509 -req -sha256 -days 1000 -in server.csr -CA ca.crt -CAkey ca.key -out server.crt -CAcreateserial
