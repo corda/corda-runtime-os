@@ -14,7 +14,6 @@ import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
-import net.corda.crypto.persistence.impl.toSigningCachedKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -168,7 +167,7 @@ class V1SigningKeyStoreTest {
     }
 
     @Test
-    fun `repository can correctly looks up a signing key by full ids`() {
+    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
         val hashA = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "0123456789AB".toByteArray())
         val hashB = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "123456789ABC".toByteArray())
         val shortA = ShortHash.of(hashA)
@@ -208,4 +207,6 @@ class V1SigningKeyStoreTest {
         assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
         assertThat(fullIdsCap.allValues.single()).isEqualTo(listOf(hashB.toString()))
     }
+
+
 }

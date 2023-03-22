@@ -14,6 +14,9 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 /**
  * Get access to crypto repository a specific tenant
  *
+ * NOTE: It's important to call [CryptoRepository.close] on the repository that is returned
+ * or you will run out of database connections
+ *
  * @param tenantId the ID to use (e.g. a virtual node holding ID, P2P or REST
  * @param dbConnectionManager used to make the database connection
  * @param jpaEntitiesRegistry

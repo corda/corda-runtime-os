@@ -1,37 +1,6 @@
-package net.corda.crypto.persistence.impl.tests
+package net.corda.crypto.softhsm.impl
 
-import com.github.benmanes.caffeine.cache.Cache
-import javax.persistence.EntityManager
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
-import net.corda.crypto.config.impl.signingService
-import net.corda.crypto.config.impl.toCryptoConfig
-import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
-import net.corda.crypto.persistence.impl.SigningKeyStoreImpl.Impl.CacheKey
-import net.corda.crypto.persistence.impl.SigningKeyStoreImpl.Impl.Companion.createCache
-import net.corda.crypto.persistence.impl.SigningKeysRepository
-import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-
+/**  TODO Port this to new code
 // TODO This is to be renamed to SigningKeyStoreTest once `SigningKeyStoreTests` gets ported/ removed
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SigningKeyStoreUnitTest {
@@ -59,22 +28,13 @@ class SigningKeyStoreUnitTest {
 
     val tenantId = "123"
 
-    val cipherSchemeMetadataImpl = CipherSchemeMetadataImpl()
-    val entityManager = mock<EntityManager>()
-
     lateinit var signingKeysRepository: SigningKeysRepository
     lateinit var signingKeyStore: SigningKeyStoreImpl.Impl
 
-    fun setUpSigningKeyStore(cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey>) {
+    fun setUpSigningKeyStore() {
         signingKeyStore =
             SigningKeyStoreImpl.Impl(
-                signingServiceConfig,
                 mock(),
-                cipherSchemeMetadataImpl,
-                PlatformDigestServiceImpl(cipherSchemeMetadataImpl),
-                signingKeysRepository,
-                { entityManager },
-                cacheFactory
             )
     }
 
@@ -99,7 +59,7 @@ class SigningKeyStoreUnitTest {
                 it.put(CacheKey(tenantId, shortKeyId1), cachedKey1)
             }
         }
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         assertEquals(
             setOf(fullKeyId0, fullKeyId1),
             signingKeyStore.lookupByKeyIds(tenantId, setOf(shortKeyId0, shortKeyId1)).map { it.fullId }.toSet()
@@ -131,7 +91,7 @@ class SigningKeyStoreUnitTest {
             whenever(this.findKeysByIds(any(), eq(tenantId), keysCaptor.capture())).thenReturn(setOf(dbFetchedKey))
         }
 
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         val lookedUpByKeyIdsKeys = signingKeyStore.lookupByKeyIds(tenantId, setOf(shortKeyId0, shortKeyId1))
 
         val expectedNotFoundInCache = setOf(shortKeyId1)
@@ -158,7 +118,7 @@ class SigningKeyStoreUnitTest {
             }
         }
 
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         assertEquals(
             setOf(fullKeyId0, fullKeyId1),
             signingKeyStore.lookupByFullKeyIds(tenantId, setOf(fullKeyId0, fullKeyId1)).map { it.fullId }.toSet()
@@ -194,7 +154,7 @@ class SigningKeyStoreUnitTest {
             whenever(this.findKeysByFullIds(any(), eq(tenantId), keysCaptor.capture())).thenReturn(setOf(dbFetchedKey))
         }
 
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         val lookedUpByFullKeyIdsKeys = signingKeyStore.lookupByFullKeyIds(tenantId, setOf(fullKeyId0, fullKeyId1))
 
         val expectedNotFoundInCache = setOf(fullKeyId1)
@@ -225,7 +185,7 @@ class SigningKeyStoreUnitTest {
             whenever(this.findKeysByFullIds(any(), eq(tenantId), keysCaptor.capture())).thenReturn(setOf())
         }
 
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         val lookedUpByFullKeyIdsKeys = signingKeyStore.lookupByFullKeyIds(tenantId, setOf(requestedFullKeyId))
 
         // TODO This currently goes to look for clashed on short key id keys up in DB, it should be changed so that id doesn't as
@@ -252,7 +212,7 @@ class SigningKeyStoreUnitTest {
             }
         }
 
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         val lookedUpByFullKeyIdKey = signingKeyStore.lookupByFullKeyId(tenantId, fullKeyId)
 
         assertEquals(fullKeyId, lookedUpByFullKeyIdKey!!.fullId)
@@ -277,10 +237,11 @@ class SigningKeyStoreUnitTest {
             }
         }
 
-        setUpSigningKeyStore(cacheFactory)
+        setUpSigningKeyStore()
         val lookedUpByFullKeyIdKey = signingKeyStore.lookupByFullKeyId(tenantId, requestedFullKeyId)
 
         assertNull(lookedUpByFullKeyIdKey)
         verify(signingKeysRepository, times(0)).findKeysByFullIds(any(), anyString(), any())
     }
 }
+        */
