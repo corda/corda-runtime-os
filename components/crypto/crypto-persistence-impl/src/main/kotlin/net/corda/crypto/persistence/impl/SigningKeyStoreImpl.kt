@@ -2,6 +2,10 @@ package net.corda.crypto.persistence.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import java.security.PublicKey
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+import javax.persistence.EntityManager
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -18,7 +22,6 @@ import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -33,23 +36,24 @@ import net.corda.crypto.persistence.createdBefore
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.externalId
+import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.persistence.masterKeyAlias
 import net.corda.crypto.persistence.schemeCodeName
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.PublicKey
-import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [SigningKeyStore::class])
@@ -62,10 +66,14 @@ class SigningKeyStoreImpl @Activate constructor(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
-    @Reference(service = CryptoConnectionsFactory::class)
-    private val connectionsFactory: CryptoConnectionsFactory,
     @Reference(service = PlatformDigestService::class)
-    private val digestService: PlatformDigestService
+    private val digestService: PlatformDigestService,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : AbstractConfigurableComponent<SigningKeyStoreImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<SigningKeyStore>(),
@@ -73,7 +81,8 @@ class SigningKeyStoreImpl @Activate constructor(
     upstream = DependenciesTracker.Default(
         setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-            LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>()
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
@@ -83,9 +92,9 @@ class SigningKeyStoreImpl @Activate constructor(
         event.config.toCryptoConfig().signingService(),
         layeredPropertyMapFactory,
         keyEncodingService,
-        connectionsFactory,
         digestService,
-        SigningKeysRepositoryImpl
+        SigningKeysRepositoryImpl,
+        ::createEntityManager,
     )
 
     override fun save(tenantId: String, context: SigningKeySaveContext) =
@@ -102,7 +111,7 @@ class SigningKeyStoreImpl @Activate constructor(
         skip: Int,
         take: Int,
         orderBy: SigningKeyOrderBy,
-        filter: Map<String, String>
+        filter: Map<String, String>,
     ): Collection<SigningCachedKey> =
         impl.lookup(tenantId, skip, take, orderBy, filter)
 
@@ -112,22 +121,31 @@ class SigningKeyStoreImpl @Activate constructor(
     override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
         impl.lookupByFullKeyIds(tenantId, fullKeyIds.toSet())
 
+    private fun createEntityManager(tenantId: String) = getEntityManagerFactory(
+        tenantId,
+        dbConnectionManager,
+        virtualNodeInfoReadService,
+        jpaEntitiesRegistry,
+    ).createEntityManager()
+
     class Impl(
         private val config: CryptoSigningServiceConfig,
         private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
         private val keyEncodingService: KeyEncodingService,
-        private val connectionsFactory: CryptoConnectionsFactory,
         private val digestService: PlatformDigestService,
         private val signingKeysRepository: SigningKeysRepository,
-        private val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = { createCache(it) }
+        private val entityManager: (String) -> EntityManager,
+        private val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = { createCache(it) },
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         companion object {
-            fun createCache(config: CryptoSigningServiceConfig): Cache<CacheKey, SigningCachedKey> = CacheFactoryImpl().build(
-                "Signing-Key-Cache",
-                Caffeine.newBuilder()
-                    .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                    .maximumSize(config.cache.maximumSize))
+            fun createCache(config: CryptoSigningServiceConfig): Cache<CacheKey, SigningCachedKey> =
+                CacheFactoryImpl().build(
+                    "Signing-Key-Cache",
+                    Caffeine.newBuilder()
+                        .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                        .maximumSize(config.cache.maximumSize)
+                )
         }
 
         data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
@@ -171,6 +189,7 @@ class SigningKeyStoreImpl @Activate constructor(
                         status = SigningKeyEntityStatus.NORMAL
                     )
                 }
+
                 is SigningWrappedKeySaveContext -> {
                     val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
                     keyId = publicKeyIdFromBytes(publicKeyBytes)
@@ -193,16 +212,17 @@ class SigningKeyStoreImpl @Activate constructor(
                         status = SigningKeyEntityStatus.NORMAL
                     )
                 }
+
                 else -> throw IllegalArgumentException("Unknown context type: ${context::class.java.name}")
             }
-            entityManagerFactory(tenantId).transaction {
+            entityManager(tenantId).transaction {
                 it.persist(entity)
             }
             cache.put(CacheKey(tenantId, ShortHash.of(keyId)), entity.toSigningCachedKey())
         }
 
         fun find(tenantId: String, alias: String): SigningCachedKey? {
-            val result = entityManagerFactory(tenantId).use { em ->
+            val result = entityManager(tenantId).use { em ->
                 signingKeysRepository.findByAliases(em, tenantId, listOf(alias))
             }
 
@@ -221,7 +241,7 @@ class SigningKeyStoreImpl @Activate constructor(
         fun lookupByFullKeyId(tenantId: String, requestedFullKeyId: SecureHash): SigningCachedKey? {
             val keyId = ShortHash.of(requestedFullKeyId)
             return cache.get(CacheKey(tenantId, keyId)) {
-                entityManagerFactory(tenantId).use { em ->
+                entityManager(tenantId).use { em ->
                     signingKeysRepository.findKeyByFullId(em, tenantId, requestedFullKeyId)
                 }
             }?.let {
@@ -240,8 +260,8 @@ class SigningKeyStoreImpl @Activate constructor(
             skip: Int,
             take: Int,
             orderBy: SigningKeyOrderBy,
-            filter: Map<String, String>
-        ): Collection<SigningCachedKey> = entityManagerFactory(tenantId).use { em ->
+            filter: Map<String, String>,
+        ): Collection<SigningCachedKey> = entityManager(tenantId).use { em ->
             val map = layeredPropertyMapFactory.create<SigningKeyFilterMapImpl>(filter)
             val builder = SigningKeyLookupBuilder(em)
             builder.equal(SigningKeyEntity::tenantId, tenantId)
@@ -271,7 +291,7 @@ class SigningKeyStoreImpl @Activate constructor(
             } else {
                 val notFound = requestedKeyIds - cachedKeys.mapTo(mutableSetOf()) { it.id }
                 val fetchedKeys =
-                    entityManagerFactory(tenantId).use { em ->
+                    entityManager(tenantId).use { em ->
                         signingKeysRepository.findKeysByIds(em, tenantId, notFound)
                     }
 
@@ -311,7 +331,7 @@ class SigningKeyStoreImpl @Activate constructor(
                     requestedFullKeyIds - cachedKeysByFullId.mapTo(mutableSetOf()) { it.fullId }
                 // We look for keys in DB by their full key ids so not risking a clash here
                 val fetchedKeys =
-                    entityManagerFactory(tenantId).use { em ->
+                    entityManager(tenantId).use { em ->
                         signingKeysRepository.findKeysByFullIds(em, tenantId, notFound)
                     }
                 fetchedKeys.forEach {
@@ -321,7 +341,6 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
-        private fun entityManagerFactory(tenantId: String) = connectionsFactory.getEntityManagerFactory(tenantId)
     }
 }
 

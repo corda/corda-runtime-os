@@ -1,5 +1,13 @@
 package net.corda.crypto.persistence.impl.tests
 
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
+import javax.persistence.PersistenceException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
@@ -21,7 +29,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -35,6 +42,7 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
@@ -45,6 +53,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
@@ -58,7 +67,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
@@ -71,14 +79,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
-import javax.persistence.PersistenceException
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class PersistenceTests {
@@ -92,7 +92,13 @@ class PersistenceTests {
         lateinit var publisherFactory: PublisherFactory
 
         @InjectService(timeout = 5000)
-        lateinit var cryptoConnectionsFactory: CryptoConnectionsFactory
+        lateinit var dbConnectionManager: DbConnectionManager
+
+        @InjectService(timeout = 5000)
+        lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+
+        @InjectService(timeout = 5000)
+        lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
         @InjectService(timeout = 5000)
         lateinit var hsmStore: HSMStore
@@ -120,9 +126,6 @@ class PersistenceTests {
         @JvmStatic
         @AfterAll
         fun cleanup() {
-            // cleanup the connections
-            cryptoConnectionsFactory.stop()
-            eventually { assertFalse(cryptoConnectionsFactory.isRunning) }
         }
 
 
@@ -137,7 +140,6 @@ class PersistenceTests {
                     ConfigurationReadService::class.java,
                     DbConnectionManager::class.java,
                     VirtualNodeInfoReadService::class.java,
-                    CryptoConnectionsFactory::class.java,
                     HSMStore::class.java,
                     SigningKeyStore::class.java,
                 )
@@ -159,8 +161,9 @@ class PersistenceTests {
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
-        private fun cryptoDbEmf(): EntityManagerFactory = cryptoConnectionsFactory.getEntityManagerFactory(
-            CryptoTenants.CRYPTO
+        private fun cryptoDbEmf(): EntityManagerFactory = getEntityManagerFactory(
+            CryptoTenants.CRYPTO,
+            dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry
         )
 
         private fun generateKeyPair(schemeName: String): KeyPair {
