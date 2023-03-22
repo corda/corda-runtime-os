@@ -141,6 +141,7 @@ class FlowRunnerImpl @Activate constructor(
         return flowFiberFactory.createAndResumeFlowFiber(fiberContext, flowContinuation)
     }
 
+    @Suppress("NestedBlockDepth")
     private fun getPropertiesWithCpiMetadata(
         holdingIdentity: HoldingIdentity,
         contextProperties: KeyValuePairList
