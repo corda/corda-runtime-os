@@ -8,7 +8,6 @@ import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope
 import org.slf4j.LoggerFactory
 
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory
     scope = ServiceScope.PROTOTYPE
 )
 class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
-    @Reference(service = VaultNamedQueryRegistry::class, scope = ReferenceScope.PROTOTYPE)
+    @Reference(service = VaultNamedQueryRegistry::class)
     private val vaultNamedQueryRegistry: VaultNamedQueryRegistry
 ): VaultNamedQueryBuilderFactory, UsedByPersistence {
 
@@ -30,6 +29,7 @@ class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
     }
 
     override fun create(queryName: String): VaultNamedQueryBuilder {
+        logger.info("Creating custom query with name: $queryName")
         logger.debug { "Creating custom query with name: $queryName" }
         return VaultNamedQueryBuilderImpl(vaultNamedQueryRegistry, queryName)
     }

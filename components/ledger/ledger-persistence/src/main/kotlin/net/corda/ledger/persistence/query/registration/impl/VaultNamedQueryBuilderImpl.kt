@@ -52,6 +52,7 @@ class VaultNamedQueryBuilderImpl(
     }
 
     override fun register() {
+        logger.info("Registering custom query with name: $name")
         logger.debug { "Registering custom query with name: $name" }
 
         vaultNamedQueryRegistry.registerQuery(

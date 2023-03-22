@@ -7,24 +7,36 @@ import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.getEntityManagerFactory
+import net.corda.sandbox.type.SandboxConstants
+import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
-@Component(service = [VaultNamedQueryExecutor::class])
+@Component(
+    service = [
+        VaultNamedQueryExecutor::class,
+        UsedByPersistence::class
+    ],
+    property = [
+        SandboxConstants.CORDA_MARKER_ONLY_SERVICE
+    ],
+    scope = ServiceScope.PROTOTYPE
+)
 class VaultNamedQueryExecutorImpl @Activate constructor(
     @Reference(service = EntitySandboxService::class)
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = VaultNamedQueryRegistry::class)
     private val registry: VaultNamedQueryRegistry,
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService
-): VaultNamedQueryExecutor {
+    private val serializationService: SerializationService,
+): VaultNamedQueryExecutor, UsedByPersistence {
 
     private companion object {
         private const val UTXO_RELEVANT_TX_TABLE = "utxo_relevant_transaction_state"

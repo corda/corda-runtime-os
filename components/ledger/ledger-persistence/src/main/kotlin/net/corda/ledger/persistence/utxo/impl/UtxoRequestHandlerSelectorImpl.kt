@@ -30,9 +30,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory,
-    @Reference(service = VaultNamedQueryExecutor::class)
-    private val vaultNamedQueryExecutor: VaultNamedQueryExecutor
+    private val responseFactory: ResponseFactory
 ): UtxoRequestHandlerSelector {
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
@@ -43,6 +41,9 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )
+
+        val vaultNamedQueryExecutor = sandbox.getSandboxSingletonService<VaultNamedQueryExecutor>()
+
         return when (val req = request.request) {
             is FindTransaction -> {
                 return UtxoFindTransactionRequestHandler(

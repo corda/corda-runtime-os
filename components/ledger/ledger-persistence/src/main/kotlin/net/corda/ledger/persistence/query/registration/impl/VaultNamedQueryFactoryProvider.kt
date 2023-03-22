@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
     scope = ServiceScope.PROTOTYPE
 )
 class VaultNamedQueryFactoryProvider @Activate constructor(
-    @Reference(service = VaultNamedQueryBuilderFactory::class, scope = ReferenceScope.PROTOTYPE)
+    @Reference(service = VaultNamedQueryBuilderFactory::class)
     private val vaultNamedQueryBuilderFactory: VaultNamedQueryBuilderFactory
 ) : UsedByPersistence, CustomMetadataConsumer {
 
@@ -34,11 +34,12 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
     override fun accept(context: MutableSandboxGroupContext) {
         val metadataServices = context.getMetadataServices<VaultNamedQueryFactory>()
 
+        logger.info("Found ${metadataServices.size} custom ledger queries")
+
         if (logger.isDebugEnabled) {
             logger.debug("Found ${metadataServices.size} custom ledger queries.")
         }
 
-        // TODO extra checks needed?
         metadataServices.forEach {
             it.create(vaultNamedQueryBuilderFactory)
         }
