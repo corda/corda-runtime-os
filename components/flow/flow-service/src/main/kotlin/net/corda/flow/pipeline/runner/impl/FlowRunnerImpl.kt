@@ -55,6 +55,7 @@ class FlowRunnerImpl @Activate constructor(
                     resumeFlow(context, flowContinuation)
                 }
             }
+
             else -> resumeFlow(context, flowContinuation)
         }
     }
@@ -66,8 +67,7 @@ class FlowRunnerImpl @Activate constructor(
 
         val contextPlatformProperties = getPropertiesWithCpiMetadata(
             context.checkpoint.holdingIdentity,
-            startFlowEvent.startContext.contextPlatformProperties,
-            true
+            startFlowEvent.startContext.contextPlatformProperties
         )
 
         return startFlow(
@@ -147,8 +147,7 @@ class FlowRunnerImpl @Activate constructor(
     @Suppress("NestedBlockDepth")
     private fun getPropertiesWithCpiMetadata(
         holdingIdentity: HoldingIdentity,
-        contextProperties: KeyValuePairList,
-        initialCheckpoint: Boolean = false
+        contextProperties: KeyValuePairList
     ): KeyValuePairList {
         return virtualNodeInfoReadService.get(holdingIdentity).let {
             if (it == null) contextProperties
@@ -166,13 +165,9 @@ class FlowRunnerImpl @Activate constructor(
                         this["corda.cpiFileChecksum"] = metadata.fileChecksum.toHexString()
                         this["corda.initialPlatformVersions"] = metadata.version.toString()
 
-                        if(initialCheckpoint) {
-                            this["corda.initialPlatformVersion"] = platformInfoProvider.localWorkerPlatformVersion.toString()
-                            this["corda.initialSoftwareVersion"] = platformInfoProvider.localWorkerSoftwareVersion
-                        } else {
-                            this["corda.currentPlatformVersion"] = platformInfoProvider.localWorkerPlatformVersion.toString()
-                            this["corda.currentSoftwareVersion"] = platformInfoProvider.localWorkerSoftwareVersion
-                        }
+                        this["corda.initialPlatformVersion"] =
+                            platformInfoProvider.localWorkerPlatformVersion.toString()
+                        this["corda.initialSoftwareVersion"] = platformInfoProvider.localWorkerSoftwareVersion
                     }
                 }.avro
             }
