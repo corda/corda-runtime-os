@@ -125,7 +125,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     // Against signatories. Notary/Unknown signatures are ignored.
-    @Suspendable // TODO: are these need to be suspendable?
+    @Suspendable //TODO are these need to be suspendable?
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatures = signatures.mapNotNull {
             val publicKey = getSignatoryKeyFromKeyId(it.by)

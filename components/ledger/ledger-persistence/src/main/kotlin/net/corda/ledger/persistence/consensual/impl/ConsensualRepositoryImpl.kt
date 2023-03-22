@@ -13,7 +13,6 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

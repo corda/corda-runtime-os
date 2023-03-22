@@ -118,7 +118,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             utxoTransactionBuilder.notaryName,
             utxoTransactionBuilder.notaryKey,
             utxoTransactionBuilder.timeWindow,
-            /*TODO notaryallowlist*/
+            //TODO notaryallowlist
         )
 
         val encumbranceGroupSizes =

@@ -220,7 +220,9 @@ class ConsensualFinalityFlowV1Test {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob), eq(publicKeyBob))).thenThrow(CryptoSignatureException(""))
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob), eq(publicKeyBob))).thenThrow(
+            CryptoSignatureException("")
+        )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CryptoSignatureException::class.java)
