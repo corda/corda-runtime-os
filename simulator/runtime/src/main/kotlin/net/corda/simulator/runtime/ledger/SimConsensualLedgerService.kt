@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger
 
+import net.corda.crypto.core.bytes
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.runtime.messaging.SimFiber

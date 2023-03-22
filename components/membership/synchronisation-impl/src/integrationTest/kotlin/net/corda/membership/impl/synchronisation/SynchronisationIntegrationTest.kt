@@ -8,6 +8,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.bytes
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
