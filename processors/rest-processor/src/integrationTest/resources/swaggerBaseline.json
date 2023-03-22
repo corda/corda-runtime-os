@@ -4404,7 +4404,7 @@
           }
         }
       },
-      "HostedIdentitySessionKey" : {
+      "HostedIdentitySessionKeyAndCertificate" : {
         "required" : [ "preferred", "sessionKeyId" ],
         "type" : "object",
         "properties" : {
@@ -4426,7 +4426,7 @@
         }
       },
       "HostedIdentitySetupRequest" : {
-        "required" : [ "p2pTlsCertificateChainAlias", "sessionKeys" ],
+        "required" : [ "p2pTlsCertificateChainAlias", "sessionKeysAndCertificates" ],
         "type" : "object",
         "properties" : {
           "p2pTlsCertificateChainAlias" : {
@@ -4434,12 +4434,12 @@
             "nullable" : false,
             "example" : "string"
           },
-          "sessionKeys" : {
+          "sessionKeysAndCertificates" : {
             "uniqueItems" : false,
             "type" : "array",
             "nullable" : false,
             "items" : {
-              "$ref" : "#/components/schemas/HostedIdentitySessionKey"
+              "$ref" : "#/components/schemas/HostedIdentitySessionKeyAndCertificate"
             }
           },
           "useClusterLevelTlsCertificateAndKey" : {

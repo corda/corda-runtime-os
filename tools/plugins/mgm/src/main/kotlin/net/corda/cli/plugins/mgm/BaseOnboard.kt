@@ -314,7 +314,7 @@ abstract class BaseOnboard : Runnable {
                         "p2pTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
                         "useClusterLevelTlsCertificateAndKey" to true,
                         "sessionKeyTenantId" to null,
-                        "sessionKeys" to
+                        "sessionKeysAndCertificates" to
                             sessionKeyIds.map {
                                 mapOf("sessionKeyId" to it)
                             }
