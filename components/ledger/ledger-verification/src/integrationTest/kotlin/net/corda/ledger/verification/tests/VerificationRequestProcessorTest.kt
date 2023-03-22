@@ -38,7 +38,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -82,7 +81,6 @@ class VerificationRequestProcessorTest {
             .also {
                 it.initialize(512)
             }.genKeyPair().public
-        val NOTARY = Party(NOTARY_X500_NAME, PUBLIC_KEY)
         val REQUEST_ID = UUID.randomUUID().toString()
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             REQUEST_ID, "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
@@ -248,7 +246,7 @@ class VerificationRequestProcessorTest {
 
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-                null, null, NOTARY, outputState::class.java.canonicalName, "contract tag"
+                null, null, NOTARY_X500_NAME, PUBLIC_KEY, outputState::class.java.canonicalName, "contract tag"
             )
         ).bytes
 

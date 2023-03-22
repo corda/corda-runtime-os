@@ -1,5 +1,6 @@
 package net.corda.uniqueness.backingstore.impl
 
+import net.corda.crypto.core.bytes
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
