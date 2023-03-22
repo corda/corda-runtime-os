@@ -5,7 +5,6 @@ import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationFactory
 import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import java.sql.Blob
 
