@@ -17,6 +17,7 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -24,6 +25,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("LongParameterList")
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberFactory::class)
@@ -36,6 +38,8 @@ class FlowRunnerImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider,
 ) : FlowRunner {
     override fun runFlow(
         context: FlowEventContext<Any>,
@@ -62,7 +66,8 @@ class FlowRunnerImpl @Activate constructor(
 
         val contextPlatformProperties = getPropertiesWithCpiMetadata(
             context.checkpoint.holdingIdentity,
-            startFlowEvent.startContext.contextPlatformProperties
+            startFlowEvent.startContext.contextPlatformProperties,
+            true
         )
 
         return startFlow(
@@ -142,19 +147,31 @@ class FlowRunnerImpl @Activate constructor(
     @Suppress("NestedBlockDepth")
     private fun getPropertiesWithCpiMetadata(
         holdingIdentity: HoldingIdentity,
-        contextProperties: KeyValuePairList
+        contextProperties: KeyValuePairList,
+        initialCheckpoint: Boolean = false
     ): KeyValuePairList {
         return virtualNodeInfoReadService.get(holdingIdentity).let {
             if (it == null) contextProperties
             else {
                 return KeyValueStore().apply {
                     cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
-                        this["corda.cpiName"] = metadata.cpiId.name
-                        this["corda.cpiVersion"] = metadata.version.toString()
-                        this["corda.cpiSignerSummaryHash"] = metadata.cpiId.signerSummaryHash.toHexString()
-                        this["corda.cpiFileChecksum"] = metadata.fileChecksum.toHexString()
+                        // Copy other properties first so that they wont override current values
                         contextProperties.items.forEach { prop ->
                             this[prop.key] = prop.value
+                        }
+
+                        this["corda.cpiName"] = metadata.cpiId.name
+                        this["corda.cpiVersion"] = metadata.cpiId.version
+                        this["corda.cpiSignerSummaryHash"] = metadata.cpiId.signerSummaryHash.toHexString()
+                        this["corda.cpiFileChecksum"] = metadata.fileChecksum.toHexString()
+                        this["corda.initialPlatformVersions"] = metadata.version.toString()
+
+                        if(initialCheckpoint) {
+                            this["corda.initialPlatformVersion"] = platformInfoProvider.localWorkerPlatformVersion.toString()
+                            this["corda.initialSoftwareVersion"] = platformInfoProvider.localWorkerSoftwareVersion
+                        } else {
+                            this["corda.currentPlatformVersion"] = platformInfoProvider.localWorkerPlatformVersion.toString()
+                            this["corda.currentSoftwareVersion"] = platformInfoProvider.localWorkerSoftwareVersion
                         }
                     }
                 }.avro

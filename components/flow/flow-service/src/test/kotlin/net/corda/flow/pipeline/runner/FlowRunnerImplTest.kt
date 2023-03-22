@@ -35,6 +35,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -63,6 +64,7 @@ class FlowRunnerImplTest {
     private val cpiInfoReadService = mock<CpiInfoReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val platformInfoProvider = mock<PlatformInfoProvider>()
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessions = mutableListOf() }
@@ -74,7 +76,8 @@ class FlowRunnerImplTest {
         flowFactory,
         flowFiberExecutionContextFactory,
         cpiInfoReadService,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        platformInfoProvider
     )
 
     private val userContext = KeyValueStore().apply {
@@ -98,6 +101,8 @@ class FlowRunnerImplTest {
         )
         whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
+        whenever(platformInfoProvider.localWorkerPlatformVersion).thenReturn(1)
+        whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("1")
     }
 
     @BeforeEach
