@@ -53,6 +53,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
@@ -162,6 +163,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
+        val notaryProtocolVersionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("[0-9]+").toRegex()
     }
 
     // for watching the config changes
@@ -461,6 +463,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+                }
+                context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
+                    require(orderVerifier.isOrdered(this, 6)) { "Provided notary protocol versions are incorrectly numbered." }
                 }
             }
         }

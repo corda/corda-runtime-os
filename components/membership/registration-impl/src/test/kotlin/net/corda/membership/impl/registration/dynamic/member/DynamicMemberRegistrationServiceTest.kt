@@ -51,6 +51,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
@@ -894,6 +895,23 @@ class DynamicMemberRegistrationServiceTest {
             }
 
             assertThat(exception).hasMessageContaining("notary key")
+        }
+
+        @Test
+        fun `registration fails when protocol versions are numbered incorrectly`() {
+            postConfigChangedEvent()
+            val testProperties =
+                context + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 5) to "1",
+                    "corda.notary.keys.0.id" to LEDGER_KEY_ID,
+                )
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
         }
     }
 
