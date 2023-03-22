@@ -20,6 +20,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -85,7 +86,7 @@ class CryptoWorker @Activate constructor(
         params.defaultParams,
         configurationValidatorFactory.createConfigValidator(),
         listOf(
-            PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams),
+            PathAndConfig(BootConfig.BOOT_DB, params.databaseParams),
             PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         )
     )
@@ -95,7 +96,7 @@ class CryptoWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @CommandLine.Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
+    @CommandLine.Option(names = ["-d", "--$BOOT_DB"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
     // TODO - delete me as part of removing multiple HSM support, CORE-10050

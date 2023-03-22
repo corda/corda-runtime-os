@@ -32,10 +32,7 @@
     "db": {
       "description": "Configuration options related to database.",
       "properties": {
-        "params": {
-          "description": "Additional db params the worker is bootstrapped with.",
-          "properties": {
-            "database" : {
+        "database" : {
               "description": "Database params",
               "properties": {
                 "jdbc": {
@@ -79,9 +76,7 @@
                   ]
                 }
               }
-            }
-          }
-        },
+            },
         "bus": {
           "description": "Details about the bus type if it is backed by a DB",
           "properties": {
@@ -127,7 +122,37 @@
       "default": 972800,
       "minimum": 512000,
       "maximum": 8388608
-    }
+    },
+    "rest": {
+      "description": "Configuration options related to REST worker.",
+      "properties": {
+        "tls" : {
+          "description": "Transport Layer Security (TLS) params",
+          "properties": {
+            "keystore": {
+              "description": "Keystore info",
+              "properties": {
+                "path": {
+                  "description": "Path to a Keystore file",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "password": {
+                  "description": "The password for the Keystore",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "additionalProperties": false
   },
   "additionalProperties": false
 }

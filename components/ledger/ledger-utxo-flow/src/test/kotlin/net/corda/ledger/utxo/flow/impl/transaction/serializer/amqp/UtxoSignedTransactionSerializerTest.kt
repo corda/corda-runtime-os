@@ -8,7 +8,7 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.utilities.serialization.deserialize
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +46,7 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val signedTx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addEncumberedOutputStates(
                 "encumbrance 1",

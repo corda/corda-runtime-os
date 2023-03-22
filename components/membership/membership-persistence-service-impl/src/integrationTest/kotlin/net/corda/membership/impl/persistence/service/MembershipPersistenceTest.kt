@@ -131,12 +131,13 @@ class MembershipPersistenceTest {
     companion object {
 
         private const val EPOCH_KEY = "corda.epoch"
-        private const val MPV_KEY = "corda.minimumPlatformVersion"
         private const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 
         private const val RULE_ID = "rule-id"
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
+
+        private const val REGISTRATION_SERIAL = 0L
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -528,7 +529,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf())
                 ),
                 CryptoSignatureSpec("", null, null),
-                true
+                REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -595,10 +597,9 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.epoch).isEqualTo(1)
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(3)
+            assertThat(deserialized.size).isEqualTo(2)
             assertThat(deserialized[EPOCH_KEY]).isEqualTo("1")
             assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
         }
     }
 
@@ -613,7 +614,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "1"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000")
                         )
                     )
                 )!!
@@ -622,7 +622,6 @@ class MembershipPersistenceTest {
         }
         val groupParameters = layeredPropertyMapFactory.create<TestGroupParametersImpl>(mapOf(
             EPOCH_KEY to "2",
-            MPV_KEY to "5000",
             MODIFIED_TIME_KEY to clock.instant().toString()
         ))
         val persisted = membershipPersistenceClientWrapper.persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
@@ -637,10 +636,9 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(3)
+            assertThat(deserialized.size).isEqualTo(2)
             assertThat(deserialized[EPOCH_KEY]).isEqualTo("2")
             assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
         }
     }
 
@@ -655,7 +653,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "50"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000")
                         )
                     )
                 )!!
@@ -698,7 +695,6 @@ class MembershipPersistenceTest {
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
@@ -777,7 +773,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "100"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000"),
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
@@ -789,7 +784,6 @@ class MembershipPersistenceTest {
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "101"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
@@ -872,7 +866,6 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "150"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair(MPV_KEY, "5000"),
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
@@ -885,7 +878,6 @@ class MembershipPersistenceTest {
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "151"),
-            KeyValuePair(MPV_KEY, "5000"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
@@ -1070,7 +1062,8 @@ class MembershipPersistenceTest {
                         signature
                     ),
                     CryptoSignatureSpec("", null, null),
-                    true
+                    REGISTRATION_SERIAL,
+                    true,
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
@@ -1123,7 +1116,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf())
                 ),
                 CryptoSignatureSpec("", null, null),
-                true
+                REGISTRATION_SERIAL,
+                true,
             )
         )
 
@@ -1491,7 +1485,8 @@ class MembershipPersistenceTest {
                     ByteBuffer.wrap(byteArrayOf())
                 ),
                 CryptoSignatureSpec("", null, null),
-                true
+                REGISTRATION_SERIAL,
+                true,
             )
         )
     }
@@ -1500,7 +1495,6 @@ class MembershipPersistenceTest {
         private val map: LayeredPropertyMap
     ) : LayeredPropertyMap by map, GroupParameters {
         override fun getEpoch() = 5
-        override fun getMinimumPlatformVersion() = 5000
         override fun getModifiedTime() = clock.instant()
         override fun getNotaries(): List<NotaryInfo> = emptyList()
     }

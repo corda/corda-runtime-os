@@ -5,6 +5,7 @@ import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.clearMDC
 import net.corda.utilities.setMDC
 import net.corda.v5.base.annotations.Suspendable
@@ -133,7 +134,13 @@ class FlowFiberImpl(
         parkAndSerialize(SerializableFiberWriter { _, _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
-            val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+            val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
+                .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
+                .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
+                .build()
+                .recordCallable {
+                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+                }
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
         })
 
@@ -141,7 +148,7 @@ class FlowFiberImpl(
         setCurrentSandboxGroupContext()
 
         @Suppress("unchecked_cast")
-        return when (val outcome = suspensionOutcome!!) {
+        return when (val outcome = suspensionOutcome ?: throw IllegalStateException("FlowFiber suspensionOutcome is missing!")) {
             is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
             is FlowContinuation.Error -> throw FlowContinuationErrorException(
                 // We populate the container exception message in case user code has a try/catch around the failing statement.
@@ -223,8 +230,6 @@ class FlowFiberImpl(
     private fun removeCurrentSandboxGroupContext() {
         getExecutionContext().currentSandboxGroupContext.remove()
     }
-
-    private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError
 
     private fun initialiseThreadContext() {
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader

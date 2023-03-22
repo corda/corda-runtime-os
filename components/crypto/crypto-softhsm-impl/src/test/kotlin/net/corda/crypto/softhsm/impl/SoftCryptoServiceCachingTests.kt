@@ -1,24 +1,33 @@
 package net.corda.crypto.softhsm.impl
 
+import java.security.PublicKey
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.persistence.HSMUsage
+import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.kotlin.mock
-import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -46,7 +55,9 @@ class SoftCryptoServiceCachingTests {
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
         val myCryptoService =
-            makeSoftCryptoService(privateKeyCache = privateKeyCache, wrappingKeyCache = wrappingKeyCache,
+            makeSoftCryptoService(
+                privateKeyCache = privateKeyCache,
+                wrappingKeyCache = wrappingKeyCache,
                 rootWrappingKey = rootWrappingKey,
                 wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
                     CountingWrappingKey(
@@ -151,20 +162,77 @@ class SoftCryptoServiceCachingTests {
 
         var saveCount = 0
         var findCount = 0
-        val countingWrappingStore = object : TestWrappingKeyStore(mock()) {
+        val testCryptoRepository = TestCryptoRepository()
+        val countingCryptoRepository = object : CryptoRepository {
             override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
                 saveCount++
-                return super.saveWrappingKey(alias, key)
+                return testCryptoRepository.saveWrappingKey(alias, key)
             }
 
             override fun findWrappingKey(alias: String): WrappingKeyInfo? {
                 findCount++
-                return super.findWrappingKey(alias)
+                return testCryptoRepository.findWrappingKey(alias)
+            }
+
+            override fun saveSigningKey(tenantId: String, context: SigningKeySaveContext) {
+                TODO("Not yet implemented")
+            }
+
+            override fun findSigningKey(tenantId: String, alias: String): SigningCachedKey? {
+                TODO("Not yet implemented")
+            }
+
+            override fun findSigningKey(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
+                TODO("Not yet implemented")
+            }
+
+            override fun lookupSigningKey(
+                tenantId: String,
+                skip: Int,
+                take: Int,
+                orderBy: SigningKeyOrderBy,
+                filter: Map<String, String>,
+            ): Collection<SigningCachedKey> {
+                TODO("Not yet implemented")
+            }
+
+            override fun lookupSigningKeysByIds(
+                tenantId: String,
+                keyIds: Set<ShortHash>,
+            ): Collection<SigningCachedKey> {
+                TODO("Not yet implemented")
+            }
+
+            override fun lookupSigningKeysByFullIds(
+                tenantId: String,
+                fullKeyIds: Set<SecureHash>,
+            ): Collection<SigningCachedKey> {
+                TODO("Not yet implemented")
+            }
+
+            override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? {
+                TODO("Not yet implemented")
+            }
+
+            override fun getHSMUsage(): List<HSMUsage> {
+                TODO("Not yet implemented")
+            }
+
+            override fun associate(
+                tenantId: String,
+                category: String,
+                hsmId: String,
+                masterKeyPolicy: MasterKeyPolicy,
+            ): HSMAssociationInfo {
+                TODO("Not yet implemented")
+            }
+
+            override fun close() {
             }
         }
         val wrappingKeyCache = makeWrappingKeyCache()
         val myCryptoService = makeSoftCryptoService(
-            wrappingKeyStore = countingWrappingStore,
+            cryptoRepository = countingCryptoRepository,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
@@ -175,9 +243,9 @@ class SoftCryptoServiceCachingTests {
         assertNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         assertNull(wrappingKeyCache.getIfPresent(cacheAlias))
-        assertNull(countingWrappingStore.findWrappingKey(alias))
-        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
-        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+        assertNull(countingCryptoRepository.findWrappingKey(alias))
+        assertNull(countingCryptoRepository.findWrappingKey(unknownAlias))
+        assertNull(countingCryptoRepository.findWrappingKey(cacheAlias))
 
         assertThat(findCount).isEqualTo(3)
         assertThat(saveCount).isEqualTo(0)
@@ -191,9 +259,9 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         assertNull(wrappingKeyCache.getIfPresent(cacheAlias))
-        assertNotNull(countingWrappingStore.findWrappingKey(alias))
-        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
-        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+        assertNotNull(countingCryptoRepository.findWrappingKey(alias))
+        assertNull(countingCryptoRepository.findWrappingKey(unknownAlias))
+        assertNull(countingCryptoRepository.findWrappingKey(cacheAlias))
 
         assertThat(findCount).isEqualTo(7)
 
@@ -207,9 +275,9 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         assertNotNull(wrappingKeyCache.getIfPresent(cacheAlias))
-        assertNotNull(countingWrappingStore.findWrappingKey(alias))
-        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
-        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+        assertNotNull(countingCryptoRepository.findWrappingKey(alias))
+        assertNull(countingCryptoRepository.findWrappingKey(unknownAlias))
+        assertNull(countingCryptoRepository.findWrappingKey(cacheAlias))
     }
     
 }

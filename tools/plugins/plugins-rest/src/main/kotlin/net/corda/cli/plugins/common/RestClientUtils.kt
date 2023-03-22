@@ -2,12 +2,15 @@ package net.corda.cli.plugins.common
 
 import net.corda.rest.RestResource
 import net.corda.rest.client.RestClient
+import net.corda.rest.client.RestConnectionListener
 import net.corda.rest.client.config.RestClientConfig
+import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import kotlin.reflect.KClass
+import kotlin.system.exitProcess
 
 object RestClientUtils {
 
@@ -20,16 +23,36 @@ object RestClientUtils {
         } else {
             targetUrl
         }
-        return RestClient(
+        val restClient = RestClient(
             baseAddress = "$localTargetUrl/api/v1/",
             restResource.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(!insecure)
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
                 .username(username)
                 .password(password),
             healthCheckInterval = 500
         )
+
+        restClient.addConnectionListener(ConnectionListener())
+        return restClient
+    }
+
+    private class ConnectionListener<I : RestResource> : RestConnectionListener<I> {
+        override fun onConnect(context: RestConnectionListener.RestConnectionContext<I>) {}
+
+        override fun onDisconnect(context: RestConnectionListener.RestConnectionContext<I>) {}
+
+        override fun onPermanentFailure(context: RestConnectionListener.RestConnectionContext<I>) {
+            when (context.throwableOpt) {
+                is ClientSslHandshakeException -> {
+                    errOut.error("Unable to verify server's SSL certificate. " +
+                            "Please check the target parameter or use '--insecure' option.")
+                    exitProcess(1)
+                }
+            }
+        }
     }
 
     fun <T> executeWithRetry(

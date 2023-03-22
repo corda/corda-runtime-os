@@ -412,11 +412,11 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration persist the status`() {
-            val status = argumentCaptor<RegistrationRequest>()
+            val capturedRequest = argumentCaptor<RegistrationRequest>()
             whenever(
                 persistenceClient.persistRegistrationRequest(
                     eq(alice),
-                    status.capture()
+                    capturedRequest.capture()
                 )
             ).doReturn(MembershipPersistenceResult.success())
             setUpPublisher()
@@ -424,7 +424,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, alice, mockContext)
 
-            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+            val registrationRequest = capturedRequest.firstValue
+            assertThat(registrationRequest.status).isEqualTo(RegistrationStatus.APPROVED)
+            assertThat(registrationRequest.serial).isEqualTo(0L)
         }
 
         @Test

@@ -4,10 +4,8 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.staticgroup.StaticGroupDefinition
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -38,7 +36,6 @@ import java.util.concurrent.CompletableFuture
 
 class GroupParametersCacheTest {
     private companion object {
-        const val MPV = 5000
         const val EPOCH = 1
         const val KNOWN_NOTARY_SERVICE = "O=NotaryA, L=LDN, C=GB"
         const val KNOWN_NOTARY_PLUGIN = "net.corda.notary.MyNotaryService"
@@ -46,9 +43,6 @@ class GroupParametersCacheTest {
 
     private val knownGroupId = UUID.randomUUID().toString()
     private val knownIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), knownGroupId)
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn MPV
-    }
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsString(any()) } doReturn "test-key"
     }
@@ -66,7 +60,7 @@ class GroupParametersCacheTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
         ))
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
 
         groupParametersCache.set(knownGroupId, groupParameters)
 
@@ -75,7 +69,7 @@ class GroupParametersCacheTest {
 
     @Test
     fun `when cache is empty, getOrCreateGroupParameters publishes snapshot`() {
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
 
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
@@ -84,7 +78,6 @@ class GroupParametersCacheTest {
             with(value as StaticGroupDefinition) {
                 val params = this.groupParameters.toMap()
                 assertThat(params[EPOCH_KEY]).isEqualTo("1")
-                assertThat(params[MPV_KEY]).isEqualTo("5000")
                 assertThat(Instant.parse(params[MODIFIED_TIME_KEY])).isBeforeOrEqualTo(Instant.now())
             }
         }
@@ -113,7 +106,7 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
         groupParametersCache.addNotary(notary, emptySet())
@@ -125,7 +118,6 @@ class GroupParametersCacheTest {
                 assertThat(params).anyMatch { it.key == MODIFIED_TIME_KEY }
                 assertThat(params.filterNot { it.key == MODIFIED_TIME_KEY }).containsExactlyInAnyOrder(
                         KeyValuePair(EPOCH_KEY, "2"),
-                        KeyValuePair(MPV_KEY, MPV.toString()),
                         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), KNOWN_NOTARY_SERVICE),
                         KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), KNOWN_NOTARY_PLUGIN),
                         KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
@@ -160,10 +152,9 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(mock(), publisher, keyEncodingService)
         val existingGroupParameters = KeyValuePairList(mutableListOf(
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
-            KeyValuePair(MPV_KEY, MPV.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
@@ -180,7 +171,6 @@ class GroupParametersCacheTest {
                 assertThat(params).anyMatch { it.key == MODIFIED_TIME_KEY }
                 assertThat(params.filterNot { it.key == MODIFIED_TIME_KEY }).containsExactlyInAnyOrder(
                     KeyValuePair(EPOCH_KEY, "2"),
-                    KeyValuePair(MPV_KEY, MPV.toString()),
                     KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),

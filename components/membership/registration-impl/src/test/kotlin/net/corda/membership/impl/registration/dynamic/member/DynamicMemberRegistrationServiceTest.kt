@@ -21,6 +21,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -37,6 +38,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -54,6 +56,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_SIGNATURE_SPEC
@@ -95,12 +98,14 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mockito
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -310,6 +315,9 @@ class DynamicMemberRegistrationServiceTest {
         on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
+    private val registrationContextCustomFieldsVerifier = Mockito.mockConstruction(RegistrationContextCustomFieldsVerifier::class.java) {
+        mock, _ -> whenever(mock.verify(context)).doReturn(RegistrationContextCustomFieldsVerifier.Result.Success)
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -324,7 +332,7 @@ class DynamicMemberRegistrationServiceTest {
         ephemeralKeyPairEncryptor,
         virtualNodeInfoReadService,
         locallyHostedIdentitiesService,
-        configurationGetService,
+        configurationGetService
     )
 
     private val context = mapOf(
@@ -335,6 +343,11 @@ class DynamicMemberRegistrationServiceTest {
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
         "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
     )
+
+    @AfterEach
+    fun cleanUp() {
+        registrationContextCustomFieldsVerifier.close()
+    }
 
     private fun postStartEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -391,6 +404,54 @@ class DynamicMemberRegistrationServiceTest {
                 it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))
             }
             registrationService.stop()
+        }
+
+        @Test
+        fun `registration request contains default serial for first time registration`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val capturedContext = argumentCaptor<KeyValuePairList>()
+            val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(keyValuePairListSerializer).serialize(capturedContext.capture())
+            verify(registrationRequestSerializer).serialize(capturedRequest.capture())
+            SoftAssertions.assertSoftly {
+                it.assertThat(capturedContext.firstValue.toMap()).doesNotContainKey(SERIAL)
+                it.assertThat(capturedRequest.firstValue.serial).isEqualTo(0)
+            }
+        }
+
+        @Test
+        fun `registration request contains current serial for re-registration`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val memberInfo = mock<MemberInfo> {
+                on { serial } doReturn 4
+            }
+            whenever(groupReader.lookup(memberName)).doReturn(memberInfo)
+            val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(registrationRequestSerializer).serialize(capturedRequest.capture())
+            assertThat(capturedRequest.firstValue.serial).isEqualTo(4)
+        }
+
+        @Test
+        fun `registration request contains serial from registration context when included`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val context = mapOf(
+                "corda.session.key.id" to SESSION_KEY_ID,
+                "corda.session.key.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.endpoints.0.connectionURL" to "https://localhost:1080",
+                "corda.endpoints.0.protocolVersion" to "1",
+                "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
+                "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.serial" to "12"
+            )
+            val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(registrationRequestSerializer).serialize(capturedRequest.capture())
+            assertThat(capturedRequest.firstValue.serial).isEqualTo(12)
         }
 
         @Test
@@ -511,6 +572,19 @@ class DynamicMemberRegistrationServiceTest {
             assertThat(exception)
                 .hasMessageContaining("The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
             registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails if custom field validation fails`() {
+            whenever(registrationContextCustomFieldsVerifier.constructed().first().verify(context)).thenReturn(
+                RegistrationContextCustomFieldsVerifier.Result.Failure("")
+            )
+            postConfigChangedEvent()
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
         }
 
         @Test
@@ -650,6 +724,23 @@ class DynamicMemberRegistrationServiceTest {
             }
 
             assertThat(exception).hasMessageContaining("is missing TLS certificates")
+        }
+
+        @Test
+        fun `registration fails when MGM info cannot be found`() {
+            // return non-MGM info on lookup
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mock()
+            }
+            whenever(groupReader.lookup()).doReturn(listOf(memberInfo))
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("MGM information")
         }
     }
 

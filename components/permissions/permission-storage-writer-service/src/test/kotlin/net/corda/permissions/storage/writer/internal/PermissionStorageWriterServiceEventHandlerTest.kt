@@ -15,7 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.DatabaseConfig.DB_PASS
@@ -61,7 +61,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
-                BOOT_DB_PARAMS,
+                BOOT_DB,
                 ConfigValueFactory.fromMap(
                     mapOf(
                         JDBC_URL to "dbUrl",

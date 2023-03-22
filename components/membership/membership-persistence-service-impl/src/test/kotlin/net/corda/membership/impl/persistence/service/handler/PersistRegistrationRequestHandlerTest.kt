@@ -133,7 +133,8 @@ class PersistRegistrationRequestHandlerTest {
                 ByteBuffer.wrap("456".toByteArray())
             ),
             CryptoSignatureSpec("dummySignature", null, null),
-            true
+            true,
+            0L,
         )
     )
 

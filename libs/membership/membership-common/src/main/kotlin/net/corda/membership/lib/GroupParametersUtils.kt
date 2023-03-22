@@ -14,7 +14,6 @@ const val NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY = "corda.notary.service.%s.flow.p
 const val NOTARY_SERVICE_KEYS_KEY = "corda.notary.service.%s.keys.%s"
 const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
 const val EPOCH_KEY = "corda.epoch"
-const val MPV_KEY = "corda.minimumPlatformVersion"
 const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 const val NOTARIES_KEY = "corda.notary.service"
 

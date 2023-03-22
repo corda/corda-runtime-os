@@ -11,6 +11,7 @@ import java.time.Instant
  * @param registrationStatus Status of registration request.
  * @param memberInfoSubmitted Information sent to the MGM for registration.
  * @param reason Reason why the request is in the status specified by [registrationStatus].
+ * @param serial The version the member wanted to update with their request. 0 for first time registrations.
  */
 data class RestRegistrationRequestStatus(
     val registrationId: String,
@@ -19,4 +20,5 @@ data class RestRegistrationRequestStatus(
     val registrationStatus: RegistrationStatus,
     val memberInfoSubmitted: MemberInfoSubmitted,
     val reason: String?,
+    val serial: Long?,
 )

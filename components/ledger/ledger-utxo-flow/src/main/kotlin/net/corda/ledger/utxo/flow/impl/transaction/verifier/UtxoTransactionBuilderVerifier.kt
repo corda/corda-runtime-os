@@ -9,7 +9,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
  * [UtxoTransactionVerifier] contains the ones shared with ledger transaction verifications.
  * The ones in this file are pointless on Ledger Transactions.
  */
-class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderInternal) :
+class UtxoTransactionBuilderVerifier(
+    private val transactionBuilder: UtxoTransactionBuilderInternal
+) :
     UtxoTransactionVerifier() {
     override val subjectClass: String = UtxoTransactionBuilder::class.simpleName!!
 
@@ -32,9 +34,14 @@ class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransac
     }
 
     private fun verifyNotary() {
-        checkNotNull(transactionBuilder.notary) {
-            "The notary of the current $subjectClass must not be null."
+        checkNotNull(transactionBuilder.notaryName) {
+            "The notary name of the current $subjectClass must not be null."
         }
+        checkNotNull(transactionBuilder.notaryKey) {
+            "The notary ${transactionBuilder.notaryName} of the current $subjectClass cannot be found or is not a valid notary."
+        }
+
+
     }
 
     private fun verifyTimeWindow() {

@@ -40,4 +40,11 @@ abstract class RestCommand : ExtensionPoint {
                 "Defaults to 10 seconds if missing."]
     )
     var waitDurationSeconds: Int = 10
+
+    @Option(
+        names = ["-k", "--insecure"],
+        required = false,
+        description = ["Allow insecure server connections with SSL. Defaults to 'false' if missing."]
+    )
+    var insecure: Boolean = false
 }

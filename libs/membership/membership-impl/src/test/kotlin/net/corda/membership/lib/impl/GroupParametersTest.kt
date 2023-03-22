@@ -6,7 +6,6 @@ import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
@@ -49,12 +48,10 @@ class GroupParametersTest {
     }
 
     private fun createTestParams(
-        mpv: Int = VALID_VALUE,
         epoch: Int = VALID_VALUE,
         time: Instant = modifiedTime
     ) = LayeredPropertyMapMocks.create<GroupParametersImpl>(
         sortedMapOf(
-            MPV_KEY to mpv.toString(),
             EPOCH_KEY to epoch.toString(),
             MODIFIED_TIME_KEY to time.toString(),
             String.format(NOTARY_SERVICE_NAME_KEY, 0) to notaryAName.toString(),
@@ -74,7 +71,6 @@ class GroupParametersTest {
     fun `group parameters are created successfully`() {
         val params = createTestParams()
         assertSoftly {
-            it.assertThat(params.minimumPlatformVersion).isEqualTo(VALID_VALUE)
             it.assertThat(params.epoch).isEqualTo(VALID_VALUE)
             it.assertThat(params.modifiedTime).isEqualTo(modifiedTime)
             it.assertThat(params.notaries)
@@ -95,14 +91,6 @@ class GroupParametersTest {
     }
 
     @Test
-    fun `exception is thrown when MPV has invalid value`() {
-        val ex = assertFailsWith<IllegalArgumentException> {
-            createTestParams(mpv = INVALID_VALUE)
-        }
-        assertThat(ex.message).isEqualTo("Platform version must be at least 1.")
-    }
-
-    @Test
     fun `exception is thrown when epoch has invalid value`() {
         val ex = assertFailsWith<IllegalArgumentException> {
             createTestParams(epoch = INVALID_VALUE)
@@ -114,7 +102,6 @@ class GroupParametersTest {
     fun `exception is thrown when modified time is missing`() {
         val params = LayeredPropertyMapMocks.create<GroupParametersImpl>(
             sortedMapOf(
-                MPV_KEY to VALID_VALUE.toString(),
                 EPOCH_KEY to VALID_VALUE.toString()
             ),
             emptyList()
@@ -131,7 +118,6 @@ class GroupParametersTest {
         val ex = assertFailsWith<ValueNotFoundException> {
             LayeredPropertyMapMocks.create<GroupParametersImpl>(
                 sortedMapOf(
-                    MPV_KEY to VALID_VALUE.toString(),
                     MODIFIED_TIME_KEY to modifiedTime.toString()
                 ),
                 emptyList()

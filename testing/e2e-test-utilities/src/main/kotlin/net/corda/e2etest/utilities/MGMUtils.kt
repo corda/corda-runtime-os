@@ -302,6 +302,6 @@ private fun createMgmRegistrationContext(
     "corda.group.tls.version" to groupPolicyConfig.tlsVersion,
     "corda.endpoints.0.connectionURL" to clusterInfo.p2p.uri.toString(),
     "corda.endpoints.0.protocolVersion" to clusterInfo.p2p.protocol,
-    "corda.group.truststore.tls.0" to caTrustRoot,
-    "corda.group.truststore.session.0" to caTrustRoot,
+    "corda.group.trustroot.tls.0" to caTrustRoot,
+    "corda.group.trustroot.session.0" to caTrustRoot,
 )
