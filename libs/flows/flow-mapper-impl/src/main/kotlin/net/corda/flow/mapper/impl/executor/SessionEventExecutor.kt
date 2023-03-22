@@ -7,6 +7,8 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -123,6 +125,28 @@ class SessionEventExecutor(
                 )
 
                 FlowMapperResult(flowMapperState, listOf(reply))
+            } else if (payload is SessionClose) {
+                log.info("[CORE-10465] Responding to session close with acknowledge message.")
+
+                val ack = Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(
+                        SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            3,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            2,
+                            emptyList(),
+                            SessionAck()
+                        )
+                    )
+                )
+
+                FlowMapperResult(flowMapperState, listOf(ack))
             } else {
                 log.info("[CORE-10465] Ignoring outbound event of type ${sessionEvent.payload.javaClass}, nothing to be done!")
                 FlowMapperResult(flowMapperState, listOf())
