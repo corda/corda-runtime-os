@@ -95,32 +95,38 @@ class SessionEventExecutor(
 
     private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
         if (messageDirection == MessageDirection.OUTBOUND) {
-            val sessionData = sessionEvent.payload as SessionData
-            val payload = sessionData.payload
+            val payload = sessionEvent.payload
 
-            log.info("[CORE-10465] Processing outbound interop session event of type ${payload.javaClass}")
+            return if (payload is SessionData) {
+                val sessionDataPayload = payload.payload
 
-            // Echo the whole payload back to the flow fibre.
-            // This avoids the need to serialize/deserialize @CordaSerializable objects here.
-            val reply = Record(
-                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-                sessionEvent.sessionId,
-                FlowMapperEvent(
-                    SessionEvent(
-                        MessageDirection.INBOUND,
-                        instant,
-                        sessionEvent.sessionId,
-                        2,
-                        sessionEvent.initiatingIdentity,
-                        sessionEvent.initiatedIdentity,
-                        1,
-                        emptyList(),
-                        SessionData(payload)
+                log.info("[CORE-10465] Echoing outbound session data event (presumed facade invocation) back to flow.")
+
+                // Echo the whole payload back to the flow fibre.
+                // This avoids the need to serialize/deserialize @CordaSerializable objects here.
+                val reply = Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(
+                        SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            2,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            1,
+                            emptyList(),
+                            SessionData(sessionDataPayload)
+                        )
                     )
                 )
-            )
 
-            return FlowMapperResult(flowMapperState, listOf(reply))
+                FlowMapperResult(flowMapperState, listOf(reply))
+            } else {
+                log.info("[CORE-10465] Ignoring outbound event of type ${sessionEvent.payload.javaClass}, nothing to be done!")
+                FlowMapperResult(flowMapperState, listOf())
+            }
         } else {
             log.info("[CORE-10465] Sending inbound interop event of type ${sessionEvent.payload.javaClass} to flow event topic.")
             val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
