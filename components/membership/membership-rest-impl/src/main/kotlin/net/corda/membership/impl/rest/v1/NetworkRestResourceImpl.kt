@@ -42,30 +42,28 @@ class NetworkRestResourceImpl @Activate constructor(
         request: HostedIdentitySetupRequest
     ) {
         val operation = "set up locally hosted identities"
-        val (preferredSessionKey, alternativeSessionKeys) = if (request.sessionKeysAndCertificates.isNotEmpty()) {
-            val preferredSessionKeys = request.sessionKeysAndCertificates.filter {
-                it.preferred
-            }
-            if (preferredSessionKeys.isEmpty()) {
-                throw BadRequestException("No preferred session key was selected.")
-            }
-            if (preferredSessionKeys.size > 1) {
-                throw BadRequestException("Can not have more than one preferred session key.")
-            }
-            val preferredSessionKey = preferredSessionKeys.first()
-            val alternativeSessionKeys = request.sessionKeysAndCertificates.filter {
-                it != preferredSessionKey && !it.preferred
-            }
-            preferredSessionKey to alternativeSessionKeys
-        } else {
-            null to emptyList()
+        if (request.sessionKeysAndCertificates.isEmpty()) {
+            throw BadRequestException("No session keys where defined.")
+        }
+        val preferredSessionKeys = request.sessionKeysAndCertificates.filter {
+            it.preferred
+        }
+        if (preferredSessionKeys.isEmpty()) {
+            throw BadRequestException("No preferred session key was selected.")
+        }
+        if (preferredSessionKeys.size > 1) {
+            throw BadRequestException("Can not have more than one preferred session key.")
+        }
+        val preferredSessionKey = preferredSessionKeys.first()
+        val alternativeSessionKeys = request.sessionKeysAndCertificates.filter {
+            !it.preferred
         }
         try {
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.parseOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
-                preferredSessionKey?.toSessionKey(),
+                preferredSessionKey.toSessionKey(),
                 alternativeSessionKeys.map { it.toSessionKey() },
             )
         } catch (e: CertificatesResourceNotFoundException) {

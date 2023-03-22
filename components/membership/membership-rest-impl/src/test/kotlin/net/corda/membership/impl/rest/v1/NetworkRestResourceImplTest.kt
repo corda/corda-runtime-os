@@ -87,7 +87,12 @@ class NetworkRestResourceImplTest {
                 HostedIdentitySetupRequest(
                     "alias",
                     true,
-                    emptyList()
+                    listOf(
+                        HostedIdentitySessionKeyAndCertificate(
+                            "1234567890ac",
+                            preferred = true,
+                        ),
+                    )
                 )
             )
 
@@ -95,7 +100,7 @@ class NetworkRestResourceImplTest {
                 ShortHash.of("1234567890ab"),
                 "alias",
                 true,
-                null,
+                CertificatesClient.SessionKeyAndCertificate(ShortHash.of("1234567890ac"), null),
                 emptyList(),
             )
         }
@@ -187,6 +192,22 @@ class NetworkRestResourceImplTest {
         }
 
         @Test
+        fun `it throws an exception if there are no session keys`() {
+            val exception = assertThrows<BadRequestException> {
+                networkRestResource.setupHostedIdentities(
+                    "1234567890ab",
+                    HostedIdentitySetupRequest(
+                        "alias",
+                        false,
+                        emptyList(),
+                    )
+                )
+            }
+
+            assertThat(exception).hasMessageContaining("No session keys where defined")
+        }
+
+        @Test
         fun `it uses the preferred key`() {
             val preferredKey = argumentCaptor<CertificatesClient.SessionKeyAndCertificate>()
             whenever(
@@ -223,7 +244,6 @@ class NetworkRestResourceImplTest {
 
             assertThat(preferredKey.firstValue.sessionKeyId).isEqualTo(ShortHash.of("1234567890ac"))
         }
-
 
         @Test
         fun `it uses the alternative keys`() {
@@ -274,6 +294,12 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
+                        listOf(
+                            HostedIdentitySessionKeyAndCertificate(
+                                "1234567890ac",
+                                preferred = true,
+                            ),
+                        )
                     )
                 )
             }
@@ -297,6 +323,12 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
+                        listOf(
+                            HostedIdentitySessionKeyAndCertificate(
+                                "1234567890ac",
+                                preferred = true,
+                            ),
+                        )
                     )
                 )
             }

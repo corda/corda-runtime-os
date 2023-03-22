@@ -159,7 +159,10 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                null,
+                CertificatesClient.SessionKeyAndCertificate(
+                    ShortHash.of("123412341234"),
+                    "chain",
+                ),
                 emptyList(),
             )
 
@@ -169,7 +172,10 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                null,
+                CertificatesClient.SessionKeyAndCertificate(
+                    ShortHash.of("123412341234"),
+                    "chain",
+                ),
                 emptyList(),
             )
         }
@@ -204,7 +210,10 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     true,
-                    null,
+                    CertificatesClient.SessionKeyAndCertificate(
+                        ShortHash.of("123412341234"),
+                        "chain",
+                    ),
                     emptyList()
                 )
             }
@@ -224,7 +233,10 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     false,
-                    null,
+                    CertificatesClient.SessionKeyAndCertificate(
+                        ShortHash.of("123412341234"),
+                        "chain",
+                    ),
                     emptyList()
                 )
             }

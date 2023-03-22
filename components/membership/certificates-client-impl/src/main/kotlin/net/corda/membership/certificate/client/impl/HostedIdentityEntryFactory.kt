@@ -2,12 +2,10 @@ package net.corda.membership.certificate.client.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.membership.certificate.client.CertificatesClient
@@ -62,17 +60,6 @@ internal class HostedIdentityEntryFactory(
             ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
     }
 
-    private fun getFirstSessionKey(tenantId: String): String {
-        return cryptoOpsClient.lookup(
-            tenantId = tenantId,
-            0,
-            1,
-            CryptoKeyOrderBy.NONE,
-            mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT),
-        ).firstOrNull()
-            ?.toPem()
-            ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
-    }
     private fun CryptoSigningKey.toPem(): String {
         return keyEncodingService.encodeAsString(
             keyEncodingService.decodePublicKey(
@@ -111,7 +98,7 @@ internal class HostedIdentityEntryFactory(
         holdingIdentityShortHash: ShortHash,
         tlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        preferredSessionKeyAndCertificate: CertificatesClient.SessionKeyAndCertificate?,
+        preferredSessionKeyAndCertificate: CertificatesClient.SessionKeyAndCertificate,
         alternativeSessionKeyAndCertificates: Collection<CertificatesClient.SessionKeyAndCertificate>,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
@@ -121,26 +108,13 @@ internal class HostedIdentityEntryFactory(
             logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
             null
         } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
-        val avroPreferredSessionKey = if (preferredSessionKeyAndCertificate == null) {
-            val sessionPublicKey = getFirstSessionKey(holdingIdentityShortHash.value)
-            val certificates = getAndValidateSessionCertificate(
-                holdingIdentityShortHash,
-                null,
-                nodeInfo,
-                policy
-            )
-            HostedIdentitySessionKeyAndCert.newBuilder()
-                .setSessionPublicKey(sessionPublicKey)
-                .setSessionCertificates(certificates)
-                .build()
-        } else {
-            buildHostedIdentitySessionKey(
-                preferredSessionKeyAndCertificate,
-                holdingIdentityShortHash,
-                nodeInfo,
-                policy
-            )
-        }
+        val avroPreferredSessionKey = buildHostedIdentitySessionKey(
+            preferredSessionKeyAndCertificate,
+            holdingIdentityShortHash,
+            nodeInfo,
+            policy
+        )
+
         val avroAlternativeSessionKeys = alternativeSessionKeyAndCertificates.map { sessionKey ->
             buildHostedIdentitySessionKey(
                 sessionKey,

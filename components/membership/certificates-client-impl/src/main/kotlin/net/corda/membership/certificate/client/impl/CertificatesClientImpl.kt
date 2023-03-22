@@ -118,7 +118,7 @@ class CertificatesClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        preferredSessionKeyAndCertificate: CertificatesClient.SessionKeyAndCertificate?,
+        preferredSessionKeyAndCertificate: CertificatesClient.SessionKeyAndCertificate,
         alternativeSessionKeyAndCertificates: List<CertificatesClient.SessionKeyAndCertificate>,
     ) {
         val record = hostedIdentityEntryFactory.createIdentityRecord(
