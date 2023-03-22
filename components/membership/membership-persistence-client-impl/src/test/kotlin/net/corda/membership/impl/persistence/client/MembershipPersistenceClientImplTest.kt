@@ -626,7 +626,7 @@ class MembershipPersistenceClientImplTest {
                 PersistGroupParametersResponse(mockGroupParameters),
             )
 
-            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary, emptySet())
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Success(mockGroupParameters))
         }
@@ -639,7 +639,7 @@ class MembershipPersistenceClientImplTest {
                 PersistenceFailedResponse("Placeholder error"),
             )
 
-            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary, emptySet())
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
         }
@@ -652,7 +652,7 @@ class MembershipPersistenceClientImplTest {
                 null,
             )
 
-            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary, emptySet())
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
         }
@@ -674,12 +674,16 @@ class MembershipPersistenceClientImplTest {
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
             whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
-            membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
+            membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest, setOf(1, 2))
 
-            val notary = (argument.firstValue.request as? AddNotaryToGroupParameters)?.notary
-            assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
-            assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
-            assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
+            with(argument.firstValue.request as? AddNotaryToGroupParameters) {
+                val notary = this?.notary
+                assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
+                assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
+                assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
+                assertThat(this?.currentProtocolVersions).containsExactlyInAnyOrder(1, 2)
+            }
+
         }
     }
 

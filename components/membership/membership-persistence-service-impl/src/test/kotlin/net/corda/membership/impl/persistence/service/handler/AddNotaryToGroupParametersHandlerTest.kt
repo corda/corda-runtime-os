@@ -22,6 +22,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
@@ -65,7 +66,7 @@ class AddNotaryToGroupParametersHandlerTest {
     private companion object {
         const val EPOCH = 1
         const val KNOWN_NOTARY_SERVICE = "O=NotaryA, L=LDN, C=GB"
-        const val KNOWN_NOTARY_PLUGIN = "net.corda.notary.MyNotaryService"
+        const val KNOWN_NOTARY_PROTOCOL = "net.corda.notary.MyNotaryService"
     }
     private val knownIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
     private val context = byteArrayOf(1, 2, 3)
@@ -155,7 +156,8 @@ class AddNotaryToGroupParametersHandlerTest {
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocol } doReturn KNOWN_NOTARY_PROTOCOL
+            on { serviceProtocolVersions } doReturn setOf(1)
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
@@ -198,13 +200,14 @@ class AddNotaryToGroupParametersHandlerTest {
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(5)
+            assertThat(persistedParameters.items.size).isEqualTo(6)
             assertThat(persistedParameters.items.containsAll(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "2"),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), KNOWN_NOTARY_SERVICE),
-                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), KNOWN_NOTARY_PROTOCOL),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), "test-key"),
                 )
             ))
@@ -220,7 +223,8 @@ class AddNotaryToGroupParametersHandlerTest {
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocol } doReturn KNOWN_NOTARY_PROTOCOL
+            on { serviceProtocolVersions } doReturn setOf(1, 2)
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
@@ -252,7 +256,8 @@ class AddNotaryToGroupParametersHandlerTest {
             KeyValuePairList(mutableListOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
                 KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
                 KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
             ))
         )
@@ -268,13 +273,15 @@ class AddNotaryToGroupParametersHandlerTest {
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(6)
+            assertThat(persistedParameters.items.size).isEqualTo(8)
             assertThat(persistedParameters.items.containsAll(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "2"),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "2"),
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
                 )
@@ -291,7 +298,8 @@ class AddNotaryToGroupParametersHandlerTest {
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocol } doReturn KNOWN_NOTARY_PROTOCOL
+            on { serviceProtocolVersions } doReturn setOf(1)
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
@@ -322,7 +330,8 @@ class AddNotaryToGroupParametersHandlerTest {
         val mockGroupParameters = KeyValuePairList(mutableListOf(
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "test-key")
         ))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(mockGroupParameters)
@@ -337,7 +346,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    fun `notary plugin must be specified to add new notary service`() {
+    fun `notary protocol must be specified to add new notary service`() {
         val knownKey = mock<MemberNotaryKey> {
             on { publicKey } doReturn mock()
         }
@@ -376,11 +385,11 @@ class AddNotaryToGroupParametersHandlerTest {
         )
 
         val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("plugin must be specified")
+        assertThat(ex.message).contains("protocol must be specified")
     }
 
     @Test
-    fun `notary plugin type must match that of existing notary service`() {
+    fun `notary protocol must match that of existing notary service`() {
         val knownKey = mock<MemberNotaryKey> {
             on { publicKey } doReturn mock()
         }
@@ -419,12 +428,56 @@ class AddNotaryToGroupParametersHandlerTest {
             KeyValuePairList(mutableListOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
                 KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
             ))
         )
 
         val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("plugin types do not match")
+        assertThat(ex.message).contains("protocols do not match")
+    }
+
+    @Test
+    fun `exception is thrown if notary protocol is specified but versions are missing`() {
+        val knownKey = mock<MemberNotaryKey> {
+            on { publicKey } doReturn mock()
+        }
+        val notaryDetails = mock<MemberNotaryDetails> {
+            on { keys } doReturn listOf(knownKey)
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { serviceProtocol } doReturn KNOWN_NOTARY_PROTOCOL
+        }
+        val memberContext: MemberContext = mock {
+            on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
+            on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
+        }
+        val mgmContext: MGMContext = mock {
+            on { entries } doReturn mapOf("a" to "b").entries
+        }
+        val notaryInRequest: MemberInfo = mock {
+            on { memberProvidedContext } doReturn memberContext
+            on { mgmProvidedContext } doReturn mgmContext
+        }
+        val memberInfoFactory = mock<MemberInfoFactory> {
+            on { create(any()) } doReturn notaryInRequest
+        }
+        whenever(persistenceHandlerServices.memberInfoFactory).doReturn(memberInfoFactory)
+        val requestContext = mock<MembershipRequestContext> {
+            on { holdingIdentity } doReturn knownIdentity
+        }
+        val persistentNotary = PersistentMemberInfo(
+            knownIdentity,
+            notaryInRequest.memberProvidedContext.toWire(),
+            notaryInRequest.mgmProvidedContext.toWire()
+        )
+        val request = mock<AddNotaryToGroupParameters> {
+            on { notary } doReturn persistentNotary
+        }
+        whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
+            KeyValuePairList(mutableListOf(KeyValuePair(EPOCH_KEY, EPOCH.toString())))
+        )
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("protocol versions are missing")
     }
 
     @Test

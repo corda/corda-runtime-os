@@ -27,10 +27,19 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -85,7 +94,8 @@ class ApproveRegistrationHandlerTest {
         on {
             addNotaryToGroupParameters(
                 mgm.holdingIdentity,
-                notaryInfo
+                notaryInfo,
+                emptySet()
             )
         } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
     }
@@ -111,8 +121,29 @@ class ApproveRegistrationHandlerTest {
     private val mockGroupParameters: GroupParameters = mock {
         on { epoch } doReturn 5
     }
+    private val knownKey = mock<MemberNotaryKey> {
+        on { publicKey } doReturn mock()
+    }
+    private val otherNotaryDetails = mock<MemberNotaryDetails> {
+        on { keys } doReturn listOf(knownKey)
+        on { serviceName } doReturn MemberX500Name.parse("O=NotaryA, L=LDN, C=GB")
+        on { serviceProtocol } doReturn "KNOWN_NOTARY_PROTOCOL"
+        on { serviceProtocolVersions } doReturn setOf(1)
+    }
+    private val memberContext: MemberContext = mock {
+        on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE, PARTY_NAME to "OtherNotary").entries
+        on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn otherNotaryDetails
+    }
+    private val mgmContext: MGMContext = mock {
+        on { entries } doReturn mapOf("a" to "b").entries
+    }
+    private val otherNotary: MemberInfo = mock {
+        on { memberProvidedContext } doReturn memberContext
+        on { mgmProvidedContext } doReturn mgmContext
+    }
     private val groupReader: MembershipGroupReader = mock {
         on { groupParameters } doReturn mockGroupParameters
+        on { lookup() } doReturn listOf(otherNotary)
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
@@ -208,8 +239,9 @@ class ApproveRegistrationHandlerTest {
         verify(membershipPersistenceClient).addNotaryToGroupParameters(
             viewOwningIdentity = mgm.holdingIdentity,
             notary = notaryInfo,
+            emptySet()
         )
-        verify(groupReaderProvider, never()).getGroupReader(any())
+        verify(groupReaderProvider).getGroupReader(any())
         assertThat(results.outputStates)
             .hasSize(3)
             .anySatisfy {
@@ -231,6 +263,7 @@ class ApproveRegistrationHandlerTest {
         verify(membershipPersistenceClient, never()).addNotaryToGroupParameters(
             viewOwningIdentity = mgm.holdingIdentity,
             notary = memberInfo,
+            emptySet()
         )
         verify(groupReaderProvider, times(1)).getGroupReader(any())
         assertThat(results.outputStates)

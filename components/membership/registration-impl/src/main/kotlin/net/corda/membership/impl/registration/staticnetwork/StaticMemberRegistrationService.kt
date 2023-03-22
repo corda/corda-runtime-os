@@ -219,7 +219,7 @@ class StaticMemberRegistrationService @Activate constructor(
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
 
-            persistGroupParameters(memberInfo, staticMemberList)
+            persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
             persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: InvalidMembershipRegistrationException) {
@@ -243,12 +243,20 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
+    private fun persistGroupParameters(
+        memberInfo: MemberInfo,
+        staticMemberList: List<StaticMember>,
+        groupReader: MembershipGroupReader,
+    ) {
         val cache = lifecycleHandler.groupParametersCache
         val holdingIdentity = memberInfo.holdingIdentity
         val groupParametersList = cache.getOrCreateGroupParameters(holdingIdentity).run {
-            memberInfo.notaryDetails?.let {
-                cache.addNotary(memberInfo)
+            memberInfo.notaryDetails?.let { notary ->
+                val currentProtocolVersions = groupReader.lookup()
+                    .filter { it.notaryDetails?.serviceName == notary.serviceName && it.name != memberInfo.name }
+                    .flatMap { it.notaryDetails!!.serviceProtocolVersions }
+                    .toSet()
+                cache.addNotary(memberInfo, currentProtocolVersions)
             } ?: this
         }
         val groupParameters = groupParametersFactory.create(groupParametersList)

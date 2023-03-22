@@ -64,7 +64,7 @@ class GroupParametersCache(
      *
      * @return Updated group parameters with notary information.
      */
-    fun addNotary(notary: MemberInfo): KeyValuePairList? {
+    fun addNotary(notary: MemberInfo, currentProtocolVersions: Collection<Int>): KeyValuePairList? {
         val groupId = notary.groupId
         val groupParameters = cache[groupId]?.toMap()
             ?: throw MembershipRegistrationException("Cannot add notary information - no group parameters found.")
@@ -75,7 +75,14 @@ class GroupParametersCache(
             notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
         }
         val (_, updated) = if (notaryServiceNumber != null) {
-            updateExistingNotaryService(groupParameters, notaryDetails, notaryServiceNumber, keyEncodingService, logger)
+            updateExistingNotaryService(
+                groupParameters,
+                notaryDetails,
+                notaryServiceNumber,
+                currentProtocolVersions,
+                keyEncodingService,
+                logger
+            )
         } else {
             addNewNotaryService(groupParameters, notaryDetails, keyEncodingService, logger)
         }

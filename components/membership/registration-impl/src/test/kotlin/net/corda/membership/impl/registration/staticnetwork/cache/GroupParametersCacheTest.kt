@@ -14,6 +14,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.membership.lib.toMap
@@ -62,6 +63,7 @@ class GroupParametersCacheTest {
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
         ))
         val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
@@ -97,6 +99,7 @@ class GroupParametersCacheTest {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
             on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocolVersions } doReturn setOf(1, 2)
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("${ROLES_PREFIX}.0" to NOTARY_ROLE).entries
@@ -113,7 +116,7 @@ class GroupParametersCacheTest {
         val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
-        groupParametersCache.addNotary(notary)
+        groupParametersCache.addNotary(notary, emptySet())
 
         with(publishCaptor.firstValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
@@ -124,6 +127,8 @@ class GroupParametersCacheTest {
                         KeyValuePair(MPV_KEY, MPV.toString()),
                         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), KNOWN_NOTARY_SERVICE),
                         KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), KNOWN_NOTARY_PLUGIN),
+                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
                         KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), "test-key"),
                     )
                 ))
@@ -140,6 +145,7 @@ class GroupParametersCacheTest {
             on { keys } doReturn listOf(knownKey)
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
             on { serviceProtocol } doReturn KNOWN_NOTARY_PLUGIN
+            on { serviceProtocolVersions } doReturn setOf(1, 2)
         }
         val memberContext: MemberContext = mock {
             on { entries } doReturn mapOf("${ROLES_PREFIX}.0" to NOTARY_ROLE).entries
@@ -159,11 +165,12 @@ class GroupParametersCacheTest {
             KeyValuePair(MPV_KEY, MPV.toString()),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
         ))
         groupParametersCache.set(knownGroupId, existingGroupParameters)
 
-        groupParametersCache.addNotary(notary)
+        groupParametersCache.addNotary(notary, setOf(1))
 
         with(publishCaptor.firstValue.first()) {
             assertThat(key).isEqualTo(knownGroupId)
@@ -174,6 +181,8 @@ class GroupParametersCacheTest {
                         KeyValuePair(MPV_KEY, MPV.toString()),
                         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
                         KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PLUGIN),
+                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
+                        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "2"),
                         KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
                         KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
                     )

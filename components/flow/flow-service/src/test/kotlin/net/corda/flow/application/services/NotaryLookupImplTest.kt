@@ -84,6 +84,7 @@ class NotaryLookupImplTest {
             MemberNotaryDetails(
                 alice,
                 "net.corda.Plugin1",
+                emptyList(),
                 emptyList()
             )
         )

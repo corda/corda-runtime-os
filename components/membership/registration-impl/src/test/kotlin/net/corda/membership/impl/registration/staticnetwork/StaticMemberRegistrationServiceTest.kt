@@ -51,6 +51,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -692,6 +693,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to notary.toString(),
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             assertDoesNotThrow {
@@ -724,6 +726,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to notary.toString(),
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             registrationService.register(registrationId, alice, context)
@@ -740,6 +743,7 @@ class StaticMemberRegistrationServiceTest {
                 assertThat(notaryDetails?.serviceName)
                     .isEqualTo(MemberX500Name.parse(notary.toString()))
                 assertThat(notaryDetails?.serviceProtocol).isEqualTo("net.corda.notary.MyNotaryService")
+                assertThat(notaryDetails?.serviceProtocolVersions).containsExactlyInAnyOrder(1)
 
                 assertThat(notaryDetails?.keys?.toList())
                     .hasSize(1)
@@ -785,6 +789,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to notary.toString(),
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
             whenever(
                 persistenceClient.persistGroupParameters(
@@ -811,6 +816,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to notary.toString(),
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
@@ -831,6 +837,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to aliceName.toString(),
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -851,6 +858,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to "",
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -871,6 +879,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to bobName.toString(),
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -891,6 +900,7 @@ class StaticMemberRegistrationServiceTest {
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(alice))

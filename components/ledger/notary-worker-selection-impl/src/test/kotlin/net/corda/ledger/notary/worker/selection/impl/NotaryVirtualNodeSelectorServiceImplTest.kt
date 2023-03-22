@@ -43,6 +43,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
             val mockNotaryDetails = MemberNotaryDetails(
                 notary.name,
                 null,
+                emptyList(),
                 emptyList()
             )
             val mockMemberContext: MemberContext = mock {

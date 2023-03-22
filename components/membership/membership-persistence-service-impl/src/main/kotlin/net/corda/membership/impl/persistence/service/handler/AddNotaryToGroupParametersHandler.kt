@@ -76,7 +76,14 @@ internal class AddNotaryToGroupParametersHandler(
             }
             val (epoch, groupParameters) = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
-                updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, keyEncodingService, logger).apply {
+                updateExistingNotaryService(
+                    parametersMap,
+                    notary,
+                    notaryServiceNumber,
+                    request.currentProtocolVersions,
+                    keyEncodingService,
+                    logger
+                ).apply {
                     first ?: return@transaction deserializeProperties(previous.singleResult.parameters)
                 }
             } else {
