@@ -66,7 +66,6 @@ class InteropDataSetupIntegrationTest {
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
-
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
     @BeforeEach
@@ -78,7 +77,7 @@ class InteropDataSetupIntegrationTest {
         }
     }
 
-    //@Test
+    @Test
     fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
@@ -141,27 +140,7 @@ class InteropDataSetupIntegrationTest {
     }
 
     private fun publishConfig(publisher: Publisher) {
-        publisher.publish(
-            listOf(
-                Record(
-                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
-                )
-            )
-        )
-    }
-
-    private fun republishConfig(publisher: Publisher) {
-        // Wait for the initial config to be available
-        val configLatch = CountDownLatch(1)
-        configService.registerForUpdates { _, _ ->
-            configLatch.countDown()
-        }
-        configLatch.await()
-
-        publishConfig(publisher)
-    }
-
-    private val messagingConf = """
+        val messagingConf = """
             componentVersion="5.1"
             subscription {
                 consumer {
@@ -176,7 +155,15 @@ class InteropDataSetupIntegrationTest {
                     close.timeout = 6000
                 }
             }
-      """
+        """
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                )
+            )
+        )
+    }
 }
 
 class MemberInfoMessageCounter(
