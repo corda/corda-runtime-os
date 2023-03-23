@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.utxo.transaction;
 
 import net.corda.v5.base.annotations.DoNotImplement;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
-import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.common.transaction.TransactionMetadata;
 import net.corda.v5.ledger.utxo.Attachment;
 import net.corda.v5.ledger.utxo.Command;
@@ -33,12 +33,21 @@ public interface UtxoLedgerTransaction {
     SecureHash getId();
 
     /**
-     * Gets the notary associated with the current {@link UtxoLedgerTransaction}.
+     * Gets the notary service name associated with the current {@link UtxoLedgerTransaction}.
      *
-     * @return Returns the notary associated with the current {@link UtxoLedgerTransaction}.
+     * @return Returns the notary service associated with the current {@link UtxoLedgerTransaction}.
      */
     @NotNull
-    Party getNotary();
+    MemberX500Name getNotaryName();
+
+    /**
+     * Gets the notary service key associated with the current {@link UtxoLedgerTransaction}.
+     *
+     * @return Returns the notary service key associated with the current {@link UtxoLedgerTransaction}.
+     */
+    @NotNull
+    PublicKey getNotaryKey();
+
 
     /**
      * Gets the transaction metadata associated with the current {@link UtxoLedgerTransaction}.

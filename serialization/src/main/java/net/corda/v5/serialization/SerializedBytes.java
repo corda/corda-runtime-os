@@ -1,29 +1,17 @@
 package net.corda.v5.serialization;
 
 import net.corda.v5.base.annotations.CordaSerializable;
-import net.corda.v5.base.types.OpaqueBytes;
+import net.corda.v5.base.annotations.DoNotImplement;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A type safe wrapper around a byte array that contains a serialised object.
  */
 @SuppressWarnings("unused")
+@DoNotImplement
 @CordaSerializable
-public final class SerializedBytes<T> extends OpaqueBytes {
-    /**
-     * Constructs a SerializedBytes holding the specified bytes.
-     * @param bytes Byte array holding serialized form of type T.
-     */
-    public SerializedBytes(@NotNull byte[] bytes) {
-        super(bytes);
-    }
+public interface SerializedBytes<T> {
 
-    /**
-     * Returns a text description of this SerializedBytes object
-     * @return Text description of this SerializedBytes object.
-     */
     @NotNull
-    public String getSummary() {
-        return "SerializedBytes(size = " + getSize() + ')';
-    }
+    byte[] getBytes();
 }

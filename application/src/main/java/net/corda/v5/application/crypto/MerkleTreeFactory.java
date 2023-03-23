@@ -16,7 +16,7 @@ import java.util.Map;
 @DoNotImplement
 public interface MerkleTreeFactory {
     /**
-     * Creates a {@link MerkleTree}
+     * Creates a {@link MerkleTree}.
      *
      * @param leaves The leaves of the tree.
      * @param digest Merkle Tree Hash digest used to construct the tree's node and leaf hashes.
@@ -33,8 +33,8 @@ public interface MerkleTreeFactory {
     /**
      * Creates a {@link MerkleTreeHashDigest}.
      *
-     * @param merkleTreeHashDigestProviderName name of the hash digest provider class
-     * @param digestAlgorithmName name of the base hash algorithm
+     * @param merkleTreeHashDigestProviderName Name of the hash digest provider class.
+     * @param digestAlgorithmName Name of the base hash algorithm.
      *
      * @return A new {@link MerkleTreeHashDigest} instance.
      */
@@ -48,9 +48,9 @@ public interface MerkleTreeFactory {
     /**
      * Creates a {@link MerkleTreeHashDigest}.
      *
-     * @param merkleTreeHashDigestProviderName name of the hash digest provider class
-     * @param digestAlgorithmName name of the base hash algorithm
-     * @param options Hash digest provider specific options
+     * @param merkleTreeHashDigestProviderName Name of the hash digest provider class.
+     * @param digestAlgorithmName Name of the base hash algorithm.
+     * @param options Hash digest provider-specific options.
      *
      * @return A new {@link MerkleTreeHashDigest} instance.
      */

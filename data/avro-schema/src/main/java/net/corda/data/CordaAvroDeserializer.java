@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Defines the interface for Message Bus deserialization.  The underlying mechanism may differ.
+ * Defines the interface for message bus deserialization. The underlying mechanism may differ.
  */
 public interface CordaAvroDeserializer<T> {
     /**

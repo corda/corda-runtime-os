@@ -4,7 +4,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
-import net.corda.v5.ledger.common.Party;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata;
 import net.corda.v5.ledger.utxo.Command;
 import net.corda.v5.ledger.utxo.StateAndRef;
@@ -74,12 +74,20 @@ public interface UtxoSignedTransaction extends TransactionWithMetadata {
     List<StateAndRef<?>> getOutputStateAndRefs();
 
     /**
-     * Gets the notary {@link Party} used for notarizing the current transaction.
+     * Gets the notary service {@link MemberX500Name} used for notarizing the current transaction.
      *
-     * @return Returns the notary {@link Party} used for notarizing the current transaction.
+     * @return Returns the notary service {@link MemberX500Name} used for notarizing the current transaction.
      */
     @NotNull
-    Party getNotary();
+    MemberX500Name getNotaryName();
+
+    /**
+     * Gets the notary service {@link PublicKey} used for notarizing the current transaction.
+     *
+     * @return Returns the notary service {@link PublicKey} used for notarizing the current transaction.
+     */
+    @NotNull
+    PublicKey getNotaryKey();
 
     /**
      * Gets the validity {@link TimeWindow} for notarizing and finalizing the current transaction.

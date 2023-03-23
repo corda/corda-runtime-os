@@ -3,8 +3,8 @@ package net.corda.v5.ledger.utxo.transaction.filtered;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.exceptions.CordaRuntimeException;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
-import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.common.transaction.TransactionMetadata;
 import net.corda.v5.ledger.utxo.Command;
 import net.corda.v5.ledger.utxo.StateAndRef;
@@ -63,12 +63,19 @@ public interface UtxoFilteredTransaction {
     TimeWindow getTimeWindow();
 
     /**
-     * Gets the notary for the current transaction, or null if filtered.
+     * Gets the notary service name for the current transaction, or null if filtered.
      *
-     * @return Returns the notary for the current transaction, or null if filtered.
+     * @return Returns the notary service name for the current transaction, or null if filtered.
      */
     @Nullable
-    Party getNotary();
+    MemberX500Name getNotaryName();
+
+    /**
+     * Gets the notary service key for the current transaction, or null if filtered
+     *
+     * @return Returns the notary service key for the current transaction or null if filtered
+     */
+    PublicKey getNotaryKey();
 
     /**
      * Gets a potentially filtered list of required signatories for the current transaction.

@@ -2,8 +2,8 @@ package net.corda.v5.ledger.utxo.transaction;
 
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
-import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException;
 import net.corda.v5.ledger.utxo.Attachment;
 import net.corda.v5.ledger.utxo.Command;
@@ -180,21 +180,29 @@ public interface UtxoTransactionBuilder {
     Map<String, List<ContractState>> getEncumbranceGroups();
 
     /**
-     * Gets the notary assigned to the current transaction, or null if the notary has not been set.
+     * Gets the notary service name assigned to the current transaction, or null if the notary has not been set.
      *
-     * @return Returns the notary assigned to the current transaction, or null if the notary has not been set.
+     * @return Returns the service name of the notary assigned to the current transaction, or null if the notary has not been set.
      */
     @Nullable
-    Party getNotary();
+    MemberX500Name getNotaryName();
 
     /**
-     * Sets the specified {@link Party} as a notary to the current {@link UtxoTransactionBuilder}.
+     * Gets the notary service key assigned to the current transaction, or null if the notary has not been set.
      *
-     * @param notary The {@link Party} to set as a notary to the current {@link UtxoTransactionBuilder}.
+     * @return Returns the service key of the notary assigned to the current transaction, or null if the notary has not been set.
+     */
+    @Nullable
+    PublicKey getNotaryKey();
+
+    /**
+     * Sets the specified {@link MemberX500Name} as a notary to the current {@link UtxoTransactionBuilder}.
+     *
+     * @param notary The {@link MemberX500Name} to set as a notary to the current {@link UtxoTransactionBuilder}.
      * @return Returns a new {@link UtxoTransactionBuilder} with the new notary.
      */
     @NotNull
-    UtxoTransactionBuilder setNotary(@NotNull Party notary);
+    UtxoTransactionBuilder setNotary(@NotNull MemberX500Name notary);
 
     /**
      * Sets the transaction time window to be valid until the specified {@link Instant}, tending towards negative infinity.

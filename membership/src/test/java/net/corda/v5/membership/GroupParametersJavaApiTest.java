@@ -41,15 +41,6 @@ public class GroupParametersJavaApiTest {
     }
 
     @Test
-    public void minimumPlatformVersion() {
-        when(groupParameters.getMinimumPlatformVersion()).thenReturn(5);
-        final int platformVersion = groupParameters.getMinimumPlatformVersion();
-
-        assertThat(platformVersion).isNotNull();
-        assertThat(platformVersion).isEqualTo(5);
-    }
-
-    @Test
     public void modifiedTime() {
         final Instant instant = Instant.now();
         when(groupParameters.getModifiedTime()).thenReturn(instant);
