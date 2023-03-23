@@ -8,13 +8,11 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropService
@@ -32,6 +30,7 @@ import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -49,8 +48,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 // To run the test outside Intellij:
-// ./gradlew clean :components:interop:interop-service:integrationTest --tests 'verify messages from flow interop event are send to flow mapper event'
-// ./gradlew clean :components:interop:interop-service:testOSGi --tests 'verify messages from flow interop event are send to flow mapper event'
+// ./gradlew clean :components:interop:interop-service:integrationTest
+// ./gradlew clean :components:interop:interop-service:testOSGi
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {
@@ -94,67 +93,85 @@ class InteropServiceIntegrationTest {
             setupConfig(publisher)
         }
     }
-    @Test
-    fun `verify messages from flow interop event are send to flow mapper event`() {
-        interopService.start()
-        val key = "test1"
-        val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(aliceX500Name), bootConfig)
-        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-        val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
 
+    private fun messagesToPublish(session: String) : List<Record<*,*>> {
+        val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        val interopMessage : ByteBuffer = ByteBuffer.wrap(cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
+            InteropMessage("InteropMessageID-01",
+                """
+                    {
+                      "method": "org.corda.interop/platform/tokens/v1.0/reserve-token",
+                      "parameters": [
+                        {
+                          "abc": {
+                            "type": "string",
+                            "value": "USD"
+                          }
+                        }
+                      ]
+                    }
+                """.trimIndent())))
+
+        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
+        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "groupId")
+        val inboundSessionEvent = SessionEvent(
+            MessageDirection.INBOUND, Instant.now(), session, 1, sourceIdentity, destinationIdentity, 0, listOf(),
+            SessionInit(sourceIdentity.toString(), null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
+
+        val outboundSessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND, Instant.now(), session, 2, destinationIdentity, sourceIdentity, 0, listOf(),
+            SessionInit(sourceIdentity.toString(), null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
+
+        val inboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(inboundSessionEvent))
+        val outboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(outboundSessionEvent))
+        return listOf(inboundMsg, inboundMsg, outboundMsg)
+    }
+
+    @Test
+    fun `verify inbound messages from flow interop processor are send to flow mapper event topic`() {
+        interopService.start()
+        val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
         // Test config updates don't break Interop Service
         republishConfig(publisher)
-        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
-        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
-        val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
-        val header = AuthenticatedMessageHeader(destinationIdentity, sourceIdentity, Instant.now(),
-            "interop" , "1", "1", MembershipStatusFilter.ACTIVE)
-        val sessionEvent = SessionEvent(
-            MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
-                aliceX500Name,
-                null,
-                emptyKeyValuePairList(),
-                emptyKeyValuePairList(),
-                emptyKeyValuePairList(),
-                ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("InteropMessageID-01", payload)))
+        val session = "session1"
+        publisher.publish(messagesToPublish(session))
+
+        val flowMapperExpectedOutputMessages = 2
+        flowMapperExpectedOutputMessages.let { expectedMessageCount ->
+            val mapperLatch = CountDownLatch(expectedMessageCount)
+            val testProcessor = FlowMapperEventCounter(session, mapperLatch, expectedMessageCount)
+            val eventTopic = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("client-flow-mapper", Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC),
+                testProcessor,
+                bootConfig,
+                null
             )
-        )
-
-        val interopRecord = Record(
-            Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, key, AppMessage(
-                AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent)))
+            eventTopic.start()
+            assertTrue(
+                mapperLatch.await(30, TimeUnit.SECONDS),
+                "Fewer output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
             )
-        )
-
-        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE)
-        val nonInteropSessionRecord = Record(
-            Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, aliceX500Name, AppMessage(
-                AuthenticatedMessage(
-                    nonInteropFlowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
-                )
+            assertEquals(expectedMessageCount, testProcessor.recordCount, "More output messages were observed that expected.")
+            eventTopic.close()
+        }
+        val p2pExpectedOutputMessages = 1
+        p2pExpectedOutputMessages.let { expectedMessageCount ->
+            val mapperLatch = CountDownLatch(expectedMessageCount)
+            val testProcessor = P2POutMessageCounter(session, mapperLatch, expectedMessageCount)
+            val eventTopic = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("client-p2p-out", Schemas.P2P.P2P_OUT_TOPIC),
+                testProcessor,
+                bootConfig,
+                null
             )
-        )
-
-        publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord))
-
-        val expectedOutputMessages = 2
-        val mapperLatch = CountDownLatch(expectedOutputMessages)
-        val testProcessor = FlowMapperEventCounter(key, mapperLatch, expectedOutputMessages)
-        val flowMapperEventTopic = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$aliceX500Name-flow-mapper", Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC),
-            testProcessor,
-            bootConfig,
-            null
-        )
-        flowMapperEventTopic.start()
-        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS),
-            "Fewer output messages were observed (${testProcessor.recordCount}) than expected ($expectedOutputMessages).")
-        assertEquals(expectedOutputMessages, testProcessor.recordCount, "More output messages were observed that expected.")
-        flowMapperEventTopic.close()
-
+            eventTopic.start()
+            assertTrue(
+                mapperLatch.await(30, TimeUnit.SECONDS),
+                "Fewer output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
+            )
+            assertEquals(expectedMessageCount, testProcessor.recordCount, "More output messages were observed that expected.")
+            eventTopic.close()
+        }
         interopService.stop()
     }
 
@@ -166,27 +183,7 @@ class InteropServiceIntegrationTest {
     }
 
     private fun publishConfig(publisher: Publisher) {
-        publisher.publish(
-            listOf(
-                Record(
-                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
-                )
-            )
-        )
-    }
-
-    private fun republishConfig(publisher: Publisher) {
-        // Wait for the initial config to be available
-        val configLatch = CountDownLatch(1)
-        configService.registerForUpdates { _, _ ->
-            configLatch.countDown()
-        }
-        configLatch.await()
-
-        publishConfig(publisher)
-    }
-
-    private val messagingConf = """
+        val messagingConf = """
             componentVersion="5.1"
             subscription {
                 consumer {
@@ -202,6 +199,33 @@ class InteropServiceIntegrationTest {
                 }
             }
       """
+        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
+        val flowConf = """
+            session {
+                p2pTTL = 500000
+            }
+        """
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    ConfigKeys.FLOW_CONFIG,
+                    Configuration(flowConf, flowConf, 0, schemaVersion)
+                )
+            )
+        )
+    }
+
+    private fun republishConfig(publisher: Publisher) {
+        // Wait for the initial config to be available
+        val configLatch = CountDownLatch(1)
+        configService.registerForUpdates { _, _ ->
+            configLatch.countDown()
+        }
+        configLatch.await()
+
+        publishConfig(publisher)
+    }
 }
 
 class FlowMapperEventCounter(
@@ -213,6 +237,27 @@ class FlowMapperEventCounter(
     override val valueClass = FlowMapperEvent::class.java
     var recordCount = 0
     override fun onNext(events: List<Record<String, FlowMapperEvent>>): List<Record<*, *>> {
+        for (event in events) {
+            recordCount++
+            if (recordCount > expectedRecordCount) {
+                fail("Expected record count exceeded in events processed for this key")
+            }
+            latch.countDown()
+
+        }
+        return emptyList()
+    }
+}
+
+class P2POutMessageCounter(
+    private val key: String,
+    private val latch: CountDownLatch,
+    private val expectedRecordCount: Int
+) : DurableProcessor<String, AppMessage> {
+    override val keyClass = String::class.java
+    override val valueClass = AppMessage::class.java
+    var recordCount = 0
+    override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
         for (event in events) {
             recordCount++
             if (recordCount > expectedRecordCount) {

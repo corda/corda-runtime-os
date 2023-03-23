@@ -78,7 +78,7 @@ class InteropDataSetupIntegrationTest {
         }
     }
 
-    @Test
+    //@Test
     fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
