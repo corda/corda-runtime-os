@@ -20,6 +20,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 
 class TestSigningRepositoryImpl {
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Appropriate use of DB connection manager that sets up DML connection when creating signing repository for Crypto tenant and P2P`() {
         // Arguably this is really tessting getEntityManagerFactory so should be moved to a new test class

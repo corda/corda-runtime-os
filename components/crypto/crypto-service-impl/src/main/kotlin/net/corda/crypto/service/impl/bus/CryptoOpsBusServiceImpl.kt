@@ -9,6 +9,7 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -27,6 +28,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.InvalidParameterException
 
 @Suppress("LongParameterList")
 @Component(service = [CryptoOpsBusService::class])
@@ -77,14 +79,18 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = CryptoOpsBusProcessor(
             event = event,
-            cryptoServiceFactory = cryptoServiceFactory,
-            schemeMetadata = schemeMetadata,
-            digestService = digestService,
-            keyEncodingService = keyEncodingService,
-            dbConnectionManager = dbConnectionManager,
-            jpaEntitiesRegistry = jpaEntitiesRegistry,
-            virtualNodeInfoReadService = virtualNodeInfoReadService,
-            layeredPropertyMapFactory = layeredPropertyMapFactory
+            SigningServiceImpl(
+                cryptoServiceFactory = cryptoServiceFactory,
+                schemeMetadata = schemeMetadata,
+                digestService = digestService,
+                keyEncodingService = keyEncodingService,
+                dbConnectionManager = dbConnectionManager,
+                jpaEntitiesRegistry = jpaEntitiesRegistry,
+                virtualNodeInfoReadService = virtualNodeInfoReadService,
+                layeredPropertyMapFactory = layeredPropertyMapFactory,
+                config = event.config.get(CRYPTO_CONFIG)
+                    ?: throw InvalidParameterException("$CRYPTO_CONFIG missing from config")
+            )
         )
         return Impl(
             subscriptionFactory.createRPCSubscription(

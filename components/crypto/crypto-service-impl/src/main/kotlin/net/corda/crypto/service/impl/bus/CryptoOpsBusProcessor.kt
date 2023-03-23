@@ -57,31 +57,8 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
-class CryptoOpsBusProcessor(
-    event: ConfigChangedEvent,
-    cryptoServiceFactory: CryptoServiceFactory,
-    schemeMetadata: CipherSchemeMetadata,
-    digestService: PlatformDigestService,
-    dbConnectionManager: DbConnectionManager,
-    jpaEntitiesRegistry: JpaEntitiesRegistry,
-    keyEncodingService: KeyEncodingService,
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    signingServiceFactory: () -> SigningService = {
-        SigningServiceImpl(
-            cryptoServiceFactory = cryptoServiceFactory,
-            schemeMetadata = schemeMetadata,
-            digestService = digestService,
-            keyEncodingService = keyEncodingService,
-            dbConnectionManager = dbConnectionManager,
-            jpaEntitiesRegistry = jpaEntitiesRegistry,
-            virtualNodeInfoReadService = virtualNodeInfoReadService,
-            layeredPropertyMapFactory = layeredPropertyMapFactory,
-            config = event.config.get(CRYPTO_CONFIG)
-                ?: throw InvalidParameterException("$CRYPTO_CONFIG missing from config")
-        )
-    },
-) : RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
+class CryptoOpsBusProcessor(private val signingService: SigningService) :
+    RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -97,7 +74,6 @@ class CryptoOpsBusProcessor(
             }
     }
 
-    private val signingService = signingServiceFactory()
     private val config = event.config.toCryptoConfig().opsBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
@@ -148,7 +124,7 @@ class CryptoOpsBusProcessor(
                         )
                     }
                     is SecureHashes -> {
-                        signingService.lookupSigingKeysByPublicKeyHashes(
+                        signingService.lookupSigningKeysByPublicKeyHashes(
                             context.tenantId,
                             avroSecureHashesToDto(avroKeyIds)
                         )

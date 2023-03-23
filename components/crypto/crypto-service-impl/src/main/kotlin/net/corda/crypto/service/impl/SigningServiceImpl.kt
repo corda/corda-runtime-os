@@ -169,7 +169,7 @@ class SigningServiceImpl(
     }
 
 
-    override fun lookupSigingKeysByPublicKeyHashes(
+    override fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
         fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo> {

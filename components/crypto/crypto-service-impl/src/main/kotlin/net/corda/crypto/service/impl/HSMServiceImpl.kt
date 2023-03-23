@@ -11,6 +11,7 @@ import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.HSMStore
@@ -148,7 +149,8 @@ class HSMServiceImpl @Activate constructor(
                 val cryptoService = cryptoServiceFactory.getInstance(association.hsmId)
                 cryptoService.createWrappingKey(
                     failIfExists = false,
-                    wrappingKeyAlias = association.masterKeyAlias!!,
+                    wrappingKeyAlias = association.masterKeyAlias
+                        ?: throw InvalidParamsException("no masterKeyAlias in association"),
                     context = mapOf(
                         CRYPTO_TENANT_ID to association.tenantId
                     )

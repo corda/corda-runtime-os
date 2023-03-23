@@ -74,7 +74,7 @@ interface SigningService {
      * @param tenantId The tenant's id which the keys belong to.
      * @param fullKeyIds Key ids to look keys for.
      */
-    fun lookupSigingKeysByPublicKeyHashes(
+    fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
         fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo>

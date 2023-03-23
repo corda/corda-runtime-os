@@ -105,10 +105,7 @@ class CryptoOpsBusProcessorTests {
         // if this is @BeforeEach.
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
-        signingFactory = mock {
-            on { getInstance() } doReturn factory.signingService
-        }
-        processor = CryptoOpsBusProcessor(signingFactory, configEvent)
+        processor = CryptoOpsBusProcessor(factory.signingService)
         CryptoConsts.Categories.all.forEach {
             factory.hsmService.assignSoftHSM(tenantId, it)
         }
