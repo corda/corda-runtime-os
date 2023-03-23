@@ -1,5 +1,8 @@
-package net.corda.serialization
+package net.corda.internal.serialization
 
+import net.corda.serialization.ObjectWithCompatibleContext
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationFactory
 import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializedBytes
@@ -27,7 +30,7 @@ inline fun <reified T : Any> ByteSequence.deserializeWithCompatibleContext(seria
  */
 inline fun <reified T : Any> SerializedBytes<T>.deserialize(serializationFactory: SerializationFactory,
                                                             context: SerializationContext): T {
-    return serializationFactory.deserialize(this, T::class.java, context)
+    return serializationFactory.deserialize(this.unwrap(), T::class.java, context)
 }
 
 /**

@@ -30,7 +30,7 @@ class SerializationServiceImpl(
     override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                deserializationInput.deserialize(serializedBytes, clazz, context)
+                deserializationInput.deserialize(serializedBytes.unwrap(), clazz, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

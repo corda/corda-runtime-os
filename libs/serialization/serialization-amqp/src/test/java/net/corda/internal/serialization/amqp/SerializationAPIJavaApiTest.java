@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.serialization.EncodingAllowList;
 import net.corda.serialization.ObjectWithCompatibleContext;
 import net.corda.serialization.SerializationContext;
@@ -35,7 +36,7 @@ public class SerializationAPIJavaApiTest {
     private final int size = bytesArr.length;
     private final OpaqueBytesSubSequence opaqueBytesSubSequence = new OpaqueBytesSubSequence(bytesArr, offset, size);
     private final ObjectWithCompatibleContext<String> objectWithCompatibleContext = new ObjectWithCompatibleContext<>("testObj", serializationContext);
-    private final SerializedBytes<String> serializedBytes = new SerializedBytes<>(bytesArr);
+    private final SerializedBytes<String> serializedBytes = new SerializedBytesImpl<>(bytesArr);
 
     @Nested
     public class SerializationFactoryJavaApiTest {
@@ -241,13 +242,6 @@ public class SerializationAPIJavaApiTest {
 
             assertThat(result).isNotNull();
             assertThat(result).isEqualTo(bytesArr);
-        }
-
-        @Test
-        public void getSummary() {
-            var result = serializedBytes.getSummary();
-
-            assertThat(result).isNotNull();
         }
     }
 

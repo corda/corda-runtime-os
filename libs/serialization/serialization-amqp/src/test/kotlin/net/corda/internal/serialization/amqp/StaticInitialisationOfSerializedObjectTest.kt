@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.deserialize
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -87,7 +87,7 @@ class StaticInitialisationOfSerializedObjectTest {
         val bytes = url.readBytes()
 
         assertThatThrownBy {
-            DeserializationInput(sf2).deserialize(SerializedBytes<D>(bytes))
+            DeserializationInput(sf2).deserialize(SerializedBytesImpl<D>(bytes))
         }.isInstanceOf(NotSerializableException::class.java)
     }
 }
