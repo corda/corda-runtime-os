@@ -147,6 +147,46 @@
                   ]
                 }
               }
+            },
+            "crt": {
+              "description": "Certificate to use in PEM format",
+              "properties": {
+                "path": {
+                  "description": "File path to the certificate in PEM format",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "key": {
+              "description": "Private key to use in PEM format",
+              "properties": {
+                "path": {
+                  "description": "File path to the private key in PEM format",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "ca": {
+              "description": "Certification Authority Certificate chain in PEM format",
+              "properties": {
+                "crt": {
+                  "properties": {
+                    "path": {
+                      "description": "File path to the Certification Authority Certificate chain in PEM format",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
             }
           }
         }
