@@ -85,6 +85,12 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
+/**
+ * A suite of integration tests that exercise the JPA entity objects including their mappins, and the
+ * JPA [Wrapping|Signing|HSM]Repository layer code, running against the actual schema in real SQL databases.
+ *
+ * For now also tests the [HSMStore] which layers above HSMRepository.
+ */
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class PersistenceTests {
     companion object {
