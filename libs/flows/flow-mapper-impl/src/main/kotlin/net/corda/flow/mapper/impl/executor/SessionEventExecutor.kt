@@ -138,7 +138,7 @@ class SessionEventExecutor(
                             sessionEvent.initiatedIdentity,
                             2,
                             emptyList(),
-                            SessionData(SessionClose())
+                            SessionClose()
                         )
                     )
                 )
