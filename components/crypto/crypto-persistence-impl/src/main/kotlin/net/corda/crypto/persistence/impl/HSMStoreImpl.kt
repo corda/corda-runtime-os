@@ -74,23 +74,23 @@ class HSMStoreImpl @Activate constructor(
     ): HSMAssociationInfo = impl.associate(tenantId, category, hsmId, masterKeyPolicy)
 
     class Impl(
-        private val cryptoHSMRRepository: HSMRepository,
+        private val cryptoHSMRepository: HSMRepository,
     ) : DownstreamAlwaysUpAbstractImpl() {
         fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-            cryptoHSMRRepository.findTenantAssociation(tenantId, category)
+            cryptoHSMRepository.findTenantAssociation(tenantId, category)
 
-        fun getHSMUsage(): List<HSMUsage> = cryptoHSMRRepository.getHSMUsage()
+        fun getHSMUsage(): List<HSMUsage> = cryptoHSMRepository.getHSMUsage()
 
         fun associate(
             tenantId: String,
             category: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy,
-        ): HSMAssociationInfo = cryptoHSMRRepository.associate(tenantId, category, hsmId, masterKeyPolicy)
+        ): HSMAssociationInfo = cryptoHSMRepository.associate(tenantId, category, hsmId, masterKeyPolicy)
 
         override fun close() {
             super.close()
-            cryptoHSMRRepository.close()
+            cryptoHSMRepository.close()
         }
     }
 }
