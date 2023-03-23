@@ -6,7 +6,6 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
@@ -44,9 +43,7 @@ class MintFlow : ClientStartableFlow {
         val myInfo = memberLookup.myInfo()
 
         val mintRequest = requestBody.getRequestBodyAs(jsonMarshallingService, MintRequest::class.java)
-        if (mintRequest.stateValues.isEmpty()) {
-            throw CordaRuntimeException("No state values to mint")
-        }
+        require(mintRequest.stateValues.isNotEmpty()) { "No state values to mint" }
 
         val myPublicKey = myInfo.ledgerKeys.first()
         val notary = notaryLookup.notaryServices.single()
