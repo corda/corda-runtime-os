@@ -56,8 +56,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
