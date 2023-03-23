@@ -2,6 +2,11 @@ package net.corda.membership.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
@@ -23,12 +28,15 @@ import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -58,12 +66,21 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = MembershipPersistenceClient::class)
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
 ) : MemberOpsService {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val RPC_GROUP_NAME = "membership.ops.rpc"
         const val RPC_CLIENT_NAME = "membership.ops.rpc"
         const val ASYNC_GROUP_NAME = "membership.ops.async"
+        const val ACTIONS_GROUP_NAME = "membership.actions"
 
         const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"
         const val CONFIG_HANDLE = "MemberOpsService.CONFIG_HANDLE"
@@ -107,6 +124,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                     LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
                 )
             )
         }
@@ -122,7 +140,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     logger.info("Registering for configuration updates.")
                     configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                     )
                 }
             }
@@ -159,11 +177,11 @@ class MemberOpsServiceImpl @Activate constructor(
     }
 
     private fun handleConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
+        recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG), event.config.getConfig(MEMBERSHIP_CONFIG))
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun recreateSubscription(coordinator: LifecycleCoordinator, messagingConfig: SmartConfig) {
+    private fun recreateSubscription(coordinator: LifecycleCoordinator, messagingConfig: SmartConfig, membershipConfig: SmartConfig) {
         coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
             logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
             val subscription = subscriptionFactory.createRPCSubscription(
@@ -205,13 +223,37 @@ class MemberOpsServiceImpl @Activate constructor(
             ).also {
                 it.start()
             }
+
+            val actionsProcessor = MembershipActionsProcessor(
+                membershipQueryClient,
+                cipherSchemeMetadata,
+                clock,
+                cryptoOpsClient,
+                cordaAvroSerializationFactory,
+                merkleTreeProvider,
+                membershipConfig,
+                membershipGroupReaderProvider,
+            )
+            val actionsSubscription = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(
+                    ACTIONS_GROUP_NAME,
+                    MEMBERSHIP_ACTIONS_TOPIC
+                ),
+                actionsProcessor,
+                messagingConfig,
+                null
+            ).also {
+                it.start()
+            }
+
             val handle = coordinator.followStatusChangesByName(
                 setOf(
                     subscription.subscriptionName,
                     asyncSubscription.subscriptionName,
+                    actionsSubscription.subscriptionName
                 )
             )
-            MembershipSubscriptionAndRegistration(subscription, asyncSubscription, handle, retryManager)
+            MembershipSubscriptionAndRegistration(subscription, asyncSubscription, actionsSubscription, handle, retryManager)
         }
     }
 
@@ -224,6 +266,7 @@ class MemberOpsServiceImpl @Activate constructor(
     private class MembershipSubscriptionAndRegistration(
         val subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>,
         val asyncSubscription: Resource,
+        val actionsSubscription: Subscription<String, MembershipActionsRequest>,
         val registrationHandle: RegistrationHandle,
         val retryManager: Resource,
     ) : Resource {
@@ -232,6 +275,7 @@ class MemberOpsServiceImpl @Activate constructor(
             // events being posted.
             registrationHandle.close()
             subscription.close()
+            actionsSubscription.close()
             asyncSubscription.close()
             retryManager.close()
         }

@@ -4,6 +4,8 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeMemberInfo
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -27,6 +29,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
@@ -213,12 +216,12 @@ class ApproveRegistrationHandlerTest {
         assertThat(results.outputStates)
             .hasSize(3)
             .anySatisfy {
-                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
+                val value = (it.value as? MembershipActionsRequest)?.request
                 assertThat(value)
                     .isNotNull
-                    .isInstanceOf(DistributeMembershipPackage::class.java)
-                assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(6)
+                    .isInstanceOf(DistributeMemberInfo::class.java)
+                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(6)
             }
     }
 
@@ -236,12 +239,12 @@ class ApproveRegistrationHandlerTest {
         assertThat(results.outputStates)
             .hasSize(3)
             .anySatisfy {
-                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
+                val value = (it.value as? MembershipActionsRequest)?.request
                 assertThat(value)
                     .isNotNull
-                    .isInstanceOf(DistributeMembershipPackage::class.java)
-                assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(5)
+                    .isInstanceOf(DistributeMemberInfo::class.java)
+                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(5)
             }
     }
 

@@ -2,6 +2,8 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeMemberInfo
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -24,10 +26,12 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
@@ -94,10 +98,10 @@ internal class ApproveRegistrationHandler(
                 reader.groupParameters?.epoch
             } ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
 
-            val distributionCommand = Record(
-                REGISTRATION_COMMAND_TOPIC,
+            val distributionAction = Record(
+                MEMBERSHIP_ACTIONS_TOPIC,
                 "$registrationId-${approvedBy.toCorda().shortHash}",
-                RegistrationCommand(DistributeMembershipPackage(epoch)),
+                 MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch)),
             )
 
             // Push member to member list kafka topic
@@ -121,7 +125,7 @@ internal class ApproveRegistrationHandler(
                 )
             )
 
-            listOf(memberRecord, persistApproveMessage, distributionCommand)
+            listOf(memberRecord, persistApproveMessage, distributionAction)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
             listOf(

@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.handler.mgm
+package net.corda.membership.service.impl.actions
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
@@ -6,17 +6,17 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.actions.request.DistributeMemberInfo
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.p2p.MembershipPackage
-import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
-import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
-import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -27,18 +27,22 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
-import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
-import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
+import net.corda.schema.Schemas
+import net.corda.schema.configuration.MembershipConfig
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.parse
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
@@ -51,20 +55,58 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 
-class DistributeMembershipPackageHandlerTest {
+class DistributeMemberInfoActionTest {
     private companion object {
         const val EPOCH = 5
+        const val GROUP_ID = "group"
     }
+    private fun createHoldingIdentity(name: String): HoldingIdentity {
+        return createTestHoldingIdentity("C=GB,L=London,O=$name", GROUP_ID)
+    }
+    private fun mockMemberInfo(
+        holdingIdentity: HoldingIdentity,
+        isMgm: Boolean = false,
+        status: String = MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+        isNotary: Boolean = false,
+    ): MemberInfo {
+        val mgmContext = mock<MGMContext> {
+            on { parseOrNull(eq(MemberInfoExtension.IS_MGM), any<Class<Boolean>>()) } doReturn isMgm
+            on { parse(eq(MemberInfoExtension.STATUS), any<Class<String>>()) } doReturn status
+            on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name.toString()).entries
+        }
+        val memberContext = mock<MemberContext> {
+            on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
+            if (isNotary) {
+                on { entries } doReturn mapOf(
+                    "member" to holdingIdentity.x500Name.toString(),
+                    "${MemberInfoExtension.ROLES_PREFIX}.0" to "notary",
+                ).entries
+                val notaryDetails = MemberNotaryDetails(
+                    holdingIdentity.x500Name,
+                    "Notary Plugin A",
+                    listOf(mock())
+                )
+                whenever(mock.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+            } else {
+                on { entries } doReturn mapOf("member" to holdingIdentity.x500Name.toString()).entries
+            }
+        }
+        return mock {
+            on { mgmProvidedContext } doReturn mgmContext
+            on { memberProvidedContext } doReturn memberContext
+            on { name } doReturn holdingIdentity.x500Name
+            on { groupId } doReturn holdingIdentity.groupId
+        }
+    }
+
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
-    private val registrationId = "registrationID"
-    private val command = DistributeMembershipPackage(EPOCH)
-    private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+    private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), EPOCH)
     private val key = "key"
     private val memberInfo = mockMemberInfo(member)
     private val inactiveMember = mockMemberInfo(
         createHoldingIdentity("inactive"),
-        status = MEMBER_STATUS_SUSPENDED
+        status = MemberInfoExtension.MEMBER_STATUS_SUSPENDED
     )
     private val mgm = mockMemberInfo(
         createHoldingIdentity("mgm"),
@@ -146,7 +188,7 @@ class DistributeMembershipPackageHandlerTest {
         on { getGroupReader(any()) } doReturn groupReader
     }
 
-    private val handler = DistributeMembershipPackageHandler(
+    private val handler = DistributeMemberInfoAction(
         membershipQueryClient,
         cipherSchemeMetadata,
         clock,
@@ -185,9 +227,9 @@ class DistributeMembershipPackageHandlerTest {
             )
         ).doReturn(allMemberPackage)
 
-        val reply = handler.invoke(state, key, command)
+        val reply = handler.process(key, action)
 
-        assertThat(reply.outputStates).contains(allMemberPackage)
+        Assertions.assertThat(reply).contains(allMemberPackage)
     }
 
     @Test
@@ -221,54 +263,31 @@ class DistributeMembershipPackageHandlerTest {
             record
         }
 
-        val reply = handler.invoke(state, key, command)
+        val reply = handler.process(key, action)
 
-        assertThat(reply.outputStates).containsAll(membersRecord)
+        Assertions.assertThat(reply).containsAll(membersRecord)
     }
 
     @Test
     fun `invoke republishes the distribute command if expected group parameters are not available via the group reader`() {
         whenever(groupParameters.epoch).thenReturn(EPOCH - 1)
 
-        val reply = handler.invoke(state, key, command)
+        val reply = handler.process(key, action)
 
-        assertThat(reply.outputStates)
+        Assertions.assertThat(reply)
             .hasSize(1)
             .allSatisfy {
-                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                assertThat((it.value as? RegistrationCommand)?.command)
-                    .isNotNull
-                    .isInstanceOf(DistributeMembershipPackage::class.java)
+                Assertions.assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                Assertions.assertThat(it.key).isEqualTo(key)
+                Assertions.assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
-
-    @Test
-    fun `invoke republishes the distribute command on exception`() {
-        whenever(groupReader.lookup()).thenThrow(CordaRuntimeException("test"))
-
-        val reply = handler.invoke(state, key, command)
-
-        assertThat(reply.outputStates)
-            .hasSize(1)
-            .allSatisfy {
-                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                assertThat((it.value as? RegistrationCommand)?.command)
-                    .isNotNull
-                    .isInstanceOf(DistributeMembershipPackage::class.java)
-            }
-    }
+    
 
     @Test
     fun `invoke uses the correct TTL configuration`() {
-        handler.invoke(state, key, command)
+        handler.process(key, action)
 
-        verify(config, atLeastOnce()).getIsNull("$TTLS.$MEMBERS_PACKAGE_UPDATE")
-    }
-
-    @Test
-    fun `exception is thrown when RegistrationState is null`() {
-        assertThrows<MissingRegistrationStateException> {
-            handler.invoke(null, key, command)
-        }
+        verify(config, atLeastOnce()).getIsNull("${MembershipConfig.TtlsConfig.TTLS}.${MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE}")
     }
 }

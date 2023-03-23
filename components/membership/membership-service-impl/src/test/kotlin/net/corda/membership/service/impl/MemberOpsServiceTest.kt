@@ -1,6 +1,8 @@
 package net.corda.membership.service.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
@@ -16,12 +18,14 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
@@ -37,6 +41,10 @@ class MemberOpsServiceTest {
     private val asyncSubscription: StateAndEventSubscription<String, MembershipAsyncRequestState, MembershipAsyncRequest> = mock {
         on { subscriptionName } doReturn asyncSubName
     }
+    private val actionsSubName = LifecycleCoordinatorName("ACTIONS_SUBSCRIPTION")
+    private val actionsSubscription = mock<Subscription<String, MembershipActionsRequest>> {
+        on { subscriptionName } doReturn actionsSubName
+    }
     private val subscriptionFactory: SubscriptionFactory = mock {
         on { createRPCSubscription(
                 any(), any(), any<RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse>>()
@@ -50,6 +58,14 @@ class MemberOpsServiceTest {
                 any<CommandsRetryManager>(),
             )
         } doReturn asyncSubscription
+        on {
+            createDurableSubscription(
+                any(),
+                any<MembershipActionsProcessor>(),
+                any(),
+                eq(null)
+            )
+        } doReturn actionsSubscription
     }
 
     private val registrationProxy: RegistrationProxy = mock()
@@ -61,12 +77,13 @@ class MemberOpsServiceTest {
     private val bootConfig: SmartConfig = mock {
         on { withFallback(messagingConfig) } doReturn messagingConfig
     }
+    private val membershipConfig = mock<SmartConfig>()
 
     private val configs = mapOf(
         ConfigKeys.BOOT_CONFIG to bootConfig,
-        ConfigKeys.MESSAGING_CONFIG to messagingConfig
+        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
+        ConfigKeys.MEMBERSHIP_CONFIG to membershipConfig
     )
-
 
     @Test
     fun `start event does not change status to UP`() {
@@ -83,6 +100,7 @@ class MemberOpsServiceTest {
             bringDependenciesUp()
             sendConfigUpdate<MemberOpsService>(configs)
             verify(rpcSubscription).start()
+            verify(actionsSubscription).start()
             verifyIsUp<MemberOpsService>()
         }
     }
@@ -163,11 +181,13 @@ class MemberOpsServiceTest {
         return LifecycleTest {
             addDependency(asyncSubName)
             addDependency(rpcSubName)
+            addDependency(actionsSubName)
             addDependency<ConfigurationReadService>()
             addDependency<RegistrationProxy>()
             addDependency<VirtualNodeInfoReadService>()
             addDependency<MembershipGroupReaderProvider>()
             addDependency<MembershipQueryClient>()
+            addDependency<CryptoOpsClient>()
 
             MemberOpsServiceImpl(
                 coordinatorFactory,
@@ -179,6 +199,10 @@ class MemberOpsServiceTest {
                 membershipGroupReaderProvider,
                 membershipQueryClient,
                 mock(),
+                mock(),
+                mock(),
+                mock(),
+                mock()
             )
         }
     }

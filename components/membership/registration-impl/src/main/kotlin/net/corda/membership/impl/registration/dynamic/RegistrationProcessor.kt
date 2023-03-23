@@ -24,7 +24,6 @@ import net.corda.membership.impl.registration.dynamic.handler.member.PersistMemb
 import net.corda.membership.impl.registration.dynamic.handler.member.ProcessMemberVerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
-import net.corda.membership.impl.registration.dynamic.handler.mgm.DistributeMembershipPackageHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
@@ -46,9 +45,6 @@ class RegistrationProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     membershipPersistenceClient: MembershipPersistenceClient,
     membershipQueryClient: MembershipQueryClient,
-    cryptoOpsClient: CryptoOpsClient,
-    cipherSchemeMetadata: CipherSchemeMetadata,
-    merkleTreeProvider: MerkleTreeProvider,
     membershipConfig: SmartConfig,
     groupParametersWriterService: GroupParametersWriterService,
     groupParametersFactory: GroupParametersFactory,
@@ -82,16 +78,6 @@ class RegistrationProcessor(
             membershipGroupReaderProvider,
             groupParametersWriterService,
             groupParametersFactory,
-        ),
-        DistributeMembershipPackage::class.java to DistributeMembershipPackageHandler(
-            membershipQueryClient,
-            cipherSchemeMetadata,
-            clock,
-            cryptoOpsClient,
-            cordaAvroSerializationFactory,
-            merkleTreeProvider,
-            membershipConfig,
-            membershipGroupReaderProvider,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,
