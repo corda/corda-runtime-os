@@ -1,11 +1,10 @@
 package net.corda.schema.configuration;
 
 /**
- * Default configuration values for associated {@link ConfigKeys}
+ * Default configuration values for associated {@link ConfigKeys}.
  * <p>
- * NOTE: this is a temporary place for them.
- * Decision to be made on how to specify default values.
- * For example.
+ * NOTE: This is a temporary place for them.
+ * Decision to be made on how to specify default values, for example:
  * <ul>
  * <li>Constants</li>
  * <li>HCON config to use as fallback</li>

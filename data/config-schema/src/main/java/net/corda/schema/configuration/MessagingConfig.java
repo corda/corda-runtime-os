@@ -1,7 +1,7 @@
 package net.corda.schema.configuration;
 
 /**
- * Configuration keys to access public parts of the configuration under the {@code corda.messaging} key
+ * Configuration keys to access public parts of the configuration under the {@code corda.messaging} key.
  */
 public final class MessagingConfig {
     private MessagingConfig() {
@@ -44,7 +44,7 @@ public final class MessagingConfig {
     }
 
     /**
-     * Subscription related configuration.
+     * Subscription-related configuration.
      */
     public static final class Subscription {
         private Subscription() {
@@ -60,7 +60,7 @@ public final class MessagingConfig {
     }
 
     /**
-     * Publisher related configuration.
+     * Publisher-related configuration.
      */
     public static final class Publisher {
         private Publisher() {
@@ -72,9 +72,10 @@ public final class MessagingConfig {
     }
 
     /**
-     * Maximum Allowed Message Size (in Bytes)
-     * NOTE: this is not sync'ed with the actual Kafka configuration and is just a guide for
-     * producers to keep under this limit when publishing messages.
+     * Maximum Allowed Message Size (in bytes).
+     * <p>
+     * NOTE: This is not synchronized with the actual Kafka configuration. This is just a guide for
+     * producers to stay under this limit when publishing messages.
      */
     public static final String MAX_ALLOWED_MSG_SIZE = "maxAllowedMessageSize";
 }
