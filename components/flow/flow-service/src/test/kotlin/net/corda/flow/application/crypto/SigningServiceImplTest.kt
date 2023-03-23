@@ -26,7 +26,10 @@ class SigningServiceImplTest {
 
     @Test
     fun `sign returns the signature returned from the flow resuming`() {
-        val signature = DigitalSignatureWithKey(mock(), byteArrayOf(1))
+        val signingKey = mock<PublicKey>().also {
+            whenever(it.encoded).thenReturn(byteArrayOf(0x00))
+        }
+        val signature = DigitalSignatureWithKey(signingKey, byteArrayOf(1))
         val publicKey = mock<PublicKey>()
         val encodedPublicKeyBytes = byteArrayOf(2)
         whenever(keyEncodingService.encodeAsByteArray(publicKey)).thenReturn(encodedPublicKeyBytes)

@@ -87,17 +87,20 @@ class UtxoFinalityFlowV1Test {
     private val memberInfoAlice = mock<MemberInfo>()
     private val memberInfoBob = mock<MemberInfo>()
 
-    private val publicKeyAlice1 = mock<PublicKey>()
-    private val publicKeyAlice2 = mock<PublicKey>()
-    private val publicKeyBob = mock<PublicKey>()
+    private val publicKeyAlice1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+    private val publicKeyAlice2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+    private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
 
-    private val publicKeyNotaryVNode1 = mock<PublicKey>()
-    private val publicKeyNotaryVNode2 = mock<PublicKey>()
-    private val invalidNotaryVNodeKey = mock<PublicKey>()
+    private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
+    private val publicKeyNotaryVNode2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x05)) }
+    private val invalidNotaryVNodeKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x06)) }
 
     private val notaryServiceKey = mock<CompositeKey>()
 
-    private val signature0 = digitalSignatureAndMetadata(mock(), byteArrayOf(1, 2, 0))
+    private val signature0 = digitalSignatureAndMetadata(
+        mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x07)) },
+        byteArrayOf(1, 2, 0)
+    )
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))

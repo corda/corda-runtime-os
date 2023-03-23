@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -12,6 +13,7 @@ import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersist
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -19,6 +21,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -30,6 +33,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -50,6 +54,18 @@ class ConsensualFinalityFlowV1Test {
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<ConsensualLedgerPersistenceService>()
+    private val digestService = mock<DigestService>().also {
+        fun capture() {
+            val bytesCaptor = argumentCaptor<ByteArray>()
+            whenever(it.hash(bytesCaptor.capture(), any())).thenAnswer {
+                val bytes = bytesCaptor.firstValue
+                SecureHashImpl(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
+                    capture()
+                }
+            }
+        }
+        capture()
+    }
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -57,10 +73,18 @@ class ConsensualFinalityFlowV1Test {
     private val memberInfoAlice = mock<MemberInfo>()
     private val memberInfoBob = mock<MemberInfo>()
 
-    private val publicKey0 = mock<PublicKey>()
-    private val publicKeyAlice1 = mock<PublicKey>()
-    private val publicKeyAlice2 = mock<PublicKey>()
-    private val publicKeyBob = mock<PublicKey>()
+    private val publicKey0 = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x01))
+    }
+    private val publicKeyAlice1 = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x02))
+    }
+    private val publicKeyAlice2 = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x03))
+    }
+    private val publicKeyBob = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x04))
+    }
 
     private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
@@ -238,10 +262,7 @@ class ConsensualFinalityFlowV1Test {
     @Test
     fun `missing signatures when verifying all signatures rethrows exception with useful message`() {
         val aliceSignatures = listOf(signatureAlice1, signatureAlice2)
-        val aliceKeyIdToKey = mapOf(
-            publicKeyAlice1.fullIdHash() to publicKeyAlice1,
-            publicKeyAlice2.fullIdHash() to publicKeyAlice2
-        )
+        val aliceSignaturesKeys = listOf(publicKeyAlice1, publicKeyAlice2)
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(aliceSignatures))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(
@@ -259,9 +280,7 @@ class ConsensualFinalityFlowV1Test {
             .hasMessageContainingAll(
                 "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
                 "The following counterparties provided signatures while finalizing the transaction:",
-                "$ALICE provided 2 signature(s) to satisfy the signatories (encoded) ${aliceSignatures.map { 
-                    aliceKeyIdToKey[it.by] ?: throw IllegalArgumentException("key id ${it.by} does not exist in key id to key mapping") 
-                }}",
+                "$ALICE provided 2 signature(s) to satisfy the signatories (encoded) ${aliceSignaturesKeys.map { it.encoded }}",
                 "$BOB provided 0 signature(s) to satisfy the signatories (encoded) []"
             )
 
@@ -306,6 +325,7 @@ class ConsensualFinalityFlowV1Test {
         flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
+        flow.digestService = digestService
         flow.call()
     }
 

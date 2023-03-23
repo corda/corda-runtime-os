@@ -53,9 +53,15 @@ class ConsensualReceiveFinalityFlowV1Test {
 
     private val memberInfo = mock<MemberInfo>()
 
-    private val publicKey1 = mock<PublicKey>()
-    private val publicKey2 = mock<PublicKey>()
-    private val publicKey3 = mock<PublicKey>()
+    private val publicKey1 = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x01))
+    }
+    private val publicKey2 = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x02))
+    }
+    private val publicKey3 = mock<PublicKey>().also {
+        whenever(it.encoded).thenReturn(byteArrayOf(0x03))
+    }
 
     private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 2))
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 3))

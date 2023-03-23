@@ -1,9 +1,11 @@
 package net.corda.ledger.common.testkit
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
+import java.security.MessageDigest
 import java.security.PublicKey
 
 private class MockTransactionSignatureService: TransactionSignatureServiceInternal {
@@ -21,9 +23,11 @@ private class MockTransactionSignatureService: TransactionSignatureServiceIntern
         publicKey: PublicKey
     ) {}
 
-    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash? {
-        TODO("Not yet implemented")
-    }
+    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash?
+        = SecureHashImpl(
+            digestAlgorithmName,
+            MessageDigest.getInstance(digestAlgorithmName).digest(publicKey.encoded)
+        )
 }
 
 fun mockTransactionSignatureService(): TransactionSignatureServiceInternal {
