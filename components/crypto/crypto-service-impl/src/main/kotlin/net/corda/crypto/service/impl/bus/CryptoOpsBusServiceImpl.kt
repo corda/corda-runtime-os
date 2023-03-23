@@ -79,7 +79,7 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = CryptoOpsBusProcessor(
             SigningServiceImpl(
-w                cryptoServiceFactory = cryptoServiceFactory,
+                cryptoServiceFactory = cryptoServiceFactory,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 keyEncodingService = keyEncodingService,
