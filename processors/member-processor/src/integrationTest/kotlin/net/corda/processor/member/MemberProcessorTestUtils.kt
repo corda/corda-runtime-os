@@ -233,7 +233,8 @@ class MemberProcessorTestUtils {
 
         fun lookUpBySessionKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
             val result = member?.let {
-                groupReader.lookupBySessionKey(it.sessionInitiationKey.calculateHash())
+                // CORE-11837: Use ledger key
+                groupReader.lookupBySessionKey(it.sessionInitiationKeys.first().calculateHash())
             }
             assertNotNull(result)
             result!!

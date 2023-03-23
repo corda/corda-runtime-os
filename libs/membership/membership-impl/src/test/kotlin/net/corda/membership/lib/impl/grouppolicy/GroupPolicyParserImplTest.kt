@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.lib.MemberInfoExtension.Companion.certificate
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
@@ -101,7 +100,6 @@ class GroupPolicyParserImplTest {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun `Parse group policy for member - verify internal map`() {
         val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC)) { null }
 
@@ -191,8 +189,7 @@ class GroupPolicyParserImplTest {
         assertSoftly {
             it.assertThat(mgmInfo.name.toString())
                 .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
-            it.assertThat(mgmInfo.certificate.size).isEqualTo(3)
-            it.assertThat(mgmInfo.sessionInitiationKey).isNotNull
+            it.assertThat(mgmInfo.sessionInitiationKeys).isNotEmpty
             it.assertThat(mgmInfo.ledgerKeys.size).isEqualTo(0)
             it.assertThat(mgmInfo.ledgerKeyHashes.size).isEqualTo(0)
             it.assertThat(mgmInfo.endpoints.size).isEqualTo(2)
