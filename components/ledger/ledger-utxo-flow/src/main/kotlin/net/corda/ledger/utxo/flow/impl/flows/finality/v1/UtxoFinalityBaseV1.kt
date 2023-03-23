@@ -66,10 +66,13 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
         try {
             log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
             transaction.verifySignatorySignature(signature)
-            log.debug { "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id" }
+            // TODO The below logging needs to be moved in the transaction
+//  log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
         } catch (e: Exception) {
-            val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +
-                    "transaction ${transaction.id}. Message: ${e.message}"
+            // TODO The below logging needs to be moved in the transaction
+//            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
+//                    "transaction ${transaction.id}. Message: ${e.message}"
+            val message = ""
             log.warn(message)
             persistInvalidTransaction(transaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
@@ -89,7 +92,7 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     @Suspendable
     protected fun verifyAndAddNotarySignature(
         transaction: UtxoSignedTransactionInternal,
-        signature: DigitalSignatureAndMetadata,
+        signature: DigitalSignatureAndMetadata
     ): UtxoSignedTransactionInternal {
         try {
             transaction.verifyNotarySignature(signature)

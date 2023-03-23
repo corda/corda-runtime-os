@@ -10,7 +10,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
 import net.corda.utilities.trace
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowMessaging
@@ -18,9 +17,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -28,7 +24,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
-import java.security.PublicKey
 import kotlin.reflect.full.primaryConstructor
 
 @CordaSystemFlow
@@ -51,9 +46,6 @@ class UtxoFinalityFlowV1(
 
     @CordaInject
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
-
-    @CordaInject
-    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -123,10 +115,11 @@ class UtxoFinalityFlowV1(
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
-                log.debug {
-                    "Added signature by ${signature.by} (key id) from ${session.counterparty} of $signature for transaction " +
-                            transactionId
-                }
+                // TODO The below logging needs to be moved in the transaction
+//                log.debug {
+//                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
+//                            transactionId
+//                }
             }
             session to signatures
         }.toMap()
@@ -134,6 +127,7 @@ class UtxoFinalityFlowV1(
         return transaction to signaturesReceivedFromSessions
     }
 
+    @Suppress("unused_parameter")
     @Suspendable
     private fun verifyAllReceivedSignatures(
         transaction: UtxoSignedTransactionInternal,
@@ -144,15 +138,17 @@ class UtxoFinalityFlowV1(
         try {
             transaction.verifySignatorySignatures()
         } catch (e: TransactionMissingSignaturesException) {
-            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
-                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-                        signatures.map { getKeyFromKeyId(it.by, session.counterparty).encoded }
-            }
-            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
-                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
-            } else {
-                "[]"
-            }
+            // TODO The below logging needs to be moved in the transaction
+//            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+//                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
+//                        signatures.map { it.by.encoded }
+//            }
+//            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+//                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+//            } else {
+//                "[]"
+//            }
+            val counterpartiesToSignatoriesMessage = "[]"
             val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
                     "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
@@ -288,19 +284,4 @@ class UtxoFinalityFlowV1(
     private fun sendNotarySignaturesToCounterparties(notarySignatures: List<DigitalSignatureAndMetadata>) {
         flowMessaging.sendAll(Payload.Success(notarySignatures), sessions.toSet())
     }
-
-    @Suspendable
-    private fun getKeyFromKeyId(keyId: SecureHash, member: MemberX500Name): PublicKey {
-        val digestAlgorithm = keyId.algorithm
-        val knownKeysByKeyIds =
-            memberLookup.lookup(member)?.ledgerKeys?.associateBy {
-                it.fullIdHash(digestService, digestAlgorithm)
-            }
-        // TODO check if this is wanted behavior
-        return knownKeysByKeyIds?.get(keyId) ?: error("Key not found for id: $keyId and member: $member")
-    }
 }
-
-@Suspendable
-private fun PublicKey.fullIdHash(digestService: DigestService, digestAlgorithm: String): SecureHash =
-    digestService.hash(this.encoded, DigestAlgorithmName(digestAlgorithm))

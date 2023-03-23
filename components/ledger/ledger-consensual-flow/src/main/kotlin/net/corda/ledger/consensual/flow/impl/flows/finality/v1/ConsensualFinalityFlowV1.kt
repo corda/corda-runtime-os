@@ -6,7 +6,6 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.membership.MemberLookup
@@ -14,13 +13,9 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 
 @CordaSystemFlow
 class ConsensualFinalityFlowV1(
@@ -41,9 +36,6 @@ class ConsensualFinalityFlowV1(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
-
-    @CordaInject
-    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
@@ -118,9 +110,12 @@ class ConsensualFinalityFlowV1(
         return transaction to signaturesReceivedFromSessions
     }
 
+    @Suppress("unused_parameter")
     @Suspendable
     private fun verifyAllReceivedSignatures(
         transaction: ConsensualSignedTransactionInternal,
+        // TODO This is not not passed in to `transaction.verifySignatures()`
+        //  Only used for logging
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
         log.debug { "Verifying all signatures for transaction $transactionId." }
@@ -128,15 +123,19 @@ class ConsensualFinalityFlowV1(
         try {
             transaction.verifySignatures()
         } catch (e: TransactionMissingSignaturesException) {
-            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
-                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-                        signatures.map { getKeyFromKeyId(it.by, session.counterparty).encoded }
-            }
-            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
-                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
-            } else {
-                "[]"
-            }
+            // TODO The below logging needs to be moved in the transaction or we switch to logging key ids,
+            //  which might not be a good idea since they might be created with different hash algorithms
+            //  so we might end up with a set of mix hash algorithm ids.
+//            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+//                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
+//                        signatures.map { it.by.encoded }
+//            }
+//            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+//                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+//            } else {
+//                "[]"
+//            }
+            val counterpartiesToSignatoriesMessage = "[]"
             val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
                     "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
@@ -166,19 +165,4 @@ class ConsensualFinalityFlowV1(
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
         log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
     }
-
-    @Suspendable
-    private fun getKeyFromKeyId(keyId: SecureHash, member: MemberX500Name): PublicKey {
-        val digestAlgorithm = keyId.algorithm
-        val knownKeysByKeyIds =
-            memberLookup.lookup(member)?.ledgerKeys?.associateBy {
-                it.fullIdHash(digestService, digestAlgorithm)
-            }
-        // TODO check if this is wanted behavior
-        return knownKeysByKeyIds?.get(keyId) ?: error("Key not found for id: $keyId and member: $member")
-    }
 }
-
-@Suspendable
-private fun PublicKey.fullIdHash(digestService: DigestService, digestAlgorithm: String): SecureHash =
-    digestService.hash(this.encoded, DigestAlgorithmName(digestAlgorithm))
