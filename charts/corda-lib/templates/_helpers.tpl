@@ -519,9 +519,7 @@ data:
 {{-   if not $field.valueFrom.secretKeyRef.name }}
 {{-     if $field.value }}
   {{ $k }}: {{ $field.value | b64enc | quote }}
-{{-     else if $v.explicit }}
-  {{ $k }}: {{ $v.explicit | b64enc | quote }}
-{{-     else if $v.generate }}
+{{-     else if (or $v.generate $v.explicit) }}
 {{-       $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
 {{-       $existingValue := "" }}
 {{-       if $existingSecret }}
@@ -530,7 +528,11 @@ data:
 {{-       if $existingValue }}
   {{ $k }}: {{ $existingValue }}
 {{-       else }}
+{{-         if $v.generate }}
   {{ $k }}: {{ randAlphaNum $v.generate | b64enc | quote }}
+{{-         else if $v.explicit }}
+  {{ $k }}: {{ $v.explicit | b64enc | quote }}
+{{-         end }}
 {{-       end }}
 {{-     end }}
 {{-   end }}
