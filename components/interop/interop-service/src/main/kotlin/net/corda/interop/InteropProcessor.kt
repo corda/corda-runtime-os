@@ -24,7 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
-import net.corda.schema.configuration.FlowConfig
+//import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -54,36 +54,6 @@ class InteropProcessor(
         cordaAvroSerializationFactory.createAvroDeserializer({}, SessionEvent::class.java)
     private val  sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
         cordaAvroSerializationFactory.createAvroSerializer{}
-
-    fun buildSessionEvent(
-        messageDirection: MessageDirection,
-        sessionId: String,
-        sequenceNum: Int?,
-        payload: Any? = null,
-        receivedSequenceNum: Int = 0,
-        outOfOrderSeqNums: List<Int> = listOf(0),
-        timestamp: Instant = Instant.now(),
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity = net.corda.data.identity.HoldingIdentity(
-            "alice",
-            "group1"
-        ),
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity = net.corda.data.identity.HoldingIdentity(
-            "bob",
-            "group1"
-        ),
-    ): SessionEvent {
-        return SessionEvent.newBuilder()
-            .setSessionId(sessionId)
-            .setMessageDirection(messageDirection)
-            .setSequenceNum(sequenceNum)
-            .setInitiatingIdentity(initiatingIdentity)
-            .setInitiatedIdentity(initiatedIdentity)
-            .setPayload(payload)
-            .setTimestamp(timestamp)
-            .setReceivedSequenceNum(receivedSequenceNum)
-            .setOutOfOrderSequenceNums(outOfOrderSeqNums)
-            .build()
-    }
 
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
@@ -129,7 +99,7 @@ class InteropProcessor(
                     realHoldingIdentity, facadeRequest.facadeId.toString(),
                     facadeRequest.methodName
                 )
-                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger,
+                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
                 // this change is required for CORE-10426 Support For Façade Handlers
                 logger.info("Flow name associated with facade request : $flowName")
             }
@@ -139,7 +109,8 @@ class InteropProcessor(
             val header = AuthenticatedMessageHeader(
                 destinationIdentity,
                 sourceIdentity,
-                Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
+                Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                 sessionEvent.sessionId + "-" + UUID.randomUUID(),
                 "",
                 Constants.FLOW_SESSION_SUBSYSTEM,
