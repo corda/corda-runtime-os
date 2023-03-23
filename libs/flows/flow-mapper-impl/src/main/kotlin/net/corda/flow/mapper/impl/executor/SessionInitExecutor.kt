@@ -55,7 +55,7 @@ class SessionInitExecutor(
             )
 
         // Send a session confirm message in response to the session init.
-        // This will need to be changed for CORE-10420
+        // Temporary hack for CORE-10465, will be removed as part of subsequent ticket
         if (sessionEvent.isInteropEvent()) {
             log.info("[CORE-10465] Received interop session init event, sending session confirmation.")
 

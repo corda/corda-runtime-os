@@ -95,6 +95,7 @@ class SessionEventExecutor(
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
     }
 
+    // Temporary hack for CORE-10465, will be removed in subsequent PR
     private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
         if (messageDirection == MessageDirection.OUTBOUND) {
             val payload = sessionEvent.payload
