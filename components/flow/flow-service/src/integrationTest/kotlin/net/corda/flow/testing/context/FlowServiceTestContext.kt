@@ -246,7 +246,7 @@ class FlowServiceTestContext @Activate constructor(
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
-        return createAndAddSessionEvent( //szsz
+        return createAndAddSessionEvent(
             flowId,
             sessionId,
             initiatingIdentity,

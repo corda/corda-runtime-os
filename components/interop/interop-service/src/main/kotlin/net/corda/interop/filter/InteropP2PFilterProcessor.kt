@@ -16,7 +16,7 @@ import java.nio.ByteBuffer
 
 /**
  * Processes events from the P2P.in topic.
- * If events have a subsystem of "interop", they are forwarded to the `interop.event` topic.
+ * If events have a subsystem of "interop", they are forwarded to the `flow.interop.event` topic.
  */
 class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory): DurableProcessor<String, AppMessage> {
 
@@ -61,6 +61,7 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
 
+    //TODO copy of a method from FlowP2PFilterProcessor
     /**
      * Toggle the [sessionId] to that of the other party and return it.
      * Initiating party sessionId will be a random UUID.
