@@ -48,7 +48,7 @@ public interface ClaimedToken {
     MemberX500Name getNotaryX500Name();
 
     /**
-     * gets the symbol for the token.
+     * Gets the symbol for the token.
      *
      * @return Returns the symbol for the token.
      */

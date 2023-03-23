@@ -12,7 +12,7 @@ import java.util.List;
  * A contract state (or just "state") contains opaque data used by a contract program. It can be thought of as a disk
  * file that the program can use to persist data across transactions.
  * <p>
- * States are immutable. Once created they are never updated, instead, any changes must generate a new successor state.
+ * States are immutable. Once created, they are never updated, instead, any changes must generate a new successor state.
  * States can be updated (consumed) only once. The notary is responsible for ensuring there is no "double spending" by
  * only signing a transaction if the input states are all free.
  */

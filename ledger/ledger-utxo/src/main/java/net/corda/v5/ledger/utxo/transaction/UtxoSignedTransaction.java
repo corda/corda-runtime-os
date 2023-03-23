@@ -30,7 +30,7 @@ import java.util.List;
  * <p>
  * {@link UtxoSignedTransaction} is frequently passed around the network and stored. The identity of a transaction is
  * the hash of Merkle root of the wrapped wire representation, therefore if you are storing data keyed by wire
- * representations hash be aware that multiple different {@link UtxoSignedTransaction}s may map to the same key, and
+ * representations hash, be aware that multiple different {@link UtxoSignedTransaction}s may map to the same key, and
  * they could be different in important ways, like validity!
  * <p>
  * The signatures on a {@link UtxoSignedTransaction} might be invalid or missing: the type does not imply validity.

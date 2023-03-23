@@ -5,10 +5,10 @@ import net.corda.v5.base.annotations.DoNotImplement;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Identifies the encumbrance of a [TransactionState]
+ * Identifies the encumbrance of a [TransactionState].
  * <p>
  * The encumbrance is identified by a tag. The encumbrance group has the tag and the size of the encumbrance group,
- * i.e. the number of states encumbered with the same tag in the same transaction. This allows to easily check
+ * that is, the number of states encumbered with the same tag in the same transaction. This allows to easily check
  * that all states of one encumbrance group are present.
  */
 @DoNotImplement

@@ -15,7 +15,7 @@ import java.io.Serializable;
  * {@link UtxoLedgerService#receiveFinality(FlowSession, UtxoTransactionValidator)} to perform custom validation on the
  * {@link UtxoLedgerTransaction} received from the initiator of finality.
  * <p>
- * When validating a {@link UtxoLedgerTransaction} throw either an {@link IllegalArgumentException},
+ * When validating a {@link UtxoLedgerTransaction}, throw either an {@link IllegalArgumentException},
  * {@link IllegalStateException} or {@link CordaRuntimeException} to indicate that the transaction is invalid.
  * <p>
  * This will lead to the termination of finality for the caller of

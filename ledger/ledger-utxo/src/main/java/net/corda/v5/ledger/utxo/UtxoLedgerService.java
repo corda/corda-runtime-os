@@ -22,7 +22,7 @@ import java.util.List;
 public interface UtxoLedgerService {
 
     /**
-     * Gets a UTXO transaction builder
+     * Gets a UTXO transaction builder.
      *
      * @return Returns a new {@link UtxoTransactionBuilder} instance.
      */

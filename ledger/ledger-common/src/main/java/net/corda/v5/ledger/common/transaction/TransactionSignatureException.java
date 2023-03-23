@@ -33,7 +33,7 @@ public class TransactionSignatureException extends CordaRuntimeException {
     /**
      * Gets the ID of the transaction that has failed the signature verification.
      *
-     * @return the Returns ID of the transaction that has failed the signature verification.
+     * @return Returns the ID of the transaction that has failed the signature verification.
      */
     @NotNull
     public SecureHash getTransactionId() {

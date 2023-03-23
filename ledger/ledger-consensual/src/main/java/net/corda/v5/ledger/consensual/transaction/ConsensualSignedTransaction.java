@@ -23,8 +23,8 @@ import java.util.List;
  * signatures, each one for a public key (including composite keys) that is mentioned inside a transaction state.
  * <p>
  * {@link ConsensualSignedTransaction} is frequently passed around the network and stored.
- * The identity of a transaction is the hash of Merkle root of the wrapped wire representation, therefore if you are
- * storing data keyed by wire representations hash be aware that multiple different {@link ConsensualSignedTransaction}s
+ * The identity of a transaction is the hash of Merkle root of the wrapped wire representation. Therefore, if you are
+ * storing data keyed by wire representations hash, be aware that multiple different {@link ConsensualSignedTransaction}s
  * may map to the same key (and they could be different in important ways, like validity).
  * <p>
  * The signatures on a {@link ConsensualSignedTransaction} might be invalid or missing: the type does not imply validity.
