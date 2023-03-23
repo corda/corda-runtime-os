@@ -10,6 +10,8 @@ import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
+import java.lang.IllegalArgumentException
+
 
 class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @Extension
@@ -53,7 +55,7 @@ class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             names = ["-t", "--type"],
             description = ["Secrets service type. Valid values: \${COMPLETION-CANDIDATES}. Default: \${DEFAULT-VALUE}. " +
                     "CORDA generates a Config snippet based on 'passphrase' and 'salt' which are the same passphrase and " +
-                    "salt you would pass in at Corda bootstrapping to use built in Corda decryption to hide secrets in the Config." +
+                    "salt you would pass in at Corda bootstrapping to use built in Corda decryption to hide secrets in the Config. " +
                     "VAULT generates a configuration compatible with the HashiCorp Vault Corda addon, available to Corda Enterprise. " +
                     "For VAULT Config generation you must supply the 'vault-path' parameter as well as the key of the secret."]
         )
@@ -64,37 +66,30 @@ class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         @Suppress("Unused")
         @Command(
-            name = "create", description = ["Create a secret config value given a salt and a passphrase"]
+            name = "create", description = ["Create a secret config value for the appropriate 'type' of secrets service."]
         )
         fun create() {
-            try {
-                val secretConfigGenerator: SecretConfigGenerator = when (type) {
-                    SecretsServiceType.CORDA -> CordaSecretConfigGenerator(
-                        checkParamPassed(passphrase)
-                            { "'passphrase' must be set for CORDA type secrets." },
-                        checkParamPassed(salt)
-                            { "'salt' must be set for CORDA type secrets." }
-                    )
+            val secretConfigGenerator: SecretConfigGenerator = when (type) {
+                SecretsServiceType.CORDA -> CordaSecretConfigGenerator(
+                    checkParamPassed(passphrase)
+                        { "'passphrase' must be set for CORDA type secrets." },
+                    checkParamPassed(salt)
+                        { "'salt' must be set for CORDA type secrets." })
 
-                    SecretsServiceType.VAULT -> VaultSecretConfigGenerator(
-                        checkParamPassed(vaultPath) {
-                            "'vaultPath' must be set for VAULT type secrets." }
-                    )
-                }
-
-                val configSection = secretConfigGenerator.generate(value)
-                println(configSection.root().render(ConfigRenderOptions.concise()))
-
-            } catch (_: ParamValidationException) {
-                // Logged at point of check
+                SecretsServiceType.VAULT -> VaultSecretConfigGenerator(
+                    checkParamPassed(vaultPath)
+                        { "'vaultPath' must be set for VAULT type secrets." })
             }
+
+            val configSection = secretConfigGenerator.generate(value)
+            println(configSection.root().render(ConfigRenderOptions.concise()))
         }
 
         @Suppress("Unused")
         @Command(
             name = "decrypt",
             description = ["Decrypt a CORDA secret value given salt and passphrase (takes the actual value, not the config). " +
-                "Does not apply to VAULT type secrets which have no encrypted Config content."]
+                    "Does not apply to VAULT type secrets which have no encrypted Config content."]
         )
         fun decrypt() {
             if (type != SecretsServiceType.CORDA) {
@@ -102,31 +97,19 @@ class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 return
             }
 
-            try {
-                val encryptionUtil = SecretEncryptionUtil()
+            val encryptionUtil = SecretEncryptionUtil()
 
-                println(encryptionUtil.decrypt(value,
-                    checkParamPassed(salt)
-                        { "'salt' must be set for CORDA type secrets." },
-                    checkParamPassed(passphrase)
-                        { "'passphrase' must be set for CORDA type secrets." }
-                    )
-                )
-            } catch (_: ParamValidationException) {
-                // Logged at point of check
-            }
+            println(
+                encryptionUtil.decrypt(value,
+                    checkParamPassed(salt) { "'salt' must be set for CORDA type secrets." },
+                    checkParamPassed(passphrase) { "'passphrase' must be set for CORDA type secrets." })
+            )
         }
 
-        class ParamValidationException : Exception()
-
-        private inline fun checkParamPassed(value: String?, lazyMessage: () -> Any): String {
-            if (value.isNullOrBlank()) {
-                val message = lazyMessage()
-                println(message.toString())
-                throw ParamValidationException()
-            } else {
-                return value
-            }
+        private inline fun checkParamPassed(value: String?, lazyMessage: () -> String) = if (value.isNullOrBlank()) {
+            throw IllegalArgumentException(lazyMessage())
+        } else {
+            value
         }
     }
 }
