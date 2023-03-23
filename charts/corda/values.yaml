@@ -298,6 +298,43 @@ bootstrap:
     # -- Indicates whether RBAC roles bootstrapping is enabled as part of installation
     enabled: true
 
+  # Configuration for REST Worker bootstrap
+  rest:
+    # -- Indicates whether REST Worker bootstrapping is enabled as part of installation
+    enabled: true
+    # TLS configuration
+    tls:
+      # TLS Certificate configuration
+      crt:
+        # the TLS Certificate secret configuration
+        valueFrom:
+          # the TLS Certificate secret key reference
+          secretKeyRef:
+            # -- the TLS Certificate secret name
+            name: ""
+            # -- the TLS Certificate secret key
+            key: ""
+      # TLS Certificate private key configuration
+      key:
+        # the TLS Certificate private key secret configuration
+        valueFrom:
+          # the TLS Certificate private key secret key reference
+          secretKeyRef:
+            # -- the TLS Certificate private key secret name
+            name: ""
+            # -- the TLS Certificate private key secret key
+            key: ""
+      # Certification Authority(CA) certificates chain configuration
+      ca:
+        # the CA certificates chain secret configuration
+        valueFrom:
+          # the CA certificates chain secret key reference
+          secretKeyRef:
+            # -- the CA certificates chain secret name
+            name: ""
+            # -- the CA certificates chain secret key
+            key: ""
+
   # Configuration for Kafka bootstrap
   kafka:
     # -- Indicates whether Kafka bootstrap is enabled as part of installation
