@@ -123,7 +123,8 @@ class NonValidatingNotaryClientFlowImplTest {
     private fun createClient(flowMessaging: FlowMessaging): NonValidatingNotaryClientFlowImpl {
         val mockMemberInfo = mock<MemberInfo> {
             on { platformVersion } doReturn DUMMY_PLATFORM_VERSION
-            on { sessionInitiationKey } doReturn mock()
+            // CORE-11837: Use ledger key
+            on { sessionInitiationKeys } doReturn listOf(mock())
         }
 
         val mockBuilder = mock<UtxoFilteredTransactionBuilder> {

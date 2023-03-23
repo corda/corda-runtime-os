@@ -2,7 +2,7 @@ package net.corda.membership.lib.impl.approval
 
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.approval.RegistrationRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -16,7 +16,7 @@ class RegistrationRuleTest {
     @Test
     fun `evaluates to true if one or more input keys matches regex`() {
         assertThat(
-            RegistrationRule.Impl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, PARTY_SESSION_KEY))
+            RegistrationRule.Impl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, PARTY_SESSION_KEYS))
         ).isTrue
     }
 
