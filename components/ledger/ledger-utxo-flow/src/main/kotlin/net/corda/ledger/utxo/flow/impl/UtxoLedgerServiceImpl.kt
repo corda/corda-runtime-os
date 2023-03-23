@@ -23,9 +23,9 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -60,7 +60,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun getTransactionBuilder() =
-        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
+        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, notaryLookup)
 
     @Suppress("UNCHECKED_CAST")
     @Suspendable
@@ -109,7 +109,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
                     sessions,
-                    getPluggableNotaryClientFlow(signedTransaction.notary)
+                    getPluggableNotaryClientFlow(signedTransaction.notaryName)
                 )
             })
         } catch (e: PrivilegedActionException) {
@@ -137,12 +137,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
     // internally.
     @VisibleForTesting
     @Suppress("ThrowsCount")
-    internal fun getPluggableNotaryClientFlow(notary: Party): Class<PluggableNotaryClientFlow> {
+    internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): Class<PluggableNotaryClientFlow> {
 
-        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass
+        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary }?.pluginClass
             ?: throw CordaRuntimeException(
                 "Plugin class not found for notary service " +
-                        "${notary.name} . This means that no notary service matching this name " +
+                        "${notary} . This means that no notary service matching this name " +
                         "has been registered on the network."
             )
 

@@ -76,7 +76,7 @@ class RegistrationRequestEntity(
      * Latest serial seen by the member when calling registration.
      */
     @Column(name = "serial", nullable = true)
-    val serial: Long,
+    val serial: Long?,
 
     /**
      * Reason why the request is in the status specified by [status].

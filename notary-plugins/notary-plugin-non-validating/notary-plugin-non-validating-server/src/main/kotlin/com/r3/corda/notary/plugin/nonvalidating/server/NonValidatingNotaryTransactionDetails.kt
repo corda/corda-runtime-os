@@ -1,11 +1,12 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import java.security.PublicKey
 
 /**
  * A representation of a transaction (non-validating). It is easier to perform operations on this representation than
@@ -19,7 +20,8 @@ data class NonValidatingNotaryTransactionDetails(
     val inputs: List<StateRef>,
     val references: List<StateRef>,
     // TODO CORE-8976 This is not used for now but will be needed when the notary check is added
-    val notary: Party,
+    val notaryName: MemberX500Name,
+    val notaryKey: PublicKey
 ) : TransactionWithMetadata {
 
     override fun getId(): SecureHash {

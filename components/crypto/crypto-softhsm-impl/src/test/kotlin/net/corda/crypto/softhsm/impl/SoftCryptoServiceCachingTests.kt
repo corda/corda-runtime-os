@@ -1,10 +1,19 @@
 package net.corda.crypto.softhsm.impl
 
+import java.security.PublicKey
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.persistence.HSMUsage
+import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
@@ -12,13 +21,13 @@ import net.corda.crypto.softhsm.impl.infra.TestCryptoRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -163,6 +172,59 @@ class SoftCryptoServiceCachingTests {
             override fun findWrappingKey(alias: String): WrappingKeyInfo? {
                 findCount++
                 return testCryptoRepository.findWrappingKey(alias)
+            }
+
+            override fun saveSigningKey(tenantId: String, context: SigningKeySaveContext) {
+                TODO("Not yet implemented")
+            }
+
+            override fun findSigningKey(tenantId: String, alias: String): SigningCachedKey? {
+                TODO("Not yet implemented")
+            }
+
+            override fun findSigningKey(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
+                TODO("Not yet implemented")
+            }
+
+            override fun lookupSigningKey(
+                tenantId: String,
+                skip: Int,
+                take: Int,
+                orderBy: SigningKeyOrderBy,
+                filter: Map<String, String>,
+            ): Collection<SigningCachedKey> {
+                TODO("Not yet implemented")
+            }
+
+            override fun lookupSigningKeysByIds(
+                tenantId: String,
+                keyIds: Set<ShortHash>,
+            ): Collection<SigningCachedKey> {
+                TODO("Not yet implemented")
+            }
+
+            override fun lookupSigningKeysByFullIds(
+                tenantId: String,
+                fullKeyIds: Set<SecureHash>,
+            ): Collection<SigningCachedKey> {
+                TODO("Not yet implemented")
+            }
+
+            override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? {
+                TODO("Not yet implemented")
+            }
+
+            override fun getHSMUsage(): List<HSMUsage> {
+                TODO("Not yet implemented")
+            }
+
+            override fun associate(
+                tenantId: String,
+                category: String,
+                hsmId: String,
+                masterKeyPolicy: MasterKeyPolicy,
+            ): HSMAssociationInfo {
+                TODO("Not yet implemented")
             }
 
             override fun close() {

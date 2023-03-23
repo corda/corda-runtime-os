@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
@@ -9,7 +10,6 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolu
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Test
@@ -188,7 +188,7 @@ class EnumTests {
 
         // we expect this to throw
         assertThrows<NotSerializableException> {
-            DeserializationInput(sf1).deserialize(SerializedBytes<C>(sc2))
+            DeserializationInput(sf1).deserialize(SerializedBytesImpl<C>(sc2))
         }
     }
 
@@ -212,7 +212,7 @@ class EnumTests {
 
         // we expect this to throw
         assertThrows<NotSerializableException> {
-            DeserializationInput(sf1).deserialize(SerializedBytes<C>(sc2))
+            DeserializationInput(sf1).deserialize(SerializedBytesImpl<C>(sc2))
         }
     }
 

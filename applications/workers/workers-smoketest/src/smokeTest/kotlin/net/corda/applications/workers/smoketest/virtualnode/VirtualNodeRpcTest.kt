@@ -3,6 +3,9 @@ package net.corda.applications.workers.smoketest.virtualnode
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
 import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.ClusterBuilder
@@ -12,25 +15,21 @@ import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.cluster
+import net.corda.e2etest.utilities.getFlowStatus
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.rest.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 import java.util.UUID
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
-import net.corda.e2etest.utilities.getFlowStatus
 
 /**
  * Any 'unordered' tests are run *last*
@@ -65,6 +64,9 @@ class VirtualNodeRpcTest {
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val upgradeTestingCpiName = "${VNODE_UPGRADE_TEST_CPI_NAME}_$testRunUniqueId"
         private val otherCpiName = "${TEST_CPI_NAME}_OTHER_$testRunUniqueId"
+
+        private val retryTimeout = 120.seconds
+        private val retryInterval = 1.seconds
     }
 
     /**
@@ -83,8 +85,8 @@ class VirtualNodeRpcTest {
             )
             assertWithRetry {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(100))
-                interval(Duration.ofSeconds(1))
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { importCertificate(CODE_SIGNER_CERT, "code-signer", "cordadev") }
                 condition { it.code == 204 }
             }
@@ -128,8 +130,8 @@ class VirtualNodeRpcTest {
         // BUG:  returning "OK" feels 'weakly' typed
         val json = assertWithRetry {
             // CPI upload can be slow in the combined worker, especially after it has just started up.
-            timeout(Duration.ofSeconds(100))
-            interval(Duration.ofSeconds(2))
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { cpiStatus(requestId) }
             condition {
                 it.code == 200 && it.toJson()["status"].textValue() == "OK"
@@ -172,8 +174,8 @@ class VirtualNodeRpcTest {
 
             val json = assertWithRetry {
                 // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(100))
-                interval(Duration.ofSeconds(2))
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { cpiStatus(requestId) }
                 condition {
                     it.code == 200 && it.toJson()["status"].textValue() == "OK"
@@ -207,6 +209,8 @@ class VirtualNodeRpcTest {
             )
 
             val json = assertWithRetry {
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { cpiList() }
                 condition { it.code == 200 }
             }.toJson()
@@ -250,6 +254,8 @@ class VirtualNodeRpcTest {
 
     private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
         val vNodeJson = assertWithRetry {
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { vNodeCreate(cpiFileChecksum, x500Name) }
             condition { it.code == 202 }
             failMessage(ERROR_HOLDING_ID)
@@ -258,6 +264,8 @@ class VirtualNodeRpcTest {
         assertThat(vnodeShortHash).isNotNull.isNotEmpty
 
         assertWithRetry {
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { getVNode(vnodeShortHash)}
             condition { it.code == 200 }
             failMessage(
@@ -275,6 +283,8 @@ class VirtualNodeRpcTest {
             val hash = getCpiChecksum(cpiName)
 
             assertWithRetry {
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { vNodeCreate(hash, aliceX500) }
                 condition { it.code == 409 }
             }
@@ -292,7 +302,8 @@ class VirtualNodeRpcTest {
             )
 
             assertWithRetry {
-                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { vNodeList() }
                 condition { response ->
                     val nodes = vNodeList().toJson()["virtualNodes"].map {
@@ -311,7 +322,8 @@ class VirtualNodeRpcTest {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             assertWithRetry {
-                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { getVNode(aliceHoldingId) }
                 condition { response ->
                     response.code == 200 &&
@@ -352,7 +364,8 @@ class VirtualNodeRpcTest {
         updateVirtualNodeState(vnodeId, newState)
 
         assertWithRetry {
-            timeout(Duration.of(60, ChronoUnit.SECONDS))
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { vNodeList() }
             condition {
                 try {
@@ -385,6 +398,8 @@ class VirtualNodeRpcTest {
                 PASSWORD
             )
             assertWithRetry {
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
                 condition { it.code == 400 }
             }
@@ -406,14 +421,15 @@ class VirtualNodeRpcTest {
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
-            // BUG:  returning "OK" feels 'weakly' typed
             assertWithRetry {
+                timeout(retryTimeout)
+                interval(retryInterval)
                 command { cpiStatus(requestId) }
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
             // Force uploaded CPI may take some time to propagate through the system and arrive to REST worker's CpiInfoReadService
-            eventually(Duration.ofSeconds(100)) {
+            eventually(retryTimeout, retryInterval) {
                 assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
@@ -515,6 +531,8 @@ class VirtualNodeRpcTest {
         virtualNodeShortHash: String, targetCpiFileChecksum: String
     ): String {
         val vNodeJson = assertWithRetry {
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { vNodeUpgrade(virtualNodeShortHash, targetCpiFileChecksum) }
             condition { it.code == 202 }
             failMessage(ERROR_HOLDING_ID)
@@ -524,6 +542,8 @@ class VirtualNodeRpcTest {
 
     private fun ClusterBuilder.getVirtualNodeOperationStatus(requestId: String): JsonNode {
         val operationStatus = assertWithRetry {
+            timeout(retryTimeout)
+            interval(retryInterval)
             command { getVNodeOperationStatus(requestId) }
             condition { it.code == 200 }
             failMessage(ERROR_REQUEST_ID)
@@ -534,7 +554,8 @@ class VirtualNodeRpcTest {
     private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
         virtualNodeShortHash: String, cpiName: String, cpiVersion: String
     ) = assertWithRetry {
-        timeout(Duration.of(30, ChronoUnit.SECONDS))
+        timeout(retryTimeout)
+        interval(retryInterval)
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
             response.code == 200 &&
@@ -544,7 +565,8 @@ class VirtualNodeRpcTest {
     }
 
     private fun ClusterBuilder.awaitVirtualNodeOperationCompletion(virtualNodeShortHash: String) = assertWithRetry {
-        timeout(Duration.of(30, ChronoUnit.SECONDS))
+        timeout(retryTimeout)
+        interval(retryInterval)
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
             response.code == 200 && response.toJson()["operationInProgress"].isNull
@@ -578,7 +600,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
-        val cpiFileChecksum = eventually {
+        val cpiFileChecksum = eventually(retryTimeout, retryInterval) {
             val cpis = cpiList().toJson()["cpis"]
             val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
             assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
@@ -588,7 +610,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String, cpiVersion: String): String {
-        val cpiFileChecksum = eventually {
+        val cpiFileChecksum = eventually(retryTimeout, retryInterval) {
             val cpis = cpiList().toJson()["cpis"]
             val cpiJson = cpis.toList().find {
                 it["id"]["cpiName"].textValue() == cpiName && it["id"]["cpiVersion"].textValue() == cpiVersion
