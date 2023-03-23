@@ -1,12 +1,12 @@
 package net.corda.v5.membership;
 
 import net.corda.v5.base.types.MemberX500Name;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.security.PublicKey;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,8 +22,8 @@ public class MemberInfoJavaApiTest {
 
         MemberContext result = memberInfo.getMemberProvidedContext();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(test);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(test);
 
         verify(memberInfo, times(1)).getMemberProvidedContext();
     }
@@ -35,8 +35,8 @@ public class MemberInfoJavaApiTest {
 
         MGMContext result = memberInfo.getMgmProvidedContext();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(test);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(test);
 
         verify(memberInfo, times(1)).getMgmProvidedContext();
     }
@@ -48,8 +48,8 @@ public class MemberInfoJavaApiTest {
 
         MemberX500Name result = memberInfo.getName();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(testName);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testName);
 
         verify(memberInfo, times(1)).getName();
     }
@@ -62,8 +62,8 @@ public class MemberInfoJavaApiTest {
 
         List<PublicKey> result = memberInfo.getLedgerKeys();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(mockList);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(mockList);
 
         verify(memberInfo, times(1)).getLedgerKeys();
     }
@@ -71,14 +71,13 @@ public class MemberInfoJavaApiTest {
     @Test
     public void getSessionKey() {
         PublicKey testPublicKey = mock(PublicKey.class);
-        when(memberInfo.getSessionInitiationKey()).thenReturn(testPublicKey);
+        when(memberInfo.getSessionInitiationKeys()).thenReturn(List.of(testPublicKey));
 
-        PublicKey result = memberInfo.getSessionInitiationKey();
+        var results = memberInfo.getSessionInitiationKeys();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(testPublicKey);
+        assertThat(results).contains(testPublicKey);
 
-        verify(memberInfo, times(1)).getSessionInitiationKey();
+        verify(memberInfo, times(1)).getSessionInitiationKeys();
     }
 
     @Test
@@ -88,8 +87,7 @@ public class MemberInfoJavaApiTest {
 
         int result = memberInfo.getPlatformVersion();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(test);
+        assertThat(result).isEqualTo(test);
 
         verify(memberInfo, times(1)).getPlatformVersion();
     }
@@ -101,8 +99,8 @@ public class MemberInfoJavaApiTest {
 
         Long result = memberInfo.getSerial();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(test);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(test);
 
         verify(memberInfo, times(1)).getSerial();
     }
@@ -113,8 +111,8 @@ public class MemberInfoJavaApiTest {
 
         Boolean result = memberInfo.isActive();
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(true);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(true);
 
         verify(memberInfo, times(1)).isActive();
     }

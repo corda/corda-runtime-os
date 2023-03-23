@@ -13,6 +13,10 @@
       "description": "The P2P connection URL protocol version. Can be multiple specified by index.",
       "type": "string"
     },
+    "^corda.session.keys.[0-9+].id$": {
+      "description": "The session public key IDs which should be used for session initiation.",
+      "type": "string"
+    },
     "^corda.group.trustroot.session.[0-9]+$": {
       "description": "Session trust root certificates in PEM format for validating session certificates in the group. Can be multiple specified by index.",
       "type": "string"
@@ -23,10 +27,6 @@
     }
   },
   "properties": {
-    "corda.session.key.id": {
-      "description": "The session public key ID which should be used for session initiation.",
-      "type": "string"
-    },
     "corda.ecdh.key.id": {
       "description": "The ECDH public key ID which should be used by registering members to encrypt registration payloads.",
       "type": "string"
@@ -97,7 +97,6 @@
     }
   },
   "required": [
-    "corda.session.key.id",
     "corda.ecdh.key.id",
     "corda.group.protocol.registration",
     "corda.group.protocol.synchronisation",

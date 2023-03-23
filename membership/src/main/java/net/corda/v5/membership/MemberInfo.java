@@ -24,7 +24,7 @@ import java.util.List;
  * List<PublicKey> ledgerKeys = memberInfo.getLedgerKeys();
  * Long serial = memberInfo.getSerial();
  * int platformVersion = memberInfo.getPlatformVersion();
- * PublicKey sessionKey = memberInfo.getSessionInitiationKey();
+ * var sessionKeys = memberInfo.getSessionInitiationKeys();
  * Boolean isActive = memberInfo.isActive();
  * }</pre></li>
  * <li>Kotlin:<pre>{@code
@@ -34,7 +34,7 @@ import java.util.List;
  * val ledgerKeys: kotlin.collections.List<PublicKey> = memberInfo.ledgerKeys
  * val serial: Long = memberInfo.serial
  * val platformVersion: Int = memberInfo.platformVersion
- * val sessionKey: PublicKey = memberInfo.sessionInitiationKey
+ * val sessionKeys: PublicKey = memberInfo.sessionInitiationKeys
  * val isActive: Boolean = memberInfo.isActive
  * }</pre></li>
  * </ul>
@@ -60,9 +60,9 @@ public interface MemberInfo {
     @NotNull MemberX500Name getName();
 
     /**
-     * @return Member's session initiation key.
+     * @return Member's session initiation keys.
      */
-    @NotNull PublicKey getSessionInitiationKey();
+    @NotNull List<PublicKey> getSessionInitiationKeys();
 
     /**
      * @return List of current and previous (rotated) ledger keys, which member can still use to sign unspent
