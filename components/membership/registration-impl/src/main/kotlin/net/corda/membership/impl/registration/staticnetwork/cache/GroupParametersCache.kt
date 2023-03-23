@@ -7,7 +7,6 @@ import net.corda.data.membership.staticgroup.StaticGroupDefinition
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
@@ -89,7 +88,6 @@ class GroupParametersCache(
         return KeyValuePairList(
             listOf(
                 KeyValuePair(EPOCH_KEY, "1"),
-                KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
                 KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             )
         ).apply {

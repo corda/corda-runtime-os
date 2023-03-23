@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.testutils
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.test.util.InMemoryZipFile
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash

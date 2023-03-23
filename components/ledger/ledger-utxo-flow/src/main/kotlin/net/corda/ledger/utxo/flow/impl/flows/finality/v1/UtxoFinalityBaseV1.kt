@@ -100,19 +100,19 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
         try {
             // If the notary service key (composite key) is provided we need to make sure it contains the key the
             // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
-            if (!KeyUtils.isKeyInSet(transaction.notary.owningKey, listOf(signature.by))) {
+            if (!KeyUtils.isKeyInSet(transaction.notaryKey, listOf(signature.by))) {
                 throw CordaRuntimeException(
                     "Notary's signature has not been created by the transaction's notary. " +
-                            "Notary's public key: ${transaction.notary.owningKey} " +
+                            "Notary's public key: ${transaction.notaryKey} " +
                             "Notary signature's key: ${signature.by}"
                 )
             }
             transactionSignatureService.verifySignature(transaction, signature)
             log.debug {
-                "Successfully verified signature($signature) by notary ${transaction.notary} for transaction ${transaction.id}"
+                "Successfully verified signature($signature) by notary ${transaction.notaryName} for transaction ${transaction.id}"
             }
         } catch (e: Exception) {
-            val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notary} for " +
+            val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notaryName} for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)

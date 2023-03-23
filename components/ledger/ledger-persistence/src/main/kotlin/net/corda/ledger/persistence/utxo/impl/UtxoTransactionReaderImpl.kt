@@ -102,7 +102,7 @@ class UtxoTransactionReaderImpl(
             }
             .map { (index, state, info) ->
                 StateAndRefImpl(
-                    state = TransactionStateImpl(state, info.notary, info.getEncumbranceGroup()),
+                    state = TransactionStateImpl(state, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                     ref = StateRef(id, index)
                 )
             }

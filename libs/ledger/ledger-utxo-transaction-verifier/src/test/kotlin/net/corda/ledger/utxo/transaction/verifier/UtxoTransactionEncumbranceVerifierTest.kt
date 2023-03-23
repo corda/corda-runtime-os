@@ -5,8 +5,7 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -25,7 +24,6 @@ class UtxoTransactionEncumbranceVerifierTest {
     }
     
     private companion object {
-        val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), publicKeyExample)
         val transactionId1 = parseSecureHash("SHA256:1234567890")
         val transactionId2 = parseSecureHash("SHA256:ABCDEF0123")
     }
@@ -35,9 +33,9 @@ class UtxoTransactionEncumbranceVerifierTest {
     @Test
     fun `unencumbered states are fine`() {
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notary, null),
+            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
                 StateRef(transactionId1, 0)),
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notary, null),
+            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
                 StateRef(transactionId2, 1))
         )
         
@@ -51,14 +49,13 @@ class UtxoTransactionEncumbranceVerifierTest {
     fun `complete encumbrance group is fine`() {
         val inputs = listOf(
             StateAndRefImpl(TransactionStateImpl(
-                TestContractState(), notary,
-                null), StateRef(transactionId1, 0)),
+                TestContractState(), notaryX500Name, publicKeyExample,null), StateRef(transactionId1, 0)),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 3)
             )
         )
@@ -72,12 +69,12 @@ class UtxoTransactionEncumbranceVerifierTest {
     @Test
     fun `duplicate entries do not count`() {
         val state2 = StateAndRefImpl(
-            TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+            TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
             StateRef(transactionId2, 1)
         )
 
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notary, null),
+            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
                 StateRef(transactionId1, 0)),
             state2,
             state2
@@ -95,19 +92,19 @@ class UtxoTransactionEncumbranceVerifierTest {
     fun `same encumbrance tag from two different tx is fine`() {
         val inputs = listOf(
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId1, 0)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId1, 5)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 3)
             )
         )
@@ -122,15 +119,15 @@ class UtxoTransactionEncumbranceVerifierTest {
     fun `incomplete encumbrance group is caught`() {
         val inputs = listOf(
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId1, 0)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 3)
             )
         )
@@ -152,11 +149,11 @@ class UtxoTransactionEncumbranceVerifierTest {
     fun `same encumbrance tag from two differend tx cannot complete each other`() {
         val inputs = listOf(
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId1, 0)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
             ),
         )
@@ -184,18 +181,18 @@ class UtxoTransactionEncumbranceVerifierTest {
     @Test
     fun `does not crash on silly inputs`() {
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notary, null),
+            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
                 StateRef(transactionId1, 0)),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 3)
             ),
             StateAndRefImpl(
-                TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 4)
             )
         )

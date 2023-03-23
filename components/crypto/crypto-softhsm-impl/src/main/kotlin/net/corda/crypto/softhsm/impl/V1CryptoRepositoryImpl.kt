@@ -16,7 +16,6 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.impl.SigningKeysRepositoryImpl
 import net.corda.crypto.softhsm.CryptoRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory

@@ -173,5 +173,10 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
         override val downstream: DependenciesTracker
             get() = DependenciesTracker.AlwaysUp()
+
+        override fun close() {
+            super.close()
+            cryptoRepository.close()
+        }
     }
 }
