@@ -45,7 +45,7 @@ class MGMRegistrationContextValidatorTest {
     companion object {
         private val validTestContext
             get() = mutableMapOf(
-                SESSION_KEY_ID to "session key",
+                SESSION_KEY_IDS.format(0) to "session key",
                 ECDH_KEY_ID to "ECDH key",
                 REGISTRATION_PROTOCOL to "registration protocol",
                 SYNCHRONISATION_PROTOCOL to "synchronisation protocol",

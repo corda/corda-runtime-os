@@ -49,11 +49,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -268,7 +268,7 @@ class MGMRegistrationServiceTest {
     )
 
     private val properties = mapOf(
-        "corda.session.key.id" to SESSION_KEY_ID,
+        "corda.session.keys.0.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
@@ -352,8 +352,8 @@ class MGMRegistrationServiceTest {
                         listOf(
                             GROUP_ID,
                             PARTY_NAME,
-                            PARTY_SESSION_KEY,
-                            SESSION_KEY_HASH,
+                            PARTY_SESSION_KEYS_PEM.format(0),
+                            SESSION_KEYS_HASH.format(0),
                             ECDH_KEY,
                             PLATFORM_VERSION,
                             SOFTWARE_VERSION,

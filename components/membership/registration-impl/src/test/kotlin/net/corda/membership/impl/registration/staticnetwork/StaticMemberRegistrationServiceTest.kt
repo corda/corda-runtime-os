@@ -409,7 +409,7 @@ class StaticMemberRegistrationServiceTest {
             assertNotNull(memberPublished.serial)
             assertNotNull(memberPublished.modifiedTime)
 
-            assertEquals(aliceKey, memberPublished.sessionInitiationKey)
+            assertEquals(aliceKey, memberPublished.sessionInitiationKeys.first())
             assertEquals(1, memberPublished.ledgerKeys.size)
             assertEquals(1, memberPublished.ledgerKeyHashes.size)
             assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())

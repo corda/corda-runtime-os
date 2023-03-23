@@ -20,7 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -94,7 +94,7 @@ class MemberLookupRestResourceTest {
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
     private val mgmName = "O=MGM, L=London, C=GB"
-    private val mgmHoldingIdentity  = createTestHoldingIdentity(mgmName, "0")
+    private val mgmHoldingIdentity = createTestHoldingIdentity(mgmName, "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
@@ -128,7 +128,7 @@ class MemberLookupRestResourceTest {
     ): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
             PARTY_NAME to name,
-            PARTY_SESSION_KEY to KNOWN_KEY,
+            String.format(PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
             GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
