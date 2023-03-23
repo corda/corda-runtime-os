@@ -98,10 +98,10 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockNotaryLookup.notaryServices).thenReturn(listOf(notaryService))
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB"))
+            utxoLedgerService.getPluggableNotaryClientFlow(MemberX500Name.parse("O=ExampleNotaryService2, L=London, C=GB"))
         }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Plugin class not found for notary service")
+            .hasMessageContaining("has not been registered on the network")
     }
 
     @Test
@@ -112,6 +112,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         val notaryService = mock<NotaryInfo>().apply {
             whenever(this.name).thenReturn(notaryX500Name)
             whenever(this.protocol).thenReturn("my-client-flow")
+            whenever(this.protocolVersions).thenReturn(listOf(1))
         }
 
         val sandboxGroup = mock<SandboxGroup>().apply {
@@ -156,6 +157,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         val notaryService = mock<NotaryInfo>().apply {
             whenever(this.name).thenReturn(notaryX500Name)
             whenever(this.protocol).thenReturn("my-client-flow")
+            whenever(this.protocolVersions).thenReturn(listOf(1))
         }
 
         val sandboxGroup = mock<SandboxGroup>().apply {

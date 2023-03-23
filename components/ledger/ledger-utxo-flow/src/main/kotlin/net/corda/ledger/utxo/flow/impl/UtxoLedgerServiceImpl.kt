@@ -153,9 +153,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 "Cannot get flow protocol store for current sandbox group context"
             )
 
-        // Hard-code supportedVersions to 1 for now, need MGM change to supply this, at which point
-        // we can pass in (see CORE-9740)
-        val flowName = protocolStore.initiatorForProtocol(protocolName, supportedVersions = listOf(1))
+        val flowName = protocolStore.initiatorForProtocol(notaryInfo.protocol, notaryInfo.protocolVersions)
 
         val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName)
 
