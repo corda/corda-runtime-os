@@ -7,6 +7,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.impl.SigningServiceImpl
@@ -87,8 +88,7 @@ class CryptoOpsBusServiceImpl @Activate constructor(
                 jpaEntitiesRegistry = jpaEntitiesRegistry,
                 virtualNodeInfoReadService = virtualNodeInfoReadService,
                 layeredPropertyMapFactory = layeredPropertyMapFactory,
-                config = event.config.get(CRYPTO_CONFIG)
-                    ?: throw InvalidParameterException("$CRYPTO_CONFIG missing from config")
+                config = event.config.toCryptoConfig()
             )
         )
         return Impl(
