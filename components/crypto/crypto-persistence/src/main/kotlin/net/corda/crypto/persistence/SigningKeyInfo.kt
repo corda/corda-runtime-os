@@ -4,6 +4,10 @@ import net.corda.crypto.core.ShortHash
 import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 
+/**
+ * The main data transfer object type
+ * to and from the [WrappingRepository].
+ */
 @Suppress("LongParameterList")
 class SigningKeyInfo(
     val id: ShortHash,
