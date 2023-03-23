@@ -682,19 +682,21 @@ class PersistenceTests {
         }
     }
 
-//    @ParameterizedTest
-//    @MethodSource("signingTenants")
-//    fun `Should find existing signing keys by alias`(tenantId: String) {
-//        val hsmId = UUID.randomUUID().toString()
-//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-//        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-//        signingKeyStore.save(tenantId, p1)
-//        signingKeyStore.save(tenantId, p2)
-//        assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
-//        assertSigningCachedKey(tenantId, p1, signingKeyStore.find(tenantId, p1.alias!!))
-//        assertSigningCachedKey(tenantId, p2, signingKeyStore.find(tenantId, p2.alias!!))
-//        assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
-//    }
+    @ParameterizedTest
+    @MethodSource("signingTenants")
+    fun `Should find existing signing keys by alias`(tenantId: String) {
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        makeSigningRepo(tenantId).use {
+            it.savePublicKey(p1)
+            it.savePublicKey(p2)
+            assertNull(it.findKey(UUID.randomUUID().toString()))
+            assertSigningCachedKey(tenantId, p1, it.findKey(p1.alias!!))
+            assertSigningCachedKey(tenantId, p2, it.findKey(p2.alias!!))
+            assertNull(it.findKey(UUID.randomUUID().toString()))
+        }
+    }
 //
 //    @ParameterizedTest
 //    @MethodSource("signingTenants")
