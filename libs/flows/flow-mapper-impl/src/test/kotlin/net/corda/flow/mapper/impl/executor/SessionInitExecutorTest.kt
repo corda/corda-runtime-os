@@ -34,15 +34,8 @@ class SessionInitExecutorTest {
         val flowId = "id1"
         val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList(),emptyKeyValuePairList(), null)
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
-        val result = SessionInitExecutor(
-            "sessionId",
-            payload,
-            sessionInit,
-            null,
-            sessionEventSerializer,
-            flowConfig
-        ).execute()
-
+        val result =
+            SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
