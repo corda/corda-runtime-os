@@ -25,6 +25,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
@@ -37,6 +38,10 @@ class FlowMessagingImpl @Activate constructor(
     @Reference(service = SerializationServiceInternal::class)
     private val serializationService: SerializationServiceInternal
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
+
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
@@ -64,7 +69,9 @@ class FlowMessagingImpl @Activate constructor(
         val session = createInteropFlowSession(memberName)
         val request = FacadeInvocation(memberName, facadeName, methodName, payload)
         val response = session.sendAndReceive(FacadeInvocation::class.java, request)
+        log.info("[CORE-10465] Got response from flow mapper message processor! Payload: ${response.payload}")
         session.close()
+        log.info("[CORE-10465] Interop session closed successfully!")
         return response.payload
     }
 
