@@ -29,7 +29,6 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
-import java.util.UUID
 
 abstract class BaseOnboard : Runnable {
     private companion object {
@@ -99,12 +98,6 @@ abstract class BaseOnboard : Runnable {
         description = ["Enable mutual TLS"]
     )
     var mtls: Boolean = false
-
-    @Option(
-        names = ["--session_keys_count"],
-        description = ["Number of session keys"]
-    )
-    var sessionKeysCount: Int = 5
 
     @Option(
         names = ["--rest-worker-deployment-name"],
@@ -234,19 +227,14 @@ abstract class BaseOnboard : Runnable {
             Thread.sleep(300)
         }
 
-        val alias = UUID.randomUUID()
-            .toString()
-            .replace("-", "")
         val response = Unirest
-            .post("/keys/$holdingId/alias/$alias/category/$category/scheme/CORDA.ECDSA.SECP256R1")
+            .post("/keys/$holdingId/alias/$holdingId-$category/category/$category/scheme/CORDA.ECDSA.SECP256R1")
             .asJson()
         return response.bodyOrThrow().`object`.get("id").toString()
     }
 
-    protected val sessionKeyIds by lazy {
-        (1..sessionKeysCount).map {
-            assignSoftHsmAndGenerateKey("SESSION_INIT")
-        }
+    protected val sessionKeyId by lazy {
+        assignSoftHsmAndGenerateKey("SESSION_INIT")
     }
     protected val ecdhKeyId by lazy {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
@@ -313,11 +301,13 @@ abstract class BaseOnboard : Runnable {
                     "request" to mapOf(
                         "p2pTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
                         "useClusterLevelTlsCertificateAndKey" to true,
-                        "sessionKeyTenantId" to null,
                         "sessionKeysAndCertificates" to
-                            sessionKeyIds.map {
-                                mapOf("sessionKeyId" to it)
-                            }
+                            listOf(
+                                mapOf(
+                                    "sessionKeyId" to sessionKeyId,
+                                    "preferred" to true,
+                                ),
+                            ),
                     )
                 )
             ).asJson()
