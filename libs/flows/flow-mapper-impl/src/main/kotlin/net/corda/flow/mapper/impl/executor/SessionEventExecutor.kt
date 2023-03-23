@@ -103,8 +103,6 @@ class SessionEventExecutor(
             return if (payload is SessionData) {
                 val sessionDataPayload = payload.payload
 
-                log.info("[CORE-10465] Echoing outbound session data event (presumed facade invocation) back to flow.")
-
                 // Echo the whole payload back to the flow fibre.
                 // This avoids the need to serialize/deserialize @CordaSerializable objects here.
                 val hackyReply = Record(
@@ -145,8 +143,6 @@ class SessionEventExecutor(
 
                 FlowMapperResult(flowMapperState, listOf(hackyReply, hackyClose))
             } else if (payload is SessionClose) {
-                log.info("[CORE-10465] Responding to session close with acknowledge message.")
-
                 val hackyAck = Record(
                     Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                     sessionEvent.sessionId,
@@ -167,11 +163,10 @@ class SessionEventExecutor(
 
                 FlowMapperResult(flowMapperState, listOf(hackyAck))
             } else {
-                log.info("[CORE-10465] Ignoring outbound event of type ${sessionEvent.payload.javaClass}, nothing to be done!")
+                // Discard any unrecognised events
                 FlowMapperResult(flowMapperState, listOf())
             }
         } else {
-            log.info("[CORE-10465] Sending inbound interop event of type ${sessionEvent.payload.javaClass} to flow event topic.")
             val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
             return FlowMapperResult(flowMapperState, listOf(record))
         }
