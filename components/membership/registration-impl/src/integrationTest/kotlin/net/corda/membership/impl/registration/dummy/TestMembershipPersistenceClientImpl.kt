@@ -6,6 +6,7 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -26,7 +27,7 @@ import java.util.UUID
 class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPersistenceClient {
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>,
+        memberInfos: Collection<SignedMemberInfo>,
     ) = MembershipPersistenceResult.success()
 
     override fun persistGroupPolicy(

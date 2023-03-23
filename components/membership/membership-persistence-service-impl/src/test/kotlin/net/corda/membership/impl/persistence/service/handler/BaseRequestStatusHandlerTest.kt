@@ -227,6 +227,18 @@ class BaseRequestStatusHandlerTest {
     @Test
     fun `toDetails sets reason to null by default`() {
         whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(KeyValuePairList())
+        val entity = RegistrationRequestEntity(
+            REGISTRATION_ID,
+            HOLDING_ID_HASH,
+            RegistrationStatus.SENT_TO_MGM.toString(),
+            sent,
+            modified,
+            context,
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
+        )
 
         val details = with(handler) {
             entity.toDetails()

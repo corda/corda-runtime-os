@@ -301,6 +301,9 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             on { mgmContext } doReturn byteArrayOf(2)
             on { groupId } doReturn member.groupId
             on { memberX500Name } doReturn member.x500Name
+            on { memberSignatureKey } doReturn publicKey
+            on { memberSignatureContent } doReturn signatureContentBytes
+            on { memberSignatureSpec } doReturn signatureSpec
         }
         mockMemberInfoEntity(memberInfoEntity)
         mockRegistrationRequestEntity()

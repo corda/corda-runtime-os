@@ -2,17 +2,14 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.membership.lib.impl.SignedMemberInfo
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer

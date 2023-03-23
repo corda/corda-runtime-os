@@ -8,6 +8,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.PersistentSignedMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
@@ -53,7 +54,7 @@ import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.impl.SignedMemberInfo
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -146,10 +147,7 @@ class MembershipPersistenceClientImplTest {
         ByteBuffer.wrap("789".toByteArray()),
     )
     private val signatureSpec = CryptoSignatureSpec(null, null, null)
-    private val ourSignedMemberInfo: SignedMemberInfo = mock {
-        on { memberInfo } doReturn ourMemberInfo
-        on { memberSignature } doReturn signature
-    }
+    private val ourSignedMemberInfo = SignedMemberInfo(ourMemberInfo, signature, signatureSpec)
     private val registrationId = "Group ID 1"
     private val ourRegistrationRequest = RegistrationRequest(
         RegistrationStatus.SENT_TO_MGM,
@@ -368,10 +366,14 @@ class MembershipPersistenceClientImplTest {
                 .isNotEmpty
                 .isEqualTo(
                     listOf(
-                        PersistentMemberInfo(
-                            ourHoldingIdentity.toAvro(),
-                            KeyValuePairList(emptyList()),
-                            KeyValuePairList(emptyList())
+                        PersistentSignedMemberInfo(
+                            PersistentMemberInfo(
+                                ourHoldingIdentity.toAvro(),
+                                KeyValuePairList(emptyList()),
+                                KeyValuePairList(emptyList())
+                            ),
+                            signature,
+                            signatureSpec
                         )
                     )
                 )

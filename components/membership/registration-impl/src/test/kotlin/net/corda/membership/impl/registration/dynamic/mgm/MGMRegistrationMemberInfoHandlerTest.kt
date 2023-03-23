@@ -31,7 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.SignedMemberInfo
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.test.util.TestRandom
@@ -95,13 +95,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn mockMemberContext
     }
-    private val signature: CryptoSignatureWithKey = mock()
-    private val signatureSpec: CryptoSignatureSpec = mock()
-    private val signedMemberInfo: SignedMemberInfo = mock {
-        on { memberInfo } doReturn memberInfo
-        on { memberSignature } doReturn signature
-        on { signatureSpec } doReturn signatureSpec
-    }
+    private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
+    private val signatureSpec = CryptoSignatureSpec("", null, null)
+    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
     private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
     private val memberContext
         get() = assertDoesNotThrow { memberContextCaptor.firstValue }

@@ -6,7 +6,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.membership.lib.impl.SignedMemberInfo
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
@@ -44,13 +44,9 @@ class MgmRegistrationRequestHandlerTest {
     private val memberInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn mockMemberContext
     }
-    private val signature: CryptoSignatureWithKey = mock()
-    private val signatureSpec: CryptoSignatureSpec = mock()
-    private val signedMemberInfo: SignedMemberInfo = mock {
-        on { memberInfo } doReturn memberInfo
-        on { memberSignature } doReturn signature
-        on { signatureSpec } doReturn signatureSpec
-    }
+    private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
+    private val signatureSpec = CryptoSignatureSpec("", null, null)
+    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }

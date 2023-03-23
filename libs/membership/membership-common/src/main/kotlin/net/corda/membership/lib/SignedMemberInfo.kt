@@ -1,4 +1,4 @@
-package net.corda.membership.lib.impl
+package net.corda.membership.lib
 
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

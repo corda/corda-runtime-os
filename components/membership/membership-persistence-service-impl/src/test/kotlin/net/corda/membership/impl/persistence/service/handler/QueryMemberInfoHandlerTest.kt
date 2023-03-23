@@ -170,12 +170,9 @@ class QueryMemberInfoHandlerTest {
 
         assertThat(result.members).isNotEmpty.hasSize(1)
         with(result.members.first()) {
-            assertThat(persistentMemberInfo.viewOwningMember).isEqualTo(requestContext.holdingIdentity)
-            assertThat(persistentMemberInfo.memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
-            assertThat(memberSignature.publicKey).isEqualTo(memberInfoEntity.memberSignatureKey)
-            assertThat(memberSignature.bytes).isEqualTo(memberInfoEntity.memberSignatureContent)
-            assertThat(memberSignatureSpec).isEqualTo(memberInfoEntity.memberSignatureSpec)
-            assertThat(persistentMemberInfo.mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
+            assertThat(viewOwningMember).isEqualTo(requestContext.holdingIdentity)
+            assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
+            assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
         }
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
@@ -241,12 +238,9 @@ class QueryMemberInfoHandlerTest {
         )
         assertThat(results.members).isNotEmpty.hasSize(1)
         with(results.members.first()) {
-            assertThat(persistentMemberInfo.viewOwningMember).isEqualTo(requestContext.holdingIdentity)
-            assertThat(persistentMemberInfo.memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
-            assertThat(memberSignature.publicKey).isEqualTo(memberInfoEntity.memberSignatureKey)
-            assertThat(memberSignature.bytes).isEqualTo(memberInfoEntity.memberSignatureContent)
-            assertThat(memberSignatureSpec).isEqualTo(memberInfoEntity.memberSignatureSpec)
-            assertThat(persistentMemberInfo.mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
+            assertThat(viewOwningMember).isEqualTo(requestContext.holdingIdentity)
+            assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
+            assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
         }
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory).createAvroDeserializer<KeyValuePairList>(any(), any())

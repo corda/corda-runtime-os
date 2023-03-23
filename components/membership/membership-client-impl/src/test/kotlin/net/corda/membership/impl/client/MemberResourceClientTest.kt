@@ -8,6 +8,8 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
@@ -124,6 +126,8 @@ class MemberResourceClientTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
     }
+    private val signatureWithKey: CryptoSignatureWithKey = mock()
+    private val signatureSpec: CryptoSignatureSpec = mock()
     private val holdingIdentity = mock<HoldingIdentity>()
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -311,6 +315,8 @@ class MemberResourceClientTest {
                     registrationId = "registration id",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    memberSignature = signatureWithKey,
+                    memberSignatureSpec = signatureSpec,
                     serial = SERIAL,
                 ),
                 RegistrationRequestStatus(
@@ -320,6 +326,8 @@ class MemberResourceClientTest {
                     registrationId = "registration id 2",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    memberSignature = signatureWithKey,
+                    memberSignatureSpec = signatureSpec,
                     serial = SERIAL,
                 ),
                 RegistrationRequestStatus(
@@ -329,6 +337,8 @@ class MemberResourceClientTest {
                     registrationId = "registration id 3",
                     protocolVersion = 1,
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                    memberSignature = signatureWithKey,
+                    memberSignatureSpec = signatureSpec,
                     serial = SERIAL,
                 ),
             )
@@ -422,6 +432,8 @@ class MemberResourceClientTest {
                 registrationId = "registration id",
                 protocolVersion = 1,
                 memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                memberSignature = signatureWithKey,
+                memberSignatureSpec = signatureSpec,
                 serial = SERIAL,
             )
         whenever(
