@@ -1,21 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import java.io.IOException
-import java.io.InputStream
-import java.io.NotSerializableException
-import java.math.BigDecimal
-import java.time.DayOfWeek
-import java.time.Month
-import java.util.Currency
-import java.util.Date
-import java.util.EnumMap
-import java.util.NavigableMap
-import java.util.Objects
-import java.util.Random
-import java.util.SortedSet
-import java.util.TreeMap
-import java.util.TreeSet
-import java.util.UUID
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SnappyEncodingAllowList
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
@@ -29,6 +13,7 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.internal.serialization.unwrap
 import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.ConstructorForDeserialization
@@ -60,6 +45,22 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
+import java.io.IOException
+import java.io.InputStream
+import java.io.NotSerializableException
+import java.math.BigDecimal
+import java.time.DayOfWeek
+import java.time.Month
+import java.util.Currency
+import java.util.Date
+import java.util.EnumMap
+import java.util.NavigableMap
+import java.util.Objects
+import java.util.Random
+import java.util.SortedSet
+import java.util.TreeMap
+import java.util.TreeSet
+import java.util.UUID
 
 object AckWrapper {
     @CordaSerializable
@@ -253,7 +254,7 @@ class SerializationOutputTests {
             this.register(TransformTypes.DESCRIPTOR, TransformTypes)
         }
         EncoderImpl(decoder)
-        DeserializationInput.withDataBytes(bytes, encodingAllowList) {
+        DeserializationInput.withDataBytes(bytes.unwrap(), encodingAllowList) {
             decoder.byteBuffer = it
             // Check that a vanilla AMQP decoder can deserialize without schema.
             val result = decoder.readObject() as Envelope
@@ -859,7 +860,7 @@ class SerializationOutputTests {
         val factory = testDefaultFactory()
         val data = ByteArray(12345).also { Random(0).nextBytes(it) }.let { it + it }
         val compressed = SerializationOutput(factory).serialize(data, CordaSerializationEncoding.SNAPPY)
-        assertEquals(.5, compressed.size.toDouble() / data.size, .03)
+        assertEquals(.5, compressed.unwrap().size.toDouble() / data.size, .03)
 
         val encodingAllowList = mock(EncodingAllowList::class.java)
         doReturn(true).whenever(encodingAllowList).acceptEncoding(CordaSerializationEncoding.SNAPPY)
