@@ -884,63 +884,7 @@ class MembershipPersistenceTest {
 
     @Test
     fun `member infos can persist over RPC topic`() {
-        /*val groupId = randomUUID().toString()
-        val memberx500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
-        x500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
-
-        val endpointUrl = "http://localhost:8080"
-        val memberContext = KeyValuePairList(
-            listOf(
-                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
-                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-                KeyValuePair(GROUP_ID, groupId),
-                KeyValuePair(PARTY_NAME, memberName.toString()),
-                KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-            ).sorted()
-        )
-        val mgmContext = KeyValuePairList(
-            listOf(
-                KeyValuePair(STATUS, memberStatus),
-                KeyValuePair(SERIAL, "1"),
-            ).sorted()
-        )
-
-        val endpointUrl = "http://localhost:8080"
-        val memberContext = KeyValuePairList(
-            listOf(
-                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
-                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-                KeyValuePair(GROUP_ID, groupId),
-                KeyValuePair(PARTY_NAME, x500Name.toString()),
-                KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-            ).sorted()
-        )
-        val mgmContext = KeyValuePairList(
-            listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
-                KeyValuePair(SERIAL, "1"),
-            ).sorted()
-        )*/
-
         val result = persistMember(x500Name, MEMBER_STATUS_ACTIVE)
-        /*= membershipPersistenceClientWrapper.persistMemberInfo(
-            viewOwningHoldingIdentity,
-            listOf(
-                SignedMemberInfo(
-                    memberInfoFactory.create(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
-                    ),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(signatureKey),
-                        ByteBuffer.wrap(signatureContent)
-                    ),
-                    signatureSpec
-                )
-            )
-        )*/
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
