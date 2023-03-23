@@ -19,6 +19,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -159,15 +160,14 @@ class FlowRunnerImpl @Activate constructor(
                             this[prop.key] = prop.value
                         }
 
-                        this["corda.cpiName"] = metadata.cpiId.name
-                        this["corda.cpiVersion"] = metadata.cpiId.version
-                        this["corda.cpiSignerSummaryHash"] = metadata.cpiId.signerSummaryHash.toHexString()
-                        this["corda.cpiFileChecksum"] = metadata.fileChecksum.toHexString()
-                        this["corda.initialPlatformVersions"] = metadata.version.toString()
+                        this[FlowContextPropertyKeys.CPI_NAME] = metadata.cpiId.name
+                        this[FlowContextPropertyKeys.CPI_VERSION] = metadata.cpiId.version
+                        this[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH] = metadata.cpiId.signerSummaryHash.toHexString()
+                        this[FlowContextPropertyKeys.CPI_FILE_CHECKSUM] = metadata.fileChecksum.toHexString()
 
-                        this["corda.initialPlatformVersion"] =
+                        this[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION] =
                             platformInfoProvider.localWorkerPlatformVersion.toString()
-                        this["corda.initialSoftwareVersion"] = platformInfoProvider.localWorkerSoftwareVersion
+                        this[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION] = platformInfoProvider.localWorkerSoftwareVersion
                     }
                 }.avro
             }

@@ -8,6 +8,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -445,10 +446,13 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suspendable
     private fun getCpiMetadata(): String {
         return """
-            cpi name: ${flowEngine.flowContextProperties["corda.cpiName"]}
-            cpi version: ${flowEngine.flowContextProperties["corda.cpiVersion"]}
-            cpi signer summary hash: ${flowEngine.flowContextProperties["corda.cpiSignerSummaryHash"]}
-            cpi file checksum: ${flowEngine.flowContextProperties["corda.cpiFileChecksum"]}
+            Cpi Name: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_NAME]}
+            Cpi Version: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]}
+            Cpi Signer Summary Hash: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]}
+            Cpi File Checksum: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]}
+            
+            Initial Platform Version: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION]}
+            Initial Software Version: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION]}
         """.trimIndent()
     }
 
@@ -477,7 +481,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         // Second test checks platform custom serializer/deserializer of MemberX500Name, the serializer should be run
         // implicitly when JsonSerializationFlowOutput is formatted
         val memberX500NameString = input.getValue("vnode")
-        val memberX500NameDeserialized = jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
+        val memberX500NameDeserialized =
+            jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
 
         val output = JsonSerializationFlowOutput(
             firstTest = jsonOutput,
