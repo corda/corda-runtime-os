@@ -20,7 +20,14 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.kotlin.*
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -657,9 +664,8 @@ class LifecycleProcessorTest {
 
     @Test
     fun `processClose will close all the timers`() {
-        val state = mock<LifecycleStateManager> {
-            on { nextBatch() } doReturn listOf(CloseCoordinator())
-        }
+        val state: LifecycleStateManager = mock()
+        whenever(state.nextBatch()).thenReturn(listOf(CloseCoordinator()))
         val processor = LifecycleProcessor(NAME, state, mock(), mock(), mock())
 
         processor.processEvents(mock(), mock())
