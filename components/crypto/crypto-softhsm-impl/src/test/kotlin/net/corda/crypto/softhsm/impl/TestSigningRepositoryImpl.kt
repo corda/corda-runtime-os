@@ -28,27 +28,30 @@ class TestSigningRepositoryImpl {
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
-        val repo = SigningRepositoryImpl(
-            getEntityManagerFactory(CryptoTenants.CRYPTO, dbConnectionManager, mock(), mock()),
-            tenantId = CryptoTenants.CRYPTO,
-            keyEncodingService = mock(),
-            digestService = mock(),
-            layeredPropertyMapFactory = mock()
-        )
+        val tenant = CryptoTenants.CRYPTO
+        val repo = makeMockSigningRepository(tenant, dbConnectionManager)
         assertThat(repo::class.simpleName).isEqualTo("SigningRepositoryImpl")
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        SigningRepositoryImpl(
-            entityManagerFactory = getEntityManagerFactory(CryptoTenants.P2P, dbConnectionManager, mock(), mock()),
-            tenantId = CryptoTenants.P2P,
-            keyEncodingService = mock(),
-            digestService = mock(),
-            layeredPropertyMapFactory = mock()
-        )
+        makeMockSigningRepository(CryptoTenants.P2P, dbConnectionManager)
         verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
         repo.close()
         verify(entityManagerFactory, times(0)).close()
+    }
+
+    private fun makeMockSigningRepository(
+        tenant: String,
+        dbConnectionManager: DbConnectionManager,
+    ): SigningRepositoryImpl {
+        val repo = SigningRepositoryImpl(
+            getEntityManagerFactory(tenant, dbConnectionManager, mock(), mock()),
+            tenantId = tenant,
+            keyEncodingService = mock(),
+            digestService = mock(),
+            layeredPropertyMapFactory = mock()
+        )
+        return repo
     }
 
     @Test
