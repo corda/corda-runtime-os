@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -37,7 +38,6 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -75,7 +75,7 @@ class MemberOpsServiceProcessorTest {
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash) } doReturn VirtualNodeInfo(
             mgmHoldingIdentity,
-            CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
+            CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
             null,
             UUID.randomUUID(),
             null,

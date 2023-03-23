@@ -6,6 +6,7 @@ import net.corda.v5.application.flows.Flow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
@@ -69,8 +70,8 @@ class MutableFlatSerializableContextTest {
     }
 
     @Test
-    fun `platform writing over platform property throws`() {
-        assertThrows<IllegalArgumentException> { flowContext.platformProperties["p-key1"] = "value" }
+    fun `platform writing over platform property does not throw`() {
+        assertDoesNotThrow { flowContext.platformProperties["p-key1"] = "value" }
     }
 
     @Test

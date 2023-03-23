@@ -1,11 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
@@ -18,11 +19,10 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -38,7 +38,7 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-        private val serializedBytes = SerializedBytes<Any>(byteBuffer.array())
+        private val serializedBytes = SerializedBytesImpl<Any>(byteBuffer.array())
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
@@ -152,7 +152,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             wireTransaction,
             signatures
         )
-        val testId = SecureHash.parse("SHA256:1234567890123456")
+        val testId = parseSecureHash("SHA256:1234567890123456")
 
         whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
             .thenReturn(SignedTransactionContainer(wireTransaction, signatures))

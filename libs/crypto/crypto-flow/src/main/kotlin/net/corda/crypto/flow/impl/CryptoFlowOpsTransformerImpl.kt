@@ -2,13 +2,13 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.bytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -140,8 +140,7 @@ class CryptoFlowOpsTransformerImpl(
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
             keyEncodingService.decodePublicKey(resp.publicKey.array()),
-            resp.bytes.array(),
-            resp.context.toMap()
+            resp.bytes.array()
         )
     }
 

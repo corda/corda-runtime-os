@@ -11,6 +11,6 @@ scrape_configs:
     metrics_path: "/metrics"
     scrape_interval: 5s
     static_configs:
-      - targets: ["host.docker.internal:7000"]
+      - targets: ["host.docker.internal:7004"]
         labels:
           alias: "java-app"

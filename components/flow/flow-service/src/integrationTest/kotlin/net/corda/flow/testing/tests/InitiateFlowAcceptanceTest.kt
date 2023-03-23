@@ -1,6 +1,7 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.flow.output.FlowStates
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
@@ -33,7 +34,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     fun `Initiating a flow with a peer sends a session init event`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         then {
@@ -44,10 +45,44 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `Requesting counterparty info flow sends a session init event`() {
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionInitEvents(SESSION_ID_1)
+            }
+        }
+    }
+
+    @Test
+    fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`
+                () {
+        `given` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noFlowEvents()
+            }
+        }
+    }
+
+    @Test
     fun `Receiving a session ack resumes the initiating flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         `when` {
@@ -63,7 +98,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a session init event starts an initiated flow and sends a session ack`() {
+    fun `Receiving a session init event starts an initiated flow and sends a session confirm`() {
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
@@ -79,7 +114,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 flowStatus(FlowStates.RUNNING)
-                sessionAckEvents(INITIATED_SESSION_ID_1)
+                sessionConfirmEvents(INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -88,7 +123,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving a session error event resumes the flow with an error`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         `when` {
@@ -110,8 +145,8 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.Send(
                         mapOf(
-                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
-                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
+                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
                         ),
                     )
                 )

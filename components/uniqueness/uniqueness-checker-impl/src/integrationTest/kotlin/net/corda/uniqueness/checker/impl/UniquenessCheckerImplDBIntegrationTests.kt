@@ -1,5 +1,6 @@
 package net.corda.uniqueness.checker.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
@@ -1391,9 +1392,9 @@ class UniquenessCheckerImplDBIntegrationTests {
         @Test
         fun `The same hash code produced by different algorithms are distinct states`() {
             val randomBytes = SecureHashUtils.randomBytes()
-            val hash1 = SecureHash("SHA-256", randomBytes)
-            val hash2 = SecureHash("SHA-512", randomBytes)
-            val hash3 = SecureHash("SHAKE256", randomBytes)
+            val hash1 = SecureHashImpl("SHA-256", randomBytes)
+            val hash2 = SecureHashImpl("SHA-512", randomBytes)
+            val hash3 = SecureHashImpl("SHAKE256", randomBytes)
 
             processRequests(
                 newRequestBuilder(hash1)

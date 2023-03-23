@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -8,7 +9,7 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -16,7 +17,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -55,10 +55,10 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val command = UtxoCommandExample()
-        val attachment = SecureHash("SHA-256", ByteArray(12))
+        val attachment = SecureHashImpl("SHA-256", ByteArray(12))
 
         val signedTransaction = transactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
@@ -92,14 +92,13 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     fun `getPluggableNotaryClientFlow fails for an unknown notary service`() {
 
         val notaryService = mock<NotaryInfo>().apply {
-            whenever(this.name).thenReturn(utxoNotaryExample.name)
+            whenever(this.name).thenReturn(notaryX500Name)
         }
 
         whenever(mockNotaryLookup.notaryServices).thenReturn(listOf(notaryService))
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(Party(MemberX500Name.parse(
-                "O=ExampleNotaryService, L=London, C=GB"), publicKeyExample))
+            utxoLedgerService.getPluggableNotaryClientFlow(MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB"))
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Plugin class not found for notary service")
@@ -111,7 +110,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         class MyClientFlow
 
         val notaryService = mock<NotaryInfo>().apply {
-            whenever(this.name).thenReturn(utxoNotaryExample.name)
+            whenever(this.name).thenReturn(notaryX500Name)
             whenever(this.pluginClass).thenReturn("my-client-flow")
         }
 
@@ -141,7 +140,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(utxoNotaryExample)
+            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("is invalid because it does not inherit from")
@@ -155,7 +154,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val notaryService = mock<NotaryInfo>().apply {
-            whenever(this.name).thenReturn(utxoNotaryExample.name)
+            whenever(this.name).thenReturn(notaryX500Name)
             whenever(this.pluginClass).thenReturn("my-client-flow")
         }
 
@@ -185,7 +184,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         val result = assertDoesNotThrow {
-            utxoLedgerService.getPluggableNotaryClientFlow(utxoNotaryExample)
+            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
         }
 
         assertEquals(MyClientFlow::class.java.name, result.name)

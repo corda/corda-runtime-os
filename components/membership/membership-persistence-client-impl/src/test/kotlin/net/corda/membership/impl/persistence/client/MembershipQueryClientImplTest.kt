@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -55,7 +56,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions.`as`
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -483,28 +483,24 @@ class MembershipQueryClientImplTest {
         }
 
         @Test
-        fun `it will returns the correct data in case of successful result`() {
+        fun `it will return the correct data in case of successful result`() {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             val holdingId1 = createTestHoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
             val signature1 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk1".toByteArray()),
-                ByteBuffer.wrap("ct1".toByteArray()),
-                KeyValuePairList(emptyList()),
+                ByteBuffer.wrap("ct1".toByteArray())
             )
+            val signatureSpec1 = CryptoSignatureSpec("dummy", null, null)
             val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
-                ByteBuffer.wrap("ct2".toByteArray()),
-                KeyValuePairList(emptyList()),
+                ByteBuffer.wrap("ct2".toByteArray())
             )
+            val signatureSpec2 = CryptoSignatureSpec("dummy", null, null)
             val signatures = listOf(
-                MemberSignature(
-                    holdingId1.toAvro(), signature1
-                ),
-                MemberSignature(
-                    holdingId2.toAvro(), signature2
-                ),
+                MemberSignature(holdingId1.toAvro(), signature1, signatureSpec1),
+                MemberSignature(holdingId2.toAvro(), signature2, signatureSpec2),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -523,14 +519,15 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
+            val result =
+                membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
 
             assertThat(result.getOrThrow())
                 .containsEntry(
-                    holdingId1, signature1
+                    holdingId1, signature1 to signatureSpec1
                 )
                 .containsEntry(
-                    holdingId2, signature2
+                    holdingId2, signature2 to signatureSpec2
                 )
         }
 
@@ -595,11 +592,12 @@ class MembershipQueryClientImplTest {
                 RegistrationStatusDetails(
                     clock.instant(),
                     clock.instant(),
-                    RegistrationStatus.PENDING_APPROVAL_FLOW,
+                    RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    "test reason"
+                    "test reason",
+                    0L,
                 )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -629,7 +627,8 @@ class MembershipQueryClientImplTest {
                         registrationLastModified = status.registrationLastModified,
                         protocolVersion = status.registrationProtocolVersion,
                         memberContext = status.memberProvidedContext,
-                        reason = status.reason
+                        reason = status.reason,
+                        serial = status.serial,
                     )
                 )
         }
@@ -741,11 +740,12 @@ class MembershipQueryClientImplTest {
                 RegistrationStatusDetails(
                     clock.instant(),
                     clock.instant(),
-                    RegistrationStatus.PENDING_APPROVAL_FLOW,
+                    RegistrationStatus.PENDING_MANUAL_APPROVAL,
                     "id 1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    "test reason 1"
+                    "test reason 1",
+                    0L,
                 ),
                 RegistrationStatusDetails(
                     clock.instant(),
@@ -754,7 +754,8 @@ class MembershipQueryClientImplTest {
                     "id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    "test reason 2"
+                    "test reason 2",
+                    1L,
                 ),
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
@@ -786,7 +787,8 @@ class MembershipQueryClientImplTest {
                             registrationLastModified = it.registrationLastModified,
                             protocolVersion = it.registrationProtocolVersion,
                             memberContext = it.memberProvidedContext,
-                            reason = it.reason
+                            reason = it.reason,
+                            serial = it.serial,
                         )
                     }
                 )

@@ -1,13 +1,12 @@
 package net.corda.processors.crypto.internal
 
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyStore
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
@@ -32,13 +31,12 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("LongParameterList")
 @Component(service = [CryptoProcessor::class])
@@ -47,10 +45,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = CryptoConnectionsFactory::class)
-    private val cryptoConnectionsFactory: CryptoConnectionsFactory,
-    @Reference(service = WrappingKeyStore::class)
-    private val wrappingKeyStore: WrappingKeyStore,
     @Reference(service = SigningKeyStore::class)
     private val signingKeyStore: SigningKeyStore,
     @Reference(service = HSMStore::class)
@@ -89,8 +83,6 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::cryptoConnectionsFactory,
-        ::wrappingKeyStore,
         ::signingKeyStore,
         ::hsmStore,
         ::signingServiceFactory,
@@ -146,7 +138,7 @@ class CryptoProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(bootstrapConfig)
 
                 logger.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
-                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
 
                 logger.info("Bootstrapping {}", cryptoServiceFactory::class.simpleName)
                 cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))

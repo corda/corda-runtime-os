@@ -10,11 +10,9 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.orm.JpaEntitiesRegistry
@@ -43,7 +41,6 @@ import javax.persistence.LockModeType
 
 class PersistGroupParametersInitialSnapshotHandlerTest {
     private companion object {
-        const val MPV = 5000
         const val SNAPSHOT_EPOCH = "1"
     }
 
@@ -86,16 +83,12 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         } doReturn entityManagerFactory
     }
     private val clock = TestClock(Instant.ofEpochMilli(10))
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn MPV
-    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
-        on { platformInfoProvider } doReturn platformInfoProvider
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
 
@@ -109,11 +102,10 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         val result = handler.invoke(context, request)
 
         with(result.groupParameters) {
-            assertThat(items.size).isEqualTo(3)
+            assertThat(items.size).isEqualTo(2)
             assertThat(items).containsAll(
                 listOf(
                     KeyValuePair(EPOCH_KEY, SNAPSHOT_EPOCH),
-                    KeyValuePair(MPV_KEY, MPV.toString())
                 )
             )
             assertDoesNotThrow { Instant.parse(this.toMap()[MODIFIED_TIME_KEY]) }
@@ -133,7 +125,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
             KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
-                    KeyValuePair(MPV_KEY, MPV.toString()),
                     KeyValuePair(MODIFIED_TIME_KEY, (clock.instant().epochSecond + 5L).toString()),
                 )
             )

@@ -1,13 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -15,12 +15,12 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertNull
 
 class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
-    private val hash1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
-    private val hash2 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
+    private val hash1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+    private val hash2 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
     private val command1 = UtxoCommandExample("command 1")
     private val command2 = UtxoCommandExample("command 2")
-    private val stateRef1 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)
-    private val stateRef2 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 2)), 0)
+    private val stateRef1 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0)
+    private val stateRef2 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 2)), 0)
     private val state1 = UtxoStateClassExample("test 1", listOf(publicKeyExample))
     private val stateWithEnc1 = ContractStateAndEncumbranceTag(state1, null)
     private val state2 = UtxoStateClassExample("test 2", listOf(publicKeyExample))
@@ -38,17 +38,17 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
     fun `diff - notary gets set when original is null`() {
         val result =
             UtxoBaselinedTransactionBuilder(utxoTransactionBuilder)
-                .setNotary(utxoNotaryExample)
+                .setNotary(notaryX500Name)
                 .diff()
-        assertEquals(utxoNotaryExample, result.getNotary())
+        assertEquals(notaryX500Name, result.getNotaryName())
     }
 
     @Test
     fun `diff - notary does not get set when original is not null`() {
         val result =
-            UtxoBaselinedTransactionBuilder(utxoTransactionBuilder.setNotary(utxoNotaryExample) as UtxoTransactionBuilderInternal)
+            UtxoBaselinedTransactionBuilder(utxoTransactionBuilder.setNotary(notaryX500Name) as UtxoTransactionBuilderInternal)
                 .diff()
-        assertNull(result.getNotary())
+        assertNull(result.getNotaryName())
     }
 
     @Test

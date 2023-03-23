@@ -1,23 +1,13 @@
 package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
-import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
-import net.corda.rest.JsonObject
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ForbiddenException
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.security.RestAuthContext
-import net.corda.rest.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -31,8 +21,20 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
+import net.corda.rest.JsonObject
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.OperationNotAllowedException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
+import net.corda.rest.ws.DuplexChannel
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -55,8 +57,6 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.rest.exception.OperationNotAllowedException
-import net.corda.virtualnode.OperationalStatus
 
 class FlowRestResourceImplTest {
 
@@ -100,7 +100,7 @@ class FlowRestResourceImplTest {
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
             CpiIdentifier(
                 "", "",
-                SecureHash("", "bytes".toByteArray())
+                SecureHashImpl("", "bytes".toByteArray())
             ),
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -295,7 +295,7 @@ class FlowRestResourceImplTest {
     fun `start flow event fails when not initialized`() {
         val flowRestResource = createFlowRestResource(false)
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -410,7 +410,7 @@ class FlowRestResourceImplTest {
             )
         }))
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -428,7 +428,7 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -443,7 +443,7 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -465,7 +465,7 @@ class FlowRestResourceImplTest {
             )
         }))
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -480,7 +480,7 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 

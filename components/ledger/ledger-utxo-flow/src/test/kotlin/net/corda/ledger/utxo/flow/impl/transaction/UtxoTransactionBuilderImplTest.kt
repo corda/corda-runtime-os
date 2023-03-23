@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
@@ -9,7 +10,7 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
@@ -23,9 +24,9 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertIs
 
 class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
-    private val stateRef1 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)
-    private val stateRef2 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 2)), 0)
-    private val stateRef3 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 3)), 0)
+    private val stateRef1 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0)
+    private val stateRef2 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 2)), 0)
+    private val stateRef3 = StateRef(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 3)), 0)
     private val state1 = UtxoStateClassExample("test 1", listOf(publicKeyExample))
     private val state2 = UtxoStateClassExample("test 2", listOf(publicKeyExample))
     private val state3 = UtxoStateClassExample("test 3", listOf(publicKeyExample))
@@ -42,20 +43,21 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
         assertEquals(inputStateRef, tx.inputStateRefs.single())
         assertEquals(referenceStateRef, tx.referenceStateRefs.single())
         assertEquals(getUtxoStateExample(), tx.outputStateAndRefs.single().state.contractState)
-        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(notaryX500Name, tx.notaryName)
+        assertEquals(publicKeyExample, tx.notaryKey)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
         assertEquals(publicKeyExample, tx.signatories.first())
     }
@@ -63,7 +65,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction with empty component groups`() {
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
@@ -73,7 +75,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         assertThat(tx.inputStateRefs).isEmpty()
         assertThat(tx.referenceStateRefs).isEmpty()
         assertEquals(getUtxoStateExample(), tx.outputStateAndRefs.single().state.contractState)
-        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(notaryX500Name, tx.notaryName)
+        assertEquals(publicKeyExample, tx.notaryKey)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
         assertEquals(publicKeyExample, tx.signatories.first())
     }
@@ -81,12 +84,12 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `includes CPI and CPK information in metadata`() {
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction() as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata as TransactionMetadataInternal
@@ -121,12 +124,12 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `can't sign twice`() {
         assertThrows(IllegalStateException::class.java) {
             val builder = utxoTransactionBuilder
-                .setNotary(utxoNotaryExample)
+                .setNotary(notaryX500Name)
                 .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
                 .addOutputState(getUtxoStateExample())
                 .addSignatories(listOf(publicKeyExample))
                 .addCommand(UtxoCommandExample())
-                .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+                .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
 
             builder.toSignedTransaction()
             builder.toSignedTransaction()
@@ -144,7 +147,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val tx = utxoTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addEncumberedOutputStates(
                 "encumbranceGroup 1",
@@ -166,7 +169,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
 
         assertThat(tx.outputStateAndRefs).hasSize(7)
@@ -200,8 +203,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     @Test
     fun `setting the notary mutates and returns the current builder`() {
         val originalTransactionBuilder = utxoTransactionBuilder
-        val mutatedTransactionBuilder = utxoTransactionBuilder.setNotary(utxoNotaryExample)
-        assertThat(mutatedTransactionBuilder.notary).isEqualTo(utxoNotaryExample)
+        val mutatedTransactionBuilder = utxoTransactionBuilder.setNotary(notaryX500Name)
+        assertThat(mutatedTransactionBuilder.notaryName).isEqualTo(notaryX500Name)
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
             System.identityHashCode(
@@ -228,7 +231,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `adding attachments mutates and returns the current builder`() {
-        val attachmentId = SecureHash("SHA-256", ByteArray(12))
+        val attachmentId = SecureHashImpl("SHA-256", ByteArray(12))
         val originalTransactionBuilder = utxoTransactionBuilder
         val mutatedTransactionBuilder = utxoTransactionBuilder.addAttachment(attachmentId)
         assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).attachments).isEqualTo(
@@ -430,7 +433,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `Duplicating attachments throws`() {
-        val attachmentId = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
+        val attachmentId = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         utxoTransactionBuilder
             .addAttachment(attachmentId)
         assertThatThrownBy {

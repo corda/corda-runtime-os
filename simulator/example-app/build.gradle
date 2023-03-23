@@ -16,6 +16,7 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-ledger-common'
     cordaProvided 'net.corda:corda-ledger-consensual'
+    cordaProvided 'net.corda:corda-ledger-utxo'
     cordaProvided 'org.slf4j:slf4j-api'
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
@@ -23,12 +24,13 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 
+    testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(':simulator:api')
     testRuntimeOnly project(':simulator:runtime')
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
-def cordappName = 'cordapp-example-rollcall'
+def cordappName = 'cordapp-example'
 
 tasks.named('jar', Jar) {
     archiveBaseName = cordappName

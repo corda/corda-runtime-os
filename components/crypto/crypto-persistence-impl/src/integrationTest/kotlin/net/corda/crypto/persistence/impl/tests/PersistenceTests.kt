@@ -1,5 +1,13 @@
 package net.corda.crypto.persistence.impl.tests
 
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
+import javax.persistence.PersistenceException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
@@ -16,12 +24,11 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -29,14 +36,13 @@ import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
@@ -47,6 +53,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
@@ -56,12 +63,10 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
@@ -74,14 +79,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
-import javax.persistence.PersistenceException
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class PersistenceTests {
@@ -95,7 +92,13 @@ class PersistenceTests {
         lateinit var publisherFactory: PublisherFactory
 
         @InjectService(timeout = 5000)
-        lateinit var cryptoConnectionsFactory: CryptoConnectionsFactory
+        lateinit var dbConnectionManager: DbConnectionManager
+
+        @InjectService(timeout = 5000)
+        lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+
+        @InjectService(timeout = 5000)
+        lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
         @InjectService(timeout = 5000)
         lateinit var hsmStore: HSMStore
@@ -103,12 +106,11 @@ class PersistenceTests {
         @InjectService(timeout = 5000)
         lateinit var signingKeyStore: SigningKeyStore
 
-        @InjectService(timeout = 5000)
-        lateinit var wrappingKeyStore: WrappingKeyStore
-
         private lateinit var publisher: Publisher
 
         private lateinit var tracker: TestDependenciesTracker
+
+        private var _cryptoDbEmf: EntityManagerFactory? = null
 
         @JvmStatic
         @BeforeAll
@@ -126,9 +128,7 @@ class PersistenceTests {
         @JvmStatic
         @AfterAll
         fun cleanup() {
-            // cleanup the connections
-            cryptoConnectionsFactory.stop()
-            eventually { assertFalse(cryptoConnectionsFactory.isRunning) }
+            _cryptoDbEmf?.close()
         }
 
 
@@ -143,15 +143,13 @@ class PersistenceTests {
                     ConfigurationReadService::class.java,
                     DbConnectionManager::class.java,
                     VirtualNodeInfoReadService::class.java,
-                    CryptoConnectionsFactory::class.java,
                     HSMStore::class.java,
                     SigningKeyStore::class.java,
-                    WrappingKeyStore::class.java
                 )
             )
             tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
             tracker.component<DbConnectionManager>().bootstrap(
-                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS)
+                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB)
             )
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
         }
@@ -166,9 +164,15 @@ class PersistenceTests {
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
-        private fun cryptoDbEmf(): EntityManagerFactory = cryptoConnectionsFactory.getEntityManagerFactory(
-            CryptoTenants.CRYPTO
-        )
+        private fun cryptoDbEmf(): EntityManagerFactory {
+            if (null == _cryptoDbEmf) {
+                _cryptoDbEmf = getEntityManagerFactory(
+                    CryptoTenants.CRYPTO,
+                    dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry
+                )
+            }
+            return _cryptoDbEmf!!
+        }
 
         private fun generateKeyPair(schemeName: String): KeyPair {
             val scheme = schemeMetadata.findKeyScheme(schemeName)
@@ -604,53 +608,6 @@ class PersistenceTests {
         assertNotNull(association2.masterKeyAlias)
     }
 
-    @Test
-    fun `Should save and then retrieve wrapping keys`() {
-        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val alias1 = UUID.randomUUID().toString()
-        val alias2 = UUID.randomUUID().toString()
-        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key1.algorithm,
-            keyMaterial = masterKey.wrap(key1)
-        )
-        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo2 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key2.algorithm,
-            keyMaterial = masterKey.wrap(key2)
-        )
-        wrappingKeyStore.saveWrappingKey(alias1, wrappingKeyInfo1)
-        wrappingKeyStore.saveWrappingKey(alias2, wrappingKeyInfo2)
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias1)!!.keyMaterial))
-        assertEquals(key2, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias2)!!.keyMaterial))
-    }
-
-    @Test
-    fun `Should fail override existing wrapping keys`() {
-        val masterKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val alias = UUID.randomUUID().toString()
-        val key1 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key1.algorithm,
-            keyMaterial = masterKey.wrap(key1)
-        )
-        val key2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val wrappingKeyInfo2 = WrappingKeyInfo(
-            encodingVersion = 1,
-            algorithmName = key2.algorithm,
-            keyMaterial = masterKey.wrap(key2)
-        )
-        wrappingKeyStore.saveWrappingKey(alias, wrappingKeyInfo1)
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias)!!.keyMaterial))
-        assertThrows(PersistenceException::class.java) {
-            wrappingKeyStore.saveWrappingKey(alias, wrappingKeyInfo2)
-        }
-        assertEquals(key1, masterKey.unwrapWrappingKey(wrappingKeyStore.findWrappingKey(alias)!!.keyMaterial))
-    }
-
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should fail saving same public key`(tenantId: String) {
@@ -889,7 +846,7 @@ class PersistenceTests {
         val keyLookedUpByKeyId =
             signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
         val keyLookedUpByFullKeyId =
-            signingKeyStore.lookupByFullIds(tenantId, listOf(SecureHash.parse(fullKeyId)))
+            signingKeyStore.lookupByFullIds(tenantId, listOf(parseSecureHash(fullKeyId)))
         assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
     }
 
@@ -974,4 +931,4 @@ class PersistenceTests {
 }
 
 fun PublicKey.id(): ShortHash =
-    ShortHash.of(SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))
+    ShortHash.of(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))

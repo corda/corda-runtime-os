@@ -1,13 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.tests
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.createExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.v5.crypto.SecureHash
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -44,7 +44,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransaction.timeWindow)
 
@@ -78,7 +79,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.id).isEqualTo(utxoSignedTransaction.id)
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
-        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.notaryName).isNull()
+        assertThat(utxoFilteredTransaction.notaryKey).isNull()
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
         assertThat(utxoFilteredTransaction.signatories).isInstanceOf(UtxoFilteredData.Removed::class.java)
         assertThat(utxoFilteredTransaction.inputStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
@@ -102,7 +104,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
 
@@ -130,7 +133,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .build()
         assertThat(utxoFilteredTransaction.id).isEqualTo(utxoSignedTransaction.id)
-        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.notaryName).isNull()
+        assertThat(utxoFilteredTransaction.notaryKey).isNull()
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
@@ -140,7 +144,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withNotary()
             .build()
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
@@ -150,7 +155,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withTimeWindow()
             .build()
-        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.notaryName).isNull()
+        assertThat(utxoFilteredTransaction.notaryKey).isNull()
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoFilteredTransaction.timeWindow)
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
@@ -171,7 +177,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransaction.timeWindow)
 
@@ -212,7 +219,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransaction.timeWindow)
 
@@ -285,7 +293,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
 
@@ -326,7 +335,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransaction.timeWindow)
 
@@ -370,7 +380,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+        assertThat(utxoFilteredTransaction.notaryName).isEqualTo(utxoSignedTransaction.notaryName)
+        assertThat(utxoFilteredTransaction.notaryKey).isEqualTo(utxoSignedTransaction.notaryKey)
 
         assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransaction.timeWindow)
 
@@ -398,11 +409,12 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
     }
     
     private fun createSignedTransaction(numberOfInputStates: Int = 2, numberOfOutputStates: Int = 2): UtxoSignedTransaction {
-        val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
+        val inputHash = parseSecureHash("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
             encumbranceGroupSize = null,
-            notary = utxoNotaryExample,
+            notaryName = notaryX500Name,
+            notaryKey = publicKeyExample,
             contractStateTag = UtxoStateClassExample::class.java.name,
             contractTag = "contract tag"
         )
@@ -413,7 +425,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             componentGroups = listOf(
                 // Notary
                 listOf(
-                    serializationService.serialize(utxoNotaryExample).bytes,
+                    serializationService.serialize(notaryX500Name).bytes,
+                    serializationService.serialize(publicKeyExample).bytes,
                     serializationService.serialize(TimeWindowBetweenImpl(Instant.MIN, Instant.now())).bytes
                 ),
                 // Signatories

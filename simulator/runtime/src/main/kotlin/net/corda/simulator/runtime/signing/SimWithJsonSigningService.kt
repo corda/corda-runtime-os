@@ -10,7 +10,6 @@ import java.security.PublicKey
 /**
  * Simulates digital signing.
  *
- * @param jsonMarshallingService A JSON marshalling service with which to format the wrapper.
  * @param keyStore The member's [SimKeyStore] containing the identifying parameters with which the key was created.
  */
 class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningService {
@@ -47,11 +46,22 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
                 keyParameters
             )
         ).toByteArray()
-        return DigitalSignature.WithKey(publicKey, opaqueBytes, mapOf())
+        return DigitalSignature.WithKey(publicKey, opaqueBytes)
     }
 
+    /**
+     * Filters member keys from a provided list of public keys
+     * @param keys A set of public keys
+     *
+     * @return A map containing keys of the member who calls the function
+     */
     override fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
-        TODO("Not yet implemented")
+        val keyMap = HashMap<PublicKey, PublicKey>()
+        keys.filter {
+            keyStore.getParameters(it) != null
+        }.forEach{
+            keyMap[it] = it
+        }
+        return keyMap
     }
-
 }

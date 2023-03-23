@@ -5,6 +5,7 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -12,12 +13,11 @@ import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTr
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.testkit.getWireTransactionExample
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -38,20 +38,22 @@ open class UtxoFilteredTransactionTestBase {
         val OUTPUT_INFO_1 = "output info 1".toByteArray()
         val OUTPUT_STATE_2 = "output state 2".toByteArray()
         val OUTPUT_INFO_2 = "output info 2".toByteArray()
-        val NOTARY = "notary".toByteArray()
+        val NOTARY_NAME = "notaryName".toByteArray()
+        val NOTARY_KEY = "notaryKey".toByteArray()
         val TIME_WINDOW = "time window".toByteArray()
         val COMMAND = "command".toByteArray()
         val COMMAND_INFO = "command_info".toByteArray()
 
-        val inputId = SecureHash.parse("SHA-256:1234567890")
-        val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), mock())
+        val inputId = parseSecureHash("SHA-256:1234567890")
+        val notaryName = MemberX500Name.parse("O=notary, L=London, C=GB")
+        val notaryKey = publicKeyExample
         val timeWindow = mock<TimeWindow>()
 
         val signerKey1 = mock<PublicKey>()
         val signerKey2 = mock<PublicKey>()
 
-        val outputInfo1 = UtxoOutputInfoComponent(null, null, notary, "", "")
-        val outputInfo2 = UtxoOutputInfoComponent("three", 3, notary, "", "")
+        val outputInfo1 = UtxoOutputInfoComponent(null, null, notaryName, notaryKey, "", "")
+        val outputInfo2 = UtxoOutputInfoComponent("three", 3, notaryName, notaryKey, "", "")
     }
 
     lateinit var wireTransaction: WireTransaction
@@ -72,8 +74,10 @@ open class UtxoFilteredTransactionTestBase {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(serializationService.deserialize(NOTARY, Party::class.java)).thenReturn(notary)
-        whenever(serializationService.deserialize(NOTARY, Any::class.java)).thenReturn(notary)
+        whenever(serializationService.deserialize(NOTARY_NAME, MemberX500Name::class.java)).thenReturn(notaryName)
+        whenever(serializationService.deserialize(NOTARY_NAME, Any::class.java)).thenReturn(notaryName)
+        whenever(serializationService.deserialize(NOTARY_KEY, PublicKey::class.java)).thenReturn(publicKeyExample)
+        whenever(serializationService.deserialize(NOTARY_KEY, Any::class.java)).thenReturn(publicKeyExample)
         whenever(serializationService.deserialize(SIGNATORY_1, PublicKey::class.java)).thenReturn(signerKey1)
         whenever(serializationService.deserialize(SIGNATORY_2, PublicKey::class.java)).thenReturn(signerKey2)
         whenever(serializationService.deserialize(TIME_WINDOW, TimeWindow::class.java)).thenReturn(timeWindow)
@@ -98,7 +102,7 @@ open class UtxoFilteredTransactionTestBase {
             jsonMarshallingService,
             jsonValidator,
             componentGroupLists = listOf(
-                listOf(NOTARY, TIME_WINDOW),
+                listOf(NOTARY_NAME, NOTARY_KEY, TIME_WINDOW),
                 listOf(SIGNATORY_1, SIGNATORY_2),
                 listOf(OUTPUT_INFO_1, OUTPUT_INFO_2),
                 listOf(COMMAND_INFO),

@@ -10,7 +10,9 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import java.io.Closeable
 import java.security.PublicKey
 
@@ -42,6 +44,13 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
     fun createSigningService(member: MemberX500Name): SigningService
 
     /**
+     * Creates a notary signing service for the member
+     *
+     * @return The [SigningService] for the given member to get notary signature.
+     */
+    fun createNotarySigningService(): SigningService
+
+    /**
      * Creates a member lookup as it exists at the time of calling.
      *
      * @param member The member for whom to create a member lookup.
@@ -71,6 +80,19 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
      * @return A generated key that is also registered with the member.
      */
     fun generateAndStoreKey(alias: String, hsmCategory: HsmCategory, scheme: String, member: MemberX500Name): PublicKey
+
+    /**
+     * Creates a notary lookup for the simulator.
+     *
+     * @return A [NotaryLookup] containing notary details.
+     */
+    fun createNotaryLookup(): NotaryLookup
+
+    /**
+     *
+     * @return A [NotaryInfo] containing notary details.
+     */
+    fun getNotary(): NotaryInfo
 
 }
 

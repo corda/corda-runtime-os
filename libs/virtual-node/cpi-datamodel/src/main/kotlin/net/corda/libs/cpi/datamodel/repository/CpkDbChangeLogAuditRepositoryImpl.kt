@@ -1,11 +1,12 @@
 package net.corda.libs.cpi.datamodel.repository
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogAuditEntity
 import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManager
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 
 class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
     override fun put(em: EntityManager, changeLogAudit: CpkDbChangeLogAudit) {
@@ -33,7 +34,7 @@ class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
         return CpkDbChangeLogAudit(
             id,
             CpkDbChangeLog(
-                CpkDbChangeLogIdentifier(SecureHash.parse(cpkFileChecksum), filePath),
+                CpkDbChangeLogIdentifier(parseSecureHash(cpkFileChecksum), filePath),
                 content
             )
         )

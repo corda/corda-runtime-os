@@ -10,7 +10,6 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer
 import de.javakaffee.kryoserializers.ArraysAsListSerializer
 import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
-import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
 import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
@@ -47,18 +46,9 @@ class DefaultKryoCustomizer {
         internal fun customize(
             kryo: Kryo,
             serializers: Map<Class<*>, Serializer<*>>,
-            classResolver: CordaClassResolver,
-            classSerializer: ClassSerializer,
+            classSerializer: ClassSerializer
         ): Kryo {
             return kryo.apply {
-
-                classResolver.setKryo(this)
-
-                // The ClassResolver can only be set in the Kryo constructor and Quasar doesn't
-                // provide us with a way of doing that
-                Kryo::class.java.getDeclaredField("classResolver").apply {
-                    isAccessible = true
-                }.set(this, classResolver)
 
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
                 fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
@@ -75,8 +65,8 @@ class DefaultKryoCustomizer {
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,
                     LinkedHashMapIteratorSerializer
                 )
-                addDefaultSerializer(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
-                addDefaultSerializer(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
+                addDefaultSerializer(LinkedHashMapEntrySerializer.serializedType, LinkedHashMapEntrySerializer)
+                addDefaultSerializer(LinkedListItrSerializer.serializedType, LinkedListItrSerializer)
                 addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)

@@ -282,9 +282,9 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.truststore.session.0"
+        "corda.group.trustroot.session.0"
                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.truststore.tls.0"
+        "corda.group.trustroot.tls.0"
                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
     )
 
@@ -395,6 +395,7 @@ class MGMRegistrationServiceTest {
                 it.assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
                 it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
                 it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+                it.assertThat(statusUpdate.firstValue.serial).isEqualTo(0L)
 
 
                 val membershipEvent = publishedEvent.value as MembershipEvent
@@ -433,9 +434,9 @@ class MGMRegistrationServiceTest {
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
-                        "truststore.session.0"
+                        "trustroot.session.0"
                                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                        "truststore.tls.0"
+                        "trustroot.tls.0"
                                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
                     ).entries
                 )
@@ -486,7 +487,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties = properties.toMutableMap()
             testProperties["corda.group.pki.session"] = "NoPKI"
-            testProperties.remove("corda.group.truststore.session.0")
+            testProperties.remove("corda.group.trustroot.session.0")
             registrationService.start()
 
             assertDoesNotThrow {
@@ -545,7 +546,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties =
                 properties + mapOf(
-                    "corda.group.truststore.tls.100" to
+                    "corda.group.trustroot.tls.100" to
                             "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
                 )
             registrationService.start()

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.uri.URIFetcher
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.schema.validation.MembershipSchemaFetchException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -63,10 +64,18 @@ class MembershipSchemaValidatorImpl(
             logger.error(errReason, ex)
             throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
+        val serial = registrationContext[MemberInfoExtension.SERIAL]?.toLong()
+        val convertedRegistrationContext = mutableMapOf<String, Any>()
+        convertedRegistrationContext.putAll(
+            registrationContext.filterNot { it.key == "corda.serial" }
+        )
+        if (serial != null) {
+            convertedRegistrationContext[MemberInfoExtension.SERIAL] = serial
+        }
         val contextAsJson = try {
             objectMapper.readTree(
                 objectMapper.writeValueAsString(
-                    registrationContext
+                    convertedRegistrationContext
                 )
             )
         } catch (ex: Exception) {

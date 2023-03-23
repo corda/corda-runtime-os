@@ -2,6 +2,7 @@
 
 package com.r3.corda.notary.plugin.common
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -21,10 +22,8 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
-import java.security.MessageDigest
 import java.security.PublicKey
 
 /**
@@ -33,18 +32,20 @@ import java.security.PublicKey
  * @throws IllegalStateException if the request signature could not be validated.
  */
 @Suspendable
+@Suppress("LongParameterList")
 fun validateRequestSignature(notarizationRequest: NotarizationRequest,
-                             requestingParty: Party,
+                             requestingPartyKey: PublicKey,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
-                             signature: NotarizationRequestSignature
+                             signature: NotarizationRequestSignature,
+                             digestService: DigestService
 ) {
     val digitalSignature = signature.digitalSignature
 
-    if (requestingParty.owningKey != digitalSignature.by) {
+    if (requestingPartyKey != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingParty.owningKey.publicKeyId()}, " +
-                    "but received by ${digitalSignature.by.publicKeyId()}}"
+            "Expected a signature by ${requestingPartyKey.publicKeyId(digestService)}, " +
+                    "but received by ${digitalSignature.by.publicKeyId(digestService)}}"
         )
     }
 
@@ -139,11 +140,7 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
 
 private const val SHORT_KEY_ID_LENGTH = 12
 
-private fun PublicKey.publicKeyId(): String {
-    val digestAlgorithm = DigestAlgorithmName.SHA2_256.name
-    val fullKeyId = SecureHash(
-        digestAlgorithm,
-        MessageDigest.getInstance(digestAlgorithm).digest(encoded)
-    )
+private fun PublicKey.publicKeyId(digestService: DigestService): String {
+    val fullKeyId = digestService.hash(encoded, DigestAlgorithmName.SHA2_256)
     return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
 }
