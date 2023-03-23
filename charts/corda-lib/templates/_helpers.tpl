@@ -123,7 +123,7 @@ Initial admin user password secret name
 Initial REST TLS keystore secret name
 */}}
 {{- define "corda.defaultRestTlsSecretName" -}}
-{{ default (printf "%s-rest-tls-keystore" (include "corda.fullname" .)) }}
+{{ default (printf "%s-rest-tls" (include "corda.fullname" .)) }}
 {{- end }}
 
 {{/*
