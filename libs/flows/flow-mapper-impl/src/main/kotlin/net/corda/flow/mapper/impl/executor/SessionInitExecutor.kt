@@ -59,7 +59,7 @@ class SessionInitExecutor(
         if (sessionEvent.isInteropEvent()) {
             log.info("[CORE-10465] Received interop session init event, sending session confirmation.")
 
-            val sessionConfirm = Record(
+            val hackyConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
                 FlowMapperEvent(
@@ -79,7 +79,7 @@ class SessionInitExecutor(
 
             return FlowMapperResult(
                 FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
-                listOf(sessionConfirm)
+                listOf(hackyConfirm)
             )
         }
 

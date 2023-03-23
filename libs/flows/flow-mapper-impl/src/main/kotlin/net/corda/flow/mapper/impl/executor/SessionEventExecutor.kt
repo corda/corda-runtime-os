@@ -107,7 +107,7 @@ class SessionEventExecutor(
 
                 // Echo the whole payload back to the flow fibre.
                 // This avoids the need to serialize/deserialize @CordaSerializable objects here.
-                val reply = Record(
+                val hackyReply = Record(
                     Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                     sessionEvent.sessionId,
                     FlowMapperEvent(
@@ -125,11 +125,7 @@ class SessionEventExecutor(
                     )
                 )
 
-                FlowMapperResult(flowMapperState, listOf(reply))
-            } else if (payload is SessionClose) {
-                log.info("[CORE-10465] Responding to session close with acknowledge message.")
-
-                val ack = Record(
+                val hackyClose = Record(
                     Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                     sessionEvent.sessionId,
                     FlowMapperEvent(
@@ -142,12 +138,34 @@ class SessionEventExecutor(
                             sessionEvent.initiatedIdentity,
                             2,
                             emptyList(),
+                            SessionData(SessionClose())
+                        )
+                    )
+                )
+
+                FlowMapperResult(flowMapperState, listOf(hackyReply, hackyClose))
+            } else if (payload is SessionClose) {
+                log.info("[CORE-10465] Responding to session close with acknowledge message.")
+
+                val hackyAck = Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(
+                        SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            4,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            3,
+                            emptyList(),
                             SessionAck()
                         )
                     )
                 )
 
-                FlowMapperResult(flowMapperState, listOf(ack))
+                FlowMapperResult(flowMapperState, listOf(hackyAck))
             } else {
                 log.info("[CORE-10465] Ignoring outbound event of type ${sessionEvent.payload.javaClass}, nothing to be done!")
                 FlowMapperResult(flowMapperState, listOf())
