@@ -110,6 +110,8 @@ class PersistenceTests {
 
         private lateinit var tracker: TestDependenciesTracker
 
+        private var _cryptoDbEmf: EntityManagerFactory? = null
+
         @JvmStatic
         @BeforeAll
         fun setup() {
@@ -126,6 +128,7 @@ class PersistenceTests {
         @JvmStatic
         @AfterAll
         fun cleanup() {
+            _cryptoDbEmf?.close()
         }
 
 
@@ -161,10 +164,15 @@ class PersistenceTests {
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
-        private fun cryptoDbEmf(): EntityManagerFactory = getEntityManagerFactory(
-            CryptoTenants.CRYPTO,
-            dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry
-        )
+        private fun cryptoDbEmf(): EntityManagerFactory {
+            if (null == _cryptoDbEmf) {
+                _cryptoDbEmf = getEntityManagerFactory(
+                    CryptoTenants.CRYPTO,
+                    dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry
+                )
+            }
+            return _cryptoDbEmf!!
+        }
 
         private fun generateKeyPair(schemeName: String): KeyPair {
             val scheme = schemeMetadata.findKeyScheme(schemeName)

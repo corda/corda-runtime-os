@@ -1,10 +1,10 @@
-package net.corda.crypto.persistence.impl
+package net.corda.crypto.softhsm.impl
 
-import net.corda.crypto.persistence.db.model.SigningKeyEntity
-import net.corda.crypto.persistence.SigningKeyOrderBy
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import kotlin.reflect.KProperty
 
 class SigningKeyLookupBuilder(private val entityManager: EntityManager) {

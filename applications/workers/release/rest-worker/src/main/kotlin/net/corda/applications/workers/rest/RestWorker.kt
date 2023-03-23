@@ -17,6 +17,8 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.rest.RestProcessor
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_CRT_PATH
+import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_FILE_PATH
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -58,6 +60,7 @@ class RestWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, RestWorkerParams())
+        params.validate()
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
@@ -85,4 +88,13 @@ private class RestWorkerParams {
 
     @CommandLine.Option(names = ["-r", "--${BootConfig.BOOT_REST}"], description = ["REST worker specific params."])
     var restParams = emptyMap<String, String>()
+
+    fun validate() {
+        if (restParams.containsKey(BOOT_REST_TLS_KEYSTORE_FILE_PATH) &&
+            restParams.containsKey(BOOT_REST_TLS_CRT_PATH)
+        ) {
+            throw IllegalStateException("'$BOOT_REST_TLS_KEYSTORE_FILE_PATH' and '$BOOT_REST_TLS_CRT_PATH' " +
+                    "are mutually exclusive for TLS certificate provisions.")
+        }
+    }
 }
