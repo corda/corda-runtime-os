@@ -83,7 +83,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     /**
      * Returns true if a session state belongs to an interop session. This is currently
      * signaled by the presence of the interop suffix in the session ID.
-     * @return True if the event is an interop event, false otherwise.
+     * @return True if the state, corresponds to an interop session, false otherwise.
      */
     private fun SessionState.isInteropSessionState(): Boolean {
         return this.sessionId.contains("-INTEROP")
