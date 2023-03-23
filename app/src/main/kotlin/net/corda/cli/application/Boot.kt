@@ -3,9 +3,9 @@ package net.corda.cli.application
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.api.serviceUsers.HttpServiceUser
 import net.corda.cli.application.commands.SetCurrentNodeCommand
-import net.corda.cli.application.utils.Files
 import net.corda.cli.application.logger.LoggerStream
 import net.corda.cli.application.services.HttpRpcService
+import net.corda.cli.application.utils.Files
 import org.pf4j.CompoundPluginDescriptorFinder
 import org.pf4j.DefaultPluginManager
 import org.pf4j.ManifestPluginDescriptorFinder
@@ -19,10 +19,14 @@ fun main(vararg args: String) {
 }
 
 @CommandLine.Command(
-    name = "corda",
+    name = "corda-cli",
     subcommands = [SetCurrentNodeCommand::class]
 )
-class App
+class App {
+    @CommandLine.Option(names = ["-h", "--help", "-?", "-help"], usageHelp = true, description = ["Display help and exit."])
+    @Suppress("unused")
+    var help = false
+}
 
 /**
  * A boot class that starts picocli and loads in plugin sub commands.
@@ -36,6 +40,7 @@ object Boot {
     }
 
     @CommandLine.Spec
+    @Suppress("unused")
     lateinit var spec: CommandLine.Model.CommandSpec
 
     fun run(vararg args: String) {
