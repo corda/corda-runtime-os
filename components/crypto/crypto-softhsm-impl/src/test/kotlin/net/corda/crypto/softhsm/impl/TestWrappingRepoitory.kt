@@ -13,7 +13,7 @@ import org.mockito.kotlin.mock
 import kotlin.test.assertNotNull
 
 
-class TestV1SigningRepositoryImpl {
+class TestWrappingRepoitory {
 
     @Test
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
