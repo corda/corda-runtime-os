@@ -28,10 +28,10 @@ class ConsensualPersistTransactionRequestHandler(
             responseFactory.successResponse(
                 externalEventContext,
                 EntityResponse(
-                    0,
-                    false,
+                    missingCpks.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
                     missingCpks.size,
-                    missingCpks.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                    missingCpks.size,
+                    false
                 )
             )
         )

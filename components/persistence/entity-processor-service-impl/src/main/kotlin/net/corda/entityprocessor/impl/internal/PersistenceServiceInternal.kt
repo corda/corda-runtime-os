@@ -66,10 +66,10 @@ class PersistenceServiceInternal(
     ): EntityResponse {
         payload.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
         return EntityResponse(
+            emptyList(),
             0,
-            false,
             0,
-            emptyList()
+            false
         )
     }
 
@@ -85,10 +85,10 @@ class PersistenceServiceInternal(
             entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
         }
         return EntityResponse(
-            0,
-            false,
+            results,
             results.size,
-            results
+            results.size,
+            false
         )
     }
 
@@ -102,10 +102,10 @@ class PersistenceServiceInternal(
             entityManager.merge(entity)
         }.map { payloadCheck(serializationService.toBytes(it)) }
         return EntityResponse(
-            0,
-            false,
+            results,
             results.size,
-            results
+            results.size,
+            false
         )
     }
 
@@ -120,10 +120,10 @@ class PersistenceServiceInternal(
             entityManager.remove(entityManager.merge(entity))
         }
         return EntityResponse(
+            emptyList(),
             0,
-            false,
             0,
-            emptyList()
+            false
         )
     }
 
@@ -149,10 +149,10 @@ class PersistenceServiceInternal(
             }
         }
         return EntityResponse(
+            emptyList(),
             0,
-            false,
             0,
-            emptyList()
+            false
         )
     }
 
@@ -230,15 +230,15 @@ class PersistenceServiceInternal(
             query.maxResults = limit
         }
 
-        val result = when (val results = query.resultList) {
+        val results = when (val results = query.resultList) {
             null -> emptyList()
             else -> results.filterNotNull().map { item -> payloadCheck(serializationService.toBytes(item)) }
         }
         return EntityResponse(
-            0,
-            false,
-            result.size,
-            result
+            results,
+            results.size,
+            results.size,
+            false
         )
     }
 }

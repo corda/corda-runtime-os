@@ -28,10 +28,10 @@ class UtxoPersistTransactionIfDoesNotExistRequestHandler(
             externalEventResponseFactory.success(
                 externalEventContext,
                 EntityResponse(
-                    0,
-                    false,
+                    data,
                     data.size,
-                    data
+                    data.size,
+                    false
                 )
             )
         )

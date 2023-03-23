@@ -64,10 +64,10 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
         return responseFactory.successResponse(
             externalEventContext,
             EntityResponse(
-                0,
-                false,
+                data,
                 data.size,
-                data
+                data.size,
+                false
             )
         )
     }
@@ -97,7 +97,7 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(0, false, 0, emptyList())
+            EntityResponse(emptyList(), 0, 0, false)
         )
     }
 

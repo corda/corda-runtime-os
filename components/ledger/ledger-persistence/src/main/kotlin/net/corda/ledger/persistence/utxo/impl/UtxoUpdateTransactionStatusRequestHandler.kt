@@ -21,7 +21,7 @@ class UtxoUpdateTransactionStatusRequestHandler(
         return listOf(
             externalEventResponseFactory.success(
                 externalEventContext,
-                EntityResponse(0, false, 0, emptyList())
+                EntityResponse(emptyList(), 0, 0, false)
             )
         )
     }

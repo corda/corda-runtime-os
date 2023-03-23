@@ -1,8 +1,8 @@
 package net.corda.ledger.persistence.query.execution.impl
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.ledger.persistence.ExecuteVaultNamedQueryRequest
 import net.corda.data.persistence.EntityResponse
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.orm.utils.transaction
@@ -46,7 +46,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
 
     override fun executeQuery(
         holdingIdentity: HoldingIdentity,
-        request: ExecuteVaultNamedQueryRequest
+        request: FindWithNamedQuery
     ): EntityResponse {
 
         log.debug("Executing query: ${request.queryName}")
@@ -64,7 +64,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                             vaultNamedQuery.whereJson // TODO Add timestamp limit logic
                 )
 
-                request.queryParameters.forEach {
+                request.parameters.forEach {
                     query.setParameter(it.key, serializationService.deserialize(it.value.array(), Any::class.java))
                 }
 
@@ -77,10 +77,10 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
             }
 
         return EntityResponse(
-            if (newOffset > 0) newOffset else 0, // We don't want any negative numbers so just reset to 0
-            newOffset > 0,
+            resultList.filterNotNull().map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
             resultList.size,
-            resultList.filterNotNull().map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+            if (newOffset > 0) newOffset else 0, // We don't want any negative numbers so just reset to 0
+            newOffset > 0
         )
     }
 }

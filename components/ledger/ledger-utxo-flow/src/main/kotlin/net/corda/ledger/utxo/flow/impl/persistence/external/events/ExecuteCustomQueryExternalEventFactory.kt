@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.ledger.persistence.ExecuteVaultNamedQueryRequest
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -11,7 +11,7 @@ class VaultNamedQueryExternalEventFactory @Activate constructor():
     AbstractUtxoLedgerExternalEventFactory<VaultNamedQueryEventParams>() {
 
     override fun createRequest(parameters: VaultNamedQueryEventParams): Any {
-        return ExecuteVaultNamedQueryRequest(
+        return FindWithNamedQuery(
             parameters.queryName,
             parameters.queryParameters,
             parameters.offset,

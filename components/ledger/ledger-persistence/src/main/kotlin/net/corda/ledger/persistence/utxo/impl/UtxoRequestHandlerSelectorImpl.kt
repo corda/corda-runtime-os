@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.utxo.impl
 
-import net.corda.data.ledger.persistence.ExecuteVaultNamedQueryRequest
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
@@ -9,6 +8,7 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
@@ -101,7 +101,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     persistenceService
                 )
             }
-            is ExecuteVaultNamedQueryRequest -> {
+            is FindWithNamedQuery -> {
                 UtxoExecuteCustomQueryHandler(
                     request.flowExternalEventContext,
                     request.holdingIdentity,

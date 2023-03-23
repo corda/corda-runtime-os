@@ -58,7 +58,7 @@ class AbstractPersistenceExternalEventFactoryTest {
         val results = listOf(ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
         val resume = abstractPersistenceExternalEventFactory.resumeWith(
             mock(),
-            EntityResponse(results)
+            EntityResponse(results, results.size, results.size, false)
         )
         assertEquals(results, resume)
     }
