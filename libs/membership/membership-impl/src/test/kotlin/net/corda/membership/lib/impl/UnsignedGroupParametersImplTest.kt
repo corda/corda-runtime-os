@@ -39,13 +39,14 @@ class UnsignedGroupParametersImplTest {
     private val compositeKeyProvider: CompositeKeyProvider = mock {
         on { create(eq(listOf(compositeKeyNodeAndWeight)), eq(null)) } doReturn compositeKey
     }
+    private val serializedParameters = "group-params".toByteArray()
 
     private class TestLayeredPropertyMap(
         map: LayeredPropertyMap
     ) : LayeredPropertyMap by map
 
     private fun createTestParams(
-        serializedParams: ByteArray = "group-params".toByteArray(),
+        serializedParams: ByteArray = serializedParameters,
         epoch: Int = VALID_VALUE,
         time: Instant = modifiedTime
     ) = UnsignedGroupParametersImpl(

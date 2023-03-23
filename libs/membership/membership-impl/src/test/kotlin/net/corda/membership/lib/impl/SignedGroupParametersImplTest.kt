@@ -47,11 +47,12 @@ class SignedGroupParametersImplTest {
         map: LayeredPropertyMap
     ) : LayeredPropertyMap by map
 
+    private val serializedParameters = "group-params".toByteArray()
     private val signature: DigitalSignature.WithKey = mock()
     private val signatureSpec: SignatureSpec = mock()
 
     private fun createTestParams(
-        serializedParams: ByteArray = "group-params".toByteArray(),
+        serializedParams: ByteArray = serializedParameters,
         sig: DigitalSignature.WithKey = signature,
         sigSpec: SignatureSpec = signatureSpec,
         epoch: Int = VALID_VALUE,
