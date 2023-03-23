@@ -78,9 +78,8 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = CryptoOpsBusProcessor(
-            event = event,
             SigningServiceImpl(
-                cryptoServiceFactory = cryptoServiceFactory,
+w                cryptoServiceFactory = cryptoServiceFactory,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 keyEncodingService = keyEncodingService,
