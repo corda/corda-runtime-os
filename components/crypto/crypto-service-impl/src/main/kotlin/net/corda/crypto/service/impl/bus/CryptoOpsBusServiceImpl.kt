@@ -29,7 +29,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.InvalidParameterException
 
 @Suppress("LongParameterList")
 @Component(service = [CryptoOpsBusService::class])
