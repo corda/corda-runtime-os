@@ -24,9 +24,6 @@ import net.corda.crypto.persistence.createdBefore
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.externalId
-import net.corda.crypto.persistence.impl.SigningKeyLookupBuilder
-import net.corda.crypto.persistence.impl.SigningKeysRepository
-import net.corda.crypto.persistence.impl.toSigningCachedKey
 import net.corda.crypto.persistence.masterKeyAlias
 import net.corda.crypto.persistence.schemeCodeName
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory

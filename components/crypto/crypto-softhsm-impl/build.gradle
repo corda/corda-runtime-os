@@ -22,7 +22,6 @@ dependencies {
     implementation project(":components:crypto:crypto-hes")
     implementation project(":components:crypto:crypto-hes-core-impl")
     implementation project(":components:crypto:crypto-persistence")
-    implementation project(":components:crypto:crypto-persistence-impl")
     implementation project(":components:crypto:crypto-persistence-model")
     implementation project(":components:db:db-connection-manager")
     implementation project(":components:virtual-node:virtual-node-info-read-service")

@@ -8,6 +8,7 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.internal.serialization.unwrap
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.InternalDirectSerializer
 import org.assertj.core.api.Assertions.assertThat
@@ -71,7 +72,7 @@ class InternalDirectSerializerTest {
 
     private fun <T: Any> assertSerializeAndDeserialize(input: T) {
         val bytes = SerializationOutput(factory).serialize(input, testSerializationContext)
-        val output = DeserializationInput(factory).deserialize(bytes, Any::class.java, testSerializationContext)
+        val output = DeserializationInput(factory).deserialize(bytes.unwrap(), Any::class.java, testSerializationContext)
         assertEquals(input, output)
     }
 
