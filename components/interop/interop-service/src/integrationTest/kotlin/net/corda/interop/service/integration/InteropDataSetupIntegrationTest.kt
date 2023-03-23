@@ -66,7 +66,6 @@ class InteropDataSetupIntegrationTest {
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
-
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
     @BeforeEach
@@ -141,16 +140,7 @@ class InteropDataSetupIntegrationTest {
     }
 
     private fun publishConfig(publisher: Publisher) {
-        publisher.publish(
-            listOf(
-                Record(
-                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
-                )
-            )
-        )
-    }
-
-    private val messagingConf = """
+        val messagingConf = """
             componentVersion="5.1"
             subscription {
                 consumer {
@@ -165,7 +155,15 @@ class InteropDataSetupIntegrationTest {
                     close.timeout = 6000
                 }
             }
-      """
+        """
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                )
+            )
+        )
+    }
 }
 
 class MemberInfoMessageCounter(
