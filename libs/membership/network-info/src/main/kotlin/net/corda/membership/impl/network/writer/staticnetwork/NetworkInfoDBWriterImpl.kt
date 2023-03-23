@@ -15,11 +15,11 @@ import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.MGM_INFO
@@ -148,9 +148,9 @@ class NetworkInfoDBWriterImpl(
             val mgmSessionKey = keyEncodingService.decodePublicKey(staticNetworkInfo.mgmPublicKey)
             val staticMgmInfo = mapOf(
                 PARTY_NAME to "O=Corda-Static-Network-MGM, L=London, C=GB",
-                PARTY_SESSION_KEY to keyEncodingService.encodeAsString(mgmSessionKey),
-                SESSION_KEY_HASH to mgmSessionKey.calculateHash().value,
-                SESSION_KEY_SIGNATURE_SPEC to mgmSignatureSpec.signatureName,
+                PARTY_SESSION_KEYS.format(0) to keyEncodingService.encodeAsString(mgmSessionKey),
+                SESSION_KEYS_HASH.format(0) to mgmSessionKey.calculateHash().value,
+                SESSION_KEYS_SIGNATURE_SPEC.format(0) to mgmSignatureSpec.signatureName,
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",
                 PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),

@@ -13,9 +13,9 @@ import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
@@ -201,8 +201,10 @@ class NetworkInfoDBWriterImplTest {
 
             val mgmInfo = groupPolicyJson.get(MGM_INFO)
             assertThat(mgmInfo.get(PARTY_NAME).textValue()).contains("Corda-Static-Network-MGM")
-            assertThat(mgmInfo.get(PARTY_SESSION_KEY).textValue()).isEqualTo(stringEncodedMgmPublicKey)
-            assertThat(mgmInfo.get(SESSION_KEY_SIGNATURE_SPEC).textValue()).isEqualTo(mgmSignatureSpec.signatureName)
+            assertThat(mgmInfo.get(PARTY_SESSION_KEYS.format(0)).textValue()).isEqualTo(stringEncodedMgmPublicKey)
+            assertThat(
+                mgmInfo.get(SESSION_KEYS_SIGNATURE_SPEC.format(0)).textValue()
+            ).isEqualTo(mgmSignatureSpec.signatureName)
             assertThat(mgmInfo.get(PLATFORM_VERSION).textValue()).isEqualTo("9999")
             assertThat(mgmInfo.get(SOFTWARE_VERSION).textValue()).isEqualTo("software-version")
             assertThat(mgmInfo.get(MemberInfoExtension.Companion.GROUP_ID).textValue()).isEqualTo(groupId)

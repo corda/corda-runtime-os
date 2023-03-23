@@ -255,7 +255,7 @@ class MemberSynchronisationServiceImplTest {
         on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
     }
     private val mgmInfo = mock<MemberInfo> {
-        on { sessionInitiationKey } doReturn mock()
+        on { sessionInitiationKeys } doReturn listOf(mock())
         on { name } doReturn MemberX500Name.parse("O=MGM, L=London, C=GB")
         on { mgmProvidedContext } doReturn mgmMgmContext
         on { memberProvidedContext } doReturn mgmMemberContext

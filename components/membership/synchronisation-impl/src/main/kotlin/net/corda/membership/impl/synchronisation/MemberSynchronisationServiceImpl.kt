@@ -260,7 +260,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             membershipPackage: MembershipPackage
         ) = with(membershipPackage.groupParameters) {
             verifier.verify(
-                mgm.sessionInitiationKey,
+                mgm.sessionInitiationKeys.first(),
                 mgmSignature,
                 mgmSignatureSpec,
                 groupParameters.array()
