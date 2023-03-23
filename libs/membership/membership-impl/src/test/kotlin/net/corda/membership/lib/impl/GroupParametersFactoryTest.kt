@@ -10,11 +10,12 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.membership.GroupParameters
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -106,7 +107,7 @@ class GroupParametersFactoryTest {
             val groupParameters = groupParametersFactory.create(avro)
 
 
-            assertThat(groupParameters).isInstanceOf(GroupParameters::class.java)
+            assertThat(groupParameters).isInstanceOf(InternalGroupParameters::class.java)
             assertThat(groupParameters).isInstanceOf(SignedGroupParameters::class.java)
             assertThat(groupParameters.entries)
                 .containsExactlyElementsOf(groupParametersValues.entries)
@@ -115,6 +116,23 @@ class GroupParametersFactoryTest {
                 .isEqualTo("SHA256withRSA")
             assertThat(groupParameters.signature.by).isEqualTo(pubKey)
             assertThat(groupParameters.signature.bytes).isEqualTo(sigBytes)
+        }
+
+        @Test
+        fun `if the unsigned avro group parameters are submitted, the factory returns an unsigned group parameters instance`() {
+            val avro = mock<AvroGroupParameters> {
+                on { mgmSignature } doReturn null
+                on { mgmSignatureSpec } doReturn null
+                on { groupParameters } doReturn serialisedGroupParameters.buffer
+            }
+            val groupParameters = groupParametersFactory.create(avro)
+
+
+            assertThat(groupParameters).isInstanceOf(InternalGroupParameters::class.java)
+            assertThat(groupParameters).isInstanceOf(UnsignedGroupParameters::class.java)
+            assertThat(groupParameters.entries)
+                .containsExactlyElementsOf(groupParametersValues.entries)
+            assertThat(groupParameters.bytes).isEqualTo(serialisedGroupParameters)
         }
     }
 

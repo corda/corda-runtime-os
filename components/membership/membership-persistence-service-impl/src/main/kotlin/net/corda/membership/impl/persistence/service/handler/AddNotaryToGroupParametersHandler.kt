@@ -43,12 +43,6 @@ internal class AddNotaryToGroupParametersHandler(
         )
     }
 
-    private fun deserializeProperties(data: ByteArray): KeyValuePairList {
-        return deserializer.deserialize(data) ?: throw MembershipPersistenceException(
-            "Failed to deserialize key value pair list A."
-        )
-    }
-
     override fun invoke(
         context: MembershipRequestContext,
         request: AddNotaryToGroupParameters
@@ -69,7 +63,7 @@ internal class AddNotaryToGroupParametersHandler(
                 )
             }
 
-            val parametersMap = deserializeProperties(previous.singleResult.parameters).toMap()
+            val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
             val notary = memberInfoFactory.create(request.notary).notaryDetails
                 ?: throw MembershipPersistenceException(
                     "Cannot add notary to group parameters - notary details not found."

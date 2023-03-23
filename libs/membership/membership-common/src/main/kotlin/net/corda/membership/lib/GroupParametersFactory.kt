@@ -1,12 +1,11 @@
 package net.corda.membership.lib
 
 import net.corda.data.KeyValuePairList
-import net.corda.v5.membership.GroupParameters
 import net.corda.data.membership.SignedGroupParameters
 
 /**
- * GroupParametersFactory is a factory for building [GroupParameters] objects. [GroupParameters] is a set
- * of parameters that all members of the group agree to abide by.
+ * GroupParametersFactory is a factory for building [InternalGroupParameters] objects. [InternalGroupParameters] is a
+ * set of parameters that all members of the group agree to abide by.
  *
  * This service can create signed and unsigned instances from avro types.
  */

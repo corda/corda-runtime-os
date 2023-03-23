@@ -31,6 +31,7 @@ import net.corda.layeredpropertymap.create
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.hash
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -46,6 +47,7 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -93,6 +95,7 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.RSA_SHA256
 import net.corda.v5.membership.MemberInfo
@@ -399,6 +402,7 @@ class MembershipPersistenceTest {
         private val dbConfig = smartConfigFactory.create(clusterDbInfo.config)
 
         private lateinit var vnodeEmf: EntityManagerFactory
+        private lateinit var clusterEmf: EntityManagerFactory
         private lateinit var cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList>
         private lateinit var cordaAvroDeserializer: CordaAvroDeserializer<KeyValuePairList>
 
@@ -432,9 +436,11 @@ class MembershipPersistenceTest {
                 cordaAvroSerializationFactory.createAvroDeserializer({ }, KeyValuePairList::class.java)
             val dbInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
             vnodeEmf = dbInstaller.setupDatabase(vnodeDbInfo, "vnode-vault", MembershipEntities.vnodeClasses)
-            dbInstaller.setupClusterDatabase(clusterDbInfo, "config", ConfigurationEntities.classes).close()
+            clusterEmf = dbInstaller.setupClusterDatabase(clusterDbInfo, "config", MembershipEntities.clusterClasses)
+            dbInstaller.setupClusterDatabase(clusterDbInfo, "config", ConfigurationEntities.classes)
 
             entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, MembershipEntities.vnodeClasses)
+            entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, MembershipEntities.clusterClasses)
 
             setupConfig()
             dbConnectionManager.startAndWait()
@@ -1436,6 +1442,64 @@ class MembershipPersistenceTest {
         }
     }
 
+    @Test
+    fun `can persist static network info to cluster DB`() {
+        val groupId = UUID(0, 1).toString()
+        val groupParameters = KeyValuePairList(listOf(KeyValuePair("key", "value")))
+        val pubKey = "pubKey".toByteArray()
+        val privateKey = "privateKey".toByteArray()
+        val initialVersion = clusterEmf.createEntityManager().transaction {
+            val serializedParams = cordaAvroSerializer.serialize(groupParameters)
+            assertThat(serializedParams).isNotNull
+            it.persist(
+                StaticNetworkInfoEntity(
+                    groupId,
+                    pubKey,
+                    privateKey,
+                    serializedParams!!
+                )
+            )
+            it.find(StaticNetworkInfoEntity::class.java, groupId).version
+        }
+        assertThat(initialVersion).isEqualTo(1)
+
+        val newStaticNetworkInfo = StaticNetworkInfo(
+            groupId,
+            KeyValuePairList(listOf(KeyValuePair("newKey", "newValue")) + groupParameters.items),
+            ByteBuffer.wrap(pubKey),
+            ByteBuffer.wrap(privateKey),
+            initialVersion
+        )
+        val result = assertDoesNotThrow {
+            membershipPersistenceClientWrapper.updateStaticNetworkInfo(newStaticNetworkInfo).getOrThrow()
+        }
+
+        // Assert returned value is as expected
+        assertThat(result.groupId).isEqualTo(groupId)
+        assertThat(result.groupParameters.items)
+            .hasSize(2)
+            .containsExactlyInAnyOrderElementsOf(
+                listOf(KeyValuePair("newKey", "newValue"), KeyValuePair("key", "value"))
+            )
+        assertThat(result.mgmPublicSigningKey.array()).isEqualTo(pubKey)
+        assertThat(result.mgmPrivateSigningKey.array()).isEqualTo(privateKey)
+        assertThat(result.version).isEqualTo(initialVersion + 1)
+
+        // Assert persisted value is as expected
+        clusterEmf.createEntityManager().transaction {
+            val persisted = it.find(StaticNetworkInfoEntity::class.java, groupId)
+            assertThat(persisted.groupId).isEqualTo(groupId)
+            assertThat(persisted.groupParameters.deserializeContextAsMap())
+                .hasSize(2)
+                .containsExactlyInAnyOrderEntriesOf(
+                    mapOf("newKey" to "newValue", "key" to "value")
+                )
+            assertThat(persisted.mgmPublicKey).isEqualTo(pubKey)
+            assertThat(persisted.mgmPrivateKey).isEqualTo(privateKey)
+            assertThat(persisted.version).isEqualTo(initialVersion + 1)
+        }
+    }
+
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
         cordaAvroDeserializer.deserialize(this)
             ?.items
@@ -1523,6 +1587,8 @@ class MembershipPersistenceTest {
         override val bytes: ByteArray
             get() = serialisedParams
                 ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function")
+        override val hash: SecureHash
+            get() = bytes.hash()
 
         override fun getModifiedTime() = clock.instant()
         override fun getNotaries(): List<NotaryInfo> = emptyList()

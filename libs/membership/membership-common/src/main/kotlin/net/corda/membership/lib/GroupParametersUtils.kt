@@ -3,15 +3,10 @@ package net.corda.membership.lib
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.libs.packaging.hash
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.GroupParameters
 import org.slf4j.Logger
 
 const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"
@@ -37,8 +32,10 @@ fun updateExistingNotaryService(
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
     notaryDetails.servicePlugin?.let {
         require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
-            throw MembershipPersistenceException("Cannot add notary to notary service " +
-                    "'$notaryServiceName' - plugin types do not match.")
+            throw MembershipPersistenceException(
+                "Cannot add notary to notary service " +
+                        "'$notaryServiceName' - plugin types do not match."
+            )
         }
     }
     val notaryKeys = currentParameters.entries
@@ -87,8 +84,10 @@ fun addNewNotaryService(
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
     requireNotNull(notaryDetails.servicePlugin) {
-        throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
-                " specified to create new notary service '$notaryServiceName'.")
+        throw MembershipPersistenceException(
+            "Cannot add notary to group parameters - notary plugin must be" +
+                    " specified to create new notary service '$notaryServiceName'."
+        )
     }
     val newNotaryServiceNumber = currentParameters
         .filter { notaryServiceRegex.matches(it.key) }.size
@@ -111,17 +110,4 @@ fun addNewNotaryService(
         )
     }
     return newEpoch to KeyValuePairList(parametersWithUpdatedEpoch + newService)
-}
-
-/**
- * Returns the [SecureHash] of the group parameters sorted alphabetically by key.
- * Sorting the properties is essential to ensure a consistent hash.
- */
-fun GroupParameters.hash(): SecureHash = when (this) {
-    is InternalGroupParameters -> bytes.hash(DigestAlgorithmName.SHA2_256)
-    else -> throw CordaRuntimeException(
-        "Group parameters implementation must implement " +
-                "${InternalGroupParameters::class.java.simpleName} to give the hash function access to the underlying" +
-                "byte array for the group parameters."
-    )
 }

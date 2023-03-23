@@ -83,15 +83,16 @@ class NetworkInfoDBWriterImpl(
                 groupIdFromJson(groupPolicy)
             } catch (ex: CordaRuntimeException) {
                 logger.error("Couldn't parse the group ID required to create the static network information.", ex)
-                return@let null
+                throw ex
             }
 
-            if (em.find(StaticNetworkInfoEntity::class.java, groupId) != null) {
+            val existingInfo = em.find(StaticNetworkInfoEntity::class.java, groupId)
+            if (existingInfo != null) {
                 logger.warn(
                     "Found existing configuration for static network [$groupId]. Skipping persistence of " +
                             "new configuration"
                 )
-                return@let null
+                return@let existingInfo
             }
 
             val (encodedPublic, encodedPrivate) = KeyPairGenerator
@@ -106,7 +107,9 @@ class NetworkInfoDBWriterImpl(
                         KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                     )
                 )
-            ) ?: return@let null
+            ) ?: throw CordaRuntimeException(
+                "Failed to serialize KeyValuePairList for static network group parameters."
+            )
 
             StaticNetworkInfoEntity(
                 groupId,
@@ -126,7 +129,12 @@ class NetworkInfoDBWriterImpl(
         groupPolicyJson
     } else {
         try {
-            val groupId = groupIdFromJson(groupPolicyJson)
+            val groupId = try {
+                groupIdFromJson(groupPolicyJson)
+            } catch (ex: CordaRuntimeException) {
+                logger.error("Couldn't parse the group ID required to create the static network information.", ex)
+                throw ex
+            }
             val staticNetworkInfo = em.find(
                 StaticNetworkInfoEntity::class.java,
                 groupId
@@ -139,7 +147,7 @@ class NetworkInfoDBWriterImpl(
 
             val mgmSessionKey = keyEncodingService.decodePublicKey(staticNetworkInfo.mgmPublicKey)
             val staticMgmInfo = mapOf(
-                PARTY_NAME to "O=Corda-Static-Network-MGM, OU=$groupId, L=London, C=GB",
+                PARTY_NAME to "O=Corda-Static-Network-MGM, L=London, C=GB",
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(mgmSessionKey),
                 SESSION_KEY_HASH to mgmSessionKey.calculateHash().value,
                 SESSION_KEY_SIGNATURE_SPEC to mgmSignatureSpec.signatureName,
@@ -155,8 +163,8 @@ class NetworkInfoDBWriterImpl(
 
             mapper.writeValueAsString(groupPolicy)
         } catch (ex: Exception) {
-            logger.warn("Failed to inject static network MGM info into uploaded CPI group policy file.", ex)
-            groupPolicyJson
+            logger.error("Failed to inject static network MGM info into uploaded CPI group policy file.", ex)
+            throw ex
         }
     }
 }

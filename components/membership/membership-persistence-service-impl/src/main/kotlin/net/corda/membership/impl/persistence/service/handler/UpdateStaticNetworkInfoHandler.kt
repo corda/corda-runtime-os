@@ -5,6 +5,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
+import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
 import javax.persistence.LockModeType
@@ -36,30 +37,45 @@ internal class UpdateStaticNetworkInfoHandler(
                 "No existing static network configuration. Cannot update."
             )
 
-            if (entity.version != request.info.version) {
-                throw MembershipPersistenceException(
-                    "Current persisted version of the static network information does not match the version in " +
-                            "the request to update."
-                )
-            } else {
-                // Only update the persisted record if the request contains a valid change.
-                var updated = false
+            val persistedVersion = entity.version
+            val proposedVersion = request.info.version
 
+            val persistedGroupParams = deserializer.deserializeKeyValuePairList(entity.groupParameters)
+            val proposedGroupParams = request.info.groupParameters
+
+            if (persistedVersion == proposedVersion) {
                 // Update persisted group params.
-                val currentParams = deserializer.deserialize(entity.groupParameters)
-                val newParams = request.info.groupParameters
-                if (currentParams != newParams) {
-                    entity.groupParameters = serializer.serialize(newParams)
+                if (!groupParametersAreEqual(persistedGroupParams, proposedGroupParams)) {
+                    entity.groupParameters = serializer.serialize(proposedGroupParams)
                         ?: throw MembershipPersistenceException("Could not serialize new group parameters.")
-                    updated = true
-                }
-
-                if (updated) {
                     em.merge(entity)
+                    em.flush()
+                }
+            } else {
+                if (persistedVersion == proposedVersion + 1
+                    && groupParametersAreEqual(persistedGroupParams, proposedGroupParams)
+                ) {
+                    logger.info("Attempted to update the group parameters for a static network but they are " +
+                            "unchanged. Returning the previously persisted version.")
+                } else {
+                    throw MembershipPersistenceException(
+                        "Current persisted version of the static network information does not match the version in " +
+                                "the request to update."
+                    )
                 }
             }
 
             StaticNetworkInfoQueryResponse(entity.toAvro(deserializer))
         }
+    }
+
+    private fun groupParametersAreEqual(params1: KeyValuePairList, params2: KeyValuePairList): Boolean {
+        return params1.normaliseForComparison() == params2.normaliseForComparison()
+    }
+
+    private fun KeyValuePairList.normaliseForComparison(): KeyValuePairList {
+        return KeyValuePairList(
+            items.filter { it.key != MODIFIED_TIME_KEY }
+        )
     }
 }

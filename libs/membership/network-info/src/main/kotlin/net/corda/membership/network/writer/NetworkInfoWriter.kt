@@ -21,7 +21,15 @@ interface NetworkInfoWriter {
     ): StaticNetworkInfoEntity?
 
     /**
+     * Injects a static network MGM into a group policy if the group policy is a static network group policy.
+     * The static network MGM details are taken from the database and are expected to be already persisted.
      *
+     * @see parseAndPersistStaticNetworkInfo
+     *
+     * @param em The [EntityManager] used to persist the static network information from within an existing transaction.
+     * @param groupPolicyJson The group policy to update and return
+     *
+     * @return the updated group policy string.
      */
     fun injectStaticNetworkMgm(
         em: EntityManager,

@@ -75,6 +75,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -84,7 +85,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -253,6 +253,7 @@ class StaticMemberRegistrationServiceTest {
             mockSignedGroupParameters
         )
         on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+        on { updateStaticNetworkInfo(any()) } doAnswer { MembershipPersistenceResult.Success(it.getArgument(0)) }
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -956,6 +957,97 @@ class StaticMemberRegistrationServiceTest {
             assertTrue(registrationService.isRunning)
             registrationService.stop()
             assertFalse(registrationService.isRunning)
+        }
+    }
+
+    @Nested
+    inner class StaticNetworkInfoTests {
+
+        @Test
+        fun `Failure to update static network info will be retried`() {
+            whenever(persistenceClient.updateStaticNetworkInfo(any()))
+                .doAnswer {
+                    // Overwrite the behaviour for next call so it succeeds
+                    whenever(persistenceClient.updateStaticNetworkInfo(any())).doAnswer {
+                        MembershipPersistenceResult.Success(it.getArgument(0))
+                    }
+                    MembershipPersistenceResult.Failure("Failed")
+                }
+
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
+
+            verify(membershipQueryClient, times(2)).queryStaticNetworkInfo(any())
+            verify(persistenceClient, times(2)).updateStaticNetworkInfo(any())
+        }
+
+        @Test
+        fun `Failure to update static network info will be retried up to the configured max times and can succeed on a later retry`() {
+            val maxRetries = 10
+            var attempts = 0
+            whenever(persistenceClient.updateStaticNetworkInfo(any()))
+                .doAnswer {
+                    if(++attempts == maxRetries-1 ) {
+                        // Overwrite the behaviour for next call so it succeeds
+                        whenever(persistenceClient.updateStaticNetworkInfo(any())).doAnswer {
+                            MembershipPersistenceResult.Success(it.getArgument(0))
+                        }
+                    }
+                    MembershipPersistenceResult.Failure("Failed")
+                }
+
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
+
+            verify(membershipQueryClient, times(maxRetries)).queryStaticNetworkInfo(any())
+            verify(persistenceClient, times(maxRetries)).updateStaticNetworkInfo(any())
+        }
+
+        @Test
+        fun `Failure to update static network info will be retried up to the configured max times and then fail`() {
+            val maxRetries = 10
+            whenever(persistenceClient.updateStaticNetworkInfo(any()))
+                .doAnswer {
+                    MembershipPersistenceResult.Failure("my test error")
+                }
+
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }.also {
+                assertThat(it.message).contains("my test error")
+            }
+
+            verify(membershipQueryClient, times(maxRetries)).queryStaticNetworkInfo(any())
+            verify(persistenceClient, times(maxRetries)).updateStaticNetworkInfo(any())
         }
     }
 }

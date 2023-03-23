@@ -12,7 +12,6 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
@@ -57,8 +56,8 @@ interface MembershipPersistenceClient : Lifecycle {
 
     /**
      * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist
-     * the initial snapshot that contains basic fields defined in [GroupParameters]. The group parameters persisted in
-     * this method do not contain other properties such as notary service information.
+     * the initial snapshot that contains basic fields defined in [InternalGroupParameters]. The group parameters
+     * persisted in this method do not contain other properties such as notary service information.
      *
      * This operation is idempotent.
      *

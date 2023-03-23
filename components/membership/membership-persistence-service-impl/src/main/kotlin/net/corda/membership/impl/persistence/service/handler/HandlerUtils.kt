@@ -27,6 +27,6 @@ fun CordaAvroDeserializer<KeyValuePairList>.deserializeKeyValuePairList(
     content: ByteArray
 ): KeyValuePairList {
     return deserialize(content) ?: throw MembershipPersistenceException(
-        "Failed to deserialize key value pair list B."
+        "Failed to deserialize key value pair list."
     )
 }

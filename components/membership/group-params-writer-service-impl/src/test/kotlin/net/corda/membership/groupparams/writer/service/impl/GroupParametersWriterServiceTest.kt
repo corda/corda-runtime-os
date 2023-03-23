@@ -319,6 +319,7 @@ class GroupParametersWriterServiceTest {
                     .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
 
                 it.assertThat(publishedParams.groupParameters.mgmSignature).isNull()
+                it.assertThat(publishedParams.groupParameters.mgmSignatureSpec).isNull()
             }
         }
 

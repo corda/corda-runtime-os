@@ -6,12 +6,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -76,7 +76,7 @@ class TestGroupReader @Activate constructor() : MembershipGroupReader {
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val owningMember: MemberX500Name
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
-    override val groupParameters: GroupParameters
+    override val groupParameters: InternalGroupParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val signedGroupParameters: SignedGroupParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)

@@ -19,6 +19,7 @@ import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -26,7 +27,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -49,6 +49,7 @@ class GroupParametersReaderServiceImplTest {
         val alice = HoldingIdentity(MemberX500Name.parse("O=Alice, L=London, C=GB"), GROUP_ID)
         val bob = HoldingIdentity(MemberX500Name.parse("O=Bob, L=London, C=GB"), GROUP_ID)
         val charlie = HoldingIdentity(MemberX500Name.parse("O=Charlie, L=London, C=GB"), GROUP_ID)
+        val mgm = HoldingIdentity(MemberX500Name.parse("O=Dave, L=London, C=GB"), GROUP_ID)
     }
 
     private val subscriptionHandle: RegistrationHandle = mock()
@@ -88,12 +89,16 @@ class GroupParametersReaderServiceImplTest {
     private val groupParams2: SignedGroupParameters = mock {
         on { epoch } doReturn 2
     }
-    private val allGroupParams = HashMap<HoldingIdentity, SignedGroupParameters>(
-        mapOf(alice to groupParams, bob to groupParams2)
+    private val unsignedGroupParams: UnsignedGroupParameters = mock {
+        on { epoch } doReturn 1
+    }
+    private val allGroupParams = HashMap<HoldingIdentity, InternalGroupParameters>(
+        mapOf(alice to groupParams, bob to groupParams2, mgm to unsignedGroupParams)
     )
     private val groupParametersCache: MemberDataCache<InternalGroupParameters> = mock {
         on { get(eq(alice)) } doReturn groupParams
         on { getAll() } doReturn allGroupParams
+        on { get(mgm) } doReturn unsignedGroupParams
     }
     private val groupParametersReaderService = GroupParametersReaderServiceImpl(
         lifecycleCoordinatorFactory,
@@ -187,7 +192,7 @@ class GroupParametersReaderServiceImplTest {
             val configCaptor = argumentCaptor<SubscriptionConfig>()
             verify(subscriptionFactory).createCompactedSubscription(
                 configCaptor.capture(),
-                any<CompactedProcessor<String, GroupParameters>>(),
+                any<CompactedProcessor<String, InternalGroupParameters>>(),
                 any()
             )
             verify(groupParamsSubscription).start()
@@ -200,7 +205,7 @@ class GroupParametersReaderServiceImplTest {
             verify(groupParamsSubscription).close()
             verify(subscriptionFactory, times(2)).createCompactedSubscription(
                 configCaptor.capture(),
-                any<CompactedProcessor<String, GroupParameters>>(),
+                any<CompactedProcessor<String, InternalGroupParameters>>(),
                 any()
             )
             verify(groupParamsSubscription, times(2)).start()
@@ -241,9 +246,8 @@ class GroupParametersReaderServiceImplTest {
         fun `calling get returns group params as expected`() {
             postConfigChangedEvent()
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
-            with(groupParametersReaderService.get(alice)) {
-                assertThat(this).isEqualTo(groupParams)
-            }
+            assertThat(groupParametersReaderService.get(alice)).isEqualTo(groupParams)
+            assertThat(groupParametersReaderService.get(mgm)).isEqualTo(unsignedGroupParams)
         }
 
         @Test
@@ -256,22 +260,55 @@ class GroupParametersReaderServiceImplTest {
         }
 
         @Test
+        fun `calling get signed returns group params as expected`() {
+            postConfigChangedEvent()
+            postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
+            assertThat(groupParametersReaderService.getSigned(alice)).isEqualTo(groupParams)
+        }
+
+        @Test
+        fun `calling get signed returns null when there are no group params for identity`() {
+            postConfigChangedEvent()
+            postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
+            assertThat(groupParametersReaderService.getSigned(charlie)).isNull()
+        }
+
+        @Test
+        fun `calling get signed returns null when there are no signed group params for identity`() {
+            postConfigChangedEvent()
+            postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
+            assertThat(groupParametersReaderService.getSigned(mgm)).isNull()
+        }
+
+        @Test
         fun `calling get all returns versioned records as expected`() {
             postConfigChangedEvent()
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
             val versionedRecords = groupParametersReaderService.getAllVersionedRecords()?.collect(Collectors.toList())
-            assertThat(versionedRecords?.size).isEqualTo(2)
+            assertThat(versionedRecords?.size).isEqualTo(3)
 
             with(versionedRecords?.first { it.key == alice }) {
                 assertThat(this?.version).isEqualTo(1)
-                assertThat(this?.isDeleted).isFalse()
-                assertThat(this?.value).isEqualTo(groupParams)
+                assertThat(this?.isDeleted).isFalse
+                assertThat(this?.value)
+                    .isInstanceOf(SignedGroupParameters::class.java)
+                    .isEqualTo(groupParams)
             }
 
             with(versionedRecords?.first { it.key == bob }) {
                 assertThat(this?.version).isEqualTo(2)
-                assertThat(this?.isDeleted).isFalse()
-                assertThat(this?.value).isEqualTo(groupParams2)
+                assertThat(this?.isDeleted).isFalse
+                assertThat(this?.value)
+                    .isInstanceOf(SignedGroupParameters::class.java)
+                    .isEqualTo(groupParams2)
+            }
+
+            with(versionedRecords?.first { it.key == mgm }) {
+                assertThat(this?.version).isEqualTo(1)
+                assertThat(this?.isDeleted).isFalse
+                assertThat(this?.value)
+                    .isInstanceOf(UnsignedGroupParameters::class.java)
+                    .isEqualTo(unsignedGroupParams)
             }
         }
     }

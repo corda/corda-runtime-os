@@ -22,7 +22,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
@@ -60,7 +59,7 @@ class MembershipPackageFactory(
         membersSignatures: Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>,
         membersToSend: Collection<MemberInfo>,
         hashCheck: SecureHash,
-        groupParameters: GroupParameters,
+        groupParameters: InternalGroupParameters,
     ): MembershipPackage {
         val mgmSignatureSpec = mgmSigner.signatureSpec.toAvro()
         val signedMembers = membersToSend.map {
@@ -80,12 +79,9 @@ class MembershipPackageFactory(
                 .setMgmSignatureSpec(mgmSignatureSpec)
                 .build()
         }
-        val serialisedParams = (groupParameters as? InternalGroupParameters)?.bytes
-            ?: serializer.serialize(groupParameters.toAvro())
-            ?: throw CordaRuntimeException("Failed to serialize group parameters.")
         val signedGroupParameters = SignedGroupParameters(
-            ByteBuffer.wrap(serialisedParams),
-            mgmSigner.sign(serialisedParams).toAvro(),
+            ByteBuffer.wrap(groupParameters.bytes),
+            mgmSigner.sign(groupParameters.bytes).toAvro(),
             mgmSigner.signatureSpec.toAvro()
         )
         val membership = SignedMemberships.newBuilder()

@@ -126,15 +126,15 @@ class GroupParametersReconciler(
                     entity.signatureSpec, null, null
                 )
             } else null to null
-            val signedGroupParameters = AvroGroupParameters(entity.parameters.buffer, signature, signatureSpec)
-            val params = groupParametersFactory.create(signedGroupParameters)
 
             Stream.of(
                 object : VersionedRecord<HoldingIdentity, InternalGroupParameters> {
                     override val version = entity.epoch
                     override val isDeleted = false
                     override val key = context.virtualNodeInfo.holdingIdentity
-                    override val value = params
+                    override val value = groupParametersFactory.create(
+                        AvroGroupParameters(entity.parameters.buffer, signature, signatureSpec)
+                    )
                 }
             )
         } ?: Stream.empty()

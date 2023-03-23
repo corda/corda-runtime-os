@@ -3,6 +3,7 @@ package net.corda.membership.impl.read.reader
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -14,7 +15,6 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
@@ -32,7 +32,7 @@ class MembershipGroupReaderImpl(
                 "Failed to find member list for ID='${holdingIdentity.shortHash}, Group ID='${holdingIdentity.groupId}'"
             )
 
-    override val groupParameters: GroupParameters?
+    override val groupParameters: InternalGroupParameters?
         get() = groupParametersReaderService.get(holdingIdentity)
 
     override val signedGroupParameters: SignedGroupParameters?

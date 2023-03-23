@@ -1,6 +1,7 @@
 package net.corda.membership.lib
 
 import net.corda.data.KeyValuePairList
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 
 /**
@@ -9,8 +10,16 @@ import net.corda.v5.membership.GroupParameters
  */
 interface InternalGroupParameters: GroupParameters {
     /**
-     * The AVRO serialised bytes that the MGM signed over during distribution.
+     * The AVRO serialized group parameters.
      * This byte array can be deserialized as a [KeyValuePairList].
+     * The serialized form of the group parameters is always the source of truth over deserialized params to support
+     * signing.
      */
     val bytes: ByteArray
+
+    /**
+     * Returns the [SecureHash] of the group parameters. The group parameters hash is a hash over the group parameters
+     * serialised byte array available as [bytes].
+     */
+    val hash: SecureHash
 }

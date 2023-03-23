@@ -9,6 +9,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
@@ -28,6 +29,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
@@ -37,6 +39,7 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.libs.configuration.SmartConfigFactory
@@ -1298,6 +1301,73 @@ class MembershipPersistenceClientImplTest {
             assertThat(sentRequest.activatedMember).isEqualTo(bobX500Name.toString())
             assertThat(sentRequest.serialNumber).isEqualTo(SERIAL)
             assertThat(sentRequest.reason).isEqualTo(REASON)
+        }
+    }
+
+    @Nested
+    inner class UpdateStaticNetworkInfoTest {
+
+        private val groupId = UUID(0, 1).toString()
+        private val groupParameters = KeyValuePairList(emptyList())
+        private val mgmPublicSigningKey = ByteBuffer.wrap("123".toByteArray())
+        private val mgmPrivateSigningKey = ByteBuffer.wrap("456".toByteArray())
+        private val version = 1
+
+        private val info = StaticNetworkInfo(
+            groupId,
+            groupParameters,
+            mgmPublicSigningKey,
+            mgmPrivateSigningKey,
+            version
+        )
+
+        @Test
+        fun `Assert request and response are as expected when persisting`() {
+            val queryResponse = StaticNetworkInfoQueryResponse(info)
+
+            postConfigChangedEvent()
+            mockPersistenceResponse(queryResponse)
+
+            val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
+
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            verify(rpcSender).sendRequest(argument.capture())
+
+            val persistenceRequest = argument.firstValue as? MembershipPersistenceRequest
+            assertThat(persistenceRequest).isNotNull
+            assertThat(persistenceRequest!!.context.holdingIdentity).isNull()
+
+            val sentRequest = (persistenceRequest.request as? UpdateStaticNetworkInfo)!!
+            assertThat(sentRequest.info).isEqualTo(info)
+
+            assertThat(output).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+            assertThat(output.getOrThrow()).isEqualTo(info)
+        }
+
+        @Test
+        fun `Assert persistence result is failure if persistence failed`() {
+            val error = "foo-bar"
+
+            postConfigChangedEvent()
+            mockPersistenceResponse(PersistenceFailedResponse(error))
+
+            val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
+
+            assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+            assertThat((output as MembershipPersistenceResult.Failure).errorMsg).isEqualTo(error)
+        }
+
+        @Test
+        fun `Assert persistence result is failure if persistence response is unexpected`() {
+            class BadResponse
+
+            postConfigChangedEvent()
+            mockPersistenceResponse(BadResponse())
+
+            val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
+
+            assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+            assertThat((output as MembershipPersistenceResult.Failure).errorMsg).contains("Unexpected response")
         }
     }
 }

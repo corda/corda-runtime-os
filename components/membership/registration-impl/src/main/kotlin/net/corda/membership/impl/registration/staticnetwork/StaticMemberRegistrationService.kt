@@ -124,6 +124,8 @@ class StaticMemberRegistrationService(
             this::class.java.getResource("/static_network_dummy_certificate.pem")!!.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
             this::class.java.getResource("/static_network_dummy_session_key.pem")!!.readText()
+
+        private const val MAX_PERSISTENCE_RETRIES = 10
     }
 
     @Activate
@@ -240,8 +242,8 @@ class StaticMemberRegistrationService(
         if (latestStatuses.isNotEmpty()) {
             throw InvalidMembershipRegistrationException(
                 "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
-                    "See registrations: ${latestStatuses.map { it.registrationId }}. " +
-                    "Can not re-register."
+                        "See registrations: ${latestStatuses.map { it.registrationId }}. " +
+                        "Can not re-register."
             )
         }
         try {
@@ -293,30 +295,9 @@ class StaticMemberRegistrationService(
         memberInfo: MemberInfo,
         staticMemberList: List<StaticMember>
     ) {
-        val currentStaticNetworkInfo = membershipQueryClient
-            .queryStaticNetworkInfo(memberInfo.groupId)
-            .getOrThrow()
+        val staticNetworkInfo = getCurrentStaticNetworkConfigWithRetry(memberInfo)
 
-        // If the current member is a notary then the group parameters need to be updated
-        val newStaticNetworkInfo = if (memberInfo.isNotary()) {
-            StaticNetworkInfo(
-                currentStaticNetworkInfo.groupId,
-                currentStaticNetworkInfo.groupParameters.addNotary(
-                    memberInfo,
-                    keyEncodingService,
-                    clock
-                ),
-                currentStaticNetworkInfo.mgmPublicSigningKey,
-                currentStaticNetworkInfo.mgmPrivateSigningKey,
-                currentStaticNetworkInfo.version
-            ).also {
-                persistenceClient.updateStaticNetworkInfo(it)
-            }
-        } else {
-            currentStaticNetworkInfo
-        }
-
-        val avroSignedGroupParameters = newStaticNetworkInfo.signGroupParameters(
+        val avroSignedGroupParameters = staticNetworkInfo.signGroupParameters(
             keyValuePairListSerializer,
             keyEncodingService,
             groupParametersFactory
@@ -570,5 +551,41 @@ class StaticMemberRegistrationService(
             )
         }
         return result
+    }
+
+    private fun getCurrentStaticNetworkConfigWithRetry(
+        memberInfo: MemberInfo,
+        attempt: Int = 0
+    ): StaticNetworkInfo {
+        return try {
+            val currentStaticNetworkInfo = membershipQueryClient
+                .queryStaticNetworkInfo(memberInfo.groupId)
+                .getOrThrow()
+
+            // If the current member is a notary then the group parameters need to be updated
+            if (memberInfo.isNotary()) {
+                StaticNetworkInfo(
+                    currentStaticNetworkInfo.groupId,
+                    currentStaticNetworkInfo.groupParameters.addNotary(
+                        memberInfo,
+                        keyEncodingService,
+                        clock
+                    ),
+                    currentStaticNetworkInfo.mgmPublicSigningKey,
+                    currentStaticNetworkInfo.mgmPrivateSigningKey,
+                    currentStaticNetworkInfo.version
+                ).also {
+                    persistenceClient.updateStaticNetworkInfo(it).getOrThrow()
+                }
+            } else {
+                currentStaticNetworkInfo
+            }
+        } catch (ex: MembershipPersistenceResult.PersistenceRequestException) {
+            if (attempt < MAX_PERSISTENCE_RETRIES - 1) {
+                getCurrentStaticNetworkConfigWithRetry(memberInfo, attempt + 1)
+            } else {
+                throw ex
+            }
+        }
     }
 }

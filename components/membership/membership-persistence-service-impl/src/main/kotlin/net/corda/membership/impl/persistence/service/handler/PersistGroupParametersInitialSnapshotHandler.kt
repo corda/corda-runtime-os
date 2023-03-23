@@ -39,12 +39,6 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             KeyValuePairList::class.java
         )
 
-    private fun deserializeProperties(content: ByteArray): KeyValuePairList {
-        return deserializer.deserialize(content) ?: throw MembershipPersistenceException(
-            "Failed to deserialize key value pair list C."
-        )
-    }
-
     override fun invoke(
         context: MembershipRequestContext,
         request: PersistGroupParametersInitialSnapshot
@@ -64,7 +58,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 LockModeType.PESSIMISTIC_WRITE
             )
             if (currentGroupParameters != null) {
-                val currentParameters = deserializeProperties(currentGroupParameters.parameters).toMap()
+                val currentParameters = deserializer.deserializeKeyValuePairList(currentGroupParameters.parameters).toMap()
                 if (currentParameters.removeTime() != groupParameters.toMap().removeTime()) {
                     throw MembershipPersistenceException(
                         "Group parameters initial snapshot already exist with different parameters."

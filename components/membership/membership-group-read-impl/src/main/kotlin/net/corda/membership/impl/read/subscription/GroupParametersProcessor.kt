@@ -10,7 +10,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class GroupParametersProcessor(
     private val groupParametersCache: MemberDataCache<InternalGroupParameters>,
@@ -36,7 +35,7 @@ class GroupParametersProcessor(
             try {
                 groupParametersCache.put(
                     it.viewOwner.toCorda(),
-                    createGroupParameters(it.groupParameters)
+                    groupParametersFactory.create(it.groupParameters)
                 )
             } catch (ex: FailedGroupParametersDeserialization) {
                 logger.error("Failed to deserialise group parameters. Group parameters cache was not updated.", ex)
@@ -49,14 +48,11 @@ class GroupParametersProcessor(
             try {
                 groupParametersCache.put(
                     it.value.viewOwner.toCorda(),
-                    createGroupParameters(it.value.groupParameters)
+                    groupParametersFactory.create(it.value.groupParameters)
                 )
             } catch (ex: FailedGroupParametersDeserialization) {
                 logger.error("Failed to deserialise group parameters. Group parameters cache was not updated.", ex)
             }
         }
     }
-
-    private fun createGroupParameters(signedGroupParameters: AvroGroupParameters) =
-        groupParametersFactory.create(signedGroupParameters)
 }

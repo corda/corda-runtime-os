@@ -273,7 +273,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes, retryAllExceptions = true, waitBetween = 2.seconds) {
+                eventually(duration = 1.minutes, retryAllExceptions = true) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
