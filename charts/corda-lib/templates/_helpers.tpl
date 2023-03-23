@@ -120,6 +120,55 @@ Initial admin user password secret name
 {{- end }}
 
 {{/*
+Initial REST TLS keystore secret name
+*/}}
+{{- define "corda.defaultRestTlsSecretName" -}}
+{{ default (printf "%s-rest-tls-keystore" (include "corda.fullname" .)) }}
+{{- end }}
+
+{{/*
+REST TLS certificate secret name
+*/}}
+{{- define "corda.restTlsCrtSecretName" -}}
+{{ .Values.bootstrap.rest.tls.crt.valueFrom.secretKeyRef.name | default (include "corda.defaultRestTlsSecretName" .) }}
+{{- end }}
+
+{{/*
+REST TLS certificate key
+*/}}
+{{- define "corda.restTlsCrtSecretKey" -}}
+{{ .Values.bootstrap.rest.tls.crt.valueFrom.secretKeyRef.key | default "crt" }}
+{{- end }}
+
+{{/*
+REST TLS private key secret name
+*/}}
+{{- define "corda.restTlsKeySecretName" -}}
+{{ .Values.bootstrap.rest.tls.key.valueFrom.secretKeyRef.name | default (include "corda.defaultRestTlsSecretName" .) }}
+{{- end }}
+
+{{/*
+REST TLS private key secret key
+*/}}
+{{- define "corda.restTlsKeySecretKey" -}}
+{{ .Values.bootstrap.rest.tls.key.valueFrom.secretKeyRef.key | default "key" }}
+{{- end }}
+
+{{/*
+REST TLS CA cert secret name
+*/}}
+{{- define "corda.restTlsCaSecretName" -}}
+{{ .Values.bootstrap.rest.tls.ca.valueFrom.secretKeyRef.name | default (include "corda.defaultRestTlsSecretName" .) }}
+{{- end }}
+
+{{/*
+REST TLS CA cert secret key
+*/}}
+{{- define "corda.restTlsCaSecretKey" -}}
+{{ .Values.bootstrap.rest.tls.ca.valueFrom.secretKeyRef.key | default "ca" }}
+{{- end }}
+
+{{/*
 Initial admin user secret username key
 */}}
 {{- define "corda.initialAdminUserSecretUsernameKey" -}}
