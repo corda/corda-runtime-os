@@ -62,7 +62,6 @@ class VaultNamedQueryBuilderImpl(
             filter,
             mapper,
             null
-        )
-        )
+        ))
     }
 }

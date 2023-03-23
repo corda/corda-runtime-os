@@ -15,7 +15,7 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
         val offset: Int,
         val limit: Int
     )
-    data class CustomQueryFlowResponse(val results: List<String>)
+    data class CustomQueryFlowResponse(val newOffset: Int, val results: List<String>)
 
     private companion object {
         const val DUMMY_QUERY_NAME = "UTXO_DUMMY_QUERY"
@@ -34,13 +34,14 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
             CustomQueryFlowRequest::class.java
         )
 
-        val txIds = utxoLedgerService.query(DUMMY_QUERY_NAME, String::class.java)
+        val resultSet = utxoLedgerService.query(DUMMY_QUERY_NAME, String::class.java)
            .setParameter("testField", "value")
            .setOffset(request.offset)
            .setLimit(request.limit)
            .execute()
-           .results
 
-        return jsonMarshallingService.format(CustomQueryFlowResponse(txIds))
+        return jsonMarshallingService.format(
+            CustomQueryFlowResponse(resultSet.newOffset, resultSet.results)
+        )
     }
 }

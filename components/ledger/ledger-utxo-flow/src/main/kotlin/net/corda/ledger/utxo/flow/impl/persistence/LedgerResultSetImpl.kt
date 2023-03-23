@@ -1,8 +1,9 @@
-package net.corda.flow.application.persistence.query
+package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.v5.application.persistence.PagedQuery
 
-data class ResultSetImpl<R>(
+// TODO Should we have a common `PagedQuery.ResultSet` implementation?
+data class LedgerResultSetImpl<R>(
     private val newOffset: Int,
     private val size: Int,
     private val hasNextPage: Boolean,

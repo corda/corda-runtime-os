@@ -29,7 +29,6 @@ class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
     }
 
     override fun create(queryName: String): VaultNamedQueryBuilder {
-        logger.info("Creating custom query with name: $queryName")
         logger.debug { "Creating custom query with name: $queryName" }
         return VaultNamedQueryBuilderImpl(vaultNamedQueryRegistry, queryName)
     }

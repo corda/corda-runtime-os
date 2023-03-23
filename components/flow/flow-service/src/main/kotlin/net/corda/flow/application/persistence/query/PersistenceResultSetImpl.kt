@@ -1,13 +1,12 @@
-package net.corda.ledger.persistence.query.execution.impl
+package net.corda.flow.application.persistence.query
 
 import net.corda.v5.application.persistence.PagedQuery
 
-// TODO need a common class but need to solve OSGi issues
-data class LedgerResultSetImpl<R>(
-    private val newOffset: Int,
+data class PersistenceResultSetImpl<R>(
+    private val results: List<R>,
     private val size: Int,
-    private val hasNextPage: Boolean,
-    private val results: List<R>
+    private val newOffset: Int,
+    private val hasNextPage: Boolean
 ) : PagedQuery.ResultSet<R> {
     override fun getNewOffset() = newOffset
 

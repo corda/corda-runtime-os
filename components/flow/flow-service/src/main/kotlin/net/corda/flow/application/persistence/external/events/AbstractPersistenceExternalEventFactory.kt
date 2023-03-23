@@ -11,7 +11,7 @@ import net.corda.virtualnode.toAvro
 import java.nio.ByteBuffer
 
 abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
-    ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>> {
+    ExternalEventFactory<PARAMETERS, EntityResponse, EntityResponseDto> {
 
     abstract fun createRequest(parameters: PARAMETERS): Any
 
@@ -32,7 +32,19 @@ abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): List<ByteBuffer> {
-        return response.results
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): EntityResponseDto {
+        return EntityResponseDto(
+            response.newOffset,
+            response.hasNextPage,
+            response.size,
+            response.results
+        )
     }
 }
+
+data class EntityResponseDto(
+    val newOffset: Int,
+    val hasNextPage: Boolean,
+    val size: Int,
+    val results: List<ByteBuffer>
+)

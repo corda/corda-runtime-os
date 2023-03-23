@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.persistence.query.execution.impl.LedgerResultSetImpl
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.v5.application.persistence.PagedQuery
@@ -73,7 +72,6 @@ class VaultNamedParameterizedQueryImpl<T>(
         )
     }
 
-    // TODO where to use this even?
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
         this.timestampLimit = timestampLimit
         return this

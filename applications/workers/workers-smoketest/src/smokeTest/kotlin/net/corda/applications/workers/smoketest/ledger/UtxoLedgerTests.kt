@@ -97,7 +97,7 @@ class UtxoLedgerTests {
             aliceHoldingId,
             mapOf(
                 "offset" to 0,
-                "limit" to 100
+                "limit" to 1000
             ),
             "net.cordapp.demo.utxo.UtxoCustomQueryDemoFlow"
         )
@@ -110,10 +110,11 @@ class UtxoLedgerTests {
 
         assertThat(parsedResponse.results).isNotEmpty
         assertThat(parsedResponse.results).hasSizeGreaterThan(1)
+        assertThat(parsedResponse.newOffset).isEqualTo(0)
     }
 
     @Test
-    fun `Utxo Ledger - custom query can be executed and only one result is returned if limit is 1`() {
+    fun `Utxo Ledger - custom query can be executed and only one result is returned if limit is 1 and new offset is set`() {
         val customQueryFlowId = startRpcFlow(
             aliceHoldingId,
             mapOf(
@@ -131,6 +132,7 @@ class UtxoLedgerTests {
 
         assertThat(parsedResponse.results).isNotEmpty
         assertThat(parsedResponse.results).hasSize(1)
+        assertThat(parsedResponse.newOffset).isGreaterThan(0)
     }
 
     @Test
@@ -237,6 +239,6 @@ class UtxoLedgerTests {
         val errorMessage: String?
     )
 
-    data class CustomQueryFlowResponse(val results: List<String>)
+    data class CustomQueryFlowResponse(val newOffset: Int, val results: List<String>)
 }
 

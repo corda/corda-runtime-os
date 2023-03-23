@@ -33,19 +33,18 @@ class PagedFindQuery<R : Any>(
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<R> {
-        val deserialized = wrapWithPersistenceException {
+        val entityResponse = wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindAllExternalEventFactory::class.java,
                 FindAllParameters(entityClass, offset, limit)
             )
-        }.map { serializationService.deserialize(it.array(), entityClass) }
+        }
 
-        // TODO how to populate this
-        return ResultSetImpl(
-            0,
-            limit,
-            false,
-            deserialized
+        return PersistenceResultSetImpl(
+            entityResponse.results.map { serializationService.deserialize(it.array(), entityClass) },
+            entityResponse.size,
+            entityResponse.newOffset,
+            entityResponse.hasNextPage
         )
     }
 }

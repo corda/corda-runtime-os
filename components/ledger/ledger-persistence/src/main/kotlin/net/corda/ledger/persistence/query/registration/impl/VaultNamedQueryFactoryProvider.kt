@@ -11,7 +11,6 @@ import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope
 import org.slf4j.LoggerFactory
 
@@ -33,8 +32,6 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
     @Suspendable
     override fun accept(context: MutableSandboxGroupContext) {
         val metadataServices = context.getMetadataServices<VaultNamedQueryFactory>()
-
-        logger.info("Found ${metadataServices.size} custom ledger queries")
 
         if (logger.isDebugEnabled) {
             logger.debug("Found ${metadataServices.size} custom ledger queries.")

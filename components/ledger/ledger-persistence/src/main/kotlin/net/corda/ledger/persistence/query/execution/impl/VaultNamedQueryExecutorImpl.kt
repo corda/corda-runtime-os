@@ -49,7 +49,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
         request: ExecuteVaultNamedQueryRequest
     ): EntityResponse {
 
-        log.info("Executing query: ${request.queryName}")
+        log.debug("Executing query: ${request.queryName}")
 
         val vaultNamedQuery = registry.getQuery(request.queryName)
 
@@ -61,7 +61,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                 // TODO For now we only select the tx id but we might need the whole entity?
                 val query = em.createNativeQuery(
                     "SELECT transaction_id FROM $UTXO_VISIBLE_TX_TABLE " +
-                            vaultNamedQuery.whereJson
+                            vaultNamedQuery.whereJson // TODO Add timestamp limit logic
                 )
 
                 request.queryParameters.forEach {
