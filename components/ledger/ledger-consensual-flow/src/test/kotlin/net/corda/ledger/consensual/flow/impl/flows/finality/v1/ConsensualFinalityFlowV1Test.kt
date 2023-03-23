@@ -73,18 +73,10 @@ class ConsensualFinalityFlowV1Test {
     private val memberInfoAlice = mock<MemberInfo>()
     private val memberInfoBob = mock<MemberInfo>()
 
-    private val publicKey0 = mock<PublicKey>().also {
-        whenever(it.encoded).thenReturn(byteArrayOf(0x01))
-    }
-    private val publicKeyAlice1 = mock<PublicKey>().also {
-        whenever(it.encoded).thenReturn(byteArrayOf(0x02))
-    }
-    private val publicKeyAlice2 = mock<PublicKey>().also {
-        whenever(it.encoded).thenReturn(byteArrayOf(0x03))
-    }
-    private val publicKeyBob = mock<PublicKey>().also {
-        whenever(it.encoded).thenReturn(byteArrayOf(0x04))
-    }
+    private val publicKey0 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+    private val publicKeyAlice1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+    private val publicKeyAlice2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
+    private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
 
     private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))

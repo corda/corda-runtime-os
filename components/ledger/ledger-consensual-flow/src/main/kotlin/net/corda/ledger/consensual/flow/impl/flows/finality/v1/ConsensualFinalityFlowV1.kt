@@ -130,7 +130,7 @@ class ConsensualFinalityFlowV1(
         } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
                 "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-                        signatures.map { getKeyForKeyId(it.by, session.counterparty).encoded }
+                        signatures.map { getKeyFromKeyId(it.by, session.counterparty).encoded }
             }
             val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
                 "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
@@ -168,13 +168,12 @@ class ConsensualFinalityFlowV1(
     }
 
     @Suspendable
-    private fun getKeyForKeyId(keyId: SecureHash, member: MemberX500Name): PublicKey {
+    private fun getKeyFromKeyId(keyId: SecureHash, member: MemberX500Name): PublicKey {
         val digestAlgorithm = keyId.algorithm
-        // `ConsensualSignedTransaction` doesn't seem to be involving a notary so looking only in
-        // ledger keys should be good enough?
-        val knownKeysByKeyIds = memberLookup.lookup(member)?.ledgerKeys?.associateBy {
-            it.fullIdHash(digestService, digestAlgorithm)
-        }
+        val knownKeysByKeyIds =
+            memberLookup.lookup(member)?.ledgerKeys?.associateBy {
+                it.fullIdHash(digestService, digestAlgorithm)
+            }
         // TODO check if this is wanted behavior
         return knownKeysByKeyIds?.get(keyId) ?: error("Key not found for id: $keyId and member: $member")
     }
