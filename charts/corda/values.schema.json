@@ -112,7 +112,6 @@
                         "cpu": "1",
                         "memory": "2048Mi"
                     }]
-                    
                 },
                 "requests": {
                     "type": "object",
@@ -360,7 +359,7 @@
                     "examples": [
                         "prereqs-kafka:9092"
                     ],
-                    "minLength": 1                   
+                    "minLength": 1
                 },
                 "topicPrefix": {
                     "type": "string",
@@ -441,7 +440,7 @@
                                 },
                                 "password": {
                                     "$ref": "#/$defs/config"
-                                } 
+                                }
                             }
                         }
                     }
@@ -498,7 +497,7 @@
             "default": {},
             "title": "configuration for cluster bootstrap",
             "required": [
-                "initialAdminUser",
+                "restApiAdmin",
                 "db",
                 "kafka",
                 "image",
@@ -507,12 +506,12 @@
             ],
             "additionalProperties": false,
             "properties": {
-                "initialAdminUser": {
+                "restApiAdmin": {
                     "type": "object",
                     "default": {},
-                    "title": "configuration for the initial user created with admin permissions",
+                    "title": "configuration for the initial REST API user created with admin permissions",
                     "required": [
-                        "username"   
+                        "username"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -912,11 +911,11 @@
                     "examples": [{
                         "requests": {
                             "cpu": "1",
-                            "memory": "2048Mi"                            
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "2048Mi"                            
+                            "memory": "2048Mi"
                         }
                     }]
                 },

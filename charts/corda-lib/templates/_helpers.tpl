@@ -99,24 +99,24 @@ Kafka bootstrap servers
 {{- end }}
 
 {{/*
-Initial admin user secret name
+Initial REST API admin secret name
 */}}
-{{- define "corda.initialAdminUserSecretName" -}}
-{{ default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{- define "corda.restApiAdminSecretName" -}}
+{{ default (printf "%s-rest-api-admin" (include "corda.fullname" .)) }}
 {{- end }}
 
 {{/*
-Initial admin user username secret name
+Initial REST API admin username secret name
 */}}
-{{- define "corda.initialAdminUserUsernameSecretName" -}}
-{{ .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.name | default ((include "corda.initialAdminUserSecretName" .)) }}
+{{- define "corda.restApiAdminUsernameSecretName" -}}
+{{ .Values.bootstrap.restApiAdmin.username.valueFrom.secretKeyRef.name | default ((include "corda.restApiAdminSecretName" .)) }}
 {{- end }}
 
 {{/*
-Initial admin user password secret name
+Initial REST API admin password secret name
 */}}
-{{- define "corda.initialAdminUserPasswordSecretName" -}}
-{{ .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.name | default (include "corda.initialAdminUserSecretName" .) }}
+{{- define "corda.restApiAdminPasswordSecretName" -}}
+{{ .Values.bootstrap.restApiAdmin.password.valueFrom.secretKeyRef.name | default (include "corda.restApiAdminSecretName" .) }}
 {{- end }}
 
 {{/*
@@ -148,41 +148,41 @@ REST TLS CA cert secret key
 {{- end }}
 
 {{/*
-Initial admin user secret username key
+Initial REST API admin secret username key
 */}}
-{{- define "corda.initialAdminUserSecretUsernameKey" -}}
-{{- if .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.name -}}
-{{ required "Must specify bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.key" .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.key }}
+{{- define "corda.restApiAdminSecretUsernameKey" -}}
+{{- if .Values.bootstrap.restApiAdmin.username.valueFrom.secretKeyRef.name -}}
+{{ required "Must specify bootstrap.restApiAdmin.username.valueFrom.secretKeyRef.key" .Values.bootstrap.restApiAdmin.username.valueFrom.secretKeyRef.key }}
 {{- else -}}
 username
 {{- end -}}
 {{- end -}}
 
 {{/*
-Initial admin user secret password key
+Initial REST API admin secret password key
 */}}
-{{- define "corda.initialAdminUserSecretPasswordKey" -}}
-{{- if .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.name -}}
-{{ required "Must specify bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.key" .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.key }}
+{{- define "corda.restApiAdminSecretPasswordKey" -}}
+{{- if .Values.bootstrap.restApiAdmin.password.valueFrom.secretKeyRef.name -}}
+{{ required "Must specify bootstrap.restApiAdmin.password.valueFrom.secretKeyRef.key" .Values.bootstrap.restApiAdmin.password.valueFrom.secretKeyRef.key }}
 {{- else -}}
 password
 {{- end -}}
 {{- end -}}
 
 {{/*
-Initial admin secret environment variable
+Initial REST API admin secret environment variable
 */}}
-{{- define "corda.initialAdminUserSecretEnv" -}}
-- name: INITIAL_ADMIN_USER_USERNAME
+{{- define "corda.restApiAdminSecretEnv" -}}
+- name: REST_API_ADMIN_USERNAME
   valueFrom:
     secretKeyRef:
-      name: {{ include "corda.initialAdminUserUsernameSecretName" . }}
-      key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
-- name: INITIAL_ADMIN_USER_PASSWORD
+      name: {{ include "corda.restApiAdminUsernameSecretName" . }}
+      key: {{ include "corda.restApiAdminSecretUsernameKey" . }}
+- name: REST_API_ADMIN_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ include "corda.initialAdminUserPasswordSecretName" . }}
-      key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+      name: {{ include "corda.restApiAdminPasswordSecretName" . }}
+      key: {{ include "corda.restApiAdminSecretPasswordKey" . }}
 {{- end -}}
 
 {{/*
@@ -364,7 +364,7 @@ SALT and PASSPHRASE environment variables for decrypting configuration.
       key: {{ required "Must specify config.encryption.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ (printf "%s-config" (include "corda.fullname" .)) | quote }}
-      key: "passphrase" 
+      key: "passphrase"
       {{- end }}
 {{- end }}
 
@@ -387,7 +387,7 @@ RBAC user environment variable
       key: {{ required "Must specify bootstrap.db.rbac.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.rbacDbDefaultSecretName" . | quote }}
-      key: "username" 
+      key: "username"
       {{- end }}
 - name: RBAC_DB_USER_PASSWORD
   valueFrom:
@@ -397,7 +397,7 @@ RBAC user environment variable
       key: {{ required "Must specify bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.rbacDbDefaultSecretName" . | quote }}
-      key: "password" 
+      key: "password"
       {{- end }}
 {{- end -}}
 
@@ -420,7 +420,7 @@ Crypto worker environment variable
       key: {{ required "Must specify bootstrap.db.crypto.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.cryptoDbDefaultSecretName" . | quote }}
-      key: "username" 
+      key: "username"
       {{- end }}
 - name: CRYPTO_DB_USER_PASSWORD
   valueFrom:
@@ -430,7 +430,7 @@ Crypto worker environment variable
       key: {{ required "Must specify bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.cryptoDbDefaultSecretName" . | quote }}
-      key: "password" 
+      key: "password"
       {{- end }}
 {{- end -}}
 

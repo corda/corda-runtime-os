@@ -1,6 +1,5 @@
 # Default values for corda.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# For more information, see the Corda 5 documentation at docs.r3.com.
 
 # -- override chart fullname
 fullnameOverride: ""
@@ -21,11 +20,11 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
-# default resource limits and requests configuration for the Corda containers
+# default resource limits and requests configuration for the Corda bootstrap and worker containers
 resources:
-  # -- the default CPU/memory resource limits for the Corda containers
+  # -- the default CPU/memory resource limits for the Corda bootstrap and worker containers
   limits: {}
-  # -- the default CPU/memory resource request for the Corda containers
+  # -- the default CPU/memory resource requests for the Corda bootstrap and worker containers
   requests: {}
 
 # Logging configuration
@@ -71,17 +70,17 @@ db:
       # -- the cluster database user
       value: ""
       # the cluster database user secret configuration; used in preference to value if name is set
-      valueFrom: 
+      valueFrom:
         # the cluster database user secret key reference
         secretKeyRef:
-          # -- the cluster database user secret name 
+          # -- the cluster database user secret name
           name: ""
-          # -- the cluster database user secret key 
+          # -- the cluster database user secret key
           key: ""
     # the cluster database password configuration
-    password: 
+    password:
       # -- the cluster database password
-      value: "" 
+      value: ""
       # the cluster database password secret configuration; used in preference to value if name is set
       valueFrom:
         # the cluster database password secret key reference
@@ -96,7 +95,7 @@ db:
 
 # Kafka configuration
 kafka:
-  # -- comma-separated list of Kafka bootstrap servers (required)
+  # -- comma-separated list of Kafka bootstrap servers (required); for example: "broker1.example.com:9092,broker2.example.com:9092,broker3.example.com:9092"
   bootstrapServers: ""
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
@@ -117,7 +116,7 @@ kafka:
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
-      password: 
+      password:
         # -- the truststore password
         value: ""
         # -- the truststore password secret configuration; used in preference to value if name is set
@@ -137,7 +136,7 @@ kafka:
     # -- enable/disable SASL for client connection to Kafka
     enabled: false
     # default SASL username configuration for client connection to Kafka
-    username: 
+    username:
       # -- the default SASL username for client connection to Kafka
       value: ""
       # the default SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
@@ -149,7 +148,7 @@ kafka:
           # -- the default SASL username secret key for client connection to Kafka
           key: ""
     # default SASL password configuration for client connection to Kafka
-    password: 
+    password:
       # -- the default SASL password for client connection to Kafka
       value: ""
       # the default SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
@@ -163,31 +162,31 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
-  # Configuration for the initial user created with admin permissions
-  initialAdminUser:
-    # the initial admin user username configuration
-    username: 
-      # -- the initial admin user username
+  # Configuration for the REST API admin to be created during cluster bootstrap
+  restApiAdmin:
+    # the username configuration for the REST API admin to be created during cluster bootstrap
+    username:
+      # -- the username for the REST API admin to be created during cluster bootstrap
       value: "admin"
-      # the initial admin user username secret configuration; used in preference to value if name is set
+      # the username secret configuration for the REST API admin to be created during cluster bootstrap; used in preference to value if name is set
       valueFrom:
-        # the initial admin user username secret key reference
+        # the username secret key reference for the REST API admin to be created during cluster bootstrap
         secretKeyRef:
-          # -- the initial admin user username secret name
+          # -- the name of the secret containing the username for the REST API admin to be created during cluster bootstrap
           name: ""
-          # -- the initial admin user username secret key
+          # -- the key for the field in the secret containing the username for the REST API admin to be created during cluster bootstrap
           key: ""
-    # the initial admin user password configuration
-    password: 
-      # -- the initial admin user password; generated if not specified
+    # the password configuration for the REST API admin to be created during cluster bootstrap
+    password:
+      # -- the password for the REST API admin to be created during cluster bootstrap; generated if not specified
       value: ""
-      # the initial admin user password secret configuration
+      # the password secret configuration for the REST API admin to be created during cluster bootstrap
       valueFrom:
-        # the initial admin user password secret key reference
+        # the password secret key reference for the REST API admin to be created during cluster bootstrap
         secretKeyRef:
-          # -- the initial admin user password secret name
+          # -- the name of the secret containing the password for the REST API admin created during cluster bootstrap
           name: ""
-          # -- the initial admin user password secret key
+          # -- the key for the field in the secret containing the password for the REST API admin created during cluster bootstrap
           key: ""
   # Configuration for database bootstrap
   db:
@@ -227,8 +226,8 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for crypto DB
         maxSize: 5
-      # the username configuration 
-      username: 
+      # the username configuration
+      username:
         # -- the username, defaults to a value randomly-generated on install
         value: "crypto_user"
         # the username secret configuration; used in preference to value if name is set
@@ -240,7 +239,7 @@ bootstrap:
             # -- the username secret key
             key: ""
       # password configuration
-      password: 
+      password:
         # -- the password, defaults to a value randomly-generated on install
         value: ""
         # the password secret configuration
@@ -260,8 +259,8 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
-      # the username configuration       
-      username: 
+      # the username configuration
+      username:
         # -- the username, defaults to a value randomly-generated on install
         value: "rbac_user"
         # the username secret configuration; used in preference to value if name is set
@@ -273,7 +272,7 @@ bootstrap:
             # -- the username secret key
             key: ""
       # password configuration
-      password: 
+      password:
         # -- the password, defaults to a value randomly-generated on install
         value: ""
         # the password secret configuration
