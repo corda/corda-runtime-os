@@ -11,12 +11,12 @@ import org.jetbrains.annotations.NotNull;
 public interface VaultNamedQueryBuilder extends VaultNamedQueryBuilderBase {
     /**
      * Sets the where clause of the named query.
-     * @param json The JSON query representation.
+     * @param query The JSON query representation.
      *
      * @return A builder instance with the where clause set.
      */
     @NotNull
-    VaultNamedQueryBuilder whereJson(@NotNull String json);
+    VaultNamedQueryBuilder whereJson(@NotNull String query);
 
     /**
      * Sets the filter function of the named query.
