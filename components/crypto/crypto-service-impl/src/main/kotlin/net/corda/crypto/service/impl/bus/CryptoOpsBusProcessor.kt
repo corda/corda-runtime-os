@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.opsBusProcessor
@@ -46,7 +47,10 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
-class CryptoOpsBusProcessor(private val signingService: SigningService) :
+class CryptoOpsBusProcessor(
+    private val signingService: SigningService,
+    event: ConfigChangedEvent,
+) :
     RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

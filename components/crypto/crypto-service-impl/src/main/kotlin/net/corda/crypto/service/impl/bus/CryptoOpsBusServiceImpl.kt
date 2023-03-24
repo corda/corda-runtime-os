@@ -11,6 +11,7 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.impl.SigningServiceImpl
+import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -80,15 +81,19 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         val processor = CryptoOpsBusProcessor(
             SigningServiceImpl(
                 cryptoServiceFactory = cryptoServiceFactory,
+                signingRepositoryFactory = SigningRepositoryFactoryImpl(
+                    dbConnectionManager,
+                    virtualNodeInfoReadService,
+                    jpaEntitiesRegistry,
+                    keyEncodingService,
+                    digestService,
+                    layeredPropertyMapFactory
+                ),
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 keyEncodingService = keyEncodingService,
-                dbConnectionManager = dbConnectionManager,
-                jpaEntitiesRegistry = jpaEntitiesRegistry,
-                virtualNodeInfoReadService = virtualNodeInfoReadService,
-                layeredPropertyMapFactory = layeredPropertyMapFactory,
                 config = event.config.toCryptoConfig()
-            )
+            ), event
         )
         return Impl(
             subscriptionFactory.createRPCSubscription(

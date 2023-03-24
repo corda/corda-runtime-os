@@ -24,11 +24,10 @@ import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
+import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
@@ -51,7 +50,7 @@ private const val SIGNING_SERVICE_OBJ = "signingService"
 
 /**
  * 1. Provide a (mostly) cached versions of the signing key operations, unlike the signing key operations
- * in [SiginingRepositoryImpl] which are uncached.
+ * in [SigningRepositoryImpl] which are uncached.
  *
  * 2. Provide wrapping key operations, routing to the appropriate crypto service implementation. The crypto
  *    service wrapping key operations are cached. TODO - remove these and have callers use CryptoServiceFactory?
@@ -59,13 +58,10 @@ private const val SIGNING_SERVICE_OBJ = "signingService"
 @Suppress("TooManyFunctions", "LongParameterList")
 class SigningServiceImpl(
     private val cryptoServiceFactory: CryptoServiceFactory,
+    private val signingRepositoryFactory: SigningRepositoryFactory,
     override val schemeMetadata: CipherSchemeMetadata,
     private val digestService: PlatformDigestService,
     private val keyEncodingService: KeyEncodingService,
-    private val dbConnectionManager: DbConnectionManager,
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val cache: Cache<CacheKey, SigningKeyInfo>,
 ) : SigningService {
 
@@ -76,23 +72,17 @@ class SigningServiceImpl(
     @Suppress("LongParameterList")
     constructor(
         cryptoServiceFactory: CryptoServiceFactory,
+        signingRepositoryFactory: SigningRepositoryFactory,
         schemeMetadata: CipherSchemeMetadata,
         digestService: PlatformDigestService,
         keyEncodingService: KeyEncodingService,
-        dbConnectionManager: DbConnectionManager,
-        jpaEntitiesRegistry: JpaEntitiesRegistry,
-        virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        layeredPropertyMapFactory: LayeredPropertyMapFactory,
         config: SmartConfig,
     ) : this(
         cryptoServiceFactory,
+        signingRepositoryFactory,
         schemeMetadata,
         digestService,
         keyEncodingService,
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        virtualNodeInfoReadService,
-        layeredPropertyMapFactory,
         CacheFactoryImpl().build(
             "Signing-Key-Cache",
             Caffeine.newBuilder()
@@ -116,18 +106,6 @@ class SigningServiceImpl(
         return ref.instance.supportedSchemes.map { it.key.codeName }
     }
 
-    private fun getSigningRepository(tenantId: String) = SigningRepositoryImpl(
-        entityManagerFactory = getEntityManagerFactory(
-            tenantId,
-            dbConnectionManager,
-            virtualNodeInfoReadService,
-            jpaEntitiesRegistry
-        ),
-        tenantId = tenantId,
-        keyEncodingService = keyEncodingService,
-        digestService = digestService,
-        layeredPropertyMapFactory = layeredPropertyMapFactory
-    )
 
     override fun querySigningKeys(
         tenantId: String,
@@ -141,7 +119,7 @@ class SigningServiceImpl(
         }
         // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
         // querying 
-        return getSigningRepository(tenantId).query(
+        return signingRepositoryFactory.getInstance(tenantId).query(
             skip,
             take,
             orderBy.toSigningKeyOrderBy(),
@@ -160,7 +138,7 @@ class SigningServiceImpl(
         if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
 
-        val fetchedKeys = with(getSigningRepository(tenantId)) {
+        val fetchedKeys = with(signingRepositoryFactory.getInstance(tenantId)) {
             lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
         fetchedKeys.forEach { cache.put(CacheKey(tenantId, it.id), it) }
@@ -182,7 +160,7 @@ class SigningServiceImpl(
             !cachedMap.containsKey(CacheKey(tenantId, ShortHash.of(it)))
         }
 
-        val fetchedKeys = getSigningRepository(tenantId).use {
+        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyHashes(notFound.toMutableSet())
                 .map { foundKey ->
                     foundKey.also {
@@ -333,7 +311,7 @@ class SigningServiceImpl(
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
-        val repo = getSigningRepository(tenantId)
+        val repo = signingRepositoryFactory.getInstance(tenantId)
         if (alias != null && repo.findKey(alias) != null) {
             throw KeyAlreadyExistsException(
                 "The key with alias $alias already exists for tenant $tenantId",
@@ -366,7 +344,7 @@ class SigningServiceImpl(
                 it.fullIdHash(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
-                val found = getSigningRepository(tenantId).lookupByPublicKeyHashes(
+                val found = signingRepositoryFactory.getInstance(tenantId).lookupByPublicKeyHashes(
                     chunk.map { it.first }.toMutableSet()
                 )
                 if (found.isNotEmpty()) {
@@ -383,7 +361,7 @@ class SigningServiceImpl(
             )
         } else {
             // TODO - use cache?
-            return getSigningRepository(tenantId).findKey(publicKey)?.let {
+            return signingRepositoryFactory.getInstance(tenantId).findKey(publicKey)?.let {
                 // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
                 // requested key Sand not a different one that clashed on key id (short key id).
                 if (it.fullId == publicKey.fullIdHash(keyEncodingService, digestService)) {
