@@ -2,46 +2,16 @@ package net.corda.crypto.service.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.GeneratedPublicKey
-import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
-import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.persistence.SigningKeyInfo
-import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
-import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.softhsm.SigningRepository
-import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import java.security.PublicKey
-import java.time.Instant
 import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertSame
 
 class SigningServiceGeneralTests {
     companion object {

@@ -28,16 +28,12 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
-import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 import java.security.PublicKey
