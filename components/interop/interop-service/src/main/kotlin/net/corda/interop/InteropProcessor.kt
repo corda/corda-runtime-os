@@ -24,6 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+//TODO import commented out - see TODO adding FLOW_CONFIG below:
 //import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
@@ -31,7 +32,7 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 @Suppress("LongParameterList", "Unused")
 class InteropProcessor(

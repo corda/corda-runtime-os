@@ -29,6 +29,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
@@ -148,7 +149,7 @@ class InteropServiceIntegrationTest {
             val mapperLatch = CountDownLatch(expectedMessageCount)
             val testProcessor = FlowMapperEventCounter(session, mapperLatch, expectedMessageCount)
             val eventTopic = subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig("client-flow-mapper", Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC),
+                SubscriptionConfig("client-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
                 testProcessor,
                 bootConfig,
                 null
@@ -156,9 +157,11 @@ class InteropServiceIntegrationTest {
             eventTopic.start()
             assertTrue(
                 mapperLatch.await(30, TimeUnit.SECONDS),
-                "Fewer output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
+                "Fewer messages on $FLOW_MAPPER_EVENT_TOPIC were observed (${testProcessor.recordCount})" +
+                        " than expected ($expectedMessageCount)."
             )
-            assertEquals(expectedMessageCount, testProcessor.recordCount, "More output messages were observed that expected.")
+            assertEquals(expectedMessageCount, testProcessor.recordCount,
+                "More messages on $FLOW_MAPPER_EVENT_TOPIC were observed that expected.")
             eventTopic.close()
         }
         val p2pExpectedOutputMessages = 1
@@ -174,9 +177,11 @@ class InteropServiceIntegrationTest {
             eventTopic.start()
             assertTrue(
                 mapperLatch.await(30, TimeUnit.SECONDS),
-                "Fewer output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
+                "Fewer messages on $P2P_OUT_TOPIC were observed (${testProcessor.recordCount})" +
+                        " than expected ($expectedMessageCount)."
             )
-            assertEquals(expectedMessageCount, testProcessor.recordCount, "More output messages were observed that expected.")
+            assertEquals(expectedMessageCount, testProcessor.recordCount,
+                "More messages on $P2P_OUT_TOPIC were observed that expected.")
             eventTopic.close()
         }
         interopService.stop()
