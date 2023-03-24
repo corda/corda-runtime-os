@@ -37,8 +37,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.FileSystem
@@ -62,11 +60,9 @@ class UpsertCpiTests {
         emConfig
     )
 
-    private val cpiSignerSummaryHash = SecureHashImpl("SHA-256","signerSummaryHash".toByteArray())
+    private val cpiSignerSummaryHash = SecureHashImpl("SHA-256", "signerSummaryHash".toByteArray())
 
-    private val networkInfoWriter: NetworkInfoWriter = mock {
-        on { injectStaticNetworkMgm(any(), any()) } doAnswer { it.getArgument(1) }
-    }
+    private val networkInfoWriter: NetworkInfoWriter = mock()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -108,7 +104,7 @@ class UpsertCpiTests {
         return path
     }
 
-    fun getRandomString(length: Int) : String {
+    fun getRandomString(length: Int): String {
         val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
         return (1..length)
             .map { allowedChars.random() }
@@ -238,7 +234,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can force update cpi with same name, signer version and group id`() {
+    @Test
+    fun `can force update cpi with same name, signer version and group id`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -258,7 +255,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot force update cpi with same name, signer version and different group id`() {
+    @Test
+    fun `cannot force update cpi with same name, signer version and different group id`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -278,7 +276,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot insert cpis with different group ids and same name, signer and version`() {
+    @Test
+    fun `cannot insert cpis with different group ids and same name, signer and version`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -298,7 +297,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can insert cpis with same group id and different name`() {
+    @Test
+    fun `can insert cpis with same group id and different name`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -318,7 +318,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can insert cpis with same group id and different version`() {
+    @Test
+    fun `can insert cpis with same group id and different version`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -338,7 +339,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can insert cpis with same group id and different signer`() {
+    @Test
+    fun `can insert cpis with same group id and different signer`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -358,7 +360,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot insert or update duplicate CPI`() {
+    @Test
+    fun `cannot insert or update duplicate CPI`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"

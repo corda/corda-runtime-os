@@ -62,6 +62,8 @@ dependencies {
     testImplementation project(":testing:packaging-test-utilities")
     testImplementation project(':testing:test-utilities')
 
+    integrationTestImplementation project(':libs:platform-info')
+
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
