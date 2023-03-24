@@ -64,6 +64,10 @@ class InteropProcessor(
         logger.info(
             "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity $realHoldingIdentity"
         )
+        val fakeDestinationIdentity = InteropAliasProcessor.findFakeHoldingIdentityByGroupId(unAuthMessage.header.source.groupId, unAuthMessage.header.source.x500Name)
+        logger.info(
+            "The alias ${fakeDestinationIdentity} is mapped to the real holding identity ${unAuthMessage.header.destination.x500Name}"
+        )
         getOutputRecord(header, unAuthMessage.payload, key)
     }
 

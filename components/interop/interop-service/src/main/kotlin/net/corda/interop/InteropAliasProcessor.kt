@@ -24,6 +24,11 @@ class InteropAliasProcessor : CompactedProcessor<String, HostedIdentityEntry> {
         fun getRealHoldingIdentity(recipientId: String?): HoldingIdentity? {
             return identityMappingCache[recipientId]
         }
+
+        fun findFakeHoldingIdentityByGroupId(groupId: String, fakeIdentity: String) : HoldingIdentity  {
+            val filteredMap = identityMappingCache.filter {(key, value) -> key != fakeIdentity && value.groupId == groupId }
+            return filteredMap.entries.first().value
+        }
     }
 
     override fun onNext(
