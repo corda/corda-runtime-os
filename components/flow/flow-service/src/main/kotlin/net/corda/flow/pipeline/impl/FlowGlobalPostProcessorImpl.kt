@@ -94,16 +94,12 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
 
-        /** For interop sessions, the counterparty is not expected to exist on the local network. */
-        if (sessionState.isInteropSessionState()) {
-            return true
-        }
-
         /**
          * If the counterparty doesn't exist in our network, don't send our queued messages yet.
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
+         * This check is not performed for interop sessions, where the counterparty exists on another cluster.
          */
-        if (!counterpartyExists) {
+        if (!counterpartyExists && !sessionState.isInteropSessionState()) {
             val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
             val expiryTime = maxOf(
                 sessionState.lastReceivedMessageTime,
