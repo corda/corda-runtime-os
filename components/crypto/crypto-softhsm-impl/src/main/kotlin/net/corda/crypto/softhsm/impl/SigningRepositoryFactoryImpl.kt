@@ -9,6 +9,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
+@Suppress("LongParameterList")
 class SigningRepositoryFactoryImpl(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
