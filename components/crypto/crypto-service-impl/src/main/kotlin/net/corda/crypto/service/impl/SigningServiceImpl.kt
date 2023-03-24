@@ -105,12 +105,14 @@ class SigningServiceImpl(
         }
         // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
         // querying 
-        return signingRepositoryFactory.getInstance(tenantId).query(
-            skip,
-            take,
-            orderBy.toSigningKeyOrderBy(),
-            filter
-        )
+        return signingRepositoryFactory.getInstance(tenantId).use {
+            it.query(
+                skip,
+                take,
+                orderBy.toSigningKeyOrderBy(),
+                filter
+            )
+        }
     }
 
     override fun lookupSigningKeysByPublicKeyShortHash(
@@ -124,8 +126,8 @@ class SigningServiceImpl(
         if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
 
-        val fetchedKeys = with(signingRepositoryFactory.getInstance(tenantId)) {
-            lookupByPublicKeyShortHashes(notFound.toMutableSet())
+        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
+            it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
         fetchedKeys.forEach { cache.put(CacheKey(tenantId, it.id), it) }
 
@@ -297,30 +299,31 @@ class SigningServiceImpl(
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
-        val repo = signingRepositoryFactory.getInstance(tenantId)
-        if (alias != null && repo.findKey(alias) != null) {
-            throw KeyAlreadyExistsException(
-                "The key with alias $alias already exists for tenant $tenantId",
-                alias,
-                tenantId
+        signingRepositoryFactory.getInstance(tenantId).use { repo ->
+            if (alias != null && repo.findKey(alias) != null) {
+                throw KeyAlreadyExistsException(
+                    "The key with alias $alias already exists for tenant $tenantId",
+                    alias,
+                    tenantId
+                )
+            }
+            require(ref.masterKeyAlias != null) { "The master key alias must be defined for tenant $tenantId category $category" }
+            val generatedKey = ref.instance.generateKeyPair(
+                KeyGenerationSpec(scheme, alias, ref.masterKeyAlias),
+                context + mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_CATEGORY to category
+                )
             )
+            val saveContext = ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
+            val signingKeyInfo = when (saveContext) {
+                is SigningWrappedKeySaveContext -> repo.savePrivateKey(saveContext)
+                is SigningPublicKeySaveContext -> repo.savePublicKey(saveContext)
+                else -> throw InvalidParameterException()
+            }
+            cache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
+            return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
         }
-        require(ref.masterKeyAlias != null) { "The master key alias must be defined for tenant $tenantId category $category" }
-        val generatedKey = ref.instance.generateKeyPair(
-            KeyGenerationSpec(scheme, alias, ref.masterKeyAlias),
-            context + mapOf(
-                CRYPTO_TENANT_ID to tenantId,
-                CRYPTO_CATEGORY to category
-            )
-        )
-        val saveContext = ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
-        val signingKeyInfo = when (saveContext) {
-            is SigningWrappedKeySaveContext -> repo.savePrivateKey(saveContext)
-            is SigningPublicKeySaveContext -> repo.savePublicKey(saveContext)
-            else -> throw InvalidParameterException()
-        }
-        cache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
-        return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
     }
 
     @Suppress("NestedBlockDepth")

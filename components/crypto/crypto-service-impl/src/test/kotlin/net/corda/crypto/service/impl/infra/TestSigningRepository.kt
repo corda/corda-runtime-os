@@ -134,5 +134,7 @@ class TestSigningRepository: SigningRepository {
         return lookupByPublicKeyShortHashes(fullKeyIds.map { ShortHash.of(it) }.toSet())
     }
 
-    override fun close() { keys.clear() }
+    override fun close() {
+        // We do not clear keys here, since we want to be able to reuse the repository.
+    }
 }
