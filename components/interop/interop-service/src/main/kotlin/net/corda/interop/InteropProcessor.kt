@@ -105,7 +105,7 @@ class InteropProcessor(
                 logger.info("Flow name associated with facade request : $flowName")
             }
             Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
-        } else {
+        } else { //MessageDirection.OUTBOUND
             //TODO taken from FlowMapperHelper function generateAppMessage
             val header = AuthenticatedMessageHeader(
                 destinationIdentity,
