@@ -1,5 +1,9 @@
 package net.corda.membership.impl.read.cache
 
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
@@ -36,7 +40,12 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
             cache.compute(holdingIdentity) { _, value ->
                 (value ?: ReplaceableList())
                     .addOrReplace(data) { old, new ->
-                        old.name == new.name
+                        if(new.status == MEMBER_STATUS_ACTIVE || new.status == MEMBER_STATUS_SUSPENDED) {
+                            old.name == new.name &&
+                                    (old.status == MEMBER_STATUS_ACTIVE|| old.status == MEMBER_STATUS_SUSPENDED)
+                        } else {
+                            old.name == new.name && old.status == MEMBER_STATUS_PENDING
+                        }
                     }
             }
         }
