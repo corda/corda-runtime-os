@@ -16,9 +16,9 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -78,6 +78,7 @@ class CryptoOpsBusServiceImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val cryptoConfig = event.config.toCryptoConfig()
         val processor = CryptoOpsBusProcessor(
             SigningServiceImpl(
                 cryptoServiceFactory = cryptoServiceFactory,
@@ -92,8 +93,8 @@ class CryptoOpsBusServiceImpl @Activate constructor(
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 keyEncodingService = keyEncodingService,
-                config = event.config.toCryptoConfig()
-            ), event
+                config = cryptoConfig
+            ), cryptoConfig
         )
         return Impl(
             subscriptionFactory.createRPCSubscription(

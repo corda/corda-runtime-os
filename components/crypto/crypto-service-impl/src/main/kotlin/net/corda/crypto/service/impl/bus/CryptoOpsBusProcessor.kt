@@ -1,10 +1,11 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.configuration.read.ConfigChangedEvent
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.opsBusProcessor
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.SecureHashImpl
@@ -37,19 +38,17 @@ import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
     private val signingService: SigningService,
-    event: ConfigChangedEvent,
+    cryptoConfig: SmartConfig,
 ) :
     RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
@@ -67,7 +66,7 @@ class CryptoOpsBusProcessor(
             }
     }
 
-    private val config = event.config.toCryptoConfig().opsBusProcessor()
+    private val config = cryptoConfig.opsBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,

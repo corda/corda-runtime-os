@@ -1,15 +1,14 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.cipher.suite.sha256Bytes
-import net.corda.crypto.core.SecureHashImpl
+import java.security.PublicKey
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyHashFromBytes
-import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
@@ -22,25 +21,17 @@ import net.corda.crypto.persistence.schemeCodeName
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.StartEvent
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import java.security.PublicKey
-import java.time.Instant
-import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class TestSigningRepository: SigningRepository {
     private val lock = ReentrantLock()
     private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
 
-    override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo = with(lock) {
+    override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo = lock.withLock {
         val encodedKey = context.key.publicKey.encoded
-        val record = SigningKeyInfo(
-            id = publicKeyIdFromBytes(encodedKey),
+        return SigningKeyInfo(
+            id = keyIdFromBytes(encodedKey),
             fullId = publicKeyHashFromBytes(encodedKey),
             tenantId = "test",
             category = context.category,
@@ -59,13 +50,13 @@ class TestSigningRepository: SigningRepository {
             if (keys.putIfAbsent(it.id, it) != null) {
                 throw IllegalArgumentException("The key ${it.id} already exists.")
             }
-        
+        }
     }
 
-    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo = with(lock) {
+    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo = lock.withLock {
         val encodedKey = context.key.publicKey.encoded
         return SigningKeyInfo(
-            id = publicKeyIdFromBytes(encodedKey),
+            id = keyIdFromBytes(encodedKey),
             fullId = publicKeyHashFromBytes(encodedKey),
             tenantId = "test",
             category = context.category,
@@ -81,8 +72,9 @@ class TestSigningRepository: SigningRepository {
             hsmId = context.hsmId,
             status = SigningKeyStatus.NORMAL
         ).also {
-            if (keys.putIfAbsent(it.id, record) != null) {
-            throw IllegalArgumentException("The key ${it.id} already exists.")
+            if (keys.putIfAbsent(it.id, it) != null) {
+                throw IllegalArgumentException("The key ${it.id} already exists.")
+            }
         }
     }
 
@@ -91,12 +83,11 @@ class TestSigningRepository: SigningRepository {
     }
 
     override fun findKey(publicKey: PublicKey): SigningKeyInfo? = lock.withLock {
-        keys[fullPublicKeyIdFromBytes(publicKey)]
+        keys[ShortHash.of(publicKeyHashFromBytes(publicKey.encoded))]
     }
 
     @Suppress("ComplexMethod")
-    override fun lookup(
-        tenantId: String,
+    override fun query(
         skip: Int,
         take: Int,
         orderBy: SigningKeyOrderBy,
@@ -104,9 +95,7 @@ class TestSigningRepository: SigningRepository {
     ): Collection<SigningKeyInfo> = lock.withLock {
         val map = SigningKeyFilterMapImpl(LayeredPropertyMapImpl(filter, PropertyConverter(emptyMap())))
         val filtered = keys.values.filter {
-            if (it.tenantId != tenantId) {
-                false
-            } else if (map.category != null && it.category != map.category) {
+            if (map.category != null && it.category != map.category) {
                 false
             } else if (map.schemeCodeName != null && it.schemeCodeName != map.schemeCodeName) {
                 false
@@ -137,30 +126,17 @@ class TestSigningRepository: SigningRepository {
         }.drop(skip).take(take)
     }
 
-    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningKeyInfo> {
-        val result = mutableListOf<SigningKeyInfo>()
-        keyIds.forEach {
-            val found = keys[Pair(tenantId, it)]
-            if (found != null) {
-                result.add(found)
-            }
-        }
-        return result
+    override fun lookupByPublicKeyShortHashes(keyIds: Set<ShortHash>): Collection<SigningKeyInfo> {
+        return keys.filter { it.key in keyIds }.values
     }
 
-    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningKeyInfo> {
-        val keyIds = fullKeyIds.map {
-            ShortHash.of(it)
-        }
-        return lookupByIds(tenantId, keyIds)
+    override fun lookupByPublicKeyHashes(fullKeyIds: Set<SecureHash>): Collection<SigningKeyInfo> {
+        return lookupByPublicKeyShortHashes(fullKeyIds.map { ShortHash.of(it) }.toSet())
     }
+
+    override fun close() { keys.clear() }
 }
 
-fun fullKeyIdFromBytes(publicKey: ByteArray): SecureHash =
-    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
-
 fun keyIdFromBytes(publicKey: ByteArray): ShortHash =
-    ShortHash.of(fullKeyIdFromBytes(publicKey))
+    ShortHash.of(fullPublicKeyIdFromBytes(publicKey))
 
-fun keyIdFromKey(publicKey: PublicKey): ShortHash =
-    keyIdFromBytes(publicKey.encoded)
