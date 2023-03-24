@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
@@ -303,7 +304,7 @@ class GenericsTests {
         assertEquals(
             "wibble",
             DeserializationInput(sf).deserialize(
-                SerializedBytes<ForceWildcard<*>>(
+                SerializedBytesImpl<ForceWildcard<*>>(
                     GenericsTests::class.java.getResource(resource).readBytes()
                 )
             ).t

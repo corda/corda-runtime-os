@@ -32,7 +32,7 @@ data class BaseMemberInfo(
 
     override fun getName(): MemberX500Name = name
 
-    override fun getSessionInitiationKey(): PublicKey {
+    override fun getSessionInitiationKeys(): List<PublicKey> {
         TODO("Not yet implemented")
     }
 
