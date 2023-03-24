@@ -141,6 +141,23 @@ class MemberListCacheImplTest {
     }
 
     @Test
+    fun `Member info discarded if status is the same - suspended`() {
+        val originalInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn suspendedContext
+            on { name } doReturn charlie
+
+        }
+        val updatedInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn suspendedContext
+            on { name } doReturn charlie
+        }
+
+        addToCacheWithDefaults(memberInfo = originalInfo)
+        addToCacheWithDefaults(memberInfo = updatedInfo)
+        assertMemberList(lookupWithDefaults(), updatedInfo)
+    }
+
+    @Test
     fun `Member info discarded if status is the same - pending`() {
         val originalInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn pendingContext
