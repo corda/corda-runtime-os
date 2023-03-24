@@ -49,13 +49,13 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -112,6 +112,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -332,8 +333,8 @@ class DynamicMemberRegistrationServiceTest {
     )
 
     private val context = mapOf(
-        "corda.session.key.id" to SESSION_KEY_ID,
-        "corda.session.key.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+        "corda.session.keys.0.id" to SESSION_KEY_ID,
+        "corda.session.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
@@ -436,8 +437,8 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
             val context = mapOf(
-                "corda.session.key.id" to SESSION_KEY_ID,
-                "corda.session.key.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.session.keys.0.id" to SESSION_KEY_ID,
+                "corda.session.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
                 "corda.endpoints.0.connectionURL" to "https://localhost:1080",
                 "corda.endpoints.0.protocolVersion" to "1",
                 "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
@@ -505,9 +506,9 @@ class DynamicMemberRegistrationServiceTest {
                 REGISTRATION_ID,
                 URL_KEY.format(0),
                 PROTOCOL_VERSION.format(0),
-                PARTY_SESSION_KEY,
-                SESSION_KEY_HASH,
-                SESSION_KEY_SIGNATURE_SPEC,
+                PARTY_SESSION_KEYS_PEM.format(0),
+                SESSION_KEYS_HASH.format(0),
+                SESSION_KEYS_SIGNATURE_SPEC.format(0),
                 LEDGER_KEYS_KEY.format(0),
                 LEDGER_KEY_HASHES_KEY.format(0),
                 LEDGER_KEY_SIGNATURE_SPEC.format(0)
@@ -537,6 +538,74 @@ class DynamicMemberRegistrationServiceTest {
                 )
             )
         }
+
+        @Test
+        fun `registration request keeps the session keys order`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            data class Key(
+                val index: Int,
+                val keyId: ShortHash,
+                val key: PublicKey,
+            )
+            val keys = (0..6).map {
+                val keyId = "ABC12345678$it"
+                val encodedKey = keyId.toByteArray()
+                val key = mock<PublicKey> {
+                    on { encoded } doReturn encodedKey
+                    on { algorithm } doReturn "EC"
+                }
+                val cryptoSigningKey = mock<CryptoSigningKey> {
+                    on { publicKey } doReturn ByteBuffer.wrap(encodedKey)
+                    on { id } doReturn keyId
+                    on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
+                    on { category } doReturn SESSION_INIT
+                }
+                whenever(keyEncodingService.decodePublicKey(keyId)).doReturn(key)
+                whenever(keyEncodingService.decodePublicKey(encodedKey)).doReturn(key)
+                whenever(keyEncodingService.encodeAsString(key)).doReturn(keyId)
+                whenever(keyEncodingService.encodeAsByteArray(key)).doReturn(encodedKey)
+                whenever(
+                    cryptoOpsClient.lookupKeysByIds(
+                        memberId.value,
+                        listOf(ShortHash.of(keyId)),
+                    )
+                ).doReturn(listOf(cryptoSigningKey))
+                Key(it, ShortHash.of(keyId), key)
+            }.reversed()
+            val signature = DigitalSignature.WithKey(
+                keys.first().key,
+                byteArrayOf(1)
+            )
+            whenever(
+                cryptoOpsClient.sign(
+                    any(),
+                    same(keys.first().key),
+                    any<SignatureSpec>(),
+                    any(),
+                    eq(emptyMap())
+                )
+            ).doReturn(signature)
+            val context = mapOf(
+                "corda.endpoints.0.connectionURL" to "https://localhost:1080",
+                "corda.endpoints.0.protocolVersion" to "1",
+                "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
+                "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+            ) +
+                keys.map { "corda.session.keys.${it.index}.id" to it.keyId.value } +
+                keys.map {
+                    "corda.session.keys.${it.index}.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName
+                }
+
+            registrationService.register(registrationResultId, member, context)
+
+            assertThat(memberContextCaptor.firstValue.toMap())
+                .containsAllEntriesOf(
+                    keys.associate {
+                        "corda.session.keys.${it.index}.pem" to it.keyId.value
+                    }
+                )
+        }
     }
 
     @Nested
@@ -554,7 +623,7 @@ class DynamicMemberRegistrationServiceTest {
         @ParameterizedTest
         @ValueSource(
             strings = arrayOf(
-                "corda.session.key.id",
+                "corda.session.keys.0.id",
                 "corda.endpoints.0.connectionURL",
                 "corda.endpoints.0.protocolVersion",
                 "corda.ledger.keys.0.id",
@@ -585,6 +654,33 @@ class DynamicMemberRegistrationServiceTest {
             assertThat(exception)
                 .hasMessageContaining("The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
             registrationService.stop()
+        }
+
+        @Test
+        fun `registration request fails when the session keys order is wrong`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val badContext = context +
+                ("corda.session.keys.3.id" to SESSION_KEY_ID)
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, badContext)
+            }
+
+            assertThat(exception).hasMessageContaining("Provided session key IDs are incorrectly numbered")
+        }
+
+        @Test
+        fun `registration request fails when the session keys are missing`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val badContext = context - "corda.session.keys.0.id"
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, badContext)
+            }
+
+            assertThat(exception).hasMessageContaining("No session key ID was provided")
         }
 
         @Test
@@ -671,7 +767,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails if the session key spec is invalid`() {
-            val registrationContext = context + ("corda.session.key.signature.spec" to "Nop")
+            val registrationContext = context + ("corda.session.keys.0.signature.spec" to "Nop")
             postConfigChangedEvent()
             registrationService.start()
 
@@ -836,14 +932,14 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration adds session spec if needed`() {
             val memberContext = argumentCaptor<KeyValuePairList>()
             whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
-            val registrationContext = context - "corda.session.key.signature.spec"
+            val registrationContext = context - "corda.session.keys.0.signature.spec"
             postConfigChangedEvent()
             registrationService.start()
 
             registrationService.register(registrationResultId, member, registrationContext)
 
             assertThat(memberContext.firstValue.toMap())
-                .containsEntry("corda.session.key.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
+                .containsEntry("corda.session.keys.0.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
         }
 
         @Test

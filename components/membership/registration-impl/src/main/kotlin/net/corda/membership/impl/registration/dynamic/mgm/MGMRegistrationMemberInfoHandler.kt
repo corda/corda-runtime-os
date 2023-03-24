@@ -20,10 +20,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
@@ -53,7 +55,8 @@ internal class MGMRegistrationMemberInfoHandler(
     private companion object {
         const val SERIAL_CONST = "1"
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val keyIdList = listOf(SESSION_KEY_ID, ECDH_KEY_ID)
+        val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
+        val sessionKeyRegex = String.format("$PARTY_SESSION_KEYS.id", "[0-9]+").toRegex()
     }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
@@ -124,28 +127,38 @@ internal class MGMRegistrationMemberInfoHandler(
             ?: throw MGMRegistrationMemberInfoHandlingException(
                 "Could not find virtual node info for member ${holdingIdentity.shortHash}"
             )
-        val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, holdingIdentity.shortHash.value, SESSION_INIT)
         val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, holdingIdentity.shortHash.value, PRE_AUTH)
         if (ecdhKey.algorithm != "EC") {
             throw MGMRegistrationContextValidationException("ECDH key must be created with an EC schema.", null)
         }
         val now = clock.instant().toString()
         val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
-        val memberContext = context.filterKeys {
-            !keyIdList.contains(it)
+        val sessionKeys = context.filterKeys { key ->
+            sessionKeyRegex.matches(key)
+        }.values
+            .map {
+                getKeyFromId(it, holdingIdentity.shortHash.value, SESSION_INIT)
+            }.flatMapIndexed { index, sessionKey ->
+                listOf(
+                    String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
+                    String.format(SESSION_KEYS_HASH, index) to sessionKey.calculateHash().value,
+                )
+            }
+        val memberContext = context.filterKeys { key ->
+            !keyIdList.any { keyPrefix ->
+                key.startsWith(keyPrefix)
+            }
         }.filterKeys {
             !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
         } + mapOf(
             GROUP_ID to holdingIdentity.groupId,
             PARTY_NAME to holdingIdentity.x500Name.toString(),
-            PARTY_SESSION_KEY to sessionKey.toPem(),
-            SESSION_KEY_HASH to sessionKey.calculateHash().value,
             ECDH_KEY to ecdhKey.toPem(),
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
-        ) + optionalContext
+        ) + optionalContext + sessionKeys
         return memberInfoFactory.create(
             memberContext = memberContext.toSortedMap(),
             mgmContext = sortedMapOf(

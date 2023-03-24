@@ -22,11 +22,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -188,7 +188,7 @@ class MGMRegistrationMemberInfoHandlerTest {
 
     private val validTestContext
         get() = mapOf(
-            SESSION_KEY_ID to sessionKeyId,
+            SESSION_KEY_IDS.format(0) to sessionKeyId,
             ECDH_KEY_ID to ecdhKeyId,
             REGISTRATION_PROTOCOL to "registration protocol",
             SYNCHRONISATION_PROTOCOL to "synchronisation protocol",
@@ -258,8 +258,8 @@ class MGMRegistrationMemberInfoHandlerTest {
         assertThat(memberContext).containsOnlyKeys(
             GROUP_ID,
             PARTY_NAME,
-            PARTY_SESSION_KEY,
-            SESSION_KEY_HASH,
+            PARTY_SESSION_KEYS_PEM.format(0),
+            SESSION_KEYS_HASH.format(0),
             ECDH_KEY,
             PLATFORM_VERSION,
             SOFTWARE_VERSION,
@@ -340,7 +340,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             eq(holdingIdentity.shortHash.value),
             eq(listOf(ShortHash.of(sessionKeyId)))
         )
-        verify(keyEncodingService, never()).decodePublicKey(any<ByteArray>())
     }
 
     @Test
