@@ -143,7 +143,7 @@ class ConsensualFinalityFlowV1Test {
 
     @Test
     fun `called with a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(transactionSignatureService.verifySignature(any(), any(), any())).thenThrow(
+        whenever(signedTransaction.verifySignature(any())).thenThrow (
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
@@ -202,9 +202,9 @@ class ConsensualFinalityFlowV1Test {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("Failed to receive signatures from $BOB for transaction ${signedTransaction.id} with message: message!")
 
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1), eq(publicKeyAlice1))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2), eq(publicKeyAlice2))
-        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob), eq(publicKeyBob))
+        verify(signedTransaction).verifySignature(eq(signatureAlice1))
+        verify(signedTransaction).verifySignature(eq(signatureAlice2))
+        verify(signedTransaction, never()).verifySignature(eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
@@ -250,6 +250,8 @@ class ConsensualFinalityFlowV1Test {
             TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
 
+        assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
 //        assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
 //            .isInstanceOf(TransactionMissingSignaturesException::class.java)
 //            .hasMessageContainingAll(
