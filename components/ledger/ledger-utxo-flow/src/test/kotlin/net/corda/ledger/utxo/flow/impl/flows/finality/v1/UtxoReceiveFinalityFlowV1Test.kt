@@ -29,7 +29,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
@@ -57,7 +56,6 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
-    private val transactionSignatureService = mock<TransactionSignatureService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
     private val visibilityChecker = mock<VisibilityChecker>()
@@ -149,7 +147,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(transactionSignatureService.verifySignature(any(), any(), any())).thenThrow(
+        whenever(signedTransaction.verifySignatorySignature(any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -241,7 +239,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary), eq(publicKeyNotary))).thenThrow(
+        whenever(signedTransactionWithOwnKeys.verifyNotarySignature(eq(signatureNotary))).thenThrow(
             CryptoSignatureException("Verifying notary signature failed!!")
         )
 
@@ -262,6 +260,10 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
         whenever(signedTransactionWithOwnKeys.notaryKey).thenReturn(publicKey1)
+
+        whenever(signedTransactionWithOwnKeys.verifyNotarySignature(any())).thenThrow(
+            CordaRuntimeException("Notary's signature has not been created by the transaction's notary.")
+        )
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(CordaRuntimeException::class.java)
