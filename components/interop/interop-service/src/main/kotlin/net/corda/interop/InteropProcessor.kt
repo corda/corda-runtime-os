@@ -2,7 +2,6 @@ package net.corda.interop
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -15,13 +14,10 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.impl.InteropMessageTransformer
-import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 //TODO import commented out - see TODO adding FLOW_CONFIG below:
@@ -34,13 +30,13 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
-@Suppress("LongParameterList", "Unused")
+@Suppress("LongParameterList")
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val subscriptionFactory: SubscriptionFactory,
-    private val config: SmartConfig,
+    //private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    //private val subscriptionFactory: SubscriptionFactory,
+    //private val config: SmartConfig,
     private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : DurableProcessor<String, FlowMapperEvent> {
 
@@ -51,10 +47,7 @@ class InteropProcessor(
 
     private val interopAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
         cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
-    private val sessionAvroDeserializer: CordaAvroDeserializer<SessionEvent> =
-        cordaAvroSerializationFactory.createAvroDeserializer({}, SessionEvent::class.java)
-    private val  sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
-        cordaAvroSerializationFactory.createAvroSerializer{}
+    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
