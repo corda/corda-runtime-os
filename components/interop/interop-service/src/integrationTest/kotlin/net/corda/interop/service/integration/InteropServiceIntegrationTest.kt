@@ -28,11 +28,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -82,7 +82,7 @@ class InteropServiceIntegrationTest {
     private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
-        .withValue(BOOT_MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
+        .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -97,9 +97,11 @@ class InteropServiceIntegrationTest {
 
     private fun messagesToPublish(session: String) : List<Record<*,*>> {
         val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        val interopMessage : ByteBuffer = ByteBuffer.wrap(cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
-            InteropMessage("InteropMessageID-01",
-                """
+        val interopMessage: ByteBuffer = ByteBuffer.wrap(
+            cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
+                InteropMessage(
+                    "InteropMessageID-01",
+                    """
                     {
                       "method": "org.corda.interop/platform/tokens/v1.0/reserve-token",
                       "parameters": [
@@ -111,7 +113,10 @@ class InteropServiceIntegrationTest {
                         }
                       ]
                     }
-                """.trimIndent())))
+                """.trimIndent()
+                )
+            )
+        )
 
         val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
         val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "groupId")
