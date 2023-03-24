@@ -158,20 +158,23 @@ class TestServicesFactory {
     }
 
     val cryptoWrappingRepository = TestWrappingRepository()
-    val signingService: SigningService = SigningServiceImpl(
-        cryptoServiceFactory,
-        { it -> TestSigningRepository(it) },
-        digestService = PlatformDigestServiceImpl(schemeMetadata),
-        schemeMetadata,
-        keyEncodingService = schemeMetadata,
-        config = cryptoConfig,
-    )
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            cryptoServiceFactory = cryptoServiceFactory,
+            signingRepositoryFactory = { it -> TestSigningRepository() },
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            schemeMetadata = schemeMetadata,
+            keyEncodingService = schemeMetadata,
+            config = cryptoConfig,
+        )
+    }
 
     val hsmService: HSMServiceImpl by lazy {
         HSMServiceImpl(
             coordinatorFactory,
             configurationReadService,
-            hsmStore
+            hsmStore,
+            cryptoServiceFactory = cryptoServiceFactory
         ).also {
             it.start()
             eventually {
@@ -204,20 +207,18 @@ class TestServicesFactory {
 
     // this MUST return cryptoService at the end of the day, rather than make its own,
     // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
-    val cryptoServiceFactory: CryptoServiceFactoryImpl by lazy {
-        CryptoServiceFactoryImpl(
-            coordinatorFactory,
-            configurationReadService,
-            hsmStore,
-            object : CryptoServiceProvider {
-                override fun getInstance(config: SmartConfig): CryptoService = cryptoService
-            }
-        ).also {
-            it.start()
-            it.bootstrapConfig(bootstrapConfig)
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
+    val cryptoServiceFactory: CryptoServiceFactoryImpl = CryptoServiceFactoryImpl(
+        coordinatorFactory,
+        configurationReadService,
+        hsmStore,
+        object : CryptoServiceProvider {
+            override fun getInstance(config: SmartConfig): CryptoService = cryptoService
+        }
+    ).also {
+        it.start()
+        it.bootstrapConfig(bootstrapConfig)
+        eventually {
+            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
         }
     }
 
@@ -265,3 +266,5 @@ class TestServicesFactory {
         }
     }
 }
+
+

@@ -1,12 +1,12 @@
 package net.corda.crypto.service.impl.infra
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.SigningRepository
+import net.corda.crypto.softhsm.WrappingRepository
+import java.util.concurrent.ConcurrentHashMap
 
 class TestWrappingRepository(
     val keys: ConcurrentHashMap<String, WrappingKeyInfo> = ConcurrentHashMap(),
-) : SigningRepository {
+) : WrappingRepository {
     override fun saveKey(alias: String, key: WrappingKeyInfo) {
         keys[alias] = key
     }
