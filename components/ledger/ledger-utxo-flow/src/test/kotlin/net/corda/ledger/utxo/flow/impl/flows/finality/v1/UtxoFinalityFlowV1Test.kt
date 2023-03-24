@@ -578,7 +578,7 @@ class UtxoFinalityFlowV1Test {
     }
 
     @Test
-    fun `receiving valid signatures over a transaction then receiving invalid signatures from notary throws`() {
+    fun `receiving valid signatures over a transaction then receiving invalid notary signatures throws`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -602,10 +602,18 @@ class UtxoFinalityFlowV1Test {
                 )
             )
         )
-        whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary), eq(publicKeyNotaryVNode1))).thenThrow(
+        whenever(txAfterBobSignature.verifyNotarySignature(eq(signatureNotary))).thenThrow(
             IllegalArgumentException("Notary signature verification failed.")
         )
 
@@ -613,18 +621,19 @@ class UtxoFinalityFlowV1Test {
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("Notary signature verification failed.")
 
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1), eq(publicKeyAlice1))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2), eq(publicKeyAlice2))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob), eq(publicKeyBob))
+        verify(initialTx).verifySignatorySignature(eq(signature0))
+        verify(initialTx).verifySignatorySignature(eq(signatureAlice1))
+        verify(txAfterAlice1Signature).verifySignatorySignature(eq(signatureAlice2))
+        verify(txAfterAlice2Signature).verifySignatorySignature(eq(signatureBob))
 
         verify(initialTx).addSignature(signatureAlice1)
-        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
-        verify(updatedTxSomeSigs).addSignature(signatureBob)
-        verify(updatedTxAllSigs, never()).addSignature(signatureNotary)
+        verify(txAfterAlice1Signature).addSignature(signatureAlice2)
+        verify(txAfterAlice2Signature).addSignature(signatureBob)
+        verify(txAfterBobSignature, never()).addSignature(signatureNotary)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
+        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
         verify(sessionAlice).receive(Payload::class.java)
@@ -793,17 +802,25 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("Failed to receive signatures from $BOB for transaction ${initialTx.id} with message: message!")
 
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1), eq(publicKeyAlice1))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2), eq(publicKeyAlice2))
-        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob), eq(publicKeyBob))
+        verify(initialTx).verifySignatorySignature(eq(signature0))
+        verify(initialTx).verifySignatorySignature(eq(signatureAlice1))
+        verify(txAfterAlice1Signature).verifySignatorySignature(eq(signatureAlice2))
+        verify(txAfterAlice2Signature, never()).verifySignatorySignature(eq(signatureBob))
 
         verify(initialTx).addSignature(signatureAlice1)
-        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
-        verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
+        verify(txAfterAlice1Signature).addSignature(signatureAlice2)
+        verify(txAfterAlice2Signature, never()).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(initialTx, TransactionStatus.INVALID)
@@ -828,7 +845,12 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob), eq(publicKeyBob))).thenThrow(
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+
+        whenever(txAfterAlice2Signature.verifySignatorySignature(eq(signatureBob))).thenThrow(
             CryptoSignatureException("")
         )
 
@@ -836,11 +858,11 @@ class UtxoFinalityFlowV1Test {
             .isInstanceOf(CryptoSignatureException::class.java)
 
         verify(initialTx).addSignature(signatureAlice1)
-        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
-        verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
+        verify(txAfterAlice1Signature).addSignature(signatureAlice2)
+        verify(txAfterAlice2Signature, never()).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxSomeSigs, TransactionStatus.INVALID)
+        verify(persistenceService).persist(txAfterAlice2Signature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -858,6 +880,9 @@ class UtxoFinalityFlowV1Test {
         whenever(updatedTxSomeSigs.verifySignatorySignatures()).thenThrow(
             TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
+
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
 
 //        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
 //            .isInstanceOf(TransactionMissingSignaturesException::class.java)
