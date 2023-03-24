@@ -82,7 +82,7 @@ fun createMgmRegistrationContext(
     sessionPkiMode: String = "NoPKI",
     tlsType: String = "OneWay",
 ) = mapOf(
-    "corda.session.key.id" to sessionKeyId,
+    "corda.session.keys.0.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
     "corda.group.protocol.registration"
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
@@ -105,8 +105,8 @@ fun createMemberRegistrationContext(
     sessionKeyId: String,
     ledgerKeyId: String
 ) = mapOf(
-    "corda.session.key.id" to sessionKeyId,
-    "corda.session.key.signature.spec" to SIGNATURE_SPEC,
+    "corda.session.keys.0.id" to sessionKeyId,
+    "corda.session.keys.0.signature.spec" to SIGNATURE_SPEC,
     "corda.ledger.keys.0.id" to ledgerKeyId,
     "corda.ledger.keys.0.signature.spec" to SIGNATURE_SPEC,
     "corda.endpoints.0.connectionURL" to memberE2eCluster.p2pUrl,

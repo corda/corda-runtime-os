@@ -180,7 +180,7 @@ internal class LifecycleProcessor(
                 dependentComponents?.stopAll()
             }
             runUserEventHandler(event, coordinator)
-            closeManagedResources(emptySet())
+            closeManagedResources(null)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
         }
@@ -217,7 +217,7 @@ internal class LifecycleProcessor(
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
-        closeManagedResources(emptySet())
+        closeManagedResources(null)
         managedResources.clear()
         return true
     }
