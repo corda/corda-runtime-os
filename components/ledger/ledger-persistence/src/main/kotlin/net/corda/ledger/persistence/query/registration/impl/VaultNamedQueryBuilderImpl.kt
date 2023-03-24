@@ -30,11 +30,17 @@ class VaultNamedQueryBuilderImpl(
     }
 
     override fun filter(filter: VaultNamedQueryFilter<*>): VaultNamedQueryBuilder {
+        require(this.filter == null) {
+            "Mapper function has already been set!"
+        }
         this.filter = filter
         return this
     }
 
     override fun map(mapper: VaultNamedQueryTransformer<*, *>): VaultNamedQueryBuilder {
+        require(this.mapper == null) {
+            "Mapper function has already been set!"
+        }
         this.mapper = mapper
         return this
     }

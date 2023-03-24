@@ -9,6 +9,7 @@ import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByPersistence
@@ -61,21 +62,20 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
         val vaultNamedQuery = registry.getQuery(request.queryName)
         require(vaultNamedQuery != null) { "Query with name ${request.queryName} could not be found!" }
 
-        // Deserialize the parameters into readable objects instead of bytes
-        val deserializedParams = request.parameters.mapValues {
-            serializationService.deserialize(it.value.array(), Any::class.java)
-        }
-
         // Fetch the transaction IDs for the given request
         val transactionIds = fetchTransactionIdsForRequest(
             request,
             vaultNamedQuery.whereJson,
-            deserializedParams,
             holdingIdentity
         )
 
         // Fetch the contract states for the given transaction IDs
         val contractStateResults = fetchContractStates(transactionIds, holdingIdentity)
+
+        // Deserialize the parameters into readable objects instead of bytes
+        val deserializedParams = request.parameters.mapValues {
+            serializationService.deserialize(it.value.array(), Any::class.java)
+        }
 
         // Apply filters and transforming functions (if there's any)
         val filteredAndTransformedResults = contractStateResults.filter {
@@ -103,19 +103,27 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
     private fun fetchTransactionIdsForRequest(
         request: FindWithNamedQuery,
         whereJson: String?,
-        deserializedParams: Map<String, Any>,
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: HoldingIdentity
     ): List<String> {
+
+        val nullParamNames = request.parameters.filter { it.value == null }.map { it.key }
+        if (nullParamNames.isNotEmpty()) {
+            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
+            log.error(msg)
+            throw NullParameterException(msg)
+        }
+
         return entitySandboxService.get(holdingIdentity.toCorda())
             .getEntityManagerFactory()
             .transaction { em ->
-                var query = em.createNativeQuery(
+                val query = em.createNativeQuery(
                     "SELECT transaction_id FROM $UTXO_VISIBLE_TX_TABLE " +
                             whereJson
                 )
 
-                deserializedParams.forEach {
-                    query = query.setParameter(it.key, it.value)
+                request.parameters.filter { it.value != null}.forEach { rec ->
+                    val bytes = rec.value.array()
+                    query.setParameter(rec.key, serializationService.deserialize(bytes))
                 }
 
                 query.firstResult = request.offset

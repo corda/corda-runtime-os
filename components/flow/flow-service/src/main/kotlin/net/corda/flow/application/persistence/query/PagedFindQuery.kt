@@ -4,6 +4,7 @@ import net.corda.flow.application.persistence.external.events.FindAllExternalEve
 import net.corda.flow.application.persistence.external.events.FindAllParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.ResultSetImpl
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -40,6 +41,6 @@ class PagedFindQuery<R : Any>(
             )
         }.map { serializationService.deserialize(it.array(), entityClass) }
 
-        return PersistenceResultSetImpl(deserialized)
+        return ResultSetImpl(deserialized)
     }
 }

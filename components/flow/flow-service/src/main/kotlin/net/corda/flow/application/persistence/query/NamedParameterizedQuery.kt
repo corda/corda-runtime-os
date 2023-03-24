@@ -5,6 +5,7 @@ import net.corda.flow.application.persistence.external.events.NamedQueryExternal
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.ResultSetImpl
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.serialization.SerializationService
@@ -55,7 +56,7 @@ class NamedParameterizedQuery<R : Any>(
             )
         }.map { serializationService.deserialize(it.array(), expectedClass) }
 
-        return PersistenceResultSetImpl(deserialized)
+        return ResultSetImpl(deserialized)
     }
 
     private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {

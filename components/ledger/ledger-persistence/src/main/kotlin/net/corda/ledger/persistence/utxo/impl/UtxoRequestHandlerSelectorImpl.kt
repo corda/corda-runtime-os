@@ -102,7 +102,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             is FindWithNamedQuery -> {
-                UtxoExecuteCustomQueryHandler(
+                UtxoExecuteNamedQueryHandler(
                     request.flowExternalEventContext,
                     request.holdingIdentity,
                     req,

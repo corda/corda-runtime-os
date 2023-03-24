@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.ResultSetImpl
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.v5.application.persistence.PagedQuery
@@ -11,6 +12,7 @@ import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
 import java.nio.ByteBuffer
 import java.time.Instant
 
+// TODO CORE-12032 use delegation to create this class
 class VaultNamedParameterizedQueryImpl<T>(
     private val queryName: String,
     private val externalEventExecutor: ExternalEventExecutor,
@@ -64,7 +66,7 @@ class VaultNamedParameterizedQueryImpl<T>(
             VaultNamedQueryEventParams(queryName, getSerializedParameters(queryParams), offsetValue, limitValue)
         )
 
-        return LedgerResultSetImpl(
+        return ResultSetImpl(
             results.map { serializationService.deserialize(it.array(), resultClass) }
         )
     }
