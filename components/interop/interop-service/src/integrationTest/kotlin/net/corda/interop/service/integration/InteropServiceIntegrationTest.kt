@@ -12,7 +12,12 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.app.*
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropService
@@ -129,7 +134,13 @@ class InteropServiceIntegrationTest {
                 ByteBuffer.wrap("".toByteArray())
             )
         )
-        val interopRecord = Record(P2P_IN_TOPIC, aliceX500Name, AppMessage(UnauthenticatedMessage(header, interopMessage)))
+        val interopRecord = Record(
+            P2P_IN_TOPIC, aliceX500Name, AppMessage(
+                UnauthenticatedMessage(
+                    header, interopMessage
+                )
+            )
+        )
         val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1),
             "", "", "flowSession", MembershipStatusFilter.ACTIVE)
         val nonInteropSessionRecord = Record(
@@ -250,7 +261,13 @@ class InteropServiceIntegrationTest {
                 }
             }
       """
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                )
+            )
+        )
     }
 
     private fun republishConfig(publisher: Publisher) {
