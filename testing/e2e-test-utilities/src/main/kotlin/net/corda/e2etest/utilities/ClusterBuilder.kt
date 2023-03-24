@@ -293,7 +293,10 @@ class ClusterBuilder {
                 {
                     "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
                     "useClusterLevelTlsCertificateAndKey": true,
-                    "sessionKeyId": "$sessionKeyId"
+                    "sessionKeysAndCertificates": [
+                      "preferred": true,
+                      "sessionKeyId": "$sessionKeyId"
+                    ]
                 }
             """.trimIndent()
         )
