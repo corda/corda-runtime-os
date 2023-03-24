@@ -98,13 +98,14 @@ public interface UtxoLedgerService {
      * Verifies, signs, collects signatures, records and broadcasts a {@link UtxoSignedTransaction} to participants and observers.
      *
      * @param transaction The {@link UtxoSignedTransaction} to verify, finalize and record.
-     * @param sessions The {@link FlowSession} instances of the participants or observers of the transaction.
-     * @return Returns the fully signed {@link UtxoSignedTransaction} that was recorded.
+     * @param sessions    The {@link FlowSession} instances of the participants or observers of the transaction.
+     * @return Returns the {@link FinalizationResult} containing a fully signed {@link UtxoSignedTransaction} that was
+     * recorded.
      * @throws ContractVerificationException if the transaction fails contract verification.
      */
     @NotNull
     @Suspendable
-    UtxoSignedTransaction finalize(
+    FinalizationResult finalize(
             @NotNull UtxoSignedTransaction transaction,
             @NotNull List<FlowSession> sessions
     );
@@ -114,14 +115,15 @@ public interface UtxoLedgerService {
      * <p>
      * This method should be called in response to {@link #finalize(UtxoSignedTransaction, List)}.
      *
-     * @param session The {@link FlowSession} of the counter-party finalizing the {@link UtxoSignedTransaction}.
+     * @param session   The {@link FlowSession} of the counter-party finalizing the {@link UtxoSignedTransaction}.
      * @param validator Validates the received {@link UtxoSignedTransaction}.
-     * @return Returns the fully signed {@link UtxoSignedTransaction} that was received and recorded.
+     * @return Returns the {@link FinalizationResult} containing a fully signed {@link UtxoSignedTransaction} that was
+     * received and recorded.
      * @throws ContractVerificationException if the transaction failed contract verification.
      */
     @NotNull
     @Suspendable
-    UtxoSignedTransaction receiveFinality(
+    FinalizationResult receiveFinality(
             @NotNull FlowSession session,
             @NotNull UtxoTransactionValidator validator
     );
