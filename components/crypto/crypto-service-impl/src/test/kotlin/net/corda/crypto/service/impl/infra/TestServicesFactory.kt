@@ -1,6 +1,9 @@
 package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
+import java.security.KeyPairGenerator
+import java.security.Provider
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -32,9 +35,6 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
-import java.security.KeyPairGenerator
-import java.security.Provider
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
 
@@ -161,7 +161,7 @@ class TestServicesFactory {
     val signingService: SigningService by lazy {
         SigningServiceImpl(
             cryptoServiceFactory = cryptoServiceFactory,
-            signingRepositoryFactory = { TestSigningRepository() },
+            signingRepositoryFactory = { signingRepository },
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             schemeMetadata = schemeMetadata,
             keyEncodingService = schemeMetadata,

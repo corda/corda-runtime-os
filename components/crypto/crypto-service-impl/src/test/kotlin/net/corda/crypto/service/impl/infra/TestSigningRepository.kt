@@ -4,8 +4,8 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyHashFromBytes
+import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -31,7 +31,7 @@ class TestSigningRepository: SigningRepository {
     override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo = lock.withLock {
         val encodedKey = context.key.publicKey.encoded
         return SigningKeyInfo(
-            id = keyIdFromBytes(encodedKey),
+            id = publicKeyShortHashFromBytes(encodedKey),
             fullId = publicKeyHashFromBytes(encodedKey),
             tenantId = "test",
             category = context.category,
@@ -56,7 +56,7 @@ class TestSigningRepository: SigningRepository {
     override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo = lock.withLock {
         val encodedKey = context.key.publicKey.encoded
         return SigningKeyInfo(
-            id = keyIdFromBytes(encodedKey),
+            id = publicKeyShortHashFromBytes(encodedKey),
             fullId = publicKeyHashFromBytes(encodedKey),
             tenantId = "test",
             category = context.category,
@@ -136,7 +136,3 @@ class TestSigningRepository: SigningRepository {
 
     override fun close() { keys.clear() }
 }
-
-fun keyIdFromBytes(publicKey: ByteArray): ShortHash =
-    ShortHash.of(fullPublicKeyIdFromBytes(publicKey))
-

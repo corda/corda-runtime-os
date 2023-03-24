@@ -1,12 +1,12 @@
 package net.corda.crypto.core
 
+import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import java.security.PublicKey
 
 // TODO we should end up with only having helpers all of them using `DigestService`/ `PlatformDigestService`
 //  as recorded in https://r3-cev.atlassian.net/browse/CORE-10267.
@@ -36,8 +36,8 @@ fun fullPublicKeyIdFromBytes(publicKey: ByteArray): String =
 fun publicKeyHashFromBytes(publicKey: ByteArray): SecureHash =
     SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
 
-fun publicKeyShortHashFromBytes(publicKey: ByteArray): String =
-    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()).toHexString().substring(0, 12)
+fun publicKeyShortHashFromBytes(publicKey: ByteArray): ShortHash =
+    ShortHash.of(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()))
 
 fun PublicKey.fullId(): String =
     fullPublicKeyIdFromBytes(this.encoded)
