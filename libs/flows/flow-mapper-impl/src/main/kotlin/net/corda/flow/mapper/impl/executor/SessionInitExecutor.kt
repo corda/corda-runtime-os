@@ -55,7 +55,7 @@ class SessionInitExecutor(
             )
 
         // Send a session confirm message in response to the session init.
-        // Temporary hack for CORE-10465, will be removed as part of subsequent ticket
+        // Temporary hack for CORE-10465, will be removed in CORE-10420
         if (sessionEvent.isInteropEvent()) {
             val hackyConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
