@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.softhsm.SigningRepository
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
@@ -12,14 +13,16 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class SigningServiceImplTest {
-    private val store = mock<SigningKeyStore>()
+    private val repo = mock<SigningRepository>()
     private val cryptoServiceFactory = mock<CryptoServiceFactory>()
     private val schemeMetadata = mock<CipherSchemeMetadata>()
     private val service = SigningServiceImpl(
-        store,
-        cryptoServiceFactory,
-        schemeMetadata,
-        mock()
+        cryptoServiceFactory = cryptoServiceFactory,
+        signingRepositoryFactory = { repo },
+        schemeMetadata = schemeMetadata,
+        digestService = mock(),
+        keyEncodingService = mock(),
+        cache = mock()
     )
 
     @Test
@@ -30,7 +33,7 @@ class SigningServiceImplTest {
         val scheme = mock<KeyScheme>()
         val context = emptyMap<String, String>()
         val key = mock<SigningKeyInfo>()
-        whenever(store.find(tenantId, alias)).doReturn(key)
+        whenever(repo.findKey(alias)).doReturn(key)
 
         assertThrows<KeyAlreadyExistsException> {
             service.generateKeyPair(
