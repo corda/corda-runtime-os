@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
