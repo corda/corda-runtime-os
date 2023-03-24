@@ -252,10 +252,11 @@ class StaticMemberRegistrationService @Activate constructor(
         val holdingIdentity = memberInfo.holdingIdentity
         val groupParametersList = cache.getOrCreateGroupParameters(holdingIdentity).run {
             memberInfo.notaryDetails?.let { notary ->
-                val currentProtocolVersions = groupReader.lookup()
-                    .filter { it.notaryDetails?.serviceName == notary.serviceName && it.name != memberInfo.name }
-                    .flatMap { it.notaryDetails!!.serviceProtocolVersions }
-                    .toSet()
+                val currentProtocolVersions = groupReader.notaryVirtualNodeLookup.getNotaryVirtualNodes(notary.serviceName)
+                    .filter { it.name != memberInfo.name }
+                    .map { it.notaryDetails!!.serviceProtocolVersions.toHashSet() }
+                    .reduceOrNull { acc, it -> acc.apply { retainAll(it) } }
+                    ?: emptySet()
                 cache.addNotary(memberInfo, currentProtocolVersions)
             } ?: this
         }

@@ -78,6 +78,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
@@ -295,7 +296,12 @@ class StaticMemberRegistrationServiceTest {
         } doReturn MembershipQueryResult.Success(emptyList())
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
-    private val groupReader: MembershipGroupReader = mock()
+    private val notaryVirtualNodeLookup = mock<NotaryVirtualNodeLookup> {
+        on { getNotaryVirtualNodes(any()) } doReturn emptyList()
+    }
+    private val groupReader: MembershipGroupReader = mock {
+        on { notaryVirtualNodeLookup } doReturn notaryVirtualNodeLookup
+    }
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }

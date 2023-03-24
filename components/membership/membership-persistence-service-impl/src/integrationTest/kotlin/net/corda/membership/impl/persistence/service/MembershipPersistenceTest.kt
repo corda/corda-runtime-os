@@ -46,6 +46,8 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -129,10 +131,6 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
     companion object {
-
-        private const val EPOCH_KEY = "corda.epoch"
-        private const val MODIFIED_TIME_KEY = "corda.modifiedTime"
-
         private const val RULE_ID = "rule-id"
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"

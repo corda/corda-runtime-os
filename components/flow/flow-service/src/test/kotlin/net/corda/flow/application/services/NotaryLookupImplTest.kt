@@ -28,11 +28,13 @@ class NotaryLookupImplTest {
     private val notaryServiceAlice: NotaryInfo = mock {
         on { name } doReturn alice
         on { protocol } doReturn "net.corda.Plugin1"
+        on { protocolVersions } doReturn setOf(1, 2)
         on { publicKey } doReturn alicePublicKeyCompose
     }
     private val notaryServiceBob: NotaryInfo = mock {
         on { name } doReturn bob
         on { protocol } doReturn "net.corda.Plugin2"
+        on { protocolVersions } doReturn setOf(3, 4)
         on { publicKey } doReturn bobPublicKeyCompose
     }
     private val notaries = listOf(
@@ -65,10 +67,12 @@ class NotaryLookupImplTest {
             assertThat(it.name).isEqualTo(alice)
             assertThat(it.protocol).isEqualTo("net.corda.Plugin1")
             assertThat(it.publicKey).isEqualTo(alicePublicKeyCompose)
+            assertThat(it.protocolVersions).containsExactlyInAnyOrder(1, 2)
         }.anySatisfy {
             assertThat(it.name).isEqualTo(bob)
             assertThat(it.protocol).isEqualTo("net.corda.Plugin2")
             assertThat(it.publicKey).isEqualTo(bobPublicKeyCompose)
+            assertThat(it.protocolVersions).containsExactlyInAnyOrder(3, 4)
         }.hasSize(2)
     }
 

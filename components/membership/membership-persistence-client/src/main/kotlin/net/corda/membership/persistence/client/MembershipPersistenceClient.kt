@@ -107,7 +107,7 @@ interface MembershipPersistenceClient : Lifecycle {
      */
     fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo,
+        notary: MemberInfo
     ): MembershipPersistenceResult<KeyValuePairList>
 
     /**

@@ -21,7 +21,7 @@ import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
-    private val persistenceHandlerServices: PersistenceHandlerServices
+    persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<AddNotaryToGroupParameters, PersistGroupParametersResponse>(persistenceHandlerServices) {
     private companion object {
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
@@ -86,16 +86,18 @@ internal class AddNotaryToGroupParametersHandler(
                 val members = em.createQuery(memberQuery)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                     .resultList.map {
-                        persistenceHandlerServices.memberInfoFactory.create(
+                        memberInfoFactory.create(
                             deserializeProperties(it.memberContext).toSortedMap(),
                             deserializeProperties(it.mgmContext).toSortedMap(),
                         )
                     }
                 val currentProtocolVersions = members.filter {
-                        it.notaryDetails?.serviceName == notary.serviceName &&
-                        it.name != notaryInfo.name &&
-                        it.status == MEMBER_STATUS_ACTIVE
-                    }.flatMap { it.notaryDetails!!.serviceProtocolVersions }.toSet()
+                    it.notaryDetails?.serviceName == notary.serviceName &&
+                    it.name != notaryInfo.name &&
+                    it.status == MEMBER_STATUS_ACTIVE
+                }.map {
+                    it.notaryDetails!!.serviceProtocolVersions.toHashSet()
+                }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
 
                 updateExistingNotaryService(
                     parametersMap,
