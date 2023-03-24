@@ -92,7 +92,6 @@ class CryptoOpsBusServiceImpl @Activate constructor(
                 ),
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
-                keyEncodingService = keyEncodingService,
                 config = cryptoConfig
             ), cryptoConfig
         )

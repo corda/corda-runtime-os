@@ -4,12 +4,16 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.SignatureSpec
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import java.security.PublicKey
 import java.util.UUID
 
@@ -24,37 +28,33 @@ class SigningServiceGeneralTests {
         }
     }
 
-//    @Test
-//    fun `Should throw original exception failing signing`() {
-//        val exception = RuntimeException("")
-//        val repo = mock<SigningRepository> {
-//            on { findKey(any<PublicKey>()) } doThrow exception
-//        }
-//        val signingService = SigningServiceImpl(
-//            cryptoServiceFactory = mock(),
-//            schemeMetadata = schemeMetadata,
-//            digestService = mock(),
-//            keyEncodingService = mock()
-//            dbConnectionManager = mock(),
-//            jpaEntitiesRegistry = mock(),
-//            virtualNodeInfoReadService = mock(),
-//            layeredPropertyMapFactory = mock()
-//            cache = mock()         
-//        )
-//        val thrown = assertThrows(exception::class.java) {
-//            signingService.sign(
-//                tenantId = UUID.randomUUID().toString(),
-//                publicKey = mock {
-//                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-//                },
-//                signatureSpec = SignatureSpec("NONE"),
-//                data = ByteArray(2),
-//                context = emptyMap()
-//            )
-//        }
-//        assertSame(exception, thrown)
-//        Mockito.verify(repo, times(1)).findKey(any<PublicKey>())
-//    }
+    @Test
+    fun `Should throw original exception failing signing`() {
+        val exception = RuntimeException("")
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doThrow exception
+        }
+        val signingService = SigningServiceImpl(
+            cryptoServiceFactory = mock(),
+            signingRepositoryFactory = { repo },
+            schemeMetadata = schemeMetadata,
+            digestService = mock(),
+            cache = mock()
+        )
+        val thrown = assertThrows(exception::class.java) {
+            signingService.sign(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                signatureSpec = SignatureSpec("NONE"),
+                data = ByteArray(2),
+                context = emptyMap()
+            )
+        }
+        assertSame(exception, thrown)
+        Mockito.verify(repo, times(1)).findKey(any<PublicKey>())
+    }
 
     @Test
     fun `Should throw IllegalArgumentException when key is not found for signing`() {
@@ -66,7 +66,6 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             schemeMetadata = schemeMetadata,
             digestService = mock(),
-            keyEncodingService = mock(),
             cache = mock()
         )
         assertThrows(IllegalArgumentException::class.java) {

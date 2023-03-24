@@ -57,7 +57,6 @@ class SigningServiceImpl(
     private val signingRepositoryFactory: SigningRepositoryFactory,
     override val schemeMetadata: CipherSchemeMetadata,
     private val digestService: PlatformDigestService,
-    private val keyEncodingService: KeyEncodingService,
     private val cache: Cache<CacheKey, SigningKeyInfo>,
 ) : SigningService {
 
@@ -71,14 +70,12 @@ class SigningServiceImpl(
         signingRepositoryFactory: SigningRepositoryFactory,
         schemeMetadata: CipherSchemeMetadata,
         digestService: PlatformDigestService,
-        keyEncodingService: KeyEncodingService, // TODO remove and use schemeMetadata instead which implements KeyEncodingService
         config: SmartConfig,
     ) : this(
         cryptoServiceFactory,
         signingRepositoryFactory,
         schemeMetadata,
         digestService,
-        keyEncodingService,
         CacheFactoryImpl().build(
             "Signing-Key-Cache",
             Caffeine.newBuilder()
@@ -360,7 +357,7 @@ class SigningServiceImpl(
             return signingRepositoryFactory.getInstance(tenantId).findKey(publicKey)?.let {
                 // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
                 // requested key Sand not a different one that clashed on key id (short key id).
-                if (it.fullId == publicKey.fullIdHash(keyEncodingService, digestService)) {
+                if (it.fullId == publicKey.fullIdHash(schemeMetadata, digestService)) {
                     it
                 } else {
                     null

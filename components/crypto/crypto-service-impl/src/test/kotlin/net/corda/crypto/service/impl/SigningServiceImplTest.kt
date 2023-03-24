@@ -21,7 +21,6 @@ class SigningServiceImplTest {
         signingRepositoryFactory = { repo },
         schemeMetadata = schemeMetadata,
         digestService = mock(),
-        keyEncodingService = mock(),
         cache = mock()
     )
 

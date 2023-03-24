@@ -164,7 +164,6 @@ class TestServicesFactory {
             signingRepositoryFactory = { signingRepository },
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             schemeMetadata = schemeMetadata,
-            keyEncodingService = schemeMetadata,
             config = cryptoConfig,
         )
     }
