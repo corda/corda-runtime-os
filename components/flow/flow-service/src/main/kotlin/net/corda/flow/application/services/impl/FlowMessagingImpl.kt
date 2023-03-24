@@ -63,8 +63,11 @@ class FlowMessagingImpl @Activate constructor(
         // For now, the flow mapper sends back the invocation
         val session = createInteropFlowSession(memberName)
         val request = FacadeInvocation(memberName, facadeName, methodName, payload)
-        val response = session.sendAndReceive(FacadeInvocation::class.java, request)
-        session.close()
+        val response = try {
+            session.sendAndReceive(FacadeInvocation::class.java, request)
+        } finally {
+            session.close()
+        }
         return response.payload
     }
 
