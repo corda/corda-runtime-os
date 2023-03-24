@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -43,7 +44,8 @@ class InteropP2PFilterService @Activate constructor(
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<InteropP2PFilterService>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<InteropP2PFilterService>(
+        DependentComponents.of(::configurationReadService), ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {

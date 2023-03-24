@@ -134,7 +134,7 @@ class InteropServiceIntegrationTest {
     }
 
     @Test
-    fun `verify inbound messages from flow interop processor are send to flow mapper event topic`() {
+    fun `verify interop processor sends messages to flow mapper event topic and p2p out topic`() {
         interopService.start()
         val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
         // Test config updates don't break Interop Service
