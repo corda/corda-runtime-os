@@ -24,7 +24,7 @@ fun makeSoftCryptoService(
     },
     wrappingRepository: WrappingRepository = TestWrappingRepository(),
 ) = SoftCryptoService(
-    wrappingRepository = wrappingRepository,
+    wrappingRepositoryFactory = { wrappingRepository },
     schemeMetadata = schemeMetadata,
     rootWrappingKey = rootWrappingKey,
     digestService = PlatformDigestServiceImpl(schemeMetadata),

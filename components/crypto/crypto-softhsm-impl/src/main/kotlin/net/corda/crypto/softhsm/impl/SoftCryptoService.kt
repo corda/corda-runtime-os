@@ -16,13 +16,14 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.WrappingRepository
+import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -41,7 +42,8 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * This class is all about the business logic of generating, storing and using key pairs; it can be run
  * without a database, without OSGi and without SmartConfig, which makes it easy to test.
  *
- * @param wrappingRepository which provides save and find operations for wrapping keys.
+ * @param wrappingRepositoryFactory which provides a factory for [WrappingRepository], which provides save and
+ *        find operations for wrapping keys on a specific tenant.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param rootWrappingKey the single top level wrapping key for encrypting all key material at rest
  * @param digestService supply a platform digest service instance; if not one will be constructed
@@ -56,7 +58,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 
 @Suppress("LongParameterList")
 class SoftCryptoService(
-    private val wrappingRepository: WrappingRepository,
+    private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val schemeMetadata: CipherSchemeMetadata,
     private val rootWrappingKey: WrappingKey,
     private val digestService: PlatformDigestService,
@@ -81,7 +83,9 @@ class SoftCryptoService(
     override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(wrappingKeyAlias != "") { "Alias must not be empty" }
         val isCached = wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null
-        val isAvailable = if (isCached) true else wrappingRepository.findKey(wrappingKeyAlias) != null
+        val isAvailable = if (isCached) true else wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use {
+            it.findKey(wrappingKeyAlias) != null
+        }
         logger.trace {
             "createWrappingKey(alias=$wrappingKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
         }
@@ -94,7 +98,9 @@ class SoftCryptoService(
         val wrappingKeyEncrypted = rootWrappingKey.wrap(wrappingKey)
         val wrappingKeyInfo =
             WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappingKeyEncrypted)
-        wrappingRepository.saveKey(wrappingKeyAlias, wrappingKeyInfo)
+        wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use {
+            it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
+        }
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
@@ -197,16 +203,16 @@ class SoftCryptoService(
     private fun getWrappingKeyUncached(alias: String): WrappingKey {
         // use IllegalArgumentException instead for not found?
         val wrappingKeyInfo =
-            wrappingRepository.findKey(alias)
+            wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use { it.findKey(alias) }
                 ?: throw IllegalStateException("Wrapping key with alias $alias not found")
-        require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-            "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-        }
-        // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-        require(rootWrappingKey.algorithm == wrappingKeyInfo.algorithmName) {
-            "Expected algorithm is ${rootWrappingKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
-        }
-        return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
+                require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+                    "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+                }
+                // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+                require(rootWrappingKey.algorithm == wrappingKeyInfo.algorithmName) {
+                    "Expected algorithm is ${rootWrappingKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+                }
+                return rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
     private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
@@ -216,5 +222,6 @@ class SoftCryptoService(
         return getWrappingKey(spec.wrappingKeyAlias).unwrap(spec.keyMaterial)
     }
 
-    override fun close() = wrappingRepository.close()
+    override fun close() {
+    }
 }

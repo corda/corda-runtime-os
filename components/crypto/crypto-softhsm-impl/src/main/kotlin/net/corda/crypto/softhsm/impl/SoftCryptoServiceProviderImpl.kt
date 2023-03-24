@@ -15,12 +15,10 @@ import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.softhsm.CryptoServiceProvider
-import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
@@ -89,15 +87,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        WrappingRepositoryImpl(
-            getEntityManagerFactory(
-                CryptoTenants.CRYPTO, // TODO review this
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                jpaEntitiesRegistry
-            )
-        ),
-        schemeMetadata, digestService, CacheFactoryImpl()
+        schemeMetadata,
+        digestService,
+        CacheFactoryImpl(),
+        dbConnectionManager,
+        virtualNodeInfoReadService,
+        jpaEntitiesRegistry
     )
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
@@ -105,11 +100,21 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 
     class Impl(
-        private val wrappingRepository: WrappingRepository,
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: PlatformDigestService,
         private val cacheFactoryImpl: CacheFactoryImpl,
+        private val dbConnectionManager: DbConnectionManager,
+        private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     ) : AbstractImpl {
+        private fun openRepository(tenantId: String) =  WrappingRepositoryImpl(
+            getEntityManagerFactory(
+                tenantId,
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry
+            )
+        )
 
         fun getInstance(config: SmartConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
@@ -147,7 +152,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                     )
             )
             return SoftCryptoService(
-                wrappingRepository = wrappingRepository,
+                wrappingRepositoryFactory = ::openRepository,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 rootWrappingKey = rootWrappingKey,
@@ -165,9 +170,5 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         override val downstream: DependenciesTracker
             get() = DependenciesTracker.AlwaysUp()
 
-        override fun close() {
-            super.close()
-            wrappingRepository.close()
-        }
     }
 }
