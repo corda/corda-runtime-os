@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.cordapp.configuration.ConfigKeys
 import net.corda.v5.base.versioning.Version
 
 class ExternalChannelsConfigValidatorImpl(private val configValidator: ConfigurationValidator) :

@@ -8,7 +8,6 @@ import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
-import net.corda.schema.configuration.ConfigKeys.EXTERNAL_MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -92,8 +91,7 @@ class ConfigurationValidationIntegrationTest {
         SANDBOX_CONFIG,
         RECONCILIATION_CONFIG,
         SECRETS_CONFIG,
-        MEMBERSHIP_CONFIG,
-        EXTERNAL_MESSAGING_CONFIG
+        MEMBERSHIP_CONFIG
     ])
     fun `verify that a sensible default is created when an empty config is provided`(section: String) {
         val validator = configurationValidatorFactory.createConfigValidator()

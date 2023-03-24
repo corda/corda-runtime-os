@@ -2,7 +2,7 @@ package net.corda.libs.configuration.validation.impl
 
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
-import net.corda.schema.configuration.provider.SchemaProviderFactory
+import net.corda.schema.common.provider.SchemaProviderFactory
 import org.osgi.service.component.annotations.Component
 
 /**
@@ -15,7 +15,15 @@ class ConfigurationValidatorFactoryImpl : ConfigurationValidatorFactory {
      * Create a new configuration validator.
      */
     override fun createConfigValidator(): ConfigurationValidator {
-        val schemaProvider = SchemaProviderFactory.getSchemaProvider()
+        val schemaProvider = SchemaProviderFactory.getConfigSchemaProvider()
+        return ConfigurationValidatorImpl(schemaProvider)
+    }
+
+    /**
+     * Create a configuration validator for the external messaging
+     */
+    override fun createCordappConfigValidator(): ConfigurationValidator {
+        val schemaProvider = SchemaProviderFactory.getCordappConfigSchemaProvider()
         return ConfigurationValidatorImpl(schemaProvider)
     }
 }

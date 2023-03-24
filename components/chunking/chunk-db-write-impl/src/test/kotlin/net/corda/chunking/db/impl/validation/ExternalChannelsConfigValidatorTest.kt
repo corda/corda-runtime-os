@@ -13,8 +13,10 @@ import org.mockito.kotlin.mock
 
 class ExternalChannelsConfigValidatorTest {
 
-    private val externalChannelsConfigValidator =
-        ExternalChannelsConfigValidatorImpl(ConfigurationValidatorFactoryImpl().createConfigValidator())
+    private val cordappConfigValidator =
+        ExternalChannelsConfigValidatorImpl(
+            ConfigurationValidatorFactoryImpl().createCordappConfigValidator()
+        )
 
     @Test
     fun `does not throw exception when the configuration is valid - no configuration`() {
@@ -22,7 +24,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -45,7 +47,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -72,7 +74,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -82,7 +84,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertDoesNotThrow {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -92,7 +94,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigException.Parse> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -102,7 +104,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -112,7 +114,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -136,7 +138,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -160,7 +162,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -183,7 +185,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -206,7 +208,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -228,7 +230,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -250,7 +252,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -273,7 +275,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -296,7 +298,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
@@ -319,7 +321,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertThrows<ConfigurationValidationException> {
-            externalChannelsConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 }
