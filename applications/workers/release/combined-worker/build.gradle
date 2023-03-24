@@ -31,6 +31,7 @@ quasar {
             'liquibase**',
             'net.bytebuddy**',
             'net.corda.membership**',
+            'net.corda.p2p**',
             'org.eclipse.jetty**',
             'org.hibernate**',
             'org.jboss.logging',

@@ -1,8 +1,10 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.internal.serialization.unwrap
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -42,7 +44,7 @@ class EnumToStringFallbackTest {
      */
     @Suppress("unchecked_cast")
     private fun SerializedBytes<BrokenContainer>.rewriteAsWorking(): SerializedBytes<WorkingContainer> {
-        val envelope = DeserializationInput.getEnvelope(this).apply {
+        val envelope = DeserializationInput.getEnvelope(this.unwrap()).apply {
             val compositeType = schema.types[0] as CompositeType
             (schema.types as MutableList<TypeNotation>)[0] = compositeType.copy(
                 name = toWorking(compositeType.name),
@@ -53,7 +55,7 @@ class EnumToStringFallbackTest {
                 name = toWorking(restrictedType.name)
             )
         }
-        return SerializedBytes(envelope.write())
+        return SerializedBytesImpl(envelope.write())
     }
 
     private fun toWorking(oldName: String): String = oldName.replace("Broken", "Working")
