@@ -179,7 +179,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                 dbRecord.timestamp.toEpochMilli(),
                 headerSerializer.deserialize(dbRecord.headers ?: "{}")
             )
-        }
+        }.filter { it.value != null }
+
         if (result.isNotEmpty()) {
             seek(topicPartition, result.last().offset + 1)
         }
