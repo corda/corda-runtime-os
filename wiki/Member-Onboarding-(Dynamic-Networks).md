@@ -431,7 +431,7 @@ At this point, the member virtual node must be configured with properties requir
 <summary>Bash</summary>
 
 ```bash
-curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert", "useClusterLevelTlsCertificateAndKey": true, "sessionKeyId": "'$SESSION_KEY_ID'"}' $API_URL/network/setup/$HOLDING_ID
+curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert", "useClusterLevelTlsCertificateAndKey": true, "sessionKeysAndCertificates": [{"sessionKeyId": "'$SESSION_KEY_ID'", "preferred": true}]}' $API_URL/network/setup/$HOLDING_ID
 ```
 </details>
 <details>
@@ -441,7 +441,10 @@ curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert"
 Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$API_URL/network/setup/$HOLDING_ID" -Method Put -Body (ConvertTo-Json @{
     p2pTlsCertificateChainAlias = "p2p-tls-cert"
     useClusterLevelTlsCertificateAndKey = $true
-    sessionKeyId = $SESSION_KEY_ID
+    sessionKeysAndCertificates = @(@{
+        sessionKeyId = $SESSION_KEY_ID
+        preferred = $true
+    })
 })
 ```
 </details>
@@ -450,7 +453,9 @@ This will set up the locally hosted identity required for the P2P messaging to w
 This will set up the locally hosted identity, which is required in order for the P2P messaging to work.
 `p2pTlsCertificateChainAlias` refers to the alias used when importing the TLS certificate.
 `useClusterLevelTlsCertificateAndKey` is true if the TLS certificate and key are cluster-level certificates and keys.
+`sessionKeysAndCertificates` refers to a list of session keys where:
 `sessionKeyId` refers to the session key ID previously generated in this guide.
+`preferred` indicate that this key will be the preferred session key.
 
 ## Build registration context
 > The available names for signature-spec are viewable through `KeysRpcOps`. One of them is used as an example below. 
@@ -460,8 +465,8 @@ This will set up the locally hosted identity, which is required in order for the
 
 ```bash
 export REGISTRATION_CONTEXT='{
-  "corda.session.key.id": "'$SESSION_KEY_ID'",
-  "corda.session.key.signature.spec": "SHA256withECDSA",
+  "corda.session.keys.0.id": "'$SESSION_KEY_ID'",
+  "corda.session.keys.0.signature.spec": "SHA256withECDSA",
   "corda.ledger.keys.0.id": "'$LEDGER_KEY_ID'",
   "corda.ledger.keys.0.signature.spec": "SHA256withECDSA",
   "corda.endpoints.0.connectionURL": "https://'$P2P_GATEWAY_HOST':'$P2P_GATEWAY_PORT'",
@@ -474,8 +479,8 @@ export REGISTRATION_CONTEXT='{
 
 ```PowerShell
 $REGISTRATION_CONTEXT = @{
-  'corda.session.key.id' =  $SESSION_KEY_ID
-  'corda.session.key.signature.spec' = "SHA256withECDSA"
+  'corda.session.keys.0.id' =  $SESSION_KEY_ID
+  'corda.session.keys.0.signature.spec' = "SHA256withECDSA"
   'corda.ledger.keys.0.id' = $LEDGER_KEY_ID
   'corda.ledger.keys.0.signature.spec' = "SHA256withECDSA"
   'corda.endpoints.0.connectionURL' = "https://$P2P_GATEWAY_HOST`:$P2P_GATEWAY_PORT"
@@ -491,8 +496,8 @@ If registering a member as a notary service representative:
 ```bash
 export NOTARY_SERVICE_NAME="C=GB,L=London,O=NotaryServiceA"
 export REGISTRATION_CONTEXT='{
-  "corda.session.key.id": "'$SESSION_KEY_ID'",
-  "corda.session.key.signature.spec": "SHA256withECDSA",
+  "corda.session.keys.0.id": "'$SESSION_KEY_ID'",
+  "corda.session.keys.0.signature.spec": "SHA256withECDSA",
   "corda.ledger.keys.0.id": "'$LEDGER_KEY_ID'",
   "corda.ledger.keys.0.signature.spec": "SHA256withECDSA",
   "corda.endpoints.0.connectionURL": "https://'$P2P_GATEWAY_HOST':'$P2P_GATEWAY_PORT'",
@@ -511,8 +516,8 @@ export REGISTRATION_CONTEXT='{
 ```PowerShell
 $NOTARY_SERVICE_NAME = "C=GB,L=London,O=NotaryServiceA"
 $REGISTRATION_CONTEXT = @{
-  'corda.session.key.id' =  $SESSION_KEY_ID
-  'corda.session.key.signature.spec' = "SHA256withECDSA"
+  'corda.session.keys.0.id' =  $SESSION_KEY_ID
+  'corda.session.keys.0.signature.spec' = "SHA256withECDSA"
   'corda.ledger.keys.0.id' = $LEDGER_KEY_ID
   'corda.ledger.keys.0.signature.spec' = "SHA256withECDSA"
   'corda.endpoints.0.connectionURL' = "https://$P2P_GATEWAY_HOST`:$P2P_GATEWAY_PORT"

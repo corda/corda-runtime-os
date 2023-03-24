@@ -31,7 +31,7 @@ This must be done in the MGM cluster before registering the MGM and in all the m
 To register an MGM in a mutual TLS cluster, the TLS type must be explicitly set in the registration context. That is, the `corda.group.tls.type` field must be `Mutual`. If the field is not set, it will default to one-way TLS. For example:
 ```
 export REGISTRATION_CONTEXT='{
-  "corda.session.key.id": "'$SESSION_KEY_ID'",
+  "corda.session.keys.0.id": "'$SESSION_KEY_ID'",
   "corda.ecdh.key.id": "'$ECDH_KEY_ID'",
   "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
   "corda.group.protocol.synchronisation": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",

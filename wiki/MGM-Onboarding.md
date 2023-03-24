@@ -453,7 +453,7 @@ Replace `<TLS CA PEM Certificate>` with the PEM format certificate of the root C
 ```
 export TLS_CA_CERT=$(cat /tmp/ca/ca/root-certificate.pem | awk '{printf "%s\\n", $0}')
 export REGISTRATION_CONTEXT='{
-  "corda.session.key.id": "'$SESSION_KEY_ID'",
+  "corda.session.keys.0.id": "'$SESSION_KEY_ID'",
   "corda.ecdh.key.id": "'$ECDH_KEY_ID'",
   "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
   "corda.group.protocol.synchronisation": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
@@ -477,7 +477,7 @@ Replace the `TLS_CA_CERT_PATH` with the certificate path
 ```PowerShell
 $TLS_CA_CERT_PATH = "$env:TEMP\tmp\ca\ca\root-certificate.pem"
 $REGISTRATION_CONTEXT = @{
-  'corda.session.key.id' =  $SESSION_KEY_ID
+  'corda.session.keys.0.id' =  $SESSION_KEY_ID
   'corda.ecdh.key.id' = $ECDH_KEY_ID
   'corda.group.protocol.registration' = "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"
   'corda.group.protocol.synchronisation' = "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
@@ -506,7 +506,7 @@ curl --insecure -u admin:admin -d "$REGISTRATION_REQUEST" $API_URL/membership/$M
 For example, this command would look something like this:
 ``` shell
 curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin", "context": {
-  "corda.session.key.id": "D2FAF709052F",
+  "corda.session.keys.0.id": "D2FAF709052F",
   "corda.ecdh.key.id": "A9FDF319654B",
   "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
   "corda.group.protocol.synchronisation": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
@@ -525,7 +525,7 @@ Alternatively, using jq:
 ```
 curl --insecure -u admin:admin -d $(
 jq -n '.memberRegistrationRequest.action="requestJoin"' | \
-  jq --arg session_key_id $SESSION_KEY_ID '.memberRegistrationRequest.context."corda.session.key.id"=$session_key_id' | \
+  jq --arg session_key_id $SESSION_KEY_ID '.memberRegistrationRequest.context."corda.session.keys.0.id"=$session_key_id' | \
   jq --arg ecdh_key_id $ECDH_KEY_ID '.memberRegistrationRequest.context."corda.ecdh.key.id"=$ecdh_key_id' | \
   jq '.memberRegistrationRequest.context."corda.group.protocol.registration"="net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"' | \
   jq '.memberRegistrationRequest.context."corda.group.protocol.synchronisation"="net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"' | \
@@ -581,7 +581,7 @@ At this point, the MGM virtual node must be configured with properties required 
 <summary>Bash</summary>
 
 ```bash
-curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert", "useClusterLevelTlsCertificateAndKey": true, "sessionKeyId": "'$SESSION_KEY_ID'"}' $API_URL/network/setup/$MGM_HOLDING_ID
+curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert", "useClusterLevelTlsCertificateAndKey": true, "sessionKeysAndCertificates": [{"sessionKeyId": "'$SESSION_KEY_ID'", "preferred": true}]}' $API_URL/network/setup/$MGM_HOLDING_ID
 ```
 </details>
 <details>
@@ -591,7 +591,10 @@ curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert"
 Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$API_URL/network/setup/$MGM_HOLDING_ID" -Method Put -Body (ConvertTo-Json @{
     p2pTlsCertificateChainAlias = "p2p-tls-cert"
     useClusterLevelTlsCertificateAndKey = $true
-    sessionKeyId = $SESSION_KEY_ID
+    sessionKeysAndCertificates = @(@{
+        sessionKeyId = $SESSION_KEY_ID
+        preferred = $true
+    })
 })
 ```
 </details>
@@ -599,7 +602,9 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 This will set up the locally hosted identity, which is required in order for the P2P messaging to work.
 `p2pTlsCertificateChainAlias` refers to the alias used when importing the TLS certificate.
 `useClusterLevelTlsCertificateAndKey` is true if the TLS certificate and key are cluster-level certificates and keys.
+`sessionKeysAndCertificates` refers to a list of session keys where:
 `sessionKeyId` refers to the session key ID previously generated in this guide.
+`preferred` indicate that this key will be the preferred session key.
 
 
 ## Export group policy for group

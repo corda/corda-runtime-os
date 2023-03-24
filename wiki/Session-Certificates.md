@@ -46,8 +46,8 @@ To enable session certificates you must set the json field `corda.group.pki.sess
 
 ## Configure virtual node as network participant
 
-You should add the extra json field (sessionCertificateChainAlias) to the network setup RPC request e.g.:
+You should add the extra json field (sessionCertificateChainAlias) to the session keys in the network setup RPC request e.g.:
  
 ```bash
-curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert", "useClusterLevelTlsCertificateAndKey": true, "sessionKeyId": "'$SESSION_KEY_ID'", "sessionCertificateChainAlias": "session-certificate"}' $API_URL/network/setup/$HOLDING_ID
+curl -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "p2p-tls-cert", "useClusterLevelTlsCertificateAndKey": true, "sessionKeysAndCertificates": [{"sessionKeyId": "'$SESSION_KEY_ID'", "sessionCertificateChainAlias": "session-certificate", "preferred": true}]}' $API_URL/network/setup/$HOLDING_ID
 ```
