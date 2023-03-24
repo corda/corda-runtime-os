@@ -18,6 +18,7 @@ import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
@@ -30,7 +31,6 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
-import net.corda.libs.configuration.SmartConfig
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -39,9 +39,6 @@ import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
-
-private const val SIGNING_SERVICE_OBJ = "signingService"
-
 
 /**
  * 1. Provide a (mostly) cached versions of the signing key operations, unlike the signing key operations
@@ -69,7 +66,7 @@ class SigningServiceImpl(
         signingRepositoryFactory: SigningRepositoryFactory,
         schemeMetadata: CipherSchemeMetadata,
         digestService: PlatformDigestService,
-        config: SmartConfig,
+        config: CryptoSigningServiceConfig,
     ) : this(
         cryptoServiceFactory,
         signingRepositoryFactory,
@@ -78,11 +75,8 @@ class SigningServiceImpl(
         CacheFactoryImpl().build(
             "Signing-Key-Cache",
             Caffeine.newBuilder()
-                .expireAfterAccess(
-                    config.getConfig(SIGNING_SERVICE_OBJ).getConfig("cache").getLong("expireAfterAccessMins"),
-                    TimeUnit.MINUTES
-                )
-                .maximumSize(config.getConfig(SIGNING_SERVICE_OBJ).getConfig("cache").getLong("maximumSize"))
+                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(config.cache.maximumSize)
         )
     )
 

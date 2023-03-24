@@ -20,6 +20,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
@@ -164,7 +165,7 @@ class TestServicesFactory {
             signingRepositoryFactory = { signingRepository },
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             schemeMetadata = schemeMetadata,
-            config = cryptoConfig,
+            config = cryptoConfig.signingService(),
         )
     }
 

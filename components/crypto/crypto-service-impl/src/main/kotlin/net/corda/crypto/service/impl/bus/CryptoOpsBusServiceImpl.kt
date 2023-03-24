@@ -7,6 +7,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
@@ -92,7 +93,7 @@ class CryptoOpsBusServiceImpl @Activate constructor(
                 ),
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
-                config = cryptoConfig
+                config = cryptoConfig.signingService()
             ), cryptoConfig
         )
         return Impl(
