@@ -7,7 +7,6 @@ import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
@@ -71,7 +70,6 @@ internal class ApproveRegistrationHandler(
                     "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
                 )
             }
-
             val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
                 viewOwningIdentity = approvedBy.toCorda(),
                 approvedMember = approvedMember.toCorda(),
@@ -101,7 +99,7 @@ internal class ApproveRegistrationHandler(
             val distributionAction = Record(
                 MEMBERSHIP_ACTIONS_TOPIC,
                 "$registrationId-${approvedBy.toCorda().shortHash}",
-                 MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch)),
+                 MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch, memberInfo.serial)),
             )
 
             // Push member to member list kafka topic

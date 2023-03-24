@@ -8,8 +8,6 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
-import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
@@ -32,7 +30,6 @@ import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.GroupParameters
@@ -58,6 +55,7 @@ import java.time.Instant
 class DistributeMemberInfoActionTest {
     private companion object {
         const val EPOCH = 5
+        const val MEMBER_INFO_SERIAL = 10L
         const val GROUP_ID = "group"
     }
     private fun createHoldingIdentity(name: String): HoldingIdentity {
@@ -96,12 +94,13 @@ class DistributeMemberInfoActionTest {
             on { memberProvidedContext } doReturn memberContext
             on { name } doReturn holdingIdentity.x500Name
             on { groupId } doReturn holdingIdentity.groupId
+            on { serial } doReturn MEMBER_INFO_SERIAL
         }
     }
 
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
-    private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), EPOCH)
+    private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), EPOCH, MEMBER_INFO_SERIAL)
     private val key = "key"
     private val memberInfo = mockMemberInfo(member)
     private val inactiveMember = mockMemberInfo(
@@ -282,7 +281,7 @@ class DistributeMemberInfoActionTest {
                 Assertions.assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
-    
+
 
     @Test
     fun `invoke uses the correct TTL configuration`() {

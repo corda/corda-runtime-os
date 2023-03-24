@@ -1,15 +1,11 @@
 package net.corda.membership.impl.registration.dynamic
 
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
@@ -137,10 +133,6 @@ class RegistrationProcessor(
                 is ApproveRegistration -> {
                     logger.info("Received approve registration command.")
                     handlers[ApproveRegistration::class.java]?.invoke(state, event)
-                }
-                is DistributeMembershipPackage -> {
-                    logger.info("Received distribute membership package command.")
-                    handlers[DistributeMembershipPackage::class.java]?.invoke(state, event)
                 }
                 is DeclineRegistration -> {
                     logger.info("Received decline registration command.")

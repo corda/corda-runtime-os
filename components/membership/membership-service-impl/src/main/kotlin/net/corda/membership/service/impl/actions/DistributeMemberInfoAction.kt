@@ -89,12 +89,23 @@ class DistributeMemberInfoAction(
             logger.info("Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
                     "group parameters with epoch ${request.minimumGroupParametersEpoch} is available.")
         }
-
         val allMembers = groupReader.lookup()
         val allActiveMembersExcludingMgm = allMembers.filter {
             it.status == MemberInfoExtension.MEMBER_STATUS_ACTIVE && !it.isMgm
         }
-        val updatedMemberInfo = allActiveMembersExcludingMgm.first { it.name.toString() == updatedMember.x500Name }
+        val updatedMemberInfo = allActiveMembersExcludingMgm.firstOrNull { it.name.toString() == updatedMember.x500Name }
+            ?: return recordToRequeueDistribution(key, request) {
+                logger.info("The MemberInfo retrieved from kafka for ${updatedMember.x500Name} is null. Republishing the distribute " +
+                        "command to be processed later when the MemberInfo is available.")
+            }
+        if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
+            return recordToRequeueDistribution(key, request) {
+                logger.info("The MemberInfo retrieved from kafka for ${updatedMember.x500Name} is has serial" +
+                        " ${updatedMemberInfo.serial}. Republishing the distribute command to be processed later when the MemberInfo with" +
+                        " serial ${request.minimumUpdatedMemberSerial} is available.")
+            }
+        }
+
         val mgm = allMembers.first { it.isMgm }
 
         val membersSignaturesQuery = membershipQueryClient.queryMembersSignatures(
@@ -135,6 +146,7 @@ class DistributeMemberInfoAction(
                         "Distributing the member info will be reattempted.", except)
             }
         }
+        logger.info("Here 7")
         val updatedMemberToAllMembers = allActiveMembersExcludingMgm.filter {
             it.holdingIdentity != updatedMember.toCorda()
         }.map { memberToSendUpdateTo ->
@@ -145,6 +157,7 @@ class DistributeMemberInfoAction(
                 minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
             )
         }
+        logger.info("Here 8")
 
         return updatedMemberToAllMembers + allMembersToUpdatedMember
     }
