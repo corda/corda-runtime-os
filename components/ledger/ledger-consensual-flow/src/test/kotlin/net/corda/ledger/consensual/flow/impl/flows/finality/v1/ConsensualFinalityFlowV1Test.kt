@@ -319,7 +319,6 @@ class ConsensualFinalityFlowV1Test {
     private fun callFinalityFlow(signedTransaction: ConsensualSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = ConsensualFinalityFlowV1(signedTransaction, sessions)
         flow.flowMessaging = flowMessaging
-        flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.call()

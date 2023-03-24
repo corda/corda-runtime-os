@@ -233,7 +233,6 @@ class ConsensualReceiveFinalityFlowV1Test {
     private fun callReceiveFinalityFlow(validator: ConsensualTransactionValidator = ConsensualTransactionValidator { }) {
         val flow = ConsensualReceiveFinalityFlowV1(session, validator)
         flow.persistenceService = persistenceService
-        flow.transactionSignatureService = transactionSignatureService
         flow.call()
     }
 

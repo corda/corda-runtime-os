@@ -14,7 +14,6 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.slf4j.Logger
 
@@ -22,9 +21,6 @@ import org.slf4j.Logger
 abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
 
     abstract val log: Logger
-
-    @CordaInject
-    lateinit var transactionSignatureService: TransactionSignatureService
 
     @CordaInject
     lateinit var persistenceService: ConsensualLedgerPersistenceService
