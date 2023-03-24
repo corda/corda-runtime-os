@@ -7,14 +7,15 @@ class PostgresDataSourceFactory(
         jdbcUrl: String,
         username: String,
         password: String,
-        maximumPoolSize: Int = 3
+        maximumPoolSize: Int = 5
     ): CloseableDataSource {
         return datasourceFactory.create(
             driverClass = "org.postgresql.Driver",
             jdbcUrl = jdbcUrl,
             username = username,
             password = password,
-            maximumPoolSize = maximumPoolSize
+            minimumPoolSize = 1,
+            maximumPoolSize = maximumPoolSize,
         )
     }
 }
