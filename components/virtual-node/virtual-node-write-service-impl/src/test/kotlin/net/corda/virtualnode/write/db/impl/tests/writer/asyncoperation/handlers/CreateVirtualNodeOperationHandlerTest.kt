@@ -3,6 +3,9 @@ package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.records.Record
 import net.corda.v5.membership.MemberInfo
@@ -10,9 +13,11 @@ import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
 import net.corda.virtualnode.write.db.impl.tests.CPI_IDENTIFIER1
 import net.corda.virtualnode.write.db.impl.tests.CPI_METADATA1
+import net.corda.virtualnode.write.db.impl.tests.GROUP_ID1
 import net.corda.virtualnode.write.db.impl.tests.GROUP_POLICY1
 import net.corda.virtualnode.write.db.impl.tests.getVNodeDb
 import net.corda.virtualnode.write.db.impl.tests.getValidRequest
+import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
@@ -198,5 +203,34 @@ class CreateVirtualNodeOperationHandlerTest {
         target.handle(timestamp, requestId, request)
 
         verify(createVirtualNodeService).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
+    }
+
+
+    @Test
+    fun `Handler doesn't try to handle MGM info if CPI is for a static network`() {
+        whenever(createVirtualNodeService.getCpiMetaData(CPI_CHECKSUM1.toString()))
+            .thenReturn(CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, """
+                {"$PROTOCOL_PARAMETERS": { "$STATIC_NETWORK": {}}}
+            """.trimIndent()))
+        val request = getValidRequest()
+        val virtualNodeInfoRecord = Record("vnode", "", "")
+        val dbConnections = mock<VirtualNodeDbConnections>()
+
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any())).thenReturn(
+            dbConnections
+        )
+        whenever(
+            recordFactory.createVirtualNodeInfoRecord(
+                ALICE_HOLDING_ID1,
+                CPI_IDENTIFIER1,
+                dbConnections
+            )
+        ).thenReturn(virtualNodeInfoRecord)
+
+        target.handle(timestamp, requestId, request)
+
+        verify(groupPolicyParser, never()).getMgmInfo(any(), any())
+        verify(recordFactory, never()).createMgmInfoRecord(any(), any())
+        verify(createVirtualNodeService).publishRecords(listOf(virtualNodeInfoRecord))
     }
 }
