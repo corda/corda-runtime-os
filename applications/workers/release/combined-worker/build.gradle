@@ -82,6 +82,9 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
     implementation 'net.corda:corda-config-schema'
 
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
