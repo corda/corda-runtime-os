@@ -103,9 +103,11 @@ class InteropServiceIntegrationTest {
     fun `verify messages from p2p-in are send back to p2p-out`() {
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        val interopMessage : ByteBuffer = ByteBuffer.wrap(cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
-            InteropMessage("InteropMessageID-01",
-                """
+        val interopMessage: ByteBuffer = ByteBuffer.wrap(
+            cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
+                InteropMessage(
+                    "InteropMessageID-01",
+                    """
                     {
                       "method": "org.corda.interop/platform/tokens/v1.0/reserve-token",
                       "parameters": [
@@ -117,7 +119,10 @@ class InteropServiceIntegrationTest {
                         }
                       ]
                     }
-                """.trimIndent())))
+                """.trimIndent()
+                )
+            )
+        )
 
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
