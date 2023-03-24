@@ -43,42 +43,55 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                 transactionId,
                 UNVERIFIED
             )
-            if (status == INVALID) {
-                log.warn(
-                    "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
-                            "The transaction is already invalid."
-                )
-                return false
-            }
-            if (status == VERIFIED) {
-                log.trace { "Backchain resolution of $initialTransactionIds - The transaction is already verified $transactionId." }
-            } else {
-                if (status == null || transaction == null) {
+            when (status) {
+                INVALID -> {
                     log.warn(
                         "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
-                                "The transaction disappeared."
+                                "The transaction is already invalid."
                     )
                     return false
                 }
-                transaction as UtxoSignedTransactionInternal
 
-                try {
-                    log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
-                    transaction.verifySignatures()
-                    transaction.verifyNotarySignatureAttached()
-                    utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
-                    log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
-                } catch (e: Exception) {
-                    // TODO revisit what exceptions get caught
+                VERIFIED -> {
+                    log.trace { "Backchain resolution of $initialTransactionIds - transaction $transactionId is already verified, " +
+                            "skipping verification ." }
+                }
+
+                UNVERIFIED -> {
+                    if (transaction == null) {
+                        log.warn(
+                            "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
+                                    "The transaction disappeared."
+                        )
+                        return false
+                    }
+                    transaction as UtxoSignedTransactionInternal
+
+                    try {
+                        log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
+                        transaction.verifySignatures()
+                        transaction.verifyNotarySignatureAttached()
+                        utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
+                        log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
+                    } catch (e: Exception) {
+                        // TODO revisit what exceptions get caught
+                        log.warn(
+                            "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
+                                    "${e.message}"
+                        )
+                        return false
+                    }
+                    utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
+                    log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId to verified" }
+                }
+
+                else -> {
                     log.warn(
-                        "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
-                                "${e.message}"
+                        "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed. " +
+                                "Unexpected status $status"
                     )
                     return false
                 }
-                utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
-                log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId to verified" }
-
             }
             sortedTransactions.remove()
         }
