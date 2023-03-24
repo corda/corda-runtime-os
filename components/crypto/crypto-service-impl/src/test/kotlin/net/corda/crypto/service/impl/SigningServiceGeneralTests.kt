@@ -93,7 +93,7 @@ class SigningServiceGeneralTests {
         }
         val signingService = SigningServiceImpl(
             cryptoServiceFactory = mock(),
-            signingRepositoryFactory = { it -> repo },
+            signingRepositoryFactory = { repo },
             schemeMetadata = schemeMetadata,
             digestService = mock(),
             keyEncodingService = mock(),

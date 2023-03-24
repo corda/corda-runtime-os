@@ -161,7 +161,7 @@ class TestServicesFactory {
     val signingService: SigningService by lazy {
         SigningServiceImpl(
             cryptoServiceFactory = cryptoServiceFactory,
-            signingRepositoryFactory = { it -> TestSigningRepository() },
+            signingRepositoryFactory = { TestSigningRepository() },
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             schemeMetadata = schemeMetadata,
             keyEncodingService = schemeMetadata,
