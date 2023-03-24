@@ -13,6 +13,7 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -146,7 +147,13 @@ class FakeDbConnectionManager(
         username: String,
         password: String,
         isAutoCommit: Boolean,
-        maximumPoolSize: Int
+        isReadOnly: Boolean,
+        maximumPoolSize: Int,
+        minimumPoolSize: Int,
+        idleTimeout: Duration,
+        maxLifetime: Duration,
+        keepaliveTime: Duration,
+        validationTimeout: Duration
     ): CloseableDataSource {
         TODO("Not yet implemented")
     }
