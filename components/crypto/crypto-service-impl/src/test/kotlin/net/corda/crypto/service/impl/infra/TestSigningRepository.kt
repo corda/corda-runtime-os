@@ -3,6 +3,9 @@ package net.corda.crypto.service.impl.infra
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.fullPublicKeyIdFromBytes
+import net.corda.crypto.core.publicKeyHashFromBytes
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -16,6 +19,7 @@ import net.corda.crypto.persistence.createdAfter
 import net.corda.crypto.persistence.createdBefore
 import net.corda.crypto.persistence.masterKeyAlias
 import net.corda.crypto.persistence.schemeCodeName
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -29,72 +33,65 @@ import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class TestSigningKeyStore(
-    coordinatorFactory: LifecycleCoordinatorFactory
-) : SigningKeyStore {
-    val lifecycleCoordinator = coordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName.forComponent<SigningKeyStore>()
-    ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
-
+class TestSigningRepository: SigningRepository {
     private val lock = ReentrantLock()
-    private val keys = mutableMapOf<Pair<String, ShortHash>, SigningKeyInfo>()
+    private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
 
-    override fun save(tenantId: String, context: SigningKeySaveContext) = lock.withLock {
-        val now = Instant.now()
-        val record = when (context) {
-            is SigningPublicKeySaveContext -> {
-                val encodedKey = context.key.publicKey.encoded
-                SigningKeyInfo(
-                    id = keyIdFromBytes(encodedKey),
-                    fullId = fullKeyIdFromBytes(encodedKey),
-                    tenantId = tenantId,
-                    category = context.category,
-                    alias = context.alias,
-                    hsmAlias = context.key.hsmAlias,
-                    publicKey = encodedKey,
-                    keyMaterial = null,
-                    schemeCodeName = context.keyScheme.codeName,
-                    masterKeyAlias = null,
-                    externalId = null,
-                    encodingVersion = null,
-                    timestamp = now,
-                    hsmId = context.hsmId,
-                    status = SigningKeyStatus.NORMAL
-                )
+    override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo = with(lock) {
+        val encodedKey = context.key.publicKey.encoded
+        val record = SigningKeyInfo(
+            id = publicKeyIdFromBytes(encodedKey),
+            fullId = publicKeyHashFromBytes(encodedKey),
+            tenantId = "test",
+            category = context.category,
+            alias = context.alias,
+            hsmAlias = context.key.hsmAlias,
+            publicKey = encodedKey,
+            keyMaterial = null,
+            schemeCodeName = context.keyScheme.codeName,
+            masterKeyAlias = null,
+            externalId = null,
+            encodingVersion = null,
+            timestamp = Instant.now(),
+            hsmId = context.hsmId,
+            status = SigningKeyStatus.NORMAL
+        ).also {
+            if (keys.putIfAbsent(it.id, it) != null) {
+                throw IllegalArgumentException("The key ${it.id} already exists.")
             }
-            is SigningWrappedKeySaveContext -> {
-                val encodedKey = context.key.publicKey.encoded
-                SigningKeyInfo(
-                    id = keyIdFromBytes(encodedKey),
-                    fullId = fullKeyIdFromBytes(encodedKey),
-                    tenantId = tenantId,
-                    category = context.category,
-                    alias = context.alias,
-                    hsmAlias = null,
-                    publicKey = encodedKey,
-                    keyMaterial = context.key.keyMaterial,
-                    schemeCodeName = context.keyScheme.codeName,
-                    masterKeyAlias = context.masterKeyAlias,
-                    externalId = context.externalId,
-                    encodingVersion = context.key.encodingVersion,
-                    timestamp = now,
-                    hsmId = context.hsmId,
-                    status = SigningKeyStatus.NORMAL
-                )
-            }
-            else -> throw  IllegalArgumentException("Unknown type ${context::class.java.name}")
-        }
-        if(keys.putIfAbsent(Pair(tenantId, record.id), record) != null) {
-            throw IllegalArgumentException("The key ${record.id} already exists.")
+        
+    }
+
+    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo = with(lock) {
+        val encodedKey = context.key.publicKey.encoded
+        return SigningKeyInfo(
+            id = publicKeyIdFromBytes(encodedKey),
+            fullId = publicKeyHashFromBytes(encodedKey),
+            tenantId = "test",
+            category = context.category,
+            alias = context.alias,
+            hsmAlias = null,
+            publicKey = encodedKey,
+            keyMaterial = context.key.keyMaterial,
+            schemeCodeName = context.keyScheme.codeName,
+            masterKeyAlias = context.masterKeyAlias,
+            externalId = context.externalId,
+            encodingVersion = context.key.encodingVersion,
+            timestamp = Instant.now(),
+            hsmId = context.hsmId,
+            status = SigningKeyStatus.NORMAL
+        ).also {
+            if (keys.putIfAbsent(it.id, record) != null) {
+            throw IllegalArgumentException("The key ${it.id} already exists.")
         }
     }
 
-    override fun find(tenantId: String, alias: String): SigningKeyInfo? = lock.withLock {
-        keys.values.firstOrNull { it.tenantId == tenantId && it.alias == alias }
+    override fun findKey(alias: String): SigningKeyInfo? = lock.withLock {
+        keys.values.firstOrNull { it.alias == alias }
     }
 
-    override fun find(tenantId: String, publicKey: PublicKey): SigningKeyInfo? = lock.withLock {
-        keys[Pair(tenantId, keyIdFromKey(publicKey))]
+    override fun findKey(publicKey: PublicKey): SigningKeyInfo? = lock.withLock {
+        keys[fullPublicKeyIdFromBytes(publicKey)]
     }
 
     @Suppress("ComplexMethod")
@@ -157,18 +154,6 @@ class TestSigningKeyStore(
         }
         return lookupByIds(tenantId, keyIds)
     }
-
-    override val isRunning: Boolean
-        get() = lifecycleCoordinator.isRunning
-
-    override fun start() {
-        lifecycleCoordinator.start()
-    }
-
-    override fun stop() {
-        lifecycleCoordinator.stop()
-    }
-
 }
 
 fun fullKeyIdFromBytes(publicKey: ByteArray): SecureHash =

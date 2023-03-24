@@ -37,6 +37,11 @@ import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
+
+/**
+ * Provide instances of high level crypto services, with no database underneath, for
+ * use for integration test cases that don't involve in-memory databases.
+ */
 class TestServicesFactory {
     companion object {
         const val CTX_TRACKING = "ctxTrackingId"
@@ -139,13 +144,8 @@ class TestServicesFactory {
         }
     }
 
-    val signingKeyStore: TestSigningKeyStore by lazy {
-        TestSigningKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
+    val signingRepository: TestSigningRepository by lazy {
+        TestSigningRepository()
     }
 
     val hsmStore: TestHSMStore by lazy {
@@ -158,22 +158,20 @@ class TestServicesFactory {
     }
 
     val cryptoWrappingRepository = TestWrappingRepository()
+    val signingService: SigningService = SigningServiceImpl(
+        cryptoServiceFactory,
+        { it -> TestSigningRepository(it) },
+        digestService = PlatformDigestServiceImpl(schemeMetadata),
+        schemeMetadata,
+        keyEncodingService = schemeMetadata,
+        config = cryptoConfig,
+    )
 
-    val signingService: SigningService by lazy {
-        SigningServiceImpl(
-            signingKeyStore,
-            cryptoServiceFactory,
-            schemeMetadata,
-            platformDigest
-        )
-    }
-    
     val hsmService: HSMServiceImpl by lazy {
         HSMServiceImpl(
             coordinatorFactory,
             configurationReadService,
-            hsmStore,
-            signingServiceFactory
+            hsmStore
         ).also {
             it.start()
             eventually {

@@ -75,7 +75,7 @@ class SigningServiceImpl(
         signingRepositoryFactory: SigningRepositoryFactory,
         schemeMetadata: CipherSchemeMetadata,
         digestService: PlatformDigestService,
-        keyEncodingService: KeyEncodingService,
+        keyEncodingService: KeyEncodingService, // TODO remove and use schemeMetadata instead which implements KeyEncodingService
         config: SmartConfig,
     ) : this(
         cryptoServiceFactory,

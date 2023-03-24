@@ -185,7 +185,7 @@ class CryptoOperationsTests {
             uuid: String?,
             scheme: KeyScheme
         ) {
-            val generatedKeyData = factory.signingKeyStore.find(tenantId, publicKey)
+            val generatedKeyData = factory.signingRepository.findKey(publicKey)
             assertNotNull(generatedKeyData)
             assertEquals(tenantId, generatedKeyData.tenantId)
             if (generatedKeyData.alias == null) {
@@ -216,7 +216,7 @@ class CryptoOperationsTests {
                 assertEquals(category, key.category)
             }
             assertEquals(scheme.codeName, key.schemeCodeName)
-            assertThat(key.masterKeyAlias).isNotBlank()
+            assertThat(key.masterKeyAlias).isNotBlank
             assertEquals(1, key.encodingVersion)
             assertArrayEquals(publicKey.encoded, key.publicKey)
         }

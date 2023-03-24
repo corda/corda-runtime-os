@@ -33,6 +33,9 @@ fun PublicKey.fullIdHash(keyEncodingService: KeyEncodingService, digestService: 
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray): String =
     SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()).toString()
 
+fun publicKeyHashFromBytes(publicKey: ByteArray): SecureHash =
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
+
 fun PublicKey.fullId(): String =
     fullPublicKeyIdFromBytes(this.encoded)
 
