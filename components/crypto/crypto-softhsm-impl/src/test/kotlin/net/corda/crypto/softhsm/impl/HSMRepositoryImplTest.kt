@@ -14,6 +14,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import java.util.Collections.emptyList
 
 class HSMRepositoryImplTest {
 
@@ -30,17 +31,17 @@ class HSMRepositoryImplTest {
                 }
             }
         }
-        val hsmRepository = HSMRepositoryImpl(
+        HSMRepositoryImpl(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
             CRYPTO_TENANT_ID
-        )
-
-        val test = hsmRepository.findTenantAssociation("tenant", "category")
-        assertThat(test).isNull()
-        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
-        assertThat(categoryCap.allValues.single()).isEqualTo("category")
+        ).use { hsmRepository ->
+            val test = hsmRepository.findTenantAssociation("tenant", "category")
+            assertThat(test).isNull()
+            assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
+            assertThat(categoryCap.allValues.single()).isEqualTo("category")
+        }
     }
 
     @Test
@@ -60,18 +61,18 @@ class HSMRepositoryImplTest {
                 }
             }
         }
-        val hsmStore = HSMRepositoryImpl(
+        HSMRepositoryImpl(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
             CryptoTenants.CRYPTO
-        )
-
-        val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)
-        val test = hsmStore.findTenantAssociation("tenant", "category")
-        assertThat(test).usingRecursiveComparison().isEqualTo(expected)
-        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
-        assertThat(categoryCap.allValues.single()).isEqualTo("category")
+        ).use { hsmStore ->
+            val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)
+            val test = hsmStore.findTenantAssociation("tenant", "category")
+            assertThat(test).usingRecursiveComparison().isEqualTo(expected)
+            assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
+            assertThat(categoryCap.allValues.single()).isEqualTo("category")
+        }
     }
 
     @Test

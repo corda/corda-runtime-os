@@ -49,17 +49,8 @@ class HSMStoreImpl @Activate constructor(
     configKeys = setOf(ConfigKeys.CRYPTO_CONFIG)
 ), HSMStore {
 
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        HSMRepositoryImpl(
-            getEntityManagerFactory(
-                CryptoTenants.CRYPTO,
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                jpaEntitiesRegistry
-            ),
-            CryptoTenants.CRYPTO
-        )
-    )
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl =
+        Impl(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService)
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
         impl.findTenantAssociation(tenantId, category)
@@ -74,23 +65,42 @@ class HSMStoreImpl @Activate constructor(
     ): HSMAssociationInfo = impl.associate(tenantId, category, hsmId, masterKeyPolicy)
 
     class Impl(
-        private val cryptoHSMRepository: HSMRepository,
+        private val dbConnectionManager: DbConnectionManager,
+        private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+        private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     ) : DownstreamAlwaysUpAbstractImpl() {
-        fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-            cryptoHSMRepository.findTenantAssociation(tenantId, category)
 
-        fun getHSMUsage(): List<HSMUsage> = cryptoHSMRepository.getHSMUsage()
+        fun openRepository(): HSMRepository = HSMRepositoryImpl(
+                getEntityManagerFactory(
+                    CryptoTenants.CRYPTO,
+                    dbConnectionManager,
+                    virtualNodeInfoReadService,
+                    jpaEntitiesRegistry
+                ),
+                CryptoTenants.CRYPTO
+            )
+
+        fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
+            openRepository().use {
+                it.findTenantAssociation(tenantId, category)
+            }
+
+        fun getHSMUsage(): List<HSMUsage> = openRepository().use {
+            it.getHSMUsage()
+        }
+
 
         fun associate(
             tenantId: String,
             category: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy,
-        ): HSMAssociationInfo = cryptoHSMRepository.associate(tenantId, category, hsmId, masterKeyPolicy)
+        ): HSMAssociationInfo = openRepository().use {
+            it.associate(tenantId, category, hsmId, masterKeyPolicy)
+        }
 
         override fun close() {
             super.close()
-            cryptoHSMRepository.close()
         }
     }
 }
