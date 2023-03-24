@@ -175,6 +175,8 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/v1/virtualnode/$holdingIdentityShortHash")
 
+    fun getVNodeStatus(requestId: String) = client!!.get("/api/v1/virtualnode/status/$requestId")
+
     /**
      * Register a member to the network
      */
@@ -293,7 +295,10 @@ class ClusterBuilder {
                 {
                     "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
                     "useClusterLevelTlsCertificateAndKey": true,
-                    "sessionKeyId": "$sessionKeyId"
+                    "sessionKeysAndCertificates": [
+                      "preferred": true,
+                      "sessionKeyId": "$sessionKeyId"
+                    ]
                 }
             """.trimIndent()
         )
