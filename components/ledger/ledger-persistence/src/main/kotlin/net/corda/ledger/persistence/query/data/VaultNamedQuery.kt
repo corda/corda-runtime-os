@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.data
 
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
@@ -11,7 +12,7 @@ import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
 data class VaultNamedQuery(
     val name: String,
     val whereJson: String?,
-    val filter: VaultNamedQueryFilter<*>?,
-    val mapper: VaultNamedQueryTransformer<*, *>?,
-    val collector: VaultNamedQueryCollector<*, *>?
+    val filter: VaultNamedQueryFilter<ContractState>?,
+    val mapper: VaultNamedQueryTransformer<ContractState, Any>?,
+    val collector: VaultNamedQueryCollector<Any, Any>?
 )

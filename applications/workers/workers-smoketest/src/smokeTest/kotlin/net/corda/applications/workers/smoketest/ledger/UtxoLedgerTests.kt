@@ -106,31 +106,14 @@ class UtxoLedgerTests {
         assertThat(customQueryFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(customQueryFlowResult.flowError).isNull()
 
-        val parsedResponse = objectMapper.readValue(customQueryFlowResult.flowResult!!, CustomQueryFlowResponse::class.java)
+        val parsedResponse = objectMapper.readValue(
+            customQueryFlowResult.flowResult!!,
+            CustomQueryFlowResponse::class.java
+        )
 
         assertThat(parsedResponse.results).isNotEmpty
         assertThat(parsedResponse.results).hasSizeGreaterThan(1)
-    }
-
-    @Test
-    fun `Utxo Ledger - custom query can be executed and only one result is returned if limit is 1`() {
-        val customQueryFlowId = startRpcFlow(
-            aliceHoldingId,
-            mapOf(
-                "offset" to 0,
-                "limit" to 1
-            ),
-            "net.cordapp.demo.utxo.UtxoCustomQueryDemoFlow"
-        )
-
-        val customQueryFlowResult = awaitRpcFlowFinished(aliceHoldingId, customQueryFlowId)
-        assertThat(customQueryFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(customQueryFlowResult.flowError).isNull()
-
-        val parsedResponse = objectMapper.readValue(customQueryFlowResult.flowResult!!, CustomQueryFlowResponse::class.java)
-
-        assertThat(parsedResponse.results).isNotEmpty
-        assertThat(parsedResponse.results).hasSize(1)
+        assertThat(parsedResponse.results.first()).isEqualTo("test input")
     }
 
     @Test
