@@ -1,4 +1,34 @@
 package net.corda.crypto.service.impl.bus
+
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.ShortHashes
+import net.corda.data.crypto.wire.CryptoRequestContext
+import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.CryptoSigningKeys
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.ConfigKeys
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
 //
 //import net.corda.configuration.read.ConfigChangedEvent
 //import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -70,77 +100,77 @@ package net.corda.crypto.service.impl.bus
 //import kotlin.test.assertNull
 //import kotlin.test.assertTrue
 //
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-//class CryptoOpsBusProcessorTests {
-//    companion object {
-//        private val configEvent = ConfigChangedEvent(
-//            setOf(ConfigKeys.CRYPTO_CONFIG),
-//            mapOf(
-//                ConfigKeys.CRYPTO_CONFIG to
-//                        SmartConfigFactory.createWithoutSecurityServices().create(
-//                            createDefaultCryptoConfig("pass", "salt")
-//                        )
-//            )
-//        )
-//        private val basicContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-//                KeyValuePair("reason", "Hello World!")
-//            )
-//        )
-//        private val emptyContext = KeyValuePairList(emptyList())
-//    }
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class CryptoOpsBusProcessorTests {
+    companion object {
+        private val configEvent = ConfigChangedEvent(
+            setOf(ConfigKeys.CRYPTO_CONFIG),
+            mapOf(
+                ConfigKeys.CRYPTO_CONFIG to
+                        SmartConfigFactory.createWithoutSecurityServices().create(
+                            createDefaultCryptoConfig("pass", "salt")
+                        )
+            )
+        )
+        private val basicContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
+        )
+        private val emptyContext = KeyValuePairList(emptyList())
+    }
+
+    private lateinit var factory: TestServicesFactory
+    private lateinit var tenantId: String
+    private lateinit var processor: CryptoOpsBusProcessor
+
+
+    @BeforeAll
+    fun setup() {
+        // none of these services store critical state, so we are safe to share them between
+        // test runs. This test class takes 1.7s for me if this is @BeforeAll, compared with 15s
+        // if this is @BeforeEach.
+        tenantId = UUID.randomUUID().toString()
+        factory = TestServicesFactory()
+        processor = CryptoOpsBusProcessor(factory.signingService, configEvent.config.toCryptoConfig())
+        CryptoConsts.Categories.all.forEach {
+            factory.hsmService.assignSoftHSM(tenantId, it)
+        }
+    }
+
+    //    private fun newAlias(): String = UUID.randomUUID().toString()
 //
-//    private lateinit var factory: TestServicesFactory
-//    private lateinit var tenantId: String
-//    private lateinit var processor: CryptoOpsBusProcessor
-//
-//
-//    @BeforeAll
-//    fun setup() {
-//        // none of these services store critical state, so we are safe to share them between
-//        // test runs. This test class takes 1.7s for me if this is @BeforeAll, compared with 15s
-//        // if this is @BeforeEach.
-//        tenantId = UUID.randomUUID().toString()
-//        factory = TestServicesFactory()
-//        processor = CryptoOpsBusProcessor(factory.signingService)
-//        CryptoConsts.Categories.all.forEach {
-//            factory.hsmService.assignSoftHSM(tenantId, it)
-//        }
-//    }
-//
-//    private fun newAlias(): String = UUID.randomUUID().toString()
-//
-//    private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
-//        "test-component",
-//        Instant.now(),
-//        UUID.randomUUID().toString(),
-//        tenantId,
-//        KeyValuePairList(
-//            listOf(
-//                KeyValuePair("key1", "value1"),
-//                KeyValuePair("key2", "value2")
-//            )
-//        )
-//    )
-//
-//    private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
-//        val now = Instant.now()
-//        assertEquals(expected.tenantId, actual.tenantId)
-//        assertEquals(expected.requestId, actual.requestId)
-//        assertEquals(expected.requestingComponent, actual.requestingComponent)
-//        assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-//        assertThat(actual.responseTimestamp.epochSecond)
-//            .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
-//            .isLessThanOrEqualTo(now.epochSecond)
-//        assertTrue(
-//            actual.other.items.size == expected.other.items.size &&
-//                    actual.other.items.containsAll(expected.other.items) &&
-//                    expected.other.items.containsAll(actual.other.items)
-//        )
-//    }
-//
-//
+    private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
+        "test-component",
+        Instant.now(),
+        UUID.randomUUID().toString(),
+        tenantId,
+        KeyValuePairList(
+            listOf(
+                KeyValuePair("key1", "value1"),
+                KeyValuePair("key2", "value2")
+            )
+        )
+    )
+
+    private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
+        val now = Instant.now()
+        assertEquals(expected.tenantId, actual.tenantId)
+        assertEquals(expected.requestId, actual.requestId)
+        assertEquals(expected.requestingComponent, actual.requestingComponent)
+        assertEquals(expected.requestTimestamp, actual.requestTimestamp)
+        assertThat(actual.responseTimestamp.epochSecond)
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
+            .isLessThanOrEqualTo(now.epochSecond)
+        assertTrue(
+            actual.other.items.size == expected.other.items.size &&
+                    actual.other.items.containsAll(expected.other.items) &&
+                    expected.other.items.containsAll(actual.other.items)
+        )
+    }
+
+    //
 //    private fun assertOperationContextMap(l: KeyValuePairList, category: String) {
 //        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
 //        assertNotNull(operationContextMap)
@@ -151,23 +181,23 @@ package net.corda.crypto.service.impl.bus
 //        assertEquals(category, operationContextMap[CRYPTO_CATEGORY])
 //    }
 //
-//    private inline fun <reified T> process(request: Any): T {
-//        val context = createRequestContext()
-//        val future = CompletableFuture<RpcOpsResponse>()
-//        processor.onNext(RpcOpsRequest(context, request), future)
-//        val result = future.get()!!
-//        assertResponseContext(context, result.context)
-//        assertNotNull(result.response)
-//        return (result.response) as T
-//    }
-//
-//    @Test
-//    fun `Should return empty list for unknown key id`() {
-//        val keyEnc = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
-//        val response = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(keyEnc))))
-//        assertEquals(0, response.keys.size)
-//    }
-//
+    private inline fun <reified T> process(request: Any): T {
+        val context = createRequestContext()
+        val future = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(RpcOpsRequest(context, request), future)
+        val result = future.get()!!
+        assertResponseContext(context, result.context)
+        assertNotNull(result.response)
+        return (result.response) as T
+    }
+
+    @Test
+    fun `Should return empty list for unknown key id`() {
+        val keyEnc = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+        val response = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(keyEnc))))
+        assertEquals(0, response.keys.size)
+    }
+
 //    @Test
 //    fun `Should return empty list for look up when the filter does not match`() {
 //        val context = KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
@@ -436,4 +466,4 @@ package net.corda.crypto.service.impl.bus
 //        assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature3.publicKey.array()))
 //        factory.verifier.verify(data, signature4.bytes.array(), publicKey, signatureSpec4)
 //    }
-//}
+}
