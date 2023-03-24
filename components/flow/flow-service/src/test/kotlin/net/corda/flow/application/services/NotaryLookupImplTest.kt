@@ -117,7 +117,7 @@ class NotaryLookupImplTest {
         val info = lookup.lookup(bob)
 
         assertThat(info?.protocol).isEqualTo("net.corda.Plugin2")
-        assertThat(info?.protocolVersions).isEqualTo(listOf(1))
+        assertThat(info?.protocolVersions).containsExactlyInAnyOrder(3, 4)
     }
 
     @Test
