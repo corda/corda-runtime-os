@@ -237,8 +237,8 @@ class UtxoFinalityFlowV1(
         }
         var notarizedTransaction = transaction
         notarySignatures.forEach { signature ->
-            notarizedTransaction = try {
-                verifyAndAddNotarySignature(notarizedTransaction, signature)
+            try {
+                notarizedTransaction = verifyAndAddNotarySignature(notarizedTransaction, signature)
             } catch (e: Exception) {
                 val message = e.message ?: "Notary signature verification failed."
                 flowMessaging.sendAll(
