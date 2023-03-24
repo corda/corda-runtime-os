@@ -19,7 +19,7 @@ class MemberNotaryDetailsConverterTest {
     private companion object {
         const val SERVICE_NAME = "service.name"
         const val SERVICE_PROTOCOL = "service.flow.protocol.name"
-        const val PROTOCOL_VERSIONS_PREFIX = "service.flow.protocol.versions"
+        const val PROTOCOL_VERSIONS_PREFIX = "service.flow.protocol.version"
     }
 
     private val publicKeyOne = mock<PublicKey> {

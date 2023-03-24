@@ -15,6 +15,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -38,11 +39,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -252,10 +253,11 @@ class StaticMemberRegistrationService @Activate constructor(
         val holdingIdentity = memberInfo.holdingIdentity
         val groupParametersList = cache.getOrCreateGroupParameters(holdingIdentity).run {
             memberInfo.notaryDetails?.let { notary ->
-                val currentProtocolVersions = groupReader.lookup()
-                    .filter { it.notaryDetails?.serviceName == notary.serviceName && it.name != memberInfo.name }
-                    .flatMap { it.notaryDetails!!.serviceProtocolVersions }
-                    .toSet()
+                val currentProtocolVersions = groupReader.notaryVirtualNodeLookup.getNotaryVirtualNodes(notary.serviceName)
+                    .filter { it.name != memberInfo.name }
+                    .map { it.notaryDetails!!.serviceProtocolVersions.toHashSet() }
+                    .reduceOrNull { acc, it -> acc.apply { retainAll(it) } }
+                    ?: emptySet()
                 cache.addNotary(memberInfo, currentProtocolVersions)
             } ?: this
         }
@@ -399,8 +401,8 @@ class StaticMemberRegistrationService @Activate constructor(
         @Suppress("SpreadOperator")
         val memberContext = mapOf(
             PARTY_NAME to memberName.toString(),
-            PARTY_SESSION_KEY to sessionKey.pem,
-            SESSION_KEY_HASH to sessionKey.hash.toString(),
+            String.format(PARTY_SESSION_KEYS_PEM, 0) to sessionKey.pem,
+            String.format(SESSION_KEYS_HASH, 0) to sessionKey.hash.toString(),
             GROUP_ID to groupPolicy.groupId,
             LEDGER_KEYS_KEY.format(0) to ledgerKey.pem,
             LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.hash.toString(),
@@ -454,8 +456,11 @@ class StaticMemberRegistrationService @Activate constructor(
             net.corda.data.identity.HoldingIdentity(memberName.toString(), groupId),
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
-            DUMMY_PUBLIC_SESSION_KEY,
-            null
+            HostedIdentitySessionKeyAndCert(
+                DUMMY_PUBLIC_SESSION_KEY,
+                null
+            ),
+            emptyList()
         )
 
         return Record(

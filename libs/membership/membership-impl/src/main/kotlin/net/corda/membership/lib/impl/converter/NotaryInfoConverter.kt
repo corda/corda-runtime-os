@@ -17,6 +17,7 @@ import java.security.PublicKey
  * Example property map for a notary service:
  * "corda.notary.service.0.name" to “NotaryService”
  * "corda.notary.service.0.flow.protocol.name" to “ProtocolOne”
+ * "corda.notary.service.0.flow.protocol.version.0" to “1”
  * "corda.notary.service.0.keys.0” to “encoded_key_0”
  * "corda.notary.service.0.keys.1” to “encoded-key_1”
  */
@@ -28,7 +29,7 @@ class NotaryInfoConverter @Activate constructor(
     private companion object {
         const val NAME = "name"
         const val PROTOCOL = "flow.protocol.name"
-        const val PROTOCOL_VERSIONS_PREFIX = "flow.protocol.versions"
+        const val PROTOCOL_VERSIONS_PREFIX = "flow.protocol.version"
         const val KEYS_PREFIX = "keys"
     }
 

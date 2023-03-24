@@ -25,7 +25,7 @@ class NotaryInfoConverterTest {
         const val NOTARY_PROTOCOL = "testProtocol"
         const val NAME = "name"
         const val PROTOCOL = "flow.protocol.name"
-        const val PROTOCOL_VERSIONS = "flow.protocol.versions.%s"
+        const val PROTOCOL_VERSIONS = "flow.protocol.version.%s"
         const val KEYS = "keys.%s"
         const val KEY_VALUE = "encoded_key"
         val key: PublicKey = mock()
@@ -147,6 +147,6 @@ class NotaryInfoConverterTest {
         val ex = assertThrows<ValueNotFoundException> {
             convertToNotaryInfo(contextWithoutVersions)
         }
-        assertThat(ex.message).contains("flow.protocol.versions")
+        assertThat(ex.message).contains("flow.protocol.version")
     }
 }

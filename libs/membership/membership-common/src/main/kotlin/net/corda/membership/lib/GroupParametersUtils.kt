@@ -10,7 +10,7 @@ import org.slf4j.Logger
 
 const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"
 const val NOTARY_SERVICE_PROTOCOL_KEY = "corda.notary.service.%s.flow.protocol.name"
-const val NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY = "corda.notary.service.%s.flow.protocol.versions.%s"
+const val NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY = "corda.notary.service.%s.flow.protocol.version.%s"
 const val NOTARY_SERVICE_KEYS_KEY = "corda.notary.service.%s.keys.%s"
 const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
 const val EPOCH_KEY = "corda.epoch"

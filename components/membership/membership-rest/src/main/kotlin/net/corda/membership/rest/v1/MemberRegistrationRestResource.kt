@@ -34,7 +34,7 @@ interface MemberRegistrationRestResource : RestResource {
      * Example usage:
      * ```
      * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationRequest
-     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.key.id": "D2FAF709052F"}))
+     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.keys.0.id": "D2FAF709052F"}))
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the requesting virtual node.

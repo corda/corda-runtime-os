@@ -677,13 +677,10 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
 
-            with(argument.firstValue.request as? AddNotaryToGroupParameters) {
-                val notary = this?.notary
-                assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
-                assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
-                assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
-            }
-
+            val notary = (argument.firstValue.request as? AddNotaryToGroupParameters)?.notary
+            assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
+            assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
+            assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
         }
     }
 
