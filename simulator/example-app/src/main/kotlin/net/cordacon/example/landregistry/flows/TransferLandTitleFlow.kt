@@ -1,13 +1,11 @@
 package net.cordacon.example.landregistry.flows
 
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
+import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.cordacon.example.landregistry.states.LandTitleContract
-import net.cordacon.example.landregistry.states.LandTitleState
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -16,6 +14,8 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.cordacon.example.landregistry.states.LandTitleContract
+import net.cordacon.example.landregistry.states.LandTitleState
 import java.time.Instant
 import java.time.LocalDateTime
 import kotlin.time.Duration.Companion.days
@@ -81,12 +81,12 @@ class TransferLandTitleFlow : ClientStartableFlow {
         val ownerSession = flowMessaging.initiateFlow(request.newOwner)
 
         // CP Signing automatically handled by finalize()
-        val finalizedSignedTransaction = utxoLedgerService.finalize(
+        val finalizationResult = utxoLedgerService.finalize(
             partiallySignedTransaction,
             listOf(issuerSession, ownerSession)
         )
 
-        return finalizedSignedTransaction.id.toString()
+        return finalizationResult.transaction.id.toString()
 
     }
 }
