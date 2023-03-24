@@ -187,7 +187,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 ex,
             )
         }
-        val latestStatuses = membershipQueryClient.queryRegistrationRequestsStatus(
+        val latestStatuses = membershipQueryClient.queryRegistrationRequests(
             member,
             member.x500Name,
             listOf(RegistrationStatus.APPROVED)

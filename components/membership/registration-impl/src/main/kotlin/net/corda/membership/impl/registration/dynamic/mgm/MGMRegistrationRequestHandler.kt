@@ -60,8 +60,8 @@ internal class MGMRegistrationRequestHandler (
     }
 
     fun throwIfRegistrationAlreadyApproved(holdingIdentity: HoldingIdentity) {
-        val result = membershipQueryClient.queryRegistrationRequestsStatus(holdingIdentity).getOrThrow()
-        result.find { it.status == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
+        val result = membershipQueryClient.queryRegistrationRequests(holdingIdentity).getOrThrow()
+        result.find { it.registrationStatus == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
             throw InvalidMembershipRegistrationException("Registration failed, there is already an approved registration for" +
                 " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}.")
         }

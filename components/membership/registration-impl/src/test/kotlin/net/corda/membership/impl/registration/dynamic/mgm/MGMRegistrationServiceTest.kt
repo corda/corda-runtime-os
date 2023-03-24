@@ -218,7 +218,7 @@ class MGMRegistrationServiceTest {
     private val mockGroupParametersList: KeyValuePairList = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryRegistrationRequestsStatus(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
+        on { queryRegistrationRequests(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)

@@ -17,6 +17,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -64,7 +65,6 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -283,7 +283,7 @@ class StaticMemberRegistrationServiceTest {
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
-            queryRegistrationRequestsStatus(
+            queryRegistrationRequests(
                 any(),
                 any(),
                 any(),
@@ -464,7 +464,7 @@ class StaticMemberRegistrationServiceTest {
         @Test
         fun `registration pass when the member is not found`() {
             whenever(
-                membershipQueryClient.queryRegistrationRequestsStatus(
+                membershipQueryClient.queryRegistrationRequests(
                     alice,
                     aliceName,
                     listOf(RegistrationStatus.APPROVED),
@@ -483,11 +483,11 @@ class StaticMemberRegistrationServiceTest {
     inner class FailedRegistrationTests {
         @Test
         fun `it fails when the member is active`() {
-            val status = mock<RegistrationRequestStatus> {
+            val status = mock<RegistrationRequestDetails> {
                 on { registrationId } doReturn "ID"
             }
             whenever(
-                membershipQueryClient.queryRegistrationRequestsStatus(
+                membershipQueryClient.queryRegistrationRequests(
                     alice,
                     aliceName,
                     listOf(RegistrationStatus.APPROVED),

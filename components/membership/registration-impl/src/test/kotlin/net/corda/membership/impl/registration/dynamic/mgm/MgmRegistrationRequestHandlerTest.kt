@@ -5,10 +5,10 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -91,11 +91,11 @@ class MgmRegistrationRequestHandlerTest {
 
     @Test
     fun `throwIfRegistrationAlreadyApproved sends request to the query client`() {
-        whenever(membershipQueryClient.queryRegistrationRequestsStatus(holdingIdentity)).doReturn(
+        whenever(membershipQueryClient.queryRegistrationRequests(holdingIdentity)).doReturn(
             MembershipQueryResult.Success(emptyList())
         )
         mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
-        verify(membershipQueryClient).queryRegistrationRequestsStatus(
+        verify(membershipQueryClient).queryRegistrationRequests(
             eq(holdingIdentity), eq(null), eq(RegistrationStatus.values().toList()), eq(null)
         )
     }
@@ -131,10 +131,10 @@ class MgmRegistrationRequestHandlerTest {
 
     @Test
     fun `expected exception thrown if registration already approved for holding id`() {
-        val persistedRegistrationRequest = mock<RegistrationRequestStatus> {
-            on {status} doReturn RegistrationStatus.APPROVED
+        val persistedRegistrationRequest = mock<RegistrationRequestDetails> {
+            on { registrationStatus } doReturn RegistrationStatus.APPROVED
         }
-        whenever(membershipQueryClient.queryRegistrationRequestsStatus(holdingIdentity)).doReturn(
+        whenever(membershipQueryClient.queryRegistrationRequests(holdingIdentity)).doReturn(
             MembershipQueryResult.Success(listOf(persistedRegistrationRequest))
         )
         assertThrows<InvalidMembershipRegistrationException> {

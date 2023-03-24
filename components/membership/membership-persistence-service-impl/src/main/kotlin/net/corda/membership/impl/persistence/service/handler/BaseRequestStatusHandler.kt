@@ -3,7 +3,7 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.common.RegistrationStatusDetails
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import java.nio.ByteBuffer
@@ -22,12 +22,12 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
         )
     }
 
-    fun RegistrationRequestEntity.toDetails(): RegistrationStatusDetails {
+    fun RegistrationRequestEntity.toDetails(): RegistrationRequestDetails {
         val context = keyValuePairListDeserializer.deserialize(this.context)
         val registrationProtocolVersion = context?.items?.firstOrNull {
             it.key == "registrationProtocolVersion"
         }?.value?.toIntOrNull() ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
-        return RegistrationStatusDetails.newBuilder()
+        return RegistrationRequestDetails.newBuilder()
             .setRegistrationSent(this.created)
             .setRegistrationLastModified(this.lastModified)
             .setRegistrationStatus(this.status.toStatus())

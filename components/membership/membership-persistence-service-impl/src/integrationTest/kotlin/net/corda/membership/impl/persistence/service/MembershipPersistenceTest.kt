@@ -1200,28 +1200,28 @@ class MembershipPersistenceTest {
         )
         assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val result1 = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result1 = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             null,
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
         ).getOrThrow()
         assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
 
-        val result2 = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result2 = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             viewOwningHoldingIdentity.x500Name,
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
         ).getOrThrow()
         assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
 
-        val result3 = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result3 = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             null,
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         ).getOrThrow()
         assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
 
-        val result4 = membershipQueryClient.queryRegistrationRequestsStatus(viewOwningHoldingIdentity).getOrThrow()
+        val result4 = membershipQueryClient.queryRegistrationRequests(viewOwningHoldingIdentity).getOrThrow()
         assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
     }
 
@@ -1245,7 +1245,7 @@ class MembershipPersistenceTest {
             persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
         }
 
-        val result = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             registeringHoldingIdentity.x500Name,
             listOf(RegistrationStatus.NEW),
@@ -1267,7 +1267,7 @@ class MembershipPersistenceTest {
         val registrationId = randomUUID().toString()
         persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
 
-        val result = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             registeringHoldingIdentity.x500Name,
             listOf(RegistrationStatus.NEW),
