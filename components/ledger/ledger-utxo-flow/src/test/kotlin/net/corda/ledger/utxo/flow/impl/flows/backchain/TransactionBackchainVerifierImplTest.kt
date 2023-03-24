@@ -21,6 +21,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -180,9 +181,9 @@ class TransactionBackchainVerifierImplTest {
     }
 
     @Test
-    fun `returns false if a transaction cannot be retrieved from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to null)
-        assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse()
+    fun `throws an exception if a transaction cannot be retrieved from the database`() {
+        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null )
+        assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
         verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
     }
 
@@ -195,8 +196,8 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `updates the statuses of transactions that pass verification even when a later transaction cannot be retrieved from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_3, UNVERIFIED)).thenReturn(null to null)
-        assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse()
+        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_3, UNVERIFIED)).thenReturn(null)
+        assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
 
         verify(utxoLedgerPersistenceService).updateStatus(TX_ID_1, VERIFIED)
         verify(utxoLedgerPersistenceService).updateStatus(TX_ID_2, VERIFIED)
@@ -205,7 +206,7 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `returns true if a transaction comes as already verified from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to TransactionStatus.VERIFIED)
+        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to VERIFIED)
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isTrue
     }
 

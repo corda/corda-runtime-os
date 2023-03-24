@@ -32,7 +32,7 @@ interface UtxoLedgerPersistenceService {
      * @param transactionStatus filter for this status.
      *
      * @return The found UTXO signed transaction and its status
-     *      null to null if it could not be found in the persistence context.
+     *      null if it could not be found in the persistence context.
      *      null to real status if the transaction exists, but its status is not the expected.
      *
      * @throws CordaPersistenceException if an error happens during find operation.
@@ -41,7 +41,7 @@ interface UtxoLedgerPersistenceService {
     fun findTransactionWithStatus(
         id: SecureHash,
         transactionStatus: TransactionStatus = TransactionStatus.VERIFIED
-    ): Pair<UtxoSignedTransaction?, TransactionStatus?>
+    ): Pair<UtxoSignedTransaction?, TransactionStatus>?
 
     /**
      * Persist a [UtxoSignedTransaction] to the store.

@@ -45,23 +45,25 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun find(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
-        return findTransactionWithStatus(id, transactionStatus).first
+        return findTransactionWithStatus(id, transactionStatus)?.first
     }
 
     @Suspendable
     override fun findTransactionWithStatus(
         id: SecureHash,
         transactionStatus: TransactionStatus
-    ): Pair<UtxoSignedTransaction?, TransactionStatus?> {
+    ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindTransactionExternalEventFactory::class.java,
                 FindTransactionParameters(id.toString(), transactionStatus)
             )
         }.firstOrNull().let {
-            if (it == null) return null to null
+            if (it == null) return null
             val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
-            transaction?.toSignedTransaction() to status?.toTransactionStatus()
+            if (status == null)
+                return null
+            transaction?.toSignedTransaction() to status.toTransactionStatus()
         }
     }
 

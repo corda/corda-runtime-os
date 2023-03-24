@@ -10,6 +10,7 @@ import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.utilities.trace
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -42,7 +43,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
             val (transaction, status) = utxoLedgerPersistenceService.findTransactionWithStatus(
                 transactionId,
                 UNVERIFIED
-            )
+            ) ?: throw CordaRuntimeException("Transaction does not exist locally")
             when (status) {
                 INVALID -> {
                     log.warn(
@@ -76,13 +77,14 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                     } catch (e: Exception) {
                         // TODO revisit what exceptions get caught
                         log.warn(
-                            "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed, message: " +
-                                    "${e.message}"
+                            "Backchain resolution of $initialTransactionIds - Verification of transaction $transactionId failed," +
+                                    " message: ${e.message}"
                         )
                         return false
                     }
                     utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
-                    log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId to verified" }
+                    log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId" +
+                            " to verified" }
                 }
 
                 else -> {

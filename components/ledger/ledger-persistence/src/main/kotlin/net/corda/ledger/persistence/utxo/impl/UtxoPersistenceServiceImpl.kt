@@ -12,6 +12,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -35,6 +36,7 @@ class UtxoPersistenceServiceImpl constructor(
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
+                    ?: throw CordaRuntimeException("Transaction $id in status $status has disappeared from the database")
             } else {
                 null
             } to status
