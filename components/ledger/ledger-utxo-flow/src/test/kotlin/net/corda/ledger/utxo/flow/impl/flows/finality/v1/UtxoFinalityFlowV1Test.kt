@@ -426,6 +426,8 @@ class UtxoFinalityFlowV1Test {
         )
     }
 
+    // TODO actual check that "a signature from a notary that is not part of the notary service composite key throws an error"
+    //  needs to be ported as a unit test for `UtxoSignedTransactionImpl`. This check will be mocked for the purposes of this test.
     @Test
     fun `receiving a signature from a notary that is not part of the notary service composite key throws an error`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
@@ -451,27 +453,40 @@ class UtxoFinalityFlowV1Test {
                 )
             )
         )
-        whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(invalidNotarySignature)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.verifyNotarySignature(invalidNotarySignature)).thenThrow(
+            CordaRuntimeException("Notary's signature has not been created by the transaction's notary")
+        )
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(invalidNotarySignature))
-
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Notary's signature has not been created by the transaction's notary")
 
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1), eq(publicKeyAlice1))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2), eq(publicKeyAlice2))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob), eq(publicKeyBob))
-        verify(transactionSignatureService, never()).verifySignature(any(), eq(invalidNotarySignature), eq(invalidNotaryVNodeKey))
+        verify(initialTx).verifySignatorySignature(eq(signature0))
+        verify(initialTx).verifySignatorySignature(eq(signatureAlice1))
+        verify(txAfterAlice1Signature).verifySignatorySignature(eq(signatureAlice2))
+        verify(txAfterAlice2Signature).verifySignatorySignature(eq(signatureBob))
+        verify(txAfterBobSignature).verifyNotarySignature(eq(invalidNotarySignature))
 
         verify(initialTx).addSignature(signatureAlice1)
-        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
-        verify(updatedTxSomeSigs).addSignature(signatureBob)
-        verify(updatedTxAllSigs, never()).addSignature(invalidNotarySignature)
+        verify(txAfterAlice1Signature).addSignature(signatureAlice2)
+        verify(txAfterAlice2Signature).addSignature(signatureBob)
+        verify(txAfterBobSignature, never()).addSignature(invalidNotarySignature)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
+        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
         verify(sessionAlice).receive(Payload::class.java)
