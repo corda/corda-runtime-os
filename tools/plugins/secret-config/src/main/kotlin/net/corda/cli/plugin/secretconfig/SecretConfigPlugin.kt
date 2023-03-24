@@ -2,7 +2,9 @@ package net.corda.cli.plugin.secretconfig
 
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.cli.api.CordaCliPlugin
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
+import net.corda.libs.configuration.secret.SecretsCreateService
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
@@ -69,8 +71,8 @@ class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             name = "create", description = ["Create a secret config value for the appropriate 'type' of secrets service."]
         )
         fun create() {
-            val secretConfigGenerator: SecretConfigGenerator = when (type) {
-                SecretsServiceType.CORDA -> CordaSecretConfigGenerator(
+            val secretConfigGenerator: SecretsCreateService = when (type) {
+                SecretsServiceType.CORDA -> EncryptionSecretsServiceImpl(
                     checkParamPassed(passphrase)
                         { "'passphrase' must be set for CORDA type secrets." },
                     checkParamPassed(salt)
@@ -81,7 +83,7 @@ class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                         { "'vaultPath' must be set for VAULT type secrets." })
             }
 
-            val configSection = secretConfigGenerator.generate(value)
+            val configSection = secretConfigGenerator.createValue(value, "unused")
             println(configSection.root().render(ConfigRenderOptions.concise()))
         }
 
