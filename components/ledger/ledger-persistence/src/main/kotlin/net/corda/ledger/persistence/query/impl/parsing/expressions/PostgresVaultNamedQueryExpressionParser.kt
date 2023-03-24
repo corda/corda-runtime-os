@@ -61,8 +61,8 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
                 ++index
                 continue
             }
-            val strMatch = stringPattern.find(query, index)
-            if (strMatch != null && strMatch.range.first == index) {
+            val strMatch = stringPattern.matchAt(query, index)
+            if (strMatch != null) {
                 val str = strMatch.groups["str"]
                 if (str != null) {
                     outputTokens += when {
@@ -88,8 +88,8 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
                 ++index
                 continue
             }
-            val opsMatch = opsPattern.find(query, index)
-            if (opsMatch != null && opsMatch.range.first == index) {
+            val opsMatch = opsPattern.matchAt(query, index)
+            if (opsMatch != null) {
                 val ops = opsMatch.groups["op"]
                 if (ops != null) {
                     outputTokens += toKeyword(ops.value)
@@ -97,8 +97,8 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
                     continue
                 }
             }
-            val jsonCastMatch = jsonCastPattern.find(query, index)
-            if (jsonCastMatch != null && jsonCastMatch.range.first == index) {
+            val jsonCastMatch = jsonCastPattern.matchAt(query, index)
+            if (jsonCastMatch != null) {
                 val cast = jsonCastMatch.groups["cast"]
                 if (cast != null) {
                     outputTokens += JsonCast(cast.value)
@@ -106,8 +106,8 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
                     continue
                 }
             }
-            val parameterMatch = parameterPattern.find(query, index)
-            if (parameterMatch != null && parameterMatch.range.first == index) {
+            val parameterMatch = parameterPattern.matchAt(query, index)
+            if (parameterMatch != null) {
                 val cast = parameterMatch.groups["parameter"]
                 if (cast != null) {
                     outputTokens += Parameter(cast.value)
@@ -115,8 +115,8 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
                     continue
                 }
             }
-            val pathMatch = pathPattern.find(query, index)
-            if (pathMatch != null && pathMatch.range.first == index) {
+            val pathMatch = pathPattern.matchAt(query, index)
+            if (pathMatch != null) {
                 val path = pathMatch.groups["path"]
                 if (path != null) {
                     outputTokens += PathReference(path.value)
@@ -124,8 +124,8 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
                     continue
                 }
             }
-            val numberMatch = numberPattern.find(query, index)
-            if (numberMatch != null && numberMatch.range.first == index) {
+            val numberMatch = numberPattern.matchAt(query, index)
+            if (numberMatch != null) {
                 val number = numberMatch.groups["num"]
                 if (number != null) {
                     outputTokens += Number(number.value)
