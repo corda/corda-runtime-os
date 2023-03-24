@@ -3675,7 +3675,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/VirtualNodeOperationStatuses"
+                  "$ref" : "#/components/schemas/AsyncOperationStatus"
                 }
               }
             }
@@ -3862,6 +3862,48 @@
           }
         },
         "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
+      },
+      "AsyncOperationStatus" : {
+        "required" : [ "lastUpdatedTimestamp", "operation", "requestId", "status" ],
+        "type" : "object",
+        "properties" : {
+          "errorReason" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "lastUpdatedTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "operation" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "processingStage" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "resourceId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "status" : {
+            "nullable" : false,
+            "example" : "IN_PROGRESS",
+            "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
+          }
+        }
       },
       "AsyncResponse" : {
         "required" : [ "requestId" ],
@@ -4303,7 +4345,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -5204,69 +5245,6 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
-          }
-        }
-      },
-      "VirtualNodeOperationStatus" : {
-        "required" : [ "latestUpdateTimestamp", "operationData", "requestId", "requestTimestamp", "state" ],
-        "type" : "object",
-        "properties" : {
-          "errors" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "heartbeatTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "latestUpdateTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "operationData" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "requestId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "requestTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "state" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "VirtualNodeOperationStatuses" : {
-        "required" : [ "requestId", "response" ],
-        "type" : "object",
-        "properties" : {
-          "requestId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "response" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/VirtualNodeOperationStatus"
-            }
           }
         }
       },

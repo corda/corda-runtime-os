@@ -9,4 +9,8 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
