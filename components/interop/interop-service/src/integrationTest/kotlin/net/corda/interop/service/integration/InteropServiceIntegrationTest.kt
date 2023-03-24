@@ -97,7 +97,6 @@ class InteropServiceIntegrationTest {
         }
     }
 
-    @Disabled("Temporarily disabled as part of CORE-10465")
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
@@ -163,7 +162,6 @@ class InteropServiceIntegrationTest {
         interopService.stop()
     }
 
-    @Disabled("Temporarily disabled as part of CORE-10465")
     @Test
     fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
