@@ -48,19 +48,14 @@ class NamedParameterizedQuery<R : Any>(
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<R> {
-        val entityResponse = wrapWithPersistenceException {
+        val deserialized = wrapWithPersistenceException {
             externalEventExecutor.execute(
                 NamedQueryExternalEventFactory::class.java,
                 NamedQueryParameters(queryName, getSerializedParameters(parameters), offset, limit)
             )
-        }
+        }.map { serializationService.deserialize(it.array(), expectedClass) }
 
-        return PersistenceResultSetImpl(
-            entityResponse.results.map { serializationService.deserialize(it.array(), expectedClass) },
-            entityResponse.size,
-            entityResponse.newOffset,
-            entityResponse.hasNextPage
-        )
+        return PersistenceResultSetImpl(deserialized)
     }
 
     private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {

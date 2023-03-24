@@ -59,16 +59,13 @@ class VaultNamedParameterizedQueryImpl<T>(
             "Limit needs to be provided and needs to be a positive number to execute the query."
         }
 
-        val responseDto = externalEventExecutor.execute(
+        val results = externalEventExecutor.execute(
             VaultNamedQueryExternalEventFactory::class.java,
             VaultNamedQueryEventParams(queryName, getSerializedParameters(queryParams), offsetValue, limitValue)
         )
 
         return LedgerResultSetImpl(
-            responseDto.newOffset,
-            responseDto.results.size,
-            responseDto.hasNextPage,
-            responseDto.results.map { serializationService.deserialize(it.array(), resultClass) }
+            results.map { serializationService.deserialize(it.array(), resultClass) }
         )
     }
 

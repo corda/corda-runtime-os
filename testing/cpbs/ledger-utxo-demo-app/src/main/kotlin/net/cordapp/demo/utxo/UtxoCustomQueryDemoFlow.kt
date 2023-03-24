@@ -15,7 +15,7 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
         val offset: Int,
         val limit: Int
     )
-    data class CustomQueryFlowResponse(val newOffset: Int, val results: List<String>)
+    data class CustomQueryFlowResponse(val results: List<String>)
 
     private companion object {
         const val DUMMY_QUERY_NAME = "UTXO_DUMMY_QUERY"
@@ -41,7 +41,7 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
            .execute()
 
         return jsonMarshallingService.format(
-            CustomQueryFlowResponse(resultSet.newOffset, resultSet.results)
+            CustomQueryFlowResponse(resultSet.results)
         )
     }
 }

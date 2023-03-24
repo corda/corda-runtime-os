@@ -42,7 +42,7 @@ class PersistenceServiceImpl @Activate constructor(
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, listOf(serialize(primaryKey)))
             )
-        }.results.firstOrNull()?.let { serializationService.deserialize(it.array(), entityClass) }
+        }.firstOrNull()?.let { serializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
@@ -53,7 +53,7 @@ class PersistenceServiceImpl @Activate constructor(
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, primaryKeys.filterNotNull().map(::serialize))
             )
-        }.results.map { serializationService.deserialize(it.array(), entityClass) }
+        }.map { serializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
@@ -70,7 +70,7 @@ class PersistenceServiceImpl @Activate constructor(
                 MergeExternalEventFactory::class.java,
                 MergeParameters(listOf(serialize(entity)))
             )
-        }.results.firstOrNull()?.let { serializationService.deserialize(it.array(), entity::class.java) }
+        }.firstOrNull()?.let { serializationService.deserialize(it.array(), entity::class.java) }
     }
 
     @Suspendable
@@ -82,7 +82,7 @@ class PersistenceServiceImpl @Activate constructor(
                     MergeExternalEventFactory::class.java,
                     MergeParameters(entities.map { serialize(it) })
                 )
-            }.results
+            }
             // Zips the merged entities with the [entities] passed into [merge] so that [mergedEntities] can be
             // deserialized into the correct types. This assumes that the order of [mergedEntities] is the same as
             // [entities].

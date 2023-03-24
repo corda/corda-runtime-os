@@ -55,7 +55,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
 
         require(vaultNamedQuery != null) { "Query with name ${request.queryName} could not be found!" }
 
-        val (resultList, newOffset) = entitySandboxService.get(holdingIdentity.toCorda())
+        val resultList = entitySandboxService.get(holdingIdentity.toCorda())
             .getEntityManagerFactory()
             .transaction { em ->
                 // TODO For now we only select the tx id but we might need the whole entity?
@@ -68,19 +68,14 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                     query.setParameter(it.key, serializationService.deserialize(it.value.array(), Any::class.java))
                 }
 
-                val originalResultList = query.resultList
-
                 query.firstResult = request.offset
                 query.maxResults = request.limit
 
-                Pair(query.resultList, originalResultList.size - request.limit)
+                query.resultList
             }
 
         return EntityResponse(
-            resultList.filterNotNull().map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-            resultList.size,
-            if (newOffset > 0) newOffset else 0, // We don't want any negative numbers so just reset to 0
-            newOffset > 0
+            resultList.filterNotNull().map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
         )
     }
 }

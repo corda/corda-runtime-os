@@ -49,7 +49,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 FindTransactionExternalEventFactory::class.java,
                 FindTransactionParameters(id.toString(), transactionStatus)
             )
-        }.results.firstOrNull()?.let {
+        }.firstOrNull()?.let {
             serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
         }
     }
@@ -65,7 +65,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 PersistTransactionExternalEventFactory::class.java,
                 PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
             )
-        }.results.map { serializationService.deserialize(it.array()) }
+        }.map { serializationService.deserialize(it.array()) }
     }
 
     @Suspendable
@@ -88,7 +88,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 PersistTransactionIfDoesNotExistExternalEventFactory::class.java,
                 PersistTransactionIfDoesNotExistParameters(serialize(transaction.toContainer()), transactionStatus)
             )
-        }.results.first().let {
+        }.first().let {
             val (status, summaries) = serializationService.deserialize<Pair<String?, List<CordaPackageSummary>>>(it.array())
             when (status) {
                 null -> TransactionExistenceStatus.DOES_NOT_EXIST
