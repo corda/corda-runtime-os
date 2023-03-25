@@ -48,7 +48,9 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.consume
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.transactionStep
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
@@ -158,6 +160,9 @@ class PersistenceTests {
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
+        /**
+         * Make an EMF, and take on the obligation to quickly close the EMF.
+         */
         private fun makeEntityManagerFactory(): EntityManagerFactory = getEntityManagerFactory(
             CryptoTenants.CRYPTO,
             dbConnectionManager,
@@ -199,8 +204,8 @@ class PersistenceTests {
                     null
                 }
             )
-            makeEntityManagerFactory().use {
-                it.transaction { em ->
+            makeEntityManagerFactory().use { emf ->
+                emf.transaction { em ->
                     em.persist(association)
                 }
             }
@@ -330,13 +335,11 @@ class PersistenceTests {
             algorithmName = "AES",
             keyMaterial = generateKeyPair(EDDSA_ED25519_CODE_NAME).public.encoded
         )
-        makeEntityManagerFactory().use { emf ->
-            emf.transaction { em ->
-                em.persist(entity)
+        makeEntityManagerFactory().consume {
+            transactionStep {
+                persist(entity)
             }
-        }
-        makeEntityManagerFactory().use { emf ->
-            val retrieved = emf.find(WrappingKeyEntity::class.java, entity.alias)
+            val retrieved = find(WrappingKeyEntity::class.java, entity.alias)
             assertNotNull(retrieved)
             assertEquals(entity.alias, retrieved.alias)
             assertEquals(

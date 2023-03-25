@@ -29,14 +29,14 @@ class TestSigningRepositoryImpl {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
         val tenant = CryptoTenants.CRYPTO
-        val repo = makeMockSigningRepository(tenant, dbConnectionManager)
-        assertThat(repo::class.simpleName).isEqualTo("SigningRepositoryImpl")
-        verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-        verifyNoMoreInteractions(dbConnectionManager)
-        makeMockSigningRepository(CryptoTenants.P2P, dbConnectionManager)
-        verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-        verifyNoMoreInteractions(dbConnectionManager)
-        repo.close()
+        makeMockSigningRepository(tenant, dbConnectionManager).use { repo ->
+            assertThat(repo::class.simpleName).isEqualTo("SigningRepositoryImpl")
+            verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+            verifyNoMoreInteractions(dbConnectionManager)
+            makeMockSigningRepository(CryptoTenants.P2P, dbConnectionManager)
+            verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+            verifyNoMoreInteractions(dbConnectionManager)
+        }
         verify(entityManagerFactory, times(0)).close()
     }
 
