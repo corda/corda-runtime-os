@@ -379,7 +379,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
-            .setParameter("publicKeyHash", signature.by)
+            .setParameter("publicKeyHash", signature.by.toString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction signature [$transactionId, $index]")
