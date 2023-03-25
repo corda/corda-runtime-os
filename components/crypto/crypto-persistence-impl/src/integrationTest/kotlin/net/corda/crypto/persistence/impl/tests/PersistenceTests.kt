@@ -604,14 +604,14 @@ class PersistenceTests {
         val hsmId = UUID.randomUUID().toString()
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-        makeSigningRepo(tenantId).consume {
-            savePublicKey(p1)
+        makeSigningRepo(tenantId).use {
+            it.savePublicKey(p1)
             assertThrows(PersistenceException::class.java) {
-                savePublicKey(p1)
+                it.savePublicKey(p1)
             }
-            savePrivateKey(w1)
+            it.savePrivateKey(w1)
             assertThrows(PersistenceException::class.java) {
-                savePrivateKey(w1)
+                it.savePrivateKey(w1)
             }
         }
     }

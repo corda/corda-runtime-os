@@ -105,8 +105,8 @@ class SigningServiceImpl(
         }
         // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
         // querying 
-        return signingRepositoryFactory.getInstance(tenantId).consume {
-            query(
+        return signingRepositoryFactory.getInstance(tenantId).use {
+            it.query(
                 skip,
                 take,
                 orderBy.toSigningKeyOrderBy(),
@@ -126,8 +126,8 @@ class SigningServiceImpl(
         if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
 
-        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).consume {
-            lookupByPublicKeyShortHashes(notFound.toMutableSet())
+        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
+            it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
         fetchedKeys.forEach { cache.put(CacheKey(tenantId, it.id), it) }
 
@@ -148,8 +148,8 @@ class SigningServiceImpl(
             !cachedMap.containsKey(CacheKey(tenantId, ShortHash.of(it)))
         }
 
-        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).consume {
-            lookupByPublicKeyHashes(notFound.toMutableSet())
+        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
+            it.lookupByPublicKeyHashes(notFound.toMutableSet())
                 .map { foundKey ->
                     foundKey.also {
                         cache.put(CacheKey(tenantId, it.id), it)
@@ -350,8 +350,8 @@ class SigningServiceImpl(
             )
         } else {
             // TODO - use cache?
-            return signingRepositoryFactory.getInstance(tenantId).consume {
-                findKey(publicKey)?.let {
+            return signingRepositoryFactory.getInstance(tenantId).use { repo->
+                repo.findKey(publicKey)?.let {
                     // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
                     // requested key Sand not a different one that clashed on key id (short key id).
                     if (it.fullId == publicKey.fullIdHash(schemeMetadata, digestService)) {

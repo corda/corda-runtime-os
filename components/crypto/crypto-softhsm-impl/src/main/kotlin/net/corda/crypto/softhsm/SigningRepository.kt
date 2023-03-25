@@ -76,10 +76,4 @@ interface SigningRepository : Closeable {
      */
     fun lookupByPublicKeyHashes(fullKeyIds: Set<SecureHash>): Collection<SigningKeyInfo>
 
-    /**
-     * Run code using this signing repository as a receiver, then close the signing repository
-     */
-
-    fun <R> consume( block: SigningRepository.() -> R): R
-
 }

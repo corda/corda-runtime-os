@@ -196,12 +196,6 @@ class SigningRepositoryImpl(
                 .resultList.map { it.toSigningKeyInfo() }
         }
     }
-
-    override fun <R> consume(block: SigningRepository.() -> R): R {
-        use {
-            return this.block()
-        }
-    }
 }
 
 

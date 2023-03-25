@@ -137,8 +137,4 @@ class TestSigningRepository: SigningRepository {
     override fun close() {
         // We do not clear keys here, since we want to be able to reuse the repository.
     }
-
-    override fun <R> consume(block: SigningRepository.() -> R): R {
-        return this.block()
-    }
 }
