@@ -102,6 +102,9 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     @Suspendable
     override fun call(session: FlowSession) {
 
@@ -111,11 +114,20 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
         }
         val requiredSignatories = finalizedSignedTransaction.toLedgerTransaction().requiredSignatories
         val actualSignatories = finalizedSignedTransaction.signatures.map { it.by }.toSet()
-        check(requiredSignatories == actualSignatories) {
+        check(requiredSignatories.size == actualSignatories.size &&
+                actualSignatories.all { keyIdMatchesKey(it, requiredSignatories) }) {
             "Signatories were not as expected. Expected:\n    " + requiredSignatories.joinToString("\n    ") +
                     "and got:\n    " + actualSignatories.joinToString("\n    ")
         }
         log.info("Finished responder flow - $finalizedSignedTransaction")
+    }
+
+    private fun keyIdMatchesKey(keyId: SecureHash, keys: Set<PublicKey>): Boolean {
+        val digestAlgorithm = DigestAlgorithmName(keyId.algorithm)
+        val keyIdsToKeys = keys.associateBy {
+            digestService.hash(it.encoded, digestAlgorithm)
+        }
+        return keyIdsToKeys.containsKey(keyId)
     }
 }
 
