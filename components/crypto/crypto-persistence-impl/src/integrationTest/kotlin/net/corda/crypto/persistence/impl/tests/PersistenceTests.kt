@@ -38,6 +38,7 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
+import net.corda.crypto.softhsm.consume
 import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.db.connection.manager.DbConnectionManager
@@ -59,7 +60,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -671,54 +671,57 @@ class PersistenceTests {
             assertNull(it.findKey(UUID.randomUUID().toString()))
         }
     }
-//
-//    @ParameterizedTest
-//    @MethodSource("signingTenants")
-//    fun `Should looup existing signing keys by ids`(tenantId: String) {
-//        val hsmId = UUID.randomUUID().toString()
-//        val p0 = generateKeyPair(EDDSA_ED25519_CODE_NAME).public
-//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-//        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-//        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
-//        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-//        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-//        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
-//        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
-//        signingKeyStore.save(tenantId, p1)
-//        signingKeyStore.save(tenantId, p2)
-//        signingKeyStore.save(tenantId, p3)
-//        signingKeyStore.save(tenantId, p4)
-//        signingKeyStore.save(tenantId, w1)
-//        signingKeyStore.save(tenantId, w2)
-//        signingKeyStore.save(tenantId, w3)
-//        val keys = signingKeyStore.lookupByIds(
-//            tenantId,
-//            listOf(
-//                ShortHash.of(p1.key.publicKey.publicKeyId()),
-//                ShortHash.of(p0.publicKeyId()),
-//                ShortHash.of(p3.key.publicKey.publicKeyId()),
-//                ShortHash.of(w2.key.publicKey.publicKeyId())
-//            )
-//        )
-//        assertEquals(3, keys.size)
-//        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.id() })
-//        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.id() })
-//        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.id() })
-//    }
-//
-//    @ParameterizedTest
-//    @MethodSource("signingTenants")
-//    fun `Should find existing signing keys by public keys`(tenantId: String) {
-//        val hsmId = UUID.randomUUID().toString()
-//        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-//        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
-//        signingKeyStore.save(tenantId, p1)
-//        signingKeyStore.save(tenantId, w1)
-//        assertNull(signingKeyStore.find(tenantId, generateKeyPair(EDDSA_ED25519_CODE_NAME).public))
-//        assertSigningCachedKey(tenantId, p1, signingKeyStore.find(tenantId, p1.key.publicKey))
-//        assertSigningCachedKey(tenantId, w1, signingKeyStore.find(tenantId, w1.key.publicKey))
-//    }
-//
+
+    @ParameterizedTest
+    @MethodSource("signingTenants")
+    fun `Should lookup existing signing keys by ids`(tenantId: String) {
+        val hsmId = UUID.randomUUID().toString()
+        val p0 = generateKeyPair(EDDSA_ED25519_CODE_NAME).public
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+        makeSigningRepo(tenantId).consume {
+            savePublicKey(p1)
+            savePublicKey(p2)
+            savePublicKey(p3)
+            savePublicKey(p4)
+            savePrivateKey(w1)
+            savePrivateKey(w2)
+            savePrivateKey(w3)
+            val keys = lookupByPublicKeyShortHashes(
+                setOf(
+                    ShortHash.of(p1.key.publicKey.publicKeyId()),
+                    ShortHash.of(p0.publicKeyId()),
+                    ShortHash.of(p3.key.publicKey.publicKeyId()),
+                    ShortHash.of(w2.key.publicKey.publicKeyId())
+                )
+            )
+            assertEquals(3, keys.size)
+            assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.id() })
+            assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.id() })
+            assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.id() })
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("signingTenants")
+    fun `Should find existing signing keys by public keys`(tenantId: String) {
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+        makeSigningRepo(tenantId).consume {
+            savePublicKey(p1)
+            savePrivateKey(w1)
+            assertNull(findKey(generateKeyPair(EDDSA_ED25519_CODE_NAME).public))
+            assertSigningCachedKey(tenantId, p1, findKey(p1.key.publicKey))
+            assertSigningCachedKey(tenantId, w1, findKey(w1.key.publicKey))
+        }
+    }
+
 //    /**
 //     * The test does post lookup filtering to ensure that only keys generated by this test are considered.
 //     */
