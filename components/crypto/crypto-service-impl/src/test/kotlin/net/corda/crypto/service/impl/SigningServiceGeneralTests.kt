@@ -86,30 +86,30 @@ class SigningServiceGeneralTests {
         Mockito.verify(repo, times(1)).findKey(any<PublicKey>())
     }
 
-    // @Test
-//    fun `Should throw IllegalArgumentException when key is not found for signing`() {
-//        val repo = mock<SigningRepository> {
-//            on { findKey(any<PublicKey>()) } doReturn null
-//        }
-//        val signingService = SigningServiceImpl(
-//            cryptoServiceFactory = mock(),
-//            signingRepositoryFactory = { repo },
-//            schemeMetadata = schemeMetadata,
-//            digestService = mock(),
-//            cache = mock()
-//        )
-//        assertThrows(IllegalArgumentException::class.java) {
-//            signingService.sign(
-//                tenantId = UUID.randomUUID().toString(),
-//                publicKey = mock {
-//                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-//                },
-//                signatureSpec = SignatureSpec("NONE"),
-//                data = ByteArray(2),
-//                context = emptyMap()
-//            )
-//        }
-//    }
+    @Test
+    fun `Should throw IllegalArgumentException when key is not found for signing`() {
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doReturn null
+        }
+        val signingService = SigningServiceImpl(
+            cryptoServiceFactory = mock(),
+            signingRepositoryFactory = { repo },
+            schemeMetadata = schemeMetadata,
+            digestService = mock(),
+            cache = mock()
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            signingService.sign(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                signatureSpec = SignatureSpec("NONE"),
+                data = ByteArray(2),
+                context = emptyMap()
+            )
+        }
+    }
 
     @Test
     fun `Should throw original exception failing derivation`() {
@@ -140,31 +140,31 @@ class SigningServiceGeneralTests {
         verify(repo, times(1)).findKey(any<PublicKey>())
     }
 
-//    @Test
-//    fun `Should throw IllegalArgumentException when key is not found for deriving`() {
-//        val repo = mock<SigningRepository> {
-//            on { findKey(any<PublicKey>()) } doReturn null
-//        }
-//        val signingService = SigningServiceImpl(
-//            signingRepositoryFactory = { repo },
-//            cryptoServiceFactory = mock(),
-//            schemeMetadata = schemeMetadata,
-//            digestService = mock(),
-//            cache = mock()
-//        )
-//        assertThrows(IllegalArgumentException::class.java) {
-//            signingService.deriveSharedSecret(
-//                tenantId = UUID.randomUUID().toString(),
-//                publicKey = mock {
-//                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-//                },
-//                otherPublicKey = mock {
-//                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-//                },
-//                context = emptyMap()
-//            )
-//        }
-//    }
+    @Test
+    fun `Should throw IllegalArgumentException when key is not found for deriving`() {
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doReturn null
+        }
+        val signingService = SigningServiceImpl(
+            signingRepositoryFactory = { repo },
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata,
+            digestService = mock(),
+            cache = mock()
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            signingService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                context = emptyMap()
+            )
+        }
+    }
 
     @Test
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
