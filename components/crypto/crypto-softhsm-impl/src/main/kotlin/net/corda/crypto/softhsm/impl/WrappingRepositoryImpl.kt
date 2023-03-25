@@ -4,8 +4,8 @@ import java.time.Instant
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.WrappingRepository
-import net.corda.orm.utils.transaction
-import net.corda.orm.utils.use
+import net.corda.orm.utils.consume
+import net.corda.orm.utils.consumeTransaction
 import javax.persistence.EntityManagerFactory
 
 class WrappingRepositoryImpl(
@@ -15,8 +15,8 @@ class WrappingRepositoryImpl(
     override fun close() = entityManagerFactory.close()
 
     override fun saveKey(alias: String, key: WrappingKeyInfo) {
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(
+        entityManagerFactory.consumeTransaction {
+            persist(
                 WrappingKeyEntity(
                     alias = alias,
                     created = Instant.now(),
@@ -29,8 +29,8 @@ class WrappingRepositoryImpl(
     }
 
     override fun findKey(alias: String): WrappingKeyInfo? =
-        entityManagerFactory.createEntityManager().use { em ->
-            em.find(WrappingKeyEntity::class.java, alias)?.let { rec ->
+        entityManagerFactory.consume {
+            find(WrappingKeyEntity::class.java, alias)?.let { rec ->
                 WrappingKeyInfo(
                     encodingVersion = rec.encodingVersion,
                     algorithmName = rec.algorithmName,
