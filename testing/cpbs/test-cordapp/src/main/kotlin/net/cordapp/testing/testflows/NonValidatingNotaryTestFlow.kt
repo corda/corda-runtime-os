@@ -134,15 +134,14 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         val notaryKeysByIds =
             (notaryServiceParty.owningKey as? CompositeKey)?.leafKeys?.associateBy {
                 digestService.hash(it.encoded, digestAlgoName)
-            } ?: run {
-                // notary service key is plain key
-                mapOf(
-                    digestService.hash(
-                        notaryServiceParty.owningKey.encoded,
-                        digestAlgoName
-                    ) to notaryServiceParty.owningKey
-                )
-            }
+            } ?:
+            // notary service key is plain key
+            mapOf(
+                digestService.hash(
+                    notaryServiceParty.owningKey.encoded,
+                    digestAlgoName
+                ) to notaryServiceParty.owningKey
+            )
         return notaryKeysByIds[keyId]
     }
 
