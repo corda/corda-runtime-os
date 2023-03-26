@@ -11,8 +11,10 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeyUtils
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -21,6 +23,7 @@ import net.corda.v5.membership.NotaryInfo
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -99,20 +102,17 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
                 findNotaryVNodeName()
             ))
 
-            // TODO Needs reviewing
-            val signatoryKey = stx.signatories.single()
-            val signature = signatures.single()
-            val algo = signature.by.algorithm
-            val signatoryKeyId = digestService.hash(signatoryKey.encoded, DigestAlgorithmName(algo))
-            if (signatoryKeyId != signature.by) {
-                throw IllegalStateException("Signatory key id doesn't match received signature key id")
-            }
+            // TODO The below is static and needs aligning if signatures > 1
+            val signatureKeyId = signatures.single().signature.by
+            val notaryKeyThatSigned =
+                findSignatureKeyFromKeyId(signatureKeyId, notaryServiceParty)
+                    ?: throw IllegalStateException("Signatory key id doesn't match received signature key id")
 
+            // TODO The below check is redundant now
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
-            // TODO confirm `signatures` should only be 1 signature?
             signatures.forEach {
-                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(signatoryKey))) {
+                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(notaryKeyThatSigned))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }
@@ -123,6 +123,27 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             stx.inputStateRefs.map { it.toString() },
             stx.referenceStateRefs.map { it.toString() }
         ))
+    }
+
+    @Suspendable
+    private fun findSignatureKeyFromKeyId(
+        keyId: SecureHash,
+        notaryServiceParty: Party
+    ): PublicKey? {
+        val digestAlgoName = DigestAlgorithmName(keyId.algorithm)
+        val notaryKeysByIds =
+            (notaryServiceParty.owningKey as? CompositeKey)?.leafKeys?.associateBy {
+                digestService.hash(it.encoded, digestAlgoName)
+            } ?: run {
+                // notary service key is plain key
+                mapOf(
+                    digestService.hash(
+                        notaryServiceParty.owningKey.encoded,
+                        digestAlgoName
+                    ) to notaryServiceParty.owningKey
+                )
+            }
+        return notaryKeysByIds[keyId]
     }
 
     /**
