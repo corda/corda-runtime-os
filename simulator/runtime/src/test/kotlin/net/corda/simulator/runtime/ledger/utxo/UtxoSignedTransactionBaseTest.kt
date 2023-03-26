@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.notary.BaseNotaryInfo
 import net.corda.simulator.runtime.notary.SimTimeWindow
@@ -203,6 +204,6 @@ class UtxoSignedTransactionBaseTest {
         val txWithTwoSignatures = txWithOneSignature.addSignatures(listOf(publicKeys[1]))
 
         // The final transaction should be signed with both the keys
-        assertThat(txWithTwoSignatures.signatures.map {it.by}, `is`(publicKeys))
+        assertThat(txWithTwoSignatures.signatures.map { it.by }.toSet(), `is`(publicKeys.map { it.fullIdHash() }.toSet()))
     }
 }
