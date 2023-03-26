@@ -108,32 +108,34 @@ class ConsensualFinalityFlowV1Test {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        val signedTransactionWithSigAlice1 = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransaction.addSignature(eq(signatureAlice1))).thenReturn(signedTransactionWithSigAlice1)
-        val signedTransactionWithSigAlice2 = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransactionWithSigAlice1.addSignature(eq(signatureAlice2))).thenReturn(signedTransactionWithSigAlice2)
-        val signedTransactionWithSigBob = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransactionWithSigAlice2.addSignature(eq(signatureBob))).thenReturn(signedTransactionWithSigBob)
+        val signedTransactionAfterSigAlice1 = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransaction.addSignature(eq(signatureAlice1))).thenReturn(signedTransactionAfterSigAlice1)
+        val signedTransactionAfterSigAlice2 = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransactionAfterSigAlice1.addSignature(eq(signatureAlice2))).thenReturn(signedTransactionAfterSigAlice2)
+        val signedTransactionAfterSigBob = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransactionAfterSigAlice2.addSignature(eq(signatureBob))).thenReturn(signedTransactionAfterSigBob)
+
+        whenever(signedTransactionAfterSigBob.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
 
         verify(signedTransaction).verifySignature(eq(signatureAlice1))
-        verify(signedTransactionWithSigAlice1).verifySignature(eq(signatureAlice2))
-        verify(signedTransactionWithSigAlice2).verifySignature(eq(signatureBob))
+        verify(signedTransactionAfterSigAlice1).verifySignature(eq(signatureAlice2))
+        verify(signedTransactionAfterSigAlice2).verifySignature(eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransactionWithSigAlice1).addSignature(signatureAlice2)
-        verify(signedTransactionWithSigAlice2).addSignature(signatureBob)
+        verify(signedTransactionAfterSigAlice1).addSignature(signatureAlice2)
+        verify(signedTransactionAfterSigAlice2).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransactionWithSigBob, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransactionAfterSigBob, TransactionStatus.VERIFIED)
 
         // TODO To be addressed maybe by ledger team
-//        verify(flowMessaging).sendAllMap(
-//            mapOf(
-//                sessionAlice to listOf(signatureBob),
-//                sessionBob to listOf(signatureAlice1, signatureAlice2)
-//            )
-//        )
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
     }
 
     @Test
@@ -204,25 +206,25 @@ class ConsensualFinalityFlowV1Test {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
 
-        val signedTransactionWithSigAlice1 = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransaction.addSignature(eq(signatureAlice1))).thenReturn(signedTransactionWithSigAlice1)
-        val signedTransactionWithSigAlice2 = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransactionWithSigAlice1.addSignature(eq(signatureAlice2))).thenReturn(signedTransactionWithSigAlice2)
+        val signedTransactionAfterSigAlice1 = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransaction.addSignature(eq(signatureAlice1))).thenReturn(signedTransactionAfterSigAlice1)
+        val signedTransactionAfterSigAlice2 = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransactionAfterSigAlice1.addSignature(eq(signatureAlice2))).thenReturn(signedTransactionAfterSigAlice2)
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("Failed to receive signatures from $BOB for transaction ${signedTransaction.id} with message: message!")
 
         verify(signedTransaction).verifySignature(eq(signatureAlice1))
-        verify(signedTransactionWithSigAlice1).verifySignature(eq(signatureAlice2))
-        verify(signedTransactionWithSigAlice2, never()).verifySignature(eq(signatureBob))
+        verify(signedTransactionAfterSigAlice1).verifySignature(eq(signatureAlice2))
+        verify(signedTransactionAfterSigAlice2, never()).verifySignature(eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransactionWithSigAlice1).addSignature(signatureAlice2)
-        verify(signedTransactionWithSigAlice2, never()).addSignature(signatureBob)
+        verify(signedTransactionAfterSigAlice1).addSignature(signatureAlice2)
+        verify(signedTransactionAfterSigAlice2, never()).addSignature(signatureBob)
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
-        verify(persistenceService, never()).persist(signedTransactionWithSigAlice1, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransactionAfterSigAlice1, TransactionStatus.VERIFIED)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
     }
 
@@ -231,16 +233,12 @@ class ConsensualFinalityFlowV1Test {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-//        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob), eq(publicKeyBob))).thenThrow(
-//            CryptoSignatureException("")
-//        )
+        val signedTransactionAfterSigAlice1 = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransaction.addSignature(eq(signatureAlice1))).thenReturn(signedTransactionAfterSigAlice1)
+        val signedTransactionAfterSigAlice2 = mock<ConsensualSignedTransactionInternal>()
+        whenever(signedTransactionAfterSigAlice1.addSignature(eq(signatureAlice2))).thenReturn(signedTransactionAfterSigAlice2)
 
-        val signedTransactionWithSigAlice1 = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransaction.addSignature(eq(signatureAlice1))).thenReturn(signedTransactionWithSigAlice1)
-        val signedTransactionWithSigAlice2 = mock<ConsensualSignedTransactionInternal>()
-        whenever(signedTransactionWithSigAlice1.addSignature(eq(signatureAlice2))).thenReturn(signedTransactionWithSigAlice2)
-
-        whenever(signedTransactionWithSigAlice2.verifySignature(eq(signatureBob))).thenThrow(
+        whenever(signedTransactionAfterSigAlice2.verifySignature(eq(signatureBob))).thenThrow(
             CryptoSignatureException("")
         )
 
@@ -248,11 +246,11 @@ class ConsensualFinalityFlowV1Test {
             .isInstanceOf(CryptoSignatureException::class.java)
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransactionWithSigAlice1).addSignature(signatureAlice2)
-        verify(signedTransactionWithSigAlice2, never()).addSignature(signatureBob)
+        verify(signedTransactionAfterSigAlice1).addSignature(signatureAlice2)
+        verify(signedTransactionAfterSigAlice2, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransactionWithSigAlice2, TransactionStatus.VERIFIED)
-        verify(persistenceService).persist(signedTransactionWithSigAlice2, TransactionStatus.INVALID)
+        verify(persistenceService, never()).persist(signedTransactionAfterSigAlice2, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransactionAfterSigAlice2, TransactionStatus.INVALID)
     }
 
     @Test
