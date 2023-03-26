@@ -31,7 +31,6 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
@@ -253,7 +252,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
 
@@ -323,7 +322,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
@@ -405,7 +404,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
@@ -487,7 +486,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(invalidNotarySignature)).thenReturn(notarizedTx)
 
@@ -560,7 +559,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
@@ -636,7 +635,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
         whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
         whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
 
@@ -764,7 +763,7 @@ class UtxoFinalityFlowV1Test {
         val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
         val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
-        whenever(txAfterBobSignature.notary).thenReturn(notaryService)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
         whenever(txAfterAlice1Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
         whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)

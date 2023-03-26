@@ -73,7 +73,6 @@ data class UtxoSignedTransactionImpl(
         return wrappedWireTransaction.notaryKey
     }
 
-
     override fun getTimeWindow(): TimeWindow {
         return wrappedWireTransaction.timeWindow
     }
@@ -226,14 +225,14 @@ data class UtxoSignedTransactionImpl(
         val publicKey = getNotaryPublicKeyByKeyId(signature.by)
             ?: throw CordaRuntimeException( // todo transition to TransactionSignatureException
                 "Notary's signature has not been created by the transaction's notary. " +
-                        "Notary's public key: ${notary.owningKey} " +
+                        "Notary's public key: $notaryKey " +
                         "Notary signature's key Id: ${signature.by}"
             )
 
-        if (!KeyUtils.isKeyInSet(notary.owningKey, listOf(publicKey))) {
+        if (!KeyUtils.isKeyInSet(notaryKey, listOf(publicKey))) {
             throw CordaRuntimeException( // todo transition to TransactionSignatureException
                 "Notary's signature has not been created by the transaction's notary. " +
-                        "Notary's public key: ${notary.owningKey} " +
+                        "Notary's public key: $notaryKey " +
                         "Notary signature's key: $publicKey"
             )
         }
@@ -287,7 +286,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getNotaryKeys(): List<PublicKey> {
-        return when (val owningKey = notary.owningKey) {
+        return when (val owningKey = notaryKey) {
             is CompositeKey -> owningKey.leafKeys.toList()
             else -> listOf(owningKey)
         }

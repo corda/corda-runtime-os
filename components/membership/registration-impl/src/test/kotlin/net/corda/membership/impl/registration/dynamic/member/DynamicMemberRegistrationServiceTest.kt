@@ -555,7 +555,7 @@ class DynamicMemberRegistrationServiceTest {
                 ).doReturn(listOf(cryptoSigningKey))
                 Key(it, ShortHash.of(keyId), key)
             }.reversed()
-            val signature = DigitalSignature.WithKey(
+            val signature = DigitalSignatureWithKey(
                 keys.first().key,
                 byteArrayOf(1)
             )

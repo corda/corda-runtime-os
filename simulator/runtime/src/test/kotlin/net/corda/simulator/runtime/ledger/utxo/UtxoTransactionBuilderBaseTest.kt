@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
@@ -38,7 +39,7 @@ class UtxoTransactionBuilderBaseTest {
         // Given a key has been generated on the node, so the SigningService can sign with it
         val signingService = mock<SigningService>()
         whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
-            .thenReturn(DigitalSignature.WithKey(publicKeys[0], "My fake signed things".toByteArray()))
+            .thenReturn(DigitalSignature.WithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
 
         val notaryLookup = mock<NotaryLookup>()

@@ -105,7 +105,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             // TODO The below is static and needs aligning if signatures > 1
             val signatureKeyId = signatures.single().signature.by
             val notaryKeyThatSigned =
-                findSignatureKeyFromKeyId(signatureKeyId, notaryServiceParty)
+                findSignatureKeyFromKeyId(signatureKeyId, notaryServiceInfo.publicKey)
                     ?: throw IllegalStateException("Signatory key id doesn't match received signature key id")
 
             // TODO The below check is redundant now
@@ -128,19 +128,19 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
     @Suspendable
     private fun findSignatureKeyFromKeyId(
         keyId: SecureHash,
-        notaryServiceParty: Party
+        notaryServiceKey: PublicKey
     ): PublicKey? {
         val digestAlgoName = DigestAlgorithmName(keyId.algorithm)
         val notaryKeysByIds =
-            (notaryServiceParty.owningKey as? CompositeKey)?.leafKeys?.associateBy {
+            (notaryServiceKey as? CompositeKey)?.leafKeys?.associateBy {
                 digestService.hash(it.encoded, digestAlgoName)
             } ?:
             // notary service key is plain key
             mapOf(
                 digestService.hash(
-                    notaryServiceParty.owningKey.encoded,
+                    notaryServiceKey.encoded,
                     digestAlgoName
-                ) to notaryServiceParty.owningKey
+                ) to notaryServiceKey
             )
         return notaryKeysByIds[keyId]
     }
