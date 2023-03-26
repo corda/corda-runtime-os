@@ -97,7 +97,7 @@ class UtxoTransactionBuilderBaseTest {
 
         // And the signatures should have come from the signing service
         assertThat(tx.signatures.size, `is`(1))
-        assertThat(tx.signatures[0].by, `is`(publicKeys[0]))
+        assertThat(tx.signatures[0].by, `is`(publicKeys[0].fullIdHash()))
         assertThat(String(tx.signatures[0].signature.bytes), `is`("My fake signed things"))
         assertThat(tx.signatures[0].metadata.timestamp, `is`(Instant.EPOCH))
         assertThat(ledgerTx.referenceStateRefs.size, `is`(1))
