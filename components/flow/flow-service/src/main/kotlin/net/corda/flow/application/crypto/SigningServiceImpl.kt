@@ -43,7 +43,8 @@ class SigningServiceImpl @Activate constructor(
         )
 
         return DigitalSignature.WithKeyId(
-            // TODO the following needs to come from the Database
+            // TODO the following static conversion to key id needs to be replaced with fetching the key id from crypto worker DB
+            //  as recorded in https://r3-cev.atlassian.net/browse/CORE-12033
             digitalSignatureWithKey.by.fullIdHash(),
             digitalSignatureWithKey.bytes
         )
