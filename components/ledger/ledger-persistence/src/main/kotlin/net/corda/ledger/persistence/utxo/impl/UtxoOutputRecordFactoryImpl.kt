@@ -56,13 +56,14 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
 
     override fun getFindTransactionSuccessRecord(
         transactionContainer: SignedTransactionContainer?,
+        status: String?,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
             EntityResponse(
-                listOfNotNull(transactionContainer)
+                listOf(transactionContainer to status)
                     .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
             )
         )

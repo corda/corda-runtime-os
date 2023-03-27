@@ -10,8 +10,14 @@ import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
  */
 data class VaultNamedQuery(
     val name: String,
-    val jsonString: String?,
+    val query: ParsedQuery,
     val filter: VaultNamedQueryFilter<*>?,
     val mapper: VaultNamedQueryTransformer<*, *>?,
     val collector: VaultNamedQueryCollector<*, *>?
-)
+) {
+    data class ParsedQuery(val originalQuery: String, val query: String, val type: Type)
+
+    enum class Type {
+        WHERE_JSON
+    }
+}

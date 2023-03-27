@@ -14,6 +14,7 @@ import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.getFlowStatus
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -21,6 +22,7 @@ import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.rest.ResponseCode.CONFLICT
+import net.corda.rest.asynchronous.v1.AsyncOperationState
 import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -252,7 +254,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
+    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String? {
         val vNodeJson = assertWithRetry {
             timeout(retryTimeout)
             interval(retryInterval)
@@ -260,19 +262,10 @@ class VirtualNodeRpcTest {
             condition { it.code == 202 }
             failMessage(ERROR_HOLDING_ID)
         }.toJson()
-        val vnodeShortHash = vNodeJson["requestId"].textValue()
-        assertThat(vnodeShortHash).isNotNull.isNotEmpty
+        val requestId = vNodeJson["requestId"].textValue()
+        assertThat(requestId).isNotNull.isNotEmpty
 
-        assertWithRetry {
-            timeout(retryTimeout)
-            interval(retryInterval)
-            command { getVNode(vnodeShortHash)}
-            condition { it.code == 200 }
-            failMessage(
-                "The virtual node was submitted for creation but no vNode found for '$vnodeShortHash'"
-            )
-        }
-        return vnodeShortHash
+        return awaitVirtualNodeOperationStatusCheck(requestId)
     }
 
     @Test
@@ -327,7 +320,7 @@ class VirtualNodeRpcTest {
                 command { getVNode(aliceHoldingId) }
                 condition { response ->
                     response.code == 200 &&
-                        response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
+                            response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
                 }
             }
         }
@@ -360,7 +353,11 @@ class VirtualNodeRpcTest {
         }
     }
 
-    private fun ClusterBuilder.eventuallyUpdateVirtualNodeState(vnodeId: String, newState: String, expectedOperationalStatuses: String) {
+    private fun ClusterBuilder.eventuallyUpdateVirtualNodeState(
+        vnodeId: String,
+        newState: String,
+        expectedOperationalStatuses: String
+    ) {
         updateVirtualNodeState(vnodeId, newState)
 
         assertWithRetry {
@@ -418,7 +415,12 @@ class VirtualNodeRpcTest {
 
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
+            val requestId = forceCpiUpload(
+                TEST_CPB_LOCATION,
+                GROUP_ID,
+                staticMemberList,
+                cpiName
+            ).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             assertWithRetry {
@@ -502,15 +504,15 @@ class VirtualNodeRpcTest {
             val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
 
             val statusAfterUpgrade = getVirtualNodeOperationStatus(requestId)
-            val operationState = statusAfterUpgrade["response"].single()["state"].textValue()
-            assertThat(operationState).isIn("COMPLETED", "IN_PROGRESS")
+            val operationState = statusAfterUpgrade["status"].textValue()
+            assertThat(operationState).isIn(AsyncOperationState.SUCCEEDED.name, AsyncOperationState.IN_PROGRESS.name)
 
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
             awaitVirtualNodeOperationCompletion(bobHoldingId)
 
             val statusAfterCompletion = getVirtualNodeOperationStatus(requestId)
-            val operationStateAfterCompletion = statusAfterCompletion["response"].single()["state"].textValue()
-            assertThat(operationStateAfterCompletion).isEqualTo("COMPLETED")
+            val operationStateAfterCompletion = statusAfterCompletion["status"].textValue()
+            assertThat(operationStateAfterCompletion).isEqualTo(AsyncOperationState.SUCCEEDED.name)
         }
     }
 
