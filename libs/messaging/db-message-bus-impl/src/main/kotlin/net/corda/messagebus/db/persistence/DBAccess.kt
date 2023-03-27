@@ -107,7 +107,7 @@ class DBAccess(
         }
     }
 
-    fun getAllTopics():Set<String>{
+    fun getAllTopics(): Set<String> {
         return executeWithErrorHandling("retrieve all the topics") { entityManager ->
             val builder = entityManager.criteriaBuilder
             val query = builder.createQuery(TopicEntry::class.java)

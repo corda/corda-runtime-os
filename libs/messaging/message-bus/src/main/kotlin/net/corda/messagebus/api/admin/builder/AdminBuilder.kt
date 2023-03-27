@@ -1,8 +1,8 @@
 package net.corda.messagebus.api.admin.builder
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messagebus.api.configuration.AdminConfig
 import net.corda.messagebus.api.admin.Admin
+import net.corda.messagebus.api.configuration.AdminConfig
 
 /**
  * Builder Interface for creating instances of [Admin].
@@ -10,7 +10,7 @@ import net.corda.messagebus.api.admin.Admin
 interface AdminBuilder {
 
     /**
-     * Generate kafka producer with given properties.
+     * Generate a message bus admin with given properties.
      * @param adminConfig The mandatory config for setting up admin
      * @param messageBusConfig Configuration for connecting to the message bus and controlling its behaviour.
      * @return A new instance of [Admin] for the underlying bus implementation .
