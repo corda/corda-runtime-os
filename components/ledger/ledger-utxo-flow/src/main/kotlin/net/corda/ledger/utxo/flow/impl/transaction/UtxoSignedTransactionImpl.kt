@@ -229,6 +229,7 @@ data class UtxoSignedTransactionImpl(
                         "Notary signature key Id: ${signature.by}"
             )
 
+        // TODO The below check is actually redundant. Above check means key id matched notary key or one of notary key leaves.
         if (!KeyUtils.isKeyInSet(notaryKey, listOf(publicKey))) {
             throw CordaRuntimeException( // todo transition to TransactionSignatureException
                 "Notary signature has not been created by the notary for this transaction. " +

@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.membership.NotaryInfo
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
@@ -66,6 +68,15 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
         signedTransaction = signedTransaction.addSignature(sig)
         assertDoesNotThrow {
             signedTransaction.verifyAttachedNotarySignature()
+        }
+    }
+
+    @Test
+    fun `receiving notary signature with key id not matching notary key or notary key leaves throws`() {
+        val notExistingNotaryKey = kpg.generateKeyPair().public
+        val notMatchingSignatureKeyId = getSignatureWithMetadataExample(notExistingNotaryKey)
+        assertThrows<CordaRuntimeException> {
+            signedTransaction.verifyNotarySignature(notMatchingSignatureKeyId)
         }
     }
 }
