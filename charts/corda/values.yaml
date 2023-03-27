@@ -55,6 +55,13 @@ serviceAccount:
 # -- extra annotations (applied to all workers only)
 annotations: {}
 
+# -- tolerations to schedual pods on nodes with matiching taints 
+tolerations:
+  key: ""
+  operator: "git stat"
+  value: ""
+  effect: ""
+
 # Database configuration
 db:
   # Cluster database configuration

@@ -75,6 +75,19 @@ securityContext:
 {{- end }}
 
 {{/*
+Container security context
+*/}}
+{{- define "corda.tolerations" -}}
+{{- if .Values.tolerations.key }}
+tolerations:
+- key: {{ Values.tolerations.key }}
+  operator: {{ Values.tolerations.operator }}
+  value: {{ Values.tolerations.value }}
+  effect: {{ Values.tolerations.effect }}
+{{- end }}
+{{- end }}
+
+{{/*
 Log4j volume
 */}}
 {{- define "corda.log4jVolume" -}}
