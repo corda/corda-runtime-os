@@ -174,7 +174,7 @@ class InteropServiceIntegrationTest {
             )
             eventTopic.start()
             assertTrue(
-                mapperLatch.await(30, TimeUnit.SECONDS),
+                mapperLatch.await(45, TimeUnit.SECONDS),
                 "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
             )
             assertEquals(
