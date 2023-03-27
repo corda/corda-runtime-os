@@ -23,7 +23,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class)

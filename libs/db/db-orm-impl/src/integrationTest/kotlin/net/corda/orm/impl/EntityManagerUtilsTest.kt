@@ -9,7 +9,7 @@ import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 class EntityManagerUtilsTest {
@@ -17,18 +17,19 @@ class EntityManagerUtilsTest {
     @Test
     fun `can persist JPA entities using EntityManagerFactory#transaction`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        emf.createEntityManager().transaction {
-            it.persist(owner)
-            it.persist(cat)
+            emf.createEntityManager().transaction {
+                it.persist(owner)
+                it.persist(cat)
+            }
+
+            val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
+            Assertions.assertThat(loadedCats.resultList).contains(cat)
         }
-
-        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
-        Assertions.assertThat(loadedCats.resultList).contains(cat)
     }
 
     @Test
@@ -54,39 +55,41 @@ class EntityManagerUtilsTest {
     @Test
     fun `can persist JPA entities using EntityManager#transaction`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val em = emf.createEntityManager()
-        em.transaction {
-            it.persist(owner)
-            it.persist(cat)
+            val em = emf.createEntityManager()
+            em.transaction {
+                it.persist(owner)
+                it.persist(cat)
+            }
+
+            val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
+            Assertions.assertThat(loadedCats.resultList).contains(cat)
         }
-
-        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
-        Assertions.assertThat(loadedCats.resultList).contains(cat)
     }
 
     @Test
     fun `can persist JPA entities using EntityManager#use`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val em = emf.createEntityManager()
-        em.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
+            val em = emf.createEntityManager()
+            em.use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
+
+            val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
+            Assertions.assertThat(loadedCats.resultList).contains(cat)
         }
-
-        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
-        Assertions.assertThat(loadedCats.resultList).contains(cat)
     }
 
     @Test
@@ -200,23 +203,24 @@ class EntityManagerUtilsTest {
     @Test
     fun `can't read resultList outside of transaction block`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val em = emf.createEntityManager()
-        em.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
+            val em = emf.createEntityManager()
+            em.use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
+
+            val loadedCats = emf.transaction { it.createQuery("from Cat", Cat::class.java) }
+            Assertions.assertThatThrownBy { loadedCats.resultList }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("closed")
         }
-
-        val loadedCats = emf.transaction { it.createQuery("from Cat", Cat::class.java) }
-        Assertions.assertThatThrownBy { loadedCats.resultList }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("closed")
     }
 
     @Test
@@ -224,25 +228,26 @@ class EntityManagerUtilsTest {
         val expectedTag = "initialTag"
         val entity = MutableEntity(UUID.randomUUID(), expectedTag)
 
-        val emf = createEntityManagerFactory()
-        emf.transaction { em ->
-            em.persist(entity)
-        }
-
-        try {
+        createEntityManagerFactory().use { emf ->
             emf.transaction { em ->
-                val retrievedEntity = em.find(MutableEntity::class.java, entity.id)
-                retrievedEntity.tag = "newTag"
-                throw Exception()
+                em.persist(entity)
             }
-        } catch (_: Exception) {
-        }
 
-        val retrievedEntity = emf.transaction { em ->
-            em.find(MutableEntity::class.java, entity.id)
-        }
+            try {
+                emf.transaction { em ->
+                    val retrievedEntity = em.find(MutableEntity::class.java, entity.id)
+                    retrievedEntity.tag = "newTag"
+                    throw Exception()
+                }
+            } catch (_: Exception) {
+            }
 
-        assertEquals(expectedTag, retrievedEntity.tag)
+            val retrievedEntity = emf.transaction { em ->
+                em.find(MutableEntity::class.java, entity.id)
+            }
+
+            assertEquals(expectedTag, retrievedEntity.tag)
+        }
     }
 
     private fun createEntityManagerFactory(): EntityManagerFactory {
