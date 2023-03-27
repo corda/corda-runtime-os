@@ -58,7 +58,7 @@ annotations: {}
 # -- tolerations to schedual pods on nodes with matiching taints 
 tolerations:
   key: ""
-  operator: "git stat"
+  operator: "Equal"
   value: ""
   effect: ""
 

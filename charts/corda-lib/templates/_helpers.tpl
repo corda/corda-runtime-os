@@ -75,15 +75,17 @@ securityContext:
 {{- end }}
 
 {{/*
-Container security context
+tolerations for node taints
 */}}
 {{- define "corda.tolerations" -}}
 {{- if .Values.tolerations.key }}
 tolerations:
-- key: {{ Values.tolerations.key }}
-  operator: {{ Values.tolerations.operator }}
-  value: {{ Values.tolerations.value }}
-  effect: {{ Values.tolerations.effect }}
+- key: {{ .Values.tolerations.key }}
+  operator: {{ required "Must specify tolerations.operator" .Values.tolerations.operator }}
+  effect: {{ required "Must specify tolerations.effect" .Values.tolerations.effect }}
+  {{- if eq .Values.tolerations.operator "Equal" }}
+  value: {{ required "Must specify tolerations.value" .Values.tolerations.value }}
+  {{- end }}
 {{- end }}
 {{- end }}
 
