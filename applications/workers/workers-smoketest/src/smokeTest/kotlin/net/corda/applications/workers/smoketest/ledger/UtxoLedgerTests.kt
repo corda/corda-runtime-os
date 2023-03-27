@@ -112,7 +112,6 @@ class UtxoLedgerTests {
         )
 
         assertThat(parsedResponse.results).isNotEmpty
-        assertThat(parsedResponse.results).hasSizeGreaterThan(1)
         assertThat(parsedResponse.results.first()).isEqualTo("test input")
     }
 

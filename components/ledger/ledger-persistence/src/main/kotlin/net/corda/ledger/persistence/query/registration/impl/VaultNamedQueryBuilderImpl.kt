@@ -3,12 +3,8 @@ package net.corda.ledger.persistence.query.registration.impl
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
-import net.corda.ledger.persistence.query.parsing.impl.logQueryRegistration
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefFilter
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefTransformer
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
 import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilder
 import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderCollected
@@ -53,16 +49,15 @@ class VaultNamedQueryBuilderImpl(
 
         val notNullQuery = requireNotNull(query) { "Vault named query: $name does not have its query statement set" }
 
-        // TODO These casts are necessary because using `out ContractState` in `VaultNamedQuery`
-        //  will result in a compilation error
+        // TODO These casts are necessary because using `Any` in `VaultNamedQuery` will result in a compilation error
         @Suppress("unchecked_cast")
         return VaultNamedQueryBuilderCollectedImpl(
             vaultNamedQueryRegistry,
             VaultNamedQuery(
                 name,
                 notNullQuery,
-                filter as VaultNamedQueryStateAndRefFilter<ContractState>,
-                transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
+                filter as VaultNamedQueryFilter<Any>,
+                transformer as VaultNamedQueryTransformer<Any, Any>,
                 collector as VaultNamedQueryCollector<Any, Any>
             )
         )
@@ -73,15 +68,14 @@ class VaultNamedQueryBuilderImpl(
 
         logQueryRegistration(name, notNullQuery)
 
-        // TODO These casts are necessary because using `out ContractState` in `VaultNamedQuery`
-        //  will result in a compilation error
+        // TODO These casts are necessary because using `Any` in `VaultNamedQuery` will result in a compilation error
         @Suppress("unchecked_cast")
         vaultNamedQueryRegistry.registerQuery(
             VaultNamedQuery(
                 name,
                 notNullQuery,
-                filter as VaultNamedQueryStateAndRefFilter<ContractState>,
-                transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
+                filter as VaultNamedQueryFilter<Any>,
+                transformer as VaultNamedQueryTransformer<Any, Any>,
                 collector = null
             )
         )

@@ -11,12 +11,16 @@ class VaultNamedQueryRegistryImplTest {
 
     private companion object {
         const val DUMMY_QUERY_NAME = "DUMMY"
-        const val DUMMY_JSON_QUERY = "WHERE custom ->> 'TestUtxoState.testField' = :testField"
+        val DUMMY_JSON_QUERY = VaultNamedQuery.ParsedQuery(
+            originalQuery = "WHERE custom ->> 'TestUtxoState.testField' = :testField",
+            query ="WHERE custom ->> 'TestUtxoState.testField' = :testField",
+            VaultNamedQuery.Type.WHERE_JSON
+        )
     }
 
     private val mockNamedQuery = mock<VaultNamedQuery> {
         on { name } doReturn DUMMY_QUERY_NAME
-        on { whereJson } doReturn DUMMY_JSON_QUERY
+        on { query } doReturn DUMMY_JSON_QUERY
     }
 
     @Test
@@ -30,7 +34,7 @@ class VaultNamedQueryRegistryImplTest {
         assertThat(storedNamedQuery).isNotNull
         assertThat(storedNamedQuery?.name).isNotNull
         assertThat(storedNamedQuery?.name).isEqualTo(DUMMY_QUERY_NAME)
-        assertThat(storedNamedQuery?.whereJson).isEqualTo(DUMMY_JSON_QUERY)
+        assertThat(storedNamedQuery?.query).isEqualTo(DUMMY_JSON_QUERY)
     }
 
     @Test
