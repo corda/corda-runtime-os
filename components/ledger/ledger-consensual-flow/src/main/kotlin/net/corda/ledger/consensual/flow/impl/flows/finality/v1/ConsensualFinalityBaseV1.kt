@@ -37,7 +37,7 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
                 "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id"
             }
         } catch (e: Exception) {
-            val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +
+            val message = "Failed to verify transaction signature($signature) by ${signature.by} (key id) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
