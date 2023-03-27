@@ -30,6 +30,7 @@ import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.GroupParameters
@@ -39,6 +40,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -203,7 +205,7 @@ class DistributeMemberInfoActionTest {
     )
 
     @Test
-    fun `invoke returns all approved members over P2P`() {
+    fun `process returns all approved members over P2P`() {
         val allMembershipPackage = mock<MembershipPackage>()
         whenever(
             membershipPackageFactory.createMembershipPackage(
@@ -228,11 +230,11 @@ class DistributeMemberInfoActionTest {
 
         val reply = handler.process(key, action)
 
-        Assertions.assertThat(reply).contains(allMemberPackage)
+        assertThat(reply).contains(allMemberPackage)
     }
 
     @Test
-    fun `invoke sends the newly approved member to all other members over P2P`() {
+    fun `process sends the updated member to all other members over P2P`() {
         val memberPackage = mock<MembershipPackage>()
         whenever(
             membershipPackageFactory.createMembershipPackage(
@@ -264,27 +266,119 @@ class DistributeMemberInfoActionTest {
 
         val reply = handler.process(key, action)
 
-        Assertions.assertThat(reply).containsAll(membersRecord)
+        assertThat(reply).containsAll(membersRecord)
     }
 
     @Test
-    fun `invoke republishes the distribute command if expected group parameters are not available via the group reader`() {
+    fun `process republishes the distribute command if expected group parameters are not available via the group reader`() {
         whenever(groupParameters.epoch).thenReturn(EPOCH - 1)
 
         val reply = handler.process(key, action)
 
-        Assertions.assertThat(reply)
+        assertThat(reply)
             .hasSize(1)
             .allSatisfy {
-                Assertions.assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                Assertions.assertThat(it.key).isEqualTo(key)
-                Assertions.assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
 
+    @Test
+    fun `process republishes the distribute command if no group parameters is available via the group reader`() {
+        whenever(groupReader.groupParameters).thenReturn(null)
+
+        val reply = handler.process(key, action)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+            }
+    }
 
     @Test
-    fun `invoke uses the correct TTL configuration`() {
+    fun `process republishes the distribute command if no member info is available via the group reader`() {
+        whenever(groupReader.lookup()).thenReturn(setOf(mgm))
+
+        val reply = handler.process(key, action)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+            }
+    }
+
+    @Test
+    fun `process republishes the distribute command if expected member info serial is not available via the group reader`() {
+        whenever(memberInfo.serial).thenReturn(MEMBER_INFO_SERIAL - 1)
+
+        val reply = handler.process(key, action)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+            }
+    }
+
+    @Test
+    fun `process republishes the distribute command if query member signature fails`() {
+        whenever(membershipQueryClient.queryMembersSignatures(any(), any())).thenReturn(
+            MembershipQueryResult.Failure("An error happened.")
+        )
+
+        val reply = handler.process(key, action)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+            }
+    }
+
+    @Test
+    fun `process republishes the distribute command if creating membership package to send to updated member fails`() {
+        whenever(membershipPackageFactory.createMembershipPackage(any(), any(), eq(activeMembersWithoutMgm), any(), any()))
+            .thenThrow(CordaRuntimeException(""))
+
+        val reply = handler.process(key, action)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+            }
+    }
+
+    @Test
+    fun `process republishes the distribute command if create membership package to send to all other member fails`() {
+        whenever(membershipPackageFactory.createMembershipPackage(any(), any(), eq(listOf(memberInfo)), any(), any()))
+            .thenThrow(CordaRuntimeException(""))
+
+        val reply = handler.process(key, action)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(key)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
+            }
+    }
+    @Test
+    fun `process uses the correct TTL configuration`() {
         handler.process(key, action)
 
         verify(config, atLeastOnce()).getIsNull("${MembershipConfig.TtlsConfig.TTLS}.${MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE}")

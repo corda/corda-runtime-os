@@ -95,12 +95,12 @@ class DistributeMemberInfoAction(
         }
         val updatedMemberInfo = allActiveMembersExcludingMgm.firstOrNull { it.name.toString() == updatedMember.x500Name }
             ?: return recordToRequeueDistribution(key, request) {
-                logger.info("The MemberInfo retrieved from kafka for ${updatedMember.x500Name} is null. Republishing the distribute " +
-                        "command to be processed later when the MemberInfo is available.")
+                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is null. Republishing the " +
+                        "distribute command to be processed later when the MemberInfo is available.")
             }
         if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
             return recordToRequeueDistribution(key, request) {
-                logger.info("The MemberInfo retrieved from kafka for ${updatedMember.x500Name} is has serial" +
+                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} has serial" +
                         " ${updatedMemberInfo.serial}. Republishing the distribute command to be processed later when the MemberInfo with" +
                         " serial ${request.minimumUpdatedMemberSerial} is available.")
             }
@@ -146,7 +146,7 @@ class DistributeMemberInfoAction(
                         "Distributing the member info will be reattempted.", except)
             }
         }
-        logger.info("Here 7")
+
         val updatedMemberToAllMembers = allActiveMembersExcludingMgm.filter {
             it.holdingIdentity != updatedMember.toCorda()
         }.map { memberToSendUpdateTo ->
@@ -157,7 +157,6 @@ class DistributeMemberInfoAction(
                 minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
             )
         }
-        logger.info("Here 8")
 
         return updatedMemberToAllMembers + allMembersToUpdatedMember
     }

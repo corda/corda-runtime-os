@@ -98,7 +98,7 @@ internal class ApproveRegistrationHandler(
 
             val distributionAction = Record(
                 MEMBERSHIP_ACTIONS_TOPIC,
-                "$registrationId-${approvedBy.toCorda().shortHash}",
+                "${approvedMember.x500Name}-${approvedMember.groupId}",
                  MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch, memberInfo.serial)),
             )
 
