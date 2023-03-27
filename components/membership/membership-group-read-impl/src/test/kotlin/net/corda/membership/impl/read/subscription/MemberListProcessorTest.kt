@@ -228,9 +228,7 @@ class MemberListProcessorTest {
             oldAlice.mgmProvidedContext.toAvro()
         )
         memberListProcessor.onNext(newRecord, oldValue, memberList)
-        assertEquals(
-            listOf(updatedAlice),
-            membershipGroupReadCache.memberListCache.get(aliceIdentity)
-        )
+        assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))
+            .containsExactly(updatedAlice)
     }
 }
