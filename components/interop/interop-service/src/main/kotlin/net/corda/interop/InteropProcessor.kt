@@ -71,13 +71,14 @@ class InteropProcessor(
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
             val destinationAlias = destinationIdentity
 
+            //TODO use getRealHoldingIdentityFromAliasMapping after
+            // general fix of broken CORE-10427
             val realHoldingIdentity = //InteropAliasProcessor.getRealHoldingIdentity(
                 //getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda())
-            //) ?:
+            //)
                 InteropAliasProcessor.getRealHoldingIdentity(
                 destinationAlias.toCorda().x500Name.toString()
-            ) //TODO drop if null branch after getRealHoldingIdentityFromAliasMapping stop returning null + generali fix of broken CORE-10427
-
+            )
             if (realHoldingIdentity == null) {
                 logger.info("Could not find a holding identity for alias $destinationAlias.")
                 return@mapNotNull null
