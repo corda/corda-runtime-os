@@ -1,0 +1,29 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.cli-plugin-packager'
+    id 'corda.common-publishing'
+}
+
+
+group 'net.corda.cli.deployment'
+
+dependencies {
+    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+
+    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
+
+    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+}
+
+cliPlugin {
+    cliPluginClass = 'net.corda.cli.plugins.preinstall.PreInstallPlugin'
+    cliPluginDescription = 'Plugin for pre-install checks.'
+}
