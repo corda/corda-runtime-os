@@ -40,11 +40,10 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
             cache.compute(holdingIdentity) { _, value ->
                 (value ?: ReplaceableList())
                     .addOrReplace(data) { old, new ->
-                        if(new.status == MEMBER_STATUS_ACTIVE || new.status == MEMBER_STATUS_SUSPENDED) {
-                            old.name == new.name &&
-                                    (old.status == MEMBER_STATUS_ACTIVE|| old.status == MEMBER_STATUS_SUSPENDED)
+                        if (new.status == MEMBER_STATUS_PENDING) {
+                            old.status == MEMBER_STATUS_PENDING && old.name == new.name
                         } else {
-                            old.name == new.name && old.status == MEMBER_STATUS_PENDING
+                            old.status != MEMBER_STATUS_PENDING && old.name == new.name
                         }
                     }
             }
