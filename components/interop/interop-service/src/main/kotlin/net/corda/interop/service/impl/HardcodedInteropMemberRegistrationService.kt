@@ -165,13 +165,13 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 
         return listOf(
             createRecord("seed-message-correct-1", membersOfInteropGroup[0], membersOfInteropGroup[1]),
-            createRecord("seed-message-no-policy-1", membersOfNonExistingGroup[0], membersOfNonExistingGroup[1]),
+            //createRecord("seed-message-no-policy-1", membersOfNonExistingGroup[0], membersOfNonExistingGroup[1]),
             // In the last two records the intended destination is put as source of the message,
             // as InteropProcessor will swap destination with source before sending it to LinkManager,
             // this message is for unpublished HoldingIdentity (unknown destination)...
-            createRecord("seed-message-no-dest-1", membersOfInteropGroup[0], unpublishedMemberOfInteropGroup),
+            //createRecord("seed-message-no-dest-1", membersOfInteropGroup[0], unpublishedMemberOfInteropGroup),
             // ... this message is for the destination from other cluster( HoldingIdentity is not hosted locally).
-            createRecord("seed-message-other-cluster-1", membersOfInteropGroup[0], memberFromOtherClusterOfInteropGroup),
+            //createRecord("seed-message-other-cluster-1", membersOfInteropGroup[0], memberFromOtherClusterOfInteropGroup),
             )
     }
 }
