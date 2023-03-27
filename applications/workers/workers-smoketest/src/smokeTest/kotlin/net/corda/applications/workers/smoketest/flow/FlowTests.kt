@@ -38,6 +38,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
+import net.corda.v5.application.flows.FlowContextPropertyKeys
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -448,9 +449,15 @@ class FlowTests {
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val flowResult = awaitRpcFlowFinished(bobHoldingId, requestId).mapFlowJsonResult()
+        val result = jacksonObjectMapper.readValue<Map<String, Any>>(flowResult["result"] as String)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        assertThat(result.flowResult).contains(applicationCpiName)
+        assertThat(result["cpiName"] as String).isEqualTo(applicationCpiName)
+        assertThat(result["cpiVersion"] as String).isNotNull.isNotEmpty
+        assertThat(result["cpiFileChecksum"] as String).isNotNull.isNotEmpty
+        assertThat(result["cpiSignerSummaryHash"] as String).isNotNull.isNotEmpty
+        assertThat(result["initialPlatformVersion"] as String).isNotNull.isNotEmpty
+        assertThat(result["initialSoftwareVersion"] as String).isNotNull.isNotEmpty
     }
 
     private fun persistDog(id: UUID): FlowStatus {

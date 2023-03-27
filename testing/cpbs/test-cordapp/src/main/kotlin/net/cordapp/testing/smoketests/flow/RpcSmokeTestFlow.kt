@@ -445,15 +445,15 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     private fun getCpiMetadata(): String {
-        return """
-            Cpi Name: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_NAME]}
-            Cpi Version: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]}
-            Cpi Signer Summary Hash: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]}
-            Cpi File Checksum: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]}
+        return """{
+            "cpiName": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_NAME]}",
+            "cpiVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]}",
+            "cpiSignerSummaryHash": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]}",
+            "cpiFileChecksum": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]}",
             
-            Initial Platform Version: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION]}
-            Initial Software Version: ${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION]}
-        """.trimIndent()
+            "initialPlatformVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION]}",
+            "initialSoftwareVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION]}"
+        }""".trimIndent()
     }
 
     private fun RpcSmokeTestInput.getValue(key: String): String {

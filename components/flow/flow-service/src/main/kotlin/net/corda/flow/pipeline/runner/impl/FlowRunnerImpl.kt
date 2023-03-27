@@ -149,28 +149,27 @@ class FlowRunnerImpl @Activate constructor(
     private fun getPropertiesWithCpiMetadata(
         holdingIdentity: HoldingIdentity,
         contextProperties: KeyValuePairList
-    ): KeyValuePairList {
-        return virtualNodeInfoReadService.get(holdingIdentity).let {
-            if (it == null) contextProperties
-            else {
-                return KeyValueStore().apply {
-                    cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
-                        // Copy other properties first so that they wont override current values
-                        contextProperties.items.forEach { prop ->
-                            this[prop.key] = prop.value
-                        }
+    ) = virtualNodeInfoReadService.get(holdingIdentity)?.let {
+        KeyValueStore().apply {
 
-                        this[FlowContextPropertyKeys.CPI_NAME] = metadata.cpiId.name
-                        this[FlowContextPropertyKeys.CPI_VERSION] = metadata.cpiId.version
-                        this[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH] = metadata.cpiId.signerSummaryHash.toHexString()
-                        this[FlowContextPropertyKeys.CPI_FILE_CHECKSUM] = metadata.fileChecksum.toHexString()
-
-                        this[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION] =
-                            platformInfoProvider.localWorkerPlatformVersion.toString()
-                        this[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION] = platformInfoProvider.localWorkerSoftwareVersion
-                    }
-                }.avro
+            // Copy other properties first so that they wont override current values
+            contextProperties.items.forEach { prop ->
+                this[prop.key] = prop.value
             }
-        }
-    }
+
+            cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
+
+                this[FlowContextPropertyKeys.CPI_NAME] = metadata.cpiId.name
+                this[FlowContextPropertyKeys.CPI_VERSION] = metadata.cpiId.version
+                this[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH] =
+                    metadata.cpiId.signerSummaryHash.toHexString()
+                this[FlowContextPropertyKeys.CPI_FILE_CHECKSUM] = metadata.fileChecksum.toHexString()
+
+                this[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION] =
+                    platformInfoProvider.localWorkerPlatformVersion.toString()
+                this[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION] =
+                    platformInfoProvider.localWorkerSoftwareVersion
+            }
+        }.avro
+    } ?: contextProperties
 }
