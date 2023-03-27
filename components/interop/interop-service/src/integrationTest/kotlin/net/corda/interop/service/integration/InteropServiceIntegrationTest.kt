@@ -53,8 +53,8 @@ import java.util.concurrent.TimeUnit
 // To run the test outside Intellij:
 // ./gradlew clean :components:interop:interop-service:integrationTest
 // ./gradlew clean :components:interop:interop-service:testOSGi
-//@ExtendWith(ServiceExtension::class, DBSetup::class)
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {
 
     private companion object {
@@ -135,7 +135,7 @@ class InteropServiceIntegrationTest {
         return listOf(inboundMsg, inboundMsg, outboundMsg)
     }
 
-    //@Test
+    @Test
     fun `verify interop processor sends messages to flow mapper event topic and p2p out topic`() {
         interopService.start()
         val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
@@ -187,7 +187,7 @@ class InteropServiceIntegrationTest {
         interopService.stop()
     }
 
-    //@Test
+    @Test
     fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
