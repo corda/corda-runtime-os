@@ -8,6 +8,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.db.configuration.ResolvedConsumerConfig
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
@@ -165,11 +166,11 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
         if (!recordsAvailable(fromOffset, topicPartition, timeout)) return emptyList()
 
-        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
-
-        val result = dbRecords.takeWhile {
+        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords).takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
-        }.map { dbRecord ->
+        }
+
+        val result = dbRecords.map { dbRecord ->
             CordaConsumerRecord(
                 dbRecord.topic,
                 dbRecord.partition,
@@ -179,10 +180,12 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                 dbRecord.timestamp.toEpochMilli(),
                 headerSerializer.deserialize(dbRecord.headers ?: "{}")
             )
-        }.filter { it.value != null }
+        }.filter {
+            it.value != null || it.topic.endsWith(".dlq")
+        }
 
-        if (result.isNotEmpty()) {
-            seek(topicPartition, result.last().offset + 1)
+        if (dbRecords.isNotEmpty()) {
+            seek(topicPartition, dbRecords.last().recordOffset + 1)
         }
         return result
     }
