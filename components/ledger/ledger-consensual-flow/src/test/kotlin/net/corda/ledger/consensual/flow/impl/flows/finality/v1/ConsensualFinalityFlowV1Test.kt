@@ -129,7 +129,6 @@ class ConsensualFinalityFlowV1Test {
 
         verify(persistenceService).persist(signedTransactionAfterSigBob, TransactionStatus.VERIFIED)
 
-        // TODO To be addressed maybe by ledger team
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
