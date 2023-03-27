@@ -5,17 +5,9 @@ import java.time.Duration
 
 data class GatewayConfiguration(
     /**
-     * Host name or IP address used when binding the HTTP server
+     * The gateway configurations
      */
-    val hostAddress: String,
-    /**
-     * Port number used when binding the HTTP server
-     */
-    val hostPort: Int,
-    /**
-     * The URL path the gateway HTTP server will listen to for requests.
-     */
-    val urlPath: String,
+    val servers: Collection<GatewayServerConfiguration>,
     /**
      * TLS configuration used for establishing the HTTPS connections
      */
@@ -28,6 +20,21 @@ data class GatewayConfiguration(
      * Configuration properties used when initiating connections to other Gateways
      */
     val connectionConfig: ConnectionConfiguration = ConnectionConfiguration(),
+)
+
+data class GatewayServerConfiguration(
+    /**
+     * Host name or IP address used when binding the HTTP server
+     */
+    val hostAddress: String,
+    /**
+     * Port number used when binding the HTTP server
+     */
+    val hostPort: Int,
+    /**
+     * The URL path the gateway HTTP server will listen to for requests.
+     */
+    val urlPath: String,
 )
 
 data class ConnectionConfiguration(
@@ -72,12 +79,19 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         ConnectionConfiguration()
     }
     return GatewayConfiguration(
-        hostAddress = this.getString("hostAddress"),
-        hostPort = this.getInt("hostPort"),
-        urlPath = this.getString("urlPath"),
+        servers = this.getConfigList("servers").map {
+            it.toServerConfiguration()
+        },
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
         maxRequestSize = this.getLong("maxRequestSize"),
         connectionConfig = connectionConfig
+    )
+}
+internal fun Config.toServerConfiguration(): GatewayServerConfiguration {
+    return GatewayServerConfiguration(
+        hostAddress = this.getString("hostAddress"),
+        hostPort = this.getInt("hostPort"),
+        urlPath = this.getString("urlPath"),
     )
 }
 private fun Config.toConnectionConfig(): ConnectionConfiguration {
@@ -85,7 +99,7 @@ private fun Config.toConnectionConfig(): ConnectionConfiguration {
         maxClientConnections = this.getLong("maxClientConnections"),
         acquireTimeout = Duration.ofSeconds(this.getLong("acquireTimeout")),
         connectionIdleTimeout = Duration.ofSeconds(this.getLong("connectionIdleTimeout")),
-        responseTimeout =  Duration.ofMillis(this.getLong("responseTimeout")),
+        responseTimeout = Duration.ofMillis(this.getLong("responseTimeout")),
         retryDelay = Duration.ofMillis(this.getLong("retryDelay")),
         initialReconnectionDelay = Duration.ofSeconds(this.getLong("initialReconnectionDelay")),
         maxReconnectionDelay = Duration.ofSeconds(this.getLong("maxReconnectionDelay")),

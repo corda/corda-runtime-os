@@ -165,10 +165,17 @@ open class TestBase {
         }
 
         fun publishConfig(configuration: GatewayConfiguration) {
+            val servers = ConfigValueFactory.fromIterable(
+                configuration.servers.map {
+                    mapOf(
+                        "hostAddress" to it.hostAddress,
+                        "hostPort" to it.hostPort,
+                        "urlPath" to it.urlPath,
+                    )
+                }
+            )
             val publishConfig = ConfigFactory.empty()
-                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
-                .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
+                .withValue("servers", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))

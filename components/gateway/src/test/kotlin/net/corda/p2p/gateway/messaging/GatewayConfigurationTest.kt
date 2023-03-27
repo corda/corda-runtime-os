@@ -16,11 +16,14 @@ class GatewayConfigurationTest {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
             on { getEnum(TlsType::class.java, "tlsType") } doReturn TlsType.ONE_WAY
         }
-        val config = mock<Config> {
-            on { hasPath("connectionConfig") } doReturn false
+        val serverConfig = mock<Config> {
             on { getInt("hostPort") } doReturn 231
             on { getString("urlPath") } doReturn "/"
             on { getString("hostAddress") } doReturn "address"
+        }
+        val config = mock<Config> {
+            on { hasPath("connectionConfig") } doReturn false
+            on { getConfigList("servers") } doReturn listOf(serverConfig)
             on { getConfig("sslConfig") } doReturn sslConfig
             on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
@@ -30,9 +33,13 @@ class GatewayConfigurationTest {
 
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
-                hostPort = 231,
-                urlPath = "/",
-                hostAddress = "address",
+                listOf(
+                    GatewayServerConfiguration(
+                        hostPort = 231,
+                        urlPath = "/",
+                        hostAddress = "address",
+                    ),
+                ),
                 connectionConfig = ConnectionConfiguration(),
                 maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
@@ -58,24 +65,31 @@ class GatewayConfigurationTest {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
             on { getEnum(TlsType::class.java, "tlsType") } doReturn TlsType.ONE_WAY
         }
-        val config = mock<Config> {
-            on { hasPath("connectionConfig") } doReturn true
+        val serverConfiguration = mock<Config> {
             on { getInt("hostPort") } doReturn 231
             on { getString("hostAddress") } doReturn "address"
             on { getString("urlPath") } doReturn "/"
+        }
+        val config = mock<Config> {
+            on { hasPath("connectionConfig") } doReturn true
             on { getConfig("sslConfig") } doReturn sslConfig
             on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
             on { getConfig("connectionConfig") } doReturn connectionConfiguration
+            on { getConfigList("servers") } doReturn listOf(serverConfiguration)
         }
 
         val gatewayConfig = config.toGatewayConfiguration()
 
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
-                hostPort = 231,
-                urlPath = "/",
-                hostAddress = "address",
+                servers = listOf(
+                    GatewayServerConfiguration(
+                        hostPort = 231,
+                        urlPath = "/",
+                        hostAddress = "address",
+                    ),
+                ),
                 connectionConfig = ConnectionConfiguration(
                     maxClientConnections = 100,
                     acquireTimeout = 5.minutes,
@@ -88,7 +102,7 @@ class GatewayConfigurationTest {
                 maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
                     revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
-                    tlsType = TlsType.ONE_WAY
+                    tlsType = TlsType.ONE_WAY,
                 )
             )
         )
