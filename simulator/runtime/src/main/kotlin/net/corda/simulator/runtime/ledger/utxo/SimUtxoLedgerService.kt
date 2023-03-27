@@ -12,11 +12,12 @@ import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
+import net.corda.v5.ledger.utxo.FinalizationResult
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -54,12 +55,12 @@ class SimUtxoLedgerService(
     override fun finalize(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
-    ): UtxoSignedTransaction {
-        return finalityHandler.finalizeTransaction(signedTransaction, sessions)
+    ): FinalizationResult {
+        return SimFinalizationResultImpl(finalityHandler.finalizeTransaction(signedTransaction, sessions))
     }
 
-    override fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
-        return finalityHandler.receiveFinality(session, validator)
+    override fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): FinalizationResult {
+        return SimFinalizationResultImpl(finalityHandler.receiveFinality(session, validator))
     }
 
     override fun sendAndReceiveTransactionBuilder(

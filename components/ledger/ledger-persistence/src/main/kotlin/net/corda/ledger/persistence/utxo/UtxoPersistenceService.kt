@@ -8,7 +8,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 
 interface UtxoPersistenceService {
-    fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer?
+    fun findTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
 
     fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
 

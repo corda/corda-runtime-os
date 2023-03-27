@@ -225,6 +225,7 @@ class ConfigTests {
 
     private class DummyValidatorFactory : ConfigurationValidatorFactory {
         override fun createConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
+        override fun createCordappConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
     }
 
     private class DummyConfigurationValidator : ConfigurationValidator {

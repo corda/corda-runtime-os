@@ -12,6 +12,7 @@ dependencies {
 
     api project(":libs:virtual-node:cpi-upload-endpoints")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:rest:rest")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'

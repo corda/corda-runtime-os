@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -27,14 +28,18 @@ class UtxoPersistenceServiceImpl constructor(
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
-    override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
+    override fun findTransaction(
+        id: String,
+        transactionStatus: TransactionStatus
+    ): Pair<SignedTransactionContainer?, String?> {
         return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
+                    ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
             } else {
                 null
-            }
+            } to status
         }
     }
 

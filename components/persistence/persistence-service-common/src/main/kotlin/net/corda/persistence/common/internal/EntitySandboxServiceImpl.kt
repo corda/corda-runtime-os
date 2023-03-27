@@ -87,7 +87,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     ): AutoCloseable {
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
-        val customQueryFactories = sandboxService.registerLedgerCustomQueryFactories(ctx)
+        val namedQueryFactories = sandboxService.registerLedgerNamedQueryFactories(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
         putTokenStateObservers(ctx, cpks)
 
@@ -114,7 +114,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             emfCloseable.close()
             customSerializers.close()
             customCrypto.close()
-            customQueryFactories.close()
+            namedQueryFactories.close()
         }
     }
 
@@ -215,12 +215,12 @@ class EntitySandboxServiceImpl @Activate constructor(
             null
         )
 
-    private fun SandboxGroupContextComponent.registerLedgerCustomQueryFactories(
+    private fun SandboxGroupContextComponent.registerLedgerNamedQueryFactories(
         sandboxGroupContext: SandboxGroupContext
     ): AutoCloseable {
         return registerMetadataServices(
             sandboxGroupContext,
-            serviceNames = { metadata -> metadata.cordappManifest.ledgerCustomQueryClasses },
+            serviceNames = { metadata -> metadata.cordappManifest.ledgerNamedQueryClasses },
             serviceMarkerType = VaultNamedQueryFactory::class.java
         )
     }
