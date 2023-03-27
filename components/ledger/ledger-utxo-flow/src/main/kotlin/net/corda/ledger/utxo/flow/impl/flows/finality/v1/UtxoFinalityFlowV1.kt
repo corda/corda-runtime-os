@@ -115,11 +115,10 @@ class UtxoFinalityFlowV1(
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
-                // TODO The below logging needs to be moved in the transaction
-//                log.debug {
-//                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
-//                            transactionId
-//                }
+                log.debug {
+                    "Added signature $signature by (key id) ${signature.by} from ${session.counterparty} for transaction " +
+                            transactionId
+                }
             }
             session to signatures
         }.toMap()
