@@ -82,7 +82,7 @@ class InteropService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)
+                            setOf(MESSAGING_CONFIG)//, FLOW_CONFIG)
                         )
                     }
                 } else {
@@ -97,6 +97,7 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        //val flowConfig = event.config.getConfig(FLOW_CONFIG)
         //TODO temporary code (commented and uncommented) to setup members of interop group,
         // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()

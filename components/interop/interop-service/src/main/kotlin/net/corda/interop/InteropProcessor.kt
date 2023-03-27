@@ -14,10 +14,10 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
-//Based on FlowP2PFilter
 @Suppress("LongParameterList")
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -40,8 +40,21 @@ class InteropProcessor(
 
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
-    ): List<Record<*, *>> = events.mapNotNull { (_, _, _) ->
-          null
+    ): List<Record<*, *>> = events.mapNotNull { (_, _, value) ->
+        val sessionEvent = value?.payload
+        if (sessionEvent == null) {
+            logger.warn("Dropping message with empty payload")
+            return@mapNotNull null
+        }
+
+        if (sessionEvent !is SessionEvent) {
+            logger.warn("Dropping message with payload of type ${sessionEvent::class.java}, required SessionEvent type.")
+            return@mapNotNull null
+        }
+        val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
+        println(sourceIdentity)
+        println(destinationIdentity)
+        null
     }
 
     override val keyClass = String::class.java
@@ -51,5 +64,20 @@ class InteropProcessor(
         val groupReader = membershipGroupReaderProvider.getGroupReader(fakeHoldingIdentity)
         val memberInfo = groupReader.lookup(fakeHoldingIdentity.x500Name)
         return memberInfo?.memberProvidedContext?.get(MemberInfoExtension.INTEROP_ALIAS_MAPPING)
+    }
+
+    //TODO taken from FlowMapperHelper
+    /**
+     * Get the source and destination holding identity from the [sessionEvent].
+     * @param sessionEvent Session event to extract identities from
+     * @return Source and destination identities for a SessionEvent message.
+     */
+    private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent):
+            Pair<net.corda.data.identity.HoldingIdentity, net.corda.data.identity.HoldingIdentity> {
+        return if (sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+        } else {
+            Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+        }
     }
 }
