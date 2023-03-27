@@ -144,7 +144,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             "The key Id of the provided signature does not match the provided public key's id."
         }
         val signatureSpec =
-            checkAndGetSignatureSpec(
+            checkSignatureSpec(
                 signatureWithMetadata.metadata.signatureSpec,
                 publicKey
             )
