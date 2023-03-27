@@ -100,7 +100,7 @@ class ConsensualFinalityFlowV1(
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
                 log.debug {
-                    "Added signature by ${signature.by} (key id) from ${session.counterparty} of $signature for transaction " +
+                    "Added signature $signature by (key id) ${signature.by} from ${session.counterparty} for transaction " +
                             transactionId
                 }
             }
