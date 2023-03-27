@@ -1,6 +1,5 @@
 package net.corda.membership.service.impl
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.membership.service.impl.actions.DistributeMemberInfoAction
