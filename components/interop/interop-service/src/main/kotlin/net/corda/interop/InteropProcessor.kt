@@ -71,11 +71,12 @@ class InteropProcessor(
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
             val destinationAlias = destinationIdentity
 
-            val realHoldingIdentity = InteropAliasProcessor.getRealHoldingIdentity(
-                getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda())
-            ) ?: InteropAliasProcessor.getRealHoldingIdentity(
+            val realHoldingIdentity = //InteropAliasProcessor.getRealHoldingIdentity(
+                //getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda())
+            //) ?:
+                InteropAliasProcessor.getRealHoldingIdentity(
                 destinationAlias.toCorda().x500Name.toString()
-            ) //TODO drop if null branch after getRealHoldingIdentityFromAliasMapping stop returning null (revisit CORE-10427)
+            ) //TODO drop if null branch after getRealHoldingIdentityFromAliasMapping stop returning null + generali fix of broken CORE-10427
 
             if (realHoldingIdentity == null) {
                 logger.info("Could not find a holding identity for alias $destinationAlias.")
@@ -107,19 +108,18 @@ class InteropProcessor(
             Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
         } else { //MessageDirection.OUTBOUND
             //TODO taken from FlowMapperHelper function generateAppMessage
-            val header = AuthenticatedMessageHeader(
-                destinationIdentity,
-                sourceIdentity,
-                //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
-                Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
-                sessionEvent.sessionId + "-" + UUID.randomUUID(),
-                "",
-                Constants.FLOW_SESSION_SUBSYSTEM,
-                MembershipStatusFilter.ACTIVE
-            )
             Record(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
-                AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+                AppMessage(AuthenticatedMessage(AuthenticatedMessageHeader(
+                    destinationIdentity,
+                    sourceIdentity,
+                    //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
+                    Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                    sessionEvent.sessionId + "-" + UUID.randomUUID(),
+                    "",
+                    Constants.FLOW_SESSION_SUBSYSTEM,
+                    MembershipStatusFilter.ACTIVE
+                ), ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
             )
         }
     }

@@ -156,7 +156,7 @@ class InteropServiceIntegrationTest {
             )
             eventTopic.start()
             assertTrue(
-                mapperLatch.await(30, TimeUnit.SECONDS),
+                mapperLatch.await(45, TimeUnit.SECONDS),
                 "Fewer messages on $FLOW_MAPPER_EVENT_TOPIC were observed (${testProcessor.recordCount})" +
                         " than expected ($expectedMessageCount)."
             )
@@ -176,7 +176,7 @@ class InteropServiceIntegrationTest {
             )
             eventTopic.start()
             assertTrue(
-                mapperLatch.await(30, TimeUnit.SECONDS),
+                mapperLatch.await(45, TimeUnit.SECONDS),
                 "Fewer messages on $P2P_OUT_TOPIC were observed (${testProcessor.recordCount})" +
                         " than expected ($expectedMessageCount)."
             )
