@@ -2,7 +2,6 @@ package net.corda.libs.configuration.secret
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.ConfigKeys
 
 /**

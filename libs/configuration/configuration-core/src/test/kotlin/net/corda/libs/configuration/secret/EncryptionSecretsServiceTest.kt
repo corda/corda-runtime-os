@@ -1,7 +1,6 @@
 package net.corda.libs.configuration.secret
 
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

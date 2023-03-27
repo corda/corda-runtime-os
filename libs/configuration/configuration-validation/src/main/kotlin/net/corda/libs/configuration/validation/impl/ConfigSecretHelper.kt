@@ -3,7 +3,6 @@ package net.corda.libs.configuration.validation.impl
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.schema.configuration.ConfigKeys
 
