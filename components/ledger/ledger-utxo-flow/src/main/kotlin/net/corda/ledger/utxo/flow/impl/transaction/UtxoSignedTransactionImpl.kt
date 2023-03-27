@@ -231,9 +231,9 @@ data class UtxoSignedTransactionImpl(
 
         if (!KeyUtils.isKeyInSet(notaryKey, listOf(publicKey))) {
             throw CordaRuntimeException( // todo transition to TransactionSignatureException
-                "Notary's signature has not been created by the transaction's notary. " +
-                        "Notary's public key: $notaryKey " +
-                        "Notary signature's key: $publicKey"
+                "Notary signature has not been created by the notary for this transaction. " +
+                        "Notary public key: $notaryKey " +
+                        "Notary signature key: $publicKey"
             )
         }
         try {
