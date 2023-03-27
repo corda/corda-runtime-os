@@ -46,8 +46,6 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
         requestingPartyKey.fullIdHash(digestService, digestAlgorithmOfSignatureKeyId)
     if (requestingPartyKeyId != digitalSignature.by) {
         throw IllegalStateException(
-            // TODO The below message used to print keys and now it prints key ids.
-            //  Maybe change to only mentioned that did not receive signature from expected?
             "Expected a signature by ${requestingPartyKeyId.shortHash}, " +
                     "but received by ${digitalSignature.by.shortHash}}"
         )
