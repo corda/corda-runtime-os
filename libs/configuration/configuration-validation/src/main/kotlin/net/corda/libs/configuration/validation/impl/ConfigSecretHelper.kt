@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
+import net.corda.schema.configuration.ConfigKeys
 
 /**
  *
@@ -37,7 +38,7 @@ class ConfigSecretHelper {
         val newPath = if (nodePath == "") nodeName else "$nodePath.$nodeName"
         if (node.isObject) {
             for ((fieldName, fieldNode) in node.fields().asSequence().toList()) {
-                if (fieldName == SmartConfig.SECRET_KEY) {
+                if (fieldName == ConfigKeys.SECRET_KEY) {
                     secrets[newPath] = node
                     (parentNode as ObjectNode).remove(nodeName)
                     parentNode.set(nodeName, TMP_SECRET_NODE)

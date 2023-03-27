@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
+import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -44,7 +45,7 @@ class ConfigSecretHelperTest {
 
         val secretsNode = convertJSONToNode(passwordsObject)!!
 
-        assertThat(inputNode["testReference"]["hidden"][SmartConfig.SECRET_KEY]).isEqualTo(secretsNode)
+        assertThat(inputNode["testReference"]["hidden"][ConfigKeys.SECRET_KEY]).isEqualTo(secretsNode)
         assertThat(inputNode["testString"].textValue()).isEqualTo("hello")
     }
 
