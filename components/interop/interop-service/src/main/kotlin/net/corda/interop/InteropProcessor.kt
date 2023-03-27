@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.interop.InteropMessage
@@ -52,9 +53,14 @@ class InteropProcessor(
             return@mapNotNull null
         }
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
-        println(sourceIdentity)
-        println(destinationIdentity)
-        null
+        if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
+            val destinationAlias = destinationIdentity
+            println(destinationAlias)
+            null
+        } else { //MessageDirection.OUTBOUND
+            println(sourceIdentity)
+            null
+        }
     }
 
     override val keyClass = String::class.java
