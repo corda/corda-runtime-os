@@ -6,7 +6,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
-import net.corda.schema.configuration.provider.SchemaProvider
+import net.corda.schema.common.provider.SchemaProvider
 import net.corda.v5.base.versioning.Version
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals

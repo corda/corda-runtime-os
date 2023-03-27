@@ -17,6 +17,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
@@ -153,7 +154,13 @@ class DbConnectionManagerImpl @Activate constructor(
         username: String,
         password: String,
         isAutoCommit: Boolean,
-        maximumPoolSize: Int
+        isReadOnly: Boolean,
+        maximumPoolSize: Int,
+        minimumPoolSize: Int,
+        idleTimeout: Duration,
+        maxLifetime: Duration,
+        keepaliveTime: Duration,
+        validationTimeout: Duration
     ): CloseableDataSource {
         TODO("Not yet implemented")
     }

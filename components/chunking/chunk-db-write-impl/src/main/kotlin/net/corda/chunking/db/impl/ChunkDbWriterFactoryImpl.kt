@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 import net.corda.chunking.db.impl.validation.ExternalChannelsConfigValidatorImpl
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 
 @Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -40,6 +41,7 @@ class ChunkDbWriterFactoryImpl(
     private val certificatesService: CertificatesService,
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+    private val configurationValidatorFactory: ConfigurationValidatorFactory
     private val networkInfoWriter: NetworkInfoWriter,
 ) : ChunkDbWriterFactory {
 
@@ -55,6 +57,8 @@ class ChunkDbWriterFactoryImpl(
         membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
         @Reference(service = MembershipGroupPolicyValidator::class)
         membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+        @Reference(service = ConfigurationValidatorFactory::class)
+        configurationValidatorFactory: ConfigurationValidatorFactory,
         @Reference(service = NetworkInfoWriter::class)
         networkInfoWriter: NetworkInfoWriter
     ) : this(
@@ -64,6 +68,7 @@ class ChunkDbWriterFactoryImpl(
         certificatesService,
         membershipSchemaValidatorFactory,
         membershipGroupPolicyValidator,
+        configurationValidatorFactory,
         networkInfoWriter,
     )
 
@@ -79,7 +84,7 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
-        cpiInfoWriteService: CpiInfoWriteService,
+        cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
         // Could be reused
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
@@ -128,7 +133,7 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
-        val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl()
+        val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createConfigValidator())
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,

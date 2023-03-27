@@ -12,6 +12,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  * by the platform.
  */
 interface UtxoLedgerPersistenceService {
+
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id].
      *
