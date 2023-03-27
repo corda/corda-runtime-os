@@ -967,51 +967,6 @@
                     "examples": [{
                         "enabled": true
                     }]
-                },
-                "rest": {
-                    "type": "object",
-                    "default": {},
-                    "title": "Configuration for REST Worker bootstrap",
-                    "required": [
-                        "enabled"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Indicates whether REST Worker bootstrapping is enabled as part of installation",
-                            "examples": [
-                                false,
-                                true
-                            ]
-                        },
-                        "tls": {
-                            "type": "object",
-                            "title": "TLS configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "crt": {
-                                    "title": "TLS Certificate configuration",
-                                    "additionalProperties": false,
-                                    "$ref": "#/$defs/config"
-                                },
-                                "key": {
-                                    "title": "TLS Certificate private key configuration",
-                                    "additionalProperties": false,
-                                    "$ref": "#/$defs/config"
-                                },
-                                "ca": {
-                                    "title": "Certification Authority(CA) certificates chain configuration",
-                                    "additionalProperties": false,
-                                    "$ref": "#/$defs/config"
-                                }
-                            }
-                        }
-                    },
-                    "examples": [{
-                        "enabled": true
-                    }]
                 }
             }
         },
@@ -1332,6 +1287,28 @@
                                             "annotations": {}
                                         }
                                     ]
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "title": "REST Worker TLS configuration",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "crt": {
+                                            "title": "TLS Certificate configuration",
+                                            "additionalProperties": false,
+                                            "$ref": "#/$defs/config"
+                                        },
+                                        "key": {
+                                            "title": "TLS Certificate private key configuration",
+                                            "additionalProperties": false,
+                                            "$ref": "#/$defs/config"
+                                        },
+                                        "ca": {
+                                            "title": "Certification Authority(CA) certificates chain configuration",
+                                            "additionalProperties": false,
+                                            "$ref": "#/$defs/config"
+                                        }
+                                    }
                                 }
                             },
                             "examples": [

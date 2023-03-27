@@ -130,21 +130,21 @@ REST TLS keystore secret name
 REST TLS certificate key
 */}}
 {{- define "corda.restTlsCrtSecretKey" -}}
-{{ .Values.bootstrap.rest.tls.crt.valueFrom.secretKeyRef.key | default "crt" }}
+{{ .Values.workers.rest.tls.crt.valueFrom.secretKeyRef.key | default "crt" }}
 {{- end }}
 
 {{/*
 REST TLS private key secret key
 */}}
 {{- define "corda.restTlsKeySecretKey" -}}
-{{ .Values.bootstrap.rest.tls.key.valueFrom.secretKeyRef.key | default "key" }}
+{{ .Values.workers.rest.tls.key.valueFrom.secretKeyRef.key | default "key" }}
 {{- end }}
 
 {{/*
 REST TLS CA cert secret key
 */}}
 {{- define "corda.restTlsCaSecretKey" -}}
-{{ .Values.bootstrap.rest.tls.ca.valueFrom.secretKeyRef.key | default "ca" }}
+{{ .Values.workers.rest.tls.ca.valueFrom.secretKeyRef.key | default "ca" }}
 {{- end }}
 
 {{/*
