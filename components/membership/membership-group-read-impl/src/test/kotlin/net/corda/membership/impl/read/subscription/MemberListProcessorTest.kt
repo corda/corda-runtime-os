@@ -32,6 +32,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -167,6 +168,11 @@ class MemberListProcessorTest {
             charlieIdentity = HoldingIdentity(charlie.name, charlie.groupId)
             memberListFromTopic = convertToTestTopicData(listOf(alice, bob, charlie))
         }
+    }
+
+    @AfterEach
+    fun tearDown() {
+        membershipGroupReadCache.clear()
     }
 
     @Test
