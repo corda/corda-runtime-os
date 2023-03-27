@@ -41,7 +41,7 @@ class ChunkDbWriterFactoryImpl(
     private val certificatesService: CertificatesService,
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
     private val networkInfoWriter: NetworkInfoWriter,
 ) : ChunkDbWriterFactory {
 
