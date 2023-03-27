@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.interop.InteropMessage
 import net.corda.interop.service.InteropFacadeToFlowMapperService
@@ -32,9 +33,10 @@ class InteropProcessor(
         const val SUBSYSTEM = "interop"
     }
 
-    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
+    private val interopAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
         cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
-    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
+    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
+        cordaAvroSerializationFactory.createAvroSerializer{}
 
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
