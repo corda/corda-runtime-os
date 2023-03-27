@@ -158,7 +158,7 @@ data class UtxoSignedTransactionImpl(
                 } catch (e: Exception) {
                     throw TransactionSignatureException(
                         id,
-                        "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
+                        "Failed to verify signature of ${it.signature} from $publicKey for transaction $id. Message: ${e.message}",
                         e
                     )
                 }
