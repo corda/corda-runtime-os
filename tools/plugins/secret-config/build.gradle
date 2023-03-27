@@ -21,6 +21,8 @@ dependencies {
     kapt "org.pf4j:pf4j:$pf4jVersion"
     kapt "info.picocli:picocli:$picocliVersion"
 
+    implementation 'net.corda:corda-config-schema'
+
     implementation project(":libs:configuration:configuration-core")
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
