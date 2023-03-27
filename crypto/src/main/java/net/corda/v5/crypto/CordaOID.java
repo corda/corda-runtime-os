@@ -26,9 +26,7 @@ public final class CordaOID {
     public static final String OID_CORDA_PLATFORM = OID_R3_ROOT + ".1";
 
     /**
-     * Identifier for the X.509 certificate extension specifying the Corda role. See
-     * <A HREF="https://r3-cev.atlassian.net/wiki/spaces/AWG/pages/156860572/Certificate+identity+type+extension">
-     * https://r3-cev.atlassian.net/wiki/spaces/AWG/pages/156860572/Certificate+identity+type+extension</A> for details.
+     * Identifier for the X.509 certificate extension specifying the Corda role.
      */
     @NotNull
     public static final String OID_X509_EXTENSION_CORDA_ROLE = OID_CORDA_PLATFORM + ".1";
