@@ -42,7 +42,7 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
 
-@Component(immediate = true)
+@Component
 class AppSimulator @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
