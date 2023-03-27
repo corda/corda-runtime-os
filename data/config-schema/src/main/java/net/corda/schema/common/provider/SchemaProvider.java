@@ -1,4 +1,4 @@
-package net.corda.schema.configuration.provider;
+package net.corda.schema.common.provider;
 
 import net.corda.v5.base.versioning.Version;
 import org.jetbrains.annotations.NotNull;

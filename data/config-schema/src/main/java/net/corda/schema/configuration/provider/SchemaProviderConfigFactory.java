@@ -1,13 +1,14 @@
 package net.corda.schema.configuration.provider;
 
-import net.corda.schema.configuration.provider.impl.SchemaProviderImpl;
+import net.corda.schema.common.provider.SchemaProvider;
+import net.corda.schema.configuration.provider.impl.SchemaProviderConfigImpl;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Factory for schema providers.
  */
-public final class SchemaProviderFactory {
-    private SchemaProviderFactory() {
+public final class SchemaProviderConfigFactory {
+    private SchemaProviderConfigFactory() {
     }
 
     /**
@@ -17,6 +18,6 @@ public final class SchemaProviderFactory {
      */
     @NotNull
     public static SchemaProvider getSchemaProvider() {
-        return new SchemaProviderImpl();
+        return new SchemaProviderConfigImpl();
     }
 }

@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/cordapp/configuration/external/messaging/1.0/corda.external.messaging.json",
+  "title": "Corda External Messaging Configuration Schema",
+  "description": "Configuration schema for the external messaging.",
+  "type": "object",
+  "default": {
+    "channels": []
+  },
+  "properties": {
+    "channels": {
+      "type": "array",
+      "description": "A list containing the configuration for each channel.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "$comment": "The name of the channels accepts alphanumeric values, underscores, periods, and dashes. Empty strings are not accepted and the max. length is 255 characters. Also topics with a period . or underscore _ could collide in internal data structures, so you are advised to use either but not both.",
+            "pattern": "^[a-zA-Z0-9-_\\.]{1,255}$",
+            "description": "The name of the channel to which external services can listen to for messages."
+          },
+          "type": {
+            "enum": [
+              "send",
+              "send-receive"
+            ],
+            "description": "Specifies whether a channel is uni or bi-directional, i.e., if external services can use the channel to only receive messages or also send messages."
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["channels"],
+  "additionalProperties": false
+}
