@@ -46,6 +46,7 @@ class SessionInitExecutor(
         }
     }
 
+    @Suppress("ForbiddenComment")
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
@@ -55,7 +56,7 @@ class SessionInitExecutor(
             )
 
         // Send a session confirm message in response to the session init.
-        // Temporary hack for CORE-10465, will be removed in CORE-10420
+        // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
         if (sessionEvent.isInteropEvent()) {
             val hackyConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,

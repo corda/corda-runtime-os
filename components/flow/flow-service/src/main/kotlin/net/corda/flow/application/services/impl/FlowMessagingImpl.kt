@@ -53,6 +53,7 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, flowContextPropertiesBuilder)
     }
 
+    @Suppress("ForbiddenComment")
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
@@ -61,6 +62,7 @@ class FlowMessagingImpl @Activate constructor(
         payload: String
     ): String {
         // For now, the flow mapper sends back the invocation
+        // TODO: CORE-10240 return an actual FacadeInvocationResponse result
         val session = createInteropFlowSession(memberName)
         val response = try {
             val request = FacadeInvocation(memberName, facadeName, methodName, payload)

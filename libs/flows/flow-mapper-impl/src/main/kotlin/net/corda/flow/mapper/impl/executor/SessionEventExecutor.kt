@@ -95,7 +95,8 @@ class SessionEventExecutor(
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
     }
 
-    // Temporary hack for CORE-10465, will be removed in CORE-10420
+    // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
+    @Suppress("ForbiddenComment")
     private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
         if (messageDirection == MessageDirection.OUTBOUND) {
             val payload = sessionEvent.payload
