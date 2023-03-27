@@ -66,13 +66,12 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
         try {
             log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
             transaction.verifySignatorySignature(signature)
-            // TODO The below logging needs to be moved in the transaction
-//  log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
+            log.debug {
+                "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id"
+            }
         } catch (e: Exception) {
-            // TODO The below logging needs to be moved in the transaction
-//            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
-//                    "transaction ${transaction.id}. Message: ${e.message}"
-            val message = ""
+            val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +
+                    "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
