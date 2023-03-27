@@ -1,9 +1,6 @@
 package net.corda.db.core
 
 import java.time.Duration
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
-import kotlin.time.toJavaDuration
 
 interface DataSourceFactory {
     /**
@@ -42,9 +39,9 @@ interface DataSourceFactory {
         isReadOnly: Boolean = false,
         maximumPoolSize: Int = 10,
         minimumPoolSize: Int = maximumPoolSize,
-        idleTimeout: Duration = 2.toDuration(DurationUnit.MINUTES).toJavaDuration(),
-        maxLifetime: Duration = 30.toDuration(DurationUnit.MINUTES).toJavaDuration(),
+        idleTimeout: Duration = Duration.ofMinutes(2),
+        maxLifetime: Duration = Duration.ofMinutes(30),
         keepaliveTime: Duration = Duration.ZERO,
-        validationTimeout: Duration = 5.toDuration(DurationUnit.SECONDS).toJavaDuration(),
+        validationTimeout: Duration = Duration.ofSeconds(5),
     ): CloseableDataSource
 }
