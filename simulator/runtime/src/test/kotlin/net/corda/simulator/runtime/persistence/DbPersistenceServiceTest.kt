@@ -24,6 +24,8 @@ class DbPersistenceServiceTest {
 
         // Then we should be able to retrieve them again
         val greetings = persistence.findAll(GreetingEntity::class.java).execute()
+            .results
+
         assertThat(greetings.map{ it.greeting }.toSet(), `is`(setOf("Hello!", "Bonjour!")))
 
         persistence.close()
@@ -42,6 +44,8 @@ class DbPersistenceServiceTest {
 
         // Then it should not show up in the other one
         val greetings = persistence2.findAll(GreetingEntity::class.java).execute()
+            .results
+
         assertThat("Greetings should be empty", greetings.isEmpty())
 
         persistence1.close()
@@ -144,11 +148,13 @@ class DbPersistenceServiceTest {
         val retrieved1 = persistence.findAll(GreetingEntity::class.java)
             .setLimit(5)
             .execute()
+            .results
 
         val retrieved2 = persistence.findAll(GreetingEntity::class.java)
             .setOffset(5)
             .setLimit(4)
             .execute()
+            .results
 
         // Then they should all be present
         assertThat(retrieved1.plus(retrieved2).sortedBy { it.greeting }, `is`(greetings.subList(0, 9)))
@@ -171,11 +177,13 @@ class DbPersistenceServiceTest {
         val retrieved1 = persistence.query("Greetings.findAll", GreetingEntity::class.java)
             .setLimit(5)
             .execute()
+            .results
 
         val retrieved2 = persistence.query("Greetings.findAll", GreetingEntity::class.java)
             .setOffset(5)
             .setLimit(4)
             .execute()
+            .results
 
         // Then they should all be present
         assertThat(retrieved1.plus(retrieved2).sortedBy { it.greeting }, `is`(greetings))

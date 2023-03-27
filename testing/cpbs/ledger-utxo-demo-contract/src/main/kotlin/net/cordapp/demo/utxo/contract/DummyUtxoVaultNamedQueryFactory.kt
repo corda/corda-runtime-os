@@ -1,10 +1,11 @@
 package net.cordapp.demo.utxo.contract
 
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderFactory
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefFilter
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefTransformer
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderFactory
 
 /**
  * This is a dummy named query factory that will:
@@ -24,15 +25,15 @@ class DummyUtxoVaultNamedQueryFactory : VaultNamedQueryFactory {
             .register()
     }
 
-    class DummyUtxoVaultNamedQueryFilter : VaultNamedQueryFilter<TestUtxoState> {
-        override fun filter(state: TestUtxoState, parameters: MutableMap<String, Any>): Boolean {
+    class DummyUtxoVaultNamedQueryFilter : VaultNamedQueryStateAndRefFilter<TestUtxoState> {
+        override fun filter(state: StateAndRef<TestUtxoState>, parameters: MutableMap<String, Any>): Boolean {
             return true
         }
     }
 
-    class DummyUtxoVaultNamedQueryTransformer : VaultNamedQueryTransformer<TestUtxoState, String> {
-        override fun transform(state: TestUtxoState, parameters: MutableMap<String, Any>): String {
-            return state.testField
+    class DummyUtxoVaultNamedQueryTransformer : VaultNamedQueryStateAndRefTransformer<TestUtxoState, String> {
+        override fun transform(state: StateAndRef<TestUtxoState>, parameters: MutableMap<String, Any>): String {
+            return state.state.contractState.testField
         }
     }
 }

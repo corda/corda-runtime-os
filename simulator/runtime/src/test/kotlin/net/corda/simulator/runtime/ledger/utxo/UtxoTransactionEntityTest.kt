@@ -106,6 +106,7 @@ class UtxoTransactionEntityTest {
             val outputs = it.query("UtxoTransactionOutputEntity.findUnconsumedStatesByType",
                 UtxoTransactionOutputEntity::class.java)
                 .setParameter("type", "someType").execute()
+                .results
 
             assertThat(outputs.size, `is`(2))
             assertThat(outputs[0].transactionId, `is`("myId"))
@@ -116,6 +117,7 @@ class UtxoTransactionEntityTest {
             val moreOutputs = it.query("UtxoTransactionOutputEntity.findUnconsumedStatesByType",
                 UtxoTransactionOutputEntity::class.java)
                 .setParameter("type", "someOtherType").execute()
+                .results
 
             assertThat(moreOutputs.size, `is`(1))
             assertThat(moreOutputs[0].transactionId, `is`("myId1"))

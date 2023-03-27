@@ -20,17 +20,23 @@ class VaultNamedParameterizedQueryImpl<T>(
     private val resultClass: Class<T>
 ) : VaultNamedParameterizedQuery<T> {
 
+    private companion object {
+        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda.TimestampLimit"
+    }
+
     private var limit: Int? = null
     private var offset: Int? = null
     private var timestampLimit: Instant? = null
     private val queryParams = mutableMapOf<String, Any>()
 
     override fun setLimit(limit: Int): ParameterizedQuery<T> {
+        require(this.limit == null) { "Limit is already set." }
         this.limit = limit
         return this
     }
 
     override fun setOffset(offset: Int): ParameterizedQuery<T> {
+        require(this.offset == null) { "Offset is already set." }
         this.offset = offset
         return this
     }
@@ -61,6 +67,11 @@ class VaultNamedParameterizedQueryImpl<T>(
             "Limit needs to be provided and needs to be a positive number to execute the query."
         }
 
+        // If timestamp limit is not set we default to the current time
+        if (timestampLimit == null) {
+            setCreatedTimestampLimit(Instant.now())
+        }
+
         val results = externalEventExecutor.execute(
             VaultNamedQueryExternalEventFactory::class.java,
             VaultNamedQueryEventParams(queryName, getSerializedParameters(queryParams), offsetValue, limitValue)
@@ -72,7 +83,11 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
+        require(this.timestampLimit == null) { "Timestamp limit is already set." }
+        require(timestampLimit <= Instant.now()) { "Timestamp limit must not be in the future." }
+
         this.timestampLimit = timestampLimit
+        queryParams[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
         return this
     }
 

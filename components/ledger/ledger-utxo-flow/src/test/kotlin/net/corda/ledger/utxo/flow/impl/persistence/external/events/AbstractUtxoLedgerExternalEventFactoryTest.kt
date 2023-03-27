@@ -71,8 +71,8 @@ class AbstractUtxoLedgerExternalEventFactoryTest {
         val results = listOf(ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
         val resume = abstractUtxoLedgerExternalEventFactory.resumeWith(
             mock(),
-            EntityResponse(results, results.size, results.size, false)
-        ).results
+            EntityResponse(results)
+        )
         assertEquals(results, resume)
     }
 }

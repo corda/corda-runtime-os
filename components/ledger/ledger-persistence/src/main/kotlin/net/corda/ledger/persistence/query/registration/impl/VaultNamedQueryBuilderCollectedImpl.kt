@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.query.registration.impl
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.utilities.debug
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderCollected
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderCollected
 import org.slf4j.LoggerFactory
 
 class VaultNamedQueryBuilderCollectedImpl(

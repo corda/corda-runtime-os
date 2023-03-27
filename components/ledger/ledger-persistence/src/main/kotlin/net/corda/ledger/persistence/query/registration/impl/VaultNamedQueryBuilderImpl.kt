@@ -4,11 +4,13 @@ import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilder
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderCollected
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefFilter
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefTransformer
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilder
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderCollected
 import org.slf4j.LoggerFactory
 
 class VaultNamedQueryBuilderImpl(
@@ -22,7 +24,7 @@ class VaultNamedQueryBuilderImpl(
 
     private var whereJson: String? = null
     private var filter: VaultNamedQueryFilter<*>? = null
-    private var mapper: VaultNamedQueryTransformer<*, *>? = null
+    private var transformer: VaultNamedQueryTransformer<*, *>? = null
 
     override fun whereJson(json: String): VaultNamedQueryBuilder {
         this.whereJson = json
@@ -31,17 +33,17 @@ class VaultNamedQueryBuilderImpl(
 
     override fun filter(filter: VaultNamedQueryFilter<*>): VaultNamedQueryBuilder {
         require(this.filter == null) {
-            "Mapper function has already been set!"
+            "Filter function has already been set!"
         }
         this.filter = filter
         return this
     }
 
-    override fun map(mapper: VaultNamedQueryTransformer<*, *>): VaultNamedQueryBuilder {
-        require(this.mapper == null) {
+    override fun map(transformer: VaultNamedQueryTransformer<*, *>): VaultNamedQueryBuilder {
+        require(this.transformer == null) {
             "Mapper function has already been set!"
         }
-        this.mapper = mapper
+        this.transformer = transformer
         return this
     }
 
@@ -56,8 +58,8 @@ class VaultNamedQueryBuilderImpl(
             VaultNamedQuery(
                 name,
                 whereJson,
-                filter as VaultNamedQueryFilter<ContractState>,
-                mapper as VaultNamedQueryTransformer<ContractState, Any>,
+                filter as VaultNamedQueryStateAndRefFilter<ContractState>,
+                transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
                 collector as VaultNamedQueryCollector<Any, Any>
             )
         )
@@ -73,8 +75,8 @@ class VaultNamedQueryBuilderImpl(
             VaultNamedQuery(
             name,
             whereJson,
-            filter as VaultNamedQueryFilter<ContractState>,
-            mapper as VaultNamedQueryTransformer<ContractState, Any>,
+            filter as VaultNamedQueryStateAndRefFilter<ContractState>,
+            transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
             null
         ))
     }

@@ -3,8 +3,8 @@ package net.corda.ledger.persistence.query.registration.impl
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilder
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderFactory
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilder
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

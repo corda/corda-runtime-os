@@ -71,7 +71,7 @@ class AbstractConsensualLedgerExternalEventFactoryTest {
         val results = listOf(ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
         val resume = abstractConsensualLedgerExternalEventFactory.resumeWith(
             mock(),
-            EntityResponse(results, results.size, results.size, false)
+            EntityResponse(results)
         )
         assertEquals(results, resume)
     }

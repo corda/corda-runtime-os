@@ -60,7 +60,7 @@ class TruancyResponderFlowTest {
         initiatingNode.generateKey("my-key", HsmCategory.LEDGER, "any-scheme")
         initiatingNode.callFlow(RequestData.IGNORED)
 
-        val truancyRecords = truancyNode.getPersistenceService().findAll(TruancyEntity::class.java).execute()
+        val truancyRecords = truancyNode.getPersistenceService().findAll(TruancyEntity::class.java).execute().results
         assertThat(truancyRecords.size, `is`(1))
         assertThat(truancyRecords[0].name, `is`(bob.toString()))
     }

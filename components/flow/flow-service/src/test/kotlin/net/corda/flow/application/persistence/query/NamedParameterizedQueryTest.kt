@@ -176,7 +176,7 @@ class NamedParameterizedQueryTest {
         query.setLimit(5)
         query.setParameter("named", "test1")
 
-        assertThat(query.execute()).isEmpty()
+        assertThat(query.execute().results).isEmpty()
 
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<String>(any())

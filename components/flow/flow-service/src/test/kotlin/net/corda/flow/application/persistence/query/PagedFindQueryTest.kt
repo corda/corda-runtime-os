@@ -108,7 +108,7 @@ class PagedFindQueryTest {
         query.setLimit(10)
         query.setOffset(1)
 
-        assertThat(query.execute()).isEmpty()
+        assertThat(query.execute().results).isEmpty()
 
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         assertEquals(FindAllExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
