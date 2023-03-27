@@ -2,8 +2,11 @@ package net.corda.ledger.persistence.query.registration.impl
 
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
-import net.corda.utilities.debug
+import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
+import net.corda.ledger.persistence.query.parsing.impl.logQueryRegistration
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilder
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderCollected
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryStateAndRefFilter
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory
 
 class VaultNamedQueryBuilderImpl(
     private val vaultNamedQueryRegistry: VaultNamedQueryRegistry,
+    private val vaultNamedQueryParser: VaultNamedQueryParser,
     private val name: String
 ) : VaultNamedQueryBuilder {
 
@@ -22,12 +26,16 @@ class VaultNamedQueryBuilderImpl(
         private val logger = LoggerFactory.getLogger(VaultNamedQueryBuilderImpl::class.java)
     }
 
-    private var whereJson: String? = null
+    private var query: VaultNamedQuery.ParsedQuery? = null
     private var filter: VaultNamedQueryFilter<*>? = null
     private var transformer: VaultNamedQueryTransformer<*, *>? = null
 
-    override fun whereJson(json: String): VaultNamedQueryBuilder {
-        this.whereJson = json
+    override fun whereJson(query: String): VaultNamedQueryBuilder {
+        this.query = VaultNamedQuery.ParsedQuery(
+            originalQuery = query,
+            query = vaultNamedQueryParser.parseWhereJson(query),
+            type = VaultNamedQuery.Type.WHERE_JSON
+        )
         return this
     }
 
@@ -50,6 +58,8 @@ class VaultNamedQueryBuilderImpl(
 
     override fun collect(collector: VaultNamedQueryCollector<*, *>): VaultNamedQueryBuilderCollected {
 
+        val notNullQuery = requireNotNull(query) { "Vault named query: $name does not have its query statement set" }
+
         // TODO These casts are necessary because using `out ContractState` in `VaultNamedQuery`
         //  will result in a compilation error
         @Suppress("unchecked_cast")
@@ -57,7 +67,7 @@ class VaultNamedQueryBuilderImpl(
             vaultNamedQueryRegistry,
             VaultNamedQuery(
                 name,
-                whereJson,
+                notNullQuery,
                 filter as VaultNamedQueryStateAndRefFilter<ContractState>,
                 transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
                 collector as VaultNamedQueryCollector<Any, Any>
@@ -66,18 +76,21 @@ class VaultNamedQueryBuilderImpl(
     }
 
     override fun register() {
-        logger.debug { "Registering custom query with name: $name" }
+        val notNullQuery = requireNotNull(query) { "Vault named query: $name does not have its query statement set" }
+
+        logQueryRegistration(name, notNullQuery)
 
         // TODO These casts are necessary because using `out ContractState` in `VaultNamedQuery`
         //  will result in a compilation error
         @Suppress("unchecked_cast")
         vaultNamedQueryRegistry.registerQuery(
             VaultNamedQuery(
-            name,
-            whereJson,
-            filter as VaultNamedQueryStateAndRefFilter<ContractState>,
-            transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
-            null
-        ))
+                name,
+                notNullQuery,
+                filter as VaultNamedQueryStateAndRefFilter<ContractState>,
+                transformer as VaultNamedQueryStateAndRefTransformer<ContractState, Any>,
+                collector = null
+            )
+        )
     }
 }

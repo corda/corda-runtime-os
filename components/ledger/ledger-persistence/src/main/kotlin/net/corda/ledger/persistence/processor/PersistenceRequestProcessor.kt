@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.processor
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.messaging.api.processor.DurableProcessor
@@ -45,7 +46,9 @@ class PersistenceRequestProcessor(
                     } catch (e: Exception) {
                         listOf(
                             when (e) {
-                                is UnsupportedLedgerTypeException, is UnsupportedRequestTypeException -> {
+                                is UnsupportedLedgerTypeException,
+                                is UnsupportedRequestTypeException,
+                                is InconsistentLedgerStateException -> {
                                     responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
                                 }
 

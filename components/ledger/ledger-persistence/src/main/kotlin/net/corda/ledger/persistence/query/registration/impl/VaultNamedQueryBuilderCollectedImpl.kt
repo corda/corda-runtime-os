@@ -1,23 +1,17 @@
 package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
-import net.corda.utilities.debug
-import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderCollected
-import org.slf4j.LoggerFactory
+import net.corda.ledger.persistence.query.parsing.impl.logQueryRegistration
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderCollected
 
 class VaultNamedQueryBuilderCollectedImpl(
     private val registry: VaultNamedQueryRegistry,
     private val vaultNamedQuery: VaultNamedQuery
 ) : VaultNamedQueryBuilderCollected {
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(VaultNamedQueryBuilderCollectedImpl::class.java)
-    }
-
     override fun register() {
-        logger.debug { "Registering custom query with name: ${vaultNamedQuery.name}" }
-
+        logQueryRegistration(vaultNamedQuery.name, vaultNamedQuery.query)
         registry.registerQuery(vaultNamedQuery)
     }
 }

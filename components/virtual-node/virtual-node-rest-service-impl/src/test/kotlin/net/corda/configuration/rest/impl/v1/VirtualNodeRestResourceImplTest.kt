@@ -1,12 +1,19 @@
 package net.corda.configuration.rest.impl.v1
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
@@ -15,18 +22,24 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.common.VirtualNodeSender
+import net.corda.virtualnode.rest.converters.MessageConverter
 import net.corda.virtualnode.rest.factories.RequestFactory
+import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
+import net.corda.virtualnode.rest.impl.v1.OperationTypes
 import net.corda.virtualnode.rest.impl.v1.VirtualNodeRestResourceImpl
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.UUID
+import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 
 class VirtualNodeRestResourceImplTest {
 
@@ -36,6 +49,8 @@ class VirtualNodeRestResourceImplTest {
     private val restContextProvider = mock<RestContextProvider>().apply {
         whenever(principal).thenReturn("user1")
     }
+    private val messageConverter = mock<MessageConverter>()
+    private val virtualNodeStatusCacheService = mock<VirtualNodeStatusCacheService>()
 
     private val mockCoordinator = mock<LifecycleCoordinator>().apply {
         whenever(isRunning).thenReturn(true)
@@ -106,23 +121,9 @@ class VirtualNodeRestResourceImplTest {
         assertThat(result.responseBody.requestId).isEqualTo(requestId)
     }
 
-    private fun createVirtualNodeRestResourceImpl(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory): VirtualNodeRestResourceImpl {
-        return VirtualNodeRestResourceImpl(
-            lifecycleCoordinatorFactory,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            requestFactory,
-            UTCClock(),
-            virtualNodeValidationService,
-            restContextProvider
-        )
-    }
-
     @Test
     fun `cant set state of virtual node to non defined value`() {
-        val vnodeResource =createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+        val vnodeResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
         vnodeResource.start()
 
         assertThrows<InvalidInputDataException> {
@@ -130,10 +131,84 @@ class VirtualNodeRestResourceImplTest {
         }
     }
 
+    @Test
+    fun `get virtual node status for missing holding id returns 404`() {
+        val holdingId = "0123456789AB"
+        val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+
+        assertThrows<ResourceNotFoundException> { target.getVirtualNodeOperationStatus(holdingId) }
+    }
+
+    @Test
+    fun `get virtual node status for holding id returns status`() {
+        val holdingId = "0123456789AB"
+        val avroStatus = mock<AvroVirtualNodeOperationStatus>()
+        val status = AsyncOperationStatus.accepted("r1", "op", Instant.ofEpochMilli(1))
+
+        whenever(virtualNodeStatusCacheService.getStatus(any())).thenReturn(avroStatus)
+        whenever(messageConverter.convert(any(), any(), any())).thenReturn(status)
+
+        val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+
+        assertThat(target.getVirtualNodeOperationStatus(holdingId)).isEqualTo(status)
+
+        verify(virtualNodeStatusCacheService).getStatus(holdingId)
+        verify(messageConverter).convert(avroStatus, OperationTypes.CREATE_VIRTUAL_NODE.toString(), holdingId)
+    }
+
+    @Test
+    fun `get upgrade node status for missing request id returns 404`() {
+        val requestId = UUID.randomUUID().toString()
+        val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+        val errorResponse = VirtualNodeManagementResponseFailure(
+            ExceptionEnvelope(VirtualNodeOperationNotFoundException::class.java.name ,"b")
+        )
+
+        val response = VirtualNodeManagementResponse(Instant.now(), errorResponse)
+        whenever(virtualNodeSender.sendAndReceive(any())).thenReturn(response)
+
+        assertThrows<ResourceNotFoundException> { target.getVirtualNodeOperationStatus(requestId) }
+    }
+
+    @Test
+    fun `get upgrade node status for request id returns status`() {
+        val requestId = UUID.randomUUID().toString()
+        val avroStatus = getAvroVirtualNodeOperationStatus("a")
+        val statusResponse = VirtualNodeOperationStatusResponse(requestId, listOf(avroStatus))
+        val response = VirtualNodeManagementResponse(Instant.now(), statusResponse)
+
+        val status = AsyncOperationStatus.accepted("r1", "op", Instant.ofEpochMilli(1))
+
+        whenever(virtualNodeSender.sendAndReceive(any())).thenReturn(response)
+        whenever(messageConverter.convert(any(), any(), anyOrNull())).thenReturn(status)
+
+        val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+
+        val result = target.getVirtualNodeOperationStatus(requestId)
+
+        assertThat(result).isEqualTo(status)
+    }
+
+    private fun createVirtualNodeRestResourceImpl(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory): VirtualNodeRestResourceImpl {
+        return VirtualNodeRestResourceImpl(
+            lifecycleCoordinatorFactory,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            virtualNodeStatusCacheService,
+            requestFactory,
+            UTCClock(),
+            virtualNodeValidationService,
+            restContextProvider,
+            messageConverter
+        )
+    }
+
     private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo? {
         return VirtualNodeInfo(
-            HoldingIdentity(MemberX500Name("test","IE","IE"), "group"),
-            CpiIdentifier("cpi","1", parseSecureHash("SHA-256:1234567890")),
+            HoldingIdentity(MemberX500Name("test", "IE", "IE"), "group"),
+            CpiIdentifier("cpi", "1", parseSecureHash("SHA-256:1234567890")),
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -150,5 +225,17 @@ class VirtualNodeRestResourceImplTest {
             mock(),
             false
         )
+    }
+
+    private fun getAvroVirtualNodeOperationStatus(stateString: String): AvroVirtualNodeOperationStatus {
+        return AvroVirtualNodeOperationStatus.newBuilder()
+            .setRequestId("request1")
+            .setState(stateString)
+            .setRequestData("requestData1")
+            .setRequestTimestamp(Instant.now())
+            .setLatestUpdateTimestamp(Instant.now())
+            .setHeartbeatTimestamp(null)
+            .setErrors("error1")
+            .build()
     }
 }

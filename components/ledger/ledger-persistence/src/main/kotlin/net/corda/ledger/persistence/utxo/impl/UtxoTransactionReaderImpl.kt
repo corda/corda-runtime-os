@@ -113,7 +113,7 @@ class UtxoTransactionReaderImpl(
 
         return inputsGroupedByTransactionId.flatMap { inputsByTransactionId ->
 
-            val transaction = persistenceService.findTransaction(
+            val (transaction, _) = persistenceService.findTransaction(
                 id = inputsByTransactionId.key.toString(),
                 transactionStatus = TransactionStatus.VERIFIED
             )

@@ -157,8 +157,8 @@ class UtxoLedgerMessageProcessorTests {
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
-        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
-        assertThat(retrievedTransaction).isEqualTo(transaction)
+        val retrievedTransaction = ctx.deserialize<Pair<SignedTransactionContainer, String>>(entityResponse.results.first())
+        assertThat(retrievedTransaction).isEqualTo(transaction to "V")
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {

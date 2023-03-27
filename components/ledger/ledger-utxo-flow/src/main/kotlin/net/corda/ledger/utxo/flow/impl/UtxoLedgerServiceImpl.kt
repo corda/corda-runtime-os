@@ -31,6 +31,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.FinalizationResult
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -104,7 +105,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun finalize(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
-    ): UtxoSignedTransaction {
+    ): FinalizationResult {
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
@@ -120,13 +121,13 @@ class UtxoLedgerServiceImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return flowEngine.subFlow(utxoFinalityFlow)
+        return FinalizationResultImpl(flowEngine.subFlow(utxoFinalityFlow))
     }
 
     @Suspendable
     override fun receiveFinality(
         session: FlowSession, validator: UtxoTransactionValidator
-    ): UtxoSignedTransaction {
+    ): FinalizationResult {
         val utxoReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoReceiveFinalityFlow(session, validator)
@@ -134,7 +135,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return flowEngine.subFlow(utxoReceiveFinalityFlow)
+        return FinalizationResultImpl(flowEngine.subFlow(utxoReceiveFinalityFlow))
     }
 
     @Suspendable

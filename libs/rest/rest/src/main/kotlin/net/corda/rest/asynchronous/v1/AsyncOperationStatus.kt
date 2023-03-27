@@ -3,70 +3,85 @@ package net.corda.rest.asynchronous.v1
 import java.time.Instant
 
 data class AsyncOperationStatus(
-    val operationType: String,
-    val operationData: Any,
-    val state: AsyncOperationState,
-    val requestTimestamp: Instant?,
-    val latestUpdateTimestamp: Instant?,
-    val heartbeatTimestamp: Instant?,
-    val errors: List<AsyncError>? = null
+    val requestId: String,
+    val operation: String,
+    val status: AsyncOperationState,
+    val lastUpdatedTimestamp: Instant,
+    val processingStage: String? = null,
+    val errorReason: String? = null,
+    val resourceId: String? = null
 ) {
     companion object {
-        @Suppress("LongParameterList")
-        fun ok(
-            operationType: String,
-            operationData: Any,
-            state: AsyncOperationState,
-            requestTimestamp: Instant?,
-            latestUpdateTimestamp: Instant?,
-            heartbeatTimestamp: Instant?,
-            errors: List<AsyncError>?
+        fun accepted(
+            requestId: String,
+            operation: String,
+            timestamp: Instant
         ): AsyncOperationStatus {
             return AsyncOperationStatus(
-                operationType,
-                operationData,
-                state,
-                requestTimestamp,
-                latestUpdateTimestamp,
-                heartbeatTimestamp,
-                errors
+                requestId = requestId,
+                operation = operation,
+                status = AsyncOperationState.ACCEPTED,
+                lastUpdatedTimestamp = timestamp
             )
         }
 
         fun inProgress(
-            operationType: String,
-            operationData: Any,
-            requestTimestamp: Instant?,
-            latestUpdateTimestamp: Instant?,
-            heartbeatTimestamp: Instant?
+            requestId: String,
+            operation: String,
+            timestamp: Instant,
+            processingStage: String? = null
         ): AsyncOperationStatus {
             return AsyncOperationStatus(
-                operationType,
-                operationData,
-                AsyncOperationState.IN_PROGRESS,
-                requestTimestamp,
-                latestUpdateTimestamp,
-                heartbeatTimestamp
+                requestId = requestId,
+                operation = operation,
+                status = AsyncOperationState.IN_PROGRESS,
+                lastUpdatedTimestamp = timestamp,
+                processingStage = processingStage
             )
         }
 
-        @Suppress("LongParameterList")
-        fun errors(
-            operationType: String,
-            operationData: Any,
-            requestTimestamp: Instant?,
-            latestUpdateTimestamp: Instant?,
-            heartbeatTimestamp: Instant?,
-            errors: List<AsyncError>?
+        fun succeeded(
+            requestId: String,
+            operation: String,
+            timestamp: Instant,
+            resourceId: String?,
         ): AsyncOperationStatus {
             return AsyncOperationStatus(
-                operationType,
-                operationData,
-                AsyncOperationState.COMPLETED,
-                requestTimestamp,
-                latestUpdateTimestamp,
-                heartbeatTimestamp,
-                errors
+                requestId = requestId,
+                operation = operation,
+                status = AsyncOperationState.SUCCEEDED,
+                lastUpdatedTimestamp = timestamp,
+                resourceId = resourceId,
+            )
+        }
+
+        fun failed(
+            requestId: String,
+            operation: String,
+            timestamp: Instant,
+            errorReason: String,
+            processingStage: String? = null
+        ): AsyncOperationStatus {
+            return AsyncOperationStatus(
+                requestId = requestId,
+                operation = operation,
+                status = AsyncOperationState.FAILED,
+                lastUpdatedTimestamp = timestamp,
+                processingStage = processingStage,
+                errorReason = errorReason
+            )
+        }
+
+        fun aborted(
+            requestId: String,
+            operation: String,
+            timestamp: Instant
+        ): AsyncOperationStatus {
+            return AsyncOperationStatus(
+                requestId = requestId,
+                operation = operation,
+                status = AsyncOperationState.ABORTED,
+                lastUpdatedTimestamp = timestamp,
             )
         }
     }
