@@ -31,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -200,7 +201,7 @@ class MemberListProcessorTest {
     @Test
     fun `Member list cache is successfully updated with changed record`() {
         memberListProcessor.onSnapshot(memberListFromTopic)
-        val updatedAlice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_ACTIVE)
+        val updatedAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_PENDING)
         val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
@@ -209,8 +210,26 @@ class MemberListProcessorTest {
             alice.mgmProvidedContext.toAvro()
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
+        assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))
+            .containsExactlyInAnyOrder(bob, charlie, updatedAlice)
+    }
+
+    @Test
+    fun `Member list cache is successfully replaced with changed record`() {
+        val oldAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_ACTIVE)
+        val memberList = convertToTestTopicData(listOf(oldAlice), true)
+        memberListProcessor.onSnapshot(memberList)
+        val updatedAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_ACTIVE)
+        val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
+        val newRecord = Record("dummy-topic", topicData.key, topicData.value)
+        val oldValue = PersistentMemberInfo(
+            aliceIdentity.toAvro(),
+            oldAlice.memberProvidedContext.toAvro(),
+            oldAlice.mgmProvidedContext.toAvro()
+        )
+        memberListProcessor.onNext(newRecord, oldValue, memberList)
         assertEquals(
-            listOf(bob, charlie, updatedAlice),
+            listOf(updatedAlice),
             membershipGroupReadCache.memberListCache.get(aliceIdentity)
         )
     }
