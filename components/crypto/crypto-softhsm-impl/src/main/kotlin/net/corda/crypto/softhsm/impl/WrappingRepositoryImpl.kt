@@ -4,8 +4,6 @@ import java.time.Instant
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.WrappingRepository
-import net.corda.orm.utils.consume
-import net.corda.orm.utils.consumeTransaction
 import javax.persistence.EntityManagerFactory
 
 class WrappingRepositoryImpl(
