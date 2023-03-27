@@ -181,7 +181,7 @@ class UtxoFinalityFlowV1(
     private fun notarize(
         transaction: UtxoSignedTransactionInternal
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
-        val notary = transaction.notary
+        val notary = transaction.notaryName
 
         val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
 
@@ -264,7 +264,7 @@ class UtxoFinalityFlowV1(
     ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
             pluggableNotaryClientFlow.kotlin.primaryConstructor!!.call(
-                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notary)
+                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
             )
         })
     }

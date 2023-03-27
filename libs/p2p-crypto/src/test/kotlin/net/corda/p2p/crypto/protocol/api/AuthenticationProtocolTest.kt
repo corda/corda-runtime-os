@@ -156,8 +156,7 @@ class AuthenticationProtocolTest {
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            partyASessionKey.public,
-            signatureSpec
+            listOf(partyASessionKey.public to signatureSpec),
         )
         if (duplicateInvocations) {
             assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, partyACertificate, signingCallbackForA))
@@ -165,8 +164,9 @@ class AuthenticationProtocolTest {
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
                 aliceX500Name,
-                partyASessionKey.public,
-                signatureSpec
+                listOf(
+                    partyASessionKey.public to signatureSpec
+                ),
             )
         }
 
@@ -185,8 +185,7 @@ class AuthenticationProtocolTest {
         protocolInitiator.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            partyBSessionKey.public,
-            signatureSpec
+            listOf(partyBSessionKey.public to signatureSpec),
         )
         if (duplicateInvocations) {
             assertThat(protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, partyBCertificate, signingCallbackForB))
@@ -194,8 +193,7 @@ class AuthenticationProtocolTest {
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
                 aliceX500Name,
-                partyBSessionKey.public,
-                signatureSpec
+                listOf(partyBSessionKey.public to signatureSpec),
             )
         }
     }

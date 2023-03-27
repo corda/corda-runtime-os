@@ -4,7 +4,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
-import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.v1.FlowRestResource
@@ -30,6 +29,7 @@ import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
 import net.corda.rest.ws.DuplexChannel
@@ -295,7 +295,7 @@ class FlowRestResourceImplTest {
     fun `start flow event fails when not initialized`() {
         val flowRestResource = createFlowRestResource(false)
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -410,7 +410,7 @@ class FlowRestResourceImplTest {
             )
         }))
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -428,7 +428,7 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -443,7 +443,7 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -465,7 +465,7 @@ class FlowRestResourceImplTest {
             )
         }))
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
@@ -480,7 +480,7 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThrows<FlowRestResourceServiceException> {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 

@@ -288,7 +288,7 @@ private fun createMgmRegistrationContext(
     clusterInfo: ClusterInfo,
     groupPolicyConfig: GroupPolicyConfig
 ) = mapOf(
-    "corda.session.key.id" to sessionKeyId,
+    "corda.session.keys.0.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
     "corda.group.protocol.registration"
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
@@ -302,6 +302,6 @@ private fun createMgmRegistrationContext(
     "corda.group.tls.version" to groupPolicyConfig.tlsVersion,
     "corda.endpoints.0.connectionURL" to clusterInfo.p2p.uri.toString(),
     "corda.endpoints.0.protocolVersion" to clusterInfo.p2p.protocol,
-    "corda.group.truststore.tls.0" to caTrustRoot,
-    "corda.group.truststore.session.0" to caTrustRoot,
+    "corda.group.trustroot.tls.0" to caTrustRoot,
+    "corda.group.trustroot.session.0" to caTrustRoot,
 )

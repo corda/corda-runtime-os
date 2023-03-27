@@ -15,18 +15,17 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
-import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.GOST3410_GOST3411_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.SM2_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.ECNamedCurveTable
@@ -39,7 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.PublicKey
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -51,13 +50,11 @@ private val schemeMetadata = CipherSchemeMetadataImpl()
 /* Tests that need wrapping keys */
 class SoftCryptoServiceOperationsTests {
     companion object {
-        private val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
-        private val wrappingKeyStore = TestWrappingKeyStore(
-            coordinatorFactory,
+        private val wrappingRepository = TestWrappingRepository(
             ConcurrentHashMap(
                 listOf(
                     knownWrappingKeyAlias to WrappingKeyInfo(
@@ -70,7 +67,7 @@ class SoftCryptoServiceOperationsTests {
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
         private val cryptoService = makeSoftCryptoService(
-            wrappingKeyStore = wrappingKeyStore,
+            wrappingRepository = wrappingRepository,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
@@ -137,7 +134,7 @@ class SoftCryptoServiceOperationsTests {
     @Suppress("MaxLineLength")
     fun `should throw IllegalStateException when signing with unknown wrapping key for all supported schemes`(
         scheme: KeyScheme,
-        spec: SignatureSpec
+        spec: SignatureSpec,
     ) {
         fun verifySign(key: GeneratedWrappedKey, spec: SignatureSpec) {
             assertThrows<IllegalStateException> {
@@ -166,7 +163,7 @@ class SoftCryptoServiceOperationsTests {
     @MethodSource("deterministicSignatureSchemes")
     fun `should generate deterministic signatures for some algorithms`(
         fresh: Boolean,
-        codeName: String
+        codeName: String,
     ) {
         val scheme = schemeMetadata.schemes.first { it.codeName == codeName }
         val key = (if (fresh) softFreshKeys else softAliasedKeys).getValue(scheme)
@@ -185,7 +182,7 @@ class SoftCryptoServiceOperationsTests {
     @MethodSource("ecdsaSchemes")
     fun `should generate non deterministic signatures for ECDSA`(
         fresh: Boolean,
-        codeName: String
+        codeName: String,
     ) {
         val scheme = schemeMetadata.schemes.first { it.codeName == codeName }
         val key = (if (fresh) softFreshKeys else softAliasedKeys).getValue(scheme)
@@ -201,7 +198,7 @@ class SoftCryptoServiceOperationsTests {
 
     private fun makeSigningWrappedSpec(
         scheme: KeyScheme,
-        key: GeneratedWrappedKey
+        key: GeneratedWrappedKey,
     ): SigningWrappedSpec {
         val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         return SigningWrappedSpec(
@@ -305,7 +302,7 @@ class SoftCryptoServiceOperationsTests {
     @MethodSource("signingSchemes")
     fun `should fail to use aliased key generated for another wrapping key for all supported schemes`(
         scheme: KeyScheme,
-        spec: SignatureSpec
+        spec: SignatureSpec,
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
         cryptoService.createWrappingKey(anotherWrappingKey, true, defaultContext)
@@ -333,7 +330,7 @@ class SoftCryptoServiceOperationsTests {
     @MethodSource("signingSchemes")
     fun `should fail to use fresh key generated for another wrapping key for all supported schemes`(
         scheme: KeyScheme,
-        spec: SignatureSpec
+        spec: SignatureSpec,
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
         cryptoService.createWrappingKey(anotherWrappingKey, true, defaultContext)
@@ -379,8 +376,8 @@ class SoftCryptoServiceOperationsTests {
         val key2Missing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2Missing)
 
-        wrappingKeyStore.saveWrappingKey(alias1, info1)
-        wrappingKeyStore.saveWrappingKey(alias2, info2)
+        wrappingRepository.saveKey(alias1, info1)
+        wrappingRepository.saveKey(alias2, info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
@@ -400,15 +397,15 @@ class SoftCryptoServiceOperationsTests {
 
         val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
         assertEquals(expected1, key1FoundLater)
-        
-        assertThat(wrappingKeyStore.findCounter[alias1]).isEqualTo(1)
-        assertThat(wrappingKeyStore.findCounter[alias2]).isEqualTo(1)
+
+        assertThat(wrappingRepository.findCounter[alias1]).isEqualTo(1)
+        assertThat(wrappingRepository.findCounter[alias2]).isEqualTo(1)
     }
 
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
-        wrappingKeyStore.saveWrappingKey(
+        wrappingRepository.saveKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
@@ -424,7 +421,7 @@ class SoftCryptoServiceOperationsTests {
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
-        wrappingKeyStore.saveWrappingKey(
+        wrappingRepository.saveKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
@@ -449,11 +446,11 @@ class SoftCryptoServiceOperationsTests {
     fun `wrapping key store can find keys that have been stored`() {
         val storeAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
-        assertNull(wrappingKeyStore.findWrappingKey(storeAlias))
-        assertNull(wrappingKeyStore.findWrappingKey(unknownAlias))
-        wrappingKeyStore.saveWrappingKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
-        assertNotNull(wrappingKeyStore.findWrappingKey(storeAlias))
-        assertNull(wrappingKeyStore.findWrappingKey(unknownAlias))
+        assertNull(wrappingRepository.findKey(storeAlias))
+        assertNull(wrappingRepository.findKey(unknownAlias))
+        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
+        assertNotNull(wrappingRepository.findKey(storeAlias))
+        assertNull(wrappingRepository.findKey(unknownAlias))
     }
 
     @Test

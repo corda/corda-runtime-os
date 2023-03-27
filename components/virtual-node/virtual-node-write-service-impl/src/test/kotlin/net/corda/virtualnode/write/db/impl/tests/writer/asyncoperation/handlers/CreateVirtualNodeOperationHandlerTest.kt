@@ -1,10 +1,13 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
@@ -18,9 +21,11 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -28,6 +33,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
@@ -54,12 +60,14 @@ class CreateVirtualNodeOperationHandlerTest {
 
     private val recordFactory = mock<RecordFactory>()
     private val groupPolicyParser = mock<GroupPolicyParser>()
+    private val statusPublisher = mock<Publisher>()
 
     private val target = CreateVirtualNodeOperationHandler(
         createVirtualNodeService,
         virtualNodeDbFactory,
         recordFactory,
         groupPolicyParser,
+        statusPublisher,
         mock()
     )
 
@@ -198,5 +206,43 @@ class CreateVirtualNodeOperationHandlerTest {
         target.handle(timestamp, requestId, request)
 
         verify(createVirtualNodeService).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
+    }
+
+    @Test
+    fun `Handler publishes status updates on success`() {
+        val request = getValidRequest()
+        val records = argumentCaptor<List<Record<Any, Any>>>()
+
+        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
+        whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
+
+        target.handle(timestamp, requestId, request)
+
+        records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
+        records.secondValue.all { verifyRecord(it, requestId, "COMPLETED") }
+    }
+
+    @Test
+    fun `Handler publishes status updates on failure`() {
+        val request = getValidRequest()
+        val records = argumentCaptor<List<Record<Any, Any>>>()
+
+        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
+        whenever(createVirtualNodeService.validateRequest(any())).thenReturn("error")
+        whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
+
+        assertThrows<IllegalArgumentException> { target.handle(timestamp, requestId, request) }
+
+        records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
+        records.secondValue.all { verifyRecord(it, requestId, "UNEXPECTED_FAILURE") }
+    }
+
+    private fun verifyRecord(record: Record<*, *>, requestId: String, status: String): Boolean {
+        assertThat(record.topic).isEqualTo(VIRTUAL_NODE_OPERATION_STATUS_TOPIC)
+        assertThat(record.key).isEqualTo(requestId)
+        assertThat(record.value as VirtualNodeOperationStatus?).isNotNull
+        val statusMessage = record.value as VirtualNodeOperationStatus
+        assertThat(statusMessage.state).isEqualTo(status)
+        return true
     }
 }

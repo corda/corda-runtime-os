@@ -8,9 +8,9 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
@@ -63,9 +63,14 @@ data class UtxoSignedTransactionImpl(
         return wrappedWireTransaction.outputStateAndRefs
     }
 
-    override fun getNotary(): Party {
-        return wrappedWireTransaction.notary
+    override fun getNotaryName(): MemberX500Name {
+        return wrappedWireTransaction.notaryName
     }
+
+    override fun getNotaryKey(): PublicKey {
+        return wrappedWireTransaction.notaryKey
+    }
+
 
     override fun getTimeWindow(): TimeWindow {
         return wrappedWireTransaction.timeWindow
@@ -149,7 +154,7 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun verifyNotarySignatureAttached() {
-        if (!KeyUtils.isKeyInSet(notary.owningKey, signatures.map { it.by })) {
+        if (!KeyUtils.isKeyInSet(notaryKey, signatures.map { it.by })) {
             throw TransactionSignatureException(
                 id,
                 "There are no notary signatures attached to the transaction.",

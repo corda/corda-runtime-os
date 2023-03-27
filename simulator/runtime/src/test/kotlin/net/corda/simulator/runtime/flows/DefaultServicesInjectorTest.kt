@@ -22,7 +22,9 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -63,6 +65,8 @@ class DefaultServicesInjectorTest {
             assertNotNull(flow.signatureVerificationService)
             assertNotNull(flow.signatureSpecService)
             assertNotNull(flow.consensualLedgerService)
+            assertNotNull(flow.utxoLedgerService)
+            assertNotNull(flow.notaryLookup)
         }
     }
 
@@ -168,6 +172,10 @@ class DefaultServicesInjectorTest {
             lateinit var signingService: SigningService
             @CordaInject
             lateinit var signatureVerificationService: DigitalSignatureVerificationService
+            @CordaInject
+            lateinit var utxoLedgerService: UtxoLedgerService
+            @CordaInject
+            lateinit var notaryLookup: NotaryLookup
 
             @Suspendable
             override fun call(session: FlowSession) {}
@@ -197,6 +205,8 @@ class DefaultServicesInjectorTest {
             assertNotNull(responder.signatureVerificationService)
             assertNotNull(responder.signatureSpecService)
             assertNotNull(responder.consensualLedgerService)
+            assertNotNull(responder.utxoLedgerService)
+            assertNotNull(responder.notaryLookup)
         }
     }
 
@@ -223,6 +233,10 @@ class DefaultServicesInjectorTest {
             lateinit var signingService: SigningService
             @CordaInject
             lateinit var signatureVerificationService: DigitalSignatureVerificationService
+            @CordaInject
+            lateinit var utxoLedgerService: UtxoLedgerService
+            @CordaInject
+            lateinit var notaryLookup: NotaryLookup
 
             @Suspendable
             override fun call(requestBody: ClientRequestBody): String {
@@ -255,6 +269,8 @@ class DefaultServicesInjectorTest {
             assertNotNull(flow.signatureVerificationService)
             assertNotNull(flow.signatureSpecService)
             assertNotNull(flow.consensualLedgerService)
+            assertNotNull(flow.utxoLedgerService)
+            assertNotNull(flow.notaryLookup)
         }
     }
 

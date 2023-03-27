@@ -2,12 +2,13 @@ package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderInternal
 import net.corda.ledger.utxo.test.UtxoLedgerTest
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -74,7 +75,8 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
         val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
-        assertThat(predicate.test(utxoNotaryExample)).isTrue
+        assertThat(predicate.test(notaryX500Name)).isTrue
+        assertThat(predicate.test(publicKeyExample)).isTrue
         assertThat(predicate.test(utxoTimeWindowExample)).isFalse
     }
 
@@ -91,7 +93,8 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
         val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
-        assertThat(predicate.test(utxoNotaryExample)).isFalse
+        assertThat(predicate.test(notaryX500Name)).isFalse
+        assertThat(predicate.test(publicKeyExample)).isFalse
         assertThat(predicate.test(utxoTimeWindowExample)).isTrue
     }
 
@@ -109,7 +112,8 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
         val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
-        assertThat(predicate.test(utxoNotaryExample)).isTrue
+        assertThat(predicate.test(notaryX500Name)).isTrue
+        assertThat(predicate.test(publicKeyExample)).isTrue
         assertThat(predicate.test(utxoTimeWindowExample)).isTrue
     }
 

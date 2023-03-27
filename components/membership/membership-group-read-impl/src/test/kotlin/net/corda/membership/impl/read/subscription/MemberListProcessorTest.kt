@@ -13,7 +13,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -28,6 +27,7 @@ import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -85,7 +85,7 @@ class MemberListProcessorTest {
         private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = memberInfoFactory.create(
             sortedMapOf(
                 PARTY_NAME to x500Name,
-                PARTY_SESSION_KEY to knownKeyAsString,
+                String.format(PARTY_SESSION_KEYS, 0) to knownKeyAsString,
                 GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                 *convertPublicKeys().toTypedArray(),
                 *convertEndpoints().toTypedArray(),

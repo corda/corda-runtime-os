@@ -86,13 +86,13 @@ class VersioningFlow<T>(
             )
         }
         when {
-            log.isDebugEnabled -> log.debug(
-                "Using ${agreedVersionedFlow::class.java.name} due to agreed platform version $agreedVersion."
-            )
             log.isTraceEnabled -> log.trace(
                 "Using ${agreedVersionedFlow::class.java.name} due to agreed platform version $agreedVersion. " +
                         "Local platform version $localPlatformVersion. Peer platform versions " +
                         "${counterpartyPlatformVersions.mapKeys { (name, _) -> name }}."
+            )
+            log.isDebugEnabled -> log.debug(
+                "Using ${agreedVersionedFlow::class.java.name} due to agreed platform version $agreedVersion."
             )
         }
         return flowEngine.subFlow(agreedVersionedFlow)
