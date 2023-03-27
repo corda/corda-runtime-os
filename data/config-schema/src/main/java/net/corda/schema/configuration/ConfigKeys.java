@@ -42,7 +42,7 @@ public final class ConfigKeys {
     //
     // For instance:
     //   - EncryptionSecretsService in corda-runtime-os needs SECRETS_PASSPHRASE and SECRETS_SALT
-    //   - The Hashicorp Vault secrets add on needs SECRETS_SERVER_ADDRESS, SECRETS_SERVER_ADDRESS and
+    //   - The HashiCorp Vault secrets add on needs SECRETS_SERVER_ADDRESS, SECRETS_SERVER_ADDRESS and
     //     SECRETS_CREATED_SECRET_PATH
     //
     public static final String SECRETS_TYPE = "type";
@@ -53,6 +53,17 @@ public final class ConfigKeys {
     public static final String SECRETS_CREATED_SECRET_PATH = "createdSecretPath";
     public static final String WORKSPACE_DIR = "dir.workspace";
     public static final String TEMP_DIR = "dir.tmp";
+    // Optional extra Secrets Service configuration to control refresh and backoff durations in seconds
+    public static final String SECRET_REFRESH_PERIOD = "refreshPeriod";
+    public static final String SECRET_RETRY_BACKOFF = "retryBackoff";
+
+    // Secret declaration parent, used where values in the Config are to be read as secrets
+    // e.g. {"configSecret":{<secrets service specific secret config>}}
+    public static final String SECRET_KEY = "configSecret";
+    // HashiCorp Vault specific secret configuration properties, would be declared under the SECRET_KEY parent
+    public static final String SECRET_KEY_VAULT_PATH = "vaultPath";
+    public static final String SECRET_KEY_VAULT_KEY = "vaultKey";
+
 
     // Sandbox
     public static final String SANDBOX_CACHE_SIZE = "cache.size";
