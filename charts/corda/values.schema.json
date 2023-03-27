@@ -240,8 +240,8 @@
             "examples": [{}]
         },
         "tolerations": {
-            "type": "object",
-            "default": {},
+            "type": "array",
+            "default": [],
             "title": "custom tolerations for all workers",
             "required": [
                 "key",

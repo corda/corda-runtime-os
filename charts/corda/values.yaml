@@ -55,11 +55,14 @@ serviceAccount:
 # -- extra annotations (applied to all workers only)
 annotations: {}
 
-# -- tolerations to schedual pods on nodes with matiching taints 
+# tolerations to schedual pods on nodes with matiching taints 
 tolerations:
-  key: ""
-  operator: "Equal"
+- key: ""
+  # -- toleration operator
+  operator: ""
+  # -- toleration value
   value: ""
+  # -- toleration effect
   effect: ""
 
 # Database configuration

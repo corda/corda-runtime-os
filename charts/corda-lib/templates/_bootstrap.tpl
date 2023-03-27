@@ -19,7 +19,7 @@ spec:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
-      {{- include "corda.tolerations" . | nindent 6 }}
+      {{- include "corda.tolerations" $ | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       securityContext:
         runAsUser: 10001

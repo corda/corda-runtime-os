@@ -78,14 +78,16 @@ securityContext:
 tolerations for node taints
 */}}
 {{- define "corda.tolerations" -}}
-{{- if .Values.tolerations.key }}
+{{- if .Values.tolerations }}
 tolerations:
-- key: {{ .Values.tolerations.key }}
-  operator: {{ required "Must specify tolerations.operator" .Values.tolerations.operator }}
-  effect: {{ required "Must specify tolerations.effect" .Values.tolerations.effect }}
-  {{- if eq .Values.tolerations.operator "Equal" }}
-  value: {{ required "Must specify tolerations.value" .Values.tolerations.value }}
+{{- range .Values.tolerations }}
+- key: {{ .key }}
+  operator: {{ default "Equal" .operator }}
+  effect: {{ required "Must specify tolerations.effect" .effect }}
+  {{- if not (eq .operator "Exist") }}
+  value: {{ required "Must specify tolerations.value" .value }}
   {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 
