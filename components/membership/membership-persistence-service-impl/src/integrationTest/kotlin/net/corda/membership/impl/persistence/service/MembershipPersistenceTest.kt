@@ -120,7 +120,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
 
