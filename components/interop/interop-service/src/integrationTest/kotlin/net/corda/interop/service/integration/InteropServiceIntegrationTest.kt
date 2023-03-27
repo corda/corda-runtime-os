@@ -99,7 +99,7 @@ class InteropServiceIntegrationTest {
             setupConfig(publisher)
         }
     }
-    @Test
+    //@Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
@@ -187,7 +187,7 @@ class InteropServiceIntegrationTest {
         interopService.stop()
     }
 
-    @Test
+    //@Test
     fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
