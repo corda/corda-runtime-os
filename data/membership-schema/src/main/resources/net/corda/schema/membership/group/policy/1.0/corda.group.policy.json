@@ -78,8 +78,7 @@
             "protocolParameters": {
               "$ref": "#/$defs/protocolParameters"
             }
-          },
-          "additionalProperties": false
+          }
         },
         "else": {
           "$comment": "Properties for a group policy generated for a member by an MGM",
@@ -100,8 +99,7 @@
             "protocolParameters": {
               "$ref": "#/$defs/protocolParameters"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "else": {
@@ -117,8 +115,7 @@
           "protocolParameters": {
             "$ref": "#/$defs/mgmProtocolParameters"
           }
-        },
-        "additionalProperties": false
+        }
       }
     },
     {
@@ -232,8 +229,7 @@
           "description": "The client certificate subject (valid only in mutual TLS type).",
           "type": "string"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "protocolParameters": {
       "description": "All parameters required to perform the registration or synchronisation protocols.",
@@ -264,8 +260,7 @@
                 "type": "object"
               }
             }
-          },
-          "additionalProperties": false
+          }
         }
       }
     },
