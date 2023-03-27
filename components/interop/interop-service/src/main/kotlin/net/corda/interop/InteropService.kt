@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -60,7 +61,8 @@ class InteropService @Activate constructor(
         private const val GROUP_NAME = "interop_alias_translator"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<InteropService>(
+        DependentComponents.of(::configurationReadService), ::eventHandler)
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
