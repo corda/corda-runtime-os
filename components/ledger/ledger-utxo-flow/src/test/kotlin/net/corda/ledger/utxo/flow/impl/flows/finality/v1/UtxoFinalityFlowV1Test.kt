@@ -453,8 +453,6 @@ class UtxoFinalityFlowV1Test {
         )
     }
 
-    // TODO actual check that "a signature from a notary that is not part of the notary service composite key throws an error"
-    //  needs to be ported as a unit test for `UtxoSignedTransactionImpl`. This check will be mocked for the purposes of this test.
     @Test
     fun `receiving a signature from a notary that is not part of the notary service composite key throws an error`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
