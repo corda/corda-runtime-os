@@ -19,7 +19,7 @@ class UtxoFindTransactionRequestHandler(
 
     override fun execute(): List<Record<*, *>> {
         // Find the transaction
-        val transactionContainer = persistenceService.findTransaction(
+        val (transactionContainer, status) = persistenceService.findTransaction(
             findTransaction.id,
             findTransaction.transactionStatus.toTransactionStatus()
         )
@@ -28,6 +28,7 @@ class UtxoFindTransactionRequestHandler(
         return listOf(
             utxoOutputRecordFactory.getFindTransactionSuccessRecord(
                 transactionContainer,
+                status,
                 externalEventContext,
                 serializationService
             )

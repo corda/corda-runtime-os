@@ -80,11 +80,11 @@ class UtxoDemoFlow : ClientStartableFlow {
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 
             return try {
-                val finalizedSignedTransaction = utxoLedgerService.finalize(
+                val finalizationResult = utxoLedgerService.finalize(
                     signedTransaction,
                     sessions
                 )
-                finalizedSignedTransaction.id.toString().also {
+                finalizationResult.transaction.id.toString().also {
                     log.info("Success! Response: $it")
                 }
 
@@ -112,7 +112,7 @@ class UtxoResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
+            val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
                 val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
                 if (state.testField == "fail") {
                     log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
@@ -120,7 +120,7 @@ class UtxoResponderFlow : ResponderFlow {
                 }
                 log.info("Verified the transaction- ${ledgerTransaction.id}")
             }
-            log.info("Finished responder flow - ${finalizedSignedTransaction.id}")
+            log.info("Finished responder flow - ${finalizationResult.transaction.id}")
         } catch (e: Exception) {
             log.warn("Exceptionally finished responder flow", e)
         }
