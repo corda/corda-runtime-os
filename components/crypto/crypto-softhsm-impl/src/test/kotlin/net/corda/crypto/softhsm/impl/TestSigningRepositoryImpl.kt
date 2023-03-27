@@ -1,13 +1,11 @@
 package net.corda.crypto.softhsm.impl
 
-import com.typesafe.config.ConfigFactory
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.softhsm.cryptoRepositoryFactory
+import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -20,41 +18,40 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 
-class TestCryptoRepositoryFactory {
+class TestSigningRepositoryImpl {
 
-    private val config = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("""
-        signingService {
-          cache {
-            expireAfterAccessMins = 3
-            maximumSize = 2
-          }
-        }
-    """.trimIndent()))
-
+    @Suppress("MaxLineLength")
     @Test
-    fun `DML to Corda crypto DB for Crypto tenant and P2P`() {
+    fun `Appropriate use of DB connection manager that sets up DML connection when creating signing repository for Crypto tenant and P2P`() {
+        // Arguably this is really tessting getEntityManagerFactory so should be moved to a new test class
         val entityManagerFactory = mock<EntityManagerFactory>()
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
         }
-        val repo = cryptoRepositoryFactory(
-            CryptoTenants.CRYPTO,
-            config,
-            dbConnectionManager,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock()
-        )
-        assertThat(repo::class.simpleName).isEqualTo("V1CryptoRepositoryImpl")
-        verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-        verifyNoMoreInteractions(dbConnectionManager)
-        cryptoRepositoryFactory(CryptoTenants.P2P, config, dbConnectionManager, mock(), mock(), mock(), mock(), mock())
-        verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-        verifyNoMoreInteractions(dbConnectionManager)
-        repo.close()
+        val tenant = CryptoTenants.CRYPTO
+        makeMockSigningRepository(tenant, dbConnectionManager).use { repo ->
+            assertThat(repo::class.simpleName).isEqualTo("SigningRepositoryImpl")
+            verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+            verifyNoMoreInteractions(dbConnectionManager)
+            makeMockSigningRepository(CryptoTenants.P2P, dbConnectionManager)
+            verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+            verifyNoMoreInteractions(dbConnectionManager)
+        }
         verify(entityManagerFactory, times(0)).close()
+    }
+
+    private fun makeMockSigningRepository(
+        tenant: String,
+        dbConnectionManager: DbConnectionManager,
+    ): SigningRepositoryImpl {
+        val repo = SigningRepositoryImpl(
+            getEntityManagerFactory(tenant, dbConnectionManager, mock(), mock()),
+            tenantId = tenant,
+            keyEncodingService = mock(),
+            digestService = mock(),
+            layeredPropertyMapFactory = mock()
+        )
+        return repo
     }
 
     @Test
@@ -75,29 +72,33 @@ class TestCryptoRepositoryFactory {
             on { get(any()) } doReturn mock()
         }
         verifyNoMoreInteractions(dbConnectionManager)
-        cryptoRepositoryFactory(
-            CryptoTenants.P2P,
-            config,
-            dbConnectionManager,
-            jpaEntitiesRegistry,
-            virtualNodeInfoReadService,
-            mock(),
-            mock(),
-            mock(),
+        SigningRepositoryImpl(
+            entityManagerFactory = getEntityManagerFactory(
+                CryptoTenants.P2P,
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry
+            ),
+            tenantId = CryptoTenants.P2P,
+            keyEncodingService = mock(),
+            digestService = mock(),
+            layeredPropertyMapFactory = mock(),
         ).use {
             verify(sharedEntityManagerFactory, times(0)).close()
         }
         verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         verifyNoMoreInteractions(dbConnectionManager)
-        cryptoRepositoryFactory(
-            "123456789012",
-            config,
-            dbConnectionManager,
-            jpaEntitiesRegistry,
-            virtualNodeInfoReadService,
-            mock(),
-            mock(),
-            mock(),
+        SigningRepositoryImpl(
+            entityManagerFactory = getEntityManagerFactory(
+                "123456789012",
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry,
+            ),
+            tenantId = "123456789012",
+            keyEncodingService = mock(),
+            digestService = mock(),
+            layeredPropertyMapFactory = mock(),
         ).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
