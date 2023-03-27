@@ -1,6 +1,5 @@
 package net.corda.flow.fiber
 
-import co.paralleluniverse.fibers.CustomFiberWriter
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -13,7 +12,6 @@ import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.Serializable
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -25,8 +23,6 @@ class FlowFiberImpl(
     override val flowLogic: FlowLogicAndArgs,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber, Interruptable {
-
-    private fun interface CordaCustomFiberWriter : CustomFiberWriter, Serializable
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -130,7 +126,7 @@ class FlowFiberImpl(
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         removeCurrentSandboxGroupContext()
-        parkAndCustomSerialize(CordaCustomFiberWriter { _ ->
+        parkAndCustomSerialize { _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
@@ -141,7 +137,7 @@ class FlowFiberImpl(
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
-        })
+        }
 
         resetLoggingContext()
         setCurrentSandboxGroupContext()
