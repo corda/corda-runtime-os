@@ -110,12 +110,9 @@ class ConsensualFinalityFlowV1(
         return transaction to signaturesReceivedFromSessions
     }
 
-    @Suppress("unused_parameter")
     @Suspendable
     private fun verifyAllReceivedSignatures(
         transaction: ConsensualSignedTransactionInternal,
-        // TODO This is not not passed in to `transaction.verifySignatures()`
-        //  Only used for logging
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
         log.debug { "Verifying all signatures for transaction $transactionId." }
@@ -123,19 +120,15 @@ class ConsensualFinalityFlowV1(
         try {
             transaction.verifySignatures()
         } catch (e: TransactionMissingSignaturesException) {
-            // TODO The below logging needs to be moved in the transaction or we switch to logging key ids,
-            //  which might not be a good idea since they might be created with different hash algorithms
-            //  so we might end up with a set of mix hash algorithm ids.
-//            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
-//                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-//                        signatures.map { it.by.encoded }
-//            }
-//            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
-//                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
-//            } else {
-//                "[]"
-//            }
-            val counterpartiesToSignatoriesMessage = "[]"
+            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +
+                        signatures.map { it.by }
+            }
+            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+            } else {
+                "[]"
+            }
             val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
                     "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"

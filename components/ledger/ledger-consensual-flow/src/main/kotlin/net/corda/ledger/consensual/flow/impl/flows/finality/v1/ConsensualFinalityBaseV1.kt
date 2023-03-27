@@ -33,15 +33,12 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
     ) {
         try {
             transaction.verifySignature(signature)
-            // TODO The below logging needs to be moved in the transaction
-//            log.debug {
-//                "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id"
-//            }
+            log.debug {
+                "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id"
+            }
         } catch (e: Exception) {
-            // TODO The below logging needs to be moved in the transaction
-//            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
-//                    "transaction ${transaction.id}. Message: ${e.message}"
-            val message = ""
+            val message = "Failed to verify transaction's signature($signature) by ${signature.by} (key id) for " +
+                    "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
