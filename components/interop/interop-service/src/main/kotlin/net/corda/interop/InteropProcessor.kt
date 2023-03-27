@@ -6,10 +6,15 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.interop.InteropMessage
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.service.InteropFacadeToFlowMapperService
+import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.MemberInfoExtension
@@ -17,9 +22,15 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+//TODO import commented out - see TODO adding FLOW_CONFIG below:
+//import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
@@ -45,7 +56,7 @@ class InteropProcessor(
 
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
-    ): List<Record<*, *>> = events.mapNotNull { (_, _, value) ->
+    ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
         val sessionEvent = value?.payload
         if (sessionEvent == null) {
             logger.warn("Dropping message with empty payload")
@@ -59,22 +70,57 @@ class InteropProcessor(
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
             val destinationAlias = destinationIdentity
-            println(destinationAlias)
-            null
+
+            val realHoldingIdentity = //InteropAliasProcessor.getRealHoldingIdentity(
+                //getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda())
+            //) ?:
+                InteropAliasProcessor.getRealHoldingIdentity(
+                destinationAlias.toCorda().x500Name.toString()
+            ) //TODO drop if null branch after getRealHoldingIdentityFromAliasMapping stop returning null + generali fix of broken CORE-10427
+
+            if (realHoldingIdentity == null) {
+                logger.info("Could not find a holding identity for alias $destinationAlias.")
+                return@mapNotNull null
+            }
+            val facadeRequest = when (val sessionPayload = sessionEvent.payload) {
+                is SessionInit -> InteropMessageTransformer.getFacadeRequest(
+                    interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
+                )
+                is SessionData -> InteropMessageTransformer.getFacadeRequest(sessionPayload.payload as InteropMessage)
+                else -> null
+            }
+
+            if (facadeRequest == null) {
+                logger.info("Pass-through event ${sessionEvent::class.java} without FacadeRequest")
+            } else {
+                logger.info(
+                    "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
+                            " Key: $key, facade request: $facadeRequest."
+                )
+                val flowName = facadeToFlowMapperService.getFlowName(
+                    realHoldingIdentity, facadeRequest.facadeId.toString(),
+                    facadeRequest.methodName
+                )
+                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
+                // this change is required for CORE-10426 Support For Façade Handlers
+                logger.info("Flow name associated with facade request : $flowName")
+            }
+            Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
         } else { //MessageDirection.OUTBOUND
             //TODO taken from FlowMapperHelper function generateAppMessage
-            val header = AuthenticatedMessageHeader(
-                destinationIdentity,
-                sourceIdentity,
-                //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
-                Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
-                sessionEvent.sessionId + "-" + UUID.randomUUID(),
-                "",
-                Constants.FLOW_SESSION_SUBSYSTEM,
-                MembershipStatusFilter.ACTIVE
+            Record(
+                P2P_OUT_TOPIC, sessionEvent.sessionId,
+                AppMessage(AuthenticatedMessage(AuthenticatedMessageHeader(
+                    destinationIdentity,
+                    sourceIdentity,
+                    //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
+                    Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                    sessionEvent.sessionId + "-" + UUID.randomUUID(),
+                    "",
+                    Constants.FLOW_SESSION_SUBSYSTEM,
+                    MembershipStatusFilter.ACTIVE
+                ), ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
             )
-            println(header)
-            null
         }
     }
 
