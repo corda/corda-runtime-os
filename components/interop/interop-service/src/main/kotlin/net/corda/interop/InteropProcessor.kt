@@ -7,6 +7,8 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.interop.InteropMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,6 +20,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("LongParameterList")
 class InteropProcessor(
@@ -58,7 +62,18 @@ class InteropProcessor(
             println(destinationAlias)
             null
         } else { //MessageDirection.OUTBOUND
-            println(sourceIdentity)
+            //TODO taken from FlowMapperHelper function generateAppMessage
+            val header = AuthenticatedMessageHeader(
+                destinationIdentity,
+                sourceIdentity,
+                //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
+                Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                sessionEvent.sessionId + "-" + UUID.randomUUID(),
+                "",
+                Constants.FLOW_SESSION_SUBSYSTEM,
+                MembershipStatusFilter.ACTIVE
+            )
+            println(header)
             null
         }
     }
