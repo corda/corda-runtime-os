@@ -566,7 +566,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when an initiator hello is received, a responder hello is return`() {
+    fun `when there are multiple locally hosted identities, the member info with latest serial is used`() {
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
