@@ -72,7 +72,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     }
 
     @Test
-    fun `receiving notary signature with key id not matching notary key or notary key leaves throws`() {
+    fun `receiving notary signature with key id not matching notary key throws`() {
         val notExistingNotaryKey = kpg.generateKeyPair().public
         val notMatchingSignatureKeyId = getSignatureWithMetadataExample(notExistingNotaryKey)
         assertThrows<CordaRuntimeException> {
