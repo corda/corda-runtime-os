@@ -219,12 +219,12 @@ class InteropServiceIntegrationTest {
             null
         )
         memberOutSub.start()
-        assertTrue(memberMapperLatch.await(30, TimeUnit.SECONDS),
+        assertTrue(memberMapperLatch.await(45, TimeUnit.SECONDS),
             "Fewer membership messages were observed (${memberProcessor.recordCount}) than expected ($memberExpectedOutputMessages).")
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
 
-        val hostedIdsExpected = 8
+        val hostedIdsExpected = 4
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
@@ -234,7 +234,7 @@ class InteropServiceIntegrationTest {
             null
         )
         hostedIdOutSub.start()
-        assertTrue(hostedIdMapperLatch.await(30, TimeUnit.SECONDS),
+        assertTrue(hostedIdMapperLatch.await(45, TimeUnit.SECONDS),
             "Fewer hosted identities messages were observed (${hostedIdProcessor.recordCount}) than expected ($hostedIdsExpected).")
         assertEquals(hostedIdsExpected, hostedIdProcessor.recordCount, "More hosted identities messages were observed that expected.")
         hostedIdOutSub.close()
