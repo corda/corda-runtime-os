@@ -35,7 +35,6 @@ class SigningServiceImplTest {
         whenever(keyEncodingService.encodeAsByteArray(publicKey)).thenReturn(encodedPublicKeyBytes)
         whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), captor.capture()))
             .thenReturn(signature)
-        // the below will be changed to signatureWithKeyId
         val signatureWithKeyId = DigitalSignature.WithKeyId(signature.by.fullIdHash(), signature.bytes)
         assertEquals(signatureWithKeyId, signingService.sign(byteArrayOf(1), publicKey, mock()))
         assertEquals(encodedPublicKeyBytes, captor.firstValue.encodedPublicKeyBytes)
