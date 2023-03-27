@@ -923,15 +923,12 @@ class UtxoFinalityFlowV1Test {
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionMissingSignaturesException::class.java)
-
-//        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-//            .isInstanceOf(TransactionMissingSignaturesException::class.java)
-//            .hasMessageContainingAll(
-//                "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
-//                "The following counterparties provided signatures while finalizing the transaction:",
-//                "$ALICE provided 2 signature(s) to satisfy the signatories (encoded) ${aliceSignatures.map { it.by.encoded }}",
-//                "$BOB provided 0 signature(s) to satisfy the signatories (encoded) []"
-//            )
+            .hasMessageContainingAll(
+                "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}. ",
+                "The following counterparties provided signatures while finalizing the transaction:",
+                "$ALICE provided 2 signature(s) to satisfy the signatories (key ids) ${aliceSignatures.map { it.by }}",
+                "$BOB provided 0 signature(s) to satisfy the signatories (key ids) []"
+            )
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs).addSignature(signatureAlice2)

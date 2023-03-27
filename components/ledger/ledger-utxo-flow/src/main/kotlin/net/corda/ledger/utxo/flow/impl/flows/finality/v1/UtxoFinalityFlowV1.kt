@@ -138,17 +138,15 @@ class UtxoFinalityFlowV1(
         try {
             transaction.verifySignatorySignatures()
         } catch (e: TransactionMissingSignaturesException) {
-            // TODO The below logging needs to be moved in the transaction
-//            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
-//                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-//                        signatures.map { it.by.encoded }
-//            }
-//            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
-//                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
-//            } else {
-//                "[]"
-//            }
-            val counterpartiesToSignatoriesMessage = "[]"
+            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +
+                        signatures.map { it.by }
+            }
+            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+            } else {
+                "[]"
+            }
             val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
                     "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
