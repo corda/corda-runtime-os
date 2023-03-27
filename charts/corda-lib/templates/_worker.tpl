@@ -195,6 +195,11 @@ spec:
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
           {{- end }}
+          {{- if $optionalArgs.restTlsSecret }}
+          - "-rtls.crt.path=/rest/tls/tls.crt"
+          - "-rtls.key.path=/rest/tls/tls.key"
+          - "-rtls.ca.crt.path=/rest/tls/ca.crt"
+          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end }}
@@ -209,12 +214,17 @@ spec:
             name: "jaas-conf"
             readOnly: true
           {{- end }}
+          {{- if $optionalArgs.restTlsSecret }}
+          - mountPath: "/rest/tls"
+            name: "resttls"
+            readOnly: true
+          {{- end }}
           {{- if $.Values.dumpHostPath }}
           - mountPath: /dumps
             name: dumps
             subPathExpr: $(K8S_POD_NAME)
           {{- end }}
-          {{ include "corda.log4jVolumeMount" $ | nindent 10 }}
+          {{- include "corda.log4jVolumeMount" $ | nindent 10 }}
         ports:
         {{- if .debug.enabled }}
           - name: debug
@@ -327,6 +337,18 @@ spec:
               - key: {{ $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
                 path: "ca.crt"
         {{- end -}}
+        {{- if $optionalArgs.restTlsSecret }}
+        - name: resttls
+          secret:
+            secretName: {{ include "corda.restTlsSecretName" $ | quote }}
+            items:
+              - key: {{ include "corda.restTlsCrtSecretKey" $ | quote }}
+                path: "tls.crt"
+              - key: {{ include "corda.restTlsKeySecretKey" $ | quote }}
+                path: "tls.key"
+              - key: {{ include "corda.restTlsCaSecretKey" $ | quote }}
+                path: "ca.crt"
+        {{- end -}}
         {{- if $.Values.kafka.sasl.enabled  }}
         - name: jaas-conf
           emptyDir: {}
@@ -337,7 +359,7 @@ spec:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
         {{- end }}
-        {{ include "corda.log4jVolume" $ | nindent 8 }}
+        {{- include "corda.log4jVolume" $ | nindent 8 }}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
