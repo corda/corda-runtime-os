@@ -5,9 +5,9 @@ import java.time.Duration
 
 data class GatewayConfiguration(
     /**
-     * The gateway configurations
+     * The gateway servers configurations
      */
-    val servers: Collection<GatewayServerConfiguration>,
+    val serversConfiguration: Collection<GatewayServerConfiguration>,
     /**
      * TLS configuration used for establishing the HTTPS connections
      */
@@ -79,7 +79,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         ConnectionConfiguration()
     }
     return GatewayConfiguration(
-        servers = this.getConfigList("servers").map {
+        serversConfiguration = this.getConfigList("serversConfiguration").map {
             it.toServerConfiguration()
         },
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),

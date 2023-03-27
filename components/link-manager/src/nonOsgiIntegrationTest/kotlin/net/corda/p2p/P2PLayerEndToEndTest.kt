@@ -530,7 +530,7 @@ class P2PLayerEndToEndTest {
                 )
             )
             return ConfigFactory.empty()
-                .withValue("servers", servers)
+                .withValue("serversConfiguration", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(sslConfig.tlsType.toString()))

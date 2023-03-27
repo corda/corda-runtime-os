@@ -14,7 +14,6 @@ import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -61,16 +60,25 @@ internal class ReconfigurableHttpServer(
             }
             @Suppress("TooGenericExceptionCaught")
             try {
-                val newServersConfiguration = newConfiguration.servers
-                if (newServersConfiguration.isEmpty()) {
-                    throw CordaRuntimeException("No servers defined!")
-                }
-                newServersConfiguration.groupBy {
+                val newServersConfiguration = newConfiguration.serversConfiguration.groupBy {
                     it.hostAddress to it.hostPort
-                }.forEach { (address, configurations) ->
-                    if (configurations.size != 1) {
-                        throw CordaRuntimeException("Can not have more than one server listening to: $address")
+                }.values
+                    .map {
+                        val first = it.first()
+                        val others = it.drop(1)
+                            .map { config ->
+                                config.urlPath
+                            }
+                        if (others.isNotEmpty()) {
+                            logger.warn(
+                                "Can not define two servers on ${first.hostAddress}:${first.hostPort}." +
+                                    " Will ignore $others and use only ${first.urlPath}"
+                            )
+                        }
+                        first
                     }
+                if (newServersConfiguration.isEmpty()) {
+                    throw IllegalArgumentException("No servers defined!")
                 }
                 val mutualTlsTrustManager = createTrustManagerIfNeeded(
                     newConfiguration.sslConfig,
@@ -81,25 +89,28 @@ internal class ReconfigurableHttpServer(
                     !newServersConfiguration.contains(configuration)
                 }
                 httpServers.keys -= serversToStop.keys
-                serversToStop.values.forEach {
-                    it.close()
-                }
-                newServersConfiguration.forEach { configuration ->
-                    httpServers.compute(configuration) { _, oldServer ->
-                        oldServer?.close()
-                        logger.info(
-                            "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                                "${configuration.hostAddress}:${configuration.hostPort}${configuration.urlPath}"
-                        )
-                        HttpServer(
-                            listener,
-                            newConfiguration.maxRequestSize,
-                            configuration,
-                            commonComponents.dynamicKeyStore.serverKeyStore,
-                            mutualTlsTrustManager,
-                        ).also {
-                            it.start()
+                try {
+                    newServersConfiguration.forEach { configuration ->
+                        httpServers.compute(configuration) { _, oldServer ->
+                            oldServer?.close()
+                            logger.info(
+                                "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
+                                    "${configuration.hostAddress}:${configuration.hostPort}${configuration.urlPath}"
+                            )
+                            HttpServer(
+                                listener,
+                                newConfiguration.maxRequestSize,
+                                configuration,
+                                commonComponents.dynamicKeyStore.serverKeyStore,
+                                mutualTlsTrustManager,
+                            ).also {
+                                it.start()
+                            }
                         }
+                    }
+                } finally {
+                    serversToStop.values.forEach {
+                        it.close()
                     }
                 }
                 configUpdateResult.complete(Unit)

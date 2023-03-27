@@ -52,7 +52,7 @@ class ReconfigurableHttpServerTest {
         urlPath = "/",
     )
     private val configuration = GatewayConfiguration(
-        servers = listOf(
+        serversConfiguration = listOf(
             serverConfiguration,
         ),
         sslConfig = SslConfiguration(
@@ -68,7 +68,7 @@ class ReconfigurableHttpServerTest {
         on { hostPort } doThrow(badConfigurationException)
     }
     private val badConfiguration = mock<GatewayConfiguration> {
-        on { servers } doReturn listOf(badServerConfiguration)
+        on { serversConfiguration } doReturn listOf(badServerConfiguration)
     }
 
     private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
@@ -126,8 +126,8 @@ class ReconfigurableHttpServerTest {
     @Test
     fun `applyNewConfiguration will stop the previous server`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-        val servers = configuration.servers.map { it.copy(hostAddress = "aaa") }
-        configHandler.applyNewConfiguration(configuration.copy(servers = servers), configuration, resourcesHolder)
+        val servers = configuration.serversConfiguration.map { it.copy(hostAddress = "aaa") }
+        configHandler.applyNewConfiguration(configuration.copy(serversConfiguration = servers), configuration, resourcesHolder)
 
         verify(serverMock.constructed().first()).close()
         verify(serverMock.constructed()[1]).start()
@@ -136,8 +136,8 @@ class ReconfigurableHttpServerTest {
     @Test
     fun `applyNewConfiguration will stop the previous server in the same address`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-        val servers = configuration.servers.map { it.copy(urlPath = "/tests") }
-        configHandler.applyNewConfiguration(configuration.copy(servers = servers), configuration, resourcesHolder)
+        val servers = configuration.serversConfiguration.map { it.copy(urlPath = "/tests") }
+        configHandler.applyNewConfiguration(configuration.copy(serversConfiguration = servers), configuration, resourcesHolder)
 
         verify(serverMock.constructed().first()).close()
         verify(serverMock.constructed()[1]).start()
@@ -146,8 +146,8 @@ class ReconfigurableHttpServerTest {
     @Test
     fun `applyNewConfiguration will stop the previous server in different port`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-        val servers = configuration.servers.map { it.copy(hostPort = 13) }
-        configHandler.applyNewConfiguration(configuration.copy(servers = servers), configuration, resourcesHolder)
+        val servers = configuration.serversConfiguration.map { it.copy(hostPort = 13) }
+        configHandler.applyNewConfiguration(configuration.copy(serversConfiguration = servers), configuration, resourcesHolder)
 
         verify(serverMock.constructed().first()).close()
         verify(serverMock.constructed()[1]).start()
@@ -186,7 +186,7 @@ class ReconfigurableHttpServerTest {
     fun `applyNewConfiguration will throw an error if there are no servers defined`() {
         val future =
             configHandler.applyNewConfiguration(
-                configuration.copy(servers = emptyList()),
+                configuration.copy(serversConfiguration = emptyList()),
                 null,
                 resourcesHolder
             )
@@ -195,17 +195,19 @@ class ReconfigurableHttpServerTest {
     }
 
     @Test
-    fun `applyNewConfiguration will throw an error if there is more than one server that is using the same host and port`() {
-        val future =
-            configHandler.applyNewConfiguration(
-                configuration.copy(
-                    servers = configuration.servers + configuration.servers.first().copy(urlPath = "/test")
-                ),
-                null,
-                resourcesHolder
-            )
+    fun `applyNewConfiguration will use the first configuration if there is more than one server that is using the same host and port`() {
+        configHandler.applyNewConfiguration(
+            configuration.copy(
+                serversConfiguration = configuration.serversConfiguration
+                    + configuration.serversConfiguration.first().copy(urlPath = "/test")
+                    + configuration.serversConfiguration.first().copy(hostAddress = "0.0.0.0")
+                    + configuration.serversConfiguration.first().copy(hostPort = 1000)
+            ),
+            null,
+            resourcesHolder
+        )
 
-        assertThat(future).isCompletedExceptionally
+        assertThat(serverMock.constructed()).hasSize(3)
     }
 
     @Test
@@ -213,7 +215,7 @@ class ReconfigurableHttpServerTest {
         val future =
             configHandler.applyNewConfiguration(
                 configuration.copy(
-                    servers = listOf(
+                    serversConfiguration = listOf(
                         GatewayServerConfiguration(
                             hostAddress = serverAddress.hostName,
                             hostPort = serverAddress.port,

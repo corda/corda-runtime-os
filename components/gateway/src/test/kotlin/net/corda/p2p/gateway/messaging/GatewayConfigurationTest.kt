@@ -23,7 +23,7 @@ class GatewayConfigurationTest {
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
-            on { getConfigList("servers") } doReturn listOf(serverConfig)
+            on { getConfigList("serversConfiguration") } doReturn listOf(serverConfig)
             on { getConfig("sslConfig") } doReturn sslConfig
             on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
@@ -76,14 +76,14 @@ class GatewayConfigurationTest {
             on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
             on { getConfig("connectionConfig") } doReturn connectionConfiguration
-            on { getConfigList("servers") } doReturn listOf(serverConfiguration)
+            on { getConfigList("serversConfiguration") } doReturn listOf(serverConfiguration)
         }
 
         val gatewayConfig = config.toGatewayConfiguration()
 
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
-                servers = listOf(
+                serversConfiguration = listOf(
                     GatewayServerConfiguration(
                         hostPort = 231,
                         urlPath = "/",
