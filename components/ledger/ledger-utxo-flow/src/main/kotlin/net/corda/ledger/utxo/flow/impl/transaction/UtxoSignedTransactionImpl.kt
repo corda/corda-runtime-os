@@ -224,9 +224,9 @@ data class UtxoSignedTransactionImpl(
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
         val publicKey = getNotaryPublicKeyByKeyId(signature.by)
             ?: throw CordaRuntimeException( // todo transition to TransactionSignatureException
-                "Notary's signature has not been created by the transaction's notary. " +
-                        "Notary's public key: $notaryKey " +
-                        "Notary signature's key Id: ${signature.by}"
+                "Notary signature has not been created by the notary for this transaction. " +
+                        "Notary public key: $notaryKey " +
+                        "Notary signature key Id: ${signature.by}"
             )
 
         if (!KeyUtils.isKeyInSet(notaryKey, listOf(publicKey))) {
