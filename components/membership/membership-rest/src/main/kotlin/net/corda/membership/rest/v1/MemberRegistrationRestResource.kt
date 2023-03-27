@@ -6,7 +6,6 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 
@@ -33,13 +32,13 @@ interface MemberRegistrationRestResource : RestResource {
      *
      * Example usage:
      * ```
-     * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationRequest
-     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.keys.0.id": "D2FAF709052F"}))
+     * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationContext
+     * = {"corda.session.keys.0.id": "D2FAF709052F"})
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the requesting virtual node.
-     * @param memberRegistrationRequest The request sent during registration which contains the requested registration
-     * action (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process.
+     * @param memberRegistrationContext The registration context sent during registration which contains the
+     * data required to initiate the registration process.
      *
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
@@ -60,10 +59,9 @@ interface MemberRegistrationRestResource : RestResource {
         @RestPathParameter(description = "The holding identity ID of the requesting virtual node")
         holdingIdentityShortHash: String,
         @ClientRequestBodyParameter(
-            description = "The request sent during registration which contains the requested registration action" +
-                    " (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
+            description = "The member or MGM registration context required for on-boarding within a group."
         )
-        memberRegistrationRequest: MemberRegistrationRequest
+        memberRegistrationContext: Map<String, String>,
     ): RegistrationRequestProgress
 
     /**

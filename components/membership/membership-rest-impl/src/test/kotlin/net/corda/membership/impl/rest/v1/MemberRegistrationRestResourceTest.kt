@@ -15,14 +15,12 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import net.corda.test.util.time.TestClock
@@ -39,9 +37,8 @@ class MemberRegistrationRestResourceTest {
         const val HOLDING_IDENTITY_ID = "1234567890ab"
         const val INVALID_HOLDING_IDENTITY_ID = "${HOLDING_IDENTITY_ID}00"
         val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
-        const val ACTION = "requestJoin"
         val clock = TestClock(Instant.ofEpochSecond(100))
-        const val SERIAL =1L
+        const val SERIAL = 1L
     }
 
     private var coordinatorIsRunning = false
@@ -65,17 +62,12 @@ class MemberRegistrationRestResourceTest {
     )
 
     private val memberResourceClient: MemberResourceClient = mock {
-        on { startRegistration(any()) } doReturn registrationProgress
+        on { startRegistration(any(), any()) } doReturn registrationProgress
     }
 
     private val memberRegistrationRestResource = MemberRegistrationRestResourceImpl(
         lifecycleCoordinatorFactory,
         memberResourceClient,
-    )
-
-    private val registrationRequest = MemberRegistrationRequest(
-        ACTION,
-        context = mock()
     )
 
     @Test
@@ -90,8 +82,8 @@ class MemberRegistrationRestResourceTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
-        memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
-        verify(memberResourceClient).startRegistration(eq(registrationRequest.toDto(HOLDING_IDENTITY_ID)))
+        memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, emptyMap())
+        verify(memberResourceClient).startRegistration(ShortHash.of(HOLDING_IDENTITY_ID), emptyMap())
         memberRegistrationRestResource.deactivate("")
         memberRegistrationRestResource.stop()
     }
@@ -100,17 +92,17 @@ class MemberRegistrationRestResourceTest {
     fun `starting registration with invalid member will fail`() {
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
-        whenever(memberResourceClient.startRegistration(any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
+        whenever(memberResourceClient.startRegistration(any(), any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
 
         assertThrows<ResourceNotFoundException> {
-            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
+            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, emptyMap())
         }
     }
 
     @Test
     fun `startRegistration fails when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
-            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
+            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, emptyMap())
         }
         assertThat(ex).hasMessage("MemberRegistrationRestResourceImpl is not running. Operation cannot be fulfilled.")
     }
@@ -121,7 +113,7 @@ class MemberRegistrationRestResourceTest {
         memberRegistrationRestResource.activate("")
 
         assertFailsWith<BadRequestException> {
-            memberRegistrationRestResource.startRegistration(INVALID_HOLDING_IDENTITY_ID, registrationRequest)
+            memberRegistrationRestResource.startRegistration(INVALID_HOLDING_IDENTITY_ID, emptyMap())
         }
 
         memberRegistrationRestResource.deactivate("")

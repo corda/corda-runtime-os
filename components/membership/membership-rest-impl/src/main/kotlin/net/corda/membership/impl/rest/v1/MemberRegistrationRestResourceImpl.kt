@@ -13,7 +13,6 @@ import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
@@ -33,7 +32,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
     private interface InnerMemberRegistrationRestResource {
         fun startRegistration(
             holdingIdentityShortHash: String,
-            memberRegistrationRequest: MemberRegistrationRequest,
+            memberRegistrationContext: Map<String, String>
         ): RegistrationRequestProgress
 
         fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RestRegistrationRequestStatus>
@@ -74,8 +73,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
 
     override fun startRegistration(
         holdingIdentityShortHash: String,
-        memberRegistrationRequest: MemberRegistrationRequest
-    ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationRequest)
+        memberRegistrationContext: Map<String, String>,
+    ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationContext)
 
     override fun checkRegistrationProgress(
         holdingIdentityShortHash: String
@@ -99,7 +98,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
     private object InactiveImpl : InnerMemberRegistrationRestResource {
         override fun startRegistration(
             holdingIdentityShortHash: String,
-            memberRegistrationRequest: MemberRegistrationRequest,
+            memberRegistrationContext: Map<String, String>,
         ) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
@@ -122,11 +121,13 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
     private inner class ActiveImpl : InnerMemberRegistrationRestResource {
         override fun startRegistration(
             holdingIdentityShortHash: String,
-            memberRegistrationRequest: MemberRegistrationRequest,
+            memberRegistrationContext: Map<String, String>,
         ): RegistrationRequestProgress {
-            val dto = memberRegistrationRequest.toDto(holdingIdentityShortHash)
             try {
-                return memberResourceClient.startRegistration(dto).fromDto()
+                return memberResourceClient.startRegistration(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    memberRegistrationContext
+                ).fromDto()
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(
                     "holdingIdentityShortHash",

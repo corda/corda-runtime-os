@@ -19,7 +19,6 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
@@ -261,10 +260,7 @@ fun E2eCluster.register(
             val proxy = client.start().proxy
             proxy.startRegistration(
                 holdingId,
-                MemberRegistrationRequest(
-                    action = "requestJoin",
-                    context = context
-                )
+                context,
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 

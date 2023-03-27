@@ -2,7 +2,6 @@ package net.corda.membership.client
 
 import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 
@@ -14,11 +13,15 @@ interface MemberResourceClient : Lifecycle {
     /**
      * Starts the registration process for a member.
      *
-     * @param memberRegistrationRequest Data necessary to include in order to initiate registration.
+     * @param holdingIdentityShortHash The ID of the holding identity the member is using.
+     * @param registrationContext The member or MGM context required for on-boarding within a group.
      * @throws CouldNotFindMemberException if the member in `holdingIdentityShortHash` can not be found.
      * @return [RegistrationRequestProgressDto] to indicate the status of the request at time of submission.
      */
-    fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
+    fun startRegistration(
+        holdingIdentityShortHash: ShortHash,
+        registrationContext: Map<String, String>,
+    ): RegistrationRequestProgressDto
 
     /**
      * Checks the known status of all registration based on a member's own local data and without

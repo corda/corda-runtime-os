@@ -9,7 +9,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
-import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.helper.getConfig
@@ -27,7 +26,6 @@ import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
-import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
@@ -93,7 +91,10 @@ class MemberResourceClientImpl @Activate constructor(
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
     private interface InnerMemberOpsClient {
-        fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
+        fun startRegistration(
+            holdingIdentityShortHash: ShortHash,
+            registrationContext: Map<String, String>,
+        ): RegistrationRequestProgressDto
 
         fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto>
 
@@ -118,8 +119,11 @@ class MemberResourceClientImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
-        impl.startRegistration(memberRegistrationRequest)
+    override fun startRegistration(
+        holdingIdentityShortHash: ShortHash,
+        registrationContext: Map<String, String>
+    ): RegistrationRequestProgressDto =
+        impl.startRegistration(holdingIdentityShortHash, registrationContext)
 
     override fun checkSpecificRegistrationProgress(
         holdingIdentityShortHash: ShortHash,
@@ -201,7 +205,10 @@ class MemberResourceClientImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMemberOpsClient {
-        override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
+        override fun startRegistration(
+            holdingIdentityShortHash: ShortHash,
+            registrationContext: Map<String, String>,
+        ) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash) =
@@ -217,24 +224,26 @@ class MemberResourceClientImpl @Activate constructor(
     private inner class ActiveImpl(
         private val asyncPublisher: Publisher,
     ) : InnerMemberOpsClient {
-        override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
+        override fun startRegistration(
+            holdingIdentityShortHash: ShortHash,
+            registrationContext: Map<String, String>,
+        ): RegistrationRequestProgressDto {
             val requestId = UUID.randomUUID().toString()
             val holdingIdentity =
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(memberRegistrationRequest.holdingIdentityShortHash)
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                     ?.holdingIdentity
-                    ?: throw CouldNotFindMemberException(memberRegistrationRequest.holdingIdentityShortHash)
+                    ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
             try {
                 asyncPublisher.publish(
                     listOf(
                         Record(
                             MEMBERSHIP_ASYNC_REQUEST_TOPIC,
-                            memberRegistrationRequest.holdingIdentityShortHash.toString(),
+                            holdingIdentityShortHash.toString(),
                             MembershipAsyncRequest(
                                 RegistrationAsyncRequest(
-                                    memberRegistrationRequest.holdingIdentityShortHash.toString(),
+                                    holdingIdentityShortHash.toString(),
                                     requestId,
-                                    RegistrationAction.valueOf(memberRegistrationRequest.action.name),
-                                    memberRegistrationRequest.context.toWire()
+                                    registrationContext.toWire(),
                                 )
                             )
                         )
@@ -245,7 +254,7 @@ class MemberResourceClientImpl @Activate constructor(
             } catch (e: Exception) {
                 logger.warn(
                     "Could not submit registration request for holding identity ID" +
-                        " [${memberRegistrationRequest.holdingIdentityShortHash}].",
+                        " [$holdingIdentityShortHash].",
                     e
                 )
                 val cause = e.cause ?: e
@@ -261,7 +270,7 @@ class MemberResourceClientImpl @Activate constructor(
             val sent = clock.instant()
             try {
                 val context = keyValuePairListSerializer.serialize(
-                    memberRegistrationRequest.context.filterNot { it.key == SERIAL }.toWire()
+                    registrationContext.filterNot { it.key == SERIAL }.toWire()
                 )
                 membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
@@ -275,7 +284,7 @@ class MemberResourceClientImpl @Activate constructor(
                             ByteBuffer.wrap(byteArrayOf())
                         ),
                         CryptoSignatureSpec("", null, null),
-                        memberRegistrationRequest.context[SERIAL]?.toLong(),
+                        registrationContext[SERIAL]?.toLong(),
                         true
                     )
                 ).getOrThrow()
@@ -285,12 +294,12 @@ class MemberResourceClientImpl @Activate constructor(
                     SubmittedRegistrationStatus.SUBMITTED,
                     true,
                     "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
+                    MemberInfoSubmittedDto(registrationContext)
                 )
             } catch (e: Exception) {
                 logger.warn(
                     "Could not persist registration request for holding identity ID" +
-                        " [${memberRegistrationRequest.holdingIdentityShortHash}].",
+                        " [$holdingIdentityShortHash].",
                     e
                 )
                 return RegistrationRequestProgressDto(
