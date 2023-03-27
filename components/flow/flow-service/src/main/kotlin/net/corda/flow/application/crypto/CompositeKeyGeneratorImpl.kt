@@ -1,6 +1,7 @@
 package net.corda.flow.application.crypto
 
 import net.corda.crypto.core.CompositeKeyProvider
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
@@ -15,13 +16,13 @@ import java.security.PublicKey
  * corda implementation so that we have flexibility to add extra checks or other
  * work at this point.
  */
-@Component(service = [ CompositeKeyGenerator::class, SingletonSerializeAsToken::class ])
+@Component(service = [ CompositeKeyGenerator::class, UsedByFlow::class, SingletonSerializeAsToken::class ])
 class CompositeKeyGeneratorImpl
 @Activate
 constructor(
     @Reference(service = CompositeKeyProvider::class)
     val provider: CompositeKeyProvider
-) : CompositeKeyGenerator, SingletonSerializeAsToken {
+) : CompositeKeyGenerator, UsedByFlow, SingletonSerializeAsToken {
     @Suspendable
     override fun create(keys: List<CompositeKeyNodeAndWeight>, threshold: Int?): PublicKey =
         provider.create(keys, threshold)
