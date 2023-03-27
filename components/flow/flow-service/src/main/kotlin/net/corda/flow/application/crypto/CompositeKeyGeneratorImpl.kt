@@ -16,7 +16,7 @@ import java.security.PublicKey
  * corda implementation so that we have flexibility to add extra checks or other
  * work at this point.
  */
-@Component(service = [ CompositeKeyGenerator::class, UsedByFlow::class, SingletonSerializeAsToken::class ])
+@Component(service = [CompositeKeyGenerator::class, UsedByFlow::class])
 class CompositeKeyGeneratorImpl
 @Activate
 constructor(
