@@ -280,7 +280,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         }
     }
 
-    private fun checkAndGetSignatureSpec(signatureSpec: SignatureSpec, signingKey: PublicKey): SignatureSpec {
+    private fun checkSignatureSpec(signatureSpec: SignatureSpec, signingKey: PublicKey): SignatureSpec {
         val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signingKey)
         require(signatureSpec in compatibleSpecs) {
             "The signature spec in the signature metadata ('$signatureSpec') is incompatible with its key!"
