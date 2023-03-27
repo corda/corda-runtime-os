@@ -1,5 +1,6 @@
 package net.cordapp.testing.smoketests.flow
 
+import net.corda.v5.application.crypto.CompositeKeyGenerator
 import java.time.Instant
 import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -17,6 +18,8 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -64,7 +67,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
-        "json_serialization" to this::jsonSerialization
+        "json_serialization" to this::jsonSerialization,
+        "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows
     )
 
     @CordaInject
@@ -93,6 +97,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var signatureSpecService: SignatureSpecService
+
+    @CordaInject
+    lateinit var compositeKeyGenerator: CompositeKeyGenerator
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -430,6 +437,19 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             "Request key in mapping should match specified request key"
         }
         return "success"
+    }
+
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun compositeKeyGeneratorWorksInFlows(input: RpcSmokeTestInput): String {
+        val myKey = memberLookup.myInfo().ledgerKeys[0]
+        val keysAndWeights = listOf(CompositeKeyNodeAndWeight(myKey,1))
+        val compositeKey = compositeKeyGenerator.create(keysAndWeights, 1)
+        return if (compositeKey is CompositeKey) {
+            "SUCCESS"
+        } else {
+            "FAILURE"
+        }
     }
 
     @Suspendable
