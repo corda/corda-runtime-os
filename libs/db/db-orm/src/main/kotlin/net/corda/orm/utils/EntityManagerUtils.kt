@@ -15,8 +15,12 @@ import javax.persistence.EntityManagerFactory
  *
  * @see transaction
  */
-inline fun <R> EntityManagerFactory.use(block: (EntityManager) -> R): R {
-    return createEntityManager().use(block)
+inline fun <R> EntityManagerFactory.use(block: (EntityManagerFactory) -> R): R {
+    return try {
+        block(this)
+    } finally {
+        close()
+    }
 }
 
 

@@ -29,7 +29,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
@@ -73,7 +73,7 @@ internal class CreateVirtualNodeServiceImpl(
     override fun ensureHoldingIdentityIsUnique(request: VirtualNodeCreateRequest) {
         val emf = dbConnectionManager.getClusterEntityManagerFactory()
         val holdingIdShortHash = request.holdingId.toCorda().shortHash
-        emf.use { em ->
+        emf.createEntityManager().use { em ->
             if (virtualNodeRepository.find(em, holdingIdShortHash) != null) {
                 throw VirtualNodeAlreadyExistsException(
                     "Virtual node for CPI with file checksum ${request.cpiFileChecksum} and x500Name " +

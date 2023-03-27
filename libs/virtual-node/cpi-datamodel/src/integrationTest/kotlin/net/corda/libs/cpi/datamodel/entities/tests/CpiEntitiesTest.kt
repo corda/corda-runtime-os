@@ -76,8 +76,8 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use { em ->
-            em.transaction {
+        ).use { emf ->
+            emf.createEntityManager().transaction {
                 it.persist(cpi)
                 it.persist(cpkData)
                 it.flush()
@@ -88,15 +88,16 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use {
-            val loadedCpiEntity = it.find(
-                CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
-            )
+        ).use { emf ->
+            emf.createEntityManager().use {
+                val loadedCpiEntity = it.find(
+                    CpiMetadataEntity::class.java,
+                    CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                )
 
-            assertThat(loadedCpiEntity.cpks).isEqualTo(cpi.cpks)
+                assertThat(loadedCpiEntity.cpks).isEqualTo(cpi.cpks)
+            }
         }
-
     }
 
     @Test
@@ -118,10 +119,12 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use { em ->
-            em.transaction {
-                it.persist(cpi)
-                it.flush()
+        ).use { emf ->
+            emf.createEntityManager().use { em ->
+                em.transaction {
+                    it.persist(cpi)
+                    it.flush()
+                }
             }
         }
 
@@ -144,31 +147,33 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use { em ->
-            val loadedCpiEntity = em.find(
-                CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
-            )
+        ).use { emf ->
+            emf.createEntityManager().use { em ->
+                val loadedCpiEntity = em.find(
+                    CpiMetadataEntity::class.java,
+                    CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                )
 
-            val updated = loadedCpiEntity.copy(
-                cpks = loadedCpiEntity.cpks.plus(
-                    CpiCpkEntity(
-                        CpiCpkKey(
-                            cpi.name,
-                            cpi.version,
-                            cpi.signerSummaryHash,
-                            cpkMetadataEntity2.cpkFileChecksum
-                        ),
-                        "test-cpk2.cpk",
-                        cpkMetadataEntity2
-                    )
-                ),
-            )
+                val updated = loadedCpiEntity.copy(
+                    cpks = loadedCpiEntity.cpks.plus(
+                        CpiCpkEntity(
+                            CpiCpkKey(
+                                cpi.name,
+                                cpi.version,
+                                cpi.signerSummaryHash,
+                                cpkMetadataEntity2.cpkFileChecksum
+                            ),
+                            "test-cpk2.cpk",
+                            cpkMetadataEntity2
+                        )
+                    ),
+                )
 
-            em.transaction {
-                it.merge(updated)
-                it.persist(cpkData2)
-                it.flush()
+                em.transaction {
+                    it.merge(updated)
+                    it.persist(cpkData2)
+                    it.flush()
+                }
             }
         }
 
@@ -176,11 +181,13 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use {
-            it.find(
-                CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
-            )
+        ).use { emf ->
+            emf.createEntityManager().use {
+                it.find(
+                    CpiMetadataEntity::class.java,
+                    CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                )
+            }
         }
 
         // assert the added one has been fetched eagerly.
@@ -212,11 +219,13 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use { em ->
-            em.transaction {
-                it.persist(cpi1)
-                it.persist(cpkData)
-                it.flush()
+        ).use { emf ->
+            emf.createEntityManager().use { em ->
+                em.transaction {
+                    it.persist(cpi1)
+                    it.persist(cpkData)
+                    it.flush()
+                }
             }
         }
 
@@ -238,8 +247,8 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use { em ->
-            em.transaction {
+        ).use { emf ->
+            emf.createEntityManager().transaction {
                 it.merge(cpi2)
                 it.persist(cpkData2)
                 it.flush()
@@ -250,11 +259,13 @@ class CpiEntitiesIntegrationTest {
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
-        ).use {
-            it.find(
-                CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
-            )
+        ).use { emf ->
+            emf.createEntityManager().use {
+                it.find(
+                    CpiMetadataEntity::class.java,
+                    CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
+                )
+            }
         }
 
         assertThat(loadedCpi.cpks.size).isEqualTo(2)
@@ -358,8 +369,8 @@ class CpiEntitiesIntegrationTest {
             val cpi = TestObject.createCpi(cpiId, cpks.keys)
             cpiNames.add(cpi.name)
 
-            emFactory.use { em ->
-                em.transaction {
+            emFactory.use { emf ->
+                emf.createEntityManager().transaction {
                     it.persist(cpi)
                     cpks.values.forEach { cpkData ->
                         it.persist(cpkData)
@@ -371,8 +382,8 @@ class CpiEntitiesIntegrationTest {
 
         // Find all - fetches eagerly
         println("**** [START] findAllCpiMetadata query as list ****")
-        val cpisEagerlyLoaded = emFactory.use { em ->
-            em.transaction {
+        val cpisEagerlyLoaded = emFactory.use { emf ->
+            emf.createEntityManager().use {em ->
                 em.findAllCpiMetadata().toList() // toList here materialises the stream.
             }
             // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
@@ -391,8 +402,8 @@ class CpiEntitiesIntegrationTest {
 
         // Repeat the above, but consume from stream
         println("**** [START] findAllCpiMetadata query as stream ****")
-        emFactory.use { em ->
-            em.transaction {
+        emFactory.use { emf ->
+            emf.createEntityManager().transaction { em ->
                 val cpisLazyLoaded = em.findAllCpiMetadata()
 
                 cpisLazyLoaded.filter {

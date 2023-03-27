@@ -9,7 +9,7 @@ import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 
 class EntityManagerUtilsTest {
@@ -22,7 +22,7 @@ class EntityManagerUtilsTest {
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
         val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        emf.transaction {
+        emf.createEntityManager().transaction {
             it.persist(owner)
             it.persist(cat)
         }
@@ -34,20 +34,21 @@ class EntityManagerUtilsTest {
     @Test
     fun `can persist JPA entities using EntityManagerFactory#use`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        emf.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
+            emf.createEntityManager().use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
+
+            val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
+            Assertions.assertThat(loadedCats.resultList).contains(cat)
         }
-
-        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
-        Assertions.assertThat(loadedCats.resultList).contains(cat)
     }
 
     @Test
@@ -109,22 +110,22 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can load JPA entities using EntityManagerFactory#use`() {
+        createEntityManagerFactory().use { emf ->
 
-        val emf = createEntityManagerFactory()
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            emf.createEntityManager().use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
 
-        emf.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
-        }
-
-        emf.createEntityManager().use {
-            val loadedCats = it.createQuery("from Cat", Cat::class.java)
-            Assertions.assertThat(loadedCats.resultList).contains(cat)
+            emf.createEntityManager().use {
+                val loadedCats = it.createQuery("from Cat", Cat::class.java)
+                Assertions.assertThat(loadedCats.resultList).contains(cat)
+            }
         }
     }
 
@@ -153,45 +154,47 @@ class EntityManagerUtilsTest {
     @Test
     fun `can load JPA entities using EntityManager#use`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val em = emf.createEntityManager()
-        em.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
-        }
+            val em = emf.createEntityManager()
+            em.use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
 
-        emf.use {
-            val loadedCats = it.createQuery("from Cat", Cat::class.java)
-            Assertions.assertThat(loadedCats.resultList).contains(cat)
+            emf.createEntityManager().use {
+                val loadedCats = it.createQuery("from Cat", Cat::class.java)
+                Assertions.assertThat(loadedCats.resultList).contains(cat)
+            }
         }
     }
 
     @Test
     fun `can't read resultList outside of use block`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val em = emf.createEntityManager()
-        em.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
+            val em = emf.createEntityManager()
+            em.use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
+
+            val loadedCats = emf.createEntityManager().use { it.createQuery("from Cat", Cat::class.java) }
+            Assertions.assertThatThrownBy { loadedCats.resultList }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("closed")
         }
-
-        val loadedCats = emf.use { it.createQuery("from Cat", Cat::class.java) }
-        Assertions.assertThatThrownBy { loadedCats.resultList }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("closed")
     }
 
     @Test
