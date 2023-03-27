@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.parsing.impl
 
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("net.corda.ledger.persistence.query.impl.VaultNamedQueryBuilderUtils")

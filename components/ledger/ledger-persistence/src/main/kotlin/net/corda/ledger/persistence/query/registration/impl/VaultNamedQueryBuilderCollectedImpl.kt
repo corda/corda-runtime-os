@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.query.registration.impl
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.parsing.impl.logQueryRegistration
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
-import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilderCollected
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderCollected
 
 class VaultNamedQueryBuilderCollectedImpl(
     private val registry: VaultNamedQueryRegistry,

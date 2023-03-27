@@ -5,6 +5,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.ledger.persistence.common.ComponentLeafDto
+import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.utxo.impl.UtxoTransactionOutputDto
@@ -69,12 +70,16 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
 
         // Get the query from the registry and make sure it exists
         val vaultNamedQuery = registry.getQuery(request.queryName)
+
         require(vaultNamedQuery != null) { "Query with name ${request.queryName} could not be found!" }
+        require(vaultNamedQuery.query.type == VaultNamedQuery.Type.WHERE_JSON) {
+            "Only WHERE queries are supported for now."
+        }
 
         // Fetch the transaction IDs for the given request
         val transactionIds = fetchTransactionIdsForRequest(
             request,
-            vaultNamedQuery.whereJson,
+            vaultNamedQuery.query.query,
             holdingIdentity
         )
 

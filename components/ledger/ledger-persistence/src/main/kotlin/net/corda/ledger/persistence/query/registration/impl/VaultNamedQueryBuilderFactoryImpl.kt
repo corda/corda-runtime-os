@@ -35,7 +35,7 @@ class VaultNamedQueryBuilderFactoryImpl constructor(
 
     @Activate
     constructor(
-        @Reference(service = VaultNamedQueryRegistry::class, scope = ReferenceScope.PROTOTYPE)
+        @Reference(service = VaultNamedQueryRegistry::class)
         vaultNamedQueryRegistry: VaultNamedQueryRegistry
     ) : this(
         vaultNamedQueryRegistry,
