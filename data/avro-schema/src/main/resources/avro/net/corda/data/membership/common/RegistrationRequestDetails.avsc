@@ -1,8 +1,8 @@
 {
   "type": "record",
-  "name": "RegistrationStatusDetails",
+  "name": "RegistrationRequestDetails",
   "namespace": "net.corda.data.membership.common",
-  "doc": "Registration status.",
+  "doc": "Details of the registration request.",
   "fields": [
     {
       "name": "registrationSent",
@@ -39,6 +39,16 @@
       "name": "memberProvidedContext",
       "doc": "Member provided context submitted for registration.",
       "type": "net.corda.data.KeyValuePairList"
+    },
+    {
+      "name": "memberSignature",
+      "doc": "Signature of the member over the memberContext.",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    },
+    {
+      "name": "memberSignatureSpec",
+      "doc": "Signature spec of member signature.",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureSpec"
     },
     {
       "name": "reason",
