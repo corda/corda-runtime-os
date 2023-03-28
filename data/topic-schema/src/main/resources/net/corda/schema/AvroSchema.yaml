@@ -8,7 +8,7 @@ topics:
       - membership
       - gateway
       - link-manager
-      - rpc
+      - rest
       - uniqueness
     producers:
       - crypto
@@ -17,7 +17,7 @@ topics:
       - membership
       - gateway
       - link-manager
-      - rpc
+      - rest
       - uniqueness
     config:
       cleanup.policy: compact
