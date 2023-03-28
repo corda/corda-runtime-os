@@ -17,7 +17,9 @@ data class FlowOutput(
     val platform: String,
     val user1: String,
     val user2: String,
-    val user3: String
+    val user3: String,
+    val cpiName: String,
+    val initiatingCpiName: String
 )
 
 
@@ -69,6 +71,9 @@ fun launchContextPropagationFlows(
     val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
     val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
+    val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+    val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
+
     // Sub flow will send its context back
     val mainSubFlowOutput = flowEngine.subFlow(ContextPropagationMainSubFlow())
 
@@ -76,7 +81,9 @@ fun launchContextPropagationFlows(
         platform = account,
         user1 = user1,
         user2 = user2,
-        user3 = user3
+        user3 = user3,
+        cpiName = cpiName,
+        initiatingCpiName = initiatingCpiName
     )
 
     // Refetch the original properties again to ensure nothing in the Flow execution path has corrupted them
@@ -84,7 +91,9 @@ fun launchContextPropagationFlows(
         platform = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE,
         user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE,
         user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE,
-        user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
+        user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE,
+        cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE,
+        initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
     )
 
     /* This is the expected output
@@ -168,12 +177,17 @@ class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
         // user3 is session specific
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
+        val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+        val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
+
         return MainSubFlowOutput(
             thisFlow = FlowOutput(
                 platform = account,
                 user1 = user1,
                 user2 = user2,
-                user3 = user3
+                user3 = user3,
+                cpiName = cpiName,
+                initiatingCpiName = initiatingCpiName
             ),
             initiatedFlow = initiatedFlowOutput
         )
@@ -194,6 +208,9 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
         val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
+        val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+        val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
+
         // This should never make it out of this flow, but should make it into the sub flow
         flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationInitiatedFlow")
 
@@ -205,7 +222,9 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
                     platform = account,
                     user1 = user1,
                     user2 = user2,
-                    user3 = user3
+                    user3 = user3,
+                    cpiName = cpiName,
+                    initiatingCpiName = initiatingCpiName
                 ),
                 initiatedSubFlow = subFlowOutput
             )
@@ -227,6 +246,9 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
         val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
+        val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+        val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
+
         // These should never make it out of this flow
         flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationInitiatedSubFlow")
         flowEngine.flowContextProperties.put("user3", "user3-set-ContextPropagationInitiatedSubFlow")
@@ -235,7 +257,9 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
             platform = account,
             user1 = user1,
             user2 = user2,
-            user3 = user3
+            user3 = user3,
+            cpiName = cpiName,
+            initiatingCpiName = initiatingCpiName
         )
     }
 }

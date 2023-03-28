@@ -717,31 +717,41 @@ class FlowTests {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "null",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               },
               "rpcSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               },
               "initiatedFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set",
-                "user3": "user3-set"
+                "user3": "user3-set",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "$applicationCpiName"
               },
               "initiatedSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set-ContextPropagationInitiatedFlow",
-                "user3": "user3-set"
+                "user3": "user3-set",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "$applicationCpiName"
               },
               "rpcFlowAtComplete": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "null",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               }
             }
             """.trimJson()
