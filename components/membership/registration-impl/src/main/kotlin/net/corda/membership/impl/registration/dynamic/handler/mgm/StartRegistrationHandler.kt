@@ -15,14 +15,15 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
@@ -59,7 +60,6 @@ internal class StartRegistrationHandler(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val SERIAL_CONST = "1"
     }
 
     private val keyValuePairListDeserializer =
@@ -108,12 +108,25 @@ internal class StartRegistrationHandler(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             )
-            validateRegistrationRequest(
+            /*validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
                         && (existingMemberInfo.payload.isEmpty()
                         || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
             ) { "The latest member info for given member is in 'Active' status or " +
-                    "there is a member with the same name." }
+                    "there is a member with the same name." }*/
+
+            validateRegistrationRequest(
+                existingMemberInfo is MembershipQueryResult.Success
+            ) { "Looking up for existing member info (if there were any), failed due to a persistence exception." }
+            val queryResult = (existingMemberInfo as MembershipQueryResult.Success).payload
+            // Modify existing validation for duplicate member names
+            validateRegistrationRequest(
+                queryResult.isEmpty() ||
+                        registrationRequest.serial != 0L
+            ) { "Member already exists with the same X500 name." }
+            // if the serial number on the request is smaller than the current version of the requestor's MemberInfo,
+            // then decline the request.
+            validateSerial(queryResult, registrationRequest)
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -202,7 +215,7 @@ internal class StartRegistrationHandler(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
                 STATUS to MEMBER_STATUS_PENDING,
-                SERIAL to SERIAL_CONST,
+                SERIAL to (registrationRequest.serial!! + 1).toString(),
             )
         )
     }
@@ -226,6 +239,21 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.serial,
             true,
         )
+    }
+
+    private fun validateSerial(memberList: Collection<MemberInfo>, registrationRequest: RegistrationRequest) {
+        val activeOrSuspendedInfo = memberList.find {
+            it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
+        }
+        validateRegistrationRequest(registrationRequest.serial != null) {
+            "Serial on the registration request should not be null."
+        }
+        validateRegistrationRequest(
+            activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
+        ) {
+            "Registration request was submitted for an older version of member info. " +
+                    "Please submit a new request."
+        }
     }
 
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {

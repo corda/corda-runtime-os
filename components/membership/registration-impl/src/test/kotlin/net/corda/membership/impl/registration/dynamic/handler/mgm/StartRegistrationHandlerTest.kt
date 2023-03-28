@@ -21,6 +21,7 @@ import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationCont
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
@@ -95,8 +96,11 @@ class StartRegistrationHandlerTest {
 
         val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext)
 
-        fun getStartRegistrationCommand(holdingIdentity: HoldingIdentity, memberContext: KeyValuePairList) =
-            RegistrationCommand(
+        fun getStartRegistrationCommand(
+            holdingIdentity: HoldingIdentity,
+            memberContext: KeyValuePairList,
+            serial: Long = 0L
+        ) = RegistrationCommand(
                 StartRegistration(
                     mgmHoldingIdentity,
                     holdingIdentity,
@@ -109,7 +113,7 @@ class StartRegistrationHandlerTest {
                         ),
                         CryptoSignatureSpec("", null, null),
                         true,
-                        0L,
+                        serial,
                     )
                 )
             )
@@ -132,17 +136,21 @@ class StartRegistrationHandlerTest {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
         on { entries } doReturn emptySet()
     }
-    private val memberInfo: MemberInfo = mock {
+    private val pendingMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
         on { status } doReturn MEMBER_STATUS_PENDING
+        on { serial } doReturn 1L
     }
-    private val declinedMember: MemberInfo = mock {
-        on { isActive } doReturn false
+    private val activeMemberInfo: MemberInfo = mock {
+        on { name } doReturn aliceX500Name
+        on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
+        on { status } doReturn MEMBER_STATUS_ACTIVE
+        on { serial } doReturn 1L
     }
 
     private val mgmMemberContext: MemberContext = mock {
@@ -182,7 +190,7 @@ class StartRegistrationHandlerTest {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
         }
         memberInfoFactory = mock {
-            on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
+            on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
@@ -364,7 +372,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member already exists`() {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         with(
             handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
@@ -374,6 +382,8 @@ class StartRegistrationHandlerTest {
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
+            assertThat(((outputStates.first().value as RegistrationCommand).command as DeclineRegistration).reason)
+                .contains("already exists with the same X500 name")
         }
         verifyServices(
             persistRegistrationRequest = true,
@@ -384,24 +394,35 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `approve if member already exists but has DECLINED as last status`() {
+    fun `declined if member's current serial is larger than the serial in the request`() {
+        val activeMemberInfo: MemberInfo = mock {
+            on { name } doReturn aliceX500Name
+            on { isActive } doReturn true
+            on { memberProvidedContext } doReturn memberMemberContext
+            on { mgmProvidedContext } doReturn memberMgmContext
+            on { status } doReturn MEMBER_STATUS_ACTIVE
+            on { serial } doReturn 2L
+        }
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult.Success(listOf(memberInfo, declinedMember)))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, 1L)
         with(
             handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
 
-            assertRegistrationStarted()
+            assertDeclinedRegistration()
+            assertThat(((outputStates.first().value as RegistrationCommand).command as DeclineRegistration).reason)
+                .contains("an older version of member info")
         }
     }
 
     @Test
     fun `declined if member info has no endpoints`() {
-        whenever(memberInfo.endpoints).thenReturn(emptyList())
+        whenever(pendingMemberInfo.endpoints).thenReturn(emptyList())
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -572,7 +593,7 @@ class StartRegistrationHandlerTest {
                 mgmHoldingIdentity.toCorda(),
                 listOf(HoldingIdentity(aliceX500Name.toString(), groupId).toCorda())
             )
-        ).thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+        ).thenReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
 
         val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity, memberContext)
         val result = handler.invoke(null, Record(testTopic, testTopicKey, registrationCommand))
