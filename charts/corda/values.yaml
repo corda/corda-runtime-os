@@ -744,6 +744,10 @@ workers:
     tls:
       # the name of the secret to derive information below
       secretName: ""
+      generation:
+        altNames:
+          - "*.c5.r3.com"
+          - "*.another.one.r3.com"
       # TLS Certificate configuration
       crt:
         # -- the TLS Certificate secret key

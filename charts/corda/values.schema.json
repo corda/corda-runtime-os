@@ -1296,7 +1296,18 @@
                                         "secretName": {
                                             "type": "string",
                                             "default": "",
-                                            "title": "the name of the secret to derive information below"
+                                            "title": "The name of the secret to derive information below. If missing a new secret will be created and certificates/keys geberated."
+                                        },
+                                        "generation": {
+                                            "type": "object",
+                                            "title": "Optional parameters to be used during TLS certificate generation.",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "altNames": {
+                                                    "type": "array",
+                                                    "title": "Alternative names to be include into certificate when generated."
+                                                }
+                                            }
                                         },
                                         "crt": {
                                             "title": "TLS Certificate configuration",
