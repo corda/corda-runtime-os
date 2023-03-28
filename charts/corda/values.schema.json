@@ -277,7 +277,7 @@
                 "effect": {
                     "type": "string",
                     "default": "",
-                    "title": "tolerration effect",
+                    "title": "toleration effect",
                     "examples": [
                         "NoSchedule"
                     ]
