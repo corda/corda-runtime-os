@@ -1293,20 +1293,43 @@
                                     "title": "REST Worker TLS configuration",
                                     "additionalProperties": false,
                                     "properties": {
+                                        "secretName": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the name of the secret to derive information below"
+                                        },
                                         "crt": {
                                             "title": "TLS Certificate configuration",
                                             "additionalProperties": false,
-                                            "$ref": "#/$defs/config"
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the required value"
+                                                }
+                                            }
                                         },
                                         "key": {
                                             "title": "TLS Certificate private key configuration",
                                             "additionalProperties": false,
-                                            "$ref": "#/$defs/config"
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the required value"
+                                                }
+                                            }
                                         },
                                         "ca": {
                                             "title": "Certification Authority(CA) certificates chain configuration",
                                             "additionalProperties": false,
-                                            "$ref": "#/$defs/config"
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the required value"
+                                                }
+                                            }
                                         }
                                     }
                                 }

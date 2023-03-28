@@ -742,36 +742,20 @@ workers:
               key: ""
     # REST Worker TLS configuration
     tls:
+      # the name of the secret to derive information below
+      secretName: ""
       # TLS Certificate configuration
       crt:
-        # the TLS Certificate secret configuration
-        valueFrom:
-          # the TLS Certificate secret key reference
-          secretKeyRef:
-            # -- the TLS Certificate secret name
-            name: ""
-            # -- the TLS Certificate secret key
-            key: ""
+        # -- the TLS Certificate secret key
+        secretKey: ""
       # TLS Certificate private key configuration
       key:
-        # the TLS Certificate private key secret configuration
-        valueFrom:
-          # the TLS Certificate private key secret key reference
-          secretKeyRef:
-            # -- the TLS Certificate private key secret name
-            name: ""
-            # -- the TLS Certificate private key secret key
-            key: ""
+        # -- the TLS Certificate private key secret key
+        secretKey: ""
       # Certification Authority(CA) certificates chain configuration
       ca:
-        # the CA certificates chain secret configuration
-        valueFrom:
-          # the CA certificates chain secret key reference
-          secretKeyRef:
-            # -- the CA certificates chain secret name
-            name: ""
-            # -- the CA certificates chain secret key
-            key: ""
+        # -- the CA certificates chain secret key
+        secretKey: ""
 
   # P2P link manager worker configuration
   p2pLinkManager:

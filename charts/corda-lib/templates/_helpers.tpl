@@ -123,28 +123,28 @@ Initial REST API admin password secret name
 REST TLS keystore secret name
 */}}
 {{- define "corda.restTlsSecretName" -}}
-{{ .Values.workers.rest.tls.crt.valueFrom.secretKeyRef.name | default (printf "%s-rest-tls" (include "corda.fullname" .)) }}
+{{ .Values.workers.rest.tls.secretName | default (printf "%s-rest-tls" (include "corda.fullname" .)) }}
 {{- end }}
 
 {{/*
 REST TLS certificate key
 */}}
 {{- define "corda.restTlsCrtSecretKey" -}}
-{{ .Values.workers.rest.tls.crt.valueFrom.secretKeyRef.key | default "crt" }}
+{{ .Values.workers.rest.tls.crt.secretKey | default "crt" }}
 {{- end }}
 
 {{/*
 REST TLS private key secret key
 */}}
 {{- define "corda.restTlsKeySecretKey" -}}
-{{ .Values.workers.rest.tls.key.valueFrom.secretKeyRef.key | default "key" }}
+{{ .Values.workers.rest.tls.key.secretKey | default "key" }}
 {{- end }}
 
 {{/*
 REST TLS CA cert secret key
 */}}
 {{- define "corda.restTlsCaSecretKey" -}}
-{{ .Values.workers.rest.tls.ca.valueFrom.secretKeyRef.key | default "ca" }}
+{{ .Values.workers.rest.tls.ca.secretKey | default "ca" }}
 {{- end }}
 
 {{/*
@@ -517,5 +517,41 @@ data:
 {{-   end }}
 {{- end }}
 {{- end }}
+{{- end }}
+{{- end }}
+{{/*
+TLS Secret creation
+*/}}
+{{- define "corda.tlsSecret" -}}
+{{- $ := index . 0 }}
+{{- $kind := index . 1 }}
+{{- $altNames := index . 2 }}
+{{- $secretName := index . 3 }}
+{{- $crtSecretKey := index . 4 }}
+{{- $keySecretKey := index . 5 }}
+{{- $caSecretKey := index . 6 }}
+{{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
+{{- if not $existingSecret }}
+{{- $caName := printf "%s Self-Signed Certification Authority" $kind }}
+{{- $ca := genCA $caName 1000 }}
+{{- $interName := printf  "%s Intermediary Cert" $kind }}
+{{- $interCert := genSignedCert $interName nil nil 365 $ca }}
+{{- $cert := genSignedCert $kind nil $altNames 365 $interCert }}
+{{- $certChain :=  printf "%s\n%s" $interCert.Cert $ca.Cert }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secretName }}
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install
+  labels:
+    {{- include "corda.labels" $ | nindent 4 }}
+type: Opaque
+data:
+  {{ $crtSecretKey }}: {{ $cert.Cert | b64enc | quote }}
+  {{ $keySecretKey }}: {{ $cert.Key | b64enc | quote }}
+  {{ $caSecretKey }}: {{ $certChain | b64enc | quote }}
 {{- end }}
 {{- end }}
