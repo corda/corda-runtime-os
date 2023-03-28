@@ -11,7 +11,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
-import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
@@ -30,8 +29,6 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
-import net.corda.membership.client.dto.MemberRegistrationRequestDto
-import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
@@ -176,11 +173,8 @@ class MemberResourceClientTest {
         changeConfig()
     }
 
-    private val request = MemberRegistrationRequestDto(
-        ShortHash.of(HOLDING_IDENTITY_ID),
-        RegistrationActionDto.REQUEST_JOIN,
-        mapOf("property" to "test"),
-    )
+    private val holdingIdentityId = ShortHash.of(HOLDING_IDENTITY_ID)
+    private val context = mapOf("property" to "test")
 
     @Test
     fun `starting and stopping the service succeeds`() {
@@ -352,7 +346,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        val statuses = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        val statuses = memberOpsClient.checkRegistrationProgress(holdingIdentityId)
 
         assertThat(statuses).hasSize(3)
             .contains(
@@ -406,7 +400,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         assertThrows<CouldNotFindMemberException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+            memberOpsClient.checkRegistrationProgress(holdingIdentityId)
         }
     }
 
@@ -420,7 +414,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         assertThrows<ServiceNotReadyException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+            memberOpsClient.checkRegistrationProgress(holdingIdentityId)
         }
     }
 
@@ -447,7 +441,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         val result = memberOpsClient.checkSpecificRegistrationProgress(
-            request.holdingIdentityShortHash, "registration id"
+            holdingIdentityId, "registration id"
         )
 
         assertThat(result).isNotNull
@@ -476,7 +470,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         assertThrows<CouldNotFindMemberException> {
-            memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+            memberOpsClient.checkSpecificRegistrationProgress(holdingIdentityId, "registration id")
         }
     }
 
@@ -488,7 +482,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         assertThrows<RegistrationProgressNotFoundException> {
-            memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+            memberOpsClient.checkSpecificRegistrationProgress(holdingIdentityId, "registration id")
         }
     }
 
@@ -500,7 +494,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         assertThrows<ServiceNotReadyException> {
-            memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+            memberOpsClient.checkSpecificRegistrationProgress(holdingIdentityId, "registration id")
         }
     }
 
@@ -515,7 +509,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        val result = memberOpsClient.startRegistration(request)
+        val result = memberOpsClient.startRegistration(holdingIdentityId, context)
 
         assertSoftly {
             it.assertThat(result.reason)
@@ -533,7 +527,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        memberOpsClient.startRegistration(request)
+        memberOpsClient.startRegistration(holdingIdentityId, context)
 
         assertThat(records.firstValue).hasSize(1)
             .anySatisfy { record ->
@@ -542,7 +536,6 @@ class MemberResourceClientTest {
                 val value = record.value as? MembershipAsyncRequest
                 val request = value?.request as? RegistrationAsyncRequest
                 assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
-                assertThat(request?.registrationAction).isEqualTo(RegistrationAction.REQUEST_JOIN)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
             }
     }
@@ -550,16 +543,12 @@ class MemberResourceClientTest {
     @Test
     fun `startRegistration uses serial specified in registration context`() {
         val serial = 12L
-        val request = MemberRegistrationRequestDto(
-            ShortHash.of(HOLDING_IDENTITY_ID),
-            RegistrationActionDto.REQUEST_JOIN,
-            mapOf("property" to "test", MemberInfoExtension.SERIAL to serial.toString()),
-        )
+        val context = mapOf("property" to "test", MemberInfoExtension.SERIAL to serial.toString())
         memberOpsClient.start()
         setUpConfig()
 
         val capturedRequest = argumentCaptor<RegistrationRequest>()
-        memberOpsClient.startRegistration(request)
+        memberOpsClient.startRegistration(holdingIdentityId, context)
         verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), capturedRequest.capture())
         assertThat(capturedRequest.firstValue.serial).isEqualTo(serial)
     }
@@ -570,7 +559,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        val result = memberOpsClient.startRegistration(request)
+        val result = memberOpsClient.startRegistration(holdingIdentityId, context)
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
         assertThat(result.availableNow).isEqualTo(true)
@@ -584,7 +573,7 @@ class MemberResourceClientTest {
         setUpConfig()
 
         assertThrows<CouldNotFindMemberException> {
-            memberOpsClient.startRegistration(request)
+            memberOpsClient.startRegistration(holdingIdentityId, context)
         }
     }
 
@@ -594,7 +583,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        memberOpsClient.startRegistration(request)
+        memberOpsClient.startRegistration(holdingIdentityId, context)
 
         verify(membershipPersistenceClient).persistRegistrationRequest(
             eq(holdingIdentity),
@@ -613,7 +602,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        val result = memberOpsClient.startRegistration(request)
+        val result = memberOpsClient.startRegistration(holdingIdentityId, context)
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
         assertThat(result.availableNow).isEqualTo(false)
@@ -626,7 +615,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        memberOpsClient.startRegistration(request)
+        memberOpsClient.startRegistration(holdingIdentityId, context)
 
         verifyNoInteractions(membershipPersistenceClient)
     }
