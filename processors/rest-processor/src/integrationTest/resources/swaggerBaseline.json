@@ -4602,7 +4602,7 @@
             "example" : "No example available for this type"
           }
         },
-        "description" : "The request sent during registration which contains the requested registration  context map containing data required to initiate the registration process."
+        "description" : "The request sent during registration which contains the requested registration context map containing data required to initiate the registration process."
       },
       "PermissionAssociationResponseType" : {
         "required" : [ "createdTimestamp", "id" ],
