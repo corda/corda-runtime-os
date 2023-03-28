@@ -142,6 +142,7 @@ class InteropServiceIntegrationTest {
         // Test config updates don't break Interop Service
         republishConfig(publisher)
         val session = "session1"
+        Thread.sleep(10000)
         publisher.publish(messagesToPublish(session))
 
         val flowMapperExpectedOutputMessages = 2
