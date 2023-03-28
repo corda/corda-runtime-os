@@ -26,10 +26,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -54,15 +56,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.SortedMap
@@ -241,6 +235,14 @@ class StartRegistrationHandlerTest {
             queryMemberInfo = true,
             persistMemberInfo = true
         )
+    }
+
+    @Test
+    fun `serial is increased when building pending member info`() {
+        val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
+        verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
+        handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("1")
     }
 
     @Test
