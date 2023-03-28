@@ -38,6 +38,7 @@ fun remoteToLocalContextMapper(
  * @param keyValuePairList A KVP List that will have the keys renamed.
  * @return The newly re-keyed KVP List
  */
+@Suppress("NestedBlockDepth")
 fun renameInitiatorProps(keyValuePairList: KeyValuePairList) = KeyValueStore().apply {
     keyValuePairList.items.forEach { kvp ->
         if (!kvp.key.contains("corda.initiator")) {
