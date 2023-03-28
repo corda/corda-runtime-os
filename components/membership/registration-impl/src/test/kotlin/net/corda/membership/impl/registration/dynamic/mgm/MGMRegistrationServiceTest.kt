@@ -39,7 +39,6 @@ import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -60,6 +59,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
@@ -85,7 +85,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -113,7 +112,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
@@ -160,7 +159,9 @@ class MGMRegistrationServiceTest {
         on { encodeAsString(ecdhKey) } doReturn ECDH_KEY_STRING
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(
+            sessionCryptoSigningKey
+        )
         on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(ECDH_KEY_ID))) } doReturn listOf(ecdhCryptoSigningKey)
     }
     private val gatewayConfiguration = mock<SmartConfig> {
@@ -213,7 +214,7 @@ class MGMRegistrationServiceTest {
         )
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
-    private val mockGroupParametersList: KeyValuePairList = mock()
+    private val mockSignedGroupParameters: SignedGroupParameters = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on { queryRegistrationRequestsStatus(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
@@ -227,7 +228,9 @@ class MGMRegistrationServiceTest {
                 statusUpdate.capture()
             )
         } doReturn MembershipPersistenceResult.success()
-        on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
+        on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(
+            mockSignedGroupParameters
+        )
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -245,10 +248,7 @@ class MGMRegistrationServiceTest {
         on { get(eq(mgm)) } doReturn virtualNodeInfo
     }
     private val writerService: GroupParametersWriterService = mock()
-    private val mockGroupParameters: GroupParameters = mock()
-    private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(mockGroupParametersList) } doReturn mockGroupParameters
-    }
+
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -264,7 +264,6 @@ class MGMRegistrationServiceTest {
         platformInfoProvider,
         virtualNodeInfoReadService,
         writerService,
-        groupParametersFactory,
         configurationGetService,
     )
 
@@ -472,14 +471,14 @@ class MGMRegistrationServiceTest {
 
         @Test
         fun `registration publishes initial group parameters snapshot to Kafka`() {
-            val groupParametersCaptor = argumentCaptor<GroupParameters>()
+            val groupParametersCaptor = argumentCaptor<SignedGroupParameters>()
             postConfigChangedEvent()
             registrationService.start()
 
             registrationService.register(registrationRequest, mgm, properties)
 
             verify(writerService).put(eq(mgm), groupParametersCaptor.capture())
-            assertThat(groupParametersCaptor.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(groupParametersCaptor.firstValue).isEqualTo(mockSignedGroupParameters)
         }
 
         @Test

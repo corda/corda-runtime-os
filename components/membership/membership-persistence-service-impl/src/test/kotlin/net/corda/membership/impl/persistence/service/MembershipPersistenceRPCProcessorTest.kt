@@ -7,6 +7,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -22,11 +23,13 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
@@ -39,6 +42,7 @@ import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -52,6 +56,7 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
@@ -237,6 +242,9 @@ class MembershipPersistenceRPCProcessorTest {
                 eq(vaultDmlConnectionId),
                 any()
             )
+        } doReturn entityManagerFactory
+        on {
+            getClusterEntityManagerFactory()
         } doReturn entityManagerFactory
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
@@ -724,6 +732,75 @@ class MembershipPersistenceRPCProcessorTest {
                 assertThat(requestId).isEqualTo(rqContext.requestId)
                 assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
                 assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `query static network info returns success`() {
+        val groupId = UUID(0, 1).toString()
+
+        whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
+
+        whenever(entityManager.find(StaticNetworkInfoEntity::class.java, groupId)).doReturn(
+            StaticNetworkInfoEntity(groupId, "123".toByteArray(), "456".toByteArray(), "789".toByteArray())
+        )
+
+        val rq = MembershipPersistenceRequest(
+            MembershipRequestContext(clock.instant(), requestId, null),
+            QueryStaticNetworkInfo(groupId)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(StaticNetworkInfoQueryResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun `update static network info returns success`() {
+        val groupId = UUID(0, 1).toString()
+
+        whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
+
+        whenever(entityManager.find(eq(StaticNetworkInfoEntity::class.java), eq(groupId), any<LockModeType>())).doReturn(
+            StaticNetworkInfoEntity(groupId, "123".toByteArray(), "456".toByteArray(), "789".toByteArray())
+        )
+
+        val info = StaticNetworkInfo(
+            groupId,
+            KeyValuePairList(listOf(mock(), mock())),
+            ByteBuffer.wrap("123".toByteArray()),
+            ByteBuffer.wrap("456".toByteArray()),
+            1
+        )
+        val rq = MembershipPersistenceRequest(
+            MembershipRequestContext(clock.instant(), requestId, null),
+            UpdateStaticNetworkInfo(info)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(StaticNetworkInfoQueryResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isNull()
             }
         }
     }

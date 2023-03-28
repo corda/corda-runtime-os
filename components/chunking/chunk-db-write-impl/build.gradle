@@ -43,6 +43,7 @@ dependencies {
     implementation project(":libs:packaging:packaging-verify")
     implementation project(":libs:utilities")
     implementation project(':libs:membership:certificates-common')
+    implementation project(':libs:membership:network-info')
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
 
@@ -61,6 +62,8 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(":testing:packaging-test-utilities")
     testImplementation project(':testing:test-utilities')
+
+    integrationTestImplementation project(':libs:platform-info')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

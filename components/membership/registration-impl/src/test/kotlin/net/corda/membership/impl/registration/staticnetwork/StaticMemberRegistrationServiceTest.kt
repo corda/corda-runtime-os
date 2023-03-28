@@ -12,11 +12,14 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -45,6 +48,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDuplicatedVNodeName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
@@ -59,6 +63,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
@@ -69,6 +75,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -78,12 +85,9 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -92,7 +96,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -116,6 +119,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -123,6 +128,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class StaticMemberRegistrationServiceTest {
     private companion object {
@@ -171,12 +177,6 @@ class StaticMemberRegistrationServiceTest {
 
     private val publisherFactory: PublisherFactory = mock {
         on { createPublisher(any(), any()) } doReturn mockPublisher
-    }
-
-    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock()
-
-    private val subscriptionFactory: SubscriptionFactory = mock {
-        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyValuePairList>>(), any()) } doReturn mockSubscription
     }
 
     private val keyEncodingService: KeyEncodingService = mock {
@@ -249,14 +249,25 @@ class StaticMemberRegistrationServiceTest {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mock())
-        on { persistRegistrationRequest(any(), any()) }  doReturn MembershipPersistenceResult.success()
+        on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(
+            mockSignedGroupParameters
+        )
+        on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+        on { updateStaticNetworkInfo(any()) } doAnswer { MembershipPersistenceResult.Success(it.getArgument(0)) }
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
     }
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
+        on { deserialize(any()) } doReturn KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "1")
+            )
+        )
+    }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
 
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
@@ -277,10 +288,28 @@ class StaticMemberRegistrationServiceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(alice)) } doReturn virtualNodeInfo
     }
-    private val mockGroupParameters: GroupParameters = mock()
-    private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(any()) } doReturn mockGroupParameters
+    private val serializedGroupParameters = "group-params".toByteArray()
+    private val mockSignedGroupParameters: SignedGroupParameters = mock {
+        on { bytes } doReturn serializedGroupParameters
     }
+    private val mockUnsignedGroupParameters: UnsignedGroupParameters = mock {
+        on { bytes } doReturn serializedGroupParameters
+    }
+    private val groupParametersFactory: GroupParametersFactory = mock {
+        on { create(any<AvroGroupParameters>()) } doReturn mockSignedGroupParameters
+        on { create(any<KeyValuePairList>()) } doReturn mockUnsignedGroupParameters
+    }
+    private val staticNetworkMgmKeyPair = KeyPairGenerator
+        .getInstance(StaticNetworkUtils.mgmSigningKeyAlgorithm, StaticNetworkUtils.mgmSigningKeyProvider)
+        .genKeyPair()
+    private val currentStaticNetworkInfo = mock<StaticNetworkInfo> {
+        on { groupParameters } doReturn KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, "1")))
+        on { groupId } doReturn DUMMY_GROUP_ID
+        on { version } doReturn 1
+        on { mgmPublicSigningKey } doReturn ByteBuffer.wrap(staticNetworkMgmKeyPair.public.encoded)
+        on { mgmPrivateSigningKey } doReturn ByteBuffer.wrap(staticNetworkMgmKeyPair.private.encoded)
+    }
+
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
             queryRegistrationRequestsStatus(
@@ -290,6 +319,8 @@ class StaticMemberRegistrationServiceTest {
                 anyOrNull(),
             )
         } doReturn MembershipQueryResult.Success(emptyList())
+
+        on { queryStaticNetworkInfo(any()) } doReturn MembershipQueryResult.Success(currentStaticNetworkInfo)
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val groupReader: MembershipGroupReader = mock()
@@ -300,7 +331,6 @@ class StaticMemberRegistrationServiceTest {
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
-        subscriptionFactory,
         keyEncodingService,
         cryptoOpsClient,
         configurationReadService,
@@ -335,13 +365,19 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             registrationService.register(registrationId, alice, mockContext)
-            verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
+            verify(mockPublisher).publish(capturedPublishedList.capture())
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
 
             (CryptoConsts.Categories.all.minus(listOf(LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
-                verify(cryptoOpsClient, never()).generateKeyPair(any(), eq(it), any(), any(), any<Map<String, String>>())
+                verify(cryptoOpsClient, never()).generateKeyPair(
+                    any(),
+                    eq(it),
+                    any(),
+                    any(),
+                    any<Map<String, String>>()
+                )
             }
             registrationService.stop()
 
@@ -349,8 +385,10 @@ class StaticMemberRegistrationServiceTest {
             assertEquals(4, publishedList.size)
 
             publishedList.take(3).forEach {
-                assertTrue(it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
-                        || it.key.startsWith(charlieId.value))
+                assertTrue(
+                    it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
+                            || it.key.startsWith(charlieId.value)
+                )
                 assertTrue(it.key.endsWith(aliceId.value))
             }
 
@@ -402,7 +440,13 @@ class StaticMemberRegistrationServiceTest {
 
             (CryptoConsts.Categories.all.minus(listOf(SESSION_INIT, LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
-                verify(cryptoOpsClient, never()).generateKeyPair(any(), eq(it), any(), any(), any<Map<String, String>>())
+                verify(cryptoOpsClient, never()).generateKeyPair(
+                    any(),
+                    eq(it),
+                    any(),
+                    any(),
+                    any<Map<String, String>>()
+                )
             }
             registrationService.stop()
         }
@@ -429,13 +473,13 @@ class StaticMemberRegistrationServiceTest {
         @Test
         fun `registration persists group parameters for registering member`() {
             val knownIdentity = HoldingIdentity(aliceName, "test-group")
-            val status = argumentCaptor<GroupParameters>()
+            val status = argumentCaptor<SignedGroupParameters>()
             whenever(
                 persistenceClient.persistGroupParameters(
                     any(),
                     status.capture()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(mock()))
+            ).doReturn(MembershipPersistenceResult.Success(mockSignedGroupParameters))
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
             setUpPublisher()
@@ -443,13 +487,13 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, knownIdentity, mockContext)
 
-            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(status.firstValue).isEqualTo(mockSignedGroupParameters)
         }
 
         @Test
         fun `registration publishes group parameters to Kafka for registering member`() {
             val knownIdentity = HoldingIdentity(aliceName, "test-group")
-            val status = argumentCaptor<GroupParameters>()
+            val status = argumentCaptor<SignedGroupParameters>()
             doNothing().whenever(groupParametersWriterService).put(any(), status.capture())
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
@@ -458,7 +502,7 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, knownIdentity, mockContext)
 
-            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(status.firstValue).isEqualTo(mockSignedGroupParameters)
         }
 
         @Test
@@ -790,7 +834,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     any()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(mock()))
+            ).doReturn(MembershipPersistenceResult.Success(mockSignedGroupParameters))
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
             setUpPublisher()
@@ -798,9 +842,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, bob, context)
 
-            verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockGroupParameters))
-            verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockGroupParameters))
-            verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockGroupParameters))
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockSignedGroupParameters))
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockSignedGroupParameters))
+            verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockSignedGroupParameters))
         }
 
         @Test
@@ -818,9 +862,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, bob, context)
 
-            verify(groupParametersWriterService).put(eq(bob), eq(mockGroupParameters))
-            verify(groupParametersWriterService).put(eq(alice), eq(mockGroupParameters))
-            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockGroupParameters))
+            verify(groupParametersWriterService).put(eq(bob), eq(mockSignedGroupParameters))
+            verify(groupParametersWriterService).put(eq(alice), eq(mockSignedGroupParameters))
+            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockSignedGroupParameters))
         }
 
         @Test
@@ -913,6 +957,97 @@ class StaticMemberRegistrationServiceTest {
             assertTrue(registrationService.isRunning)
             registrationService.stop()
             assertFalse(registrationService.isRunning)
+        }
+    }
+
+    @Nested
+    inner class StaticNetworkInfoTests {
+
+        @Test
+        fun `Failure to update static network info will be retried`() {
+            whenever(persistenceClient.updateStaticNetworkInfo(any()))
+                .doAnswer {
+                    // Overwrite the behaviour for next call so it succeeds
+                    whenever(persistenceClient.updateStaticNetworkInfo(any())).doAnswer {
+                        MembershipPersistenceResult.Success(it.getArgument(0))
+                    }
+                    MembershipPersistenceResult.Failure("Failed")
+                }
+
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
+
+            verify(membershipQueryClient, times(2)).queryStaticNetworkInfo(any())
+            verify(persistenceClient, times(2)).updateStaticNetworkInfo(any())
+        }
+
+        @Test
+        fun `Failure to update static network info will be retried up to the configured max times and can succeed on a later retry`() {
+            val maxRetries = 10
+            var attempts = 0
+            whenever(persistenceClient.updateStaticNetworkInfo(any()))
+                .doAnswer {
+                    if(++attempts == maxRetries-1 ) {
+                        // Overwrite the behaviour for next call so it succeeds
+                        whenever(persistenceClient.updateStaticNetworkInfo(any())).doAnswer {
+                            MembershipPersistenceResult.Success(it.getArgument(0))
+                        }
+                    }
+                    MembershipPersistenceResult.Failure("Failed")
+                }
+
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
+
+            verify(membershipQueryClient, times(maxRetries)).queryStaticNetworkInfo(any())
+            verify(persistenceClient, times(maxRetries)).updateStaticNetworkInfo(any())
+        }
+
+        @Test
+        fun `Failure to update static network info will be retried up to the configured max times and then fail`() {
+            val maxRetries = 10
+            whenever(persistenceClient.updateStaticNetworkInfo(any()))
+                .doAnswer {
+                    MembershipPersistenceResult.Failure("my test error")
+                }
+
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to notary.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }.also {
+                assertThat(it.message).contains("my test error")
+            }
+
+            verify(membershipQueryClient, times(maxRetries)).queryStaticNetworkInfo(any())
+            verify(persistenceClient, times(maxRetries)).updateStaticNetworkInfo(any())
         }
     }
 }

@@ -13,6 +13,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -28,7 +29,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.utilities.time.Clock
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -146,7 +146,7 @@ class DistributeMembershipPackageHandler(
     private fun createMembershipPackageFactory(
         mgm: MemberInfo,
         members: Collection<MemberInfo>
-    ): (Collection<MemberInfo>, GroupParameters) -> MembershipPackage {
+    ): (Collection<MemberInfo>, InternalGroupParameters) -> MembershipPackage {
         val mgmSigner = signerFactory.createSigner(mgm)
         val signatures = membershipQueryClient
             .queryMembersSignatures(
