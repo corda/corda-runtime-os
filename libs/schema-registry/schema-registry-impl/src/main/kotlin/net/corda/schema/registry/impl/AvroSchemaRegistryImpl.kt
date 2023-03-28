@@ -106,6 +106,9 @@ class AvroSchemaRegistryImpl(
      */
     private val schemasByFingerprint: ConcurrentHashMap<Fingerprint, Schema> = ConcurrentHashMap<Fingerprint, Schema>()
 
+    override fun containsSchema(fingerPrint: Fingerprint) =
+        schemasByFingerprint.containsKey(fingerPrint)
+
     override val schemasByFingerprintSnapshot
         get() = schemasByFingerprint.toMap()
 

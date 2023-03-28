@@ -250,6 +250,36 @@ internal class AvroSchemaRegistryImplTest {
         }
     }
 
+    @Test
+    fun `containsSchema returns true if schema exists`() {
+        val registry = AvroSchemaRegistryImpl()
+
+        registry.schemasByFingerprintSnapshot.keys.forEach {
+            assertThat(registry.containsSchema(it)).isTrue
+        }
+    }
+
+    @Test
+    fun `containsSchema returbs false if schema does not exists`() {
+        val registry = AvroSchemaRegistryImpl()
+
+        val newSchema = Schema.Parser().parse("""
+            {
+               "type" : "record",
+               "namespace" : "foo",
+               "name" : "bar",
+               "fields" : [
+                  { "name" : "Name" , "type" : "string" },
+                  { "name" : "CoolFactor" , "type" : "int" }
+               ]
+            }
+        """.trimIndent())
+        val newSchemaFingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", newSchema))
+
+
+        assertThat(registry.containsSchema(newSchemaFingerprint)).isFalse
+    }
+
     @Disabled("Manual run only for a quick leak test.")
     @ParameterizedTest
     @ValueSource(booleans = [false, true])

@@ -34,19 +34,17 @@ internal class AvroSchemaProcessor(
     override fun onSnapshot(currentData: Map<Fingerprint, String>) {
         logger.info("Received ${currentData.size} Avro schemas from topic in initial snapshot.")
 
-        val externalFingerprints = mutableSetOf<Fingerprint>()
         // Read external schemas
-        currentData.forEach { (fingerprint, schemaJson) ->
-            externalFingerprints.add(fingerprint)
-            avroSchemaRegistry.addSchemaOnly(Schema.Parser().parse(schemaJson))
-        }
-
-        // Record any schemas we know about that aren't already in the topic
-        avroSchemaRegistry.schemasByFingerprintSnapshot.forEach { (fingerprint, schema) ->
-            if (!externalFingerprints.contains(fingerprint)) {
+        currentData
+            .filter { (fingerprint, _) ->
+                !avroSchemaRegistry.containsSchema(fingerprint)
+            }
+            .forEach { (fingerprint, schemaJson) ->
+                val schema = Schema.Parser().parse(schemaJson)
+                avroSchemaRegistry.addSchemaOnly(schema)
+                // Record any schemas we know about that aren't already in the topic
                 recordsToWrite.add(Record(AVRO_SCHEMA_TOPIC, fingerprint, schema.toString()))
             }
-        }
 
         if (recordsToWrite.isNotEmpty()) {
             logger.info("Queued ${recordsToWrite.size} Avro schemas to write to topic.")
@@ -56,7 +54,11 @@ internal class AvroSchemaProcessor(
         coordinator.postEvent(SetupConfigSubscription())
     }
 
-    override fun onNext(newRecord: Record<Fingerprint, String>, oldValue: String?, currentData: Map<Fingerprint, String>) {
+    override fun onNext(
+        newRecord: Record<Fingerprint, String>,
+        oldValue: String?,
+        currentData: Map<Fingerprint, String>
+    ) {
         avroSchemaRegistry.addSchemaOnly(Schema.Parser().parse(newRecord.value))
     }
 
