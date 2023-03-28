@@ -169,7 +169,6 @@ class MGMRegistrationService @Activate constructor(
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,
-            cordaAvroSerializationFactory,
             cryptoOpsClient,
             keyEncodingService,
             memberInfoFactory,

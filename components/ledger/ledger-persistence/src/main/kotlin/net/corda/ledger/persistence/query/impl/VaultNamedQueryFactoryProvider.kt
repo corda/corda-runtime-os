@@ -35,7 +35,11 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
         val metadataServices = context.getMetadataServices<VaultNamedQueryFactory>()
 
         if (logger.isDebugEnabled) {
-            logger.debug("Found ${metadataServices.size} custom ledger queries.")
+            if (metadataServices.size == 1) {
+                logger.debug("Found 1 vault named query.")
+            } else {
+                logger.debug("Found ${metadataServices.size} vault named queries.")
+            }
         }
 
         // TODO extra checks needed?

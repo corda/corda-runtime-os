@@ -18,11 +18,11 @@ class VirtualNodeCliPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     override fun start() {
-        logger.info("starting virtual node plugin")
+        logger.debug("starting virtual node plugin")
     }
 
     override fun stop() {
-        logger.info("stopping virtual node plugin")
+        logger.debug("stopping virtual node plugin")
     }
 
     @Extension

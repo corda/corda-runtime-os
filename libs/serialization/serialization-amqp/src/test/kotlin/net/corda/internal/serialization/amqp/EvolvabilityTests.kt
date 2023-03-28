@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.custom.InstantSerializer
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
@@ -10,7 +11,6 @@ import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
-import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
@@ -58,7 +58,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedC = DeserializationInput(sf).deserialize(bytes = SerializedBytes<C>(sc2))
+        val deserializedC = DeserializationInput(sf).deserialize(bytes = SerializedBytesImpl<C>(sc2))
 
         assertEquals(A, deserializedC.a)
         assertEquals(B, deserializedC.b)
@@ -83,7 +83,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedC = DeserializationInput(sf).deserialize(bytes = SerializedBytes<C>(sc2))
+        val deserializedC = DeserializationInput(sf).deserialize(bytes = SerializedBytesImpl<C>(sc2))
 
         assertEquals(A, deserializedC.a)
         assertEquals(B, deserializedC.b)
@@ -107,7 +107,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedC = DeserializationInput(sf).deserialize(SerializedBytes<C>(sc2))
+        val deserializedC = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sc2))
 
         assertEquals(A, deserializedC.a)
         assertEquals(B, deserializedC.b)
@@ -129,7 +129,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedC = DeserializationInput(sf).deserialize(SerializedBytes<C>(sc2))
+        val deserializedC = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sc2))
 
         assertEquals(A, deserializedC.a)
         assertEquals(null, deserializedC.b)
@@ -158,7 +158,7 @@ class EvolvabilityTests {
         // added parameter that isn't optional, i.e. not nullable and there isn't
         // a constructor that takes the old parameters
         assertThrows<NotSerializableException> {
-            DeserializationInput(sf).deserialize(SerializedBytes<C>(sc2))
+            DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sc2))
         }
     }
 
@@ -182,7 +182,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource("EvolvabilityTests.removeParameters")
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(B, deserializedCC.b)
         assertEquals(D, deserializedCC.d)
@@ -210,7 +210,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(A, deserializedCC.a)
         assertEquals(E, deserializedCC.e)
@@ -237,7 +237,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(A, deserializedCC.a)
         assertEquals("hello", deserializedCC.b)
@@ -263,7 +263,7 @@ class EvolvabilityTests {
         }
 
         val url = EvolvabilityTests::class.java.getResource(resource)
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(url.readBytes()))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(url.readBytes()))
 
         assertEquals("10", deserializedCC.a)
         assertEquals(y, deserializedCC.y)
@@ -302,7 +302,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         assertNotNull(url)
-        DeserializationInput(factory).deserialize(SerializedBytes<NetworkParametersExample>(url.readBytes()))
+        DeserializationInput(factory).deserialize(SerializedBytesImpl<NetworkParametersExample>(url.readBytes()))
     }
 
     @Test
@@ -328,7 +328,7 @@ class EvolvabilityTests {
         // we expect this to throw as we should not find any constructors
         // capable of dealing with this
         assertThrows<NotSerializableException> {
-            DeserializationInput(sf).deserialize(SerializedBytes<CC>(url.readBytes()))
+            DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(url.readBytes()))
         }
     }
 
@@ -356,7 +356,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(A, deserializedCC.a)
         assertEquals(B, deserializedCC.b)
@@ -390,7 +390,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(A, deserializedCC.a)
         assertEquals(C, deserializedCC.c)
@@ -444,7 +444,7 @@ class EvolvabilityTests {
         val url3 = EvolvabilityTests::class.java.getResource(resource3)
 
         val sb1 = url1.readBytes()
-        val db1 = DeserializationInput(sf).deserialize(SerializedBytes<C>(sb1))
+        val db1 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sb1))
 
         assertEquals(a, db1.a)
         assertEquals(b, db1.b)
@@ -453,7 +453,7 @@ class EvolvabilityTests {
         assertEquals(-1, db1.e)
 
         val sb2 = url2.readBytes()
-        val db2 = DeserializationInput(sf).deserialize(SerializedBytes<C>(sb2))
+        val db2 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sb2))
 
         assertEquals(a, db2.a)
         assertEquals(b, db2.b)
@@ -462,7 +462,7 @@ class EvolvabilityTests {
         assertEquals(-1, db2.e)
 
         val sb3 = url3.readBytes()
-        val db3 = DeserializationInput(sf).deserialize(SerializedBytes<C>(sb3))
+        val db3 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sb3))
 
         assertEquals(a, db3.a)
         assertEquals(b, db3.b)
@@ -496,7 +496,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
-        val outer = DeserializationInput(sf).deserialize(SerializedBytes<Outer>(sc2))
+        val outer = DeserializationInput(sf).deserialize(SerializedBytesImpl<Outer>(sc2))
 
         assertEquals(oa, outer.a)
         assertEquals(ia, outer.b.a)
@@ -511,7 +511,7 @@ class EvolvabilityTests {
         )
         println(remoteTypeInfo)
 
-        val newOuter = DeserializationInput(sf).deserialize(SerializedBytes<Outer>(newVersion.obj.bytes))
+        val newOuter = DeserializationInput(sf).deserialize(SerializedBytesImpl<Outer>(newVersion.obj.bytes))
         assertEquals(oa, newOuter.a)
         assertEquals(ia, newOuter.b.a)
         assertEquals("new value", newOuter.b.b)
@@ -571,7 +571,7 @@ class EvolvabilityTests {
         val url3 = EvolvabilityTests::class.java.getResource(resource3)
 
         val sb1 = url1.readBytes()
-        val db1 = DeserializationInput(sf).deserialize(SerializedBytes<C>(sb1))
+        val db1 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sb1))
 
         assertEquals(b, db1.b)
         assertEquals(c, db1.c)
@@ -581,7 +581,7 @@ class EvolvabilityTests {
         assertEquals(-1, db1.g)
 
         val sb2 = url2.readBytes()
-        val db2 = DeserializationInput(sf).deserialize(SerializedBytes<C>(sb2))
+        val db2 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sb2))
 
         assertEquals(b, db2.b)
         assertEquals(c, db2.c)
@@ -591,7 +591,7 @@ class EvolvabilityTests {
         assertEquals(-1, db1.g)
 
         val sb3 = url3.readBytes()
-        val db3 = DeserializationInput(sf).deserialize(SerializedBytes<C>(sb3))
+        val db3 = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sb3))
 
         assertEquals(b, db3.b)
         assertEquals(c, db3.c)
@@ -636,7 +636,7 @@ class EvolvabilityTests {
         val url = EvolvabilityTests::class.java.getResource(resource)
 
         val sc2 = url.readBytes()
-        val deserializedC = DeserializationInput(sf).deserialize(SerializedBytes<C>(sc2))
+        val deserializedC = DeserializationInput(sf).deserialize(SerializedBytesImpl<C>(sc2))
 
         assertEquals(1, deserializedC.a)
         assertEquals(2, deserializedC.b)
@@ -669,7 +669,7 @@ class EvolvabilityTests {
         val url = EvolvabilityTests::class.java.getResource(resource)
 
         val sc2 = url.readBytes()
-        val deserialized = DeserializationInput(sf).deserialize(SerializedBytes<ParameterizedContainer>(sc2))
+        val deserialized = DeserializationInput(sf).deserialize(SerializedBytesImpl<ParameterizedContainer>(sc2))
 
         assertEquals(10, deserialized.parameterized?.a)
     }
@@ -693,7 +693,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource) ?: fail("Not found!")
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(1, deserializedCC.a)
         assertEquals(42, deserializedCC.b)
@@ -718,7 +718,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource) ?: fail("Not found!")
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals(-1, deserializedCC.a)
         assertEquals(42, deserializedCC.b)
@@ -743,7 +743,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource) ?: fail("Not found!")
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals("written", deserializedCC.data)
         assertEquals("<not provided>", deserializedCC.b)
@@ -768,7 +768,7 @@ class EvolvabilityTests {
 
         val url = EvolvabilityTests::class.java.getResource(resource) ?: fail("Not found!")
         val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
+        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytesImpl<CC>(sc2))
 
         assertEquals("written<not provided>", deserializedCC.data)
     }

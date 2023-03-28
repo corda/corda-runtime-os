@@ -1,20 +1,20 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
+import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
-import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 
 /** Rest operations for virtual node management. */
 @HttpRestResource(
@@ -100,7 +100,7 @@ interface VirtualNodeRestResource : RestResource {
     fun getVirtualNodeOperationStatus(
         @RestPathParameter(description = "The requestId for the operation; obtained during node creation/upgrade")
         requestId: String
-    ): VirtualNodeOperationStatuses
+    ): AsyncOperationStatus
 
 
     /**

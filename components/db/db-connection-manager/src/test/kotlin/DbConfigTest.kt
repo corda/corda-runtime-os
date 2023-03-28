@@ -63,12 +63,11 @@ class DbConfigTest {
         dataSourceFactory.createFromConfig(fullSmartConfig)
 
         verify(dataSourceFactory).create(
-            driver,
-            url,
-            user,
-            pass,
-            false,
-            poolsize)
+            driverClass = driver,
+            jdbcUrl = url,
+            username = user,
+            password = pass,
+            maximumPoolSize = poolsize)
     }
 
     @Test
@@ -80,8 +79,7 @@ class DbConfigTest {
             DEFAULT_JDBC_URL,
             user,
             pass,
-            false,
-            DB_POOL_MAX_SIZE)
+            maximumPoolSize = DB_POOL_MAX_SIZE)
     }
 
     @Test

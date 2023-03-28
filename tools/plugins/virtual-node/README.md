@@ -11,7 +11,7 @@ deletes vault data for the affected Virtual Nodes.
 
 Example:
 ```bash
-$ corda-cli vnode reset -t https://localhost:8888 -u admin -p password --cpi mycpifile.cpi -w
+$ corda-cli vnode reset -t https://localhost:8888 -u admin -p password --cpi mycpifile.cpi -w -k
 ```
 
 Flags:
@@ -21,3 +21,4 @@ Flags:
  - `-pv` `--protocol-version` NOT REQUIRED, defaults to 1
  - `-c` `--cpi` the cpi file to upload
  - `-w` `--wait` wait for the result, or have a result ID returned to be checked later.
+ - `-k` `--insecure` Allow for invalid Server-side SSL certificates

@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.utxo.test.UtxoLedgerTest
-import net.corda.ledger.utxo.testkit.anotherUtxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -24,20 +24,20 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
     @Test
     fun `Overwriting to the same notary does not throw`() {
         utxoBaselinedTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
         assertDoesNotThrow {
             utxoBaselinedTransactionBuilder
-                .setNotary(utxoNotaryExample)
+                .setNotary(notaryX500Name)
         }
     }
 
     @Test
     fun `Overwriting to different notary throws`() {
         utxoBaselinedTransactionBuilder
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
         assertThatThrownBy {
             utxoBaselinedTransactionBuilder
-                .setNotary(anotherUtxoNotaryExample)
+                .setNotary(anotherNotaryX500Name)
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
 

@@ -52,6 +52,7 @@ dependencies {
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:db:db-admin')
     implementation project(':libs:db:db-admin-impl')
+    implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 

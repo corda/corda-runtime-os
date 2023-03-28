@@ -23,11 +23,12 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.FinalizationResult
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -60,7 +61,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun getTransactionBuilder() =
-        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
+        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, notaryLookup)
 
     @Suppress("UNCHECKED_CAST")
     @Suspendable
@@ -99,7 +100,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun finalize(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
-    ): UtxoSignedTransaction {
+    ): FinalizationResult {
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
@@ -109,19 +110,19 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
                     sessions,
-                    getPluggableNotaryClientFlow(signedTransaction.notary)
+                    getPluggableNotaryClientFlow(signedTransaction.notaryName)
                 )
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return flowEngine.subFlow(utxoFinalityFlow)
+        return FinalizationResultImpl(flowEngine.subFlow(utxoFinalityFlow))
     }
 
     @Suspendable
     override fun receiveFinality(
         session: FlowSession, validator: UtxoTransactionValidator
-    ): UtxoSignedTransaction {
+    ): FinalizationResult {
         val utxoReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoReceiveFinalityFlow(session, validator)
@@ -129,7 +130,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return flowEngine.subFlow(utxoReceiveFinalityFlow)
+        return FinalizationResultImpl(flowEngine.subFlow(utxoReceiveFinalityFlow))
     }
 
     // Retrieve notary client plugin class for specified notary service identity. This is done in
@@ -137,12 +138,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
     // internally.
     @VisibleForTesting
     @Suppress("ThrowsCount")
-    internal fun getPluggableNotaryClientFlow(notary: Party): Class<PluggableNotaryClientFlow> {
+    internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): Class<PluggableNotaryClientFlow> {
 
-        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass
+        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary }?.pluginClass
             ?: throw CordaRuntimeException(
                 "Plugin class not found for notary service " +
-                        "${notary.name} . This means that no notary service matching this name " +
+                        "${notary} . This means that no notary service matching this name " +
                         "has been registered on the network."
             )
 

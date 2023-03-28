@@ -1,6 +1,9 @@
 package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
+import java.security.KeyPairGenerator
+import java.security.Provider
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -17,13 +20,12 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
-import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SoftCryptoService
@@ -34,11 +36,13 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
-import java.security.KeyPairGenerator
-import java.security.Provider
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
+
+/**
+ * Provide instances of high level crypto services, with no database underneath, for
+ * use for integration test cases that don't involve in-memory databases.
+ */
 class TestServicesFactory {
     companion object {
         const val CTX_TRACKING = "ctxTrackingId"
@@ -141,13 +145,8 @@ class TestServicesFactory {
         }
     }
 
-    val signingKeyStore: TestSigningKeyStore by lazy {
-        TestSigningKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
+    val signingRepository: TestSigningRepository by lazy {
+        TestSigningRepository()
     }
 
     val hsmStore: TestHSMStore by lazy {
@@ -159,37 +158,15 @@ class TestServicesFactory {
         }
     }
 
-    val wrappingKeyStore: TestWrappingKeyStore by lazy {
-        TestWrappingKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
-
+    val cryptoWrappingRepository = TestWrappingRepository()
     val signingService: SigningService by lazy {
         SigningServiceImpl(
-            signingKeyStore,
-            cryptoServiceFactory,
-            schemeMetadata,
-            platformDigest
+            cryptoServiceFactory = cryptoServiceFactory,
+            signingRepositoryFactory = { signingRepository },
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            schemeMetadata = schemeMetadata,
+            config = cryptoConfig.signingService(),
         )
-    }
-
-    val signingServiceFactory: SigningServiceFactory by lazy {
-        SigningServiceFactoryImpl(
-            coordinatorFactory,
-            schemeMetadata,
-            signingKeyStore,
-            cryptoServiceFactory,
-            platformDigest
-        ).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
     }
 
     val hsmService: HSMServiceImpl by lazy {
@@ -197,7 +174,7 @@ class TestServicesFactory {
             coordinatorFactory,
             configurationReadService,
             hsmStore,
-            signingServiceFactory
+            cryptoServiceFactory = cryptoServiceFactory
         ).also {
             it.start()
             eventually {
@@ -211,7 +188,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy {
         CryptoServiceWrapper(
             SoftCryptoService(
-                wrappingKeyStore = wrappingKeyStore,
+                wrappingRepositoryFactory = { cryptoWrappingRepository },
                 schemeMetadata = schemeMetadata,
                 rootWrappingKey = rootWrappingKey,
                 digestService = PlatformDigestServiceImpl(schemeMetadata),
@@ -222,7 +199,7 @@ class TestServicesFactory {
                 },
                 wrappingKeyFactory = {
                     WrappingKeyImpl.generateWrappingKey(it)
-                }
+                },
             ),
             recordedCryptoContexts
         )
@@ -230,20 +207,18 @@ class TestServicesFactory {
 
     // this MUST return cryptoService at the end of the day, rather than make its own,
     // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
-    val cryptoServiceFactory: CryptoServiceFactoryImpl by lazy {
-        CryptoServiceFactoryImpl(
-            coordinatorFactory,
-            configurationReadService,
-            hsmStore,
-            object : CryptoServiceProvider {
-                override fun getInstance(config: SmartConfig): CryptoService = cryptoService
-            }
-        ).also {
-            it.start()
-            it.bootstrapConfig(bootstrapConfig)
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
+    val cryptoServiceFactory: CryptoServiceFactoryImpl = CryptoServiceFactoryImpl(
+        coordinatorFactory,
+        configurationReadService,
+        hsmStore,
+        object : CryptoServiceProvider {
+            override fun getInstance(config: SmartConfig): CryptoService = cryptoService
+        }
+    ).also {
+        it.start()
+        it.bootstrapConfig(bootstrapConfig)
+        eventually {
+            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
         }
     }
 
@@ -291,3 +266,5 @@ class TestServicesFactory {
         }
     }
 }
+
+

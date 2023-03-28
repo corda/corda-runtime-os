@@ -8,6 +8,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.bytes
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -54,7 +55,6 @@ import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistence
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -62,10 +62,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.synchronisation.SynchronisationProxy
@@ -375,7 +373,7 @@ class SynchronisationIntegrationTest {
         private fun createTestMemberInfo(holdingIdentity: HoldingIdentity, sessionInitKey: PublicKey): MemberInfo = memberInfoFactory.create(
             sortedMapOf(
                 MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
-                MemberInfoExtension.PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionInitKey),
+                String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to keyEncodingService.encodeAsString(sessionInitKey),
                 MemberInfoExtension.GROUP_ID to groupId,
                 String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
                 String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
@@ -526,7 +524,6 @@ class SynchronisationIntegrationTest {
         val groupParameters = KeyValuePairList(
             listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH),
-                KeyValuePair(MPV_KEY, PLATFORM_VERSION),
                 KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
             ).sorted()
         )

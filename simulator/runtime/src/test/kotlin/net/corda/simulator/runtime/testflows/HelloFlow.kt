@@ -14,7 +14,9 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 
 @InitiatingFlow(protocol = "hello")
 class HelloFlow : ClientStartableFlow {
@@ -45,6 +47,12 @@ class HelloFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var signatureVerificationService: DigitalSignatureVerificationService
+
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {

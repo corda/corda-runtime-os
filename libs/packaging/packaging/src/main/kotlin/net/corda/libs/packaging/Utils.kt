@@ -1,6 +1,7 @@
 package net.corda.libs.packaging
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.v5.base.types.MemberX500Name

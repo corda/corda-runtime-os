@@ -203,14 +203,15 @@ class OnBoardMember : Runnable, BaseOnboard() {
     }
 
     override val registrationContext by lazy {
+        val preAuth = if (preAuthToken != null) mapOf("corda.auth.token" to preAuthToken) else emptyMap()
         mapOf(
-            "corda.session.key.id" to sessionKeyId,
-            "corda.session.key.signature.spec" to "SHA256withECDSA",
+            "corda.session.keys.0.id" to sessionKeyId,
+            "corda.session.keys.0.signature.spec" to "SHA256withECDSA",
             "corda.ledger.keys.0.id" to ledgerKeyId,
             "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA",
             "corda.endpoints.0.connectionURL" to p2pUrl,
             "corda.endpoints.0.protocolVersion" to "1"
-        ) + if (preAuthToken != null) mapOf("corda.auth.token" to preAuthToken) else emptyMap()
+        ) + preAuth
     }
     override fun run() {
         println("This sub command should only be used in for internal development")
