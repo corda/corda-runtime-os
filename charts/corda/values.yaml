@@ -56,14 +56,14 @@ serviceAccount:
 annotations: {}
 
 # tolerations to schedual pods on nodes with matiching taints 
-tolerations:
-- key: ""
-  # -- toleration operator
-  operator: ""
-  # -- toleration value
-  value: ""
-  # -- toleration effect
-  effect: ""
+tolerations: []
+# - key: ""
+#   # -- toleration operator
+#   operator: ""
+#   # -- toleration value
+#   value: ""
+#   # -- toleration effect
+#   effect: ""
 
 # Database configuration
 db:
