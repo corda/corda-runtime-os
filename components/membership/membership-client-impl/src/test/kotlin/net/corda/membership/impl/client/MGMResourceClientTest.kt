@@ -165,7 +165,7 @@ class MGMResourceClientTest {
     private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
             MemberInfoExtension.PARTY_NAME to name,
-            MemberInfoExtension.PARTY_SESSION_KEY to KNOWN_KEY,
+            String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
             MemberInfoExtension.GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),

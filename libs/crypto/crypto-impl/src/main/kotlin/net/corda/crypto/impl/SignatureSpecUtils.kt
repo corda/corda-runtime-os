@@ -2,6 +2,7 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.bytes
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.SignatureSpec
 

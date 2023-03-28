@@ -22,7 +22,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
@@ -35,7 +34,7 @@ import java.security.PublicKey
 @Suspendable
 @Suppress("LongParameterList")
 fun validateRequestSignature(notarizationRequest: NotarizationRequest,
-                             requestingParty: Party,
+                             requestingPartyKey: PublicKey,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
                              signature: NotarizationRequestSignature,
@@ -43,9 +42,9 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
 ) {
     val digitalSignature = signature.digitalSignature
 
-    if (requestingParty.owningKey != digitalSignature.by) {
+    if (requestingPartyKey != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingParty.owningKey.publicKeyId(digestService)}, " +
+            "Expected a signature by ${requestingPartyKey.publicKeyId(digestService)}, " +
                     "but received by ${digitalSignature.by.publicKeyId(digestService)}}"
         )
     }
@@ -72,7 +71,8 @@ fun generateRequestSignature(notarizationRequest: NotarizationRequest,
                              signingService: SigningService
 ): NotarizationRequestSignature {
     val serializedRequest = serializationService.serialize(notarizationRequest).bytes
-    val myLegalIdentity = memberInfo.sessionInitiationKey
+    // CORE-11837: Use notary key instead
+    val myLegalIdentity = memberInfo.sessionInitiationKeys.first()
     val signature = signingService.sign(
         serializedRequest,
         myLegalIdentity,

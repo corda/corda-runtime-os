@@ -1,0 +1,42 @@
+{
+  "secrets": {
+    "salt": "secrets-salt",
+    "passphrase": "secrets-passphrase"
+  },
+  "crypto": {
+    "hsmId": "hsm-id"
+  },
+  "db": {
+    "database": {
+      "jdbc": {
+        "directory": "jdbc-dir",
+        "url": "jdbc-url",
+        "url_messagebus": "jdbc-url-msg-bus"
+      },
+      "pass": "db-pass",
+      "user": "db-user"
+    }
+  },
+  "dir": {
+    "tmp": "dir-tmp",
+    "workspace": "dir-workspace"
+  },
+  "instanceId": 666,
+  "kafka": {
+    "common": {
+      "bus": {
+        "busType": "kafka-bustype"
+      }
+    }
+  },
+  "maxAllowedMessageSize": 999,
+  "rest": {
+    "tls": {
+      "keystore": {
+        "password": "tls-pass",
+        "path": "tls-path"
+      }
+    }
+  },
+  "topicPrefix": "prefix"
+}

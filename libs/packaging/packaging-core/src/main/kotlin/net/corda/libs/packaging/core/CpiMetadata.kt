@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.core
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.time.Instant

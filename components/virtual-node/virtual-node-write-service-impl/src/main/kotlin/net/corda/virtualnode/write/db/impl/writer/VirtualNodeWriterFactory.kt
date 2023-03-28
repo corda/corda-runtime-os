@@ -8,7 +8,11 @@ import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -21,18 +25,14 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactoryImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeServiceImpl
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
-import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 import org.slf4j.LoggerFactory
 
@@ -60,10 +60,10 @@ internal class VirtualNodeWriterFactory(
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
     fun create(messagingConfig: SmartConfig): VirtualNodeWriter {
-        val virtualNodeInfoPublisher = createPublisher(messagingConfig)
-        val rpcSubscription = createRPCSubscription(messagingConfig, virtualNodeInfoPublisher)
-        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, virtualNodeInfoPublisher)
-        return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, virtualNodeInfoPublisher)
+        val publisher = createPublisher(messagingConfig)
+        val rpcSubscription = createRPCSubscription(messagingConfig, publisher)
+        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, publisher)
+        return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, publisher)
     }
 
     /**
@@ -71,7 +71,7 @@ internal class VirtualNodeWriterFactory(
      */
     private fun createAsyncOperationSubscription(
         messagingConfig: SmartConfig,
-        virtualNodeInfoPublisher: Publisher,
+        publisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
         val oldVirtualNodeEntityRepository =
@@ -84,7 +84,7 @@ internal class VirtualNodeWriterFactory(
             oldVirtualNodeEntityRepository,
             VirtualNodeRepositoryImpl(),
             HoldingIdentityRepositoryImpl(),
-            virtualNodeInfoPublisher
+            publisher
         )
 
         val virtualNodeDbFactory = VirtualNodeDbFactoryImpl(dbConnectionManager, virtualNodeDbAdmin, schemaMigrator)
@@ -94,7 +94,7 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeUpgradeRequest::class.java to VirtualNodeUpgradeOperationHandler(
                 dbConnectionManager.getClusterEntityManagerFactory(),
                 oldVirtualNodeEntityRepository,
-                virtualNodeInfoPublisher,
+                publisher,
                 migrationUtility
             ),
 
@@ -103,6 +103,7 @@ internal class VirtualNodeWriterFactory(
                 virtualNodeDbFactory,
                 recordFactory,
                 groupPolicyParser,
+                publisher,
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
             )
         )

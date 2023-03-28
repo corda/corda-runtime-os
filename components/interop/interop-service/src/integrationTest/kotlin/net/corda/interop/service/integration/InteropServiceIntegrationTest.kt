@@ -101,19 +101,33 @@ class InteropServiceIntegrationTest {
     }
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
-        interopService.start()
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(aliceX500Name), bootConfig)
-        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-        val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
+        val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        val interopMessage: ByteBuffer = ByteBuffer.wrap(
+            cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
+                InteropMessage(
+                    "InteropMessageID-01",
+                    """
+                    {
+                      "method": "org.corda.interop/platform/tokens/v1.0/reserve-token",
+                      "parameters": [
+                        {
+                          "abc": {
+                            "type": "string",
+                            "value": "USD"
+                          }
+                        }
+                      ]
+                    }
+                """.trimIndent()
+                )
+            )
+        )
 
-        // Test config updates don't break Interop Service
-        republishConfig(publisher)
-        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
-        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
-        val identity = HoldingIdentity(aliceX500Name, aliceGroupId)
+        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
+        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", groupId)
+        val identity = HoldingIdentity(aliceX500Name, groupId)
         val header = UnauthenticatedMessageHeader(destinationIdentity, sourceIdentity, "interop" , "1")
         val sessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), aliceX500Name, 1, identity, identity, 0, listOf(), SessionInit(
@@ -125,17 +139,15 @@ class InteropServiceIntegrationTest {
                 ByteBuffer.wrap("".toByteArray())
             )
         )
-        val interopMessage = InteropMessage("InteropMessageID-01", payload)
-
         val interopRecord = Record(
             P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 UnauthenticatedMessage(
-                    header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
+                    header, interopMessage
                 )
             )
         )
-
-        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE)
+        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1),
+            "", "", "flowSession", MembershipStatusFilter.ACTIVE)
         val nonInteropSessionRecord = Record(
             P2P_IN_TOPIC, aliceX500Name, AppMessage(
                 AuthenticatedMessage(
@@ -144,23 +156,34 @@ class InteropServiceIntegrationTest {
             )
         )
 
+        interopService.start()
+        val publisher = publisherFactory.createPublisher(PublisherConfig(aliceX500Name), bootConfig)
+        // Test config updates don't break Interop Service
+        republishConfig(publisher)
         publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord))
 
-        val expectedOutputMessages = 2
-        val mapperLatch = CountDownLatch(expectedOutputMessages)
-        val testProcessor = P2POutMessageCounter(aliceX500Name, mapperLatch, expectedOutputMessages)
-        val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$aliceX500Name-p2p-out", P2P_OUT_TOPIC),
-            testProcessor,
-            bootConfig,
-            null
-        )
-        p2pOutSub.start()
-        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS),
-            "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedOutputMessages).")
-        assertEquals(expectedOutputMessages, testProcessor.recordCount, "More P2P output messages were observed that expected.")
-        p2pOutSub.close()
-
+        val flowMapperExpectedOutputMessages = 2
+        flowMapperExpectedOutputMessages.let { expectedMessageCount ->
+            val mapperLatch = CountDownLatch(expectedMessageCount)
+            val testProcessor = P2POutMessageCounter(aliceX500Name, mapperLatch, expectedMessageCount)
+            val eventTopic = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("$aliceX500Name-p2p-out", P2P_OUT_TOPIC),
+                testProcessor,
+                bootConfig,
+                null
+            )
+            eventTopic.start()
+            assertTrue(
+                mapperLatch.await(45, TimeUnit.SECONDS),
+                "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
+            )
+            assertEquals(
+                expectedMessageCount,
+                testProcessor.recordCount,
+                "More P2P output messages were observed that expected."
+            )
+            eventTopic.close()
+        }
         interopService.stop()
     }
 
@@ -196,12 +219,12 @@ class InteropServiceIntegrationTest {
             null
         )
         memberOutSub.start()
-        assertTrue(memberMapperLatch.await(30, TimeUnit.SECONDS),
+        assertTrue(memberMapperLatch.await(45, TimeUnit.SECONDS),
             "Fewer membership messages were observed (${memberProcessor.recordCount}) than expected ($memberExpectedOutputMessages).")
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
 
-        val hostedIdsExpected = 8
+        val hostedIdsExpected = 4
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
@@ -211,7 +234,7 @@ class InteropServiceIntegrationTest {
             null
         )
         hostedIdOutSub.start()
-        assertTrue(hostedIdMapperLatch.await(30, TimeUnit.SECONDS),
+        assertTrue(hostedIdMapperLatch.await(45, TimeUnit.SECONDS),
             "Fewer hosted identities messages were observed (${hostedIdProcessor.recordCount}) than expected ($hostedIdsExpected).")
         assertEquals(hostedIdsExpected, hostedIdProcessor.recordCount, "More hosted identities messages were observed that expected.")
         hostedIdOutSub.close()
@@ -227,6 +250,22 @@ class InteropServiceIntegrationTest {
     }
 
     private fun publishConfig(publisher: Publisher) {
+        val messagingConf = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+      """
         publisher.publish(
             listOf(
                 Record(
@@ -246,23 +285,6 @@ class InteropServiceIntegrationTest {
 
         publishConfig(publisher)
     }
-
-    private val messagingConf = """
-            componentVersion="5.1"
-            subscription {
-                consumer {
-                    close.timeout = 6000
-                    poll.timeout = 6000
-                    thread.stop.timeout = 6000
-                    processor.retries = 3
-                    subscribe.retries = 3
-                    commit.retries = 3
-                }
-                producer {
-                    close.timeout = 6000
-                }
-            }
-      """
 }
 
 class P2POutMessageCounter(

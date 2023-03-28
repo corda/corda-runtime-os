@@ -6,11 +6,12 @@ import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
 
 interface SmartConfigFactory {
     companion object {
-        const val SECRET_SERVICE_TYPE = "${ConfigKeys.SECRETS_CONFIG}.${ConfigKeys.SECRETS_TYPE}"
+        const val SECRET_SERVICE_TYPE = "${BootConfig.BOOT_SECRETS}.${ConfigKeys.SECRETS_TYPE}"
 
         /**
          * Create a [SmartConfigFactory] that is initialized with the [SecretsService] that is relevant based on the

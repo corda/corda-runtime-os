@@ -46,7 +46,7 @@ fun mockMemberInfo(
     return mock {
         on { memberProvidedContext } doReturn context
         on { name } doReturn holdingIdentity.x500Name
-        on { sessionInitiationKey } doReturn publicKey
+        on { sessionInitiationKeys } doReturn listOf(publicKey)
         on { serial } doReturn serialNumber
     }
 }
@@ -72,7 +72,7 @@ fun mockMembers(members: Collection<HoldingIdentity>, serialNumber: Long = 1,): 
         return digest()
     }
     val hashToInfo = identities.values.associateBy {
-        val publicKeyHash = PublicKeyHash.parse(messageDigest.hash(it.sessionInitiationKey.encoded))
+        val publicKeyHash = PublicKeyHash.parse(messageDigest.hash(it.sessionInitiationKeys.first().encoded))
         publicKeyHash
     }
     return object : MembershipGroupReaderProvider {

@@ -13,7 +13,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 
@@ -77,7 +77,7 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
         .withFallback(
             ConfigFactory.parseMap(
                 mapOf(
-                    BOOT_DB_PARAMS to dbParams.root().unwrapped()
+                    BOOT_DB to dbParams.root().unwrapped()
                 )
             )
         )

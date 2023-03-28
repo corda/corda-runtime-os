@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.SerializationContext
@@ -86,7 +87,7 @@ open class SerializationOutput constructor(
                 writeMetadata(metadata, this)
             }
         }
-        return SerializedBytes(byteArrayOutput {
+        return SerializedBytesImpl(byteArrayOutput {
             var stream: OutputStream = it
             try {
                 amqpMagic.writeTo(stream)

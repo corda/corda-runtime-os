@@ -1,6 +1,7 @@
 package net.corda.sandbox.crypto
 
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -20,6 +21,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
         UsedByPersistence::class,
         UsedByVerification::class
     ],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
 class DigestAlgorithmFactoryProviderImpl @Activate constructor()
