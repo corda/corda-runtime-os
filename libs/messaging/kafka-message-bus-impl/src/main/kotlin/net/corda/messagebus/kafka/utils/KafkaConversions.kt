@@ -35,7 +35,7 @@ fun <K : Any, V : Any> CordaProducerRecord<K, V>.toKafkaRecord(
 fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
     topicPrefix: String
 ): CordaConsumerRecord<K, V> {
-    return this.toCordaConsumerRecord(topicPrefix, this.key() as K,this.value() as V)
+    return this.toCordaConsumerRecord(topicPrefix, this.key() as K,this.value() as V?)
 }
 
 fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
