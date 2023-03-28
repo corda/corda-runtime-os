@@ -442,8 +442,10 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suppress("unused_parameter")
     @Suspendable
     private fun compositeKeyGeneratorWorksInFlows(input: RpcSmokeTestInput): String {
-        val myKey = memberLookup.myInfo().ledgerKeys[0]
-        val keysAndWeights = listOf(CompositeKeyNodeAndWeight(myKey,1))
+        val someKeys = memberLookup.lookup().flatMap { it.ledgerKeys }
+        val keysAndWeights = someKeys.map {
+            CompositeKeyNodeAndWeight(it, 1)
+        }
         val compositeKey = compositeKeyGenerator.create(keysAndWeights, 1)
         return if (compositeKey is CompositeKey) {
             "SUCCESS"
