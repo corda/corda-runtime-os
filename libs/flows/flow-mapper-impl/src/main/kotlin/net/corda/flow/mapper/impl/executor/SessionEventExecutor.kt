@@ -6,6 +6,10 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
@@ -37,6 +41,8 @@ class SessionEventExecutor(
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             handleNullState()
+        } else if (sessionEvent.isInteropEvent()) {
+            processOtherSessionEventsInterop(flowMapperState)
         } else {
             processOtherSessionEvents(flowMapperState)
         }
@@ -87,5 +93,83 @@ class SessionEventExecutor(
         }
 
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
+    }
+
+    // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
+    @Suppress("ForbiddenComment")
+    private fun processOtherSessionEventsInterop(flowMapperState: FlowMapperState): FlowMapperResult {
+        if (messageDirection == MessageDirection.OUTBOUND) {
+            val payload = sessionEvent.payload
+
+            return if (payload is SessionData) {
+                val sessionDataPayload = payload.payload
+
+                // Echo the whole payload back to the flow fibre.
+                // This avoids the need to serialize/deserialize @CordaSerializable objects here.
+                val hackyReply = Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(
+                        SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            2,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            1,
+                            emptyList(),
+                            SessionData(sessionDataPayload)
+                        )
+                    )
+                )
+
+                val hackyClose = Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(
+                        SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            3,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            2,
+                            emptyList(),
+                            SessionClose()
+                        )
+                    )
+                )
+
+                FlowMapperResult(flowMapperState, listOf(hackyReply, hackyClose))
+            } else if (payload is SessionClose) {
+                val hackyAck = Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(
+                        SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            4,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            3,
+                            emptyList(),
+                            SessionAck()
+                        )
+                    )
+                )
+
+                FlowMapperResult(flowMapperState, listOf(hackyAck))
+            } else {
+                // Discard any unrecognised events
+                FlowMapperResult(flowMapperState, listOf())
+            }
+        } else {
+            val record = Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+            return FlowMapperResult(flowMapperState, listOf(record))
+        }
     }
 }
