@@ -65,15 +65,11 @@ class VaultNamedParameterizedQueryImpl<T>(
             "Limit needs to be provided and needs to be a positive number to execute the query."
         }
 
-        // If timestamp limit is not set we default to the current time
-        if (getTimestampLimitParameter() == null) {
-            setCreatedTimestampLimit(Instant.now())
-        }
-
-        // It's safe to assume that timestamp is not null here, and we do a double check
-        require(getTimestampLimitParameter()!! <= Instant.now()) {
-            "Timestamp limit must not be in the future."
-        }
+        getCreatedTimestampLimit()?.let {
+            require(it <= Instant.now()) {
+                "Timestamp limit must not be in the future."
+            }
+        } ?: setCreatedTimestampLimit(Instant.now())
 
         val results = externalEventExecutor.execute(
             VaultNamedQueryExternalEventFactory::class.java,
@@ -86,14 +82,13 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
-        require(getTimestampLimitParameter() == null) { "Timestamp limit is already set." }
         require(timestampLimit <= Instant.now()) { "Timestamp limit must not be in the future." }
 
         queryParams[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
         return this
     }
 
-    private fun getTimestampLimitParameter() = queryParams[TIMESTAMP_LIMIT_PARAM_NAME] as? Instant
+    private fun getCreatedTimestampLimit() = queryParams[TIMESTAMP_LIMIT_PARAM_NAME] as? Instant
 
     private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
         return parameters.mapValues {
