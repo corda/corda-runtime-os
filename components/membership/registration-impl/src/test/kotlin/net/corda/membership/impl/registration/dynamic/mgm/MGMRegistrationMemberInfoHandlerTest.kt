@@ -5,6 +5,8 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
@@ -29,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.test.util.TestRandom
@@ -41,6 +44,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -91,6 +95,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn mockMemberContext
     }
+    private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
+    private val signatureSpec = CryptoSignatureSpec("", null, null)
+    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
     private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
     private val memberContext
         get() = assertDoesNotThrow { memberContextCaptor.firstValue }
@@ -154,7 +161,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
-            persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
+            persistMemberInfo(eq(holdingIdentity), eq(listOf(signedMemberInfo)))
         } doReturn MembershipPersistenceResult.success()
     }
 
@@ -205,7 +212,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(result).isEqualTo(memberInfo)
+        assertThat(result).isEqualTo(signedMemberInfo)
     }
 
     @Test
@@ -280,6 +287,23 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
+    fun `Signature is built as expected`() {
+        val result = assertDoesNotThrow {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext
+            )
+        }
+
+        SoftAssertions.assertSoftly {
+            it.assertThat(result.memberSignature)
+                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())))
+            it.assertThat(result.memberSignatureSpec)
+                .isEqualTo(CryptoSignatureSpec("", null, null))
+        }
+    }
+
+    @Test
     fun `expected exception thrown if CPI info cannot be found for holding identity`() {
         whenever(
             virtualNodeInfoReadService.get(
@@ -339,7 +363,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     fun `expected exception thrown if member info persistence fails`() {
         whenever(
             membershipPersistenceClient.persistMemberInfo(
-                eq(holdingIdentity), eq(listOf(memberInfo))
+                eq(holdingIdentity), eq(listOf(signedMemberInfo))
             )
         ).doReturn(MembershipPersistenceResult.Failure(""))
 
@@ -351,7 +375,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(holdingIdentity),
-            eq(listOf(memberInfo))
+            eq(listOf(signedMemberInfo))
         )
     }
 
