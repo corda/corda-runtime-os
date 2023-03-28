@@ -93,6 +93,10 @@ internal class StartRegistrationHandler(
                 }
             }
 
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request should not be null."
+            }
+
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
@@ -108,12 +112,6 @@ internal class StartRegistrationHandler(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             )
-            /*validateRegistrationRequest(
-                existingMemberInfo is MembershipQueryResult.Success
-                        && (existingMemberInfo.payload.isEmpty()
-                        || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
-            ) { "The latest member info for given member is in 'Active' status or " +
-                    "there is a member with the same name." }*/
 
             validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
@@ -126,7 +124,15 @@ internal class StartRegistrationHandler(
             ) { "Member already exists with the same X500 name." }
             // if the serial number on the request is smaller than the current version of the requestor's MemberInfo,
             // then decline the request.
-            validateSerial(queryResult, registrationRequest)
+            val activeOrSuspendedInfo = queryResult.find {
+                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
+            }
+            validateRegistrationRequest(
+                activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
+            ) {
+                "Registration request was submitted for an older version of member info. " +
+                        "Please submit a new request."
+            }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -239,21 +245,6 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.serial,
             true,
         )
-    }
-
-    private fun validateSerial(memberList: Collection<MemberInfo>, registrationRequest: RegistrationRequest) {
-        val activeOrSuspendedInfo = memberList.find {
-            it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
-        }
-        validateRegistrationRequest(registrationRequest.serial != null) {
-            "Serial on the registration request should not be null."
-        }
-        validateRegistrationRequest(
-            activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
-        ) {
-            "Registration request was submitted for an older version of member info. " +
-                    "Please submit a new request."
-        }
     }
 
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {

@@ -31,7 +31,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
-import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -93,7 +92,7 @@ class StartRegistrationHandlerTest {
         fun getStartRegistrationCommand(
             holdingIdentity: HoldingIdentity,
             memberContext: KeyValuePairList,
-            serial: Long = 0L
+            serial: Long? = 0L
         ) = RegistrationCommand(
                 StartRegistration(
                     mgmHoldingIdentity,
@@ -240,9 +239,23 @@ class StartRegistrationHandlerTest {
     @Test
     fun `serial is increased when building pending member info`() {
         val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
-        verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
+        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, 10L)
         handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
-        assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("1")
+        verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
+        assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("11")
+    }
+
+    @Test
+    fun `declined if serial in the registration request is null`() {
+        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, null)
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
+
+            assertDeclinedRegistration()
+        }
     }
 
     @Test
@@ -600,6 +613,25 @@ class StartRegistrationHandlerTest {
         val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity, memberContext)
         val result = handler.invoke(null, Record(testTopic, testTopicKey, registrationCommand))
         result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if persistence failure happened when trying to query for existing member info`() {
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(aliceX500Name.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Failure("error happened"))
+
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
+
+            assertDeclinedRegistration()
+        }
     }
 
     @Nested
