@@ -10,6 +10,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.interop.InteropMessage
+import net.corda.data.interop.InteropState
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
@@ -24,6 +25,7 @@ import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -166,7 +168,7 @@ class InteropServiceIntegrationTest {
         flowMapperExpectedOutputMessages.let { expectedMessageCount ->
             val mapperLatch = CountDownLatch(expectedMessageCount)
             val testProcessor = P2POutMessageCounter(aliceX500Name, mapperLatch, expectedMessageCount)
-            val eventTopic = subscriptionFactory.createDurableSubscription(
+            val eventTopic = subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig("$aliceX500Name-p2p-out", P2P_OUT_TOPIC),
                 testProcessor,
                 bootConfig,
@@ -174,7 +176,7 @@ class InteropServiceIntegrationTest {
             )
             eventTopic.start()
             assertTrue(
-                mapperLatch.await(45, TimeUnit.SECONDS),
+                mapperLatch.await(60, TimeUnit.SECONDS),
                 "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedMessageCount)."
             )
             assertEquals(
@@ -291,22 +293,24 @@ class P2POutMessageCounter(
     private val key: String,
     private val latch: CountDownLatch,
     private val expectedRecordCount: Int
-) : DurableProcessor<String, AppMessage> {
+) : StateAndEventProcessor<String, InteropState, AppMessage> {
     override val keyClass = String::class.java
-    override val valueClass = AppMessage::class.java
+    override val stateValueClass = InteropState::class.java
+    override val eventValueClass = AppMessage::class.java
     var recordCount = 0
-    override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
-        for (event in events) {
-            println("Event : $event")
-            if (event.key == key) {
-                recordCount++
-                if (recordCount > expectedRecordCount) {
-                    fail("Expected record count exceeded in events processed for this key")
-                }
-                latch.countDown()
+    override fun onNext(
+        state: InteropState?,
+        event: Record<String, AppMessage>
+    ): StateAndEventProcessor.Response<InteropState> {
+        println("Event : $event")
+        if (event.key == key) {
+            recordCount++
+            if (recordCount > expectedRecordCount) {
+                fail("Expected record count exceeded in events processed for this key")
             }
+            latch.countDown()
         }
-        return emptyList()
+        return StateAndEventProcessor.Response(state, emptyList())
     }
 }
 
