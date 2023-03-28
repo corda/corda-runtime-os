@@ -45,6 +45,7 @@ data class ContextPropagationOutput(
 )
 
 private const val CORDA_ACCOUNT = "corda.account"
+private const val CORDA_INITIATOR_ACCOUNT = "corda.initiator.account"
 private const val ERROR_VALUE = "error"
 private const val NULL_VALUE = "null"
 
@@ -98,38 +99,48 @@ fun launchContextPropagationFlows(
 
     /* This is the expected output
        Values that are missing incorrectly will be marked as 'error'
-    {
-      "rpcFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "null",
-        "user3": "null"
-      },
-      "rpcSubFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "user2-set",
-        "user3": "null"
-      },
-      "initiatedFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "user2-set",
-        "user3": "user3-set"
-      },
-      "initiatedSubFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "user2-set-ContextPropagationInitiatedFlow",
-        "user3": "user3-set"
-      },
-      "rpcFlowAtComplete": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "null",
-        "user3": "null"
-      }
-    }
+        {
+          "rpcFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "null",
+            "user3": "null",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "null"
+          },
+          "rpcSubFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "user2-set",
+            "user3": "null",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "null"
+          },
+          "initiatedFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "user2-set",
+            "user3": "user3-set",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "$applicationCpiName"
+          },
+          "initiatedSubFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "user2-set-ContextPropagationInitiatedFlow",
+            "user3": "user3-set",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "$applicationCpiName"
+          },
+          "rpcFlowAtComplete": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "null",
+            "user3": "null",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "null"
+          }
+        }
     */
     return jsonMarshallingService.format(
         ContextPropagationOutput(
@@ -202,7 +213,7 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+        val account = flowEngine.flowContextProperties.get(CORDA_INITIATOR_ACCOUNT) ?: ERROR_VALUE
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
         // Get user2 and user3 on flow entry
         val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
@@ -239,7 +250,7 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
 
     @Suspendable
     override fun call(): FlowOutput {
-        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+        val account = flowEngine.flowContextProperties.get(CORDA_INITIATOR_ACCOUNT) ?: ERROR_VALUE
 
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
         // Get user2 and user3 on flow entry
