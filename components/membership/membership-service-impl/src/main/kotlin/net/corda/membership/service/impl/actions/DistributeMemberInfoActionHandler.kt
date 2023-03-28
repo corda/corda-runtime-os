@@ -72,35 +72,42 @@ class DistributeMemberInfoActionHandler(
 
         val groupReader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
 
-        // Verify that the group parameters from the reader are the ones persisted during registration approval.
-        // If not, republish the distribute command to be processed later when the updated set of group parameters
-        // is available.
-        val groupParameters = groupReader.groupParameters?.apply {
-            if (request.minimumGroupParametersEpoch > epoch) {
-                return recordToRequeueDistribution(key, request) {
-                    logger.info("Retrieved group parameters are outdated (current epoch $epoch). Republishing the distribute command to " +
-                            "be processed later when the set of group parameters with epoch ${request.minimumGroupParametersEpoch} is " +
-                            "available.")
-                }
-            }
-        } ?: return recordToRequeueDistribution(key, request) {
-            logger.info("Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
-                    "group parameters with epoch ${request.minimumGroupParametersEpoch} is available.")
-        }
         val allActiveMembers = groupReader.lookup()
         val allActiveMembersExcludingMgm = allActiveMembers.filterNot { it.isMgm }
         val updatedMemberInfo = allActiveMembersExcludingMgm.firstOrNull { it.name.toString() == updatedMember.x500Name }
             ?: return recordToRequeueDistribution(key, request) {
-                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. Republishing " +
-                        "the distribute command to be processed later when the MemberInfo is available.")
+                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. " +
+                    "Republishing the distribute command to be processed later when the MemberInfo is available.")
             }
-        if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
-            return recordToRequeueDistribution(key, request) {
-                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} has serial" +
-                        " ${updatedMemberInfo.serial}, which is an old version. Republishing the distribute command to be processed " +
-                        "later when the MemberInfo with serial ${request.minimumUpdatedMemberSerial} is available.")
+        request.minimumUpdatedMemberSerial?.let {
+            if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
+                return recordToRequeueDistribution(key, request) {
+                    logger.info(
+                        "The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} has serial" +
+                            " ${updatedMemberInfo.serial}, which is an old version. Republishing the distribute command to be processed " +
+                            "later when the MemberInfo with serial ${request.minimumUpdatedMemberSerial} is available."
+                    )
+                }
             }
         }
+        // Verify that the group parameters from the reader are the ones persisted during registration approval.
+        // If not, republish the distribute command to be processed later when the updated set of group parameters
+        // is available.
+        val groupParameters = groupReader.groupParameters?.apply {
+        } ?: return recordToRequeueDistribution(key, request) {
+            logger.info("Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
+               "group parameters with epoch ${request.minimumGroupParametersEpoch} is available.")
+        }
+        request.minimumGroupParametersEpoch?.let {
+            if (it > groupParameters.epoch) {
+                return recordToRequeueDistribution(key, request) {
+                    logger.info("Retrieved group parameters are outdated (current epoch ${groupParameters.epoch}). Republishing the " +
+                       "distribute command to be processed later when the set of group parameters with epoch " +
+                       "${request.minimumGroupParametersEpoch} is available.")
+                }
+            }
+        }
+
 
         val mgm = allActiveMembers.first { it.isMgm }
 

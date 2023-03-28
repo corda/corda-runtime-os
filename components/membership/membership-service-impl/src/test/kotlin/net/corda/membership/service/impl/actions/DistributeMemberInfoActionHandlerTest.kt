@@ -34,7 +34,6 @@ import net.corda.utilities.parse
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -103,7 +102,7 @@ class DistributeMemberInfoActionHandlerTest {
 
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
-    private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), EPOCH, MEMBER_INFO_SERIAL)
+    private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), null, null)
     private val memberInfo = mockMemberInfo(member)
     private val inactiveMember = mockMemberInfo(
         createHoldingIdentity("inactive"),
@@ -270,36 +269,6 @@ class DistributeMemberInfoActionHandlerTest {
     }
 
     @Test
-    fun `process republishes the distribute command if expected group parameters are not available via the group reader`() {
-        whenever(groupParameters.epoch).thenReturn(EPOCH - 1)
-
-        val reply = handler.process(KEY, action)
-
-        assertThat(reply)
-            .hasSize(1)
-            .allSatisfy {
-                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(KEY)
-                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
-            }
-    }
-
-    @Test
-    fun `process republishes the distribute command if no group parameters is available via the group reader`() {
-        whenever(groupReader.groupParameters).thenReturn(null)
-
-        val reply = handler.process(KEY, action)
-
-        assertThat(reply)
-            .hasSize(1)
-            .allSatisfy {
-                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(KEY)
-                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
-            }
-    }
-
-    @Test
     fun `process republishes the distribute command if no member info is available via the group reader`() {
         whenever(groupReader.lookup()).thenReturn(setOf(mgm))
 
@@ -316,7 +285,35 @@ class DistributeMemberInfoActionHandlerTest {
 
     @Test
     fun `process republishes the distribute command if expected member info version is not available via the group reader`() {
-        whenever(memberInfo.serial).thenReturn(MEMBER_INFO_SERIAL - 1)
+        val actionWithSerial = DistributeMemberInfo(owner.toAvro(), member.toAvro(), null, MEMBER_INFO_SERIAL + 1)
+        val reply = handler.process(KEY, actionWithSerial)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(KEY)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(actionWithSerial)
+            }
+    }
+
+    @Test
+    fun `process republishes the distribute command if expected group parameters are not available via the group reader`() {
+        val actionWithEpoch = DistributeMemberInfo(owner.toAvro(), member.toAvro(), EPOCH + 1, null)
+        val reply = handler.process(KEY, actionWithEpoch)
+
+        assertThat(reply)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
+                assertThat(it.key).isEqualTo(KEY)
+                assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(actionWithEpoch)
+            }
+    }
+
+    @Test
+    fun `process republishes the distribute command if no group parameters is available via the group reader`() {
+        whenever(groupReader.groupParameters).thenReturn(null)
 
         val reply = handler.process(KEY, action)
 
