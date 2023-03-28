@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -28,8 +29,8 @@ import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
-import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
+import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
@@ -56,7 +57,6 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -464,7 +464,7 @@ class MembershipPersistenceClientImpl(
         }
     }
 
-    private fun DigitalSignature.WithKey.toAvro() =
+    private fun DigitalSignatureWithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(bytes))
             .setPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(by)))

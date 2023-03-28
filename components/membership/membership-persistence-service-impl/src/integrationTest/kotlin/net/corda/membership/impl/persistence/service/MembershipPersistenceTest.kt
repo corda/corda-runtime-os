@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.calculateHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -95,7 +96,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.RSA_SHA256
@@ -1556,8 +1556,8 @@ class MembershipPersistenceTest {
         var publicKey: PublicKey? = null
 
         override fun getEpoch() = 5
-        override val signature: DigitalSignature.WithKey
-            get() = DigitalSignature.WithKey(
+        override val signature: DigitalSignatureWithKey
+            get() = DigitalSignatureWithKey(
                 publicKey
                     ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function"),
                 byteArrayOf(1)

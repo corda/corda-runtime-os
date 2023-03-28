@@ -152,7 +152,7 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `returns false when a single transaction has invalid signatures`() {
-        whenever(transaction1.verifySignatures()).thenThrow(
+        whenever(transaction1.verifySignatorySignatures()).thenThrow(
             TransactionMissingSignaturesException(
                 TX_ID_1,
                 setOf(signatory),
@@ -167,7 +167,7 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `returns false when a single transaction does not have notary signatures`() {
-        whenever(transaction1.verifyNotarySignatureAttached()).thenThrow(
+        whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(
             TransactionMissingSignaturesException(
                 TX_ID_1,
                 setOf(signatory),
