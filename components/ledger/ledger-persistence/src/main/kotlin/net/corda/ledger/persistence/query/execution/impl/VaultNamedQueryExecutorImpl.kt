@@ -76,15 +76,12 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
             "Only WHERE queries are supported for now."
         }
 
-        // Fetch the transaction IDs for the given request
-        val transactionIds = fetchTransactionIdsForRequest(
+        // Fetch the state and refs for the given transaction IDs
+        val contractStateResults = fetchStateAndRefs(
             request,
             vaultNamedQuery.query.query,
             holdingIdentity
         )
-
-        // Fetch the contract states for the given transaction IDs
-        val contractStateResults = fetchStateAndRefs(transactionIds, holdingIdentity)
 
         // Deserialize the parameters into readable objects instead of bytes
         val deserializedParams = request.parameters.mapValues {
@@ -111,30 +108,33 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
     }
 
     /**
-     * A function that fetches the transaction IDs that match the given WHERE clause. These transaction IDs will be
-     * used to fetch the contract states later on.
+     * A function that fetches the contract states that belong to the given transaction IDs. The data stored in the
+     * component table will be deserialized into contract states using component groups.
      */
-    private fun fetchTransactionIdsForRequest(
+    private fun fetchStateAndRefs(
         request: FindWithNamedQuery,
         whereJson: String?,
         holdingIdentity: HoldingIdentity
-    ): List<String> {
+    ): List<StateAndRef<ContractState>> {
 
-        val nullParamNames = request.parameters.filter { it.value == null }.map { it.key }
+        validateParameters(request)
 
-        if (nullParamNames.isNotEmpty()) {
-            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
-            log.error(msg)
-            throw NullParameterException(msg)
-        }
-
-        return entitySandboxService.get(holdingIdentity.toCorda())
+        @Suppress("UNCHECKED_CAST")
+        val componentGroups = entitySandboxService.get(holdingIdentity.toCorda())
             .getEntityManagerFactory()
             .transaction { em ->
                 val query = em.createNativeQuery(
-                    "SELECT transaction_id FROM $UTXO_VISIBLE_TX_TABLE " +
-                            whereJson +
-                            " AND consumed <= :$TIMESTAMP_LIMIT_PARAM_NAME"
+                    "SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data FROM " +
+                            "$UTXO_TX_COMPONENT_TABLE AS tc " +
+                            "JOIN $UTXO_VISIBLE_TX_TABLE AS visible_states " +
+                                "ON visible_states.transaction_id = tc.transaction_id " +
+                            "$whereJson " +
+                            "AND tc.group_idx IN (:groupIndices) " +
+                            "AND consumed <= :$TIMESTAMP_LIMIT_PARAM_NAME",
+                    Tuple::class.java
+                ).setParameter("groupIndices", listOf(
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    UtxoComponentGroup.OUTPUTS_INFO.ordinal)
                 )
 
                 request.parameters.filter { it.value != null }.forEach { rec ->
@@ -145,36 +145,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                 query.firstResult = request.offset
                 query.maxResults = request.limit
 
-                query.resultList
-            }.filterNotNull().map { it as String }
-    }
-
-    /**
-     * A function that fetches the contract states that belong to the given transaction IDs. The data stored in the
-     * component table will be deserialized into contract states using component groups.
-     */
-    private fun fetchStateAndRefs(
-        transactionIds: List<String>,
-        holdingIdentity: HoldingIdentity
-    ): List<StateAndRef<ContractState>> {
-
-        @Suppress("UNCHECKED_CAST")
-        val componentGroups = entitySandboxService.get(holdingIdentity.toCorda())
-            .getEntityManagerFactory()
-            .transaction { em ->
-                em.createNativeQuery(
-                    "SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data FROM " +
-                            "$UTXO_TX_COMPONENT_TABLE tc " +
-                            "WHERE transaction_id IN (:transactionIds) " +
-                            "AND tc.group_idx IN (:groupIndices)",
-                    Tuple::class.java
-                )
-                    .setParameter("transactionIds", transactionIds)
-                    .setParameter("groupIndices", listOf(
-                        UtxoComponentGroup.OUTPUTS.ordinal,
-                        UtxoComponentGroup.OUTPUTS_INFO.ordinal)
-                    )
-                    .resultList as List<Tuple>
+                query.resultList as List<Tuple>
             }.map { t ->
                 ComponentLeafDto(
                     t[0] as String, // transactionId
@@ -203,6 +174,16 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                 state = TransactionStateImpl(contractState, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                 ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
             )
+        }
+    }
+
+    private fun validateParameters(request: FindWithNamedQuery) {
+        val nullParamNames = request.parameters.filter { it.value == null }.map { it.key }
+
+        if (nullParamNames.isNotEmpty()) {
+            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
+            log.error(msg)
+            throw NullParameterException(msg)
         }
     }
 }
