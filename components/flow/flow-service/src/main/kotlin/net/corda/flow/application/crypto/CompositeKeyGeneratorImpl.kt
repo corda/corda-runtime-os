@@ -9,6 +9,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
 /* This component is currently a trivial stub over CompositeKeyProvider, which
@@ -16,12 +17,15 @@ import java.security.PublicKey
  * corda implementation so that we have flexibility to add extra checks or other
  * work at this point.
  */
-@Component(service = [CompositeKeyGenerator::class, UsedByFlow::class])
+@Component(
+    service = [CompositeKeyGenerator::class, UsedByFlow::class],
+    scope = PROTOTYPE
+)
 class CompositeKeyGeneratorImpl
 @Activate
 constructor(
     @Reference(service = CompositeKeyProvider::class)
-    val provider: CompositeKeyProvider
+    private val provider: CompositeKeyProvider
 ) : CompositeKeyGenerator, UsedByFlow, SingletonSerializeAsToken {
     @Suspendable
     override fun create(keys: List<CompositeKeyNodeAndWeight>, threshold: Int?): PublicKey =
