@@ -2,11 +2,12 @@ package net.corda.flow.testing.fakes
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.mockito.Mockito.mock
@@ -49,7 +50,10 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
             get() = ""
         override val owningMember: MemberX500Name
             get() = TODO("Not yet implemented")
-        override val groupParameters: GroupParameters
+        override val groupParameters: InternalGroupParameters
+            get() = TODO("Not yet implemented")
+
+        override val signedGroupParameters: SignedGroupParameters
             get() = TODO("Not yet implemented")
 
         override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {

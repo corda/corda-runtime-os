@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
-@Component(service = [FlowRestResource::class, PluggableRestResource::class], immediate = true)
+@Component(service = [FlowRestResource::class, PluggableRestResource::class])
 class FlowRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,

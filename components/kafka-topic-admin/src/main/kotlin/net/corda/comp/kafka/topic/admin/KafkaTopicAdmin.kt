@@ -6,9 +6,9 @@ import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
+import java.util.Properties
 
-@Component(immediate = true, service = [KafkaTopicAdmin::class])
+@Component(service = [KafkaTopicAdmin::class])
 class KafkaTopicAdmin @Activate constructor(
     @Reference(service = TopicUtilsFactory::class)
     private val topicUtilsFactory: TopicUtilsFactory
