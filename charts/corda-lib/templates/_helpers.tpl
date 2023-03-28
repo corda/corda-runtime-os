@@ -83,9 +83,9 @@ tolerations:
 {{- range .Values.tolerations }}
 - key: {{ required "Must specify key for toleration" .key }}
   operator: {{ default "Equal" .operator }}
-  effect: {{ required "Must specify effect for toleration with key toleration.effect" .effect }}
+  effect: {{ required ( printf "Must specify effect for toleration with key %s" .key ) .effect }}
   {{- if not (eq .operator "Exist") }}
-  value: {{ required "Must specify value for toleration with key tolerations.value" .value }}
+  value: {{ required "Must specify value for toleration" .value }}
   {{- end }}
 {{- end }}
 {{- end }}
