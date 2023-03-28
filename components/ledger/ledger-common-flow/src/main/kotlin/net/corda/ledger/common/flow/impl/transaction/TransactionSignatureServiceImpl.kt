@@ -1,5 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
@@ -21,6 +22,7 @@ import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafP
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefixB64
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefix
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefixB64
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigestService
@@ -31,6 +33,8 @@ import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -52,7 +56,7 @@ const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batc
 
 @Suppress("Unused", "LongParameterList")
 @Component(
-    service = [TransactionSignatureService::class, UsedByFlow::class],
+    service = [TransactionSignatureService::class, TransactionSignatureServiceInternal::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureServiceImpl @Activate constructor(
@@ -69,8 +73,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider
-) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
+    private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService
+) : TransactionSignatureService, TransactionSignatureServiceInternal, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
     override fun sign(
@@ -129,9 +135,19 @@ class TransactionSignatureServiceImpl @Activate constructor(
 
     override fun verifySignature(
         transaction: TransactionWithMetadata,
-        signatureWithMetadata: DigitalSignatureAndMetadata
+        signatureWithMetadata: DigitalSignatureAndMetadata,
+        publicKey: PublicKey
     ) {
-        val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
+        val digestAlgorithmOfKeyId = signatureWithMetadata.signature.by.algorithm
+        val publicKeyId = getIdOfPublicKey(publicKey, digestAlgorithmOfKeyId)
+        require(publicKeyId == signatureWithMetadata.signature.by) {
+            "The key Id of the provided signature does not match the provided public key's id."
+        }
+        val signatureSpec =
+            checkSignatureSpec(
+                signatureWithMetadata.metadata.signatureSpec,
+                publicKey
+            )
 
         val proof = signatureWithMetadata.proof
         val signedHash = if (proof == null) {   // Simple signature
@@ -154,8 +170,15 @@ class TransactionSignatureServiceImpl @Activate constructor(
         return digitalSignatureVerificationService.verify(
             serializationService.serialize(signedData).bytes,
             signatureWithMetadata.signature.bytes,
-            signatureWithMetadata.by,
+            publicKey,
             signatureSpec
+        )
+    }
+
+    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash{
+        return digestService.hash(
+            keyEncodingService.encodeAsByteArray(publicKey),
+            DigestAlgorithmName(digestAlgorithmName)
         )
     }
 
@@ -257,10 +280,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
         }
     }
 
-    private fun checkAndGetSignatureSpec(signatureWithMetadata: DigitalSignatureAndMetadata): SignatureSpec {
-        val signatureSpec = signatureWithMetadata.metadata.signatureSpec
-
-        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
+    private fun checkSignatureSpec(signatureSpec: SignatureSpec, signingKey: PublicKey): SignatureSpec {
+        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signingKey)
         require(signatureSpec in compatibleSpecs) {
             "The signature spec in the signature metadata ('$signatureSpec') is incompatible with its key!"
         }
@@ -302,3 +323,4 @@ private fun getCpiSummary(): CordaPackageSummary =
         signerSummaryHash = SecureHashImpl("SHA-256", "Fake-value".toByteArray()).toHexString(),
         fileChecksum = SecureHashImpl("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
     )
+

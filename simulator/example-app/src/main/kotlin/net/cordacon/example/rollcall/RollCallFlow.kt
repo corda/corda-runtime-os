@@ -156,4 +156,4 @@ data class RollCallResponse(val response: String)
 data class AbsenceResponse(val response: String)
 
 @CordaSerializable
-data class TruancyRecord(val absentees: List<MemberX500Name>, val signature: DigitalSignature.WithKey)
+data class TruancyRecord(val absentees: List<MemberX500Name>, val signature: DigitalSignature.WithKeyId)
