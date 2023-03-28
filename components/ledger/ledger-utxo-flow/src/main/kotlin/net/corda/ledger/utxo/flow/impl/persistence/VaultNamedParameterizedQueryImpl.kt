@@ -5,7 +5,6 @@ import net.corda.flow.persistence.ResultSetImpl
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
@@ -29,25 +28,25 @@ class VaultNamedParameterizedQueryImpl<T>(
     private var timestampLimit: Instant? = null
     private val queryParams = mutableMapOf<String, Any>()
 
-    override fun setLimit(limit: Int): ParameterizedQuery<T> {
+    override fun setLimit(limit: Int): VaultNamedParameterizedQuery<T> {
         require(this.limit == null) { "Limit is already set." }
         this.limit = limit
         return this
     }
 
-    override fun setOffset(offset: Int): ParameterizedQuery<T> {
+    override fun setOffset(offset: Int): VaultNamedParameterizedQuery<T> {
         require(this.offset == null) { "Offset is already set." }
         this.offset = offset
         return this
     }
 
-    override fun setParameter(name: String, value: Any): ParameterizedQuery<T> {
+    override fun setParameter(name: String, value: Any): VaultNamedParameterizedQuery<T> {
         require(queryParams[name] == null) { "Parameter with key $name is already set." }
         queryParams[name] = value
         return this
     }
 
-    override fun setParameters(parameters: MutableMap<String, Any>): ParameterizedQuery<T> {
+    override fun setParameters(parameters: MutableMap<String, Any>): VaultNamedParameterizedQuery<T> {
         val existingParams = (queryParams - parameters).map { it.key }
 
         require(existingParams.isEmpty()) { "Parameters with keys: $existingParams are already set." }

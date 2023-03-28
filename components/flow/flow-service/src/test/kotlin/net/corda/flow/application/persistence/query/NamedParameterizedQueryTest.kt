@@ -160,7 +160,7 @@ class NamedParameterizedQueryTest {
         query.setLimit(5)
         query.setParameter("named", "test1")
 
-        assertEquals(listOf(result), query.execute())
+        assertEquals(listOf(result), query.execute().results)
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<String>(any())

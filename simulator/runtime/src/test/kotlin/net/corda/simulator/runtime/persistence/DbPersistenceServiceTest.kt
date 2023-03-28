@@ -77,6 +77,8 @@ class DbPersistenceServiceTest {
 
         // Then it should show up in the other one
         val greetings = persistence2.findAll(GreetingEntity::class.java).execute()
+            .results
+
         assertThat(greetings, `is`(listOf(hello)))
 
         persistence1.close()
