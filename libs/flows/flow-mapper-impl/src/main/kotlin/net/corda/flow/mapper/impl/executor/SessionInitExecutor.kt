@@ -55,33 +55,6 @@ class SessionInitExecutor(
                 sessionInit
             )
 
-        // Send a session confirm message in response to the session init.
-        // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
-        if (sessionEvent.isInteropEvent()) {
-            val hackyConfirm = Record(
-                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-                sessionEvent.sessionId,
-                FlowMapperEvent(
-                    SessionEvent(
-                        MessageDirection.INBOUND,
-                        Instant.now(),
-                        sessionEvent.sessionId,
-                        1,
-                        sessionEvent.initiatingIdentity,
-                        sessionEvent.initiatedIdentity,
-                        0,
-                        emptyList(),
-                        SessionConfirm(KeyValuePairList(emptyList()))
-                    )
-                )
-            )
-
-            return FlowMapperResult(
-                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
-                listOf(hackyConfirm)
-            )
-        }
-
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
