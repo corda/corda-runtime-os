@@ -12,7 +12,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
@@ -105,7 +104,7 @@ class TransferStatesFlow : ClientStartableFlow {
             outputStates += SimpleState(transferRequest.value, listOf(counterpartyMember.ledgerKeys.first()), issuerName)
 
             log.info("Creating transaction")
-            val signedTransaction = utxoLedgerService.transactionBuilder.setNotary(Party(notary.name, notary.publicKey))
+            val signedTransaction = utxoLedgerService.transactionBuilder.setNotary(notary.name)
                 .addInputStates(tokenClaim.claimedTokens.map { it.stateRef })
                 .addOutputStates(outputStates)
                 .addSignatories(listOf(counterpartyMember.ledgerKeys.first(), myPublicKey))

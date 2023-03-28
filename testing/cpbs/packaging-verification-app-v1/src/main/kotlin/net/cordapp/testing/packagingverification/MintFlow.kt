@@ -8,7 +8,6 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.NotaryInfo
 import net.cordapp.testing.packagingverification.contract.SimpleCommand
@@ -64,7 +63,7 @@ class MintFlow : ClientStartableFlow {
         log.info("Creating signed transaction")
 
         val signedTransaction = utxoLedgerService.transactionBuilder
-            .setNotary(Party(notary.name, notary.publicKey))
+            .setNotary(notary.name)
             .addOutputState(state)
             .addSignatories(state.participants)
             .setTimeWindowUntil(Instant.now() + Duration.ofDays(1))
