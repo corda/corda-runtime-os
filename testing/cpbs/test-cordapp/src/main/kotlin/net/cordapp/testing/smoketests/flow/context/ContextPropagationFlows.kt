@@ -20,15 +20,6 @@ data class FlowOutput(
     val user3: String
 )
 
-@CordaSerializable
-data class CpiMetadataInitiatedFlowOutput(
-    val name: String,
-    val version: String,
-    val signerSummaryHash: String,
-    val fileChecksum: String,
-    val platformVersion: String,
-    val softwareVersion: String
-)
 
 @CordaSerializable
 data class MainSubFlowOutput(
