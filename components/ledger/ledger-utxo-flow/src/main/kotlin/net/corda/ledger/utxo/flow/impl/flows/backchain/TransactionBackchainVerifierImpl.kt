@@ -70,8 +70,8 @@ class TransactionBackchainVerifierImpl @Activate constructor(
 
                     try {
                         log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
-                        transaction.verifySignatures()
-                        transaction.verifyNotarySignatureAttached()
+                        transaction.verifySignatorySignatures()
+                        transaction.verifyAttachedNotarySignature()
                         utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
                         log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
                     } catch (e: Exception) {

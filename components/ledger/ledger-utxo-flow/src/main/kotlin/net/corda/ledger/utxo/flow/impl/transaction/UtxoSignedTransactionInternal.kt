@@ -5,6 +5,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
@@ -46,19 +47,41 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
     fun getMissingSignatories(): Set<PublicKey>
 
     /**
-     * Verify all available signatures and whether there are any missing ones.
+     * Verify the signatories' signatures and check if there are any missing one.
+     * It ignores the non-signatory signatures! (including the notary's)
      *
-     * @throws TransactionSignatureException if any signatures are invalid or missing.
+     * @throws TransactionSignatureException if any signatures are missing or invalid.
      */
     @Suspendable
-    fun verifySignatures()
+    fun verifySignatorySignatures()
 
     /**
      * Verify if notary has signed the transaction.
-     * The signature itself does not get verified!
+     * It checks both the existence and the validity of that signature.
      *
-     * @throws TransactionSignatureException if notary signatures is missing.
+     * @throws TransactionSignatureException if notary signatures is missing or invalid.
      */
     @Suspendable
-    fun verifyNotarySignatureAttached()
+    fun verifyAttachedNotarySignature()
+
+    /**
+     * Verify if a signature
+     *  - is made by the notary of the transaction
+     *  - is valid
+     *
+     * @throws CordaRuntimeException if not made by the notary // todo: change this to TransactionSignatureException
+     * @throws TransactionSignatureException if the signature is invalid
+     */
+    @Suspendable
+    fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
+
+    /**
+     * Verify if a signature is one of the signatories is valid.
+     * It does not throw if the signature is not one of the signatories regardless of the validity since
+     * the public key is not available, the validity cannot be verified.
+     *
+     * @throws TransactionSignatureException if signature is owned by a signatory, and it is not valid.
+     */
+    @Suspendable
+    fun verifySignatorySignature(signature: DigitalSignatureAndMetadata)
 }

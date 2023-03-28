@@ -12,6 +12,7 @@ import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -43,7 +44,6 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -717,7 +717,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
-                membershipQueryClient.queryRegistrationRequestsStatus(
+                membershipQueryClient.queryRegistrationRequests(
                     holdingIdentity,
                     memberName,
                     listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
@@ -732,7 +732,7 @@ class MGMResourceClientTest {
                 false
             )
 
-            verify(membershipQueryClient).queryRegistrationRequestsStatus(
+            verify(membershipQueryClient).queryRegistrationRequests(
                 holdingIdentity,
                 memberName,
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
@@ -792,10 +792,10 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should publish the correct command when approved`() {
             whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
-            val mockStatus = mock<RegistrationRequestStatus> {
-                on { status } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
             }
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
             )
             mgmResourceClient.start()
@@ -823,10 +823,10 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should publish the correct command when declined`() {
             whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
-            val mockStatus = mock<RegistrationRequestStatus> {
-                on { status } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
             }
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
             )
             mgmResourceClient.start()
@@ -907,10 +907,10 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should fail if request is not pending review`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
-            val mockStatus = mock<RegistrationRequestStatus> {
-                on { status } doReturn RegistrationStatus.SENT_TO_MGM
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.SENT_TO_MGM
             }
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
             )
 
@@ -928,7 +928,7 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should fail if request status cannot be determined`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(null)
             )
 

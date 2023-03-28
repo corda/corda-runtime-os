@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.consensual
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKeys
@@ -50,7 +51,10 @@ class ConsensualSignedTransactionBaseTest {
         )
         val signedByTwoTx = signedByOneTx.addSignature(publicKeys[1])
         val signedByAllTx = signedByTwoTx.addSignatures(listOf(signatures[2]))
-        assertThat(signedByAllTx.signatures.map { it.by }, `is`(publicKeys))
+        assertThat(
+            signedByAllTx.signatures.map { it.by }.toSet(),
+            `is`(publicKeys.map { it.fullIdHash() }.toSet())
+        )
     }
 
     @Test
@@ -150,7 +154,7 @@ class ConsensualSignedTransactionBaseTest {
     }
 
     private fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = now()) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray()),
+        DigitalSignature.WithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
         DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
     )
 
