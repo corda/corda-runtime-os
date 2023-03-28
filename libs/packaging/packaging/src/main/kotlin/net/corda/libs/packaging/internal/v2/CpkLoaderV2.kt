@@ -23,10 +23,15 @@ import java.security.cert.Certificate
 import java.util.Collections
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoaderImpl
 
 internal const val CPK_TYPE = "Corda-CPK-Type"
 
-class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
+class CpkLoaderV2(
+    private val clock: Clock = UTCClock(),
+    private val externalChannelsConfigLoader: ExternalChannelsConfigLoader = ExternalChannelsConfigLoaderImpl()
+) : CpkLoader {
 
     override fun loadCPK(
         source: ByteArray,
@@ -81,6 +86,9 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         // List all libraries
         val libNames = readLibNames(cpkEntries)
 
+        // Read the configuration for the external channels
+        val externalChannelsConfig = externalChannelsConfigLoader.read(cpkEntries)
+
         return CpkMetadata(
             cpkId = CpkIdentifier(
                 cordappManifest.bundleSymbolicName,
@@ -94,7 +102,8 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             cordappManifest = cordappManifest,
             cordappCertificates = cordappCertificates,
             libraries = Collections.unmodifiableList(libNames),
-            timestamp = clock.instant()
+            timestamp = clock.instant(),
+            externalChannelsConfig = externalChannelsConfig
         )
     }
 

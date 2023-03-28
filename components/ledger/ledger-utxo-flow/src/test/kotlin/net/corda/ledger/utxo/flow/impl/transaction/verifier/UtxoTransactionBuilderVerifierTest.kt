@@ -1,8 +1,9 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -27,7 +28,8 @@ class UtxoTransactionBuilderVerifierTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(transactionBuilder.notary).thenReturn(utxoNotaryExample)
+        whenever(transactionBuilder.notaryName).thenReturn(notaryX500Name)
+        whenever(transactionBuilder.notaryKey).thenReturn(publicKeyExample)
         whenever(transactionBuilder.timeWindow).thenReturn(timeWindow)
         whenever(transactionBuilder.getEncumbranceGroups()).thenReturn(emptyMap())
         whenever(transactionBuilder.signatories).thenReturn(listOf(signatory))
@@ -43,11 +45,20 @@ class UtxoTransactionBuilderVerifierTest {
 
     @Test
     fun `throws an exception when the notary is null`() {
-        whenever(transactionBuilder.notary).thenReturn(null)
+        whenever(transactionBuilder.notaryName).thenReturn(null)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("The notary")
     }
+
+    @Test
+    fun `throws an exception when the notary key is null`() {
+        whenever(transactionBuilder.notaryKey).thenReturn(null)
+        assertThatThrownBy { verifier.verify() }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("cannot be found or is not a valid notary.")
+    }
+
 
     @Test
     fun `throws an exception when the time window is null`() {

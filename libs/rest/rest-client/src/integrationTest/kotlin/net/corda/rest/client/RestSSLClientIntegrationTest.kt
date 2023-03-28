@@ -1,6 +1,7 @@
 package net.corda.rest.client
 
 import net.corda.rest.client.config.RestClientConfig
+import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.server.config.models.RestSSLSettings
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.RestServerImpl
@@ -21,7 +22,7 @@ import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito.mock
 import java.nio.file.Files
 
-internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
+class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     companion object {
 
         private val sslService = SslCertReadServiceImpl {
@@ -71,6 +72,7 @@ internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
@@ -96,6 +98,7 @@ internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             CustomSerializationAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
@@ -117,6 +120,7 @@ internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
@@ -143,11 +147,32 @@ internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(3)
                 .username(userAlice.username)
                 .password(requireNotNull(userAlice.password))
         )
 
         assertThatThrownBy { client.start() }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    @Timeout(100)
+    fun `check correct error when certificate cannot be verified`() {
+        val client = RestClient(
+            baseAddress = "https://localhost:${server.port}/api/v1/",
+            TestHealthCheckAPI::class.java,
+            RestClientConfig()
+                .enableSSL(true)
+                .secureSSL(true)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password))
+        )
+
+        client.use {
+            assertThatThrownBy { client.start() }.isInstanceOf(ClientSslHandshakeException::class.java)
+                .hasMessageContaining("unable to find valid certification path to requested target")
+        }
     }
 }

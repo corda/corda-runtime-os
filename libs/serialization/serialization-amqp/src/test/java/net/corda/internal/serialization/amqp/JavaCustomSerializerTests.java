@@ -11,6 +11,7 @@ import java.io.NotSerializableException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtils.unwrapSerializedBytes;
 import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.testDefaultFactory;
 
 @Timeout(value = 30)
@@ -89,7 +90,7 @@ public class JavaCustomSerializerTests {
         factory.registerExternal(new ExampleSerializer(), factory);
 
         var serializedBytes = ser.serialize(e, TestSerializationContext.testSerializationContext);
-        var deserialize = new DeserializationInput(factory).deserialize(serializedBytes, ClassThatNeedsCustomSerializer.class, TestSerializationContext.testSerializationContext);
+        var deserialize = new DeserializationInput(factory).deserialize(unwrapSerializedBytes(serializedBytes), ClassThatNeedsCustomSerializer.class, TestSerializationContext.testSerializationContext);
 
         Assertions.assertEquals(10, deserialize.getA());
         Assertions.assertEquals(20, deserialize.getB());

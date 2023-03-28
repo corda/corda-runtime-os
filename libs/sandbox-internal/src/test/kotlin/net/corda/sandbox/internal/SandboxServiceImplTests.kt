@@ -575,7 +575,9 @@ private data class CpkAndContents(
             fileChecksum = cpkChecksum ?:
                 SecureHashImpl(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
             cordappCertificates = emptySet(),
-            timestamp = Instant.now())
+            timestamp = Instant.now(),
+            null
+        )
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
         override fun getMainBundle(): InputStream = ByteArrayInputStream(ByteArray(0))

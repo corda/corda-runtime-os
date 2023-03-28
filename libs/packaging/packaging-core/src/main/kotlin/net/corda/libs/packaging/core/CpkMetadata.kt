@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.core
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.v5.crypto.SecureHash
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.io.EncoderFactory
@@ -40,7 +41,8 @@ data class CpkMetadata(
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
     val cordappCertificates: Set<Certificate>,
-    val timestamp: Instant
+    val timestamp: Instant,
+    val externalChannelsConfig: String?
 ) {
     companion object {
         fun fromAvro(other: CpkMetadataAvro): CpkMetadata {
@@ -59,7 +61,8 @@ data class CpkMetadata(
                             .use(crtFactory::generateCertificate)
                     }.collect(Collectors.toUnmodifiableSet())
                 },
-                other.timestamp
+                other.timestamp,
+                other.externalChannelsConfig
             )
         }
 
@@ -91,6 +94,7 @@ data class CpkMetadata(
                         )
                 )
                 .setTimestamp(timestamp)
+                .setExternalChannelsConfig(externalChannelsConfig)
                 .build()
     }
 

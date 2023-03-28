@@ -3,8 +3,8 @@ package net.corda.ledger.utxo.data.transaction
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
@@ -32,9 +32,14 @@ class UtxoLedgerTransactionImpl(
         return wrappedWireTransaction.id
     }
 
-    override fun getNotary(): Party {
-        return wrappedWireTransaction.notary
+    override fun getNotaryName(): MemberX500Name {
+        return wrappedWireTransaction.notaryName
     }
+
+    override fun getNotaryKey(): PublicKey {
+        return wrappedWireTransaction.notaryKey
+    }
+
 
     override fun getMetadata(): TransactionMetadata {
         return wrappedWireTransaction.metadata

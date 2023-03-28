@@ -15,7 +15,9 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.lang.reflect.Field
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
@@ -75,18 +77,15 @@ val MemberX500Name.sandboxName: String
  */
 fun checkAPIAvailability(flow: Flow, configuration: SimulatorConfiguration){
     flow::class.java.declaredFields.forEach {
-        if(!it.isAnnotationPresent(CordaInject::class.java))
-            return
-
-        if(it.type.name.startsWith("net.corda.v5")) {
+        if(it.isAnnotationPresent(CordaInject::class.java) && it.type.name.startsWith("net.corda.v5")) {
             if (!availableAPIs.contains(it.type) && !configuration.serviceOverrides.containsKey(it.type)) {
                 throw NotImplementedError(
                     "${it.type.name} is not implemented in Simulator for this release"
                 )
             }
-        }
-        else
+        }else if(it.isAnnotationPresent(CordaInject::class.java)){
             throw NotImplementedError("Support for custom services is not implemented; service was ${it.type.name}")
+        }
     }
 }
 
@@ -108,5 +107,7 @@ val availableAPIs = setOf(
     PersistenceService::class.java,
     SignatureSpecService::class.java,
     SerializationService::class.java,
-    ConsensualLedgerService::class.java
+    ConsensualLedgerService::class.java,
+    UtxoLedgerService::class.java,
+    NotaryLookup::class.java
 )

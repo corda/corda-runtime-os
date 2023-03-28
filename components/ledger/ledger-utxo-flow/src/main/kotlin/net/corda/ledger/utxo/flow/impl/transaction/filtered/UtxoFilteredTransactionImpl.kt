@@ -9,9 +9,9 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProofType
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -43,11 +43,18 @@ class UtxoFilteredTransactionImpl(
             ?.let { serializationService.deserialize(it.second, TimeWindow::class.java) }
     }
 
-    override fun getNotary(): Party? {
+    override fun getNotaryName(): MemberX500Name? {
         return filteredTransaction.getComponentGroupContent(UtxoComponentGroup.NOTARY.ordinal)
-            ?.singleOrNull { it.first == WrappedUtxoWireTransaction.notaryIndex }
-            ?.let { serializationService.deserialize(it.second, Party::class.java) }
+            ?.singleOrNull { it.first == WrappedUtxoWireTransaction.notaryNameIndex }
+            ?.let { serializationService.deserialize(it.second, MemberX500Name::class.java) }
     }
+
+    override fun getNotaryKey(): PublicKey? {
+        return filteredTransaction.getComponentGroupContent(UtxoComponentGroup.NOTARY.ordinal)
+            ?.singleOrNull { it.first == WrappedUtxoWireTransaction.notaryKeyIndex }
+            ?.let { serializationService.deserialize(it.second, PublicKey::class.java) }
+    }
+
 
     override fun getSignatories(): UtxoFilteredData<PublicKey> {
         return getFilteredData(UtxoComponentGroup.SIGNATORIES.ordinal)
@@ -88,7 +95,7 @@ class UtxoFilteredTransactionImpl(
                         val info = filteredStateInfos.values[key]
                             ?: throw FilteredDataInconsistencyException("Missing output info")
                         StateAndRefImpl(
-                            TransactionStateImpl(value, info.notary, info.getEncumbranceGroup()),
+                            TransactionStateImpl(value, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                             StateRef(id, key)
                         )
                     })

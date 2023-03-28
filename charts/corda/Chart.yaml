@@ -24,6 +24,6 @@ version: 5.0.0-Interop
 appVersion: "unstable"
 
 dependencies:
-  - name: corda-lib
-    version: 5.0.0-Interop
-    repository: file://../corda-lib
+  - name: "corda-lib"
+    version: "5.0.0-Interop"
+    repository: "file://../corda-lib"

@@ -34,7 +34,7 @@ interface MemberRegistrationRestResource : RestResource {
      * Example usage:
      * ```
      * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationRequest
-     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.key.id": "D2FAF709052F"}))
+     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.keys.0.id": "D2FAF709052F"}))
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the requesting virtual node.
@@ -91,8 +91,8 @@ interface MemberRegistrationRestResource : RestResource {
                 value of null indicated that registration has not started yet
             registrationUpdated: the date and the when the registration has been last updated    
             registrationStatus: the status of the registration request; 
-                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", 
-                "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
+                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", 
+                "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
             memberInfoSubmitted: the properties submitted to MGM during the registration     
         """
     )
@@ -128,8 +128,8 @@ interface MemberRegistrationRestResource : RestResource {
                 value of null indicated that registration has not started yet
             registrationUpdated: the date and the when the registration has been last updated    
             registrationStatus: the status of the registration request; 
-                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", 
-                "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
+                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", 
+                "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
             memberInfoSubmitted: the properties submitted to MGM during the registration     
         """
     )

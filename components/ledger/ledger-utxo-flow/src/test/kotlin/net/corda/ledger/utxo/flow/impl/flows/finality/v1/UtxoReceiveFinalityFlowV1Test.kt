@@ -26,7 +26,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.VisibilityChecker
@@ -72,8 +71,6 @@ class UtxoReceiveFinalityFlowV1Test {
     private val publicKey3 = mock<PublicKey>()
     private val publicKeyNotary = mock<PublicKey>()
 
-    private val notaryService = mock<Party>()
-
     private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 3))
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 4))
@@ -100,7 +97,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(signedTransaction.metadata).thenReturn(metadata)
-        whenever(signedTransaction.notary).thenReturn(notaryService)
+        whenever(signedTransaction.notaryKey).thenReturn(publicKeyNotary)
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.signatures).thenReturn(listOf(signature0))
 
@@ -109,7 +106,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransactionWithOwnKeys.signatures).thenReturn(listOf(signature1, signature2))
         whenever(signedTransactionWithOwnKeys.addSignature(signature3)).thenReturn(signedTransactionWithOwnKeys)
         whenever(signedTransactionWithOwnKeys.addSignature(signatureNotary)).thenReturn(notarizedTransaction)
-        whenever(signedTransactionWithOwnKeys.notary).thenReturn(notaryService)
+        whenever(signedTransactionWithOwnKeys.notaryKey).thenReturn(publicKeyNotary)
 
         whenever(notarizedTransaction.id).thenReturn(ID)
 
@@ -119,8 +116,6 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
         whenever(ledgerTransaction.metadata).thenReturn(metadata)
-
-        whenever(notaryService.owningKey).thenReturn(publicKeyNotary)
     }
 
     @Test
@@ -265,7 +260,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
-        whenever(notaryService.owningKey).thenReturn(publicKey1)
+        whenever(signedTransactionWithOwnKeys.notaryKey).thenReturn(publicKey1)
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -290,7 +285,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(signedTransactionWith1Key.signatures).thenReturn(listOf(signature1))
 
         whenever(signedTransactionWith1Key.addSignature(signature3)).thenReturn(signedTransactionWith1Key)
-        whenever(signedTransactionWith1Key.notary).thenReturn(notaryService)
+        whenever(signedTransactionWith1Key.notaryKey).thenReturn(publicKeyNotary)
         whenever(signedTransactionWith1Key.addSignature(signatureNotary)).thenReturn(notarizedTransaction)
 
         callReceiveFinalityFlow()
