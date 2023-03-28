@@ -35,6 +35,7 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -56,7 +57,8 @@ internal class ConfigReadServiceEventHandlerTest {
     // Mocks
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var coordinator: LifecycleCoordinator
-    private lateinit var compactedSubscription: CompactedSubscription<String, SmartConfig>
+    private lateinit var configSubscription: CompactedSubscription<String, SmartConfig>
+    private lateinit var avroSchemaSubscription: CompactedSubscription<Fingerprint, String>
     private lateinit var configMerger: ConfigMerger
     private lateinit var avroSchemaRegistry: AvroSchemaRegistry
     private lateinit var publisher: Publisher
@@ -70,12 +72,20 @@ internal class ConfigReadServiceEventHandlerTest {
     private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
     @BeforeEach
     fun setUp() {
-        subscriptionFactory = mock()
         coordinator = mock()
-        compactedSubscription = mock()
-        `when`(subscriptionFactory.createCompactedSubscription<String, SmartConfig>(any(), any(), any())).thenReturn(
-            compactedSubscription
-        )
+        configSubscription = mock()
+        avroSchemaSubscription = mock()
+        subscriptionFactory = mock {
+            on {
+                createCompactedSubscription<String, SmartConfig>(
+                    argThat { groupName == ConfigReadServiceEventHandler.CONFIG_GROUP }, any(), any())
+            } doReturn (configSubscription)
+            on {
+                createCompactedSubscription<Fingerprint, String>(
+                    argThat { groupName == ConfigReadServiceEventHandler.AVRO_GROUP }, any(), any())
+            } doReturn (avroSchemaSubscription)
+        }
+
         messagingConfig = mock()
         configMerger  = mock {
             on { getMessagingConfig(bootConfig, null) } doAnswer { messagingConfig }
@@ -110,7 +120,7 @@ internal class ConfigReadServiceEventHandlerTest {
         configReadServiceEventHandler.processEvent(SetupConfigSubscription(), coordinator)
         `when`(coordinator.status).thenReturn(LifecycleStatus.DOWN)
 
-        verify(compactedSubscription).start()
+        verify(configSubscription).start()
 
         configReadServiceEventHandler.processEvent(
             RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP),
@@ -140,8 +150,10 @@ internal class ConfigReadServiceEventHandlerTest {
     fun `stop event removes the subscription`() {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         configReadServiceEventHandler.processEvent(SetupConfigSubscription(), coordinator)
+        configReadServiceEventHandler.processEvent(SetupAvroSchemaSubscription(), coordinator)
         configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
-        verify(compactedSubscription).close()
+        verify(configSubscription).close()
+        verify(avroSchemaSubscription).close()
     }
 
     @Test
@@ -150,7 +162,7 @@ internal class ConfigReadServiceEventHandlerTest {
         // The first value captured will be from the BootstrapConfig being provided
         verifyNoInteractions(coordinator)
         verifyNoInteractions(subscriptionFactory)
-        verifyNoInteractions(compactedSubscription)
+        verifyNoInteractions(configSubscription)
     }
 
     @Test
@@ -222,13 +234,6 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `SetupAvroSchemaSubscription creates sub`() {
-        val sub = mock<CompactedSubscription<Fingerprint, String>>()
-        `when`(subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(ConfigReadServiceEventHandler.AVRO_GROUP, Schemas.AvroSchema.AVRO_SCHEMA_TOPIC),
-            avroSchemaProcessor,
-            messagingConfig
-        )).doReturn(sub)
-
         // must be bootstrapped first
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
 
@@ -239,7 +244,7 @@ internal class ConfigReadServiceEventHandlerTest {
             avroSchemaProcessor,
             messagingConfig
         )
-        verify(sub).start()
+        verify(avroSchemaSubscription).start()
     }
 
     @Test

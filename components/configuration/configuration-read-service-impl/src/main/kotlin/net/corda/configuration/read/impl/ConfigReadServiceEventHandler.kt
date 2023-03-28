@@ -51,7 +51,7 @@ internal class ConfigReadServiceEventHandler(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private const val CONFIG_GROUP = "CONFIGURATION_READ"
+        const val CONFIG_GROUP = "CONFIGURATION_READ"
         const val AVRO_GROUP = "AVRO_READ"
     }
 
@@ -118,6 +118,8 @@ internal class ConfigReadServiceEventHandler(
                 subReg?.close()
                 configSubscription?.close()
                 configSubscription = null
+                avroSchemaSubscription?.close()
+                avroSchemaSubscription = null
             }
 
             is ErrorEvent -> {
