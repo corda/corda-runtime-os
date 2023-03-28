@@ -72,7 +72,7 @@ class InteropProcessor(
             val destinationAlias = destinationIdentity
 
             //TODO use getRealHoldingIdentityFromAliasMapping after
-            // general fix of CORE-10427
+            // general fix of CORE-10427, currently the code always returns null
             val realHoldingIdentity = //InteropAliasProcessor.getRealHoldingIdentity(
                 //getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda())
             //)
