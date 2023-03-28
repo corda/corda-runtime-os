@@ -82,6 +82,15 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
+    /**
+     * Returns true if a session state belongs to an interop session. This is currently
+     * signaled by the presence of the interop suffix in the session ID.
+     * @return True if the state, corresponds to an interop session, false otherwise.
+     */
+    private fun SessionState.isInteropSessionState(): Boolean {
+        return this.sessionId.contains("-INTEROP")
+    }
+
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
         if (isInterop(context)) {
             return true
@@ -93,8 +102,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         /**
          * If the counterparty doesn't exist in our network, don't send our queued messages yet.
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
+         * This check is not performed for interop sessions, where the counterparty exists on another cluster.
          */
-        if (!counterpartyExists) {
+        if (!counterpartyExists && !sessionState.isInteropSessionState()) {
             val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
             val expiryTime = maxOf(
                 sessionState.lastReceivedMessageTime,

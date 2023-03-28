@@ -3,9 +3,11 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.interop.filter.InteropP2PFilterService
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -22,7 +24,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
+//import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -48,7 +51,9 @@ class InteropService @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = InteropFacadeToFlowMapperService::class)
-    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService,
+    @Reference(service = InteropP2PFilterService::class)
+    private val interopP2PFilterService: InteropP2PFilterService
 ) : Lifecycle {
 
     companion object {
@@ -60,7 +65,8 @@ class InteropService @Activate constructor(
         private const val GROUP_NAME = "interop_alias_translator"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<InteropService>(
+        DependentComponents.of(::configurationReadService, ::interopP2PFilterService), ::eventHandler)
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -80,7 +86,7 @@ class InteropService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)
+                            setOf(MESSAGING_CONFIG)//, FLOW_CONFIG)
                         )
                     }
                 } else {
@@ -95,6 +101,7 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        //val flowConfig = event.config.getConfig(FLOW_CONFIG)
         //TODO temporary code (commented and uncommented) to setup members of interop group,
         // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()
@@ -118,7 +125,7 @@ class InteropService @Activate constructor(
         }
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
+                SubscriptionConfig(CONSUMER_GROUP, FLOW_INTEROP_EVENT_TOPIC),
                 InteropProcessor(
                     cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
                     subscriptionFactory, messagingConfig, facadeToFlowMapperService
