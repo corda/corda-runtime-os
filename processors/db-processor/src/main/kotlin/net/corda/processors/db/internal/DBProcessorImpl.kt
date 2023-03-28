@@ -11,7 +11,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
@@ -108,8 +107,6 @@ class DBProcessorImpl @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = MembershipGroupPolicyValidator::class)
@@ -127,12 +124,13 @@ class DBProcessorImpl @Activate constructor(
                     + ChunkingEntities.classes
                     + CpiEntities.classes
                     + CertificateEntities.clusterClasses
+                    + MembershipEntities.clusterClasses
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
         entitiesRegistry.register(
             CordaDb.Vault.persistenceUnitName,
             CertificateEntities.vnodeClasses
-                    + MembershipEntities.classes
+                    + MembershipEntities.vnodeClasses
         )
     }
 
@@ -181,7 +179,6 @@ class DBProcessorImpl @Activate constructor(
         configPublishService,
         configBusReconcilerReader,
         reconcilerFactory,
-        cordaAvroSerializationFactory,
         entitiesRegistry,
         groupParametersFactory,
         allowedCertificatesReaderWriterService,

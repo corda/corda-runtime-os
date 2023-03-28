@@ -2,6 +2,7 @@ package net.corda.membership.impl.p2p.dummy
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -117,7 +118,7 @@ internal class TestCryptoOpsClientImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -130,7 +131,7 @@ internal class TestCryptoOpsClientImpl @Activate constructor(
         digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

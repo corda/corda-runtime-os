@@ -319,7 +319,6 @@ abstract class BaseOnboard : Runnable {
             .body(
                 mapOf(
                     "memberRegistrationRequest" to mapOf(
-                        "action" to "requestJoin",
                         "context" to registrationContext
                     )
                 )

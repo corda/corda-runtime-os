@@ -2,26 +2,26 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.bytes
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.toAvro
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
-import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
@@ -39,7 +39,7 @@ class MembershipPackageFactory(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-    private fun DigitalSignature.WithKey.toAvro() =
+    private fun DigitalSignatureWithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))
             .setPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.by)))
@@ -59,7 +59,7 @@ class MembershipPackageFactory(
         membersSignatures: Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>,
         membersToSend: Collection<MemberInfo>,
         hashCheck: SecureHash,
-        groupParameters: GroupParameters,
+        groupParameters: InternalGroupParameters,
     ): MembershipPackage {
         val mgmSignatureSpec = mgmSigner.signatureSpec.toAvro()
         val signedMembers = membersToSend.map {
@@ -79,13 +79,11 @@ class MembershipPackageFactory(
                 .setMgmSignatureSpec(mgmSignatureSpec)
                 .build()
         }
-        val wireGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
-            WireGroupParameters(
-                ByteBuffer.wrap(it),
-                mgmSigner.sign(it).toAvro(),
-                mgmSigner.signatureSpec.toAvro()
-            )
-        } ?: throw CordaRuntimeException("Failed to serialize group parameters.")
+        val signedGroupParameters = SignedGroupParameters(
+            ByteBuffer.wrap(groupParameters.bytes),
+            mgmSigner.sign(groupParameters.bytes).toAvro(),
+            mgmSigner.signatureSpec.toAvro()
+        )
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hashCheck.toAvro())
@@ -94,8 +92,7 @@ class MembershipPackageFactory(
             .setDistributionType(type)
             .setCurrentPage(0)
             .setPageCount(1)
-            .setCpiAllowList(null)
-            .setGroupParameters(wireGroupParameters)
+            .setGroupParameters(signedGroupParameters)
             .setMemberships(
                 membership
             )

@@ -9,6 +9,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -775,7 +776,7 @@ class CryptoProcessorTests {
             ).forEach { it.get() }
             logger.info("Waiting for response for createSign")
             val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignature.WithKey
+            val signature = transformer.transform(response) as DigitalSignatureWithKey
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(
@@ -821,7 +822,7 @@ class CryptoProcessorTests {
             ).forEach { it.get() }
             logger.info("Waiting for response for createSign")
             val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignature.WithKey
+            val signature = transformer.transform(response) as DigitalSignatureWithKey
             assertEquals(publicKey, signature.by)
             assertTrue(signature.bytes.isNotEmpty())
             verifier.verify(

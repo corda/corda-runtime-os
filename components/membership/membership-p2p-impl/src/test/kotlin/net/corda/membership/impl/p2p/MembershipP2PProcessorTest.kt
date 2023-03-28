@@ -83,7 +83,6 @@ class MembershipP2PProcessorTest {
         memberContext,
         testSig,
         testSigSpec,
-        true,
         0L,
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()

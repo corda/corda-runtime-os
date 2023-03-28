@@ -41,11 +41,13 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
                              digestService: DigestService
 ) {
     val digitalSignature = signature.digitalSignature
-
-    if (requestingPartyKey != digitalSignature.by) {
+    val digestAlgorithmOfSignatureKeyId = digitalSignature.by.algorithm
+    val requestingPartyKeyId =
+        requestingPartyKey.fullIdHash(digestService, digestAlgorithmOfSignatureKeyId)
+    if (requestingPartyKeyId != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingPartyKey.publicKeyId(digestService)}, " +
-                    "but received by ${digitalSignature.by.publicKeyId(digestService)}}"
+            "Expected a signature by ${requestingPartyKeyId.shortHash}, " +
+                    "but received by ${digitalSignature.by.shortHash}}"
         )
     }
 
@@ -55,7 +57,7 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
         signatureVerifier.verify(
             expectedSignedBytes,
             digitalSignature.bytes,
-            digitalSignature.by,
+            requestingPartyKey,
             SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
         )
     } catch (e: Exception) {
@@ -141,7 +143,8 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
 
 private const val SHORT_KEY_ID_LENGTH = 12
 
-private fun PublicKey.publicKeyId(digestService: DigestService): String {
-    val fullKeyId = digestService.hash(encoded, DigestAlgorithmName.SHA2_256)
-    return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
-}
+private fun PublicKey.fullIdHash(digestService: DigestService, digestAlgorithmName: String): SecureHash =
+    digestService.hash(this.encoded, DigestAlgorithmName(digestAlgorithmName))
+
+private val SecureHash.shortHash: String
+    get() = this.toHexString().substring(0, SHORT_KEY_ID_LENGTH)

@@ -4,12 +4,12 @@ import net.corda.flow.application.services.impl.NotaryLookupImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
@@ -39,7 +39,7 @@ class NotaryLookupImplTest {
         notaryServiceAlice,
         notaryServiceBob
     )
-    private val groupParameters: GroupParameters = mock {
+    private val groupParameters: InternalGroupParameters = mock {
         on { notaries } doReturn notaries
     }
     private val groupReader = mock<MembershipGroupReader> {

@@ -73,7 +73,7 @@ internal class CreateVirtualNodeServiceImpl(
     override fun ensureHoldingIdentityIsUnique(request: VirtualNodeCreateRequest) {
         val emf = dbConnectionManager.getClusterEntityManagerFactory()
         val holdingIdShortHash = request.holdingId.toCorda().shortHash
-        emf.use { em ->
+        emf.createEntityManager().use { em ->
             if (virtualNodeRepository.find(em, holdingIdShortHash) != null) {
                 throw VirtualNodeAlreadyExistsException(
                     "Virtual node for CPI with file checksum ${request.cpiFileChecksum} and x500Name " +

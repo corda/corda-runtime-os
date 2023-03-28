@@ -14,6 +14,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -40,7 +41,8 @@ class ChunkDbWriterFactoryImpl(
     private val certificatesService: CertificatesService,
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    private val networkInfoWriter: NetworkInfoWriter,
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -57,6 +59,8 @@ class ChunkDbWriterFactoryImpl(
         membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
         @Reference(service = ConfigurationValidatorFactory::class)
         configurationValidatorFactory: ConfigurationValidatorFactory,
+        @Reference(service = NetworkInfoWriter::class)
+        networkInfoWriter: NetworkInfoWriter
     ) : this(
         subscriptionFactory,
         publisherFactory,
@@ -64,7 +68,8 @@ class ChunkDbWriterFactoryImpl(
         certificatesService,
         membershipSchemaValidatorFactory,
         membershipGroupPolicyValidator,
-        configurationValidatorFactory
+        configurationValidatorFactory,
+        networkInfoWriter,
     )
 
     companion object {
@@ -92,6 +97,7 @@ class ChunkDbWriterFactoryImpl(
             messagingConfig,
             bootConfig,
             entityManagerFactory,
+            networkInfoWriter,
             statusTopic,
             cpiInfoWriteService
         )
@@ -116,11 +122,12 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
+        networkInfoWriter: NetworkInfoWriter,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
-        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
+        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)

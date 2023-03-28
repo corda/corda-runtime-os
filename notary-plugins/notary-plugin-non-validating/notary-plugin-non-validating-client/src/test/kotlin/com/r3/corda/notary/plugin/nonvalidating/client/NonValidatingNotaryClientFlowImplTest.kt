@@ -38,7 +38,7 @@ class NonValidatingNotaryClientFlowImplTest {
         const val DUMMY_PLATFORM_VERSION = 9001
 
         /* Signature */
-        val mockRequestSignature = mock<DigitalSignature.WithKey>()
+        val mockRequestSignature = mock<DigitalSignature.WithKeyId>()
         val dummyUniquenessSignature = DigitalSignatureAndMetadata(
             mock(),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
