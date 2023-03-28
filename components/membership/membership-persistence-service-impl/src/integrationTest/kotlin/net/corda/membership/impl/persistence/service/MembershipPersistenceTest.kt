@@ -542,7 +542,7 @@ class MembershipPersistenceTest {
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
         assertThat(persistedEntity).isNotNull
@@ -571,13 +571,13 @@ class MembershipPersistenceTest {
         val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2, 2)
         assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(GroupPolicyEntity::class.java, 1L)
         }
         assertThat(cordaAvroDeserializer.deserialize(persistedEntity.properties)!!.toMap()).isEqualTo(
             groupPolicy1.entries.associate { it.key to it.value }
         )
-        val secondPersistedEntity = vnodeEmf.use {
+        val secondPersistedEntity = vnodeEmf.createEntityManager().use {
             it.find(GroupPolicyEntity::class.java, 2L)
         }
         assertThat(cordaAvroDeserializer.deserialize(secondPersistedEntity.properties)!!.toMap()).isEqualTo(
@@ -594,7 +594,7 @@ class MembershipPersistenceTest {
             membershipPersistenceClientWrapper.persistGroupParametersInitialSnapshot(viewOwningHoldingIdentity)
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 GroupParametersEntity::class.java,
                 1
@@ -648,7 +648,7 @@ class MembershipPersistenceTest {
             .persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 GroupParametersEntity::class.java,
                 2
@@ -730,7 +730,7 @@ class MembershipPersistenceTest {
             assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
         }
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 GroupParametersEntity::class.java,
                 51
@@ -814,7 +814,7 @@ class MembershipPersistenceTest {
             assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
         }
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 GroupParametersEntity::class.java,
                 101
@@ -905,7 +905,7 @@ class MembershipPersistenceTest {
             assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
         }
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 GroupParametersEntity::class.java,
                 151
@@ -954,7 +954,7 @@ class MembershipPersistenceTest {
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
@@ -989,7 +989,7 @@ class MembershipPersistenceTest {
         val memberPersistentResult = persistMember(registeringX500Name, MEMBER_STATUS_PENDING)
 
         assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val memberEntity = vnodeEmf.use {
+        val memberEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
@@ -1005,7 +1005,7 @@ class MembershipPersistenceTest {
 
         assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val requestEntity = vnodeEmf.use {
+        val requestEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
         assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
@@ -1019,7 +1019,7 @@ class MembershipPersistenceTest {
         assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(approveResult.groupId).isEqualTo(groupId)
         assertThat(approveResult.name).isEqualTo(registeringHoldingIdentity.x500Name)
-        val newMemberEntity = vnodeEmf.use {
+        val newMemberEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
@@ -1028,7 +1028,7 @@ class MembershipPersistenceTest {
             )
         }
         assertThat(newMemberEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-        val newRequestEntity = vnodeEmf.use {
+        val newRequestEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
         assertThat(newRequestEntity.status).isEqualTo(RegistrationStatus.APPROVED.toString())
@@ -1132,7 +1132,7 @@ class MembershipPersistenceTest {
 
         assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val persistedEntity = vnodeEmf.use {
+        val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
         assertThat(persistedEntity).isNotNull
@@ -1148,7 +1148,7 @@ class MembershipPersistenceTest {
 
         assertThat(updateRegRequestStatusResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val updatedEntity = vnodeEmf.use {
+        val updatedEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
         assertThat(updatedEntity).isNotNull
@@ -1167,7 +1167,7 @@ class MembershipPersistenceTest {
             ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
         ).getOrThrow()
 
-        val approvalRuleEntity = vnodeEmf.use {
+        val approvalRuleEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 ApprovalRulesEntity::class.java,
                 ApprovalRulesEntityPrimaryKey(
@@ -1197,7 +1197,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
         ).getOrThrow()
 
-        vnodeEmf.use {
+        vnodeEmf.createEntityManager().use {
             assertThat(
                 it.find(
                     ApprovalRulesEntity::class.java,
@@ -1356,7 +1356,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity, member1, 1L, "test-reason"
         ).getOrThrow()
 
-        val persistedEntity1 = vnodeEmf.use {
+        val persistedEntity1 = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
@@ -1379,7 +1379,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity, member2, null, "test-reason"
         ).getOrThrow()
 
-        val persistedEntity2 = vnodeEmf.use {
+        val persistedEntity2 = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
@@ -1404,7 +1404,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity, member1, 1L, "test-reason"
         ).getOrThrow()
 
-        val persistedEntity1 = vnodeEmf.use {
+        val persistedEntity1 = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member1.toString(), false)
@@ -1427,7 +1427,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity, member2, 1L, "test-reason"
         ).getOrThrow()
 
-        val persistedEntity2 = vnodeEmf.use {
+        val persistedEntity2 = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, member2.toString(), false)
