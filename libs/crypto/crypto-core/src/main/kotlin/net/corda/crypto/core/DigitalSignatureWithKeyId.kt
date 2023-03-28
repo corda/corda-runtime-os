@@ -8,6 +8,5 @@ class DigitalSignatureWithKeyId(
     private val by: SecureHash,
     bytes: ByteArray
     ) : DigitalSignature.WithKeyId, OpaqueBytes(bytes) {
-    // TODO Not sure why Kotlin generated getter cannot override?
     override fun getBy() = by
 }
