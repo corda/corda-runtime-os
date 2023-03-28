@@ -46,7 +46,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
         private val caches = capacities.entries.associate { (type, capacity) ->
             type to CacheFactoryImpl().build(
-                "Sandbox-Cache",
+                "Sandbox-Cache-$type",
                 Caffeine.newBuilder()
                     .maximumSize(capacity)
                     // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
