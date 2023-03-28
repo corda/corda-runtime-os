@@ -31,8 +31,11 @@ import kotlin.streams.toList
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")
-
-
+    private val emf = EntityManagerFactoryFactoryImpl().create(
+        "test_unit",
+        CpiEntities.classes.toList(),
+        dbConfig
+    )
 
     private val cpkFileRepository = CpkFileRepositoryImpl()
 

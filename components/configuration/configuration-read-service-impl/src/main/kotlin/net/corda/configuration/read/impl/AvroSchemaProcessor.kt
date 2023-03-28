@@ -20,7 +20,7 @@ internal class AvroSchemaProcessor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val PUBLISH_TIMEOUT = 5L
+        const val PUBLISH_TIMEOUT_SECONDS = 5L
     }
 
     override val keyClass: Class<Fingerprint>
@@ -74,7 +74,7 @@ internal class AvroSchemaProcessor(
             val futures = publisher.publish(recordsToWrite)
             try {
                 @Suppress("SpreadOperator")
-                CompletableFuture.allOf(*futures.toTypedArray()).get(PUBLISH_TIMEOUT, TimeUnit.SECONDS)
+                CompletableFuture.allOf(*futures.toTypedArray()).get(PUBLISH_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 // The consequence of this is some current version schemas may not be available to later versions of the
                 // software. All workers will attempt to publish missing schemas so there is every change this would
