@@ -1,15 +1,15 @@
 package net.corda.membership.lib.impl
 
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.util.Objects
 
 class SignedGroupParametersImpl(
     override val bytes: ByteArray,
-    override val signature: DigitalSignature.WithKey,
+    override val signature: DigitalSignatureWithKey,
     override val signatureSpec: SignatureSpec,
     private val deserializer: (serialisedParams: ByteArray) -> LayeredPropertyMap
 ) : SignedGroupParameters, InternalGroupParameters by UnsignedGroupParametersImpl(bytes, deserializer) {
