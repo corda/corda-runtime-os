@@ -114,13 +114,13 @@ class TransferStatesFlow : ClientStartableFlow {
             val session = flowMessaging.initiateFlow(recipientX500)
             log.info("Finalizing transaction")
             utxoLedgerService.finalize(signedTransaction, listOf(session))
+            // Release the claim on the tokens' states, indicating we spent them all
+            tokenClaim.useAndRelease(tokenClaim.claimedTokens.map { it.stateRef })
             log.info("Finalized transaction")
         } catch (ex: Exception) {
             log.info("TransferStatesFlow failed", ex)
-        }
-        finally {
-            // Release the claim on the tokens' states
-            tokenClaim?.useAndRelease(tokenClaim.claimedTokens.map { it.stateRef })
+            // Release the claim on the tokens' states, indicating we spent none of them
+            tokenClaim?.useAndRelease(listOf())
         }
 
         log.info("Finished transferring States")
