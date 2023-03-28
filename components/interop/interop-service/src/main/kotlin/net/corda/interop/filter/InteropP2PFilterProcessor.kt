@@ -38,10 +38,10 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
 
         logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key." )
 
-        getOutputRecord(authMessage.payload, key)
+        processInteropMessage(authMessage.payload, key)
     }
 
-    private fun getOutputRecord(
+    private fun processInteropMessage(
         payload: ByteBuffer,
         key: String
     ) : Record<String, FlowMapperEvent>? {
