@@ -169,18 +169,17 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
             it.transactionId.state == TransactionState.COMMITTED
         }
 
-        val result = dbRecords.map { dbRecord ->
-            CordaConsumerRecord(
-                dbRecord.topic,
-                dbRecord.partition,
-                dbRecord.recordOffset,
-                deserializeKey(dbRecord.key),
-                deserializeValue(dbRecord.value),
-                dbRecord.timestamp.toEpochMilli(),
-                headerSerializer.deserialize(dbRecord.headers ?: "{}")
-            )
-        }.filter {
-            it.value != null || it.topic.endsWith(".dlq")
+        val result = dbRecords.mapNotNull { dbRecord ->
+            deserializeValue(dbRecord.value)?.let {
+                CordaConsumerRecord(
+                    dbRecord.topic,
+                    dbRecord.partition,
+                    dbRecord.recordOffset,
+                    deserializeKey(dbRecord.key),
+                    it,
+                    dbRecord.timestamp.toEpochMilli()
+                )
+            }
         }
 
         if (dbRecords.isNotEmpty()) {
