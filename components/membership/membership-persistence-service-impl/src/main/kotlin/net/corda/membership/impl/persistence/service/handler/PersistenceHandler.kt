@@ -55,6 +55,10 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         }
     }
 
+    fun <R> transaction(block: (EntityManager) -> R): R {
+        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+    }
+
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
         return dbConnectionManager.createEntityManagerFactory(
             connectionId = info.vaultDmlConnectionId,

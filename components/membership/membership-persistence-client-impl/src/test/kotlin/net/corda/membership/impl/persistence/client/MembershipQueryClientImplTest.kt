@@ -7,7 +7,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -28,6 +28,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -148,7 +149,12 @@ class MembershipQueryClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipQueryClient = MembershipQueryClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock, layeredPropertyMapFactory
+            coordinatorFactory,
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            clock,
+            layeredPropertyMapFactory
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())
@@ -261,17 +267,15 @@ class MembershipQueryClientImplTest {
 
     private fun buildResponse(
         rsContext: MembershipResponseContext,
-        success: Boolean,
         payload: Any?
     ) = MembershipPersistenceResponse(
         rsContext,
-        if (success) payload else PersistenceFailedResponse("Error")
+        payload
     )
 
     @Suppress("LongParameterList")
     private fun mockPersistenceResponse(
-        success: Boolean,
-        payload: List<PersistentMemberInfo>?,
+        payload: Any?,
         reqTimestampOverride: Instant? = null,
         reqIdOverride: String? = null,
         rsTimestampOverride: Instant? = null,
@@ -289,8 +293,7 @@ class MembershipQueryClientImplTest {
             CompletableFuture.completedFuture(
                 buildResponse(
                     rsContext,
-                    success,
-                    payload?.let { MemberInfoQueryResponse(it) }
+                    payload
                 )
             )
         }
@@ -299,7 +302,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `request to persistence service is as expected`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, listOf(mock()))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock())))
 
         membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
 
@@ -318,7 +321,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for all member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, listOf(mock()))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock())))
 
         val queryResult = membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
         assertThat(queryResult)
@@ -329,7 +332,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `failed request for all member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(false, null)
+        mockPersistenceResponse(PersistenceFailedResponse("Error"))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity)).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -339,7 +342,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for list of member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, listOf(mock()))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock())))
 
         val queryResult = membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))
         assertThat(queryResult)
@@ -350,7 +353,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `failed request for list of member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(false, null)
+        mockPersistenceResponse(PersistenceFailedResponse("Error"))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -360,7 +363,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for member info with no results is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, emptyList())
+        mockPersistenceResponse(MemberInfoQueryResponse(emptyList()))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Success::class.java
@@ -371,8 +374,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in holding identity between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -384,8 +386,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in request timestamp between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -397,8 +398,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in request ID between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             reqIdOverride = "Group ID 3"
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -410,8 +410,7 @@ class MembershipQueryClientImplTest {
     fun `Response timestamp before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -897,7 +896,6 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        true,
                         MutualTlsListAllowedCertificatesResponse(
                             listOf(
                                 ourX500Name.toString(),
@@ -929,12 +927,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        false,
-                        MutualTlsListAllowedCertificatesResponse(
-                            listOf(
-                                ourX500Name.toString(),
-                            )
-                        )
+                        PersistenceFailedResponse("Error")
                     )
                 )
             }
@@ -961,7 +954,6 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        true,
                         "ooops"
                     )
                 )
@@ -1246,6 +1238,46 @@ class MembershipQueryClientImplTest {
             val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class QueryStaticNetworkInfo {
+        private val groupId = UUID(0, 1).toString()
+        private val groupParameters = KeyValuePairList(emptyList())
+        private val mgmPublicSigningKey = ByteBuffer.wrap("123".toByteArray())
+        private val mgmPrivateSigningKey = ByteBuffer.wrap("456".toByteArray())
+        private val version = 1
+
+        private val info = StaticNetworkInfo(
+            groupId,
+            groupParameters,
+            mgmPublicSigningKey,
+            mgmPrivateSigningKey,
+            version
+        )
+
+        @Test
+        fun `Can successfully query`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(StaticNetworkInfoQueryResponse(info))
+
+            val result = membershipQueryClient.queryStaticNetworkInfo(groupId)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Success::class.java)
+            assertThat(result.getOrThrow()).isEqualTo(info)
+        }
+
+        @Test
+        fun `Failure to get expected response results in failure`() {
+            class BadResponse
+            postConfigChangedEvent()
+            mockPersistenceResponse(BadResponse())
+
+            val result = membershipQueryClient.queryStaticNetworkInfo(groupId)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+            assertThat((result as MembershipQueryResult.Failure).errorMsg).contains("Failed to retrieve static network")
         }
     }
 }

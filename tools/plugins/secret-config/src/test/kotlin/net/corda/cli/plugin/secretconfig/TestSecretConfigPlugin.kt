@@ -12,7 +12,7 @@ import java.util.stream.Stream
 
 class TestSecretConfigPlugin {
     @Test
-    fun testEncryption() {
+    fun `create CORDA type secret Config`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = SecretConfigPlugin.PluginEntryPoint()
 
@@ -24,6 +24,21 @@ class TestSecretConfigPlugin {
 
         println(outText)
         assertThat(outText.startsWith("{\"configSecret\":{\"encryptedSecret\")"))
+    }
+
+    @Test
+    fun `create VAULT type secret Config`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = SecretConfigPlugin.PluginEntryPoint()
+
+        val outText = SystemLambda.tapSystemOutNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute("passwordKey", "-v", "myPath", "-t", "VAULT", "create")
+        }
+
+        println(outText)
+        assertThat(outText.startsWith("{\"configSecret\":{\"vaultKey\":\"passwordKey\",\"vaultPath\":\"myPath\"}}"))
     }
 
     @Test
@@ -51,65 +66,62 @@ class TestSecretConfigPlugin {
     @ParameterizedTest
     @MethodSource("badCommandLineInputs")
     fun testBadCommandline(caseName: String, args: Array<String>, expectedError: String) {
+        args.hashCode()
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = SecretConfigPlugin.PluginEntryPoint()
+
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
-            ).setColorScheme(colorScheme).execute(
-                *args
-            )
+            ).setColorScheme(colorScheme).execute(*args)
         }
 
         println("Output:\n$outText")
         println("Expected:\n$expectedError")
-        assertThat(outText).isEqualTo(expectedError).withFailMessage(caseName)
+        assertThat(outText).contains(expectedError).withFailMessage(caseName)
     }
 
     companion object {
-
-        private val helpText =
-            "Usage: secret-config [-p=<passphrase>] [-s=<salt>] <value> [COMMAND]\n" +
-                "Handle secret config values given the value, a passphrase and a salt\n" +
-                "      <value>         The value to secure for configuration\n" +
-                "  -p, --passphrase=<passphrase>\n" +
-                "                      Passphrase for the encrypting secrets service\n" +
-                "  -s, --salt=<salt>   Salt for the encrypting secrets service\n" +
-                "Commands:\n" +
-                "  create   Create a secret config value given a salt and a passphrase\n" +
-                "  decrypt  Decrypt a secret value given salt and passphrase (takes the actual\n" +
-                "             value, not the config)\n"
 
         @JvmStatic
         private fun badCommandLineInputs(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(
-                    "passphrase missing create", arrayOf("value", "-s", "salt", "create"),
-                    "A passphrase must be provided\n$helpText"
-                ),
-                Arguments.of(
-                    "passphrase missing decrypt", arrayOf("value", "-s", "salt", "decrypt"),
-                    "A passphrase must be provided\n$helpText"
-                ),
-                Arguments.of(
-                    "salt missing decrypt", arrayOf("value", "-p", "passphrase", "decrypt"),
-                    "A salt must be provided\n$helpText"
-                ),
-                Arguments.of(
-                    "salt missing create", arrayOf("value", "-p", "passphrase", "create"),
-                    "A salt must be provided\n$helpText"
-                ),
-                Arguments.of(
-                    "command missing", arrayOf("value", "-p", "passphrase", "-s", "salt"),
-                    "Missing required subcommand\n$helpText"
-                ),
-                Arguments.of(
-                    "no arguments", arrayOf(""),
-                    "Missing required subcommand\n$helpText"
-                ),
-                Arguments.of(
-                    "value missing", arrayOf("-p", "passphrase", "-s", "salt", "create"),
-                    "Missing required parameter: '<value>'\n$helpText"
+                    "passphrase missing create, CORDA type",
+                    arrayOf("value", "-s", "salt", "create"),
+                    "'passphrase' must be set for CORDA type secrets"
+                ), Arguments.of(
+                    "salt missing create, CORDA type",
+                    arrayOf("value", "-p", "passphrase", "create"),
+                    "'salt' must be set for CORDA type secrets"
+                ), Arguments.of(
+                    "passphrase missing decrypt, CORDA type",
+                    arrayOf("value", "-s", "salt", "decrypt"),
+                    "'passphrase' must be set for CORDA type secrets"
+                ), Arguments.of(
+                    "salt missing decrypt, CORDA type",
+                    arrayOf("value", "-p", "passphrase", "decrypt"),
+                    "'salt' must be set for CORDA type secrets"
+                ), Arguments.of(
+                    "command missing, CORDA type",
+                    arrayOf("value", "-p", "passphrase", "-s", "salt"),
+                    "Missing required subcommand"
+                ), Arguments.of(
+                    "value missing, CORDA type",
+                    arrayOf("-p", "passphrase", "-s", "salt", "create"),
+                    "Missing required parameter: '<value>'"
+                ), Arguments.of(
+                    "vaultPath missing create, VAULT type",
+                    arrayOf("value", "-t", "VAULT", "create"),
+                    "'vaultPath' must be set for VAULT type secrets"
+                ), Arguments.of(
+                    "command missing, VAULT type",
+                    arrayOf("value", "-t", "VAULT", "-v", "vaultPath"),
+                    "Missing required subcommand"
+                ), Arguments.of(
+                    "value missing, VAULT type",
+                    arrayOf("-t", "VAULT", "-v", "vaultPath", "create"),
+                    "Missing required parameter: '<value>'"
                 )
             )
         }

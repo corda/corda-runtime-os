@@ -24,6 +24,7 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -59,7 +60,9 @@ class UpsertCpiTests {
         emConfig
     )
 
-    private val cpiSignerSummaryHash = SecureHashImpl("SHA-256","signerSummaryHash".toByteArray())
+    private val cpiSignerSummaryHash = SecureHashImpl("SHA-256", "signerSummaryHash".toByteArray())
+
+    private val networkInfoWriter: NetworkInfoWriter = mock()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -93,7 +96,7 @@ class UpsertCpiTests {
     @AfterEach
     fun afterEach() = fs.close()
 
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
+    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
 
     private fun String.writeToPath(): Path {
         val path = fs.getPath(UUID.randomUUID().toString())
@@ -101,7 +104,7 @@ class UpsertCpiTests {
         return path
     }
 
-    fun getRandomString(length: Int) : String {
+    fun getRandomString(length: Int): String {
         val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
         return (1..length)
             .map { allowedChars.random() }
@@ -231,7 +234,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can force update cpi with same name, signer version and group id`() {
+    @Test
+    fun `can force update cpi with same name, signer version and group id`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -251,7 +255,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot force update cpi with same name, signer version and different group id`() {
+    @Test
+    fun `cannot force update cpi with same name, signer version and different group id`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -271,7 +276,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot insert cpis with different group ids and same name, signer and version`() {
+    @Test
+    fun `cannot insert cpis with different group ids and same name, signer and version`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -291,7 +297,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can insert cpis with same group id and different name`() {
+    @Test
+    fun `can insert cpis with same group id and different name`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -311,7 +318,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can insert cpis with same group id and different version`() {
+    @Test
+    fun `can insert cpis with same group id and different version`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -331,7 +339,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can insert cpis with same group id and different signer`() {
+    @Test
+    fun `can insert cpis with same group id and different signer`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -351,7 +360,8 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot insert or update duplicate CPI`() {
+    @Test
+    fun `cannot insert or update duplicate CPI`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"

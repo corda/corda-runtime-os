@@ -4,7 +4,8 @@ import com.typesafe.config.ConfigFactory
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,19 +17,19 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl
+import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
@@ -45,12 +46,12 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
+import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
 class GroupParametersWriterServiceTest {
     private val viewOwner = HoldingIdentity(MemberX500Name("R3", "London", "GB"), "groupId")
-    private val clock = TestClock(Instant.ofEpochSecond(100))
     private val testConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
@@ -89,10 +90,25 @@ class GroupParametersWriterServiceTest {
         on { createPublisher(any(), any()) } doReturn mockPublisher
     }
 
+    private val publicKey = mock<PublicKey>()
+    private val keyBytes = "key-bytes".toByteArray()
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { encodeAsByteArray(publicKey) } doReturn keyBytes
+    }
+    private val serializedGroupParameters = "group-params".toByteArray()
+
+    private val sigBytes = "signature".toByteArray()
+    private val signature = DigitalSignature.WithKey(
+        publicKey,
+        sigBytes
+    )
+    private val signatureSpec = SignatureSpec.ECDSA_SHA256
+
     private val writerService = GroupParametersWriterServiceImpl(
         coordinatorFactory,
         configurationReadService,
-        publisherFactory
+        publisherFactory,
+        keyEncodingService
     )
 
     private fun postStartEvent() {
@@ -235,23 +251,23 @@ class GroupParametersWriterServiceTest {
 
     @Nested
     inner class WriterTests {
+
         @Test
-        fun `put publishes records to kafka`() {
+        fun `put publishes signed records to kafka`() {
             postConfigChangedEvent()
 
-            val capturedPublishedList = argumentCaptor<List<Record<String, GroupParameters>>>()
+            val capturedPublishedList = argumentCaptor<List<Record<String, PersistentGroupParameters>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture()))
                 .doReturn(listOf(CompletableFuture.completedFuture(Unit)))
 
             val ownerId = viewOwner.shortHash.toString()
-            val params = LayeredPropertyMapMocks.create<GroupParametersImpl>(
-                sortedMapOf(
-                    EPOCH_KEY to "2",
-                    MODIFIED_TIME_KEY to clock.instant().toString()
-                ),
-                emptyList()
-            )
-            writerService.put(viewOwner, params)
+            val groupParameters: SignedGroupParameters = mock {
+                on { bytes } doReturn serializedGroupParameters
+                on { signature } doReturn signature
+                on { signatureSpec } doReturn signatureSpec
+            }
+
+            writerService.put(viewOwner, groupParameters)
 
             val result = capturedPublishedList.firstValue
             assertSoftly {
@@ -259,7 +275,51 @@ class GroupParametersWriterServiceTest {
                 val record = result.first()
                 it.assertThat(record.topic).isEqualTo(GROUP_PARAMETERS_TOPIC)
                 it.assertThat(record.key).isEqualTo(ownerId)
-                it.assertThat(record.value).isEqualTo(params.toAvro(viewOwner))
+                it.assertThat(record.value).isInstanceOf(PersistentGroupParameters::class.java)
+                val publishedParams = record.value as PersistentGroupParameters
+                it.assertThat(publishedParams.viewOwner).isEqualTo(viewOwner.toAvro())
+
+                it.assertThat(publishedParams.groupParameters.groupParameters)
+                    .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+
+                it.assertThat(publishedParams.groupParameters.mgmSignature).isNotNull
+                it.assertThat(publishedParams.groupParameters.mgmSignature.publicKey.array()).isEqualTo(keyBytes)
+                it.assertThat(publishedParams.groupParameters.mgmSignature.bytes.array()).isEqualTo(sigBytes)
+                it.assertThat(publishedParams.groupParameters.mgmSignatureSpec.signatureName)
+                    .isEqualTo(signatureSpec.signatureName)
+            }
+        }
+
+        @Test
+        fun `put publishes unsigned records to kafka`() {
+            postConfigChangedEvent()
+
+            val capturedPublishedList = argumentCaptor<List<Record<String, PersistentGroupParameters>>>()
+            whenever(mockPublisher.publish(capturedPublishedList.capture()))
+                .doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+
+            val ownerId = viewOwner.shortHash.toString()
+            val groupParameters: UnsignedGroupParameters = mock {
+                on { bytes } doReturn serializedGroupParameters
+            }
+
+            writerService.put(viewOwner, groupParameters)
+
+            val result = capturedPublishedList.firstValue
+            assertSoftly {
+                it.assertThat(result.size).isEqualTo(1)
+                val record = result.first()
+                it.assertThat(record.topic).isEqualTo(GROUP_PARAMETERS_TOPIC)
+                it.assertThat(record.key).isEqualTo(ownerId)
+                it.assertThat(record.value).isInstanceOf(PersistentGroupParameters::class.java)
+                val publishedParams = record.value as PersistentGroupParameters
+                it.assertThat(publishedParams.viewOwner).isEqualTo(viewOwner.toAvro())
+
+                it.assertThat(publishedParams.groupParameters.groupParameters)
+                    .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+
+                it.assertThat(publishedParams.groupParameters.mgmSignature).isNull()
+                it.assertThat(publishedParams.groupParameters.mgmSignatureSpec).isNull()
             }
         }
 
