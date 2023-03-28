@@ -218,7 +218,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 builder = setCredentialsOnBaseImage(builder)
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-                    builder = Jib.from(imageName)
+                builder = setCredentialsOnBaseImage(builder)
             }
         } else {  // CI use case
             logger.info("No daemon available")
