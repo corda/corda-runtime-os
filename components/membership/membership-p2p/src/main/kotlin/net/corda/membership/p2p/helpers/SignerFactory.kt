@@ -12,7 +12,8 @@ class SignerFactory(
     ): Signer =
         Signer(
             mgm.id,
-            mgm.sessionInitiationKey,
+            // CORE-11935: We should use the preferred key instead of the first one.
+            mgm.sessionInitiationKeys.first(),
             cryptoOpsClient,
         )
 }

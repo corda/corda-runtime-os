@@ -27,9 +27,7 @@ class FlowCheckpointImpl(
 ) : FlowCheckpoint {
 
     private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState, config, instantProvider)
-    private var flowStateManager = checkpoint.flowState?.let {
-        FlowStateManager(it)
-    }
+    private var flowStateManager = checkpoint.flowState?.let(::FlowStateManager)
     private var nullableFlowStack: FlowStackImpl? = checkpoint.flowState?.let {
         FlowStackImpl(it.flowStackItems)
     }

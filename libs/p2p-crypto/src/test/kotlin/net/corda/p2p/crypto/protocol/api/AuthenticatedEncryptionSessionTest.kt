@@ -74,8 +74,9 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
+            listOf(
+                partyASessionKey.public to SignatureSpec.ECDSA_SHA256,
+            ),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -93,8 +94,7 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            partyBSessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
+            listOf(partyBSessionKey.public to SignatureSpec.ECDSA_SHA256,),
         )
 
         // Both sides generate session secrets
@@ -163,8 +163,7 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
+            listOf(partyASessionKey.public to SignatureSpec.ECDSA_SHA256),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -182,8 +181,7 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            partyBSessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
+            listOf(partyBSessionKey.public to SignatureSpec.ECDSA_SHA256)
         )
 
         // Both sides generate session secrets
@@ -258,8 +256,7 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
+            listOf(partyASessionKey.public to SignatureSpec.ECDSA_SHA256),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -277,8 +274,7 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            partyBSessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
+            listOf(partyBSessionKey.public to SignatureSpec.ECDSA_SHA256),
         )
 
         // Both sides generate session secrets

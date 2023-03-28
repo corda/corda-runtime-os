@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.testutils.cpb.packaging.v2
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader

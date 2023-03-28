@@ -6,6 +6,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
@@ -19,10 +20,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -82,8 +82,9 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 KeyValuePair(PARTY_NAME, member.x500Name.toString()),
                 KeyValuePair(String.format(URL_KEY, "0"), "http://localhost:8080"),
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-                KeyValuePair(PARTY_SESSION_KEY, DUMMY_CERTIFICATE),
-                KeyValuePair(SESSION_KEY_HASH, "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"),
+                KeyValuePair(String.format(PARTY_SESSION_KEYS, 0), DUMMY_CERTIFICATE),
+                KeyValuePair(MemberInfoExtension.SESSION_KEYS_HASH.format(0),
+                    "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"),
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(LEDGER_KEYS_KEY.format(0), DUMMY_PUBLIC_SESSION_KEY),
                 KeyValuePair(
@@ -133,8 +134,11 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 ),
                 registeringMember.shortHash.value,
                 listOf(DUMMY_CERTIFICATE),
-                DUMMY_PUBLIC_SESSION_KEY,
-                null
+                HostedIdentitySessionKeyAndCert(
+                    DUMMY_PUBLIC_SESSION_KEY,
+                    null
+                ),
+                emptyList()
             )
             Record(
                 Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,

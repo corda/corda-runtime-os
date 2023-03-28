@@ -1,13 +1,16 @@
 package net.corda.crypto.softhsm.impl
 
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
@@ -16,9 +19,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.kotlin.mock
-import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -46,7 +46,9 @@ class SoftCryptoServiceCachingTests {
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
         val myCryptoService =
-            makeSoftCryptoService(privateKeyCache = privateKeyCache, wrappingKeyCache = wrappingKeyCache,
+            makeSoftCryptoService(
+                privateKeyCache = privateKeyCache,
+                wrappingKeyCache = wrappingKeyCache,
                 rootWrappingKey = rootWrappingKey,
                 wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
                     CountingWrappingKey(
@@ -151,20 +153,24 @@ class SoftCryptoServiceCachingTests {
 
         var saveCount = 0
         var findCount = 0
-        val countingWrappingStore = object : TestWrappingKeyStore(mock()) {
-            override fun saveWrappingKey(alias: String, key: WrappingKeyInfo) {
+        val testCryptoRepositoryWrapping = TestWrappingRepository()
+        val countingWrappingRepository: WrappingRepository = object : WrappingRepository {
+            override fun saveKey(alias: String, key: WrappingKeyInfo) {
                 saveCount++
-                return super.saveWrappingKey(alias, key)
+                return testCryptoRepositoryWrapping.saveKey(alias, key)
             }
 
-            override fun findWrappingKey(alias: String): WrappingKeyInfo? {
+            override fun findKey(alias: String): WrappingKeyInfo? {
                 findCount++
-                return super.findWrappingKey(alias)
+                return testCryptoRepositoryWrapping.findKey(alias)
+            }
+
+            override fun close() {
             }
         }
         val wrappingKeyCache = makeWrappingKeyCache()
         val myCryptoService = makeSoftCryptoService(
-            wrappingKeyStore = countingWrappingStore,
+            wrappingRepository = countingWrappingRepository,
             schemeMetadata = schemeMetadata,
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
@@ -175,9 +181,9 @@ class SoftCryptoServiceCachingTests {
         assertNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         assertNull(wrappingKeyCache.getIfPresent(cacheAlias))
-        assertNull(countingWrappingStore.findWrappingKey(alias))
-        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
-        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+        assertNull(countingWrappingRepository.findKey(alias))
+        assertNull(countingWrappingRepository.findKey(unknownAlias))
+        assertNull(countingWrappingRepository.findKey(cacheAlias))
 
         assertThat(findCount).isEqualTo(3)
         assertThat(saveCount).isEqualTo(0)
@@ -191,9 +197,9 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         assertNull(wrappingKeyCache.getIfPresent(cacheAlias))
-        assertNotNull(countingWrappingStore.findWrappingKey(alias))
-        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
-        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+        assertNotNull(countingWrappingRepository.findKey(alias))
+        assertNull(countingWrappingRepository.findKey(unknownAlias))
+        assertNull(countingWrappingRepository.findKey(cacheAlias))
 
         assertThat(findCount).isEqualTo(7)
 
@@ -207,9 +213,9 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(wrappingKeyCache.getIfPresent(alias))
         assertNull(wrappingKeyCache.getIfPresent(unknownAlias))
         assertNotNull(wrappingKeyCache.getIfPresent(cacheAlias))
-        assertNotNull(countingWrappingStore.findWrappingKey(alias))
-        assertNull(countingWrappingStore.findWrappingKey(unknownAlias))
-        assertNull(countingWrappingStore.findWrappingKey(cacheAlias))
+        assertNotNull(countingWrappingRepository.findKey(alias))
+        assertNull(countingWrappingRepository.findKey(unknownAlias))
+        assertNull(countingWrappingRepository.findKey(cacheAlias))
     }
     
 }

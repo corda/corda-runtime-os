@@ -12,8 +12,8 @@ import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -38,8 +38,8 @@ class FlowSessionImplTest {
 
     private val mockFlowFiberService = MockFlowFiberService()
     private val serializationService = mock<SerializationServiceInternal>().apply {
-        whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytes(HELLO_THERE.toByteArray()))
-        whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
+        whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytesImpl(HELLO_THERE.toByteArray()))
+        whenever(serialize(HI)).thenReturn(SerializedBytesImpl(HI.toByteArray()))
         whenever(deserializeAndCheckType(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
         whenever(deserializeAndCheckType(HI.toByteArray(), String::class.java)).thenReturn(HI)
     }

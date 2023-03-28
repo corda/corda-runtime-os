@@ -21,6 +21,7 @@ interface UtxoOutputRecordFactory {
 
     fun getFindTransactionSuccessRecord(
         transactionContainer: SignedTransactionContainer?,
+        status: String?,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent>

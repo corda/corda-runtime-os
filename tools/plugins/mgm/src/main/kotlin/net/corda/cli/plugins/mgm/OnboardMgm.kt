@@ -90,7 +90,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "OneWay"
         }
         mapOf(
-            "corda.session.key.id" to sessionKeyId,
+            "corda.session.keys.0.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
@@ -104,7 +104,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.group.tls.version" to "1.3",
             "corda.endpoints.0.connectionURL" to p2pUrl,
             "corda.endpoints.0.protocolVersion" to "1",
-            "corda.group.truststore.tls.0" to tlsTrustRoot,
+            "corda.group.trustroot.tls.0" to tlsTrustRoot,
         )
     }
 

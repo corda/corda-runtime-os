@@ -12,7 +12,7 @@ import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
+import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -31,12 +31,12 @@ import kotlin.test.assertTrue
 class SoftCryptoServiceGeneralTests {
     private val schemeMetadata = CipherSchemeMetadataImpl()
     private val UNSUPPORTED_SIGNATURE_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
-    private val wrappingKeyStore = TestWrappingKeyStore(mock())
+    private val cryptoRepositoryWrapping = TestWrappingRepository()
     private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf())
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
     private val service = makeSoftCryptoService(
-        wrappingKeyStore = wrappingKeyStore,
+        wrappingRepository = cryptoRepositoryWrapping,
         schemeMetadata = schemeMetadata,
         rootWrappingKey = mock(),
     )
@@ -44,24 +44,24 @@ class SoftCryptoServiceGeneralTests {
     @Test
     fun `Should throw IllegalStateException when wrapping key alias exists and failIfExists is true`() {
         val alias = "stuff"
-        wrappingKeyStore.keys[alias] = sampleWrappingKeyInfo
+        cryptoRepositoryWrapping.keys[alias] = sampleWrappingKeyInfo
         assertThrows<IllegalStateException> {
             service.createWrappingKey(alias, true, emptyMap())
         }
-        assertThat(wrappingKeyStore.keys[alias]).isEqualTo(sampleWrappingKeyInfo)
+        assertThat(cryptoRepositoryWrapping.keys[alias]).isEqualTo(sampleWrappingKeyInfo)
     }
 
     @Test
     fun `Should not generate new master key when master alias exists and failIfExists is false`() {
-        wrappingKeyStore.keys["stuff2"] = sampleWrappingKeyInfo
+        cryptoRepositoryWrapping.keys["stuff2"] = sampleWrappingKeyInfo
         service.createWrappingKey("stuff2", false, emptyMap())
-        assertThat(wrappingKeyStore.keys["stuff2"]).isEqualTo(sampleWrappingKeyInfo)
+        assertThat(cryptoRepositoryWrapping.keys["stuff2"]).isEqualTo(sampleWrappingKeyInfo)
     }
 
     @Test
     @Suppress("MaxLineLength")
     fun `Should throw IllegalArgumentException when generating key pair and signature scheme is not supported`() {
-        wrappingKeyStore.keys["stuff3"] = sampleWrappingKeyInfo
+        cryptoRepositoryWrapping.keys["stuff3"] = sampleWrappingKeyInfo
         assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
