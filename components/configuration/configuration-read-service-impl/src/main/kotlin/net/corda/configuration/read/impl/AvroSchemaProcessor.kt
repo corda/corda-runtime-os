@@ -71,6 +71,7 @@ internal class AvroSchemaProcessor(
 
             val futures = publisher.publish(recordsToWrite)
             try {
+                @Suppress("SpreadOperator")
                 CompletableFuture.allOf(*futures.toTypedArray()).get(PUBLISH_TIMEOUT, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 // The consequence of this is some current version schemas may not be available to later versions of the

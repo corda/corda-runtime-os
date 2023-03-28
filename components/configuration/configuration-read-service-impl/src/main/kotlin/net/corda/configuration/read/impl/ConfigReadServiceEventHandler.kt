@@ -187,7 +187,8 @@ internal class ConfigReadServiceEventHandler(
             coordinator.postEvent(SetupAvroSchemaSubscription())
         } else if (bootstrapConfig != config) {
             val errorString =
-                "An attempt was made to set the bootstrap configuration twice with " + "different config. Current: $bootstrapConfig, New: $config"
+                "An attempt was made to set the bootstrap configuration twice with " +
+                        "different config. Current: $bootstrapConfig, New: $config"
             logger.error(errorString)
             throw ConfigurationReadException(errorString)
         } else {

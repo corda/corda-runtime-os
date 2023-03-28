@@ -87,6 +87,9 @@ interface AvroSchemaRegistry {
      */
     fun getClassType(bytes: ByteBuffer) : Class<*>
 
+    /**
+     * Current, point in time, view of all [Schema]s in the registry, keyed by [Fingerprint].
+     */
     val schemasByFingerprintSnapshot: Map<Fingerprint, Schema>
 }
 

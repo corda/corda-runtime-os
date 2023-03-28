@@ -74,7 +74,8 @@ internal class ConfigReadServiceEventHandlerTest {
         avroSchemaRegistry = mock()
         publisherFactory = mock()
 
-        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
+        configReadServiceEventHandler =
+            ConfigReadServiceEventHandler(subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
     }
 
     @Test

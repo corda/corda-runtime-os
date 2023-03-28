@@ -2,6 +2,7 @@ package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
 import net.corda.data.AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses
+import net.corda.data.Fingerprint
 import net.corda.data.crypto.SecureHash
 import net.corda.data.test.EvolvedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -14,6 +15,7 @@ import org.apache.avro.SchemaNormalization
 import org.apache.avro.generic.GenericContainer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -117,7 +119,7 @@ internal class AvroSchemaRegistryImplTest {
         // Getting the class type shouldn't work
         assertThatExceptionOfType(CordaRuntimeException::class.java).isThrownBy {
             registry.getClassType(encoded)
-        }.withMessageStartingWith("Could not find data for record with fingerprint: [0,")
+        }.withMessageStartingWith("Could not find class for fingerprint: [0,")
         // Nor should deserializing even if we knew what to expect
         assertThatExceptionOfType(CordaRuntimeException::class.java).isThrownBy {
             registry.deserialize<SecureHash>(badFingerprint)
@@ -217,6 +219,35 @@ internal class AvroSchemaRegistryImplTest {
         val decoded = registry.deserialize(encoded, dummy)
         assertThat(decoded.flags).isEqualTo(5)
         assertThat(decoded.extraField).isEqualTo("evolution is cool")
+    }
+
+    @Test
+    fun `can add schema to registry`() {
+        val registry = AvroSchemaRegistryImpl()
+        val newSchema = Schema.Parser().parse("""
+            {
+               "type" : "record",
+               "namespace" : "foo",
+               "name" : "bar",
+               "fields" : [
+                  { "name" : "Name" , "type" : "string" },
+                  { "name" : "CoolFactor" , "type" : "int" }
+               ]
+            }
+        """.trimIndent())
+        val newSchemaFingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", newSchema))
+
+        registry.initialiseSchemas(avroGeneratedMessages)
+
+        val schemasCount = registry.schemasByFingerprintSnapshot.size
+        assertThat(registry.schemasByFingerprintSnapshot).doesNotContainKey(newSchemaFingerprint)
+
+        registry.addSchemaOnly(newSchema)
+
+        SoftAssertions.assertSoftly {
+            assertThat(registry.schemasByFingerprintSnapshot).size().isEqualTo(schemasCount+1)
+            assertThat(registry.schemasByFingerprintSnapshot[newSchemaFingerprint]).isEqualTo(newSchema)
+        }
     }
 
     @Disabled("Manual run only for a quick leak test.")
