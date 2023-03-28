@@ -688,16 +688,20 @@ internal class SessionManagerImpl(
         }
 
         val sessionManagerConfig = config.get()
-        val hostedIdentityInSameGroup = hostedIdentitiesInSameGroup.first()
-        val peerMemberInfo = hostedIdentitiesInSameGroup.mapNotNull { localIdentity ->
-            membershipGroupReaderProvider.lookupByKey(
+        val locallyHostedIdentityWithPeerMemberInfo = hostedIdentitiesInSameGroup.mapNotNull { localIdentity ->
+            val peerMemberInfo = membershipGroupReaderProvider.lookupByKey(
                 localIdentity,
                 message.source.initiatorPublicKeyHash.array(),
                 MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
             )
-        }.maxByOrNull { it.serial }
+            if (peerMemberInfo == null) {
+                null
+            } else {
+                localIdentity to peerMemberInfo
+            }
+        }.maxByOrNull { it.second.serial }
 
-        if (peerMemberInfo == null) {
+        if (locallyHostedIdentityWithPeerMemberInfo == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -706,6 +710,7 @@ internal class SessionManagerImpl(
             return null
         }
 
+        val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
         val groupPolicy = groupPolicyProvider.getGroupPolicy(hostedIdentityInSameGroup)
         if (groupPolicy == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
