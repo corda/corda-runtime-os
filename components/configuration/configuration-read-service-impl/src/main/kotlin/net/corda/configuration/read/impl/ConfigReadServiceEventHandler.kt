@@ -32,7 +32,9 @@ internal class ConfigReadServiceEventHandler(
     private val subscriptionFactory: SubscriptionFactory,
     private val configMerger: ConfigMerger,
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    private val avroSchemaProcessorFactory:
+        (LifecycleCoordinator, AvroSchemaRegistry) -> AvroSchemaProcessor = { l, a ->  AvroSchemaProcessor(l, a)},
 ) : LifecycleEventHandler {
 
     internal var configProcessor: ConfigProcessor? = null
@@ -46,11 +48,11 @@ internal class ConfigReadServiceEventHandler(
     private val registrations = mutableSetOf<ConfigurationChangeRegistration>()
     private val configuration = mutableMapOf<String, SmartConfig>()
 
-    private companion object {
+    companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val CONFIG_GROUP = "CONFIGURATION_READ"
-        private const val AVRO_GROUP = "AVRO_READ"
+        const val AVRO_GROUP = "AVRO_READ"
     }
 
     val publisher by lazy {
@@ -134,7 +136,7 @@ internal class ConfigReadServiceEventHandler(
             throw ConfigurationReadException("Subscription to $AVRO_SCHEMA_TOPIC already exists when setup requested")
         }
 
-        val avroSchemaProcessor = AvroSchemaProcessor(coordinator, avroSchemaRegistry)
+        val avroSchemaProcessor = avroSchemaProcessorFactory(coordinator, avroSchemaRegistry)
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(AVRO_GROUP, AVRO_SCHEMA_TOPIC),
             avroSchemaProcessor,
