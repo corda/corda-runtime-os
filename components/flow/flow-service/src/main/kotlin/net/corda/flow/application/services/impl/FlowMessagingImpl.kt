@@ -190,7 +190,10 @@ class FlowMessagingImpl @Activate constructor(
     private fun createInteropFlowSession(x500Name: MemberX500Name): FlowSession {
         val sessionId = "${UUID.randomUUID()}-INTEROP"
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, null)
+        val propertiesBuilder = FlowContextPropertiesBuilder {
+            it.put("isInteropSession", "true")
+        }
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, propertiesBuilder)
     }
 
     private fun checkFlowCanBeInitiated() {
