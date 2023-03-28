@@ -142,7 +142,7 @@ class InteropServiceIntegrationTest {
         // Test config updates don't break Interop Service
         republishConfig(publisher)
         val session = "session1"
-        Thread.sleep(10000)
+        Thread.sleep(20000)
         publisher.publish(messagesToPublish(session))
 
         val flowMapperExpectedOutputMessages = 2
@@ -157,7 +157,7 @@ class InteropServiceIntegrationTest {
             )
             eventTopic.start()
             assertTrue(
-                mapperLatch.await(45, TimeUnit.SECONDS),
+                mapperLatch.await(30, TimeUnit.SECONDS),
                 "Fewer messages on $FLOW_MAPPER_EVENT_TOPIC were observed (${testProcessor.recordCount})" +
                         " than expected ($expectedMessageCount)."
             )
@@ -177,7 +177,7 @@ class InteropServiceIntegrationTest {
             )
             eventTopic.start()
             assertTrue(
-                mapperLatch.await(45, TimeUnit.SECONDS),
+                mapperLatch.await(30, TimeUnit.SECONDS),
                 "Fewer messages on $P2P_OUT_TOPIC were observed (${testProcessor.recordCount})" +
                         " than expected ($expectedMessageCount)."
             )
@@ -202,10 +202,9 @@ class InteropServiceIntegrationTest {
             bootConfig,
             null
         )
-        val latch = CountDownLatch(2)
         clearMemberInfoSub.start()
         clearHostedIdsSub.start()
-        latch.await(10, TimeUnit.SECONDS)
+        Thread.sleep(20000)
         clearMemberInfoSub.close()
         clearHostedIdsSub.close()
 
@@ -220,7 +219,7 @@ class InteropServiceIntegrationTest {
             null
         )
         memberOutSub.start()
-        assertTrue(memberMapperLatch.await(45, TimeUnit.SECONDS),
+        assertTrue(memberMapperLatch.await(30, TimeUnit.SECONDS),
             "Fewer membership messages were observed (${memberProcessor.recordCount}) than expected ($memberExpectedOutputMessages).")
         //As this is a test of temporary code, relaxing check on getting more messages
         memberOutSub.close()
@@ -235,7 +234,7 @@ class InteropServiceIntegrationTest {
             null
         )
         hostedIdOutSub.start()
-        assertTrue(hostedIdMapperLatch.await(45, TimeUnit.SECONDS),
+        assertTrue(hostedIdMapperLatch.await(30, TimeUnit.SECONDS),
             "Fewer hosted identities messages were observed (${hostedIdProcessor.recordCount}) than expected ($hostedIdsExpected).")
         assertEquals(hostedIdsExpected, hostedIdProcessor.recordCount, "More hosted identities messages were observed that expected.")
         hostedIdOutSub.close()
