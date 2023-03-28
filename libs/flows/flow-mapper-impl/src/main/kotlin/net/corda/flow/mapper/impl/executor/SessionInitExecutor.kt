@@ -1,9 +1,12 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -11,8 +14,10 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -41,6 +46,7 @@ class SessionInitExecutor(
         }
     }
 
+    @Suppress("ForbiddenComment")
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
@@ -48,6 +54,33 @@ class SessionInitExecutor(
                 sessionEvent,
                 sessionInit
             )
+
+        // Send a session confirm message in response to the session init.
+        // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
+        if (sessionEvent.isInteropEvent()) {
+            val hackyConfirm = Record(
+                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                sessionEvent.sessionId,
+                FlowMapperEvent(
+                    SessionEvent(
+                        MessageDirection.INBOUND,
+                        Instant.now(),
+                        sessionEvent.sessionId,
+                        1,
+                        sessionEvent.initiatingIdentity,
+                        sessionEvent.initiatedIdentity,
+                        0,
+                        emptyList(),
+                        SessionConfirm(KeyValuePairList(emptyList()))
+                    )
+                )
+            )
+
+            return FlowMapperResult(
+                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+                listOf(hackyConfirm)
+            )
+        }
 
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),

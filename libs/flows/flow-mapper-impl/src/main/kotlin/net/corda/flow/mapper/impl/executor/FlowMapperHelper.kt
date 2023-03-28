@@ -76,3 +76,11 @@ fun generateAppMessage(
     return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
 }
 
+/**
+ * Returns true if a session event is an interop event. This is currently
+ * signaled by the presence of the interop suffix to the session ID.
+ * @return True if the event is an interop event, false otherwise.
+ */
+fun SessionEvent.isInteropEvent(): Boolean {
+    return this.sessionId.contains("-INTEROP")
+}
