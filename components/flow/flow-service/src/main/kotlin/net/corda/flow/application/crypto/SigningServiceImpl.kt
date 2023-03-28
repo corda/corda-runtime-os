@@ -1,6 +1,7 @@
 package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
@@ -42,7 +43,7 @@ class SigningServiceImpl @Activate constructor(
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
         )
 
-        return DigitalSignature.WithKeyId(
+        return DigitalSignatureWithKeyId(
             // TODO the following static conversion to key id needs to be replaced with fetching the key id from crypto worker DB
             //  as recorded in https://r3-cev.atlassian.net/browse/CORE-12033
             digitalSignatureWithKey.by.fullIdHash(),
