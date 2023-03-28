@@ -520,10 +520,17 @@ class P2PLayerEndToEndTest {
         }
 
         private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
+            val servers = ConfigValueFactory.fromIterable(
+                listOf(
+                    mapOf(
+                        "hostAddress" to domainName,
+                        "hostPort" to port,
+                        "urlPath" to URL_PATH,
+                    )
+                )
+            )
             return ConfigFactory.empty()
-                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
-                .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
-                .withValue("urlPath", ConfigValueFactory.fromAnyRef(URL_PATH))
+                .withValue("serversConfiguration", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(sslConfig.tlsType.toString()))

@@ -10,6 +10,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.PersistentSignedMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -57,6 +58,7 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -146,17 +148,20 @@ class MembershipPersistenceClientImplTest {
         on { memberProvidedContext } doReturn memberProvidedContext
         on { mgmProvidedContext } doReturn mgmProvidedContext
     }
+    private val signature = CryptoSignatureWithKey(
+        ByteBuffer.wrap("456".toByteArray()),
+        ByteBuffer.wrap("789".toByteArray()),
+    )
+    private val signatureSpec = CryptoSignatureSpec(null, null, null)
+    private val ourSignedMemberInfo = SignedMemberInfo(ourMemberInfo, signature, signatureSpec)
     private val registrationId = "Group ID 1"
     private val ourRegistrationRequest = RegistrationRequest(
         RegistrationStatus.SENT_TO_MGM,
         registrationId,
         ourHoldingIdentity,
         ByteBuffer.wrap("123".toByteArray()),
-        CryptoSignatureWithKey(
-            ByteBuffer.wrap("456".toByteArray()),
-            ByteBuffer.wrap("789".toByteArray()),
-        ),
-        CryptoSignatureSpec(null, null, null),
+        signature,
+        signatureSpec,
         0L,
     )
 
@@ -223,7 +228,7 @@ class MembershipPersistenceClientImplTest {
 
     @Test
     fun `persist list of member info before starting component`() {
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
@@ -367,7 +372,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
             verify(rpcSender).sendRequest(capture())
@@ -381,10 +386,14 @@ class MembershipPersistenceClientImplTest {
                 .isNotEmpty
                 .isEqualTo(
                     listOf(
-                        PersistentMemberInfo(
-                            ourHoldingIdentity.toAvro(),
-                            KeyValuePairList(emptyList()),
-                            KeyValuePairList(emptyList())
+                        PersistentSignedMemberInfo(
+                            PersistentMemberInfo(
+                                ourHoldingIdentity.toAvro(),
+                                KeyValuePairList(emptyList()),
+                                KeyValuePairList(emptyList())
+                            ),
+                            signature,
+                            signatureSpec
                         )
                     )
                 )
@@ -420,7 +429,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
     }
 
@@ -429,7 +438,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"), null)
 
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -439,7 +448,7 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -449,7 +458,7 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -459,7 +468,7 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             reqIdOverride = "Group ID 3"
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -469,7 +478,7 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
