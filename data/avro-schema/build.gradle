@@ -63,9 +63,14 @@ def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
             if (!it.name.contains("package-info") && it.name.endsWith('.java')) {
                 def packageName = ((it.text =~ "package (.+);")[0][1])
                 packages << packageName
-                def classCapture = it.text.normalize() =~ "@org.apache.avro.specific.AvroGenerated\npublic class (\\w+) extends org.apache.avro.specific.SpecificRecordBase"
-                if (classCapture.any()) {
-                    classes << packageName + '.' + classCapture[0][1]
+                def normalizedText = it.text.normalize()
+                def specificRecordBaseClassCapture = normalizedText =~ "@org.apache.avro.specific.AvroGenerated\npublic class (\\w+) extends org.apache.avro.specific.SpecificRecordBase"
+                if (specificRecordBaseClassCapture.any()) {
+                    classes << packageName + '.' + specificRecordBaseClassCapture[0][1]
+                }
+                def specificFixedClassCapture = normalizedText =~ "@org.apache.avro.specific.AvroGenerated\npublic class (\\w+) extends org.apache.avro.specific.SpecificFixed"
+                if (specificFixedClassCapture.any()) {
+                    classes << packageName + '.' + specificFixedClassCapture[0][1]
                 }
             }
         }

@@ -18,15 +18,6 @@
       }
     },
     {
-      "name": "registrationAction",
-      "doc": "The action to take during registration.",
-      "type": {
-        "type": "enum",
-        "name": "RegistrationAction",
-        "symbols": ["REQUEST_JOIN"]
-      }
-    },
-    {
       "name": "context",
       "doc": "The member or MGM context required for on-boarding within a group.",
       "type": "net.corda.data.KeyValuePairList"

@@ -3,7 +3,6 @@ package net.corda.v5.ledger.consensual.transaction;
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
-import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata;
 import org.jetbrains.annotations.NotNull;
 

@@ -9,7 +9,7 @@
       "doc": "List of MemberInfos to persist.",
       "type": {
         "type": "array",
-        "items": "net.corda.data.membership.PersistentMemberInfo"
+        "items": "net.corda.data.membership.PersistentSignedMemberInfo"
       }
     }
   ]

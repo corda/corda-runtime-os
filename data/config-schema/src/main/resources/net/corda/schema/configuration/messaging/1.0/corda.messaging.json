@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://corda.r3.com/net/corda/schema/configuration/messaging/1.0/corda.messaging.json",
   "title": "Corda Messaging Configuration Schema",
-  "description": "Configuration schema for the messaging subsection. This configures the interactions of the workers with the underlying message bus.",
+  "description": "Configuration schema for the messaging section. This configures the interactions of the workers with the underlying message bus.",
   "type": "object",
   "properties": {
     "bus": {
@@ -10,7 +10,7 @@
       "type": "object",
       "properties": {
         "busType": {
-          "description": "Which bus implementation is currently in use.",
+          "description": "The type of bus implementation.",
           "enum": [
             "KAFKA",
             "DATABASE",
@@ -33,7 +33,7 @@
           "then": {
             "properties": {
               "kafkaProperties": {
-                "description": "Kafka connection properties to use to connect to the broker",
+                "description": "Settings to connect to the broker in a KAFKA bus implementation.",
                 "$ref": "kafka-properties.json"
               }
             },
@@ -54,7 +54,7 @@
                     "type": "object",
                     "properties": {
                       "maxPollRecords": {
-                        "description": "Max records to poll from db in a single poll.",
+                        "description": "The maximum number of records to poll from the database in a single poll.",
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 100000,
@@ -64,21 +64,21 @@
                     "additionalProperties": false
                   },
                   "jdbcUrl": {
-                    "description": "The JDBC database URL",
+                    "description": "The JDBC database URL.",
                     "type": [
                       "string",
                       "null"
                     ]
                   },
                   "user": {
-                    "description": "Cluster admin username to connect to the database with.",
+                    "description": "The cluster admin username to connect to the database with.",
                     "type": [
                       "string",
                       "null"
                     ]
                   },
                   "pass": {
-                    "description": "Cluster admin password to connect to the database with.",
+                    "description": "The cluster admin password to connect to the database with.",
                     "type": [
                       "string",
                       "null"
@@ -94,17 +94,17 @@
       ]
     },
     "subscription": {
-      "description": "Configuration options for subscriptions that process messages on the bus.",
+      "description": "Settings for subscriptions that process messages on the underlying bus.",
       "$ref": "subscription.json",
       "default": {}
     },
     "publisher": {
-      "description": "Settings for publishers that write messages to the underlying bus",
+      "description": "Settings for publishers that write messages to the underlying bus.",
       "$ref": "publisher.json",
       "default": {}
     },
     "maxAllowedMessageSize": {
-      "description": "Maximum allowed size, in bytes, for messages. Messages exceeding this size will be broken up into smaller messages before being sent.",
+      "description": "The maximum size, in bytes, for messages. Corda breaks messages exceeding this size into smaller messages before sending.",
       "type": "integer",
       "default": 972800,
       "minimum": 512000,

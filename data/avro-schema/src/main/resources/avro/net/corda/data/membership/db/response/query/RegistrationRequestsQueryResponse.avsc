@@ -8,7 +8,7 @@
       "name": "registrationRequests",
       "type": {
         "type": "array",
-        "items": "net.corda.data.membership.common.RegistrationStatusDetails"
+        "items": "net.corda.data.membership.common.RegistrationRequestDetails"
       },
       "doc": "All the registration requests for the holding identity."
     }
