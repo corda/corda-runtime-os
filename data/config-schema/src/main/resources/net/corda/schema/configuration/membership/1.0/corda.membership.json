@@ -7,34 +7,34 @@
   "default": {},
   "properties": {
     "maxDurationBetweenSyncRequestsMinutes": {
-      "description": "Maximum duration in minutes between member list synchronization requests.",
+      "description": "The maximum duration in minutes between member list synchronization requests.",
       "type": "integer",
       "minimum": 10,
       "maximum": 2880,
       "default": 480
     },
     "TTLs": {
-      "description": "Maximum duration in minutes between to wait for a message to be sent (null to wait forever).",
+      "description": "The maximum durations in minutes to wait for different types of message to send. If set to null, Corda waits forever.",
       "type": "object",
       "default": {},
       "properties": {
         "membersPackageUpdate": {
-          "description": "Maximum duration in minutes between to wait for a members package update message.",
+          "description": "The maximum duration in minutes to wait for a members package update message.",
           "$ref": "#/$defs/ttl",
           "default": 10
         },
         "declineRegistration": {
-          "description": "Maximum duration in minutes between to wait for a decline registration message.",
+          "description": "The maximum duration in minutes to wait for a decline registration message.",
           "$ref": "#/$defs/ttl",
           "default": 8
         },
         "updateToPendingAutoApproval": {
-          "description": "Maximum duration in minutes between to wait for an update registration status to pending auto approval.",
+          "description": "The maximum duration in minutes to wait for a message to update registration status to pending auto approval.",
           "$ref": "#/$defs/ttl",
           "default": 3
         },
         "verifyMemberRequest": {
-          "description": "Maximum duration in minutes between to wait for a verify member request.",
+          "description": "The maximum duration in minutes to wait for a verify member request.",
           "$ref": "#/$defs/ttl",
           "default": 20
         }
