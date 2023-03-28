@@ -47,7 +47,12 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
         )
 
     DbConfig.log.debug("Creating DB connection for: $driver, $jdbcUrl, $username, $maxPoolSize")
-    return this.create(driver, jdbcUrl, username, password, false, maxPoolSize)
+    return this.create(
+        driverClass = driver,
+        jdbcUrl = jdbcUrl,
+        username = username,
+        password = password,
+        maximumPoolSize = maxPoolSize)
 }
 
 @Suppress("LongParameterList")

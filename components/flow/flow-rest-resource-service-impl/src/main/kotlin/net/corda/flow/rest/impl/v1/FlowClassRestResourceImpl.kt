@@ -27,7 +27,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Component(service = [FlowClassRestResource::class, PluggableRestResource::class], immediate = true)
+@Component(service = [FlowClassRestResource::class, PluggableRestResource::class])
 class FlowClassRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,

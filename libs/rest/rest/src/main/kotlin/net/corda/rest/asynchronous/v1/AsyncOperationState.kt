@@ -25,10 +25,5 @@ enum class AsyncOperationState  {
     /**
      * The request was aborted.
      */
-    ABORTED,
-    ;
-
-    override fun toString(): String {
-        return name
-    }
+    ABORTED
 }
