@@ -14,7 +14,9 @@ interface MemberResourceClient : Lifecycle {
      * Starts the registration process for a member.
      *
      * @param holdingIdentityShortHash The ID of the holding identity the member is using.
-     * @param registrationContext The member or MGM context required for on-boarding within a group.
+     * @param registrationContext The member's or MGM's registration context required for on-boarding within a group,
+     *   which will be later part of the member provided context of the [MemberInfo]. In case of MGM registration some
+     *   parts of the context will be used for building the [GroupPolicy] as well.
      * @throws CouldNotFindMemberException if the member in `holdingIdentityShortHash` can not be found.
      * @return [RegistrationRequestProgressDto] to indicate the status of the request at time of submission.
      */

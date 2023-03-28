@@ -61,7 +61,7 @@ interface MemberRegistrationRestResource : RestResource {
         holdingIdentityShortHash: String,
         @ClientRequestBodyParameter(
             description = "The request sent during registration which contains the requested registration " +
-                " context map containing data required to initiate the registration process."
+                "context map containing data required to initiate the registration process."
         )
         memberRegistrationRequest: MemberRegistrationRequest,
     ): RegistrationRequestProgress
