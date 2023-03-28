@@ -42,4 +42,7 @@ fun publicKeyShortHashFromBytes(publicKey: ByteArray): ShortHash =
 fun PublicKey.fullId(): String =
     fullPublicKeyIdFromBytes(this.encoded)
 
+fun PublicKey.fullIdHash(): SecureHash =
+    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, this.encoded.sha256Bytes())
+
 const val KEY_LOOKUP_INPUT_ITEMS_LIMIT = 20

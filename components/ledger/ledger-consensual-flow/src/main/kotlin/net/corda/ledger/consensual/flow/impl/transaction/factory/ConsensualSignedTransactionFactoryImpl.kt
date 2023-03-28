@@ -4,13 +4,14 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
-import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -18,7 +19,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -36,8 +36,8 @@ import java.time.Instant
 class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService,
+    @Reference(service = TransactionSignatureServiceInternal::class)
+    private val transactionSignatureService: TransactionSignatureServiceInternal,
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)

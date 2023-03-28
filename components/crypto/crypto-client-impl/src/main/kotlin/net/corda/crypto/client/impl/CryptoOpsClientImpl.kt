@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.toStringShort
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
@@ -44,7 +45,6 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
@@ -254,7 +254,7 @@ class CryptoOpsClientImpl(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         logger.info(
             "Sending '{}'(tenant={}, publicKey={}, signatureSpec={})",
             SignRpcCommand::class.java.simpleName,
@@ -272,7 +272,7 @@ class CryptoOpsClientImpl(
             )
         )
         val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
-        return DigitalSignature.WithKey(
+        return DigitalSignatureWithKey(
             schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             response.bytes.array()
         )

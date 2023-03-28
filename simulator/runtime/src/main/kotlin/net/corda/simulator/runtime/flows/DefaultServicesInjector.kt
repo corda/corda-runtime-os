@@ -4,6 +4,7 @@ import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.ledger.consensual.SimConsensualLedgerService
 import net.corda.simulator.runtime.ledger.utxo.SimUtxoLedgerService
+import net.corda.simulator.runtime.hashing.SimulatedDigestService
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
@@ -12,6 +13,7 @@ import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationServi
 import net.corda.simulator.runtime.utils.availableAPIs
 import net.corda.simulator.runtime.utils.checkAPIAvailability
 import net.corda.simulator.runtime.utils.injectIfRequired
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -96,6 +98,8 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
             createNotaryLookup(fiber)
         }
 
+        doInject(member, flow, DigestService::class.java) { createDigestService() }
+
         injectOtherCordaServices(flow, member)
     }
 
@@ -153,6 +157,11 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
     private fun createNotaryLookup(fiber: SimFiber): NotaryLookup{
         log.info("Injecting ${NotaryLookup::class.java.simpleName}")
         return fiber.createNotaryLookup()
+    }
+
+    private fun createDigestService(): DigestService {
+        log.info("Injecting ${DigestService::class.java.simpleName}")
+        return SimulatedDigestService()
     }
 
     private fun createVerificationService(): DigitalSignatureVerificationService {

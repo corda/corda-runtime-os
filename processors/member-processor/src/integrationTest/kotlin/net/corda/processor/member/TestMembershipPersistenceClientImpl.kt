@@ -8,6 +8,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,9 +18,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -57,7 +58,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>,
+        memberInfos: Collection<SignedMemberInfo>,
     ) = MembershipPersistenceResult.success()
 
     override fun persistGroupPolicy(
@@ -175,17 +176,17 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         queryFilter: Collection<HoldingIdentity>,
     ): MembershipQueryResult<Collection<MemberInfo>> = MembershipQueryResult.Success(emptyList())
 
-    override fun queryRegistrationRequestStatus(
+    override fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
-    ): MembershipQueryResult<RegistrationRequestStatus?> = MembershipQueryResult.Success(null)
+    ): MembershipQueryResult<RegistrationRequestDetails?> = MembershipQueryResult.Success(null)
 
-    override fun queryRegistrationRequestsStatus(
+    override fun queryRegistrationRequests(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
         limit: Int?,
-    ): MembershipQueryResult<List<RegistrationRequestStatus>> = MembershipQueryResult.Success(emptyList())
+    ): MembershipQueryResult<List<RegistrationRequestDetails>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,

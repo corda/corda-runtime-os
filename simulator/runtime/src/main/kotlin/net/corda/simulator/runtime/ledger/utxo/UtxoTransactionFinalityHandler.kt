@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.bytes
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
@@ -11,13 +12,13 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
+import java.security.MessageDigest
 import java.security.PublicKey
 import java.time.Instant
 
@@ -122,19 +123,28 @@ class UtxoTransactionFinalityHandler(
     }
 
     /**
-     * Verifies if a [UtxoSignedTransaction] has been completly signed by all required signatories
+     * Verifies if a [UtxoSignedTransaction] has been completely signed by all required signatories
      *
      * @param finalTransaction The final [UtxoSignedTransaction] to be checked for signatures
      */
     private fun verifySignatures(finalTransaction: UtxoSignedTransaction){
-        val appliedSignatories = finalTransaction.signatures.map { it.by }.toSet()
-        val missingSignatories = finalTransaction.signatories
-            .filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
+        val appliedSignatures = finalTransaction.signatures.map { it.by }
+        val missingSignatories = finalTransaction.signatories.filterNot {
+            signatorySignatureExists(it, appliedSignatures)
+        }
         if (missingSignatories.isNotEmpty()) {
             throw CordaRuntimeException("Transaction ${finalTransaction.id} " +
                     "is missing signatures for signatories ${missingSignatories.map { memberLookup.lookup(it) }}")
         }
     }
+
+    private fun signatorySignatureExists(key: PublicKey, appliedSignatures: List<SecureHash>): Boolean =
+        appliedSignatures.any {
+            // TODO Need to use digest service instead below
+            val digestAlgorithm = it.algorithm
+            val keyId = MessageDigest.getInstance(digestAlgorithm).digest(key.encoded)
+            keyId.contentEquals(it.bytes)
+        }
 
     /**
      * Notarises a transaction, Simulator doesn't check for double spending, it signs transaction irrespective

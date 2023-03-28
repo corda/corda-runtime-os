@@ -129,7 +129,7 @@ class UtxoReceiveFinalityFlowV1(
             log.debug("Verifying signatures of transaction: ${transaction.id}")
         }
         try {
-            transaction.verifySignatures()
+            transaction.verifySignatorySignatures()
         } catch (e: Exception) {
             persistInvalidTransaction(transaction)
             throw e
