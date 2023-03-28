@@ -11,11 +11,12 @@ import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMService
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -34,8 +35,8 @@ class HSMServiceImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStore::class)
     private val store: HSMStore,
-    @Reference(service = SigningServiceFactory::class)
-    private val signingServiceFactory: SigningServiceFactory
+    @Reference(service = CryptoServiceFactory::class)
+    private val cryptoServiceFactory: CryptoServiceFactory,
 ) : AbstractConfigurableComponent<HSMServiceImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMService>(),
@@ -49,7 +50,7 @@ class HSMServiceImpl @Activate constructor(
     configKeys = setOf(CRYPTO_CONFIG)
 ), HSMService {
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(logger, event, store, signingServiceFactory)
+        Impl(logger, event, store, cryptoServiceFactory)
 
     override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
         impl.assignHSM(tenantId, category, context)
@@ -64,7 +65,7 @@ class HSMServiceImpl @Activate constructor(
         private val logger: Logger,
         event: ConfigChangedEvent,
         private val store: HSMStore,
-        private val signingServiceFactory: SigningServiceFactory
+        private val cryptoServiceFactory: CryptoServiceFactory,
     ) : DownstreamAlwaysUpAbstractImpl() {
         companion object {
             private fun Map<String, String>.isPreferredPrivateKeyPolicy(policy: String): Boolean =
@@ -145,15 +146,14 @@ class HSMServiceImpl @Activate constructor(
                     "The master key alias is not specified."
                 }
 
-                val signingService = signingServiceFactory.getInstance()
-                signingService
-                    .createWrappingKey(
-                        hsmId = association.hsmId,
-                        failIfExists = false,
-                        masterKeyAlias = association.masterKeyAlias!!,
-                        context = mapOf(
-                            CRYPTO_TENANT_ID to association.tenantId
-                        )
+                val cryptoService = cryptoServiceFactory.getInstance(association.hsmId)
+                cryptoService.createWrappingKey(
+                    failIfExists = false,
+                    wrappingKeyAlias = association.masterKeyAlias
+                        ?: throw InvalidParamsException("no masterKeyAlias in association"),
+                    context = mapOf(
+                        CRYPTO_TENANT_ID to association.tenantId
+                    )
                 )
             }
         }

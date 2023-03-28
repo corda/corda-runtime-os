@@ -1,17 +1,20 @@
 package net.corda.applications.workers.rest
 
+import net.corda.applications.workers.rest.utils.E2eCluster
 import net.corda.applications.workers.rest.utils.E2eClusterAConfig
 import net.corda.applications.workers.rest.utils.E2eClusterBConfig
 import net.corda.applications.workers.rest.utils.E2eClusterCConfig
 import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.applications.workers.rest.utils.E2eClusterMember
+import net.corda.applications.workers.rest.utils.E2eClusterMemberRole
 import net.corda.applications.workers.rest.utils.allowClientCertificates
 import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
-import net.corda.applications.workers.rest.utils.setSslConfiguration
 import net.corda.applications.workers.rest.utils.generateGroupPolicy
 import net.corda.applications.workers.rest.utils.getGroupId
+import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardMembers
 import net.corda.applications.workers.rest.utils.onboardMgm
+import net.corda.applications.workers.rest.utils.setSslConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -26,22 +29,18 @@ class MultiClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path
 
-    private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
-        cluster.addMembers(
-            listOf(E2eClusterMember("O=Alice, L=London, C=GB, OU=${cluster.uniqueName}"))
-        )
+    private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).apply {
+        addMember(createTestMember("Alice"))
+        // Blocked by CORE-11878
+        // addMember(createTestMember("Notary", E2eClusterMemberRole.NOTARY))
     }
 
-    private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
-        cluster.addMembers(
-            listOf(E2eClusterMember("O=Bob, L=London, C=GB, OU=${cluster.uniqueName}"))
-        )
+    private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).apply {
+        addMember(createTestMember("Bob"))
     }
 
-    private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
-        cluster.addMembers(
-            listOf(E2eClusterMember("O=Mgm, L=London, C=GB, OU=${cluster.uniqueName}"))
-        )
+    private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).apply {
+        addMember(createTestMember("Mgm"))
     }
 
     private val memberClusters = listOf(clusterA, clusterB)
@@ -100,5 +99,15 @@ class MultiClusterDynamicNetworkTest {
             }
         }
         return clusterC.getGroupId(mgm.holdingId)
+    }
+
+    private fun E2eCluster.createTestMember(
+        namePrefix: String,
+        role: E2eClusterMemberRole? = null
+    ): E2eClusterMember {
+        val memberName = getMemberName<MultiClusterDynamicNetworkTest>(namePrefix)
+        return role?.let {
+            E2eClusterMember(memberName, it)
+        } ?: E2eClusterMember(memberName)
     }
 }

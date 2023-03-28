@@ -13,13 +13,13 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
@@ -197,7 +197,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
                     "'$holdingIdentityShortHash'.")
         }
 
-        private fun GroupParameters.toMap() = entries.associate { it.key to it.value }
+        private fun InternalGroupParameters.toMap() = entries.associate { it.key to it.value }
 
         private fun Set<String>.getStatusFilter(isMgm: Boolean): Set<String> {
             val filter = this.mapTo(mutableSetOf()) {
