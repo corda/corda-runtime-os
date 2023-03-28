@@ -242,7 +242,7 @@
         "tolerations": {
             "type": "array",
             "default": [],
-            "title": "custom tolerations for all workers",
+            "title": "custom tolerations for all workers and bootstrap jobs",
             "required": [
                 "key",
                 "operator",
