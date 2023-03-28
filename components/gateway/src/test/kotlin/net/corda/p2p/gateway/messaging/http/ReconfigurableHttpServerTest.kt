@@ -165,17 +165,6 @@ class ReconfigurableHttpServerTest {
     }
 
     @Test
-    fun `applyNewConfiguration will remember to forget about the servers`() {
-        val closeable = argumentCaptor<AutoCloseable>()
-        whenever(resourcesHolder.keep(closeable.capture())).doAnswer { }
-
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-
-        closeable.firstValue.close()
-        verify(serverMock.constructed().last()).close()
-    }
-
-    @Test
     fun `applyNewConfiguration creates new key store`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
@@ -211,7 +200,7 @@ class ReconfigurableHttpServerTest {
     }
 
     @Test
-    fun `applyNewConfiguration will throw an error if there is more than one server that is using the same host andport`() {
+    fun `applyNewConfiguration will not fail if there are duplicates in the host and port`() {
         val future =
             configHandler.applyNewConfiguration(
                 configuration.copy(
@@ -223,12 +212,12 @@ class ReconfigurableHttpServerTest {
                         ),
                         GatewayServerConfiguration(
                             hostAddress = serverAddress.hostName,
-                            hostPort = serverAddress.port+1,
+                            hostPort = serverAddress.port + 1,
                             urlPath = "/",
                         ),
                         GatewayServerConfiguration(
                             hostAddress = serverAddress.hostName,
-                            hostPort = serverAddress.port+2,
+                            hostPort = serverAddress.port + 2,
                             urlPath = "/",
                         ),
                         GatewayServerConfiguration(

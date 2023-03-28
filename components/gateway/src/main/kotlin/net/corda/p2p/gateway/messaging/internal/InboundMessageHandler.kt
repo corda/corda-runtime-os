@@ -120,7 +120,7 @@ internal class InboundMessageHandler(
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
             logger.warn("Received invalid message, which could not be deserialized", e)
-            httpWriter.write(HttpResponseStatus.BAD_REQUEST, request.source )
+            httpWriter.write(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
 

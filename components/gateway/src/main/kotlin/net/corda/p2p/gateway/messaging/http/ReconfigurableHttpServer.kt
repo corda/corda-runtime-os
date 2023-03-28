@@ -28,7 +28,7 @@ internal class ReconfigurableHttpServer(
 ) : LifecycleWithDominoTile {
 
     // Map from the server configuration to a server
-    private var httpServers = ConcurrentHashMap<GatewayServerConfiguration, HttpServer>()
+    private val httpServers = ConcurrentHashMap<GatewayServerConfiguration, HttpServer>()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -90,17 +90,17 @@ internal class ReconfigurableHttpServer(
                 }
                 httpServers.keys -= serversToStop.keys
                 try {
-                    newServersConfiguration.forEach { configuration ->
-                        httpServers.compute(configuration) { _, oldServer ->
+                    newServersConfiguration.forEach { serverConfiguration ->
+                        httpServers.compute(serverConfiguration) { _, oldServer ->
                             oldServer?.close()
                             logger.info(
                                 "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                                    "${configuration.hostAddress}:${configuration.hostPort}${configuration.urlPath}"
+                                    "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}${serverConfiguration.urlPath}"
                             )
                             HttpServer(
                                 listener,
                                 newConfiguration.maxRequestSize,
-                                configuration,
+                                serverConfiguration,
                                 commonComponents.dynamicKeyStore.serverKeyStore,
                                 mutualTlsTrustManager,
                             ).also {
