@@ -288,7 +288,7 @@ private fun createMgmRegistrationContext(
     clusterInfo: ClusterInfo,
     groupPolicyConfig: GroupPolicyConfig
 ) = mapOf(
-    "corda.session.key.id" to sessionKeyId,
+    "corda.session.keys.0.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
     "corda.group.protocol.registration"
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",

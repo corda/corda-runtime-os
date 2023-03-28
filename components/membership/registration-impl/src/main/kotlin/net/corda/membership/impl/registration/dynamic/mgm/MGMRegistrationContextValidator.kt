@@ -23,7 +23,6 @@ internal class MGMRegistrationContextValidator(
 
         val errorMessageMap = errorMessageTemplate.run {
             mapOf(
-                SESSION_KEY_ID to format("session key"),
                 ECDH_KEY_ID to format("ECDH key"),
                 REGISTRATION_PROTOCOL to format("registration protocol"),
                 SYNCHRONISATION_PROTOCOL to format("synchronisation protocol"),
@@ -86,6 +85,10 @@ internal class MGMRegistrationContextValidator(
         context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
             require(isNotEmpty()) { "No TLS trust store was provided." }
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
+        }
+        context.keys.filter { SESSION_KEY_IDS.format("[0-9]+").toRegex().matches(it) }.apply {
+            require(isNotEmpty()) { "No session key was provided." }
+            require(orderVerifier.isOrdered(this, 3)) { "Provided session keys are incorrectly numbered." }
         }
         val contextRegistrationTlsType = context[TLS_TYPE]?.let { tlsType ->
             TlsType.fromString(tlsType) ?: throw IllegalArgumentException("Invalid TLS type: $tlsType")

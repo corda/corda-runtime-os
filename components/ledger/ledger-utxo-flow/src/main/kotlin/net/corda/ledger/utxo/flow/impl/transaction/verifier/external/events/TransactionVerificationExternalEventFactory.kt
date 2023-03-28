@@ -6,16 +6,17 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
+import net.corda.ledger.utxo.verification.CordaPackageSummary as CordaPackageSummaryAvro
+import net.corda.ledger.utxo.verification.TransactionVerificationStatus as TransactionVerificationStatusAvro
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest as TransactionVerificationRequestAvro
+import net.corda.ledger.utxo.verification.TransactionVerificationResponse as TransactionVerificationResponseAvro
 import net.corda.schema.Schemas
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
 import java.time.Clock
-import net.corda.ledger.utxo.verification.CordaPackageSummary as CordaPackageSummaryAvro
-import net.corda.ledger.utxo.verification.TransactionVerificationStatus as TransactionVerificationStatusAvro
-import net.corda.ledger.utxo.verification.TransactionVerificationRequest as TransactionVerificationRequestAvro
-import net.corda.ledger.utxo.verification.TransactionVerificationResponse as TransactionVerificationResponseAvro
 
 @Component(service = [ExternalEventFactory::class])
 class TransactionVerificationExternalEventFactory(
@@ -38,7 +39,7 @@ class TransactionVerificationExternalEventFactory(
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setTransaction(parameters.transaction)
-                .setCpkMetadata(parameters.cpkMetadata)
+                .setCpkMetadata(parameters.cpkMetadata.map(CordaPackageSummary::toAvro))
                 .setFlowExternalEventContext(flowExternalEventContext)
                 .build()
         )
@@ -63,5 +64,9 @@ class TransactionVerificationExternalEventFactory(
 
 data class TransactionVerificationParameters(
     val transaction: ByteBuffer,
-    val cpkMetadata: List<CordaPackageSummaryAvro>
+    val cpkMetadata: List<CordaPackageSummary>
 )
+
+fun CordaPackageSummary.toAvro(): CordaPackageSummaryAvro {
+    return CordaPackageSummaryAvro(name, version, signerSummaryHash, fileChecksum)
+}

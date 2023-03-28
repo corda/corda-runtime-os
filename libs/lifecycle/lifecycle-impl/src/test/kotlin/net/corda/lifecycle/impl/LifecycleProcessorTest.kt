@@ -20,12 +20,14 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -543,6 +545,22 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    fun `null argument works correctly when passed to closeManagedResources`(){
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
+        val resource1 = mock<Resource>()
+        processor.addManagedResource<Resource>("TEST1") { resource1 }
+
+        processor.closeManagedResources(emptySet())
+        verifyNoInteractions(resource1)
+
+        processor.closeManagedResources(null)
+        verify(resource1).close()
+
+    }
+
+    @Test
     fun `only requested managed resources are closed`() {
         val state = LifecycleStateManager(5)
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
@@ -646,9 +664,8 @@ class LifecycleProcessorTest {
 
     @Test
     fun `processClose will close all the timers`() {
-        val state = mock<LifecycleStateManager> {
-            on { nextBatch() } doReturn listOf(CloseCoordinator())
-        }
+        val state: LifecycleStateManager = mock()
+        whenever(state.nextBatch()).thenReturn(listOf(CloseCoordinator()))
         val processor = LifecycleProcessor(NAME, state, mock(), mock(), mock())
 
         processor.processEvents(mock(), mock())

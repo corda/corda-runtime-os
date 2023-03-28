@@ -6,6 +6,7 @@ import net.corda.internal.serialization.NullEncodingAllowList
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.internal.serialization.unwrap
 import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
 import net.corda.utilities.VisibleForTesting
@@ -93,7 +94,7 @@ class DeserializationInput constructor(
         AMQPNoTypeNotSerializableException::class
     )
     inline fun <reified T : Any> deserialize(bytes: SerializedBytes<T>, context: SerializationContext): T =
-        deserialize(bytes, T::class.java, context)
+        deserialize(bytes.unwrap(), T::class.java, context)
 
     @Throws(
         AMQPNotSerializableException::class,
@@ -136,7 +137,7 @@ class DeserializationInput constructor(
         clazz: Class<T>,
         context: SerializationContext
     ): ObjectAndEnvelope<T> = des {
-        val envelope = getEnvelope(bytes, context.encodingAllowList)
+        val envelope = getEnvelope(bytes.unwrap(), context.encodingAllowList)
         // Now pick out the obj and schema from the envelope.
         ObjectAndEnvelope(doReadObject(envelope, clazz, context), envelope)
     }

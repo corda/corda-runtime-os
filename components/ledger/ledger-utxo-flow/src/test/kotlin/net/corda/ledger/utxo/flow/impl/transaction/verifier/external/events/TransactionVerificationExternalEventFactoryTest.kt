@@ -3,10 +3,11 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.ledger.utxo.verification.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.schema.Schemas
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -24,13 +25,13 @@ class TransactionVerificationExternalEventFactoryTest {
         val checkpoint = mock<FlowCheckpoint>()
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
         val cpkMetadata = listOf(
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "cpk1",
                 "1.0",
                 "SHA-256:0000000000000001",
                 "SHA-256:0000000000000011"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "cpk2",
                 "2.0",
                 "SHA-256:0000000000000002",
@@ -59,7 +60,7 @@ class TransactionVerificationExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 transaction,
-                cpkMetadata,
+                cpkMetadata.map(CordaPackageSummary::toAvro),
                 externalEventContext
             ),
             externalEventRecord.payload

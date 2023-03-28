@@ -19,11 +19,11 @@ class TopicPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     override fun start() {
-        logger.info("Topic plugin started.")
+        logger.debug("Topic plugin started.")
     }
 
     override fun stop() {
-        logger.info("Topic plugin stopped.")
+        logger.debug("Topic plugin stopped.")
     }
 
     @Extension
