@@ -160,29 +160,39 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             }
         """.trimIndent()
 
-        fun createRecord(key: String, destination: HoldingIdentity, source: HoldingIdentity) : Record<String, AppMessage> {
+        fun createRecord(
+            key: String,
+            destination: HoldingIdentity,
+            source: HoldingIdentity
+        ): Record<String, AppMessage> {
             val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-           return  Record(
+            return Record(
                 Schemas.P2P.P2P_IN_TOPIC, key,
                 AppMessage(
                     AuthenticatedMessage(
-                        AuthenticatedMessageHeader(destination.toAvro(), source.toAvro(), Instant.now(), SUBSYSTEM,
-                            "1", "1", MembershipStatusFilter.ACTIVE),
+                        AuthenticatedMessageHeader(
+                            destination.toAvro(), source.toAvro(), Instant.now(), SUBSYSTEM,
+                            "1", "1", MembershipStatusFilter.ACTIVE
+                        ),
                         ByteBuffer.wrap(
-                            sessionEventSerializer.serialize(SessionEvent(
-                            MessageDirection.INBOUND, Instant.now(), "1", 1, source.toAvro(),
-                                destination.toAvro(), 0, listOf(),
-                                SessionInit(
-                                    source.toString(),
-                                null,
-                                    KeyValuePairList(emptyList()),
-                                    KeyValuePairList(emptyList()),
-                                    KeyValuePairList(emptyList()),
-                                ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("InteropMessageID-01", payload)))
-                            ))))
+                            sessionEventSerializer.serialize(
+                                SessionEvent(
+                                    MessageDirection.INBOUND, Instant.now(), "1", 1, source.toAvro(),
+                                    destination.toAvro(), 0, listOf(),
+                                    SessionInit(
+                                        source.toString(),
+                                        null,
+                                        KeyValuePairList(emptyList()),
+                                        KeyValuePairList(emptyList()),
+                                        KeyValuePairList(emptyList()),
+                                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("InteropMessageID-01", payload)))
+                                    )
+                                )
+                            )
                         )
-                )
                     )
+                )
+            )
         }
 
         return listOf(
@@ -194,6 +204,6 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             //createRecord("seed-message-no-dest-1", membersOfInteropGroup[0], unpublishedMemberOfInteropGroup),
             // ... this message is for the destination from other cluster( HoldingIdentity is not hosted locally).
             //createRecord("seed-message-other-cluster-1", membersOfInteropGroup[0], memberFromOtherClusterOfInteropGroup),
-            )
+        )
     }
 }

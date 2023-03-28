@@ -77,7 +77,7 @@ class InteropP2PFilterService @Activate constructor(
     }
 
     /**
-     * Recreate the Flow P2P Filter service in response to new config [event]
+     * Recreate the Interop Filter service in response to new config [event]
      */
     private fun restartInteropP2PFilterService(event: ConfigChangedEvent) {
         logger.info("restartInteropP2PFilterService")
