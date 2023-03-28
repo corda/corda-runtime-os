@@ -1,8 +1,6 @@
 package net.corda.membership.impl.read.cache
 
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
