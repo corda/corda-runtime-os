@@ -81,11 +81,11 @@ tolerations for node taints
 {{- if .Values.tolerations }}
 tolerations:
 {{- range .Values.tolerations }}
-- key: {{ .key }}
+- key: {{ required "Must specify key for toleration with key toleration.key" .key }}
   operator: {{ default "Equal" .operator }}
-  effect: {{ required "Must specify tolerations.effect" .effect }}
+  effect: {{ required "Must specify effect for toleration with key toleration.effect" .effect }}
   {{- if not (eq .operator "Exist") }}
-  value: {{ required "Must specify tolerations.value" .value }}
+  value: {{ required "Must specify value for toleration with key tolerations.value" .value }}
   {{- end }}
 {{- end }}
 {{- end }}

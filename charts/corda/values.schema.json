@@ -245,7 +245,6 @@
             "title": "custom tolerations for all workers and bootstrap jobs",
             "required": [
                 "key",
-                "operator",
                 "effect"
             ],
             "additionalProperties": false,
