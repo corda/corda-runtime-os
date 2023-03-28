@@ -10,6 +10,7 @@ import org.apache.avro.SchemaNormalization
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.anyList
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -17,6 +18,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class AvroSchemaProcessorTest {
     private val dogSchemaJson = """
@@ -93,7 +95,7 @@ class AvroSchemaProcessorTest {
 
          processor.publishNewSchemas(publisher)
 
-         `when`(publisher.publish(any())).doAnswer {
+         whenever(publisher.publish(any())).doAnswer {
              // verifying early as the list gets cleared
              @Suppress("UNCHECKED_CAST")
              val records = it.arguments[0] as List<Record<Fingerprint,String>>
@@ -107,5 +109,7 @@ class AvroSchemaProcessorTest {
              }
              null
          }
+
+         verify(publisher).publish(anyList())
     }
 }

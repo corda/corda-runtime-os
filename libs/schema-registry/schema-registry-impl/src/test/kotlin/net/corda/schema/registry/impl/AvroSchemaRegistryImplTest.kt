@@ -245,7 +245,7 @@ internal class AvroSchemaRegistryImplTest {
         registry.addSchemaOnly(newSchema)
 
         SoftAssertions.assertSoftly {
-            assertThat(registry.schemasByFingerprintSnapshot).size().isEqualTo(schemasCount+1)
+            assertThat(registry.schemasByFingerprintSnapshot).size().isEqualTo(schemasCount + 1)
             assertThat(registry.schemasByFingerprintSnapshot[newSchemaFingerprint]).isEqualTo(newSchema)
         }
     }
@@ -260,7 +260,7 @@ internal class AvroSchemaRegistryImplTest {
     }
 
     @Test
-    fun `containsSchema returbs false if schema does not exists`() {
+    fun `containsSchema returns false if schema does not exist`() {
         val registry = AvroSchemaRegistryImpl()
 
         val newSchema = Schema.Parser().parse("""
@@ -275,7 +275,6 @@ internal class AvroSchemaRegistryImplTest {
             }
         """.trimIndent())
         val newSchemaFingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", newSchema))
-
 
         assertThat(registry.containsSchema(newSchemaFingerprint)).isFalse
     }

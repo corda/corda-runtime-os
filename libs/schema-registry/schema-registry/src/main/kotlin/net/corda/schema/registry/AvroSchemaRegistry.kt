@@ -88,12 +88,12 @@ interface AvroSchemaRegistry {
     fun getClassType(bytes: ByteBuffer) : Class<*>
 
     /**
-     * Returns true if the Registry has a schema with the given [Fingerprint].
+     * @return true if the Registry has a schema with the given [Fingerprint].
      */
     fun containsSchema(fingerPrint: Fingerprint): Boolean
 
     /**
-     * Current, point in time, view of all [Schema]s in the registry, keyed by [Fingerprint].
+     * Snapshot of all [Schema]s in the registry, keyed by [Fingerprint].
      */
     val schemasByFingerprintSnapshot: Map<Fingerprint, Schema>
 }
