@@ -195,11 +195,6 @@ spec:
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
           {{- end }}
-          {{- if $optionalArgs.restTlsSecret }}
-          - "-rtls.crt.path=/rest/tls/tls.crt"
-          - "-rtls.key.path=/rest/tls/tls.key"
-          - "-rtls.ca.crt.path=/rest/tls/ca.crt"
-          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end }}
@@ -214,8 +209,8 @@ spec:
             name: "jaas-conf"
             readOnly: true
           {{- end }}
-          {{- if $optionalArgs.restTlsSecret }}
-          - mountPath: "/rest/tls"
+          {{- if eq "rest" $worker }}
+          - mountPath: "/tls"
             name: "resttls"
             readOnly: true
           {{- end }}
@@ -337,7 +332,7 @@ spec:
               - key: {{ $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
                 path: "ca.crt"
         {{- end -}}
-        {{- if $optionalArgs.restTlsSecret }}
+        {{- if eq "rest" $worker }}
         - name: resttls
           secret:
             secretName: {{ include "corda.restTlsSecretName" $ | quote }}
