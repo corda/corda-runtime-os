@@ -1,7 +1,7 @@
 package net.corda.membership.datamodel
 
 object MembershipEntities {
-    val classes = setOf(
+    val vnodeClasses = setOf(
         RegistrationRequestEntity::class.java,
         GroupPolicyEntity::class.java,
         MemberInfoEntity::class.java,
@@ -10,5 +10,9 @@ object MembershipEntities {
         MutualTlsAllowedClientCertificateEntity::class.java,
         PreAuthTokenEntity::class.java,
         ApprovalRulesEntity::class.java
+    )
+
+    val clusterClasses = setOf(
+        StaticNetworkInfoEntity::class.java
     )
 }
