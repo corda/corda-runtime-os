@@ -95,19 +95,20 @@ class EntityManagerUtilsTest {
     @Test
     fun `can load JPA entities using EntityManagerFactory#transaction`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        emf.transaction {
-            it.persist(owner)
-            it.persist(cat)
-        }
+            emf.transaction {
+                it.persist(owner)
+                it.persist(cat)
+            }
 
-        emf.createEntityManager().transaction {
-            val loadedCats = it.createQuery("from Cat", Cat::class.java)
-            Assertions.assertThat(loadedCats.resultList).contains(cat)
+            emf.createEntityManager().transaction {
+                val loadedCats = it.createQuery("from Cat", Cat::class.java)
+                Assertions.assertThat(loadedCats.resultList).contains(cat)
+            }
         }
     }
 
@@ -135,22 +136,23 @@ class EntityManagerUtilsTest {
     @Test
     fun `can load JPA entities using EntityManager#transaction`() {
 
-        val emf = createEntityManagerFactory()
+        createEntityManagerFactory().use { emf ->
 
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+            val owner = Owner(UUID.randomUUID(), "Fred", 25)
+            val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
-        val em = emf.createEntityManager()
-        em.use {
-            it.transaction.begin()
-            it.persist(owner)
-            it.persist(cat)
-            it.transaction.commit()
-        }
+            val em = emf.createEntityManager()
+            em.use {
+                it.transaction.begin()
+                it.persist(owner)
+                it.persist(cat)
+                it.transaction.commit()
+            }
 
-        emf.transaction {
-            val loadedCats = it.createQuery("from Cat", Cat::class.java)
-            Assertions.assertThat(loadedCats.resultList).contains(cat)
+            emf.transaction {
+                val loadedCats = it.createQuery("from Cat", Cat::class.java)
+                Assertions.assertThat(loadedCats.resultList).contains(cat)
+            }
         }
     }
 
