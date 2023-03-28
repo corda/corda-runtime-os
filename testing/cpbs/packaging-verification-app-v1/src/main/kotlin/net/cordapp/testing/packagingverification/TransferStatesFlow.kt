@@ -18,8 +18,8 @@ import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import net.cordapp.testing.packagingverification.contract.STATE_NAME
 import net.cordapp.testing.packagingverification.contract.STATE_SYMBOL
-import net.cordapp.testing.packagingverification.contract.SimpleCommand
 import net.cordapp.testing.packagingverification.contract.SimpleState
+import net.cordapp.testing.packagingverification.contract.TransferCommand
 import net.cordapp.testing.packagingverification.contract.toSecureHash
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
@@ -64,13 +64,11 @@ class TransferStatesFlow : ClientStartableFlow {
         val counterpartyMember = memberLookup.lookup(recipientX500)
             ?: throw IllegalArgumentException("Member info cannot be found for $recipientX500")
 
+        val issuerName = MemberX500Name.parse(transferRequest.issuerX500Name)
+
         val notary = notaryLookup.notaryServices.single()
 
         val myInfo = memberLookup.myInfo()
-        // Tests use dynamic names for vnodes to avoid clashes so we have to treat the vnode running this flow as the
-        // issuer, we cannot know it in advance. This means this flow will only work executed as the same vnode the mint
-        // flow was executed in. If the test was ever extended the issuer would have to be passed to the flow request body.
-        val issuerName = myInfo.name
 
         val selectionCriteria = TokenClaimCriteria(
             STATE_NAME,
@@ -109,7 +107,7 @@ class TransferStatesFlow : ClientStartableFlow {
                 .addOutputStates(outputStates)
                 .addSignatories(listOf(counterpartyMember.ledgerKeys.first(), myPublicKey))
                 .setTimeWindowUntil(Instant.now() + Duration.ofDays(1))
-                .addCommand(SimpleCommand())
+                .addCommand(TransferCommand())
                 .toSignedTransaction()
 
             log.info("Initiating recipient Flow")

@@ -10,7 +10,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.NotaryInfo
-import net.cordapp.testing.packagingverification.contract.SimpleCommand
+import net.cordapp.testing.packagingverification.contract.MintCommand
 import net.cordapp.testing.packagingverification.contract.SimpleState
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
@@ -45,29 +45,27 @@ class MintFlow : ClientStartableFlow {
         require(mintRequest.stateValues.isNotEmpty()) { "No state values to mint" }
 
         val myPublicKey = myInfo.ledgerKeys.first()
-        val notary = notaryLookup.notaryServices.single()
+        val notary = notaryLookup.notaryServices.first()
 
-        mintRequest.stateValues.forEach { stateValue ->
-            log.info("Minting state with value $stateValue")
-            mintState(stateValue, myPublicKey, notary, myInfo.name)
-        }
+        log.info("Minting ${mintRequest.stateValues.size} states")
+        mintStates(mintRequest.stateValues, myPublicKey, notary, myInfo.name)
 
         log.info("Finished minting ${mintRequest.stateValues.size} states")
         return ""
     }
 
     @Suspendable
-    fun mintState(value: Long, publicKey: PublicKey, notary: NotaryInfo, issuer: MemberX500Name) {
-        val state = SimpleState(value, listOf(publicKey), issuer)
+    fun mintStates(values: List<Long>, publicKey: PublicKey, notary: NotaryInfo, issuer: MemberX500Name) {
+        val states = values.map { SimpleState(it, listOf(publicKey), issuer) }
 
         log.info("Creating signed transaction")
 
         val signedTransaction = utxoLedgerService.transactionBuilder
             .setNotary(notary.name)
-            .addOutputState(state)
-            .addSignatories(state.participants)
+            .addOutputStates(states)
+            .addSignatories(listOf(publicKey))
             .setTimeWindowUntil(Instant.now() + Duration.ofDays(1))
-            .addCommand(SimpleCommand())
+            .addCommand(MintCommand())
             .toSignedTransaction()
 
         log.info("Finalizing signed transaction")
