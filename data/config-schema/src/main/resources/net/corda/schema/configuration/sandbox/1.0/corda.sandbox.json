@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://corda.r3.com/net/corda/schema/configuration/sandbox/1.0/corda.sandbox.json",
   "title": "Corda Sandbox Configuration Schema",
-  "description": "Configuration schema for the sandbox subsection.",
+  "description": "Configuration schema for the sandbox section.",
   "type": "object",
   "properties": {
     "flow": {
@@ -51,12 +51,12 @@
       "default": {},
       "properties": {
         "cache": {
-          "description": "Settings for verification sandbox caching",
+          "description": "Settings for verification sandbox caching.",
           "type": "object",
           "default": {},
           "properties": {
             "size": {
-              "description": "The maximum number cached verification sandboxes.",
+              "description": "The maximum number of cached verification sandboxes.",
               "type": "integer",
               "minimum": 0,
               "default": 10

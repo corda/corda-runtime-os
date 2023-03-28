@@ -6,42 +6,42 @@
   "type": "object",
   "properties": {
     "pollTimeout": {
-      "description": "Time in ms to wait for a response from the bus when calling poll.",
+      "description": "The length of time in milliseconds that Corda waits for a response from the bus when calling poll.",
       "type": "integer",
       "minimum": 100,
       "maximum": 2147483647,
       "default": 500
     },
     "threadStopTimeout": {
-      "description": "Time in ms to wait for the subscription processing thread to terminate on close",
+      "description": "The length of time in milliseconds that Corda waits for the subscription processing thread to terminate on close.",
       "type": "integer",
       "minimum": 100,
       "maximum": 2147483647,
       "default": 10000
     },
     "processorRetries": {
-      "description": "Number of times to retry internal intermittent failures before throwing back to the client",
+      "description": "The number of times Corda retries internal intermittent failures before throwing back to the client.",
       "type": "integer",
       "minimum": 0,
       "maximum": 1000,
       "default": 3
     },
     "subscribeRetries": {
-      "description": "Number of times to attempt to subscribe to the underlying bus before throwing back to the client",
+      "description": "The number of times Corda attempts to subscribe to the underlying bus before throwing back to the client.",
       "type": "integer",
       "minimum": 0,
       "maximum": 1000,
       "default": 3
     },
     "commitRetries": {
-      "description": "Number of times to attempt to commit a transaction before throwing back to the client",
+      "description": "The number of times Corda attempts to commit a transaction before throwing back to the client.",
       "type": "integer",
       "minimum": 0,
       "maximum": 1000,
       "default": 3
     },
     "processorTimeout": {
-      "description": "Time in ms to wait for an individual event to process. This is applied if the subscription must also maintain state that needs to be periodically serviced.",
+      "description": "The length of time in milliseconds that Corda waits for an individual event to process. This is applied if the subscription must also maintain a state that needs to be periodically serviced.",
       "type": "integer",
       "minimum": 1000,
       "maximum": 2147483647,
