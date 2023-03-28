@@ -126,7 +126,6 @@ class UtxoFinalityFlowV1(
         return transaction to signaturesReceivedFromSessions
     }
 
-    @Suppress("unused_parameter")
     @Suspendable
     private fun verifyAllReceivedSignatures(
         transaction: UtxoSignedTransactionInternal,
