@@ -28,7 +28,8 @@
         "net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse",
         "net.corda.data.membership.db.response.query.GroupPolicyQueryResponse",
         "net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse",
-        "net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse"
+        "net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse",
+        "net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse"
       ],
       "doc": "Response payload which depends on the requested operation."
     }

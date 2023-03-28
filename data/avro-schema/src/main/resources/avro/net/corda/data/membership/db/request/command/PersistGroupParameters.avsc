@@ -6,8 +6,8 @@
   "fields": [
     {
       "name": "groupParameters",
-      "doc": "Parameters which all group members agree to abide by",
-      "type": "net.corda.data.KeyValuePairList"
+      "doc": "The group parameters to persist.",
+      "type": "net.corda.data.membership.SignedGroupParameters"
     }
   ]
 }

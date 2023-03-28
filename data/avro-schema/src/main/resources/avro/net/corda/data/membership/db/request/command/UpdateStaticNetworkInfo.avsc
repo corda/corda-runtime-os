@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "UpdateStaticNetworkInfo",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Command to update the persisted static network info. ",
+  "fields": [
+    {
+      "name": "info",
+      "doc": "Updated static network info to persist. The version number must be the version of the info to be persisted.",
+      "type": "net.corda.data.membership.StaticNetworkInfo"
+    }
+  ]
+}

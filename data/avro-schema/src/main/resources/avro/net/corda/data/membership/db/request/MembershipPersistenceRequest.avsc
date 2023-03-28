@@ -30,6 +30,7 @@
         "net.corda.data.membership.db.request.command.RevokePreAuthToken",
         "net.corda.data.membership.db.request.command.SuspendMember",
         "net.corda.data.membership.db.request.command.ActivateMember",
+        "net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo",
         "net.corda.data.membership.db.request.query.QueryGroupPolicy",
         "net.corda.data.membership.db.request.query.QueryMemberInfo",
         "net.corda.data.membership.db.request.query.QueryMemberSignature",
@@ -37,7 +38,8 @@
         "net.corda.data.membership.db.request.query.QueryRegistrationRequests",
         "net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates",
         "net.corda.data.membership.db.request.query.QueryApprovalRules",
-        "net.corda.data.membership.db.request.query.QueryPreAuthToken"
+        "net.corda.data.membership.db.request.query.QueryPreAuthToken",
+        "net.corda.data.membership.db.request.query.QueryStaticNetworkInfo"
       ],
       "doc": "Request's payload, depends on the requested operation."
     }

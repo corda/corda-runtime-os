@@ -36,12 +36,7 @@
     {
       "name": "groupParameters",
       "doc": "GroupParameters updates.",
-      "type": ["null", "WireGroupParameters"]
-    },
-    {
-      "name": "cpiAllowList",
-      "doc": "CpiAllowList updates.",
-      "type": ["null", "WireCpiAllowList"]
+      "type": ["null", "net.corda.data.membership.SignedGroupParameters"]
     }
   ]
 }

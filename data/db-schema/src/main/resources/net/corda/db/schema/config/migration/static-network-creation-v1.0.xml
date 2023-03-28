@@ -1,0 +1,27 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="static-network-creation-v1.0">
+
+        <createTable tableName="static_network_info">
+            <column name="group_id" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="mgm_public_signing_key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mgm_private_signing_key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_parameters" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+</databaseChangeLog>

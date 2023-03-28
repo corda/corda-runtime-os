@@ -125,7 +125,6 @@ public final class Schemas {
         public static final String MEMBERSHIP_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_RPC_TOPIC);
         public static final String MEMBERSHIP_DB_RPC_TOPIC = "membership.db.rpc.ops";
         public static final String MEMBERSHIP_DB_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_DB_RPC_TOPIC);
-        public static final String MEMBERSHIP_STATIC_NETWORK_TOPIC = "membership.static.network";
         public static final String MEMBERSHIP_ASYNC_REQUEST_TOPIC = "membership.async.request";
         public static final String MEMBERSHIP_ASYNC_REQUEST_STATE_TOPIC = getStateAndEventStateTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC);
         public static final String MEMBERSHIP_ASYNC_REQUEST_DLQ_TOPIC = getStateAndEventDLQTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC);

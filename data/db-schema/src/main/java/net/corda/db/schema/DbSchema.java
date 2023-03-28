@@ -16,6 +16,7 @@ public final class DbSchema {
     public static final String CONFIG_AUDIT_TABLE = "config_audit";
     public static final String CONFIG_AUDIT_ID_SEQUENCE = "config_audit_id_seq";
     public static final String CLUSTER_CERTIFICATE_DB_TABLE = "cluster_certificate";
+    public static final String CLUSTER_STATIC_NETWORK_INFO_TABLE = "static_network_info";
     public static final int CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1;
 
     public static final String DB_CONNECTION_TABLE = "db_connection";
