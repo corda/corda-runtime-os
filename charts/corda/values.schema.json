@@ -269,7 +269,7 @@
                 "value": {
                     "type": "string",
                     "default": "",
-                    "title": "toleration valur",
+                    "title": "toleration value",
                     "examples": [
                         "testing"
                     ]
