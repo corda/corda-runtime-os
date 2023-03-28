@@ -1,9 +1,11 @@
 package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.utilities.debug
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -12,6 +14,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -40,6 +43,8 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     ): UniquenessCheckResult {
         log.debug { "Received request with id: $txId, sending it to Uniqueness Checker" }
 
+        val startTime = Instant.now().toEpochMilli()
+
         return externalEventExecutor.execute(
             UniquenessCheckExternalEventFactory::class.java,
             UniquenessCheckExternalEventParams(
@@ -50,6 +55,18 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 timeWindowLowerBound,
                 timeWindowUpperBound
             )
-        )
+        ).also {
+            CordaMetrics.Metric.LedgerUniquenessClientRunTime
+                .builder()
+                .withTag(
+                    CordaMetrics.Tag.ResultType,
+                    if (UniquenessCheckResultFailure::class.java.isAssignableFrom(it.javaClass)) {
+                        (it as UniquenessCheckResultFailure).error.javaClass.simpleName
+                    } else {
+                        it.javaClass.simpleName
+                    })
+                .build()
+                .record(Duration.ofMillis(Instant.now().toEpochMilli() - startTime))
+        }
     }
 }

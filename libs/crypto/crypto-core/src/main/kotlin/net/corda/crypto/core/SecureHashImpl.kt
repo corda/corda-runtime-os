@@ -41,3 +41,10 @@ fun parseSecureHash(algoNameAndHexString: String): SecureHash {
         SecureHashImpl(algorithm, data)
     }
 }
+
+val SecureHash.bytes: ByteArray
+    get() =
+        (this as? SecureHashImpl)?.bytes
+            ?: throw IllegalArgumentException(
+                "User defined subtypes of ${SecureHash::class.java.simpleName} are not permitted"
+            )

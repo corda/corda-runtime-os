@@ -14,7 +14,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificat
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -30,7 +30,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.ledger.common.Party
+
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
@@ -94,7 +94,6 @@ class UtxoFinalityFlowV1Test {
     private val publicKeyNotaryVNode2 = mock<PublicKey>()
     private val invalidNotaryVNodeKey = mock<PublicKey>()
 
-    private val notaryService = mock<Party>()
     private val notaryServiceKey = mock<CompositeKey>()
 
     private val signature0 = digitalSignatureAndMetadata(mock(), byteArrayOf(1, 2, 0))
@@ -145,7 +144,8 @@ class UtxoFinalityFlowV1Test {
         )
         whenever(initialTx.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(initialTx.metadata).thenReturn(metadata)
-        whenever(initialTx.notary).thenReturn(utxoNotaryExample)
+        whenever(initialTx.notaryName).thenReturn(notaryX500Name)
+        whenever(initialTx.notaryKey).thenReturn(publicKeyExample)
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(updatedTxSomeSigs)
         whenever(initialTx.signatures).thenReturn(listOf(signature0))
 
@@ -157,7 +157,8 @@ class UtxoFinalityFlowV1Test {
             updatedTxAllSigs
         )
         whenever(updatedTxAllSigs.id).thenReturn(TX_ID)
-        whenever(updatedTxAllSigs.notary).thenReturn(notaryService)
+        whenever(updatedTxAllSigs.notaryName).thenReturn(notaryX500Name)
+        whenever(updatedTxAllSigs.notaryKey).thenReturn(notaryServiceKey)
         whenever(updatedTxAllSigs.addSignature(signatureNotary)).thenReturn(
             notarizedTx
         )
@@ -171,7 +172,6 @@ class UtxoFinalityFlowV1Test {
 
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
-        whenever(notaryService.owningKey).thenReturn(notaryServiceKey)
 
         // Single output State
         whenever(stateAndRef.state).thenReturn(transactionState)
@@ -637,7 +637,7 @@ class UtxoFinalityFlowV1Test {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
-        whenever(notaryService.owningKey).thenReturn(publicKeyAlice1)
+        whenever(updatedTxAllSigs.notaryKey).thenReturn(publicKeyAlice1)
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)

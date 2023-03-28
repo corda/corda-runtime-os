@@ -50,11 +50,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -269,7 +269,7 @@ class MGMRegistrationServiceTest {
     )
 
     private val properties = mapOf(
-        "corda.session.key.id" to SESSION_KEY_ID,
+        "corda.session.keys.0.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
@@ -282,9 +282,9 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.truststore.session.0"
+        "corda.group.trustroot.session.0"
                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.truststore.tls.0"
+        "corda.group.trustroot.tls.0"
                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
     )
 
@@ -353,8 +353,8 @@ class MGMRegistrationServiceTest {
                         listOf(
                             GROUP_ID,
                             PARTY_NAME,
-                            PARTY_SESSION_KEY,
-                            SESSION_KEY_HASH,
+                            PARTY_SESSION_KEYS_PEM.format(0),
+                            SESSION_KEYS_HASH.format(0),
                             ECDH_KEY,
                             PLATFORM_VERSION,
                             SOFTWARE_VERSION,
@@ -434,9 +434,9 @@ class MGMRegistrationServiceTest {
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
-                        "truststore.session.0"
+                        "trustroot.session.0"
                                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                        "truststore.tls.0"
+                        "trustroot.tls.0"
                                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
                     ).entries
                 )
@@ -487,7 +487,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties = properties.toMutableMap()
             testProperties["corda.group.pki.session"] = "NoPKI"
-            testProperties.remove("corda.group.truststore.session.0")
+            testProperties.remove("corda.group.trustroot.session.0")
             registrationService.start()
 
             assertDoesNotThrow {
@@ -546,7 +546,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties =
                 properties + mapOf(
-                    "corda.group.truststore.tls.100" to
+                    "corda.group.trustroot.tls.100" to
                             "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
                 )
             registrationService.start()

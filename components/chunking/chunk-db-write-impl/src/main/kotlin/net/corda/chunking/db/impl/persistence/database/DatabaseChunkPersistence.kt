@@ -6,6 +6,7 @@ import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkPropertyEntity
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda

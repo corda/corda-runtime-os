@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.createExample
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
@@ -23,7 +22,8 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
             encumbranceGroupSize = null,
-            notary = Party(MemberX500Name("alice", "LDN", "GB"), publicKeyExample),
+            notaryName = MemberX500Name("alice", "LDN", "GB"),
+            notaryKey = publicKeyExample,
             contractStateTag = UtxoStateClassExample::class.java.name,
             contractTag = "contract tag"
         )

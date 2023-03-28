@@ -592,7 +592,7 @@ class MembershipQueryClientImplTest {
                 RegistrationStatusDetails(
                     clock.instant(),
                     clock.instant(),
-                    RegistrationStatus.PENDING_APPROVAL_FLOW,
+                    RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -740,7 +740,7 @@ class MembershipQueryClientImplTest {
                 RegistrationStatusDetails(
                     clock.instant(),
                     clock.instant(),
-                    RegistrationStatus.PENDING_APPROVAL_FLOW,
+                    RegistrationStatus.PENDING_MANUAL_APPROVAL,
                     "id 1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),

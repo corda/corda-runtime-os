@@ -1,6 +1,11 @@
 package net.corda.ledger.persistence.query.impl
 
 import net.corda.ledger.persistence.query.VaultNamedQueryRegistry
+import net.corda.ledger.persistence.query.impl.parsing.VaultNamedQueryParser
+import net.corda.ledger.persistence.query.impl.parsing.VaultNamedQueryParserImpl
+import net.corda.ledger.persistence.query.impl.parsing.converters.PostgresVaultNamedQueryConverter
+import net.corda.ledger.persistence.query.impl.parsing.expressions.PostgresVaultNamedQueryExpressionParser
+import net.corda.ledger.persistence.query.impl.parsing.expressions.VaultNamedQueryExpressionValidatorImpl
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryBuilder
@@ -20,17 +25,30 @@ import org.slf4j.LoggerFactory
     ],
     scope = ServiceScope.PROTOTYPE
 )
-class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
-    @Reference(service = VaultNamedQueryRegistry::class, scope = ReferenceScope.PROTOTYPE)
-    private val vaultNamedQueryRegistry: VaultNamedQueryRegistry
-): VaultNamedQueryBuilderFactory, UsedByPersistence {
+class VaultNamedQueryBuilderFactoryImpl constructor(
+    private val vaultNamedQueryRegistry: VaultNamedQueryRegistry,
+    private val vaultNamedQueryParser: VaultNamedQueryParser
+) : VaultNamedQueryBuilderFactory, UsedByPersistence {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    @Activate
+    constructor(
+        @Reference(service = VaultNamedQueryRegistry::class, scope = ReferenceScope.PROTOTYPE)
+        vaultNamedQueryRegistry: VaultNamedQueryRegistry
+    ) : this(
+        vaultNamedQueryRegistry,
+        VaultNamedQueryParserImpl(
+            PostgresVaultNamedQueryExpressionParser(),
+            VaultNamedQueryExpressionValidatorImpl(),
+            PostgresVaultNamedQueryConverter()
+        )
+    )
+
     override fun create(queryName: String): VaultNamedQueryBuilder {
-        logger.debug { "Creating custom query with name: $queryName" }
-        return VaultNamedQueryBuilderImpl(vaultNamedQueryRegistry, queryName)
+        logger.debug { "Creating vault named query with name: $queryName" }
+        return VaultNamedQueryBuilderImpl(vaultNamedQueryRegistry, vaultNamedQueryParser, queryName)
     }
 }
