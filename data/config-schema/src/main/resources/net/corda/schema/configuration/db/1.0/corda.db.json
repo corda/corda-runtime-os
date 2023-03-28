@@ -2,39 +2,39 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://corda.r3.com/net/corda/schema/configuration/db/1.0/corda.db.json",
   "title": "Corda Database Configuration Schema",
-  "description": "Configuration schema for the database subsection. Note that this configuration cannot be updated dynamically through the REST endpoint.",
+  "description": "Configuration schema for the database section. Note that this configuration cannot be updated dynamically through the REST endpoint.",
   "type": "object",
   "properties": {
     "database": {
-      "description": "Database settings",
+      "description": "Database settings.",
       "type": "object",
       "default": {},
       "properties": {
         "user": {
-          "description": "Database user",
+          "description": "The database user.",
           "type": "string"
         },
         "pass": {
-          "description": "Database password",
+          "description": "The database password.",
           "type": "string"
         },
         "jdbc": {
-          "description": "JDBC settings",
+          "description": "JDBC settings.",
           "type": "object",
           "default": {},
           "properties": {
             "driver": {
-              "description": "JDBC driver",
+              "description": "The JDBC driver.",
               "type": "string",
               "default": "org.postgresql.Driver"
             },
             "directory": {
-              "description": "Directory with JDBC drivers",
+              "description": "The directory that contains the JDBC drivers.",
               "type": "string",
               "default": "/opt/jdbc-driver"
             },
             "url": {
-              "description": "JDBC URL",
+              "description": "The JDBC URL.",
               "type": "string",
               "default": "jdbc:postgresql://cluster-db:5432/cordacluster"
             }
@@ -42,12 +42,12 @@
           "additionalProperties": false
         },
         "pool": {
-          "description": "Database pool settings",
+          "description": "Database pool settings.",
           "type": "object",
           "default": {},
           "properties": {
             "max_size": {
-              "description": "Max database pool size",
+              "description": "The maximum database pool size.",
               "type": "integer",
               "minimum": 1,
               "default": 10
