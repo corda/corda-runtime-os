@@ -107,23 +107,20 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            // The MemberX500Name is not a duplicate
             val existingMemberInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             )
-
             validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
             ) { "Looking up for existing member info (if there were any), failed due to a persistence exception." }
             val queryResult = (existingMemberInfo as MembershipQueryResult.Success).payload
-            // Modify existing validation for duplicate member names
+            // The MemberX500Name is not a duplicate
             validateRegistrationRequest(
                 queryResult.isEmpty() ||
                         registrationRequest.serial != 0L
             ) { "Member already exists with the same X500 name." }
-            // if the serial number on the request is smaller than the current version of the requestor's MemberInfo,
-            // then decline the request.
+            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
             val activeOrSuspendedInfo = queryResult.find {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
