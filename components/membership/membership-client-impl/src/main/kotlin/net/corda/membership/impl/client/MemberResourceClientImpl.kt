@@ -10,6 +10,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -32,7 +33,6 @@ import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -285,7 +285,6 @@ class MemberResourceClientImpl @Activate constructor(
                         ),
                         CryptoSignatureSpec("", null, null),
                         registrationContext[SERIAL]?.toLong(),
-                        true
                     )
                 ).getOrThrow()
                 return RegistrationRequestProgressDto(
@@ -318,7 +317,7 @@ class MemberResourceClientImpl @Activate constructor(
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                 ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
             return try {
-                membershipQueryClient.queryRegistrationRequestsStatus(
+                membershipQueryClient.queryRegistrationRequests(
                     holdingIdentity.holdingIdentity
                 ).getOrThrow().map {
                     it.toDto()
@@ -336,7 +335,7 @@ class MemberResourceClientImpl @Activate constructor(
                 ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
             return try {
                 val status =
-                    membershipQueryClient.queryRegistrationRequestStatus(
+                    membershipQueryClient.queryRegistrationRequest(
                         holdingIdentity.holdingIdentity,
                         registrationRequestId,
                     ).getOrThrow() ?: throw RegistrationProgressNotFoundException(
@@ -349,16 +348,16 @@ class MemberResourceClientImpl @Activate constructor(
         }
 
         @Suppress("SpreadOperator")
-        private fun RegistrationRequestStatus.toDto(): RegistrationRequestStatusDto =
+        private fun RegistrationRequestDetails.toDto(): RegistrationRequestStatusDto =
             RegistrationRequestStatusDto(
                 this.registrationId,
                 this.registrationSent,
                 this.registrationLastModified,
-                this.status.toDto(),
+                this.registrationStatus.toDto(),
                 MemberInfoSubmittedDto(
                     mapOf(
-                        "registrationProtocolVersion" to this.protocolVersion.toString(),
-                        *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
+                        "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
+                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
                     )
                 ),
                 this.reason,

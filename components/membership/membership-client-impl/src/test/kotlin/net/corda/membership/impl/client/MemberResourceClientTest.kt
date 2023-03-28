@@ -8,8 +8,11 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -31,7 +34,6 @@ import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -121,6 +123,8 @@ class MemberResourceClientTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
     }
+    private val signatureWithKey: CryptoSignatureWithKey = mock()
+    private val signatureSpec: CryptoSignatureSpec = mock()
     private val holdingIdentity = mock<HoldingIdentity>()
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -298,35 +302,44 @@ class MemberResourceClientTest {
     fun `checkRegistrationProgress return correct data`() {
         val response =
             listOf(
-                RegistrationRequestStatus(
-                    registrationSent = clock.instant().plusSeconds(3),
-                    registrationLastModified = clock.instant().plusSeconds(7),
-                    status = RegistrationStatus.APPROVED,
-                    registrationId = "registration id",
-                    protocolVersion = 1,
-                    memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    serial = SERIAL,
+                RegistrationRequestDetails(
+                    clock.instant().plusSeconds(3),
+                    clock.instant().plusSeconds(7),
+                    RegistrationStatus.APPROVED,
+                    "registration id",
+                    1,
+                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    signatureWithKey,
+                    signatureSpec,
+                    null,
+                    SERIAL,
                 ),
-                RegistrationRequestStatus(
-                    registrationSent = clock.instant().plusSeconds(10),
-                    registrationLastModified = clock.instant().plusSeconds(20),
-                    status = RegistrationStatus.SENT_TO_MGM,
-                    registrationId = "registration id 2",
-                    protocolVersion = 1,
-                    memberContext = KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    serial = SERIAL,
+                RegistrationRequestDetails(
+                    clock.instant().plusSeconds(10),
+                    clock.instant().plusSeconds(20),
+                    RegistrationStatus.SENT_TO_MGM,
+                    "registration id 2",
+                    1,
+                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    signatureWithKey,
+                    signatureSpec,
+                    null,
+                    SERIAL,
                 ),
-                RegistrationRequestStatus(
-                    registrationSent = clock.instant().plusSeconds(30),
-                    registrationLastModified = clock.instant().plusSeconds(70),
-                    status = RegistrationStatus.DECLINED,
-                    registrationId = "registration id 3",
-                    protocolVersion = 1,
-                    memberContext = KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
-                    serial = SERIAL,
+                RegistrationRequestDetails(
+                    clock.instant().plusSeconds(30),
+                    clock.instant().plusSeconds(70),
+                    RegistrationStatus.DECLINED,
+                    "registration id 3",
+                    1,
+                    KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                    signatureWithKey,
+                    signatureSpec,
+                    null,
+                    SERIAL,
                 ),
             )
-        whenever(membershipQueryClient.queryRegistrationRequestsStatus(
+        whenever(membershipQueryClient.queryRegistrationRequests(
             any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
         ).doReturn(MembershipQueryResult.Success(response))
 
@@ -393,7 +406,7 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkRegistrationProgress throw exception if the request fails`() {
-        whenever(membershipQueryClient.queryRegistrationRequestsStatus(
+        whenever(membershipQueryClient.queryRegistrationRequests(
             any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
         ).doReturn(MembershipQueryResult.Failure("oops"))
 
@@ -409,17 +422,20 @@ class MemberResourceClientTest {
     @EnumSource(RegistrationStatus::class)
     fun `checkSpecificRegistrationProgress return correct data when response is not null`(status: RegistrationStatus) {
         val response =
-            RegistrationRequestStatus(
-                registrationSent = clock.instant().plusSeconds(1),
-                registrationLastModified = clock.instant().plusSeconds(2),
-                status = status,
-                registrationId = "registration id",
-                protocolVersion = 1,
-                memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                serial = SERIAL,
+            RegistrationRequestDetails(
+                clock.instant().plusSeconds(1),
+                clock.instant().plusSeconds(2),
+                status,
+                "registration id",
+                1,
+                KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                signatureWithKey,
+                signatureSpec,
+                null,
+                SERIAL,
             )
         whenever(
-            membershipQueryClient.queryRegistrationRequestStatus(any(), any())
+            membershipQueryClient.queryRegistrationRequest(any(), any())
         ).doReturn(MembershipQueryResult.Success(response))
         memberOpsClient.start()
         setUpConfig()
@@ -460,7 +476,7 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkSpecificRegistrationProgress throw exception if request could not be found`() {
-        whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(MembershipQueryResult.Success(null))
+        whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(MembershipQueryResult.Success(null))
 
         memberOpsClient.start()
         setUpConfig()
@@ -472,7 +488,7 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkSpecificRegistrationProgress throw exception if request fails`() {
-        whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(MembershipQueryResult.Failure("oops"))
+        whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(MembershipQueryResult.Failure("oops"))
 
         memberOpsClient.start()
         setUpConfig()

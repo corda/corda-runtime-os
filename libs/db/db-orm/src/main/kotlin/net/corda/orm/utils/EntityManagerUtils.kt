@@ -4,9 +4,9 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 /**
- * Creates an [EntityManager], executes the [block] and closes the [EntityManager].
+ * Executes the [block] and then closes the [EntityManagerFactory].
  *
- * Starting and committing the [EntityManager]'s transaction is up to the [block].
+ * NOTE: because EntityManagerFactory does not implement [AutoCloseable] it doesn't support 'use' natively.
  *
  * @param block The code to execute using the [EntityManager].
  * @param R The type returned by [block].
@@ -15,8 +15,12 @@ import javax.persistence.EntityManagerFactory
  *
  * @see transaction
  */
-inline fun <R> EntityManagerFactory.use(block: (EntityManager) -> R): R {
-    return createEntityManager().use(block)
+inline fun <R> EntityManagerFactory.use(block: (EntityManagerFactory) -> R): R {
+    return try {
+        block(this)
+    } finally {
+        close()
+    }
 }
 
 

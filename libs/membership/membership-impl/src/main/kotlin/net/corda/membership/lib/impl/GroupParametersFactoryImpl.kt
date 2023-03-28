@@ -1,6 +1,7 @@
 package net.corda.membership.lib.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -13,7 +14,6 @@ import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.exceptions.FailedGroupParametersSerialization
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -71,7 +71,7 @@ class GroupParametersFactoryImpl @Activate constructor(
         ::deserializeLayeredPropertyMap
     )
 
-    private fun CryptoSignatureWithKey.toCorda() = DigitalSignature.WithKey(
+    private fun CryptoSignatureWithKey.toCorda() = DigitalSignatureWithKey(
         keyEncodingService.decodePublicKey(publicKey.array()),
         bytes.array()
     )

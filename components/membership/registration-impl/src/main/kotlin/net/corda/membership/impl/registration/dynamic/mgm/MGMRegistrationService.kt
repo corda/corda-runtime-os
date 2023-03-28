@@ -207,7 +207,7 @@ class MGMRegistrationService @Activate constructor(
                 val groupParameters = groupParametersPersistenceResult.getOrThrow()
                 groupParametersWriterService.put(member, groupParameters)
 
-                mgmRegistrationOutputPublisher.publish(mgmInfo)
+                mgmRegistrationOutputPublisher.publish(mgmInfo.memberInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {

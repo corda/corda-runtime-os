@@ -6,8 +6,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -51,7 +51,7 @@ class MemberOpsAsyncProcessorTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
-            queryRegistrationRequestStatus(
+            queryRegistrationRequest(
                 any(),
                 any(),
             )
@@ -384,7 +384,7 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry if the current status is not available`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Failure(
                     FAILURE_REASON
                 )
@@ -417,16 +417,19 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry do nothing if the status is not new any more`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
-                        status = RegistrationStatus.SENT_TO_MGM,
-                        registrationId = "",
-                        memberContext = mock(),
-                        registrationSent = Instant.MIN,
-                        registrationLastModified = Instant.MIN,
-                        protocolVersion = 0,
-                        serial = SERIAL,
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
+                        RegistrationStatus.SENT_TO_MGM,
+                        "",
+                        0,
+                        mock(),
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
                     )
                 )
             )
@@ -460,16 +463,19 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should register if the status is new`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
-                        status = RegistrationStatus.NEW,
-                        registrationId = "",
-                        memberContext = mock(),
-                        registrationSent = Instant.MIN,
-                        registrationLastModified = Instant.MIN,
-                        protocolVersion = 0,
-                        serial = SERIAL,
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
+                        RegistrationStatus.NEW,
+                        "",
+                        0,
+                        mock(),
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
                     )
                 )
             )

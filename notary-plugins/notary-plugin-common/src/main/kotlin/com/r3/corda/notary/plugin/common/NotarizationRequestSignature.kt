@@ -11,6 +11,6 @@ import net.corda.v5.crypto.DigitalSignature
  */
 @CordaSerializable
 data class NotarizationRequestSignature(
-    val digitalSignature: DigitalSignature.WithKey,
+    val digitalSignature: DigitalSignature.WithKeyId,
     val platformVersion: Int
 )
