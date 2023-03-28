@@ -117,8 +117,7 @@ internal class StartRegistrationHandler(
             val queryResult = (existingMemberInfo as MembershipQueryResult.Success).payload
             // The MemberX500Name is not a duplicate
             validateRegistrationRequest(
-                queryResult.isEmpty() ||
-                        registrationRequest.serial != 0L
+                queryResult.isEmpty() || registrationRequest.serial != 0L
             ) { "Member already exists with the same X500 name." }
             // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
             val activeOrSuspendedInfo = queryResult.find {

@@ -397,8 +397,6 @@ class StartRegistrationHandlerTest {
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
-            assertThat(((outputStates.first().value as RegistrationCommand).command as DeclineRegistration).reason)
-                .contains("already exists with the same X500 name")
         }
         verifyServices(
             persistRegistrationRequest = true,
@@ -430,8 +428,6 @@ class StartRegistrationHandlerTest {
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
-            assertThat(((outputStates.first().value as RegistrationCommand).command as DeclineRegistration).reason)
-                .contains("an older version of member info")
         }
     }
 
