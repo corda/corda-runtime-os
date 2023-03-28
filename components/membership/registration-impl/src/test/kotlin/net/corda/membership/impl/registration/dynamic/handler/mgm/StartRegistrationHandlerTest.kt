@@ -18,6 +18,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -43,7 +44,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -159,7 +159,7 @@ class StartRegistrationHandlerTest {
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
     }
-    private val mockGroupParameters = mock<GroupParameters> {
+    private val mockGroupParameters = mock<InternalGroupParameters> {
         on { entries } doReturn mapOf(String.format(NOTARY_SERVICE_NAME_KEY, 0) to notaryX500Name.toString()).entries
     }
     private val groupReader = mock<MembershipGroupReader> {

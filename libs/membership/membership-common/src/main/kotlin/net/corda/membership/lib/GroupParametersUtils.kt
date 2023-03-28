@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import org.slf4j.Logger
 
@@ -16,22 +17,25 @@ const val EPOCH_KEY = "corda.epoch"
 const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 const val NOTARIES_KEY = "corda.notary.service"
 
-private val clock = UTCClock()
-private val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
+val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
 
+@Suppress("LongParameterList")
 fun updateExistingNotaryService(
     currentParameters: Map<String, String>,
     notaryDetails: MemberNotaryDetails,
     notaryServiceNumber: Int,
     keyEncodingService: KeyEncodingService,
     logger: Logger,
+    clock: Clock = UTCClock()
 ): Pair<Int?, KeyValuePairList?> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
     notaryDetails.servicePlugin?.let {
         require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
-            throw MembershipPersistenceException("Cannot add notary to notary service " +
-                    "'$notaryServiceName' - plugin types do not match.")
+            throw MembershipPersistenceException(
+                "Cannot add notary to notary service " +
+                        "'$notaryServiceName' - plugin types do not match."
+            )
         }
     }
     val notaryKeys = currentParameters.entries
@@ -75,12 +79,15 @@ fun addNewNotaryService(
     notaryDetails: MemberNotaryDetails,
     keyEncodingService: KeyEncodingService,
     logger: Logger,
+    clock: Clock = UTCClock()
 ): Pair<Int, KeyValuePairList> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
     requireNotNull(notaryDetails.servicePlugin) {
-        throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
-                " specified to create new notary service '$notaryServiceName'.")
+        throw MembershipPersistenceException(
+            "Cannot add notary to group parameters - notary plugin must be" +
+                    " specified to create new notary service '$notaryServiceName'."
+        )
     }
     val newNotaryServiceNumber = currentParameters
         .filter { notaryServiceRegex.matches(it.key) }.size

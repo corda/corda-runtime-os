@@ -2,10 +2,13 @@ package net.corda.membership.impl.registration.dummy
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -13,7 +16,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -38,17 +40,19 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceResult<InternalGroupParameters> =
+        throw UnsupportedOperationException("not implemented for testing")
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
-        groupParameters: GroupParameters,
-    ): MembershipPersistenceResult<GroupParameters> = MembershipPersistenceResult.Success(groupParameters)
+        groupParameters: InternalGroupParameters,
+    ): MembershipPersistenceResult<InternalGroupParameters> = MembershipPersistenceResult.Success(groupParameters)
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceResult<InternalGroupParameters> =
+        throw UnsupportedOperationException("not implemented for testing")
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -117,6 +121,10 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+
+    override fun updateStaticNetworkInfo(
+        info: StaticNetworkInfo
+    ): MembershipPersistenceResult<StaticNetworkInfo> = MembershipPersistenceResult.Failure("Unsupported")
 
     override val isRunning = true
 

@@ -56,11 +56,15 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         }
     }
 
+    fun <R> transaction(block: (EntityManager) -> R): R {
+        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+    }
+
     fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
-            CryptoSignatureSpec("", null, null)
-        } else {
-            CryptoSignatureSpec(signatureSpec, null, null)
-        }
+        CryptoSignatureSpec("", null, null)
+    } else {
+        CryptoSignatureSpec(signatureSpec, null, null)
+    }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
         return dbConnectionManager.createEntityManagerFactory(

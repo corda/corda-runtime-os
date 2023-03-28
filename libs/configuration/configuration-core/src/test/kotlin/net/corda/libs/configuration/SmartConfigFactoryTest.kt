@@ -5,6 +5,7 @@ import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
+import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -27,7 +28,8 @@ class SmartConfigFactoryTest {
     fun `when create, choose matching secrets provider from list`() {
         val cf = SmartConfigFactory.createWith(secretsServiceConfig, listOf(mockSecretsServiceFactory1, mockSecretsServiceFactory2))
         val config = ConfigFactory.parseMap(
-            mapOf(SmartConfig.SECRET_KEY to mapOf(
+            mapOf(
+                ConfigKeys.SECRET_KEY to mapOf(
                 "fred" to "jon"
             )))
         val smartConfig = cf.create(config.atKey("foo"))
@@ -50,7 +52,7 @@ class SmartConfigFactoryTest {
     fun `when createWithoutSecurityServices used masked`() {
         val cf = SmartConfigFactory.createWithoutSecurityServices()
         val config = ConfigFactory.parseMap(
-            mapOf(SmartConfig.SECRET_KEY to mapOf(
+            mapOf(ConfigKeys.SECRET_KEY to mapOf(
                 "fred" to "jon"
             )))
         val smartConfig = cf.create(config.atKey("foo"))

@@ -21,6 +21,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -44,7 +45,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -263,7 +263,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         private fun createMembershipPackage(
             mgm: MemberInfo,
             members: Collection<MemberInfo>,
-            groupParameters: GroupParameters,
+            groupParameters: InternalGroupParameters,
         ): MembershipPackage {
             val mgmSigner = services.signerFactory.createSigner(mgm)
             val signatures = services.membershipQueryClient
