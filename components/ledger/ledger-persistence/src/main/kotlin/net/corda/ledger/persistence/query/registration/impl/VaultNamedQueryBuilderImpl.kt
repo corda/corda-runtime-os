@@ -56,9 +56,9 @@ class VaultNamedQueryBuilderImpl(
             VaultNamedQuery(
                 name,
                 notNullQuery,
-                filter as VaultNamedQueryFilter<Any>,
-                transformer as VaultNamedQueryTransformer<Any, Any>,
-                collector as VaultNamedQueryCollector<Any, Any>
+                filter as? VaultNamedQueryFilter<Any>,
+                transformer as? VaultNamedQueryTransformer<Any, Any>,
+                collector as? VaultNamedQueryCollector<Any, Any>
             )
         )
     }
@@ -74,8 +74,8 @@ class VaultNamedQueryBuilderImpl(
             VaultNamedQuery(
                 name,
                 notNullQuery,
-                filter as VaultNamedQueryFilter<Any>,
-                transformer as VaultNamedQueryTransformer<Any, Any>,
+                filter as? VaultNamedQueryFilter<Any>,
+                transformer as? VaultNamedQueryTransformer<Any, Any>,
                 collector = null
             )
         )

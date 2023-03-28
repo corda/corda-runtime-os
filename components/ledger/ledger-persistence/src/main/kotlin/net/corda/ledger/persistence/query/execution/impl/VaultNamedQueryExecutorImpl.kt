@@ -96,13 +96,13 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
             vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
         }.map {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
-        }
+        }.filterNotNull() // This has no effect as of now, but we keep it for safety purposes
 
         // Once filtering and transforming are done collector function can be applied (if present)
         val collectedResults = vaultNamedQuery.collector?.collect(
             filteredAndTransformedResults,
             deserializedParams
-        )?.results ?: filteredAndTransformedResults
+        )?.results?.filterNotNull() ?: filteredAndTransformedResults
 
         // Return the filtered/transformed/collected (if present) result to the caller
         return EntityResponse(
