@@ -86,7 +86,7 @@ If a member wishes to send or receive a message as part of a flow session they m
 
 ```shell
 #Register member to network
-curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/$HOLDING_ID 
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/$HOLDING_ID 
 ```
 
 # Execute flow

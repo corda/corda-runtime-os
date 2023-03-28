@@ -499,13 +499,13 @@ $REGISTRATION_CONTEXT = @{
 <summary>Bash</summary>
 
 ```bash
-REGISTRATION_REQUEST='{"memberRegistrationRequest":{"action": "requestJoin", "context": '$REGISTRATION_CONTEXT'}}'
+REGISTRATION_REQUEST='{"memberRegistrationRequest":{"context": '$REGISTRATION_CONTEXT'}}'
 curl --insecure -u admin:admin -d "$REGISTRATION_REQUEST" $API_URL/membership/$MGM_HOLDING_ID
 ```
 
 For example, this command would look something like this:
 ``` shell
-curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin", "context": {
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": {
   "corda.session.keys.0.id": "D2FAF709052F",
   "corda.ecdh.key.id": "A9FDF319654B",
   "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
@@ -520,26 +520,6 @@ curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "r
   "corda.group.trustroot.tls.0" : "-----BEGIN CERTIFICATE-----\nMIIBLjCB1aADAgECAgECMAoGCCqGSM49BAMCMBAxDjAMBgNVBAYTBVVLIENOMB4X\nDTIyMDgyMzA4MDUzN1oXDTIyMDkyMjA4MDUzN1owEDEOMAwGA1UEBhMFVUsgQ04w\nWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASG6ijAvbmaIaIwKpZZqTeKmMKfoOPb\ncCK/BqdtKXVTt5AjJtiP/Uoq+481UEQyaUZYXGf5rC1owjT40U2B71qdoyAwHjAP\nBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBrjAKBggqhkjOPQQDAgNIADBFAiEA\n1h6WEfdWUXSjBcenf5ycXPkYQQzI92I54q2WaVVjQHwCIEBk1ov/hYp9RCCDPnJx\nk8WgCZIyhFe0pEmow7MuI/Zk\n-----END CERTIFICATE-----"
 } } }' https://localhost:8888/api/v1/membership/EF19BF67E77C
 ```
-
-Alternatively, using jq:
-```
-curl --insecure -u admin:admin -d $(
-jq -n '.memberRegistrationRequest.action="requestJoin"' | \
-  jq --arg session_key_id $SESSION_KEY_ID '.memberRegistrationRequest.context."corda.session.keys.0.id"=$session_key_id' | \
-  jq --arg ecdh_key_id $ECDH_KEY_ID '.memberRegistrationRequest.context."corda.ecdh.key.id"=$ecdh_key_id' | \
-  jq '.memberRegistrationRequest.context."corda.group.protocol.registration"="net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"' | \
-  jq '.memberRegistrationRequest.context."corda.group.protocol.synchronisation"="net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"' | \
-  jq '.memberRegistrationRequest.context."corda.group.protocol.p2p.mode"="Authenticated_Encryption"' | \
-  jq '.memberRegistrationRequest.context."corda.group.key.session.policy"="Combined"' | \
-  jq '.memberRegistrationRequest.context."corda.group.pki.session"="NoPKI"' | \
-  jq '.memberRegistrationRequest.context."corda.group.pki.tls"="Standard"' | \
-  jq '.memberRegistrationRequest.context."corda.group.tls.version"="1.3"' | \
-  jq '.memberRegistrationRequest.context."corda.group.key.session.policy"="Combined"' | \
-  jq --arg p2p_url "https://$P2P_GATEWAY_HOST:$P2P_GATEWAY_PORT" '.memberRegistrationRequest.context."corda.endpoints.0.connectionURL"=$p2p_url' | \
-  jq '.memberRegistrationRequest.context."corda.endpoints.0.protocolVersion"="1"' | \
-  jq --rawfile root_certicicate /tmp/ca/ca/root-certificate.pem '.memberRegistrationRequest.context."corda.group.trustroot.tls.0"=$root_certicicate' \
-) $API_URL/membership/$MGM_HOLDING_ID
-```
 </details>
 
 <details>
@@ -548,7 +528,6 @@ jq -n '.memberRegistrationRequest.action="requestJoin"' | \
 ```PowerShell
 $REGISTER_RESPONSE = Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Method Post -Uri "$API_URL/membership/$MGM_HOLDING_ID" -Body (ConvertTo-Json -Depth 4 @{
     memberRegistrationRequest = @{
-        action = "requestJoin"
         context = $REGISTRATION_CONTEXT
     }
 })

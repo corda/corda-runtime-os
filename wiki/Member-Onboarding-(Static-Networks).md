@@ -62,7 +62,7 @@ curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "<CPI check
 
 To register a member, run the following command (replace `<holding identity ID short hash>` with the ID short hash obtained before):
 ```
-curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin", "context": { "corda.key.scheme": "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/<holding identity ID short hash>
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": { "corda.key.scheme": "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/<holding identity ID short hash>
 ```
 Run this command for each member defined in the `staticNetwork` section of your _GroupPolicy.json_. 
 Perform a lookup to ensure all members have registered successfully and are visible to each other:

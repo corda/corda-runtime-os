@@ -544,7 +544,7 @@ To register a member, run the following command.
 <summary>Bash</summary>
 
 ```bash
-export REGISTRATION_REQUEST='{"memberRegistrationRequest":{"action": "requestJoin", "context": '$REGISTRATION_CONTEXT'}}'
+export REGISTRATION_REQUEST='{"memberRegistrationRequest":{"context": '$REGISTRATION_CONTEXT'}}'
 curl --insecure -u admin:admin -d "$REGISTRATION_REQUEST" $API_URL/membership/$HOLDING_ID
 ```
 </details>
@@ -554,7 +554,6 @@ curl --insecure -u admin:admin -d "$REGISTRATION_REQUEST" $API_URL/membership/$H
 ```PowerShell
 $RESGISTER_RESPONSE = Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Method Post -Uri "$API_URL/membership/$HOLDING_ID" -Body (ConvertTo-Json -Depth 4 @{
     memberRegistrationRequest = @{
-        action = "requestJoin"
         context = $REGISTRATION_CONTEXT
     }
 })
@@ -567,7 +566,6 @@ This will send a join request to the MGM, the response should be `SUBMITTED`.
 ```
 {
   "memberRegistrationRequest":{
-    "action":"requestJoin",
     "context": <registration context>
   }
 }
