@@ -86,5 +86,5 @@ fun generateAppMessage(
  * @return True if the event is an interop event, false otherwise.
  */
 fun SessionEvent.isInteropEvent(): Boolean {
-    return this.sessionId.contains("INTEROP")
+    return this.sessionId.contains("-INTEROP")
 }
