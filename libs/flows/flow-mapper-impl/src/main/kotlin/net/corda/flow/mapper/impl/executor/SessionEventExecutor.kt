@@ -36,8 +36,7 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val isInterop =  sessionEvent.isInteropEvent()
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, isInterop)
+    private val outputTopic = getSessionEventOutputTopic(messageDirection, sessionEvent.isInteropEvent())
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
