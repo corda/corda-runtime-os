@@ -487,3 +487,25 @@ data:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Pod Monitor creation
+*/}}
+{{- define "corda.podMonitor" -}}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: corda
+  labels:
+    release: kube-prometheus-stack
+spec:
+  podMetricsEndpoints:
+  - port: monitor
+  jobLabel: corda
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: corda
+{{- end }}
