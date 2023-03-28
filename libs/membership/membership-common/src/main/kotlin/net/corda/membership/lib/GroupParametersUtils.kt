@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import org.slf4j.Logger
 
@@ -17,8 +18,7 @@ const val EPOCH_KEY = "corda.epoch"
 const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 const val NOTARIES_KEY = "corda.notary.service"
 
-private val clock = UTCClock()
-private val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
+val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
 
 @Suppress("LongParameterList")
 fun updateExistingNotaryService(
@@ -28,6 +28,7 @@ fun updateExistingNotaryService(
     currentProtocolVersions: Collection<Int>,
     keyEncodingService: KeyEncodingService,
     logger: Logger,
+    clock: Clock = UTCClock()
 ): Pair<Int?, KeyValuePairList?> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
@@ -96,12 +97,14 @@ fun addNewNotaryService(
     notaryDetails: MemberNotaryDetails,
     keyEncodingService: KeyEncodingService,
     logger: Logger,
+    clock: Clock = UTCClock()
 ): Pair<Int, KeyValuePairList> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
     requireNotNull(notaryDetails.serviceProtocol) {
         throw MembershipPersistenceException("Cannot add notary to group parameters - notary protocol must be" +
-                " specified to create new notary service '$notaryServiceName'.")
+                " specified to create new notary service '$notaryServiceName'."
+        )
     }
     require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
         throw MembershipPersistenceException("Cannot add notary to notary service '$notaryServiceName' - protocol versions are missing.")

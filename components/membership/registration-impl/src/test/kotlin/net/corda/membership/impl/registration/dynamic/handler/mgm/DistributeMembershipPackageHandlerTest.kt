@@ -15,6 +15,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
@@ -34,7 +35,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -135,7 +135,7 @@ class DistributeMembershipPackageHandlerTest {
     }
     private val config = mock<SmartConfig>()
 
-    private val groupParameters: GroupParameters = mock {
+    private val groupParameters: InternalGroupParameters = mock {
         on { epoch } doReturn EPOCH
     }
     private val groupReader: MembershipGroupReader = mock {

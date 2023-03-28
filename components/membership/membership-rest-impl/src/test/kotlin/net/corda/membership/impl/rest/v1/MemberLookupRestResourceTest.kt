@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -37,7 +38,6 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -179,7 +179,7 @@ class MemberLookupRestResourceTest {
         EPOCH_KEY to "1",
         MODIFIED_TIME_KEY to clock.instant().toString(),
     )
-    private val mockGroupParameters = mock<GroupParameters> {
+    private val mockGroupParameters = mock<InternalGroupParameters> {
         on { entries } doReturn testEntries.entries
     }
     private val groupReader: MembershipGroupReader = mock {

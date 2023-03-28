@@ -9,6 +9,7 @@ import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
@@ -23,6 +24,7 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundE
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.CustomEvent
@@ -75,8 +77,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
-import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
-import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -484,9 +484,9 @@ internal class VirtualNodeRestResourceImpl(
     override fun start() = lifecycleCoordinator.start()
     override fun stop() = lifecycleCoordinator.stop()
 
-    private fun createVirtualNodeOperationStatus(requestId: String): AvroVirtualNodeOperationStatus {
+    private fun createVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatus {
         val now = Instant.now()
-        return AvroVirtualNodeOperationStatus.newBuilder()
+        return VirtualNodeOperationStatus.newBuilder()
             .setRequestId(requestId)
             .setRequestData("{}")
             .setRequestTimestamp(now)
