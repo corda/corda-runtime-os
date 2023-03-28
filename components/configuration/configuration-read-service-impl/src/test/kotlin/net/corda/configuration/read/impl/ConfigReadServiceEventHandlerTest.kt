@@ -13,10 +13,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -50,6 +52,8 @@ internal class ConfigReadServiceEventHandlerTest {
     private lateinit var coordinator: LifecycleCoordinator
     private lateinit var compactedSubscription: CompactedSubscription<String, SmartConfig>
     private lateinit var configMerger: ConfigMerger
+    private lateinit var avroSchemaRegistry: AvroSchemaRegistry
+    private lateinit var publisherFactory: PublisherFactory
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
@@ -67,8 +71,10 @@ internal class ConfigReadServiceEventHandlerTest {
             on { getMessagingConfig(bootConfig, null) } doAnswer { SmartConfigImpl.empty() }
             on { getDbConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
         }
+        avroSchemaRegistry = mock()
+        publisherFactory = mock()
 
-        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger)
+        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
     }
 
     @Test

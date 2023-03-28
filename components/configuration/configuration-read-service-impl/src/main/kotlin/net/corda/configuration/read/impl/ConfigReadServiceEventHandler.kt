@@ -20,14 +20,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.AvroSchema.AVRO_SCHEMA_TOPIC
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.Schemas.AvroSchemas.Companion.AVRO_SCHEMA_TOPIC
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.utilities.debug
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 internal class ConfigReadServiceEventHandler(

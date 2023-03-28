@@ -5,7 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.AvroSchemas.Companion.AVRO_SCHEMA_TOPIC
+import net.corda.schema.Schemas.AvroSchema.AVRO_SCHEMA_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.avro.Schema
 

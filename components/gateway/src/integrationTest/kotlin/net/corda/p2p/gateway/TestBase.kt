@@ -45,6 +45,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
@@ -144,7 +145,9 @@ open class TestBase {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
                 InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
-                configMerger
+                configMerger,
+                AvroSchemaRegistryImpl(),
+                CordaPublisherFactory(configurationTopicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory),
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
