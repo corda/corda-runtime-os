@@ -116,11 +116,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageName =
-            getObjects().property(String).convention('corda/test-repo')
+            getObjects().property(String).convention('azul/zulu-openjdk')
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('jdk-11')
+            getObjects().property(String).convention('11.0.15-11.56.19')
 
     @Input
     final Property<String> subDir =
@@ -218,7 +218,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 builder = setCredentialsOnBaseImage(builder)
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-                builder = setCredentialsOnBaseImage(builder)
+                    builder = Jib.from(imageName)
             }
         } else {  // CI use case
             logger.info("No daemon available")
@@ -326,19 +326,17 @@ abstract class DeployableContainerBuilder extends DefaultTask {
      *  Set credentials on the base image we use
      */
     private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
-        logger.info("DEBUG setCredentialsOnBaseImage")
         def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
         if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
-            logger.info("DEBUG artifactory setCredentialsOnBaseImage")
+            logger.info("Authenticating against Artifactory for base image resolution")
             baseImage.addCredential(registryUsername.get(), registryPassword.get())
             builder = Jib.from(baseImage)
         }
         else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) && (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())){
-            logger.info("DEBUG setCredentialsOnBaseImage")
+            logger.info("Authenticating against Docker Hub for base image resolution")
             baseImage.addCredential(dockerHubUsername.get(), dockerHubPassword.get())
             builder = Jib.from(baseImage)
         }
-        // Else need to authenticate locally on docker hub
         builder
     }
 
