@@ -15,7 +15,6 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -39,7 +38,6 @@ internal class ApproveRegistrationHandler(
     private val memberTypeChecker: MemberTypeChecker,
     private val groupReaderProvider: MembershipGroupReaderProvider,
     private val groupParametersWriterService: GroupParametersWriterService,
-    private val groupParametersFactory: GroupParametersFactory,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
@@ -51,7 +49,11 @@ internal class ApproveRegistrationHandler(
 
     override val commandType = ApproveRegistration::class.java
 
-    override fun invoke(state: RegistrationState?, key: String, command: ApproveRegistration): RegistrationHandlerResult {
+    override fun invoke(
+        state: RegistrationState?,
+        key: String,
+        command: ApproveRegistration
+    ): RegistrationHandlerResult {
         if (state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
         val approvedBy = state.mgm
@@ -86,7 +88,7 @@ internal class ApproveRegistrationHandler(
                                 " '${memberInfo.name}', which has role set to 'notary'."
                     )
                 }
-                val persistedGroupParameters = groupParametersFactory.create(result.getOrThrow())
+                val persistedGroupParameters = result.getOrThrow()
                 groupParametersWriterService.put(mgmHoldingIdentity, persistedGroupParameters)
                 persistedGroupParameters.epoch
             } else {

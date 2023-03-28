@@ -43,7 +43,7 @@ class VerifierTest {
     )
 
     @Test
-    fun `verify call the service with the correct arguments`() {
+    fun `verify without key call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
 
         verifier.verify(signature, signatureSpec, data)
@@ -59,7 +59,23 @@ class VerifierTest {
     }
 
     @Test
-    fun `verify fails if spec can not be found`() {
+    fun `verify call the service with the correct arguments`() {
+        val data = byteArrayOf(44, 1)
+
+        verifier.verify(publicKey, signature, signatureSpec, data)
+
+        verify(signatureVerificationService).verify(
+            eq(data),
+            eq(rawSignature),
+            same(publicKey),
+            argThat<SignatureSpec> {
+                this.signatureName == SPEC
+            },
+        )
+    }
+
+    @Test
+    fun `verify without key fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
         val signature = CryptoSignatureWithKey(
             signature.publicKey,
@@ -69,6 +85,37 @@ class VerifierTest {
 
         assertThrows<CordaRuntimeException> {
             verifier.verify(signature, badSignatureSpec, data)
+        }
+    }
+
+    @Test
+    fun `verify fails if spec can not be found`() {
+        val data = byteArrayOf(44, 1)
+        val signature = CryptoSignatureWithKey(
+            signature.publicKey,
+            signature.bytes
+        )
+        val badSignatureSpec = CryptoSignatureSpec(null, null, null)
+
+        assertThrows<CordaRuntimeException> {
+            verifier.verify(publicKey, signature, badSignatureSpec, data)
+        }
+    }
+
+    @Test
+    fun `verify without key fails if signature verification service fails`() {
+        val data = byteArrayOf(44, 1)
+        whenever(
+            signatureVerificationService.verify(
+                eq(data),
+                eq(rawSignature),
+                same(publicKey),
+                argThat<SignatureSpec> { this.signatureName == SPEC }
+            )
+        ).doThrow(CryptoSignatureException("Not verified"))
+
+        assertThrows<CryptoSignatureException> {
+            verifier.verify(signature, signatureSpec, data)
         }
     }
 
@@ -85,7 +132,7 @@ class VerifierTest {
         ).doThrow(CryptoSignatureException("Not verified"))
 
         assertThrows<CryptoSignatureException> {
-            verifier.verify(signature, signatureSpec, data)
+            verifier.verify(publicKey, signature, signatureSpec, data)
         }
     }
 }

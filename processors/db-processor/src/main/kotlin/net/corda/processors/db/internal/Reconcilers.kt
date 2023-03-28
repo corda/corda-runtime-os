@@ -5,7 +5,6 @@ import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -45,7 +44,6 @@ class Reconcilers(
     configPublishService: ConfigPublishService,
     configBusReconcilerReader: ConfigReconcilerReader,
     reconcilerFactory: ReconcilerFactory,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     groupParametersFactory: GroupParametersFactory,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
@@ -73,7 +71,6 @@ class Reconcilers(
         configPublishService,
     )
     private val groupParametersReconciler = GroupParametersReconciler(
-        cordaAvroSerializationFactory,
         coordinatorFactory,
         dbConnectionManager,
         virtualNodeInfoReadService,
@@ -113,7 +110,10 @@ class Reconcilers(
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CPI_INFO_INTERVAL_MS, cpiReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_VNODE_INFO_INTERVAL_MS, vnodeReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CONFIG_INTERVAL_MS, configReconciler::updateInterval)
-        smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_GROUP_PARAMS_INTERVAL_MS, groupParametersReconciler::updateInterval)
+        smartConfig.updateIntervalWhenKeyIs(
+            RECONCILIATION_GROUP_PARAMS_INTERVAL_MS,
+            groupParametersReconciler::updateInterval
+        )
         smartConfig.updateIntervalWhenKeyIs(
             RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS,
             mgmAllowedCertificateSubjectsReconciler::updateInterval,

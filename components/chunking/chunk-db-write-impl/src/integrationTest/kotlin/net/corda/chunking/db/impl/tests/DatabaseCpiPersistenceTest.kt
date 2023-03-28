@@ -1,19 +1,26 @@
 package net.corda.chunking.db.impl.tests
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
-import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
-import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
@@ -31,6 +38,17 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.datamodel.MembershipEntities
+import net.corda.membership.datamodel.StaticNetworkInfoEntity
+import net.corda.membership.impl.network.writer.staticnetwork.NetworkInfoDBWriterImpl
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.MGM_INFO
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
@@ -40,20 +58,23 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.PublicKey
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
-import net.corda.libs.cpi.datamodel.CpkFile
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -65,10 +86,34 @@ internal class DatabaseCpiPersistenceTest {
     private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
-        ChunkingEntities.classes.toList() + CpiEntities.classes.toList(),
+        ChunkingEntities.classes.toList() + CpiEntities.classes.toList() + MembershipEntities.clusterClasses.toList(),
         emConfig
     )
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { activePlatformVersion } doReturn 999
+        on { localWorkerSoftwareVersion } doReturn "5.0.0"
+    }
+    private val mgmPubKeyStr = "PUB-KEY"
+    private val mgmPubKeyEncoded = mgmPubKeyStr.toByteArray()
+    private val mgmPubKey: PublicKey = mock {
+        on { encoded } doReturn mgmPubKeyEncoded
+    }
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { encodeAsString(mgmPubKey) } doReturn mgmPubKeyStr
+        on { decodePublicKey(any<ByteArray>()) } doReturn mgmPubKey
+    }
+    private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn "serialized-bytes".toByteArray()
+    }
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+    }
+    private val networkInfoWriter: NetworkInfoWriter = NetworkInfoDBWriterImpl(
+        platformInfoProvider,
+        keyEncodingService,
+        cordaAvroSerializationFactory
+    )
+    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
     private val mockCpkContent = """
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor 
             condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem 
@@ -174,7 +219,8 @@ internal class DatabaseCpiPersistenceTest {
         signerSummaryHash: SecureHash = SecureHashImpl("SHA-256", ByteArray(12)),
         name: String = UUID.randomUUID().toString(),
         version: String = "1.0",
-        fileChecksum: SecureHash? = newRandomSecureHash()
+        fileChecksum: SecureHash? = newRandomSecureHash(),
+        groupPolicy: String = "{}"
     ): Cpi {
         // We need a random name here as the database primary key is (name, version, signerSummaryHash)
         // and we'd end up trying to insert the same mock cpi.
@@ -184,17 +230,18 @@ internal class DatabaseCpiPersistenceTest {
             whenever(it.signerSummaryHash).thenReturn(signerSummaryHash)
         }
 
-        return mockCpiWithId(cpks.toList(), id, fileChecksum)
+        return mockCpiWithId(cpks.toList(), id, fileChecksum, groupPolicy)
     }
 
     private fun mockCpiWithId(
         cpks: List<Cpk>,
         cpiId: CpiIdentifier,
-        fileChecksum: SecureHash? = newRandomSecureHash()
+        fileChecksum: SecureHash? = newRandomSecureHash(),
+        groupPolicy: String = "{}"
     ): Cpi {
         val metadata = mock<CpiMetadata>().also {
             whenever(it.cpiId).thenReturn(cpiId)
-            whenever(it.groupPolicy).thenReturn("{}")
+            whenever(it.groupPolicy).thenReturn(groupPolicy)
             whenever(it.fileChecksum).thenReturn(fileChecksum)
         }
 
@@ -632,6 +679,107 @@ internal class DatabaseCpiPersistenceTest {
 
         val updatedChangelogAudits = findAuditLogs(listOf(cpk1FileChecksum, cpk2FileChecksum))
         assertThat(updatedChangelogAudits.size).isEqualTo(3)
+    }
+
+    /**
+     * Tests verifying the static network information persisted during CPI upload.
+     */
+    @Nested
+    inner class StaticNetworkInfoTests {
+        private val mapper = ObjectMapper()
+        private val groupId = UUID.randomUUID().toString()
+        private val minimumStaticNetworkGroupPolicy = """
+            {
+                "$GROUP_ID": "$groupId",
+                "$PROTOCOL_PARAMETERS": {
+                    "$STATIC_NETWORK": {}
+                }
+            }
+            """.trimIndent()
+
+        private val nonStaticNetworkGroupPolicy = """
+            {
+                "$GROUP_ID": "$groupId",
+                "$PROTOCOL_PARAMETERS": {}
+            }
+            """.trimIndent()
+
+        @Test
+        fun `database cpi persistence persists static network data if group policy is for a static network`() {
+            val cpi = mockCpi(mockCpk(), groupPolicy = minimumStaticNetworkGroupPolicy)
+
+            cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
+
+            val persistedEntity = entityManagerFactory.createEntityManager().transaction {
+                it.find(StaticNetworkInfoEntity::class.java, groupId)
+            }
+            assertThat(persistedEntity).isNotNull
+            assertThat(persistedEntity.groupId).isEqualTo(groupId)
+        }
+
+        @Test
+        fun `database cpi persistence does not persist static network data if group policy is not for a static network`() {
+            val cpi = mockCpi(mockCpk(), groupPolicy = nonStaticNetworkGroupPolicy)
+
+            cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
+
+            val persistedEntity = entityManagerFactory.createEntityManager().transaction {
+                it.find(StaticNetworkInfoEntity::class.java, groupId)
+            }
+            assertThat(persistedEntity).isNull()
+
+        }
+
+        @Test
+        fun `database cpi persistence add static network MGM to group policy if it is for a static network`() {
+            val cpi = mockCpi(mockCpk(), groupPolicy = minimumStaticNetworkGroupPolicy)
+
+            cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
+
+            val originalGroupPolicy = mapper.readTree(minimumStaticNetworkGroupPolicy)
+            assertThat(originalGroupPolicy.has(MGM_INFO)).isFalse
+
+            val persistedGroupPolicy = mapper.readTree(loadCpiDirectFromDatabase(cpi).groupPolicy)
+            assertThat(persistedGroupPolicy.has(MGM_INFO)).isTrue
+
+            val mgmInfo = mapper.convertValue(
+                persistedGroupPolicy[MGM_INFO],
+                object : TypeReference<Map<String, String>>() {}
+            )
+            assertThat(mgmInfo[MemberInfoExtension.GROUP_ID]).isEqualTo(groupId)
+            assertThat(mgmInfo[IS_STATIC_MGM]).isEqualTo("true")
+        }
+
+        @Test
+        fun `database cpi persistence does not add static network MGM to group policy if it is not for a static network`() {
+            val cpi = mockCpi(mockCpk(), groupPolicy = nonStaticNetworkGroupPolicy)
+
+            cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
+
+            val originalGroupPolicy = mapper.readTree(nonStaticNetworkGroupPolicy)
+            assertThat(originalGroupPolicy.has(MGM_INFO)).isFalse
+
+            val persistedGroupPolicy = mapper.readTree(loadCpiDirectFromDatabase(cpi).groupPolicy)
+            assertThat(persistedGroupPolicy.has(MGM_INFO)).isFalse
+        }
+
+        @Test
+        fun `database cpi persistence operation returns the static network persisted group policy in the returned entity`() {
+            val cpi = mockCpi(mockCpk(), groupPolicy = minimumStaticNetworkGroupPolicy)
+
+            val result = cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
+            assertThat(result.groupPolicy).isNotEqualTo(minimumStaticNetworkGroupPolicy)
+            assertThat(result.groupPolicy).isEqualTo(loadCpiDirectFromDatabase(cpi).groupPolicy)
+        }
+
+        @Test
+        fun `database cpi persistence operation returns the non static network persisted group policy in the returned entity`() {
+            val cpi = mockCpi(mockCpk(), groupPolicy = nonStaticNetworkGroupPolicy)
+
+            val result = cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
+            assertThat(result.groupPolicy).isEqualTo(nonStaticNetworkGroupPolicy)
+            assertThat(result.groupPolicy).isEqualTo(loadCpiDirectFromDatabase(cpi).groupPolicy)
+        }
     }
 
     private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {

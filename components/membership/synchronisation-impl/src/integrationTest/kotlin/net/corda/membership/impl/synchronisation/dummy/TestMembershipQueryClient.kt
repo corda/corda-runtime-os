@@ -2,6 +2,7 @@ package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -113,6 +114,13 @@ class TestMembershipQueryClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun queryStaticNetworkInfo(groupId: String): MembershipQueryResult<StaticNetworkInfo> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
