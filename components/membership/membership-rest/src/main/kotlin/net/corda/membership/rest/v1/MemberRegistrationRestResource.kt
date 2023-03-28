@@ -1,5 +1,6 @@
 package net.corda.membership.rest.v1
 
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
@@ -32,13 +33,13 @@ interface MemberRegistrationRestResource : RestResource {
      *
      * Example usage:
      * ```
-     * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationContext
-     * = {"corda.session.keys.0.id": "D2FAF709052F"})
+     * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationRequest
+     * = MemberRegistrationRequest(context = {"corda.session.keys.0.id": "D2FAF709052F"}))
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the requesting virtual node.
-     * @param memberRegistrationContext The registration context sent during registration which contains the
-     * data required to initiate the registration process.
+     * @param memberRegistrationRequest The request sent during registration which contains the requested registration
+     *   context map containing data required to initiate the registration process.
      *
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
@@ -59,9 +60,10 @@ interface MemberRegistrationRestResource : RestResource {
         @RestPathParameter(description = "The holding identity ID of the requesting virtual node")
         holdingIdentityShortHash: String,
         @ClientRequestBodyParameter(
-            description = "The member or MGM registration context required for on-boarding within a group."
+            description = "The request sent during registration which contains the requested registration " +
+                " context map containing data required to initiate the registration process."
         )
-        memberRegistrationContext: Map<String, String>,
+        memberRegistrationRequest: MemberRegistrationRequest,
     ): RegistrationRequestProgress
 
     /**

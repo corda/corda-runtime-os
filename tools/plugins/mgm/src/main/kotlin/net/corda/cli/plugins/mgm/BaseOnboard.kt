@@ -318,7 +318,9 @@ abstract class BaseOnboard : Runnable {
         val response = Unirest.post("/membership/$holdingId")
             .body(
                 mapOf(
-                    "memberRegistrationContext" to registrationContext
+                    "memberRegistrationRequest" to mapOf(
+                        "context" to registrationContext
+                    )
                 )
             ).asJson()
 

@@ -203,7 +203,7 @@ wait_for_approve() {
 }
 
 register() {
-    local COMMAND='{ "memberRegistrationContext": $3}'
+    local COMMAND='{ "memberRegistrationRequest": { "context": '$3' }}'
 
     echo "Registering using:"
     echo $COMMAND | jq

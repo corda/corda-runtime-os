@@ -136,8 +136,8 @@ This should yield a result similar to this for first request:
 4) Register the members to the network
 
 ```shell
-curl --insecure -u admin:admin -d '{ "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
-curl --insecure -u admin:admin -d '{ "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" }' https://localhost:8888/api/v1/membership/44D0F817B592
+curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
+curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v1/membership/44D0F817B592
 ```
 
 ### Calling the flow and testing for a result

@@ -144,15 +144,17 @@ class ClusterBuilder {
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
     private fun registerMemberBody() =
-        """{ "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" }""".trimMargin()
+        """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
     // TODO CORE-7248 Review once plugin loading logic is added
     private fun registerNotaryBody() =
         """{ 
-            |  "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
-            |  "corda.roles.0" : "notary",
-            |  "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
-            |  "corda.notary.service.plugin" : "net.corda.notary.NonValidatingNotary"
+            |  "context": { 
+            |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
+            |    "corda.roles.0" : "notary",
+            |    "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
+            |    "corda.notary.service.plugin" : "net.corda.notary.NonValidatingNotary"
+            |   } 
             | }""".trimMargin()
 
     /** Create a virtual node */

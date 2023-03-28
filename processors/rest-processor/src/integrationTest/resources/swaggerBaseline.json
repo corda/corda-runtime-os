@@ -1941,19 +1941,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "memberRegistrationContext" : {
-                    "type" : "object",
-                    "additionalProperties" : {
-                      "type" : "string",
-                      "example" : "string"
-                    },
-                    "description" : "The member or MGM registration context required for on-boarding within a group.",
-                    "nullable" : false,
-                    "example" : "No example available for this type"
-                  }
-                }
+                "$ref" : "#/components/schemas/MemberRegistrationRequest"
               }
             }
           },
@@ -4599,6 +4587,22 @@
             "example" : "No example available for this type"
           }
         }
+      },
+      "MemberRegistrationRequest" : {
+        "required" : [ "context" ],
+        "type" : "object",
+        "properties" : {
+          "context" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        },
+        "description" : "The request sent during registration which contains the requested registration  context map containing data required to initiate the registration process."
       },
       "PermissionAssociationResponseType" : {
         "required" : [ "createdTimestamp", "id" ],

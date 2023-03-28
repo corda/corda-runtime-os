@@ -15,6 +15,7 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -82,7 +83,7 @@ class MemberRegistrationRestResourceTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
-        memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, emptyMap())
+        memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         verify(memberResourceClient).startRegistration(ShortHash.of(HOLDING_IDENTITY_ID), emptyMap())
         memberRegistrationRestResource.deactivate("")
         memberRegistrationRestResource.stop()
@@ -95,14 +96,14 @@ class MemberRegistrationRestResourceTest {
         whenever(memberResourceClient.startRegistration(any(), any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
 
         assertThrows<ResourceNotFoundException> {
-            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, emptyMap())
+            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         }
     }
 
     @Test
     fun `startRegistration fails when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
-            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, emptyMap())
+            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         }
         assertThat(ex).hasMessage("MemberRegistrationRestResourceImpl is not running. Operation cannot be fulfilled.")
     }
@@ -113,7 +114,7 @@ class MemberRegistrationRestResourceTest {
         memberRegistrationRestResource.activate("")
 
         assertFailsWith<BadRequestException> {
-            memberRegistrationRestResource.startRegistration(INVALID_HOLDING_IDENTITY_ID, emptyMap())
+            memberRegistrationRestResource.startRegistration(INVALID_HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         }
 
         memberRegistrationRestResource.deactivate("")

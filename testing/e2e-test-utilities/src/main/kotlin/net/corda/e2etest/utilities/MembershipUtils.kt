@@ -145,8 +145,13 @@ fun register(
     registrationContext: Map<String, String>,
     waitForApproval: Boolean
 ) = cluster(clusterInfo) {
+
+    val payload = mapOf(
+        "context" to registrationContext
+    )
+
     assertWithRetry {
-        command { register(holdingIdentityShortHash, mapper.writeValueAsString(registrationContext)) }
+        command { register(holdingIdentityShortHash, mapper.writeValueAsString(payload)) }
         condition {
             it.code == ResponseCode.OK.statusCode
                     && it.toJson().get("registrationStatus")?.textValue() == REGISTRATION_SUBMITTED

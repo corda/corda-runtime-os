@@ -16,6 +16,7 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -73,8 +74,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
 
     override fun startRegistration(
         holdingIdentityShortHash: String,
-        memberRegistrationContext: Map<String, String>,
-    ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationContext)
+        memberRegistrationRequest: MemberRegistrationRequest
+    ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationRequest.context)
 
     override fun checkRegistrationProgress(
         holdingIdentityShortHash: String
