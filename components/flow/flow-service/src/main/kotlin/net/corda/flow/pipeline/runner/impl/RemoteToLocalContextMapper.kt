@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.runner.impl
 
 import net.corda.data.KeyValuePairList
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.toMap
 
 /**
@@ -18,12 +19,37 @@ fun remoteToLocalContextMapper(
     remoteUserContextProperties: KeyValuePairList,
     remotePlatformContextProperties: KeyValuePairList
 ): LocalContext {
+
+    // replace 'corda.' with 'corda.initiator.'
+    val initiatorPlatformContextProperties = renameInitiatorProps(remotePlatformContextProperties)
+
     return LocalContext(
-        userProperties = remoteUserContextProperties,
-        platformProperties = remotePlatformContextProperties,
-        counterpartySessionProperties = remotePlatformContextProperties.toMap()
+        userProperties = renameInitiatorProps(remoteUserContextProperties),
+        platformProperties = initiatorPlatformContextProperties,
+        counterpartySessionProperties = initiatorPlatformContextProperties.toMap()
     )
 }
+
+/**
+ * Rename the properties sent from the initiating remote party to include the 'initiator' identifier.
+ * This will only rename one level deep.
+ * e.g. we wont see corda.initiator.initiator
+ *
+ * @param keyValuePairList A KVP List that will have the keys renamed.
+ * @return The newly re-keyed KVP List
+ */
+fun renameInitiatorProps(keyValuePairList: KeyValuePairList) = KeyValueStore().apply {
+    keyValuePairList.items.forEach { kvp ->
+        if (!kvp.key.contains("corda.initiator")) {
+            if (kvp.key.contains("corda.")) {
+                this[kvp.key.replace("corda.", "corda.initiator.")] = kvp.value
+            } else {
+                this[kvp.key] = kvp.value
+            }
+        }
+    }
+}.avro
+
 
 /**
  * User and platform properties live in the domain of the checkpoint, hence they must be modelled by avro types.

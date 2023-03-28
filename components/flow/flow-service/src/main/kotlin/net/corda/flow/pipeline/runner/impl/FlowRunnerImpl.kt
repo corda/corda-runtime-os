@@ -87,15 +87,9 @@ class FlowRunnerImpl @Activate constructor(
         val flowStartContext = context.checkpoint.flowStartContext
         val sessionId = flowStartContext.statusKey.id
 
-        val remotePlatformProperties =
-            getPropertiesWithCpiMetadata(
-                context.checkpoint.holdingIdentity,
-                sessionInitEvent.contextPlatformProperties
-            )
-
         val localContext = remoteToLocalContextMapper(
             remoteUserContextProperties = sessionInitEvent.contextUserProperties,
-            remotePlatformContextProperties = remotePlatformProperties
+            remotePlatformContextProperties = sessionInitEvent.contextPlatformProperties
         )
 
         return startFlow(
@@ -109,7 +103,10 @@ class FlowRunnerImpl @Activate constructor(
             },
             updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },
             contextUserProperties = localContext.userProperties,
-            contextPlatformProperties = localContext.platformProperties
+            contextPlatformProperties = getPropertiesWithCpiMetadata(
+                context.checkpoint.holdingIdentity,
+                localContext.platformProperties
+            )
         )
     }
 
