@@ -130,7 +130,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                                 "ON visible_states.transaction_id = tc.transaction_id " +
                             "$whereJson " +
                             "AND tc.group_idx IN (:groupIndices) " +
-                            "AND consumed <= :$TIMESTAMP_LIMIT_PARAM_NAME",
+                            "AND visible_states.consumed <= :$TIMESTAMP_LIMIT_PARAM_NAME",
                     Tuple::class.java
                 ).setParameter("groupIndices", listOf(
                     UtxoComponentGroup.OUTPUTS.ordinal,
