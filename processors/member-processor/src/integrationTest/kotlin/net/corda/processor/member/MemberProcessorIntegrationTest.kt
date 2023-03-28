@@ -60,7 +60,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -166,7 +166,7 @@ class MemberProcessorIntegrationTest {
 
         private val boostrapConfig = makeBootstrapConfig(
             mapOf(
-                BOOT_DB_PARAMS to clusterDb.config
+                BOOT_DB to clusterDb.config
             )
         )
 

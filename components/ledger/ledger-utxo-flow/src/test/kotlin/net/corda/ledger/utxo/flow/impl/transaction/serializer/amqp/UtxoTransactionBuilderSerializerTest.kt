@@ -10,7 +10,7 @@ class UtxoTransactionBuilderSerializerTest {
 
     @Test
     fun `cannot serialize utxo transaction builder`() {
-        val builder = UtxoTransactionBuilderImpl(mock())
+        val builder = UtxoTransactionBuilderImpl(mock(), mock())
         assertThatThrownBy { UtxoTransactionBuilderSerializer().toProxy(builder, mock()) }
             .isInstanceOf(CordaRuntimeException::class.java)
     }

@@ -45,6 +45,8 @@ object CpkMetaTestData {
         ),
     )
 
+    private const val externalChannelsConfig = "{}"
+
     fun create(): CpkMetadata {
         return CpkMetadata(
             cpkId,
@@ -55,7 +57,8 @@ object CpkMetaTestData {
             cpkType,
             SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
             emptySet(),
-            currentTimeStamp
+            currentTimeStamp,
+            externalChannelsConfig
         )
     }
 }

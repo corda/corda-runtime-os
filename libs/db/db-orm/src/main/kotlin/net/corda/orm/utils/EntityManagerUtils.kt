@@ -19,6 +19,7 @@ inline fun <R> EntityManagerFactory.use(block: (EntityManager) -> R): R {
     return createEntityManager().use(block)
 }
 
+
 /**
  * Executes the [block] and closes the [EntityManager].
  *
@@ -84,7 +85,7 @@ inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
  *
  * @see transaction
  */
-inline fun <R> transactionExecutor(entityManager: EntityManager,  block: (EntityManager) -> R): R {
+inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R {
     entityManager.use { em ->
         val currentTransaction = em.transaction
         currentTransaction.begin()

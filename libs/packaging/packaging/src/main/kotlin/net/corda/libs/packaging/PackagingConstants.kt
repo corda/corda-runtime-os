@@ -7,6 +7,7 @@ object PackagingConstants {
     const val CPK_FILE_EXTENSION = ".cpk"
     const val CPK_LIB_FOLDER = "lib" // The folder that contains a CPK's library JARs.
     const val CPK_LIB_FOLDER_V2 = "META-INF/privatelib/"
+    const val CPK_CONFIG_FOLDER = "config"
     const val CPK_DEPENDENCIES_FILE_NAME = "CPKDependencies"
     const val CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME = "DependencyConstraints"
     const val CPK_DEPENDENCIES_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCIES_FILE_NAME"

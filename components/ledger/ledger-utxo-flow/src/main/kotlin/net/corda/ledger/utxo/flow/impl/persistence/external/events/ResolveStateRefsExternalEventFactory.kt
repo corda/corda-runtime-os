@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
+import net.corda.crypto.core.bytes
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest

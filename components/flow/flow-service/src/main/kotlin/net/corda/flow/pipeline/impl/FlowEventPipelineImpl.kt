@@ -8,19 +8,19 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
-import net.corda.flow.pipeline.exceptions.FlowTransientException
-import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -41,7 +41,7 @@ class FlowEventPipelineImpl(
     private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
-    context: FlowEventContext<Any>,
+    override var context: FlowEventContext<Any>,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private var output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
@@ -49,11 +49,6 @@ class FlowEventPipelineImpl(
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    override var context: FlowEventContext<Any> = context
-        private set(value) {
-            field = value
-        }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
         log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }

@@ -3,6 +3,7 @@ package net.corda.db.core
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import java.io.Closeable
+import java.time.Duration
 import javax.sql.DataSource
 
 /**
@@ -35,7 +36,13 @@ class HikariDataSourceFactory(
         username: String,
         password: String,
         isAutoCommit: Boolean,
-        maximumPoolSize: Int
+        isReadOnly: Boolean,
+        maximumPoolSize: Int,
+        minimumPoolSize: Int,
+        idleTimeout: Duration,
+        maxLifetime: Duration,
+        keepaliveTime: Duration,
+        validationTimeout: Duration
     ): CloseableDataSource {
         val conf = HikariConfig()
 
@@ -57,7 +64,14 @@ class HikariDataSourceFactory(
         }
 
         conf.isAutoCommit = isAutoCommit
+        conf.isReadOnly = isReadOnly
         conf.maximumPoolSize = maximumPoolSize
+        conf.minimumIdle = minimumPoolSize
+        conf.idleTimeout = idleTimeout.toMillis()
+        conf.maxLifetime = maxLifetime.toMillis()
+        if(Duration.ZERO != keepaliveTime)
+            conf.keepaliveTime = keepaliveTime.toMillis()
+        conf.validationTimeout = validationTimeout.toMillis()
 
         return hikariDataSourceFactory(conf)
     }

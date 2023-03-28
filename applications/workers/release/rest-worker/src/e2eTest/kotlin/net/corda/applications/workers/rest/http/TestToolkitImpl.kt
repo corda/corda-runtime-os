@@ -36,6 +36,7 @@ class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAdd
         return RestClient(
             baseAddress, restResourceClass, RestClientConfig()
                 .enableSSL(true)
+                .secureSSL(false)
                 .minimumServerProtocolVersion(1)
                 .username(userName)
                 .password(password)
