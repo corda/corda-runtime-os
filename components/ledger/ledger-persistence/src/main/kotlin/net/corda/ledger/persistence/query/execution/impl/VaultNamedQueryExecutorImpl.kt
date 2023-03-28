@@ -102,7 +102,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
         val collectedResults = vaultNamedQuery.collector?.collect(
             filteredAndTransformedResults,
             deserializedParams
-        )?.results?.filterNotNull() ?: filteredAndTransformedResults
+        )?.results ?: filteredAndTransformedResults
 
         // Return the filtered/transformed/collected (if present) result to the caller
         return EntityResponse(
