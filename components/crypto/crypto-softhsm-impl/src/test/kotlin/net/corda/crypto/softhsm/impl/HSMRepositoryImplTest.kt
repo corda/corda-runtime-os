@@ -1,5 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.crypto.core.CryptoTenants
 import java.time.Instant
 import javax.persistence.EntityManager
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
@@ -12,8 +14,9 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import java.util.Collections.emptyList
 
-class V1HSMStoreTest {
+class HSMRepositoryImplTest {
 
     @Test
     fun `findTenantAssociation returns null when there are no results`() {
@@ -28,16 +31,17 @@ class V1HSMStoreTest {
                 }
             }
         }
-        val hsmStore = V1HSMStore(
+        HSMRepositoryImpl(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
-        )
-
-        val test = hsmStore.findTenantAssociation("tenant", "category")
-        assertThat(test).isNull()
-        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
-        assertThat(categoryCap.allValues.single()).isEqualTo("category")
+            CRYPTO_TENANT_ID
+        ).use { hsmRepository ->
+            val test = hsmRepository.findTenantAssociation("tenant", "category")
+            assertThat(test).isNull()
+            assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
+            assertThat(categoryCap.allValues.single()).isEqualTo("category")
+        }
     }
 
     @Test
@@ -57,17 +61,18 @@ class V1HSMStoreTest {
                 }
             }
         }
-        val hsmStore = V1HSMStore(
+        HSMRepositoryImpl(
             org.mockito.kotlin.mock {
                 on { createEntityManager() } doReturn em
             },
-        )
-
-        val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)
-        val test = hsmStore.findTenantAssociation("tenant", "category")
-        assertThat(test).usingRecursiveComparison().isEqualTo(expected)
-        assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
-        assertThat(categoryCap.allValues.single()).isEqualTo("category")
+            CryptoTenants.CRYPTO
+        ).use { hsmStore ->
+            val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)
+            val test = hsmStore.findTenantAssociation("tenant", "category")
+            assertThat(test).usingRecursiveComparison().isEqualTo(expected)
+            assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
+            assertThat(categoryCap.allValues.single()).isEqualTo("category")
+        }
     }
 
     @Test

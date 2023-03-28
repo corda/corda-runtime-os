@@ -3,21 +3,32 @@ package net.corda.crypto.softhsm.impl
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import javax.persistence.Tuple
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
+import net.corda.crypto.softhsm.HSMRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
+import javax.persistence.EntityManagerFactory
 
-class V1HSMStore(
+/**
+ * Database operations for HSM.
+ *
+ * @param entityManagerFactory An entity manager factory connected to the right database, matching tenantId
+ * @param tenantId The tenant who owns the database
+ */
+
+class HSMRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
-) {
-    fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
+    val tenantId: String,
+) : HSMRepository {
+    override fun close() = entityManagerFactory.close()
+
+    override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
         entityManagerFactory.createEntityManager().use {
             val result = it.createQuery(
                 """
@@ -37,7 +48,7 @@ class V1HSMStore(
             }
         }
 
-    fun getHSMUsage(): List<HSMUsage> = entityManagerFactory.createEntityManager().use {
+    override fun getHSMUsage(): List<HSMUsage> = entityManagerFactory.createEntityManager().use {
         it.createQuery(
             """
             SELECT ha.hsmId as hsmId, COUNT(*) as usages 
@@ -53,7 +64,7 @@ class V1HSMStore(
         }
     }
 
-    fun associate(
+    override fun associate(
         tenantId: String,
         category: String,
         hsmId: String,
