@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -68,7 +69,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -166,7 +166,7 @@ class MembershipPersistenceClientImplTest {
     private val publicKey = mock<PublicKey>()
     private val publicKeyBytes = "public-key".toByteArray()
     private val signatureBytes = "signature".toByteArray()
-    private val mockSignatureWithKey = DigitalSignature.WithKey(
+    private val mockSignatureWithKey = DigitalSignatureWithKey(
         publicKey,
         signatureBytes
     )

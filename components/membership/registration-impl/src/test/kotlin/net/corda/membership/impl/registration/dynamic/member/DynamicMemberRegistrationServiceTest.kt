@@ -10,6 +10,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
@@ -82,7 +83,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
@@ -201,8 +201,8 @@ class DynamicMemberRegistrationServiceTest {
         on { encodeAsString(ledgerKey) } doReturn LEDGER_KEY
         on { encodeAsByteArray(sessionKey) } doReturn SESSION_KEY.toByteArray()
     }
-    private val mockSignature: DigitalSignature.WithKey =
-        DigitalSignature.WithKey(
+    private val mockSignature: DigitalSignatureWithKey =
+        DigitalSignatureWithKey(
             sessionKey,
             byteArrayOf(1)
         )
@@ -555,7 +555,7 @@ class DynamicMemberRegistrationServiceTest {
                 ).doReturn(listOf(cryptoSigningKey))
                 Key(it, ShortHash.of(keyId), key)
             }.reversed()
-            val signature = DigitalSignature.WithKey(
+            val signature = DigitalSignatureWithKey(
                 keys.first().key,
                 byteArrayOf(1)
             )

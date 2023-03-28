@@ -2,9 +2,9 @@ package net.corda.crypto.service
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.crypto.persistence.SigningKeyInfo
@@ -195,7 +195,7 @@ interface SigningService {
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
-    ): DigitalSignature.WithKey
+    ): DigitalSignatureWithKey
 
     /**
      * Derive Diffie–Hellman key agreement shared secret by using the private key associated with [publicKey]
