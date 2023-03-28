@@ -11,6 +11,7 @@ import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
@@ -177,7 +178,7 @@ class DistributeMemberInfoActionHandlerTest {
     }
     private val config = mock<SmartConfig>()
 
-    private val groupParameters: GroupParameters = mock {
+    private val groupParameters: InternalGroupParameters = mock {
         on { epoch } doReturn EPOCH
     }
     private val groupReader: MembershipGroupReader = mock {

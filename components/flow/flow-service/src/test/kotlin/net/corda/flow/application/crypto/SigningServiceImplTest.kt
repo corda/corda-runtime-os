@@ -1,6 +1,8 @@
 package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
@@ -24,13 +26,17 @@ class SigningServiceImplTest {
 
     @Test
     fun `sign returns the signature returned from the flow resuming`() {
-        val signature = DigitalSignature.WithKey(mock(), byteArrayOf(1))
+        val signingKey = mock<PublicKey>().also {
+            whenever(it.encoded).thenReturn(byteArrayOf(0x00))
+        }
+        val signature = DigitalSignatureWithKey(signingKey, byteArrayOf(1))
         val publicKey = mock<PublicKey>()
         val encodedPublicKeyBytes = byteArrayOf(2)
         whenever(keyEncodingService.encodeAsByteArray(publicKey)).thenReturn(encodedPublicKeyBytes)
         whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), captor.capture()))
             .thenReturn(signature)
-        assertEquals(signature, signingService.sign(byteArrayOf(1), publicKey, mock()))
+        val signatureWithKeyId = DigitalSignature.WithKeyId(signature.by.fullIdHash(), signature.bytes)
+        assertEquals(signatureWithKeyId, signingService.sign(byteArrayOf(1), publicKey, mock()))
         assertEquals(encodedPublicKeyBytes, captor.firstValue.encodedPublicKeyBytes)
     }
 

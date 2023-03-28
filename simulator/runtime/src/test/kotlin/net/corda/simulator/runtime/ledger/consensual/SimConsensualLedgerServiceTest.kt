@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.consensual
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
@@ -121,7 +122,7 @@ class SimConsensualLedgerServiceTest {
 
         // Then the transaction should get signed by the counterparty
         Assertions.assertNotNull(finalSignedTx)
-        assertThat(finalSignedTx.signatures.map { it.by }.toSet(), `is`(publicKeys.toSet()))
+        assertThat(finalSignedTx.signatures.map { it.by }.toSet(), `is`(publicKeys.map { it.fullIdHash() }.toSet()))
 
         // And it should have been persisted
         verify(persistenceService, times(1)).persist(
@@ -222,7 +223,7 @@ class SimConsensualLedgerServiceTest {
     }
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray()),
+        DigitalSignature.WithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
         DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
     )
 

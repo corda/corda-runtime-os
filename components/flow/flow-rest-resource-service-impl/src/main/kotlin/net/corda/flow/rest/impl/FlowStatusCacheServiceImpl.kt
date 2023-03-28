@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
-@Component(immediate = true, service = [FlowStatusCacheService::class])
+@Component(service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,

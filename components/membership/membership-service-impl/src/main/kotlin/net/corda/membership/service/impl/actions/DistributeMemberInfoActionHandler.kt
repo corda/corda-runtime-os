@@ -11,6 +11,7 @@ import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
@@ -26,7 +27,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -170,7 +170,7 @@ class DistributeMemberInfoActionHandler(
         mgm: MemberInfo,
         members: Collection<MemberInfo>,
         membersSignatures: Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>,
-    ): (Collection<MemberInfo>, GroupParameters) -> MembershipPackage {
+    ): (Collection<MemberInfo>, InternalGroupParameters) -> MembershipPackage {
         val mgmSigner = signerFactory.createSigner(mgm)
         val membersTree = merkleTreeGenerator.generateTree(members)
 

@@ -2,7 +2,6 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
@@ -12,27 +11,25 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -58,11 +55,9 @@ class ApproveRegistrationHandlerTest {
     private val command = ApproveRegistration()
     private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
     private val key = "key"
-    private val mockGroupParametersList = KeyValuePairList(
-        listOf(
-            KeyValuePair(EPOCH_KEY, "5")
-        )
-    )
+    private val mockSignedGroupParameters = mock<SignedGroupParameters> {
+        on { epoch } doReturn 6
+    }
     private val memberInfo = mockMemberInfo(member)
     private val notaryInfo = mockMemberInfo(notary, isNotary = true)
     private val mgm = mockMemberInfo(
@@ -89,7 +84,7 @@ class ApproveRegistrationHandlerTest {
                 mgm.holdingIdentity,
                 notaryInfo
             )
-        } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
+        } doReturn MembershipPersistenceResult.Success(mockSignedGroupParameters)
     }
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
@@ -110,7 +105,7 @@ class ApproveRegistrationHandlerTest {
         on { isMgm(member.toAvro()) } doReturn false
         on { getMgmMemberInfo(owner) } doReturn mgm
     }
-    private val mockGroupParameters: GroupParameters = mock {
+    private val mockGroupParameters: SignedGroupParameters = mock {
         on { epoch } doReturn 5
     }
     private val groupReader: MembershipGroupReader = mock {
@@ -120,12 +115,6 @@ class ApproveRegistrationHandlerTest {
         on { getGroupReader(any()) } doReturn groupReader
     }
     private val writerService: GroupParametersWriterService = mock()
-    private val persistedGroupParameters: GroupParameters = mock {
-        on { epoch } doReturn 6
-    }
-    private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(any()) } doReturn persistedGroupParameters
-    }
 
     private val handler = ApproveRegistrationHandler(
         membershipPersistenceClient,
@@ -134,7 +123,6 @@ class ApproveRegistrationHandlerTest {
         memberTypeChecker,
         groupReaderProvider,
         writerService,
-        groupParametersFactory,
         p2pRecordsFactory,
     )
 
@@ -250,13 +238,13 @@ class ApproveRegistrationHandlerTest {
     @Test
     fun `invoke publishes group parameters to kafka if approved member has notary role set `() {
         val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
-        val groupParametersCaptor = argumentCaptor<GroupParameters>()
+        val groupParametersCaptor = argumentCaptor<SignedGroupParameters>()
         val holdingIdentityCaptor = argumentCaptor<HoldingIdentity>()
 
         handler.invoke(state, key, command)
 
         verify(writerService).put(holdingIdentityCaptor.capture(), groupParametersCaptor.capture())
-        assertThat(groupParametersCaptor.firstValue).isEqualTo(persistedGroupParameters)
+        assertThat(groupParametersCaptor.firstValue).isEqualTo(mockSignedGroupParameters)
         assertThat(holdingIdentityCaptor.firstValue).isEqualTo(mgm.holdingIdentity)
     }
 
