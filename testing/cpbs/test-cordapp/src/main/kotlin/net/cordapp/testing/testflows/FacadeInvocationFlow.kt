@@ -20,12 +20,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         }
     }
 
-    private val alterEgoX500Name = MemberX500Name(
-        "Bob",
-        "Other Bob Corp",
-        "LDN",
-        "GB"
-    )
+    private val alterEgoX500Name = MemberX500Name.parse("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB")
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging

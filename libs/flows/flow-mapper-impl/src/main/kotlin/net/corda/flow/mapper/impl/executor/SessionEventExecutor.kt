@@ -7,7 +7,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -85,11 +84,41 @@ class SessionEventExecutor(
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-            Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+            if (!sessionEvent.isInteropEvent()) {
+                Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+            } else {
+                log.info("INTEROP outputTopic=$outputTopic, messageDirection=$messageDirection")
+                Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+            }
         } else {
             Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
-
+        log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, direction=$messageDirection\"")
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
+    }
+
+    // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
+    @Suppress("ForbiddenComment")
+    private fun processOutboundSessionEventsInterop(): Record<*, *>? {
+        return when (sessionEvent.payload) {
+            is SessionData -> {
+                Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(sessionEvent)
+                )
+            }
+            is SessionClose -> {
+                Record(
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
+                    sessionEvent.sessionId,
+                    FlowMapperEvent(sessionEvent)
+                )
+            }
+            else -> {
+                // Discard any unrecognised events
+                null
+            }
+        }
     }
 }

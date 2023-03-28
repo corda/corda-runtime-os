@@ -137,8 +137,6 @@ class InteropService @Activate constructor(
             }
         }
 
-        logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

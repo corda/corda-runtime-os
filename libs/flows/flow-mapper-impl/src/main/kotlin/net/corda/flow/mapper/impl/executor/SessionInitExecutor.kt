@@ -1,12 +1,10 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -14,10 +12,9 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.time.Instant
+import java.util.*
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -50,11 +47,12 @@ class SessionInitExecutor(
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
-                messageDirection,
-                sessionEvent,
-                sessionInit
-            )
-
+                    messageDirection,
+                    sessionEvent,
+                    sessionInit
+                )
+        log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, " +
+                "direction=$messageDirection, sessionInit")
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
@@ -83,11 +81,16 @@ class SessionInitExecutor(
             sessionInit.flowId = null
             sessionEvent.payload = sessionInit
 
-            SessionInitOutputs(
-                tmpFLowEventKey,
-                sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
-            )
+            if (!sessionEvent.isInteropEvent()) {
+                SessionInitOutputs(
+                    tmpFLowEventKey,
+                    sessionEvent.sessionId,
+                    generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                )
+            } else {
+                log.info("INTEROP outputTopic=$outputTopic, messageDirection=$messageDirection, sessionInit")
+                SessionInitOutputs(tmpFLowEventKey, sessionEvent, FlowMapperEvent(sessionEvent))
+            }
         }
     }
 
