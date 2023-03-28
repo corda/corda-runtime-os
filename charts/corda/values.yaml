@@ -1,7 +1,7 @@
 # Default values for corda.
 # For more information, see the Corda 5 documentation at docs.r3.com.
 
-# -- override chart full name
+# -- override chart fullname
 fullnameOverride: ""
 
 # -- override chart name
@@ -96,7 +96,7 @@ db:
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required); for example: "broker1.example.com:9092,broker2.example.com:9092,broker3.example.com:9092"
-  bootstrapServers: "change-me-kafka:9092"
+  bootstrapServers: ""
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
   # TLS configuration for client connections to Kafka
