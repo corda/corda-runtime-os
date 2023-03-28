@@ -11,7 +11,7 @@ import org.osgi.service.component.annotations.Component
 import java.nio.file.Path
 import java.util.function.Supplier
 
-@Component(immediate = true, service = [RestServerFactory::class])
+@Component(service = [RestServerFactory::class])
 @Suppress("Unused")
 class RestServerFactoryImpl : RestServerFactory {
 

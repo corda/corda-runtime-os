@@ -147,7 +147,6 @@ fun register(
 ) = cluster(clusterInfo) {
 
     val payload = mapOf(
-        "action" to "requestJoin",
         "context" to registrationContext
     )
 

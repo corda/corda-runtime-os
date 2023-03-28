@@ -10,7 +10,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
 
-@Component(immediate = true)
+@Component
 internal class Application @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,

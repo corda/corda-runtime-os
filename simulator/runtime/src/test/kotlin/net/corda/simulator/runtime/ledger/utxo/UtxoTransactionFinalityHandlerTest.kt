@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseMemberInfo
@@ -91,7 +92,7 @@ class UtxoTransactionFinalityHandlerTest {
         // Then the transaction should get signed by the counterparties and notary
         assertThat(finalTx.id, `is`(transaction.id))
         assertThat(finalTx.signatures.size, `is`(4))
-        assertThat(finalTx.signatures.map { it.by }.toSet(), `is`(publicKeys.plus(notaryKey).toSet()))
+        assertThat(finalTx.signatures.map { it.by }.toSet(), `is`(publicKeys.plus(notaryKey).map { it.fullIdHash() }.toSet()))
 
         // And it should have been persisted
         verify(persistenceService, times(1)).persist(

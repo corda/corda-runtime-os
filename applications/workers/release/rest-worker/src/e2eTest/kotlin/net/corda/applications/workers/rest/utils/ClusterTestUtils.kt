@@ -48,6 +48,7 @@ const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
+const val HSM_CAT_NOTARY = "NOTARY"
 
 private class TestJsonObject(data: Map<String, Any?>) : JsonObject {
     val json = ObjectMapper()
@@ -248,29 +249,37 @@ fun E2eCluster.assignSoftHsm(
 ): HsmAssociationInfo {
     return clusterHttpClientFor(HsmRestResource::class.java)
         .use { client ->
-            client.start().proxy.assignSoftHsm(holdingId, cat)
+            eventually(
+                duration = 10.seconds,
+                retryAllExceptions = true
+            ) {
+                client.start().proxy.assignSoftHsm(holdingId, cat)
+            }
         }
 }
 
 fun E2eCluster.register(
-    holdingId: String,
+    member: E2eClusterMember,
     context: Map<String, String>
 ): RegistrationRequestProgress {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
             proxy.startRegistration(
-                holdingId,
+                member.holdingId,
                 MemberRegistrationRequest(
-                    action = "requestJoin",
-                    context = context
+                    context,
                 )
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
                 eventually(duration = 1.minutes, retryAllExceptions = true) {
-                    val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
+                    val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
+                        .withFailMessage {
+                            "${member.name} failed to get to approved registration state. " +
+                                    "Last state was ${registrationStatus.registrationStatus}"
+                        }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
             }
@@ -395,6 +404,9 @@ fun E2eCluster.onboardMembers(
 
         assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
         assignSoftHsm(member.holdingId, HSM_CAT_LEDGER)
+        if (member.isNotary()) {
+            assignSoftHsm(member.holdingId, HSM_CAT_NOTARY)
+        }
 
         if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
             val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
@@ -415,6 +427,10 @@ fun E2eCluster.onboardMembers(
 
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
+        val memberNotaryKeyId = if (member.isNotary()) {
+            generateKeyPairIfNotExists(member.holdingId, HSM_CAT_NOTARY)
+        } else null
+
         if (useSessionCertificate) {
             setUpNetworkIdentity(member.holdingId, memberSessionKeyId, SESSION_CERT_ALIAS)
         } else {
@@ -424,11 +440,13 @@ fun E2eCluster.onboardMembers(
 
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
-            member.holdingId,
+            member,
             createMemberRegistrationContext(
+                member,
                 this,
                 memberSessionKeyId,
-                memberLedgerKeyId
+                memberLedgerKeyId,
+                memberNotaryKeyId
             )
         )
 
@@ -485,7 +503,7 @@ fun E2eCluster.onboardMgm(
     }
 
     register(
-        mgm.holdingId,
+        mgm,
         mgmRegistrationContext,
     )
 
@@ -511,11 +529,22 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
     members.forEach { member ->
         createVirtualNode(member, cpiCheckSum)
 
-        register(
-            member.holdingId,
+        val registrationContext = if (member.isNotary()) {
+            mapOf(
+                "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService-$uniqueName, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.NonValidatingNotary"
+            )
+        } else {
             mapOf(
                 "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME
             )
+        }
+
+        register(
+            member,
+            registrationContext
         )
 
         // Check registration complete.
@@ -546,7 +575,16 @@ fun E2eCluster.assertAllMembersAreInMemberList(
                     assertThat(memberInfo.status).isEqualTo("ACTIVE")
                     assertThat(memberInfo.groupId).isEqualTo(groupId)
                 }
-            assertThat(result.map { memberInfo -> memberInfo.name })
+            val resultNames = result.map { memberInfo -> memberInfo.name }
+            fun List<String>.formatList(): String {
+                return joinToString(separator = ",", prefix = "[", postfix = "]")
+            }
+            assertThat(resultNames)
+                .withFailMessage {
+                    "${member.name} does not have visibility of the full member list.\n" +
+                            "Expected ${expectedList.formatList()}.\n" +
+                            "Found ${resultNames.formatList()}"
+                }
                 .hasSize(allMembers.size)
                 .containsExactlyInAnyOrderElementsOf(expectedList)
         }

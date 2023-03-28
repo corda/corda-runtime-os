@@ -12,6 +12,7 @@ dependencies {
 
     api project(':components:reconciliation:reconciliation')
     api project(':libs:virtual-node:virtual-node-info')
+    api project(':libs:membership:membership-common')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-membership'

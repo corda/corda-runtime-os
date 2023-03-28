@@ -15,7 +15,6 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -380,7 +379,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
-            .setParameter("publicKeyHash", signature.by.encoded.hashAsString())
+            .setParameter("publicKeyHash", signature.by.toString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction signature [$transactionId, $index]")
@@ -450,9 +449,6 @@ class UtxoRepositoryImpl @Activate constructor(
         }
         return this
     }
-
-    private fun ByteArray.hashAsString() =
-        digestService.hash(this, DigestAlgorithmName.SHA2_256).toString()
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
