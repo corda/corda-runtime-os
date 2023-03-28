@@ -143,7 +143,7 @@ class InteropServiceIntegrationTest {
         republishConfig(publisher)
         val session = "session1"
         //TODO revisit sleep in CORE-12134
-        Thread.sleep(25000)
+        Thread.sleep(30000)
         publisher.publish(messagesToPublish(session))
 
         val flowMapperExpectedOutputMessages = 2
