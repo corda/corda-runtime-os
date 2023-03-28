@@ -23,25 +23,25 @@ public final class DigestAlgorithmName {
     }
 
     /**
-     * Instance of SHA-256
+     * Instance of SHA-256.
      */
     @NotNull
     public static final DigestAlgorithmName SHA2_256 = new DigestAlgorithmName("SHA-256");
 
     /**
-     * Instance of Double SHA-256
+     * Instance of Double SHA-256.
      */
     @NotNull
     public static final DigestAlgorithmName SHA2_256D = new DigestAlgorithmName("SHA-256D");
 
     /**
-     * Instance of SHA-384
+     * Instance of SHA-384.
      */
     @NotNull
     public static final DigestAlgorithmName SHA2_384 = new DigestAlgorithmName("SHA-384");
 
     /**
-     * Instance of SHA-512
+     * Instance of SHA-512.
      */
     @NotNull
     public static final DigestAlgorithmName SHA2_512 = new DigestAlgorithmName("SHA-512");

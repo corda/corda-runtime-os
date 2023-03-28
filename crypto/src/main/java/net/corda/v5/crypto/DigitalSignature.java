@@ -21,7 +21,7 @@ public class DigitalSignature extends OpaqueBytes {
     public static class WithKey extends DigitalSignature {
 
         /**
-         * Construct WithKey
+         * Construct WithKey.
          *
          * @param by      The public key of the corresponding private key used to sign the data (as if an instance
          *                of the {@link CompositeKey} is passed to the sign operation it may contain keys which are not actually owned by

@@ -42,7 +42,7 @@ public final class KeySchemeCodes {
 
     /**
      * SM2 key scheme code name.
-     * As the key scheme is variant of ECDSA it can be used for signing and key derivation such as ECDH.
+     * As the key scheme is variant of ECDSA, it can be used for signing and key derivation such as ECDH.
      */
     @NotNull
     public static final String SM2_CODE_NAME = "CORDA.SM2";

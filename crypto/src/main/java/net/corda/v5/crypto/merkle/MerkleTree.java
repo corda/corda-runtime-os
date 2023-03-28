@@ -24,7 +24,7 @@ public interface MerkleTree {
     /**
      * Return the {@link MerkleTreeHashDigest} used to construct the tree's node and leaf hashes.
      *
-     * @return The digest
+     * @return The digest.
      */
     @NotNull
     MerkleTreeHashDigest getDigest();
@@ -32,7 +32,7 @@ public interface MerkleTree {
     /**
      * Return the root element of the tree which is essentially the fingerprint of the whole tree/data set.
      *
-     * @return The root element hash
+     * @return The root element hash.
      */
     @NotNull
     SecureHash getRoot();

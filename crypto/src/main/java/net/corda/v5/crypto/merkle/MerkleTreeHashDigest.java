@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 public interface MerkleTreeHashDigest {
     
     /**
-     * Get the algorithm name
+     * Get the algorithm name.
      *
      * @return Specifies the digest algorithm.
      */
