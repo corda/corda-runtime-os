@@ -53,11 +53,12 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 
-class DistributeMemberInfoActionTest {
+class DistributeMemberInfoActionHandlerTest {
     private companion object {
         const val EPOCH = 5
         const val MEMBER_INFO_SERIAL = 10L
         const val GROUP_ID = "group"
+        const val KEY = "key"
     }
     private fun createHoldingIdentity(name: String): HoldingIdentity {
         return createTestHoldingIdentity("C=GB,L=London,O=$name", GROUP_ID)
@@ -102,7 +103,6 @@ class DistributeMemberInfoActionTest {
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
     private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), EPOCH, MEMBER_INFO_SERIAL)
-    private val key = "key"
     private val memberInfo = mockMemberInfo(member)
     private val inactiveMember = mockMemberInfo(
         createHoldingIdentity("inactive"),
@@ -188,7 +188,7 @@ class DistributeMemberInfoActionTest {
         on { getGroupReader(any()) } doReturn groupReader
     }
 
-    private val handler = DistributeMemberInfoAction(
+    private val handler = DistributeMemberInfoActionHandler(
         membershipQueryClient,
         cipherSchemeMetadata,
         clock,
@@ -227,7 +227,7 @@ class DistributeMemberInfoActionTest {
             )
         ).doReturn(allMemberPackage)
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply).contains(allMemberPackage)
     }
@@ -263,7 +263,7 @@ class DistributeMemberInfoActionTest {
             record
         }
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply).containsAll(membersRecord)
     }
@@ -272,13 +272,13 @@ class DistributeMemberInfoActionTest {
     fun `process republishes the distribute command if expected group parameters are not available via the group reader`() {
         whenever(groupParameters.epoch).thenReturn(EPOCH - 1)
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
@@ -287,13 +287,13 @@ class DistributeMemberInfoActionTest {
     fun `process republishes the distribute command if no group parameters is available via the group reader`() {
         whenever(groupReader.groupParameters).thenReturn(null)
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
@@ -302,28 +302,28 @@ class DistributeMemberInfoActionTest {
     fun `process republishes the distribute command if no member info is available via the group reader`() {
         whenever(groupReader.lookup()).thenReturn(setOf(mgm))
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
 
     @Test
-    fun `process republishes the distribute command if expected member info serial is not available via the group reader`() {
+    fun `process republishes the distribute command if expected member info version is not available via the group reader`() {
         whenever(memberInfo.serial).thenReturn(MEMBER_INFO_SERIAL - 1)
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
@@ -334,13 +334,13 @@ class DistributeMemberInfoActionTest {
             MembershipQueryResult.Failure("An error happened.")
         )
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
@@ -350,13 +350,13 @@ class DistributeMemberInfoActionTest {
         whenever(membershipPackageFactory.createMembershipPackage(any(), any(), eq(activeMembersWithoutMgm), any(), any()))
             .thenThrow(CordaRuntimeException(""))
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
@@ -366,19 +366,19 @@ class DistributeMemberInfoActionTest {
         whenever(membershipPackageFactory.createMembershipPackage(any(), any(), eq(listOf(memberInfo)), any(), any()))
             .thenThrow(CordaRuntimeException(""))
 
-        val reply = handler.process(key, action)
+        val reply = handler.process(KEY, action)
 
         assertThat(reply)
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC)
-                assertThat(it.key).isEqualTo(key)
+                assertThat(it.key).isEqualTo(KEY)
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
     @Test
     fun `process uses the correct TTL configuration`() {
-        handler.process(key, action)
+        handler.process(KEY, action)
 
         verify(config, atLeastOnce()).getIsNull("${MembershipConfig.TtlsConfig.TTLS}.${MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE}")
     }

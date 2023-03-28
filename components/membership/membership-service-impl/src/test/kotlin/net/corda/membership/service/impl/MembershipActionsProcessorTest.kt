@@ -2,9 +2,10 @@ package net.corda.membership.service.impl
 
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
-import net.corda.membership.service.impl.actions.DistributeMemberInfoAction
+import net.corda.membership.service.impl.actions.DistributeMemberInfoActionHandler
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -19,14 +20,14 @@ class MembershipActionsProcessorTest {
         const val KEY = "KEY"
     }
 
-    private val distributeMemberInfoAction = Mockito.mockConstruction(DistributeMemberInfoAction::class.java) { mock, _ ->
+    private val distributeMemberInfoActionHandler = Mockito.mockConstruction(DistributeMemberInfoActionHandler::class.java) { mock, _ ->
         whenever(mock.process(any(), any())) doReturn emptyList()
     }
     private val processor = MembershipActionsProcessor(mock(), mock(), mock(), mock(), mock(), mock(), mock(), mock())
 
     @AfterEach
     fun cleanUp() {
-        distributeMemberInfoAction.close()
+        distributeMemberInfoActionHandler.close()
     }
 
     @Test
@@ -39,6 +40,17 @@ class MembershipActionsProcessorTest {
             MembershipActionsRequest(distributeRequest)
         )))
 
-        verify(distributeMemberInfoAction.constructed().last()).process(KEY, distributeRequest)
+        verify(distributeMemberInfoActionHandler.constructed().last()).process(KEY, distributeRequest)
+    }
+
+    @Test
+    fun `processor returns an empty list if unknown action`() {
+        val result = processor.onNext(listOf(Record(
+            Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
+            KEY,
+            MembershipActionsRequest(Unit),
+        )))
+
+        assertThat(result).isEmpty()
     }
 }

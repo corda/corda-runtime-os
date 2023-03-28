@@ -108,9 +108,6 @@ class RegistrationManagementServiceTest {
             membershipQueryClient,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock(),
         )
     }
 

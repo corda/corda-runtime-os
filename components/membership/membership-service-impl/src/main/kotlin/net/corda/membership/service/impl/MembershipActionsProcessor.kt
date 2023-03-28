@@ -9,7 +9,7 @@ import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.service.impl.actions.DistributeMemberInfoAction
+import net.corda.membership.service.impl.actions.DistributeMemberInfoActionHandler
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
@@ -31,7 +31,7 @@ class MembershipActionsProcessor(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val distributeMemberInfoAction = DistributeMemberInfoAction(
+    private val distributeMemberInfoActionHandler = DistributeMemberInfoActionHandler(
         membershipQueryClient,
         cipherSchemeMetadata,
         clock,
@@ -49,7 +49,7 @@ class MembershipActionsProcessor(
     private fun processEvent(event: Record<String, MembershipActionsRequest>): List<Record<String, *>> {
         event.value?.request?.let { request ->
             return when (request) {
-                is DistributeMemberInfo -> distributeMemberInfoAction.process(event.key, request)
+                is DistributeMemberInfo -> distributeMemberInfoActionHandler.process(event.key, request)
                 else -> {
                     logger.error("Received unimplemented membership action request.")
                     emptyList()

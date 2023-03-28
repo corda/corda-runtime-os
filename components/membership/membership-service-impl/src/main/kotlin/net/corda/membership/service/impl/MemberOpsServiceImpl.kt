@@ -80,7 +80,7 @@ class MemberOpsServiceImpl @Activate constructor(
         const val RPC_GROUP_NAME = "membership.ops.rpc"
         const val RPC_CLIENT_NAME = "membership.ops.rpc"
         const val ASYNC_GROUP_NAME = "membership.ops.async"
-        const val ACTIONS_GROUP_NAME = "membership.actions"
+        const val ACTIONS_GROUP_NAME = "membership.ops.actions"
 
         const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"
         const val CONFIG_HANDLE = "MemberOpsService.CONFIG_HANDLE"

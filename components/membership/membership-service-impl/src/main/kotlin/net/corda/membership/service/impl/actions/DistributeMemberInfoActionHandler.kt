@@ -11,10 +11,8 @@ import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -38,7 +36,7 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Suppress("LongParameterList")
-class DistributeMemberInfoAction(
+class DistributeMemberInfoActionHandler(
     private val membershipQueryClient: MembershipQueryClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
     clock: Clock,
@@ -89,24 +87,22 @@ class DistributeMemberInfoAction(
             logger.info("Retrieved group parameters are null. Republishing the distribute command to be processed later when set of " +
                     "group parameters with epoch ${request.minimumGroupParametersEpoch} is available.")
         }
-        val allMembers = groupReader.lookup()
-        val allActiveMembersExcludingMgm = allMembers.filter {
-            it.status == MemberInfoExtension.MEMBER_STATUS_ACTIVE && !it.isMgm
-        }
+        val allActiveMembers = groupReader.lookup()
+        val allActiveMembersExcludingMgm = allActiveMembers.filterNot { it.isMgm }
         val updatedMemberInfo = allActiveMembersExcludingMgm.firstOrNull { it.name.toString() == updatedMember.x500Name }
             ?: return recordToRequeueDistribution(key, request) {
-                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is null. Republishing the " +
-                        "distribute command to be processed later when the MemberInfo is available.")
+                logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. Republishing " +
+                        "the distribute command to be processed later when the MemberInfo is available.")
             }
         if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
             return recordToRequeueDistribution(key, request) {
                 logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} has serial" +
-                        " ${updatedMemberInfo.serial}. Republishing the distribute command to be processed later when the MemberInfo with" +
-                        " serial ${request.minimumUpdatedMemberSerial} is available.")
+                        " ${updatedMemberInfo.serial}, which is an old version. Republishing the distribute command to be processed " +
+                        "later when the MemberInfo with serial ${request.minimumUpdatedMemberSerial} is available.")
             }
         }
 
-        val mgm = allMembers.first { it.isMgm }
+        val mgm = allActiveMembers.first { it.isMgm }
 
         val membersSignaturesQuery = membershipQueryClient.queryMembersSignatures(
             mgm.holdingIdentity,
@@ -123,7 +119,7 @@ class DistributeMemberInfoAction(
 
         // Send all approved members from the same group to the newly approved member over P2P
         val allMembersExcludingMgmPackage = try {
-            membershipPackageFactory.invoke(allActiveMembersExcludingMgm, groupParameters)
+            membershipPackageFactory(allActiveMembersExcludingMgm, groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
                 logger.warn("Failed to create membership package for distribution to $updatedMember. Distributing the member info will " +
@@ -139,7 +135,7 @@ class DistributeMemberInfoAction(
 
         // Send the newly approved member to all other members in the same group over P2P
         val memberPackage = try {
-            membershipPackageFactory.invoke(listOf(updatedMemberInfo), groupParameters)
+            membershipPackageFactory(listOf(updatedMemberInfo), groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
                 logger.warn("Failed to create membership package for distribution of the $updatedMember to the rest of the group. " +
