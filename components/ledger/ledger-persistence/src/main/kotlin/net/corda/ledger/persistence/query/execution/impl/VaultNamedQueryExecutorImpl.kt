@@ -56,7 +56,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
     private companion object {
         const val UTXO_VISIBLE_TX_TABLE = "utxo_visible_transaction_state"
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
-        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda.TimestampLimit"
+        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
         val log = LoggerFactory.getLogger(VaultNamedQueryExecutorImpl::class.java)
     }
@@ -130,7 +130,7 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
                                 "ON visible_states.transaction_id = tc.transaction_id " +
                             "$whereJson " +
                             "AND tc.group_idx IN (:groupIndices) " +
-                            "AND visible_states.consumed <= :$TIMESTAMP_LIMIT_PARAM_NAME",
+                            "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME",
                     Tuple::class.java
                 ).setParameter("groupIndices", listOf(
                     UtxoComponentGroup.OUTPUTS.ordinal,
@@ -156,15 +156,16 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
             }.groupBy { it.groupIndex }
 
         val outputInfos = componentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]
-            ?.associate { Pair(it.leafIndex, it.data) }
+            ?.associateBy { it.transactionId to it.leafIndex }
             ?: emptyMap()
 
         val utxoComponentDtos = componentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.map {
-            val info = outputInfos[it.leafIndex]
+            val info = outputInfos[it.transactionId to it.leafIndex]
+
             requireNotNull(info) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
-            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
+            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
         } ?: emptyList()
 
         return utxoComponentDtos.map {

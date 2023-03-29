@@ -20,7 +20,7 @@ class VaultNamedParameterizedQueryImpl<T>(
 ) : VaultNamedParameterizedQuery<T> {
 
     private companion object {
-        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda.TimestampLimit"
+        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
     }
 
     private var limit: Int? = null

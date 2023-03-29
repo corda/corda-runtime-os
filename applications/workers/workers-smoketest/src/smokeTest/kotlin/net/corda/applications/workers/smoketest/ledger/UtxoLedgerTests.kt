@@ -93,6 +93,24 @@ class UtxoLedgerTests {
 
     @Test
     fun `Utxo Ledger - custom query can be executed and results are returned if no offset is provided and limit is maximized`() {
+        val input = "test input"
+
+        // Issue some states and consume them
+        for (i in 0..1) {
+
+            // Issue state
+            val flowId = startRpcFlow(
+                aliceHoldingId,
+                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+                "net.cordapp.demo.utxo.UtxoDemoFlow"
+            )
+
+            val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowId)
+
+            assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(flowResult.flowError).isNull()
+        }
+
         val customQueryFlowId = startRpcFlow(
             aliceHoldingId,
             mapOf(
@@ -112,6 +130,7 @@ class UtxoLedgerTests {
         )
 
         assertThat(parsedResponse.results).isNotEmpty
+        assertThat(parsedResponse.results).hasSizeGreaterThan(1)
         assertThat(parsedResponse.results.first()).isEqualTo("test input")
     }
 
