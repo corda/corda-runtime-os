@@ -745,7 +745,7 @@ workers:
               key: ""
     # REST Worker TLS configuration
     tls:
-      # -- the name of the K8s secret to derive information about certificate, private key and CA certificate
+      # -- the name of the Kubernetes secret containing the certificate, private key and CA certificate; if not specified, a new secret will be created and certificates/keys generated
       secretName: ""
       # TLS Certificate configuration
       crt:
