@@ -3,13 +3,17 @@ package net.corda.interop.service.impl
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -156,26 +160,50 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             }
         """.trimIndent()
 
-        fun createRecord(key: String, destination: HoldingIdentity, source: HoldingIdentity) =
-            Record(
+        fun createRecord(
+            key: String,
+            destination: HoldingIdentity,
+            source: HoldingIdentity
+        ): Record<String, AppMessage> {
+            val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+            return Record(
                 Schemas.P2P.P2P_IN_TOPIC, key,
                 AppMessage(
-                    UnauthenticatedMessage(
-                        UnauthenticatedMessageHeader(destination.toAvro(), source.toAvro(), SUBSYSTEM, "1"),
-                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage(key, payload)))
+                    AuthenticatedMessage(
+                        AuthenticatedMessageHeader(
+                            destination.toAvro(), source.toAvro(), Instant.now(), SUBSYSTEM,
+                            "1", "1", MembershipStatusFilter.ACTIVE
+                        ),
+                        ByteBuffer.wrap(
+                            sessionEventSerializer.serialize(
+                                SessionEvent(
+                                    MessageDirection.INBOUND, Instant.now(), "1", 1, source.toAvro(),
+                                    destination.toAvro(), 0, listOf(),
+                                    SessionInit(
+                                        source.toString(),
+                                        null,
+                                        KeyValuePairList(emptyList()),
+                                        KeyValuePairList(emptyList()),
+                                        KeyValuePairList(emptyList()),
+                                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("InteropMessageID-01", payload)))
+                                    )
+                                )
+                            )
+                        )
                     )
                 )
             )
+        }
 
         return listOf(
             createRecord("seed-message-correct-1", membersOfInteropGroup[0], membersOfInteropGroup[1]),
-            createRecord("seed-message-no-policy-1", membersOfNonExistingGroup[0], membersOfNonExistingGroup[1]),
+            //createRecord("seed-message-no-policy-1", membersOfNonExistingGroup[0], membersOfNonExistingGroup[1]),
             // In the last two records the intended destination is put as source of the message,
             // as InteropProcessor will swap destination with source before sending it to LinkManager,
             // this message is for unpublished HoldingIdentity (unknown destination)...
-            createRecord("seed-message-no-dest-1", membersOfInteropGroup[0], unpublishedMemberOfInteropGroup),
+            //createRecord("seed-message-no-dest-1", membersOfInteropGroup[0], unpublishedMemberOfInteropGroup),
             // ... this message is for the destination from other cluster( HoldingIdentity is not hosted locally).
-            createRecord("seed-message-other-cluster-1", membersOfInteropGroup[0], memberFromOtherClusterOfInteropGroup),
-            )
+            //createRecord("seed-message-other-cluster-1", membersOfInteropGroup[0], memberFromOtherClusterOfInteropGroup),
+        )
     }
 }
