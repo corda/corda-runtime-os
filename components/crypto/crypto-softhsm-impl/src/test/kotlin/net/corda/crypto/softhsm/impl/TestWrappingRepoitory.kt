@@ -10,6 +10,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.collections.ArrayList
 import kotlin.test.assertNotNull
@@ -21,9 +23,44 @@ class TestWrappingRepoitory {
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
         val uuidAlpha = UUID.randomUUID()
         val uuidBeta = UUID.randomUUID()
-        val alpha1 = WrappingKeyEntity(uuidAlpha, "a1", 1, Instant.now(), Instant.now(), 1, "DES", byteArrayOf(),null,   false, "root")
-        val alpha2 = WrappingKeyEntity(uuidAlpha, "a1", 1, Instant.now(),Instant.now(), 2, "AES", byteArrayOf(), null,  false, "root")
-        val beta = WrappingKeyEntity(uuidBeta, "a1", 1, Instant.now(),Instant.now(), 42, "DES",  byteArrayOf(), null, false, "root")
+        val alpha1 = WrappingKeyEntity(
+            uuidAlpha,
+            "a1",
+            1,
+            Instant.now(),
+            1,
+            "DES",
+            byteArrayOf(),
+            LocalDate.parse("9999-12-31").atStartOfDay().toInstant(
+                ZoneOffset.UTC
+            ),
+            false,
+            "root"
+        )
+        val alpha2 = WrappingKeyEntity(
+            uuidAlpha,
+            "a1",
+            1,
+            Instant.now(),
+            2,
+            "AES",
+            byteArrayOf(),
+            LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
+            false,
+            "root"
+        )
+        val beta = WrappingKeyEntity(
+            uuidBeta,
+            "a1",
+            1,
+            Instant.now(),
+            42,
+            "DES",
+            byteArrayOf(),
+            LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
+            false,
+            "root"
+        )
         assertThat(alpha1).isEqualTo(alpha2)
         assertThat(alpha1).isNotEqualTo(beta)
     }
