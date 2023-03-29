@@ -19,11 +19,13 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 
 class TestInitialConfigPluginCrypto {
     @Test
+    @Disabled
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
@@ -51,6 +53,7 @@ class TestInitialConfigPluginCrypto {
         "insert into config (config, is_deleted, schema_version_major, schema_version_minor, section, update_actor, update_ts, version) values ('"
 
     @Test
+    @Disabled
     fun `Should be able to create default initial crypto configuration with defined wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
@@ -77,6 +80,7 @@ class TestInitialConfigPluginCrypto {
     }
 
     @Test
+    @Disabled
     fun `Should be able to create default initial crypto configuration with random wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()

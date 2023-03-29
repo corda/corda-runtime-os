@@ -155,21 +155,19 @@ class SigningRepositoryImpl(
 
     override fun findKey(alias: String): SigningKeyInfo? {
         entityManagerFactory.createEntityManager().use { em ->
-            em.transaction {
-                val result = em.createQuery(
-                    "FROM ${SigningKeyEntity::class.java.simpleName} WHERE tenantId=:tenantId AND alias=:alias",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("alias", alias)
-                    .resultList
+            val result = em.createQuery(
+                "FROM ${SigningKeyEntity::class.java.simpleName} WHERE tenantId=:tenantId AND alias=:alias",
+                SigningKeyEntity::class.java
+            ).setParameter("tenantId", tenantId)
+                .setParameter("alias", alias)
+                .resultList
 
-                if (result.size > 1) {
-                    throw IllegalStateException("There are more than one key with alias=$alias for tenant=$tenantId")
-                }
-
-
-                return result.firstOrNull()?.joinSigningKeyInfo(em)
+            if (result.size > 1) {
+                throw IllegalStateException("There are more than one key with alias=$alias for tenant=$tenantId")
             }
+
+
+            return result.firstOrNull()?.joinSigningKeyInfo(em)
         }
     }
 

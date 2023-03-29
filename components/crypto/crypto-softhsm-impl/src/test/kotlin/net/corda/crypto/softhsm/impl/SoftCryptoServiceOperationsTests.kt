@@ -62,7 +62,7 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKey.algorithm,
                         knownWrappingKeyMaterial,
                         1,
-                        "woo",
+                        "root",
                     )
                 ).toMap()
             )
@@ -368,7 +368,7 @@ class SoftCryptoServiceOperationsTests {
             expected1.algorithm,
             rootWrappingKey.wrap(expected1),
             1,
-            "woo"
+            "root"
 
         )
         val info2 = WrappingKeyInfo(
@@ -376,7 +376,7 @@ class SoftCryptoServiceOperationsTests {
             expected2.algorithm,
             rootWrappingKey.wrap(expected2),
             1,
-            "Enoch"
+            "root"
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
@@ -438,7 +438,7 @@ class SoftCryptoServiceOperationsTests {
                 "Enoch"
             )
         )
-        assertThrows<IllegalArgumentException> {
+        assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
     }

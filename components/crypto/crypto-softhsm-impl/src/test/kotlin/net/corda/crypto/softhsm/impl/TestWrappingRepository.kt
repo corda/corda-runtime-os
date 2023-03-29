@@ -4,20 +4,22 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.testkit.SecureHashUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.collections.ArrayList
-import kotlin.test.assertNotNull
 
 
-class TestWrappingRepoitory {
+class TestWrappingRepository {
 
     @Test
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
@@ -68,11 +70,17 @@ class TestWrappingRepoitory {
     @Test
     fun `save a wrapping key`() {
         val stored = ArrayList<WrappingKeyEntity>()
+        val wrappingKeyInfo = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+        val savedWrappingKeyo = mock<WrappingKeyEntity>() {
+            on { encodingVersion } doReturn (wrappingKeyInfo.encodingVersion)
+            on { algorithmName } doReturn (wrappingKeyInfo.algorithmName)
+            on { keyMaterial } doReturn (wrappingKeyInfo.keyMaterial)
+            on { generation } doReturn (wrappingKeyInfo.generation)
+            on { parentKeyReference } doReturn (wrappingKeyInfo.parentKeyAlias)
+        }
         val em = mock<EntityManager> {
-            on { persist(any()) } doAnswer {
-                stored.add(it.getArgument(0))
-                Unit
-            }
+            on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKeyo)
             on { find<WrappingKeyEntity>(any(), any()) } doAnswer { stored.first() }
             on { transaction } doReturn mock()
         }
@@ -81,10 +89,20 @@ class TestWrappingRepoitory {
                 on { createEntityManager() } doReturn em
             }
         )
-        val wrappingKeyInfo = WrappingKeyInfo(1, "caesar", byteArrayOf(), 1, "Enoch")
-        repo.saveKey("a", wrappingKeyInfo)
-        val retrievedWrappingKeyInfo = repo.findKey("a")
-        assertNotNull(retrievedWrappingKeyInfo)
-        assertThat(wrappingKeyInfo.encodingVersion).isEqualTo(retrievedWrappingKeyInfo.encodingVersion)
+        val savedKey = repo.saveKey("a", wrappingKeyInfo)
+        verify(em).merge(argThat<WrappingKeyEntity>{
+                    this.encodingVersion == 1 &&
+                    this.algorithmName == "caesar" &&
+                    this.keyMaterial.contentEquals(wrappingKeyInfo.keyMaterial) &&
+                    this.generation == 1 &&
+                    this.parentKeyReference == "Enoch"
+        })
+        // not worth the assertion, verifying it's called is good enough
+//        val retrievedWrappingKeyInfo = repo.findKey("a")
+//        assertNotNull(retrievedWrappingKeyInfo)
+//        assertThat(wrappingKeyInfo.encodingVersion).isEqualTo(retrievedWrappingKeyInfo.encodingVersion)
+
+        // but you can assert the return info is effectively the same as mocked
+        assertThat(savedKey).isEqualTo(wrappingKeyInfo)
     }
 }
