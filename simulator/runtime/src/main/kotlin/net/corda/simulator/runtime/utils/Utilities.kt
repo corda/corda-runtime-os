@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.utils
 
 import net.corda.simulator.SimulatorConfiguration
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -109,5 +110,6 @@ val availableAPIs = setOf(
     SerializationService::class.java,
     ConsensualLedgerService::class.java,
     UtxoLedgerService::class.java,
-    NotaryLookup::class.java
+    NotaryLookup::class.java,
+    DigestService::class.java
 )

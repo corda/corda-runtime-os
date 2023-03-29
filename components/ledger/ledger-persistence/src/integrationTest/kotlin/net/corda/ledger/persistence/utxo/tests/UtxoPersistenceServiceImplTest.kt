@@ -418,7 +418,7 @@ class UtxoPersistenceServiceImplTest {
                         ).bytes
                     )
                     assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        digest("SHA-256", signature.by.encoded).toString()
+                        signature.by.toString()
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
@@ -477,7 +477,7 @@ class UtxoPersistenceServiceImplTest {
                         transaction,
                         index,
                         serializationService.serialize(signature).bytes,
-                        digest("SHA-256", signature.by.encoded).toString(),
+                        signature.by.toString(),
                         createdTs
                     )
                 }

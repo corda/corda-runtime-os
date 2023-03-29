@@ -321,7 +321,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature,
                     CryptoSignatureSpec(signatureSpec, null, null),
-                    true,
                     serialInfo,
                 )
 
@@ -372,7 +371,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                         signature = memberSignature,
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
                         serial = serialInfo,
-                        isPending = true,
                     )
                 ).getOrThrow()
 

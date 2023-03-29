@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
@@ -35,7 +36,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -353,8 +353,8 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(data, passedData.array())
         assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-        assertInstanceOf(DigitalSignature.WithKey::class.java, transformed)
-        val transformedSignature = transformed as DigitalSignature.WithKey
+        assertInstanceOf(DigitalSignatureWithKey::class.java, transformed)
+        val transformedSignature = transformed as DigitalSignatureWithKey
         assertArrayEquals(publicKey.encoded, transformedSignature.by.encoded)
         assertArrayEquals(signature, transformedSignature.bytes)
     }

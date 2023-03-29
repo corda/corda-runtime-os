@@ -116,10 +116,6 @@ open class TestBase {
         tlsType = TlsType.ONE_WAY,
     )
     protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
-    protected val daleSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL),
-        tlsType = TlsType.ONE_WAY,
-    )
     protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
@@ -165,10 +161,17 @@ open class TestBase {
         }
 
         fun publishConfig(configuration: GatewayConfiguration) {
+            val servers = ConfigValueFactory.fromIterable(
+                configuration.serversConfiguration.map {
+                    mapOf(
+                        "hostAddress" to it.hostAddress,
+                        "hostPort" to it.hostPort,
+                        "urlPath" to it.urlPath,
+                    )
+                }
+            )
             val publishConfig = ConfigFactory.empty()
-                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
-                .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
+                .withValue("serversConfiguration", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))

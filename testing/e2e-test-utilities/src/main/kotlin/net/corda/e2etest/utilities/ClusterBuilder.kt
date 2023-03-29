@@ -144,12 +144,11 @@ class ClusterBuilder {
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
     private fun registerMemberBody() =
-        """{ "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
+        """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
     // TODO CORE-7248 Review once plugin loading logic is added
     private fun registerNotaryBody() =
         """{ 
-            |  "action": "requestJoin",
             |  "context": { 
             |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
             |    "corda.roles.0" : "notary",

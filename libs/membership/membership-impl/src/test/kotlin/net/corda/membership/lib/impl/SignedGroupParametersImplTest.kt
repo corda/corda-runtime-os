@@ -2,6 +2,7 @@ package net.corda.membership.lib.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.CompositeKeyProvider
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.EPOCH_KEY
@@ -15,7 +16,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -53,12 +53,12 @@ class SignedGroupParametersImplTest {
     ) : LayeredPropertyMap by map
 
     private val serializedParameters = "group-params".toByteArray()
-    private val signature: DigitalSignature.WithKey = mock()
+    private val signature: DigitalSignatureWithKey = mock()
     private val signatureSpec: SignatureSpec = mock()
 
     private fun createTestParams(
         serializedParams: ByteArray = serializedParameters,
-        sig: DigitalSignature.WithKey = signature,
+        sig: DigitalSignatureWithKey = signature,
         sigSpec: SignatureSpec = signatureSpec,
         epoch: Int = VALID_VALUE,
         time: Instant = modifiedTime

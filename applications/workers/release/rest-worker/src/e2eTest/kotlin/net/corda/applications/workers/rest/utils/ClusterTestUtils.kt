@@ -268,8 +268,7 @@ fun E2eCluster.register(
             proxy.startRegistration(
                 member.holdingId,
                 MemberRegistrationRequest(
-                    action = "requestJoin",
-                    context = context
+                    context,
                 )
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")

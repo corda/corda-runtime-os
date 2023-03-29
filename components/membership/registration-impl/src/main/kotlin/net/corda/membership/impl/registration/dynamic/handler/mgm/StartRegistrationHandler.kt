@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -128,8 +129,14 @@ internal class StartRegistrationHandler(
             // Validate role-specific information if any role is set
             validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
+            val signedMemberInfo = SignedMemberInfo(
+                pendingMemberInfo,
+                registrationRequest.signature,
+                registrationRequest.signatureSpec
+            )
+
             // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo)).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to persist pending member info. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
@@ -224,7 +231,6 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.memberSignature,
             memberRegistrationRequest.memberSignatureSpec,
             memberRegistrationRequest.serial,
-            true,
         )
     }
 
