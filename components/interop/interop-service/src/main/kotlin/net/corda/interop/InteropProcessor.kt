@@ -58,7 +58,6 @@ class InteropProcessor(
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
     ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
-        //logger.info("About to process a message from flow.mapper.event. Key: $key." )
         val sessionEvent = value?.payload
         if (sessionEvent == null) {
             logger.warn("Dropping message with empty payload")
