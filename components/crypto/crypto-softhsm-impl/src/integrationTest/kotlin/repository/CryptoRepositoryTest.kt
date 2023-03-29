@@ -25,7 +25,7 @@ abstract class CryptoRepositoryTest {
     init {
         dbs = mapOf(
             "cluster" to MIGRATION_FILE_LOCATION,
-//            "vnode" to MIGRATION_FILE_LOCATION_VNODE,
+            "vnode" to MIGRATION_FILE_LOCATION_VNODE,
             )
             .map { (k,v) ->
                 val dbChange = ClassloaderChangeLog(

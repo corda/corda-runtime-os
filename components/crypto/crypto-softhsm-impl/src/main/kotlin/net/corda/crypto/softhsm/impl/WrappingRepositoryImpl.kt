@@ -17,12 +17,12 @@ class WrappingRepositoryImpl(
 
     override fun close() = entityManagerFactory.close()
 
-    override fun saveKey(alias: String, key: WrappingKeyInfo) = entityManagerFactory.createEntityManager().use {
-        it.transaction {
-            it.persist(
+    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo = entityManagerFactory.createEntityManager().use {
+        return it.transaction {
+            it.merge(
                 WrappingKeyEntity(
                     id = UUID.randomUUID(),
-                    generation = 1,
+                    generation = key.generation,
                     alias = alias,
                     created = Instant.now(),
                     rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
@@ -33,7 +33,7 @@ class WrappingRepositoryImpl(
                     parentKeyReference = key.parentKeyAlias,
                 )
             )
-        }
+        }.toDto()
     }
 
     override fun findKey(alias: String): WrappingKeyInfo? =
