@@ -521,11 +521,21 @@ TLS Secret creation
 {{- $purpose := index . 1 }}
 {{- $serviceName := index . 2 }}
 {{- $altNames := index . 3 }}
-{{- $secretName := index . 4 }}
-{{- $crtSecretKey := index . 5 }}
-{{- $keySecretKey := index . 6 }}
-{{- $caSecretKey := index . 7 }}
-{{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
+{{- $maybeExplicitSecretName := index . 4 }}
+{{- $newSecretName := index . 5 }}
+{{- $crtSecretKey := index . 6 }}
+{{- $keySecretKey := index . 7 }}
+{{- $caSecretKey := index . 8 }}
+{{- $existingSecret := "undefined" }}
+{{- if $maybeExplicitSecretName }}
+{{-   if ( lookup "v1" "Secret" $.Release.Namespace $maybeExplicitSecretName ) }}
+{{-     $existingSecret = true }}
+{{-   else }}
+{{-     fail ( printf ( "The name of the existing secret '%s' been explicitly provided but it does not exist." $maybeExplicitSecretName ) ) }}
+{{-   end }}
+{{- else }}
+{{-   $existingSecret = ( lookup "v1" "Secret" $.Release.Namespace $newSecretName ) }}
+{{- end }}
 {{- if not $existingSecret }}
 {{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
 {{- $ca := genCA $caName 1000 }}
@@ -538,7 +548,7 @@ TLS Secret creation
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ $secretName }}
+  name: {{ $newSecretName }}
   annotations:
     certificate/altNames: {{ ( join "," $altNames ) | quote }}
   labels:
