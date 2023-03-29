@@ -180,7 +180,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                     dbRecord.recordOffset,
                     deserializeKey(dbRecord.key),
                     deserializedValue,
-                    dbRecord.timestamp.toEpochMilli()
+                    dbRecord.timestamp.toEpochMilli(),
+                    headerSerializer.deserialize(dbRecord.headers ?: "{}")
                 )
             } else {
                 null

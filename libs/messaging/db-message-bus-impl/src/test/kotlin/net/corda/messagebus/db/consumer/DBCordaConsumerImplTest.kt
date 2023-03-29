@@ -358,10 +358,46 @@ internal class DBCordaConsumerImplTest {
         val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
 
         val pollResult = listOf(
-            TopicRecordEntry(topic, 0, 0, serializedKey, serializedValue, serializedHeader, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 2, serializedKey, serializedValue, serializedHeader, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 5, serializedKey, invalidSerializedValue, serializedHeader, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 7, serializedKey, invalidSerializedValue, serializedHeader, transactionRecord1, timestamp),
+            TopicRecordEntry(
+                topic,
+                0,
+                0,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp)
+            ,
+            TopicRecordEntry(
+                topic,
+                0,
+                2,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                5,
+                serializedKey,
+                invalidSerializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                7,
+                serializedKey,
+                invalidSerializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
         )
         val expectedRecords = listOf(
             CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
@@ -387,10 +423,46 @@ internal class DBCordaConsumerImplTest {
         val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
 
         val pollResult = listOf(
-            TopicRecordEntry(topic, 0, 0, serializedKey, serializedValue, serializedHeader, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 2, serializedKey, serializedValue, serializedHeader, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 5, serializedKey, value=null, serializedHeader, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 7, serializedKey, value=null, serializedHeader, transactionRecord1, timestamp),
+            TopicRecordEntry(
+                topic,
+                0,
+                0,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                2,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                5,
+                serializedKey,
+                value=null,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                7,
+                serializedKey,
+                value=null,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
         )
         val expectedRecords = listOf(
             CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
