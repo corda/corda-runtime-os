@@ -85,7 +85,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
      * @return True if the state, corresponds to an interop session, false otherwise.
      */
     private fun SessionState.isInteropSessionState(): Boolean {
-        return this.counterpartySessionProperties["isInteropSession"]?.equals("true") ?: false
+        val sessionProperties = counterpartySessionProperties.items.associate { it.key to it.value }
+        return sessionProperties["isInteropSession"]?.equals("true") ?: false
     }
 
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
