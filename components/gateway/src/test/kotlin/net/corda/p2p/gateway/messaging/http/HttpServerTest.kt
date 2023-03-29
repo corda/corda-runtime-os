@@ -15,7 +15,8 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
+import net.corda.p2p.gateway.messaging.internal.RequestListener
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -39,14 +40,13 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 
 class HttpServerTest {
-    private val listener = mock<HttpServerListener>()
-    private val configuration = GatewayConfiguration(
+    private val listener = mock<RequestListener>()
+    private val configuration = GatewayServerConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
         urlPath = "/",
-        sslConfig = mock(),
-        maxRequestSize = 1_000
     )
+    private val maxRequestSize = 1_000L
     private val address = InetSocketAddress("www.r3.com", 30)
     private val channel = mock<Channel> {
         on { remoteAddress() } doReturn address
@@ -85,15 +85,15 @@ class HttpServerTest {
         groupFactory.close()
     }
 
-    private val server = HttpServer(listener, configuration, KeyStoreWithPassword(mock(), ""), null)
+    private val server = HttpServer(listener, maxRequestSize, configuration, KeyStoreWithPassword(mock(), ""), null)
 
     @Test
     fun `write will throw an exception if the channel is not opened`() {
         assertThrows<IllegalStateException> {
             server.write(
                 HttpResponseStatus.ACCEPTED,
+                address,
                 byteArrayOf(1),
-                address
             )
         }
     }
@@ -107,8 +107,8 @@ class HttpServerTest {
 
         server.write(
             HttpResponseStatus.OK,
+            address,
             byteArrayOf(5, 7),
-            address
         )
 
         assertSoftly {
@@ -127,8 +127,8 @@ class HttpServerTest {
 
         server.write(
             HttpResponseStatus.BAD_REQUEST,
+            address,
             byteArrayOf(5, 7),
-            address
         )
 
         assertSoftly {
@@ -146,24 +146,10 @@ class HttpServerTest {
         assertThrows<IllegalStateException> {
             server.write(
                 HttpResponseStatus.ACCEPTED,
+                address,
                 byteArrayOf(1),
-                address
             )
         }
-    }
-
-    @Test
-    fun `onOpen will propagate the event`() {
-        server.onOpen(HttpConnectionEvent(channel))
-
-        verify(listener).onOpen(HttpConnectionEvent(channel))
-    }
-
-    @Test
-    fun `onClose will propagate the event`() {
-        server.onClose(HttpConnectionEvent(channel))
-
-        verify(listener).onClose(HttpConnectionEvent(channel))
     }
 
     @Test
@@ -171,7 +157,7 @@ class HttpServerTest {
         val request = mock<HttpRequest>()
         server.onRequest(request)
 
-        verify(listener).onRequest(request)
+        verify(listener).onRequest(server, request)
     }
 
     @Test
@@ -260,8 +246,8 @@ class HttpServerTest {
         assertThrows<IllegalStateException> {
             server.write(
                 HttpResponseStatus.ACCEPTED,
+                address,
                 byteArrayOf(1),
-                address
             )
         }
     }

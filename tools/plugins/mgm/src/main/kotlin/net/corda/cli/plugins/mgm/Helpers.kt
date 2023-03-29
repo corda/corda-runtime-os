@@ -17,13 +17,10 @@ internal object Helpers {
                 "go-template={{ .data.password | base64decode }}"
             ).start()
             if (getSecret.waitFor() != 0) {
-                throw BaseOnboard.OnboardException(
-                    "Can not get admin password. ${
-                    getSecret.errorStream.reader().readText()
-                    }"
-                )
+                "admin"
+            } else {
+                getSecret.inputStream.reader().readText()
             }
-            getSecret.inputStream.reader().readText()
         } else {
             "admin"
         }

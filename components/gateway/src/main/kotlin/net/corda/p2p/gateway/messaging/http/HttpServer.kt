@@ -11,7 +11,8 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Resource
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
+import net.corda.p2p.gateway.messaging.internal.RequestListener
 import org.slf4j.LoggerFactory
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
@@ -32,12 +33,14 @@ import kotlin.concurrent.withLock
  * in which case the body will contain additional information.
  */
 internal class HttpServer(
-    private val eventListener: HttpServerListener,
-    private val configuration: GatewayConfiguration,
+    private val eventListener: RequestListener,
+    private val maxRequestSize: Long,
+    private val serverConfiguration: GatewayServerConfiguration,
     private val keyStore: KeyStoreWithPassword,
     private val serverTrustManager: X509ExtendedTrustManager?,
 ) : Resource,
-    HttpServerListener {
+    HttpServerListener,
+    HttpWriter {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -58,7 +61,7 @@ internal class HttpServer(
 
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
     private val lock = ReentrantLock()
-    private val shutdownSequence = ConcurrentLinkedDeque<()->Unit>()
+    private val shutdownSequence = ConcurrentLinkedDeque<() -> Unit>()
 
     /**
      * Writes the given message to the channel corresponding to the recipient address. This method should be called
@@ -69,7 +72,7 @@ internal class HttpServer(
      * has closed it or the server is stopped
      */
     @Throws(IllegalStateException::class)
-    fun write(statusCode: HttpResponseStatus, message: ByteArray, destination: SocketAddress) {
+    override fun write(statusCode: HttpResponseStatus, destination: SocketAddress, message: ByteArray) {
         val channel = clientChannels[destination]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
@@ -88,16 +91,14 @@ internal class HttpServer(
 
     override fun onOpen(event: HttpConnectionEvent) {
         clientChannels[event.channel.remoteAddress()] = event.channel
-        eventListener.onOpen(event)
     }
 
     override fun onClose(event: HttpConnectionEvent) {
         clientChannels.remove(event.channel.remoteAddress())
-        eventListener.onClose(event)
     }
 
     override fun onRequest(request: HttpRequest) {
-        eventListener.onRequest(request)
+        eventListener.onRequest(this, request)
     }
 
     private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {
@@ -107,7 +108,7 @@ internal class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(keyStore, serverTrustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))
+            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPath, logger))
         }
     }
 
@@ -127,9 +128,10 @@ internal class HttpServer(
                     logger.warn("Could not stop HTTP server", e)
                 }
             }
-            val host = configuration.hostAddress
-            val port = configuration.hostPort
-            logger.info("Stopping HTTP Server $host:$port")
+            val host = serverConfiguration.hostAddress
+            val port = serverConfiguration.hostPort
+            val path = serverConfiguration.urlPath
+            logger.info("Stopping HTTP Server $host:$port$path")
             shutdownSequence.clear()
         }
     }
@@ -154,8 +156,8 @@ internal class HttpServer(
                 val server = ServerBootstrap()
                 server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
                     .childHandler(ServerChannelInitializer())
-                val host = configuration.hostAddress
-                val port = configuration.hostPort
+                val host = serverConfiguration.hostAddress
+                val port = serverConfiguration.hostPort
                 logger.info("Trying to bind to $host:$port")
                 val channelFuture = server.bind(host, port).sync()
                 logger.info("Listening on port $port")
