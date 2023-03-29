@@ -520,6 +520,8 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: {{ $secretName }}
+  annotations:
+    certificate/altNames: {{ toString ( toStrings ( $altNames ) ) | quote }}
   labels:
     {{- include "corda.labels" $ | nindent 4 }}
 type: Opaque
