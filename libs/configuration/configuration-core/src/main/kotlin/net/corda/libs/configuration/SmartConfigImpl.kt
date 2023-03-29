@@ -11,6 +11,7 @@ import com.typesafe.config.ConfigResolveOptions
 import com.typesafe.config.ConfigValue
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsLookupService
+import net.corda.schema.configuration.ConfigKeys
 import java.time.Duration
 import java.time.Period
 import java.time.temporal.TemporalAmount
@@ -48,7 +49,7 @@ class SmartConfigImpl(
     }
 
     override fun isSecret(path: String): Boolean =
-        typeSafeConfig.hasPath("$path.${SmartConfig.SECRET_KEY}")
+        typeSafeConfig.hasPath("$path.${ConfigKeys.SECRET_KEY}")
 
     override fun convert(config: Config): SmartConfig {
         return SmartConfigImpl(config, factory, secretsLookupService)

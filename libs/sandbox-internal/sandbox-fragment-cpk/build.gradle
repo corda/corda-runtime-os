@@ -6,7 +6,7 @@ plugins {
 group = 'com.example'
 
 cordapp {
-    targetPlatformVersion platformVersion.toInteger()
+    targetPlatformVersion = platformVersion.toInteger()
     contract {
         name 'Corda Fragment CPK'
         versionId 1
@@ -18,7 +18,6 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'org.osgi:org.osgi.service.component.annotations'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    cordaProvided 'org.jetbrains:annotations'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-base'
     implementation project('fragment')

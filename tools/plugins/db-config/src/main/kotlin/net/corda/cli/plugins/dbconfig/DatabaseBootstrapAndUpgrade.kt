@@ -16,11 +16,11 @@ class DatabaseBootstrapAndUpgrade(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     override fun start() {
-        logger.info("Bootstrap plugin started.")
+        logger.debug("Bootstrap plugin started.")
     }
 
     override fun stop() {
-        logger.info("Bootstrap plugin stopped.")
+        logger.debug("Bootstrap plugin stopped.")
     }
 
     @Extension

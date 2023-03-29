@@ -17,7 +17,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -105,11 +104,12 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
 
-            val otherParty = Party(otherMemberInfo.name, otherMemberInfo.sessionInitiationKey)
+            // CORE-11837: Use ledger key
+            val otherPartySessionKey = otherMemberInfo.sessionInitiationKeys.first()
 
             validateRequestSignature(
                 request,
-                otherParty,
+                otherPartySessionKey,
                 serializationService,
                 signatureVerifier,
                 requestPayload.requestSignature,
@@ -180,9 +180,14 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
         // The notary component is not needed by us but we validate that it is present just in case
-        requireNotNull(filteredTx.notary) {
-            "Notary component could not be found on the transaction"
+        requireNotNull(filteredTx.notaryName) {
+            "Notary name component could not be found on the transaction"
         }
+
+        requireNotNull(filteredTx.notaryKey) {
+            "Notary key component could not be found on the transaction"
+        }
+
 
         requireNotNull(filteredTx.metadata) {
             "Metadata component could not be found on the transaction"
@@ -211,7 +216,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             filteredTx.timeWindow!!,
             inputStates.values.values.toList(),
             refStates.values.values.toList(),
-            filteredTx.notary!!
+            filteredTx.notaryName!!,
+            filteredTx.notaryKey!!
         )
     }
 

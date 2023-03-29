@@ -301,8 +301,13 @@ abstract class BaseOnboard : Runnable {
                     "request" to mapOf(
                         "p2pTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
                         "useClusterLevelTlsCertificateAndKey" to true,
-                        "sessionKeyTenantId" to null,
-                        "sessionKeyId" to sessionKeyId
+                        "sessionKeysAndCertificates" to
+                            listOf(
+                                mapOf(
+                                    "sessionKeyId" to sessionKeyId,
+                                    "preferred" to true,
+                                ),
+                            ),
                     )
                 )
             ).asJson()
@@ -314,7 +319,6 @@ abstract class BaseOnboard : Runnable {
             .body(
                 mapOf(
                     "memberRegistrationRequest" to mapOf(
-                        "action" to "requestJoin",
                         "context" to registrationContext
                     )
                 )
@@ -335,15 +339,19 @@ abstract class BaseOnboard : Runnable {
     private fun waitForFinalStatus(id: String) {
         val end = System.currentTimeMillis() + 5 * 60 * 1000
         while (System.currentTimeMillis() < end) {
+            Thread.sleep(400)
             val status = Unirest.get("/membership/$holdingId/$id").asJson()
             val registrationStatus = status.bodyOrThrow().`object`.get("registrationStatus")
-            if (registrationStatus == "APPROVED") {
-                return
-            } else if (registrationStatus =="DECLINED") {
-                throw OnboardException("Registration has been declined.")
-            } else {
-                println("Status of $x500Name registration is $registrationStatus")
-                Thread.sleep(400)
+            when (registrationStatus) {
+                "APPROVED" -> {
+                    return
+                }
+                "DECLINED", "INVALID" -> {
+                    throw OnboardException("Status of registration is $registrationStatus.")
+                }
+                else -> {
+                    println("Status of $x500Name registration is $registrationStatus")
+                }
             }
         }
         throw OnboardException("Registration had failed!")

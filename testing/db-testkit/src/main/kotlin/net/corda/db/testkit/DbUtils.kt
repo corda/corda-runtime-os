@@ -102,7 +102,7 @@ object DbUtils {
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing
-        return factory.create(jdbcUrl, user, password, maximumPoolSize = 5)
+        return factory.create(jdbcUrl, user, password)
     }
 
     fun createConfig(

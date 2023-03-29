@@ -2,6 +2,8 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.bytes
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -22,7 +24,6 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
@@ -135,9 +136,9 @@ class CryptoFlowOpsTransformerImpl(
     /**
      * Transforms [CryptoSignatureWithKey]
      */
-    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
+    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignatureWithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
-        return DigitalSignature.WithKey(
+        return DigitalSignatureWithKey(
             keyEncodingService.decodePublicKey(resp.publicKey.array()),
             resp.bytes.array()
         )

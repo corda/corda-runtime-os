@@ -52,10 +52,11 @@ import kotlin.math.min
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
-class AuthenticationProtocolResponder(val sessionId: String,
-                                      private val supportedModes: Set<ProtocolMode>,
-                                      private val ourMaxMessageSize: Int,
-                                      private val certificateCheckMode: CertificateCheckMode
+class AuthenticationProtocolResponder(
+    val sessionId: String,
+    private val supportedModes: Set<ProtocolMode>,
+    private val ourMaxMessageSize: Int,
+    private val certificateCheckMode: CertificateCheckMode
 ): AuthenticationProtocol(certificateCheckMode) {
 
     init {
@@ -137,15 +138,14 @@ class AuthenticationProtocolResponder(val sessionId: String,
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
         initiatorX500Name: MemberX500Name,
-        initiatorPublicKey: PublicKey,
-        initiatorSignatureSpec: SignatureSpec,
+        initiatorPublicKeys: Collection<Pair<PublicKey, SignatureSpec>>,
     ): HandshakeIdentityData {
         return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { handshakeIdentityData!! }) {
-            val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
             val expectedInitiatorPublicKeyHash = getInitiatorIdentity().initiatorPublicKeyHash.array()
-            if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
-                throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
-            }
+            val (initiatorPublicKey, initiatorSignatureSpec) = initiatorPublicKeys.firstOrNull { (key, _) ->
+                val initiatorPublicKeyHash = hash(key)
+                initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)
+            } ?: throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeys.map { hash(it.first) })
 
             val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
             try {
@@ -241,7 +241,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
             val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
             val responderHandshakePayload = ResponderHandshakePayload(
                 ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates),
-                ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
+                ByteBuffer.wrap(hash(ourPublicKey)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
             )

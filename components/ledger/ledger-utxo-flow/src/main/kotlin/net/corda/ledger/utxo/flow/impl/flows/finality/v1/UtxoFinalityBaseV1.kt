@@ -15,8 +15,6 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.KeyUtils
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
@@ -42,10 +40,6 @@ enum class FinalityNotarizationFailureType(val value: String) {
 
 @CordaSystemFlow
 abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
-
-    @CordaInject
-    lateinit var transactionSignatureService: TransactionSignatureService
-
     @CordaInject
     lateinit var persistenceService: UtxoLedgerPersistenceService
 
@@ -71,10 +65,12 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     ) {
         try {
             log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
-            transactionSignatureService.verifySignature(transaction, signature)
-            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
+            transaction.verifySignatorySignature(signature)
+            log.debug {
+                "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id"
+            }
         } catch (e: Exception) {
-            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
+            val message = "Failed to verify transaction signature($signature) by ${signature.by} (key id) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
@@ -98,21 +94,12 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
         signature: DigitalSignatureAndMetadata
     ): UtxoSignedTransactionInternal {
         try {
-            // If the notary service key (composite key) is provided we need to make sure it contains the key the
-            // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
-            if (!KeyUtils.isKeyInSet(transaction.notary.owningKey, listOf(signature.by))) {
-                throw CordaRuntimeException(
-                    "Notary's signature has not been created by the transaction's notary. " +
-                            "Notary's public key: ${transaction.notary.owningKey} " +
-                            "Notary signature's key: ${signature.by}"
-                )
-            }
-            transactionSignatureService.verifySignature(transaction, signature)
+            transaction.verifyNotarySignature(signature)
             log.debug {
-                "Successfully verified signature($signature) by notary ${transaction.notary} for transaction ${transaction.id}"
+                "Successfully verified signature($signature) by notary ${transaction.notaryName} for transaction ${transaction.id}"
             }
         } catch (e: Exception) {
-            val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notary} for " +
+            val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notaryName} for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)

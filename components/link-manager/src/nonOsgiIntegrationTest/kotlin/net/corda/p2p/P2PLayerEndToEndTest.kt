@@ -25,9 +25,11 @@ import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
@@ -94,7 +96,6 @@ import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
@@ -463,7 +464,7 @@ class P2PLayerEndToEndTest {
             return mock {
                 on { name } doReturn identity.name
                 on { memberProvidedContext } doReturn context
-                on { sessionInitiationKey } doReturn keyPair.public
+                on { sessionInitiationKeys } doReturn listOf(keyPair.public)
 
             }
         }
@@ -519,10 +520,17 @@ class P2PLayerEndToEndTest {
         }
 
         private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
+            val servers = ConfigValueFactory.fromIterable(
+                listOf(
+                    mapOf(
+                        "hostAddress" to domainName,
+                        "hostPort" to port,
+                        "urlPath" to URL_PATH,
+                    )
+                )
+            )
             return ConfigFactory.empty()
-                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
-                .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
-                .withValue("urlPath", ConfigValueFactory.fromAnyRef(URL_PATH))
+                .withValue("serversConfiguration", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(sslConfig.tlsType.toString()))
@@ -591,7 +599,7 @@ class P2PLayerEndToEndTest {
                 signature.initSign(key)
                 (signatureSpec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
                 signature.update(data)
-                DigitalSignature.WithKey(publicKey, signature.sign())
+                DigitalSignatureWithKey(publicKey, signature.sign())
             }
         }
         private val groupPolicyProvider = mockLifeCycle<GroupPolicyProvider> {
@@ -690,8 +698,11 @@ class P2PLayerEndToEndTest {
                         info.identity.id.toAvro(),
                         TLS_KEY_TENANT_ID,
                         info.tlsCertificatesPem,
-                        info.keyPair.public.toPem(),
-                        null
+                        HostedIdentitySessionKeyAndCert(
+                            info.keyPair.public.toPem(),
+                            null
+                        ),
+                        emptyList()
                     )
                 )
             }.toList()

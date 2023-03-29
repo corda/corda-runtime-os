@@ -122,6 +122,9 @@ class ActivateMemberHandlerTest {
             on { memberX500Name } doReturn name.toString()
             on { serialNumber } doReturn serial!!
             on { status } doReturn memberStatus
+            on { memberSignatureKey } doReturn byteArrayOf(1)
+            on { memberSignatureContent } doReturn byteArrayOf(2)
+            on { memberSignatureSpec } doReturn ""
         }
         whenever(
             em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))

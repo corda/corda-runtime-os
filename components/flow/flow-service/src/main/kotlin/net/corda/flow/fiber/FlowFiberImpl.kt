@@ -5,6 +5,7 @@ import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.clearMDC
 import net.corda.utilities.setMDC
 import net.corda.v5.base.annotations.Suspendable
@@ -133,7 +134,13 @@ class FlowFiberImpl(
         parkAndSerialize(SerializableFiberWriter { _, _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
-            val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+            val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
+                .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
+                .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
+                .build()
+                .recordCallable {
+                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+                }
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
         })
 
@@ -223,8 +230,6 @@ class FlowFiberImpl(
     private fun removeCurrentSandboxGroupContext() {
         getExecutionContext().currentSandboxGroupContext.remove()
     }
-
-    private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError
 
     private fun initialiseThreadContext() {
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader

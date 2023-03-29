@@ -4,6 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
@@ -22,7 +23,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -44,8 +44,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val jsonValidator: JsonValidator,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService,
+    @Reference(service = TransactionSignatureServiceInternal::class)
+    private val transactionSignatureService: TransactionSignatureServiceInternal,
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
@@ -115,9 +115,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
 
         val notaryGroup = listOf(
-            utxoTransactionBuilder.notary,
+            utxoTransactionBuilder.notaryName,
+            utxoTransactionBuilder.notaryKey,
             utxoTransactionBuilder.timeWindow,
-            /*TODO notaryallowlist*/
+            //TODO notaryallowlist
         )
 
         val encumbranceGroupSizes =
@@ -125,7 +126,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         val outputTransactionStates = utxoTransactionBuilder.outputStates.map {
             it.toTransactionState(
-                utxoTransactionBuilder.notary!!,
+                utxoTransactionBuilder.notaryName!!,
+                utxoTransactionBuilder.notaryKey!!,
                 it.encumbranceTag?.let { tag -> encumbranceGroupSizes[tag] })
         }
 
@@ -133,7 +135,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             UtxoOutputInfoComponent(
                 it.encumbranceGroup?.tag,
                 it.encumbranceGroup?.size,
-                utxoTransactionBuilder.notary!!,
+                utxoTransactionBuilder.notaryName!!,
+                utxoTransactionBuilder.notaryKey!!,
                 currentSandboxGroup.getEvolvableTag(it.contractStateType),
                 currentSandboxGroup.getEvolvableTag(it.contractType)
             )

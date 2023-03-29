@@ -146,7 +146,7 @@ upload_certificate() {
 
 register_node() {
     local REG_CONTEXT='{
-      "corda.session.key.id": "'$3'",
+      "corda.session.keys.0.id": "'$3'",
       "corda.ledger.keys.0.id": "'$5'",
       "corda.ledger.keys.0.signature.spec": "SHA256withECDSA",
       "corda.endpoints.0.connectionURL": "'$4'",
@@ -165,7 +165,7 @@ register_mgm() {
     fi
 
     local REG_CONTEXT='{
-      "corda.session.key.id": "'$3'",
+      "corda.session.keys.0.id": "'$3'",
       "corda.ecdh.key.id": "'$5'",
       "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
       "corda.group.protocol.synchronisation": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
@@ -203,7 +203,7 @@ wait_for_approve() {
 }
 
 register() {
-    local COMMAND='{ "memberRegistrationRequest": { "action": "requestJoin", "context": '$3' }}'
+    local COMMAND='{ "memberRegistrationRequest": { "context": '$3' }}'
 
     echo "Registering using:"
     echo $COMMAND | jq

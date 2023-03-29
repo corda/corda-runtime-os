@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
 import net.corda.data.p2p.HeartbeatMessage
@@ -63,7 +64,6 @@ import net.corda.utilities.millis
 import net.corda.utilities.minutes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.EncodingUtils.toBase64
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -90,6 +90,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.Key
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Duration
@@ -215,8 +216,11 @@ class SessionManagerTest {
         holdingIdentity = OUR_PARTY,
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
-        sessionPublicKey = OUR_KEY.public,
-        sessionCertificates = null
+        HostingMapListener.SessionKeyAndCertificates(
+            sessionPublicKey = OUR_KEY.public,
+            sessionCertificateChain = null
+        ),
+        emptyList(),
     )
 
     private val counterparties = SessionManager.SessionCounterparties(
@@ -231,7 +235,7 @@ class SessionManagerTest {
         on { dominoTile } doReturn hostingMapDominoTile
         on { allLocallyHostedIdentities() } doReturn listOf(OUR_PARTY)
     }
-    private val signature = mock<DigitalSignature.WithKey> {
+    private val signature = mock<DigitalSignatureWithKey> {
         on { bytes } doReturn "signature-from-A".toByteArray()
     }
     private val cryptoOpsClient = mock<CryptoOpsClient> {
@@ -255,7 +259,11 @@ class SessionManagerTest {
     private val secondProtocolInitiator = mock<AuthenticationProtocolInitiator> {
         on { sessionId } doReturn "anotherSessionId"
     }
-    private val protocolResponder = mock<AuthenticationProtocolResponder>()
+    private val protocolResponder = mock<AuthenticationProtocolResponder> {
+        on { hash(any()) } doAnswer {
+            messageDigest.hash(it.getArgument<Key>(0).encoded)
+        }
+    }
     private val protocolFactory = mock<ProtocolFactory> {
         on { createInitiator(any(), any(), any(), any(), any(), any()) } doReturn protocolInitiator doReturn secondProtocolInitiator
         on { createResponder(any(), any(), any(), any()) } doReturn protocolResponder
@@ -798,8 +806,7 @@ class SessionManagerTest {
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
                 PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                PEER_KEY.public,
-                SignatureSpec.ECDSA_SHA256,
+                listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256)
             )
         ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
@@ -843,8 +850,7 @@ class SessionManagerTest {
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
                 PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                PEER_KEY.public,
-                SignatureSpec.ECDSA_SHA256,
+                listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
             )
         ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
@@ -880,8 +886,7 @@ class SessionManagerTest {
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
                 PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                PEER_KEY.public,
-                SignatureSpec.ECDSA_SHA256,
+                listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
             )
         ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
@@ -999,9 +1004,8 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
-        )).thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), initiatorPublicKeyHash))
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
+        )).thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), listOf(initiatorPublicKeyHash)))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -1026,8 +1030,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
         )).thenThrow(InvalidHandshakeMessageException())
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1053,8 +1056,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
         )).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1081,8 +1083,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, GROUP_ID)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1112,8 +1113,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(groupPolicyProvider.getGroupPolicy(OUR_PARTY)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1143,8 +1143,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), eq(null), any()))
             .thenThrow(CordaRuntimeException("Nop"))
@@ -1174,8 +1173,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
             PEER_MEMBER_INFO.holdingIdentity.x500Name,
-            PEER_KEY.public,
-            SignatureSpec.ECDSA_SHA256
+            listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1255,8 +1253,7 @@ class SessionManagerTest {
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
                 PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                PEER_KEY.public,
-                SignatureSpec.ECDSA_SHA256,
+                listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
             )
         ).thenThrow(InvalidHandshakeResponderKeyHash())
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
@@ -1277,8 +1274,8 @@ class SessionManagerTest {
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
                 PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                PEER_KEY.public,
-                SignatureSpec.ECDSA_SHA256,
+                listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
+
             )
         ).thenThrow(InvalidPeerCertificate("Bad Cert"))
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
@@ -1299,8 +1296,7 @@ class SessionManagerTest {
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
                 PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                PEER_KEY.public,
-                SignatureSpec.ECDSA_SHA256,
+                listOf(PEER_KEY.public to SignatureSpec.ECDSA_SHA256),
             )
         ).thenThrow(InvalidHandshakeMessageException())
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()

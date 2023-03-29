@@ -23,7 +23,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -43,6 +43,7 @@ class BaseSuspensionActivationHandlerTest {
 
     private companion object {
         const val SERIAL_NUMBER = 5L
+        const val SIGNATURE_SPEC = ""
     }
 
     private val knownGroupId = UUID(0, 1).toString()
@@ -53,6 +54,8 @@ class BaseSuspensionActivationHandlerTest {
         false
     )
     private val contextBytes = byteArrayOf(1, 10)
+    private val signatureKey = byteArrayOf(5)
+    private val signatureContent = byteArrayOf(6)
     private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
     private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
         on { vaultDmlConnectionId } doReturn UUID(0, 1)
@@ -128,8 +131,8 @@ class BaseSuspensionActivationHandlerTest {
         assertThrows<Exception> {
             testFunction.invoke()
         }.apply {
-            Assertions.assertThat(this).isInstanceOf(type)
-            Assertions.assertThat(message).contains(errorMsg)
+            assertThat(this).isInstanceOf(type)
+            assertThat(message).contains(errorMsg)
         }
     }
 
@@ -159,6 +162,9 @@ class BaseSuspensionActivationHandlerTest {
             on { memberX500Name } doReturn name.toString()
             on { serialNumber } doReturn serial!!
             on { status } doReturn memberStatus
+            on { memberSignatureKey } doReturn signatureKey
+            on { memberSignatureContent } doReturn signatureContent
+            on { memberSignatureSpec} doReturn SIGNATURE_SPEC
         }
         whenever(
             em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
@@ -187,7 +193,7 @@ class BaseSuspensionActivationHandlerTest {
 
         val result = invokeSuspend()
 
-        Assertions.assertThat(result).isEqualTo(
+        assertThat(result).isEqualTo(
             PersistentMemberInfo(
                 context.holdingIdentity,
                 memberContext, mgmContext
@@ -213,13 +219,16 @@ class BaseSuspensionActivationHandlerTest {
         invokeActivate()
 
         with(entityCapture.firstValue) {
-            Assertions.assertThat(status).isEqualTo(MEMBER_STATUS_ACTIVE)
-            Assertions.assertThat(serialNumber).isEqualTo(SERIAL_NUMBER + 1)
-            Assertions.assertThat(modifiedTime).isEqualTo(clock.instant())
-            Assertions.assertThat(groupId).isEqualTo(knownGroupId)
-            Assertions.assertThat(memberX500Name).isEqualTo(knownX500Name.toString())
-            Assertions.assertThat(mgmContext).isEqualTo(expectedMgmContext)
-            Assertions.assertThat(isPending).isFalse
+            assertThat(status).isEqualTo(MEMBER_STATUS_ACTIVE)
+            assertThat(serialNumber).isEqualTo(SERIAL_NUMBER + 1)
+            assertThat(modifiedTime).isEqualTo(clock.instant())
+            assertThat(groupId).isEqualTo(knownGroupId)
+            assertThat(memberX500Name).isEqualTo(knownX500Name.toString())
+            assertThat(mgmContext).isEqualTo(expectedMgmContext)
+            assertThat(isPending).isFalse
+            assertThat(memberSignatureKey).isEqualTo(signatureKey)
+            assertThat(memberSignatureContent).isEqualTo(signatureContent)
+            assertThat(memberSignatureSpec).isEqualTo(SIGNATURE_SPEC)
         }
     }
 
@@ -240,7 +249,7 @@ class BaseSuspensionActivationHandlerTest {
 
         invokeActivate()
 
-        Assertions.assertThat(mgmContextCapture.firstValue.items).contains(
+        assertThat(mgmContextCapture.firstValue.items).contains(
             KeyValuePair(MemberInfoExtension.STATUS, MEMBER_STATUS_ACTIVE),
             KeyValuePair(MemberInfoExtension.MODIFIED_TIME, clock.instant().toString()),
             KeyValuePair(MemberInfoExtension.SERIAL, (SERIAL_NUMBER + 1).toString())
