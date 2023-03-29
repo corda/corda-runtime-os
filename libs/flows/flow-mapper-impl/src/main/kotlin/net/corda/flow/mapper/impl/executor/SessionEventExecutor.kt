@@ -7,8 +7,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
@@ -93,32 +91,7 @@ class SessionEventExecutor(
         } else {
             Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
-        log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, direction=$messageDirection\"")
+        log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, direction=$messageDirection")
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
-    }
-
-    // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
-    @Suppress("ForbiddenComment")
-    private fun processOutboundSessionEventsInterop(): Record<*, *>? {
-        return when (sessionEvent.payload) {
-            is SessionData -> {
-                Record(
-                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-                    sessionEvent.sessionId,
-                    FlowMapperEvent(sessionEvent)
-                )
-            }
-            is SessionClose -> {
-                Record(
-                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-                    sessionEvent.sessionId,
-                    FlowMapperEvent(sessionEvent)
-                )
-            }
-            else -> {
-                // Discard any unrecognised events
-                null
-            }
-        }
     }
 }

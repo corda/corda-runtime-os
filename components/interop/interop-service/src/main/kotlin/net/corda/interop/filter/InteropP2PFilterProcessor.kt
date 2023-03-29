@@ -47,7 +47,7 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
         key: String
     ) : Record<String, FlowMapperEvent>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.info("Processing message from p2p.in with subsystem ${Constants.FLOW_SESSION_SUBSYSTEM}. Key: $key, Event: $sessionEvent")
+        logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, Event: $sessionEvent")
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND

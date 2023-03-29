@@ -28,6 +28,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 //import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -57,6 +58,7 @@ class InteropProcessor(
     override fun onNext(
         events: List<Record<String, FlowMapperEvent>>
     ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
+        //logger.info("About to process a message from flow.mapper.event. Key: $key." )
         val sessionEvent = value?.payload
         if (sessionEvent == null) {
             logger.warn("Dropping message with empty payload")
@@ -83,13 +85,18 @@ class InteropProcessor(
             if (realHoldingIdentity == null) {
                 logger.info("Could not find a holding identity for alias $destinationAlias.")
                 return@mapNotNull null
+            } else {
+                logger.info("Translated alias $destinationAlias to $realHoldingIdentity.")
             }
-            val facadeRequest = when (val sessionPayload = sessionEvent.payload) {
+            val facadeRequest = try { when (val sessionPayload = sessionEvent.payload) {
                 is SessionInit -> InteropMessageTransformer.getFacadeRequest(
                     interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
                 )
                 is SessionData -> InteropMessageTransformer.getFacadeRequest(sessionPayload.payload as InteropMessage)
                 else -> null
+            } } catch(e: Exception) {
+                logger.warn("Ignored exception when deserializing an Interop payload", e)
+                null
             }
 
             if (facadeRequest == null) {
@@ -107,19 +114,22 @@ class InteropProcessor(
                 // this change is required for CORE-10426 Support For Façade Handlers
                 logger.info("Flow name associated with facade request : $flowName")
             }
-            Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+            Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent.apply {
+                initiatingIdentity = realHoldingIdentity.toAvro() } //TODO the hack
+            ))
         } else { //MessageDirection.OUTBOUND
+            logger.info("Sending outbound message for ${sessionEvent.sessionId}")
             //TODO taken from FlowMapperHelper function generateAppMessage
             Record(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
                 AppMessage(AuthenticatedMessage(AuthenticatedMessageHeader(
-                    destinationIdentity,
-                    sourceIdentity,
+                    destinationIdentity.apply { groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08" }, //TODO the hack
+                    sourceIdentity.apply { groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08" }, //TODO the hack
                     //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
                     Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                     sessionEvent.sessionId + "-" + UUID.randomUUID(),
                     "",
-                    Constants.FLOW_SESSION_SUBSYSTEM,
+                    SUBSYSTEM,
                     MembershipStatusFilter.ACTIVE
                 ), ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
             )

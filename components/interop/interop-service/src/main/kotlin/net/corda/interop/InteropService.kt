@@ -3,11 +3,11 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.interop.filter.InteropP2PFilterService
+//import net.corda.interop.filter.InteropP2PFilterService
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.DependentComponents
+//import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -51,9 +51,7 @@ class InteropService @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = InteropFacadeToFlowMapperService::class)
-    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService,
-    @Reference(service = InteropP2PFilterService::class)
-    private val interopP2PFilterService: InteropP2PFilterService
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : Lifecycle {
 
     companion object {
@@ -66,7 +64,8 @@ class InteropService @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(
-        DependentComponents.of(::configurationReadService, ::interopP2PFilterService), ::eventHandler)
+       // DependentComponents.of(::configurationReadService, ::interopP2PFilterService),
+        ::eventHandler)
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -133,10 +132,11 @@ class InteropService @Activate constructor(
                 messagingConfig,
                 null
             ).also {
+                logger.info("Subscribed to $FLOW_INTEROP_EVENT_TOPIC")
                 it.start()
             }
         }
-
+        logger.info("Status UP")
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
