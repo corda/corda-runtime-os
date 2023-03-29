@@ -90,7 +90,7 @@ internal class AddNotaryToGroupParametersHandler(
                         )
                     }
                 val currentProtocolVersions = members.filter {
-                    it.notaryDetails?.serviceName == notary.serviceName &&
+                    it.notaryDetails?.serviceName.toString() == notaryServiceName &&
                     it.name != notaryInfo.name &&
                     it.status == MEMBER_STATUS_ACTIVE
                 }.map {
