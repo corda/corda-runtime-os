@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -28,6 +29,7 @@ class UtxoSignedTransactionKryoSerializerTest: UtxoLedgerTest() {
                 emptyMap<String, String>()::class.java,
                 emptyList<String>()::class.java,
                 DigitalSignature.WithKeyId::class.java,
+                DigitalSignatureWithKeyId::class.java,
                 SignatureSpec::class.java,
                 mapOf("" to "")::class.java
             )

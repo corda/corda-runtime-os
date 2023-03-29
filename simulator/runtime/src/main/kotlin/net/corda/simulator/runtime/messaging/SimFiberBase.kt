@@ -117,7 +117,7 @@ class SimFiberBase(
         if(keyStore == null){
             val key = keyStores[notaryX500]!!.generateKey(
                 "simulated-notary", HsmCategory.LEDGER, "any-scheme")
-            notaryInfo = BaseNotaryInfo(notaryX500, "", key)
+            notaryInfo = BaseNotaryInfo(notaryX500, "", emptySet(), key)
             val memberInfo = memberInfos[notaryX500]
             memberInfos[notaryX500] =  memberInfo!!.copy(ledgerKeys = memberInfo.ledgerKeys.plus(key))
         }

@@ -5,7 +5,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PLUGIN
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.v5.base.types.MemberX500Name
 
@@ -50,10 +51,14 @@ internal sealed class MemberRole {
         private fun readNotary(context: Map<String, String>): Notary {
             val serviceName = context[NOTARY_SERVICE_NAME]
             if(serviceName.isNullOrEmpty()) throw IllegalArgumentException("Notary must have a non-empty service name.")
-            val plugin = context[NOTARY_SERVICE_PLUGIN]
+            val protocol = context[NOTARY_SERVICE_PROTOCOL]
+            val protocolVersions = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("([0-9]+)").toRegex().let { regex ->
+                context.filter { it.key.matches(regex) }.mapTo(mutableSetOf()) { it.value.toInt() }
+            }
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
-                plugin = plugin,
+                protocol = protocol,
+                protocolVersions = protocolVersions
             )
         }
     }
@@ -65,7 +70,8 @@ internal sealed class MemberRole {
 
     data class Notary(
         val serviceName: MemberX500Name,
-        val plugin: String?,
+        val protocol: String?,
+        val protocolVersions: Collection<Int>,
     ) : MemberRole() {
         override fun toMemberInfo(
             notariesKeysFactory: () -> List<KeyDetails>,
@@ -78,14 +84,19 @@ internal sealed class MemberRole {
                     String.format(NOTARY_KEY_SPEC, keyIndex) to key.spec.signatureName,
                 )
             }
-            return keys + listOf(
+            val versions = protocolVersions.flatMapIndexed { versionIndex, version ->
+                listOf(
+                    String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, versionIndex) to version.toString()
+                )
+            }
+            return keys + versions + listOf(
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-            ) + if (plugin == null) {
+            ) + if (protocol == null) {
                 emptyList()
             } else {
                 listOf(
-                    NOTARY_SERVICE_PLUGIN to plugin,
+                    NOTARY_SERVICE_PROTOCOL to protocol,
                 )
             }
         }

@@ -10,7 +10,8 @@ import net.corda.utilities.time.UTCClock
 import org.slf4j.Logger
 
 const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"
-const val NOTARY_SERVICE_PLUGIN_KEY = "corda.notary.service.%s.plugin"
+const val NOTARY_SERVICE_PROTOCOL_KEY = "corda.notary.service.%s.flow.protocol.name"
+const val NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY = "corda.notary.service.%s.flow.protocol.version.%s"
 const val NOTARY_SERVICE_KEYS_KEY = "corda.notary.service.%s.keys.%s"
 const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
 const val EPOCH_KEY = "corda.epoch"
@@ -24,17 +25,34 @@ fun updateExistingNotaryService(
     currentParameters: Map<String, String>,
     notaryDetails: MemberNotaryDetails,
     notaryServiceNumber: Int,
+    currentProtocolVersions: Collection<Int>,
     keyEncodingService: KeyEncodingService,
     logger: Logger,
     clock: Clock = UTCClock()
 ): Pair<Int?, KeyValuePairList?> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
-    notaryDetails.servicePlugin?.let {
-        require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
-            throw MembershipPersistenceException(
-                "Cannot add notary to notary service " +
-                        "'$notaryServiceName' - plugin types do not match."
+    notaryDetails.serviceProtocol?.let {
+        require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
+            throw MembershipPersistenceException("Cannot add notary to notary service " +
+                    "'$notaryServiceName' - protocols do not match.")
+        }
+        require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
+            throw MembershipPersistenceException("Cannot add notary to notary service '$notaryServiceName' - protocol" +
+                    "  versions are missing.")
+        }
+    }
+    val versionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY.format(notaryServiceNumber, "([0-9]+)").toRegex()
+    val updatedVersions = notaryDetails.serviceProtocolVersions.let {
+        val versionIntersection = if (currentProtocolVersions.isEmpty()) {
+            it
+        } else {
+            it.intersect(currentProtocolVersions.toSet())
+        }
+        versionIntersection.toSortedSet().mapIndexed { index, version ->
+            KeyValuePair(
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, notaryServiceNumber, index),
+                version.toString()
             )
         }
     }
@@ -65,13 +83,13 @@ fun updateExistingNotaryService(
         }
     val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
     val parametersWithUpdatedEpoch = with(currentParameters) {
-        filterNot { listOf(EPOCH_KEY, MODIFIED_TIME_KEY).contains(it.key) }
+        filterNot { listOf(EPOCH_KEY, MODIFIED_TIME_KEY).contains(it.key) || it.key.matches(versionsRegex) }
             .map { KeyValuePair(it.key, it.value) } + listOf(
             KeyValuePair(EPOCH_KEY, newEpoch.toString()),
             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
         )
     }
-    return newEpoch to KeyValuePairList(parametersWithUpdatedEpoch + newKeys)
+    return newEpoch to KeyValuePairList(parametersWithUpdatedEpoch + newKeys + updatedVersions)
 }
 
 fun addNewNotaryService(
@@ -83,14 +101,19 @@ fun addNewNotaryService(
 ): Pair<Int, KeyValuePairList> {
     val notaryServiceName = notaryDetails.serviceName.toString()
     logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
-    requireNotNull(notaryDetails.servicePlugin) {
-        throw MembershipPersistenceException(
-            "Cannot add notary to group parameters - notary plugin must be" +
-                    " specified to create new notary service '$notaryServiceName'."
+    requireNotNull(notaryDetails.serviceProtocol) {
+        throw MembershipPersistenceException("Cannot add notary to group parameters - notary protocol must be" +
+                " specified to create new notary service '$notaryServiceName'."
         )
+    }
+    require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
+        throw MembershipPersistenceException("Cannot add notary to notary service '$notaryServiceName' - protocol versions are missing.")
     }
     val newNotaryServiceNumber = currentParameters
         .filter { notaryServiceRegex.matches(it.key) }.size
+    val protocolVersions = notaryDetails.serviceProtocolVersions.mapIndexed { index, version ->
+        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, newNotaryServiceNumber, index), version.toString())
+    }
     val newService = notaryDetails.keys
         .mapIndexed { index, key ->
             KeyValuePair(
@@ -99,8 +122,8 @@ fun addNewNotaryService(
             )
         } + listOf(
         KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName),
-        KeyValuePair(String.format(NOTARY_SERVICE_PLUGIN_KEY, newNotaryServiceNumber), notaryDetails.servicePlugin)
-    )
+        KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.serviceProtocol)
+    ) + protocolVersions
     val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
     val parametersWithUpdatedEpoch = with(currentParameters) {
         filterNot { listOf(EPOCH_KEY, MODIFIED_TIME_KEY).contains(it.key) }

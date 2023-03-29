@@ -1,6 +1,5 @@
 package net.corda.messagebus.kafka.consumer
 
-import java.time.Duration
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
@@ -9,6 +8,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
+import net.corda.messagebus.kafka.utils.toCordaConsumerRecord
 import net.corda.messagebus.kafka.utils.toCordaTopicPartition
 import net.corda.messagebus.kafka.utils.toCordaTopicPartitions
 import net.corda.messagebus.kafka.utils.toTopicPartition
@@ -35,6 +35,7 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 
 /**
@@ -131,7 +132,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
      * @param polledRecords record to poll from the bus for this partition
      * @return Complete records safe to return from the consumer with an offset lower than any incomplete chunk records
      */
-    private fun parseRecords(partition: Int, polledRecords: List<ConsumerRecord<Any, Any>>): List<CordaConsumerRecord<K, V>> {
+    private fun parseRecords(
+        partition: Int,
+        polledRecords: List<ConsumerRecord<Any, Any>>
+    ): List<CordaConsumerRecord<K, V>> {
         val completeRecords = mutableListOf<CordaConsumerRecord<K, V>>()
         //only stores current chunks for this partition on this poll
         val currentChunks = mutableMapOf<String, ChunksRead>()
@@ -152,17 +156,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     completeRecords.add(it)
                 }
             } else {
-                completeRecords.add(
-                    @Suppress("unchecked_cast")
-                    CordaConsumerRecord(
-                        consumerRecord.topic().removePrefix(config.topicPrefix),
-                        consumerRecord.partition(),
-                        consumerRecord.offset(),
-                        consumerRecord.key() as K,
-                        consumerRecord.value() as? V,
-                        consumerRecord.timestamp(),
-                    )
-                )
+                completeRecords.add(consumerRecord.toCordaConsumerRecord(config.topicPrefix))
             }
         }
 
@@ -192,15 +186,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             log.trace { "Found checksum for chunkId ${chunk.requestId} " }
             currentChunks.remove(chunk.requestId)
             chunkDeserializerService.assembleChunks(chunksRead.chunks)?.let {
-                CordaConsumerRecord(
-                    consumerRecord.topic().removePrefix(config.topicPrefix),
-                    consumerRecord.partition(),
-                    //use the last chunks offset as the completed record offset to ensure we do not reread chunks on sync
-                    consumerRecord.offset(),
-                    it.first,
-                    it.second,
-                    consumerRecord.timestamp(),
-                )
+                consumerRecord.toCordaConsumerRecord(config.topicPrefix, it.first, it.second)
             }
         } else {
             null

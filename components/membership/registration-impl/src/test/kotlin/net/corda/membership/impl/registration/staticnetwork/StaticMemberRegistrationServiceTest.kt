@@ -54,6 +54,9 @@ import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -82,6 +85,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
@@ -323,7 +327,12 @@ class StaticMemberRegistrationServiceTest {
         on { queryStaticNetworkInfo(any()) } doReturn MembershipQueryResult.Success(currentStaticNetworkInfo)
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
-    private val groupReader: MembershipGroupReader = mock()
+    private val notaryVirtualNodeLookup = mock<NotaryVirtualNodeLookup> {
+        on { getNotaryVirtualNodes(any()) } doReturn emptyList()
+    }
+    private val groupReader: MembershipGroupReader = mock {
+        on { notaryVirtualNodeLookup } doReturn notaryVirtualNodeLookup
+    }
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
@@ -653,13 +662,14 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
             )
             val mockNotaryDetails = MemberNotaryDetails(
                 notary,
                 null,
+                emptyList(),
                 emptyList()
             )
             val mockMemberContext: MemberContext = mock {
@@ -732,9 +742,10 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             assertDoesNotThrow {
@@ -748,7 +759,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "nop",
+                "${ROLES_PREFIX}.0" to "nop",
             )
 
             assertThrows<InvalidMembershipRegistrationException> {
@@ -764,9 +775,10 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             registrationService.register(registrationId, alice, context)
@@ -782,7 +794,8 @@ class StaticMemberRegistrationServiceTest {
                 assertThat(notaryDetails).isNotNull
                 assertThat(notaryDetails?.serviceName)
                     .isEqualTo(MemberX500Name.parse(notary.toString()))
-                assertThat(notaryDetails?.servicePlugin).isEqualTo("net.corda.notary.MyNotaryService")
+                assertThat(notaryDetails?.serviceProtocol).isEqualTo("net.corda.notary.MyNotaryService")
+                assertThat(notaryDetails?.serviceProtocolVersions).containsExactlyInAnyOrder(1)
 
                 assertThat(notaryDetails?.keys?.toList())
                     .hasSize(1)
@@ -825,9 +838,10 @@ class StaticMemberRegistrationServiceTest {
         fun `registration with notary role persists group parameters for all members who have vnodes set up`() {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
             whenever(
                 persistenceClient.persistGroupParameters(
@@ -851,9 +865,10 @@ class StaticMemberRegistrationServiceTest {
         fun `registration with notary role publishes group parameters to Kafka for all members who have vnodes set up`() {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
@@ -871,9 +886,10 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when there is a virtual node having the same name as the notary service`() {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to aliceName.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to aliceName.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -891,9 +907,10 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when notary service name is blank`() {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "",
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to "",
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -911,9 +928,10 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when the virtual node and notary service name is the same`() {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to bobName.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to bobName.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
@@ -931,9 +949,10 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when there are two virtual nodes in the static list having the same name`() {
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             whenever(groupPolicyProvider.getGroupPolicy(alice))
@@ -978,9 +997,10 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             assertDoesNotThrow {
@@ -1010,9 +1030,10 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             assertDoesNotThrow {
@@ -1035,9 +1056,10 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to notary.toString(),
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
 
             assertThrows<NotReadyMembershipRegistrationException> {

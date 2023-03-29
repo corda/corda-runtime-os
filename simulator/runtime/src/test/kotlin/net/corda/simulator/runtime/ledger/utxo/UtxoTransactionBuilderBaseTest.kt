@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -12,7 +13,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
@@ -39,11 +39,11 @@ class UtxoTransactionBuilderBaseTest {
         // Given a key has been generated on the node, so the SigningService can sign with it
         val signingService = mock<SigningService>()
         whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
-            .thenReturn(DigitalSignature.WithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
+            .thenReturn(DigitalSignatureWithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
 
         val notaryLookup = mock<NotaryLookup>()
-        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", notaryKey)))
+        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey)))
 
         // And our configuration has a special clock
         val clock = mock<Clock>()
@@ -107,7 +107,7 @@ class UtxoTransactionBuilderBaseTest {
     @Test
     fun `should fail when mandatory fields are missing in the transactions`() {
         val notaryLookup = mock<NotaryLookup>()
-        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", notaryKey)))
+        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey)))
         val builder = UtxoTransactionBuilderBase(
             signingService = mock(),
             persistenceService = mock(),
