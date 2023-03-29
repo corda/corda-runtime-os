@@ -83,6 +83,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /**
  * A suite of integration tests that exercise the JPA entity objects including their mappings, and the
@@ -343,7 +345,7 @@ class PersistenceTests {
             encodingVersion = 11,
             algorithmName = "AES",
             keyMaterial = generateKeyPair(EDDSA_ED25519_CODE_NAME).public.encoded,
-            rotationDate = null,
+            rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
             parentKeyReference = "golden",
             isParentKeyManaged = false
         )
