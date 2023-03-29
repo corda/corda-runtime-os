@@ -22,7 +22,7 @@ class FlowMapperListenerTest {
     fun testOnPartitionsLost() {
         val publisher: Publisher = mock()
         val scheduledKeys = listOf("1", "2", "3")
-        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, null, null) })
+        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, null, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, scheduledKeys)
         assertThat(scheduledTaskState.tasks.size).isEqualTo(3)
 
