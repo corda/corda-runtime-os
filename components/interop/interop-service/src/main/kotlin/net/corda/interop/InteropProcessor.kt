@@ -124,7 +124,7 @@ class InteropProcessor(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
                 AppMessage(AuthenticatedMessage(AuthenticatedMessageHeader(
                     destinationIdentity.apply { groupId = INTEROP_GROUP_ID }, //TODO the hack
-                    sourceIdentity.apply { groupId = INTEROP_GROUP_ID }, //TODO the hack
+                    sourceIdentity.apply { groupId = INTEROP_GROUP_ID }, //TODO the hack, replace groups with alias one
                     //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
                     Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                     sessionEvent.sessionId + "-" + UUID.randomUUID(),

@@ -30,7 +30,6 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
     override fun onNext(
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
-        logger.info("About to process a message from p2p.in. Key: $key." )
         val authMessage = value?.message
         if (authMessage == null ||
             authMessage !is AuthenticatedMessage ||
