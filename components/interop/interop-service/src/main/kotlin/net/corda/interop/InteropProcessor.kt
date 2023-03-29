@@ -48,6 +48,7 @@ class InteropProcessor(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SUBSYSTEM = "interop"
+        const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
     }
 
     private val interopAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
@@ -122,8 +123,8 @@ class InteropProcessor(
             Record(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
                 AppMessage(AuthenticatedMessage(AuthenticatedMessageHeader(
-                    destinationIdentity.apply { groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08" }, //TODO the hack
-                    sourceIdentity.apply { groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08" }, //TODO the hack
+                    destinationIdentity.apply { groupId = INTEROP_GROUP_ID }, //TODO the hack
+                    sourceIdentity.apply { groupId = INTEROP_GROUP_ID }, //TODO the hack
                     //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
                     Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                     sessionEvent.sessionId + "-" + UUID.randomUUID(),

@@ -14,6 +14,8 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.interop.InteropProcessor.Companion.INTEROP_GROUP_ID
+import net.corda.interop.InteropProcessor.Companion.SUBSYSTEM
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -52,9 +54,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         private val ALICE_ALTER_EGO_X500_ALIAS = MemberX500Name.parse("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
         private val ALICE_X500_ALIAS = MemberX500Name.parse("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB")
         private val ALICE_X500_REAL = MemberX500Name.parse("O=Alice,L=London,C=GB")
-        private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         private const val NON_EXISTING_GROUP_ID = "non-existing-group"
-        private const val SUBSYSTEM = "interop"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
