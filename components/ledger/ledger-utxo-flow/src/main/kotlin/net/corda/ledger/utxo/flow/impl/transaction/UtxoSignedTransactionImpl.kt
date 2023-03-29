@@ -123,7 +123,6 @@ data class UtxoSignedTransactionImpl(
     }
 
     // Against signatories. Notary/Unknown signatures are ignored.
-    @Suspendable //TODO are these need to be suspendable?
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatures = signatures.mapNotNull {
             val publicKey = getSignatoryKeyFromKeyId(it.by)
@@ -144,7 +143,6 @@ data class UtxoSignedTransactionImpl(
     }
 
     // Against signatories. Notary/unknown signatures are ignored
-    @Suspendable
     override fun verifySignatorySignatures() {
         val appliedSignatories = signatures.mapNotNull {
             val publicKey = getSignatoryKeyFromKeyId(it.by)
@@ -185,7 +183,6 @@ data class UtxoSignedTransactionImpl(
         return keyIdNotary[keyId]
     }
 
-    @Suspendable
     override fun verifyAttachedNotarySignature() {
         val notaryPublicKeysWithValidSignatures = signatures.mapNotNull {
             val publicKey = getNotaryPublicKeyByKeyId(it.by)
@@ -219,7 +216,6 @@ data class UtxoSignedTransactionImpl(
         }
     }
 
-    @Suspendable
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
         val publicKey = getNotaryPublicKeyByKeyId(signature.by)
             ?: throw TransactionSignatureException(
@@ -241,7 +237,6 @@ data class UtxoSignedTransactionImpl(
         }
     }
 
-    @Suspendable
     override fun verifySignatorySignature(signature: DigitalSignatureAndMetadata) {
         val publicKey = getSignatoryKeyFromKeyId(signature.by)
             ?: return // We do not care about non-notary/non-signatory signatures.

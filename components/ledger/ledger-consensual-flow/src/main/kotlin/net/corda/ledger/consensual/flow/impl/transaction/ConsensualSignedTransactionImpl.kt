@@ -89,7 +89,6 @@ class ConsensualSignedTransactionImpl(
         return requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatures) }.toSet()
     }
 
-    @Suspendable
     override fun verifySignatures() {
         // TODO See if adding the following as property breaks CordaSerializable
         val requiredSignatories = this.toLedgerTransaction().requiredSignatories

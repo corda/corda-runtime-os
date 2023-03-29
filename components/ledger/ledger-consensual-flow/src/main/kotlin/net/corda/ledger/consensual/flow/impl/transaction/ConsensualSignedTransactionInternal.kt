@@ -42,7 +42,6 @@ interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
      *
      * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [ConsensualSignedTransactionInternal].
      */
-    @Suspendable
     fun getMissingSignatories(): Set<PublicKey>
 
     /**
@@ -50,7 +49,6 @@ interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
      *
      * @throws TransactionSignatureException if any signatures are invalid or missing.
      */
-    @Suspendable
     fun verifySignatures()
 
     fun verifySignature(signature: DigitalSignatureAndMetadata)

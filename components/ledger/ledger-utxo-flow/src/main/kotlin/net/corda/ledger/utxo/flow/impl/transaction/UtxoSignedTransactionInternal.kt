@@ -42,7 +42,6 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      *
      * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransactionInternal].
      */
-    @Suspendable
     fun getMissingSignatories(): Set<PublicKey>
 
     /**
@@ -51,7 +50,6 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      *
      * @throws TransactionSignatureException if any signatures are missing or invalid.
      */
-    @Suspendable
     fun verifySignatorySignatures()
 
     /**
@@ -60,7 +58,6 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      *
      * @throws TransactionSignatureException if notary signatures is missing or invalid.
      */
-    @Suspendable
     fun verifyAttachedNotarySignature()
 
     /**
@@ -70,7 +67,6 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      *
      * @throws TransactionSignatureException if the signature is invalid or if not made by the notary
      */
-    @Suspendable
     fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
 
     /**
@@ -80,6 +76,5 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      *
      * @throws TransactionSignatureException if signature is owned by a signatory, and it is not valid.
      */
-    @Suspendable
     fun verifySignatorySignature(signature: DigitalSignatureAndMetadata)
 }
