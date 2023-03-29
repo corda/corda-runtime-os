@@ -1,6 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -23,13 +25,11 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.VisibilityChecker
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -56,7 +56,6 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
-    private val transactionSignatureService = mock<TransactionSignatureService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
     private val visibilityChecker = mock<VisibilityChecker>()
@@ -65,11 +64,11 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private val memberInfo = mock<MemberInfo>()
 
-    private val publicKey0 = mock<PublicKey>()
-    private val publicKey1 = mock<PublicKey>()
-    private val publicKey2 = mock<PublicKey>()
-    private val publicKey3 = mock<PublicKey>()
-    private val publicKeyNotary = mock<PublicKey>()
+    private val publicKey0 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+    private val publicKey1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+    private val publicKey2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
+    private val publicKey3 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
+    private val publicKeyNotary = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x05)) }
 
     private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 3))
@@ -148,7 +147,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+        whenever(signedTransaction.verifySignatorySignature(any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -240,7 +239,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
+        whenever(signedTransactionWithOwnKeys.verifyNotarySignature(eq(signatureNotary))).thenThrow(
             CryptoSignatureException("Verifying notary signature failed!!")
         )
 
@@ -261,6 +260,10 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
         whenever(signedTransactionWithOwnKeys.notaryKey).thenReturn(publicKey1)
+
+        whenever(signedTransactionWithOwnKeys.verifyNotarySignature(any())).thenThrow(
+            CordaRuntimeException("Notary's signature has not been created by the transaction's notary.")
+        )
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -368,7 +371,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(List::class.java)).thenReturn(listOf(invalidSignature))
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf())
         whenever(signedTransactionWithOwnKeys.addSignature(any())).thenReturn(signedTransactionWithOwnKeys)
-        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(
+        whenever(signedTransactionWithOwnKeys.verifySignatorySignatures()).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
 
@@ -384,7 +387,7 @@ class UtxoReceiveFinalityFlowV1Test {
     @Test
     fun `receiving a transaction to record that is not fully signed throws an exception`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf())
-        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
+        whenever(signedTransactionWithOwnKeys.verifySignatorySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
 
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -429,7 +432,6 @@ class UtxoReceiveFinalityFlowV1Test {
         val flow = UtxoReceiveFinalityFlowV1(session, validator)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
-        flow.transactionSignatureService = transactionSignatureService
         flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
         flow.visibilityChecker = visibilityChecker
@@ -438,7 +440,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArray),
+            DigitalSignatureWithKeyId(publicKey.fullIdHash(), byteArray),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }

@@ -16,7 +16,8 @@ import java.security.PublicKey
  * Converts notary service information into [NotaryInfo] objects.
  * Example property map for a notary service:
  * "corda.notary.service.0.name" to “NotaryService”
- * "corda.notary.service.0.plugin" to “PluginOne”
+ * "corda.notary.service.0.flow.protocol.name" to “ProtocolOne”
+ * "corda.notary.service.0.flow.protocol.version.0" to “1”
  * "corda.notary.service.0.keys.0” to “encoded_key_0”
  * "corda.notary.service.0.keys.1” to “encoded-key_1”
  */
@@ -27,7 +28,8 @@ class NotaryInfoConverter @Activate constructor(
 ) : CustomPropertyConverter<NotaryInfo> {
     private companion object {
         const val NAME = "name"
-        const val PLUGIN = "plugin"
+        const val PROTOCOL = "flow.protocol.name"
+        const val PROTOCOL_VERSIONS_PREFIX = "flow.protocol.version"
         const val KEYS_PREFIX = "keys"
     }
 
@@ -35,13 +37,17 @@ class NotaryInfoConverter @Activate constructor(
 
     override fun convert(context: ConversionContext): NotaryInfo {
         val name = context.map.parse(NAME, MemberX500Name::class.java)
-        val pluginName = context.value(PLUGIN) ?: throw ValueNotFoundException("'$PLUGIN' is null or missing.")
+        val protocol = context.value(PROTOCOL) ?: throw ValueNotFoundException("'$PROTOCOL' is null or missing.")
+        val protocolVersions = context.map.parseList(PROTOCOL_VERSIONS_PREFIX, Int::class.java).toSet().apply {
+            require(isNotEmpty()) { throw ValueNotFoundException("'$PROTOCOL_VERSIONS_PREFIX' is empty.") }
+        }
         val keysWithWeight = context.map.parseList(KEYS_PREFIX, PublicKey::class.java).map {
             CompositeKeyNodeAndWeight(it, 1)
         }
         return NotaryInfoImpl(
             name,
-            pluginName,
+            protocol,
+            protocolVersions,
             compositeKeyProvider.create(keysWithWeight, null)
         )
     }
@@ -49,10 +55,12 @@ class NotaryInfoConverter @Activate constructor(
 
 private data class NotaryInfoImpl(
     private val name: MemberX500Name,
-    private val pluginClass: String,
+    private val protocol: String,
+    private val protocolVersions: Collection<Int>,
     private val publicKey: PublicKey,
 ) : NotaryInfo {
     override fun getName() = name
-    override fun getPluginClass() = pluginClass
+    override fun getProtocol() = protocol
+    override fun getProtocolVersions() = protocolVersions
     override fun getPublicKey() = publicKey
 }

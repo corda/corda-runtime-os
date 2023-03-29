@@ -268,8 +268,7 @@ fun E2eCluster.register(
             proxy.startRegistration(
                 member.holdingId,
                 MemberRegistrationRequest(
-                    action = "requestJoin",
-                    context = context
+                    context,
                 )
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
@@ -535,7 +534,8 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
                 "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
                 "corda.notary.service.name" to "O=MyNotaryService-$uniqueName, L=London, C=GB",
-                "corda.notary.service.plugin" to "net.corda.notary.NonValidatingNotary"
+                "corda.notary.service.flow.protocol.name" to "net.corda.notary.NonValidatingNotary",
+                "corda.notary.service.flow.protocol.version.0" to "1"
             )
         } else {
             mapOf(

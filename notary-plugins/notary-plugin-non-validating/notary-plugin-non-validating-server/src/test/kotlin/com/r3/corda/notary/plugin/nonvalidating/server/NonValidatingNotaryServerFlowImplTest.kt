@@ -5,7 +5,10 @@ import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
+import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
@@ -22,7 +25,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -39,6 +42,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -57,8 +61,8 @@ class NonValidatingNotaryServerFlowImplTest {
         val responseFromServer = mutableListOf<NotarizationResponse>()
 
         /* Notary VNodes */
-        val notaryVNodeAliceKey = mock<PublicKey>()
-        val notaryVNodeBobKey = mock<PublicKey>()
+        val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01))}
+        val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02))}
 
         /* Notary Service */
         val notaryServiceCompositeKey = mock<CompositeKey> {
@@ -68,7 +72,7 @@ class NonValidatingNotaryServerFlowImplTest {
         val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
 
         /* Member - The client that initiated the session with the notary server */
-        val memberCharlieKey = mock<PublicKey>()
+        val memberCharlieKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03))}
 
         // The client that initiated the session with the notary server
         val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
@@ -133,7 +137,7 @@ class NonValidatingNotaryServerFlowImplTest {
             val response = responseFromServer.first()
             assertThat(response.error).isNull()
             assertThat(response.signatures).hasSize(1)
-            assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey)
+            assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
         }
     }
 
@@ -182,14 +186,10 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with signatures if the uniqueness check successful`() {
+        val notaryVNodeAliceSig = getSignatureWithMetadataExample(notaryVNodeAliceKey)
+
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
-            listOf(
-                listOf(
-                    getSignatureWithMetadataExample(
-                        notaryVNodeAliceKey
-                    )
-                )
-            )
+            listOf(listOf(notaryVNodeAliceSig))
         )
 
         createAndCallServer(
@@ -200,7 +200,7 @@ class NonValidatingNotaryServerFlowImplTest {
             val response = responseFromServer.first()
             assertThat(response.error).isNull()
             assertThat(response.signatures).hasSize(1)
-            assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey)
+            assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
         }
     }
 
@@ -408,13 +408,15 @@ class NonValidatingNotaryServerFlowImplTest {
             on { id } doReturn txId
         }
 
+
+        val charlieKeyId = memberCharlieKey.fullIdHash()
         // 3. Mock the receive and send from the counterparty session, unless it is overwritten
         val paramOrDefaultSession = flowSession ?: mock {
             on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
                 NotarizationRequestSignature(
-                    DigitalSignature.WithKey(
-                        memberCharlieKey,
+                    DigitalSignatureWithKeyId(
+                        charlieKeyId,
                         "ABC".toByteArray()
                     ),
                     DUMMY_PLATFORM_VERSION
@@ -443,9 +445,13 @@ class NonValidatingNotaryServerFlowImplTest {
             on { serialize(any<Any>()) } doReturn SerializedBytesImpl("ABC".toByteArray())
         }
 
-        val mockDigestService = mock<DigestService> {
-            on { hash(any<ByteArray>(), any()) } doReturn
-                    SecureHashImpl("dummy", byteArrayOf(0x01, 0x02, 0x03, 0x04))
+        val mockDigestService = mock<DigestService>().also {
+            val keyBytesCaptor = argumentCaptor<ByteArray>()
+            whenever(it.hash(keyBytesCaptor.capture(), any()))
+                .thenAnswer {
+                    val bytes = keyBytesCaptor.firstValue
+                    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes())
+                }
         }
 
         val server = NonValidatingNotaryServerFlowImpl(

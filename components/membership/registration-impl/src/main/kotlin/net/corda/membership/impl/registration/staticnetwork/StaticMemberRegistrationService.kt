@@ -235,7 +235,7 @@ class StaticMemberRegistrationService(
                 ex,
             )
         }
-        val latestStatuses = membershipQueryClient.queryRegistrationRequestsStatus(
+        val latestStatuses = membershipQueryClient.queryRegistrationRequests(
             member,
             member.x500Name,
             listOf(RegistrationStatus.APPROVED)
@@ -567,11 +567,19 @@ class StaticMemberRegistrationService(
                 .getOrThrow()
 
             // If the current member is a notary then the group parameters need to be updated
-            if (memberInfo.isNotary()) {
+            memberInfo.notaryDetails?.let { notary ->
+                val currentProtocolVersions = membershipGroupReaderProvider.getGroupReader(memberInfo.holdingIdentity)
+                    .notaryVirtualNodeLookup
+                    .getNotaryVirtualNodes(notary.serviceName)
+                    .filter { it.name != memberInfo.name }
+                    .map { it.notaryDetails!!.serviceProtocolVersions.toHashSet() }
+                    .reduceOrNull { acc, it -> acc.apply { retainAll(it) } }
+                    ?: emptySet()
                 StaticNetworkInfo(
                     currentStaticNetworkInfo.groupId,
                     currentStaticNetworkInfo.groupParameters.addNotary(
                         memberInfo,
+                        currentProtocolVersions,
                         keyEncodingService,
                         clock
                     ),
@@ -581,9 +589,7 @@ class StaticMemberRegistrationService(
                 ).also {
                     persistenceClient.updateStaticNetworkInfo(it).getOrThrow()
                 }
-            } else {
-                currentStaticNetworkInfo
-            }
+            } ?: currentStaticNetworkInfo
         } catch (ex: MembershipPersistenceResult.PersistenceRequestException) {
             if (attempt < MAX_PERSISTENCE_RETRIES - 1) {
                 getCurrentStaticNetworkConfigWithRetry(memberInfo, attempt + 1)

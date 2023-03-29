@@ -111,7 +111,8 @@ fun onboardNotaryMember(
     mapOf(
         "corda.roles.0" to "notary",
         "corda.notary.service.name" to MemberX500Name.parse("O=NotaryService, L=London, C=GB").toString(),
-        "corda.notary.service.plugin" to "net.corda.notary.NonValidatingNotary",
+        "corda.notary.service.flow.protocol.name" to "net.corda.notary.NonValidatingNotary",
+        "corda.notary.service.flow.protocol.version.0" to "1",
         "corda.notary.keys.0.id" to notaryKeyId,
         "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
@@ -147,7 +148,6 @@ fun register(
 ) = cluster(clusterInfo) {
 
     val payload = mapOf(
-        "action" to "requestJoin",
         "context" to registrationContext
     )
 

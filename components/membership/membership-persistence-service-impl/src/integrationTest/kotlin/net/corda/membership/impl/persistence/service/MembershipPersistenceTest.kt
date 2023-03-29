@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.calculateHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -49,14 +50,23 @@ import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -64,7 +74,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -94,7 +109,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.RSA_SHA256
@@ -105,13 +119,10 @@ import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -127,15 +138,12 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
     companion object {
-
-        private const val EPOCH_KEY = "corda.epoch"
-        private const val MODIFIED_TIME_KEY = "corda.modifiedTime"
-
         private const val RULE_ID = "rule-id"
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
 
         private const val REGISTRATION_SERIAL = 0L
+        private const val ENDPOINT_URL = "http://localhost:8080"
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -221,7 +229,7 @@ class MembershipPersistenceTest {
         val membershipPersistenceClientWrapper = object : MembershipPersistenceClient {
             override fun persistMemberInfo(
                 viewOwningIdentity: HoldingIdentity,
-                memberInfos: Collection<MemberInfo>
+                memberInfos: Collection<SignedMemberInfo>
             ) = safeCall {
                 membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfos)
             }
@@ -390,6 +398,9 @@ class MembershipPersistenceTest {
         private val x500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
         private val viewOwningHoldingIdentity = HoldingIdentity(x500Name, groupId)
         private val holdingIdentityShortHash = viewOwningHoldingIdentity.shortHash
+        private val signatureKey = "pk".toByteArray()
+        private val signatureContent = "signature".toByteArray()
+        private val signatureSpec = CryptoSignatureSpec("", null, null)
 
         private val registeringX500Name = MemberX500Name.parse("O=Bob, C=GB, L=London")
         private val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)
@@ -536,7 +547,6 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
-                true,
             )
         )
 
@@ -700,12 +710,13 @@ class MembershipPersistenceTest {
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-                KeyValuePair("corda.notary.service.name", notaryServiceName),
-                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
-                KeyValuePair("corda.roles.0", "notary"),
-                KeyValuePair("corda.notary.keys.0.pem", keyEncodingService.encodeAsString(notaryKey)),
-                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), keyEncodingService.encodeAsString(notaryKey)),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
@@ -717,17 +728,19 @@ class MembershipPersistenceTest {
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
-            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-            KeyValuePair("corda.notary.service.0.keys.0", keyEncodingService.encodeAsString(notaryKey)),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
-            assertThat(size).isEqualTo(5)
-            assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
+            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
         }
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
@@ -739,8 +752,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(5)
-            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
@@ -764,12 +779,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-                KeyValuePair("corda.notary.service.name", notaryServiceName),
-                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
-                KeyValuePair("corda.roles.0", "notary"),
-                KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
-                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1), "2"),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
@@ -788,8 +805,9 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "100"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-                            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin)
+                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
                         )
                     )
                 )!!,
@@ -801,17 +819,20 @@ class MembershipPersistenceTest {
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "101"),
-            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-            KeyValuePair("corda.notary.service.0.keys.0", notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
-            assertThat(size).isEqualTo(5)
-            assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
+            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
         }
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
@@ -823,8 +844,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(5)
-            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
@@ -850,12 +873,13 @@ class MembershipPersistenceTest {
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-                KeyValuePair("corda.notary.service.name", notaryServiceName),
-                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
-                KeyValuePair("corda.roles.0", "notary"),
-                KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
-                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
@@ -877,9 +901,10 @@ class MembershipPersistenceTest {
                         listOf(
                             KeyValuePair(EPOCH_KEY, "150"),
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-                            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-                            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-                            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey)
+                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+                            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey)
                         )
                     )
                 )!!,
@@ -891,18 +916,20 @@ class MembershipPersistenceTest {
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "151"),
-            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
-            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
-            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey),
-            KeyValuePair("corda.notary.service.0.keys.1", notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
-            assertThat(size).isEqualTo(6)
-            assertThat(containsAll(expectedGroupParameters.associate { it.key to it.value }.entries))
+            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
         }
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
@@ -914,43 +941,17 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
             val deserialized = cordaAvroDeserializer.deserialize(this)!!
-            assertThat(deserialized.items.size).isEqualTo(6)
-            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
 
     @Test
     fun `member infos can persist over RPC topic`() {
-        val groupId = randomUUID().toString()
-        val memberx500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
-        val endpointUrl = "http://localhost:8080"
-        val memberContext = KeyValuePairList(
-            listOf(
-                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
-                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-                KeyValuePair(GROUP_ID, groupId),
-                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
-                KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-            ).sorted()
-        )
-        val mgmContext = KeyValuePairList(
-            listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
-                KeyValuePair(SERIAL, "1"),
-            ).sorted()
-        )
-
-        val result = membershipPersistenceClientWrapper.persistMemberInfo(
-            viewOwningHoldingIdentity,
-            listOf(
-                memberInfoFactory.create(
-                    memberContext.toSortedMap(),
-                    mgmContext.toSortedMap()
-                )
-            )
-        )
+        val result = persistMember(x500Name, MEMBER_STATUS_ACTIVE)
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -958,15 +959,18 @@ class MembershipPersistenceTest {
             it.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(
-                    groupId, memberx500Name.toString(), false
+                    groupId, x500Name.toString(), false
                 )
             )
         }
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.groupId).isEqualTo(groupId)
-        assertThat(persistedEntity.memberX500Name).isEqualTo(memberx500Name.toString())
+        assertThat(persistedEntity.memberX500Name).isEqualTo(x500Name.toString())
         assertThat(persistedEntity.serialNumber).isEqualTo(1)
         assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity.memberSignatureKey).isEqualTo(signatureKey)
+        assertThat(persistedEntity.memberSignatureContent).isEqualTo(signatureContent)
+        assertThat(persistedEntity.memberSignatureSpec).isEqualTo(signatureSpec.signatureName)
 
         val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
         assertThat(persistedMgmContext)
@@ -975,10 +979,10 @@ class MembershipPersistenceTest {
 
         val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
         assertThat(persistedMemberContext)
-            .containsEntry(String.format(URL_KEY, "0"), endpointUrl)
+            .containsEntry(String.format(URL_KEY, "0"), ENDPOINT_URL)
             .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
             .containsEntry(GROUP_ID, groupId)
-            .containsEntry(PARTY_NAME, memberx500Name.toString())
+            .containsEntry(PARTY_NAME, x500Name.toString())
             .containsEntry(PLATFORM_VERSION, "5000")
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
@@ -1046,15 +1050,21 @@ class MembershipPersistenceTest {
         val signatures = (1..5).associate { index ->
             val registrationId = randomUUID().toString()
             val holdingId = createTestHoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
-            memberAndRegistrationId.put(holdingId, registrationId)
-            val publicKey = ByteBuffer.wrap("pk-$index".toByteArray())
-            val signature = ByteBuffer.wrap("signature-$index".toByteArray())
+            memberAndRegistrationId[holdingId] = registrationId
+            val publicKey = "pk-$index".toByteArray()
+            val signature = "signature-$index".toByteArray()
+            val signatureSpec = CryptoSignatureSpec("spec-$index", null, null)
+            persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
+
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(
+                ByteBuffer.wrap(publicKey),
+                ByteBuffer.wrap(signature)
+            )
             val context = KeyValuePairList(
                 listOf(
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
-            persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING)
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
@@ -1066,26 +1076,22 @@ class MembershipPersistenceTest {
                             context
                         )
                     ),
-                    CryptoSignatureWithKey(
-                        publicKey,
-                        signature
-                    ),
-                    CryptoSignatureSpec("", null, null),
+                    cryptoSignatureWithKey,
+                    signatureSpec,
                     REGISTRATION_SERIAL,
-                    true,
                 )
             ).getOrThrow()
-            val cryptoSignatureWithKey = CryptoSignatureWithKey(publicKey, signature)
+
             holdingId to (
-                    cryptoSignatureWithKey to CryptoSignatureSpec("", null, null)
+                    cryptoSignatureWithKey to signatureSpec
             )
         }
 
         // before approval only non-pending information is available
         assertThrows<MembershipPersistenceException> {
             membershipQueryClient.queryMembersSignatures(
-            viewOwningHoldingIdentity,
-            signatures.keys
+                viewOwningHoldingIdentity,
+                signatures.keys
             ).getOrThrow()
         }
 
@@ -1126,7 +1132,6 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
-                true,
             )
         )
 
@@ -1264,35 +1269,29 @@ class MembershipPersistenceTest {
         )
         assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val result1 = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result1 = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             null,
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
         ).getOrThrow()
         assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
 
-        val result2 = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result2 = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             viewOwningHoldingIdentity.x500Name,
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
         ).getOrThrow()
         assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
 
-        val result3 = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result3 = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             null,
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         ).getOrThrow()
         assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
 
-        val result4 = membershipQueryClient.queryRegistrationRequestsStatus(viewOwningHoldingIdentity).getOrThrow()
-        assertThat(result4.map { it.registrationId }).containsAll(
-            listOf(
-                registrationId1,
-                registrationId2,
-                registrationId3
-            )
-        )
+        val result4 = membershipQueryClient.queryRegistrationRequests(viewOwningHoldingIdentity).getOrThrow()
+        assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
     }
 
     @Test
@@ -1315,7 +1314,7 @@ class MembershipPersistenceTest {
             persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
         }
 
-        val result = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             registeringHoldingIdentity.x500Name,
             listOf(RegistrationStatus.NEW),
@@ -1337,7 +1336,7 @@ class MembershipPersistenceTest {
         val registrationId = randomUUID().toString()
         persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
 
-        val result = membershipQueryClient.queryRegistrationRequestsStatus(
+        val result = membershipQueryClient.queryRegistrationRequests(
             viewOwningHoldingIdentity,
             registeringHoldingIdentity.x500Name,
             listOf(RegistrationStatus.NEW),
@@ -1505,11 +1504,16 @@ class MembershipPersistenceTest {
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
 
-    private fun persistMember(memberName: MemberX500Name, memberStatus: String): MembershipPersistenceResult<Unit> {
-        val endpointUrl = "http://localhost:8080"
+    private fun persistMember(
+        memberName: MemberX500Name,
+        memberStatus: String,
+        memberSignatureKey: ByteArray = signatureKey,
+        memberSignatureContent: ByteArray = signatureContent,
+        memberSignatureSpec: CryptoSignatureSpec = signatureSpec,
+    ): MembershipPersistenceResult<Unit> {
         val memberContext = KeyValuePairList(
             listOf(
-                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(URL_KEY, "0"), ENDPOINT_URL),
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberName.toString()),
@@ -1527,9 +1531,16 @@ class MembershipPersistenceTest {
         return membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                memberInfoFactory.create(
-                    memberContext.toSortedMap(),
-                    mgmContext.toSortedMap()
+                SignedMemberInfo(
+                    memberInfoFactory.create(
+                        memberContext.toSortedMap(),
+                        mgmContext.toSortedMap()
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(memberSignatureKey),
+                        ByteBuffer.wrap(memberSignatureContent)
+                    ),
+                    memberSignatureSpec,
                 )
             )
         )
@@ -1561,7 +1572,6 @@ class MembershipPersistenceTest {
                 ),
                 CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
-                true,
             )
         )
     }
@@ -1574,8 +1584,8 @@ class MembershipPersistenceTest {
         var publicKey: PublicKey? = null
 
         override fun getEpoch() = 5
-        override val signature: DigitalSignature.WithKey
-            get() = DigitalSignature.WithKey(
+        override val signature: DigitalSignatureWithKey
+            get() = DigitalSignatureWithKey(
                 publicKey
                     ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function"),
                 byteArrayOf(1)

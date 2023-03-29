@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
 import net.corda.data.p2p.HeartbeatMessage
@@ -63,7 +64,6 @@ import net.corda.utilities.millis
 import net.corda.utilities.minutes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.EncodingUtils.toBase64
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -129,11 +129,12 @@ class SessionManagerTest {
             "http://alice.com",
             OUR_KEY.public,
         )
+        private val PEER_ENDPOINT = "http://bob.com"
         private val PEER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         private val PEER_KEY = keyGenerator.genKeyPair()
         private val PEER_MEMBER_INFO = mockMemberInfo(
             PEER_PARTY,
-            "http://bob.com",
+            PEER_ENDPOINT,
             PEER_KEY.public,
         )
 
@@ -235,7 +236,7 @@ class SessionManagerTest {
         on { dominoTile } doReturn hostingMapDominoTile
         on { allLocallyHostedIdentities() } doReturn listOf(OUR_PARTY)
     }
-    private val signature = mock<DigitalSignature.WithKey> {
+    private val signature = mock<DigitalSignatureWithKey> {
         on { bytes } doReturn "signature-from-A".toByteArray()
     }
     private val cryptoOpsClient = mock<CryptoOpsClient> {
@@ -560,6 +561,34 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage!!.payload).isInstanceOf(ResponderHelloMessage::class.java)
+        assertThat(responseMessage.header.address)
+            .isEqualTo(PEER_ENDPOINT)
+    }
+
+    @Test
+    fun `when there are multiple locally hosted identities, the member info with latest serial is used`() {
+        val sessionId = "some-session-id"
+        val responderHello = mock<ResponderHelloMessage>()
+        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+        val ourSecondParty = createTestHoldingIdentity("CN=Charlie, O=BigCorp, L=LDN, C=GB", GROUP_ID)
+        val secondPeerEndpoint = "https://bob2.com"
+        val secondPeerMemberInfo = mockMemberInfo(PEER_PARTY, secondPeerEndpoint, PEER_KEY.public, 2)
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities())
+            .thenReturn(listOf(OUR_PARTY, ourSecondParty))
+        val secondMembershipGroupReader = mock<MembershipGroupReader>()
+        whenever(membershipGroupReader.lookupBySessionKey(
+            eq(PublicKeyHash.parse(messageDigest.hash(PEER_KEY.public.encoded))), eq(MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING)
+        )).thenReturn(secondPeerMemberInfo)
+        whenever(membershipGroupReaderProvider.getGroupReader(ourSecondParty)).thenReturn(secondMembershipGroupReader)
+
+        val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
+
+        assertThat(responseMessage!!.payload).isInstanceOf(ResponderHelloMessage::class.java)
+        assertThat(responseMessage.header.address)
+            .isEqualTo(secondPeerEndpoint)
     }
 
     @Test

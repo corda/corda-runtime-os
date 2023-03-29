@@ -1,4 +1,4 @@
-package net.corda.messagebus.api.consumer;
+package net.corda.messagebus.api.consumer
 
 /**
  * A key/value pair to be received from the message bus. This also consists of a topic name and
@@ -36,4 +36,9 @@ data class CordaConsumerRecord<K, V>(
      * The timestamp of this record.
      */
     val timestamp: Long,
+
+    /**
+     * The optional headers carried on the message.
+     */
+    val headers: List<Pair<String, String>> = listOf()
 )

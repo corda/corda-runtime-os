@@ -7,6 +7,7 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
@@ -36,7 +37,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
@@ -602,13 +602,13 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        private fun RegistrationRequestStatus.toRest() =
+        private fun RegistrationRequestDetails.toRest() =
             RestRegistrationRequestStatus(
                 registrationId,
                 registrationSent,
                 registrationLastModified,
-                status.fromAvro(),
-                MemberInfoSubmitted(memberContext.toMap()),
+                registrationStatus.fromAvro(),
+                MemberInfoSubmitted(memberProvidedContext.toMap()),
                 reason,
                 serial,
             )

@@ -2,11 +2,10 @@ package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
-import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -24,9 +23,6 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
     abstract val log: Logger
 
     @CordaInject
-    lateinit var transactionSignatureService: TransactionSignatureService
-
-    @CordaInject
     lateinit var persistenceService: ConsensualLedgerPersistenceService
 
     @Suspendable
@@ -36,10 +32,12 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
         sessionToNotify: FlowSession? = null
     ) {
         try {
-            transactionSignatureService.verifySignature(transaction, signature)
-            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
+            transaction.verifySignature(signature)
+            log.debug {
+                "Successfully verified signature($signature) by ${signature.by} (key id) for transaction $transaction.id"
+            }
         } catch (e: Exception) {
-            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
+            val message = "Failed to verify transaction signature($signature) by ${signature.by} (key id) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
