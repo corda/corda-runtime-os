@@ -8,7 +8,7 @@
     "serversConfiguration": {
       "type": "array",
       "minItems": 1,
-      "description": "The HTTP servers. The pair hostAddress and hostPort must be unique for each server.",
+      "description": "The HTTP servers. The hostAddress and hostPort pair must be unique for each server.",
       "default": [{
         "hostAddress": "0.0.0.0",
         "hostPort": 8080,
@@ -19,20 +19,20 @@
         "description": "An HTTP server details.",
         "properties": {
           "hostAddress": {
-            "description": "The host name or IP address where the HTTP server will bind.",
+            "description": "The hostname or IP address where the HTTP server will bind.",
             "type": "string",
             "format": "hostname",
             "default": "0.0.0.0"
           },
           "hostPort": {
-            "description": "The HTTP port.",
+            "description": "The HTTP port of the server.",
             "type": "integer",
             "default": 8080,
             "minimum": 0,
             "maximum": 65535
           },
           "urlPath": {
-            "description": "The url path the gateway server will be listening to.",
+            "description": "The URL path the gateway server will listen to.",
             "type": "string",
             "default": "/",
             "pattern": "^\\/[\\/.a-zA-Z0-9-]*$"
@@ -41,29 +41,29 @@
       }
     },
     "sslConfig": {
-      "description": "Used for TLS between Gateways.",
+      "description": "Settings for TLS connections between gateways.",
       "type": "object",
       "default": {},
       "properties": {
         "revocationCheck": {
           "type": "object",
           "default": {},
-          "description": "How to check for revocation of the TLS certificate.",
+          "description": "The type of revocation check for the TLS certificate.",
           "properties": {
             "mode": {
               "oneOf": [
-                {"const": "SOFT_FAIL", "title": "The revocation check will succeed if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL java doc for more details."},
-                {"const": "HARD_FAIL", "title": "Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."},
-                {"const": "OFF", "title": "Switch CRL check off."}
+                {"const": "SOFT_FAIL", "title": "The revocation check succeeds if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL Javadoc for more details."},
+                {"const": "HARD_FAIL", "title": "The opposite of SOFT_FAIL. This is the most rigorous check. Amongst other requirements, this check requires that the CRL checking URL is available on every level of certificate chain."},
+                {"const": "OFF", "title": "Disables the CRL check."}
               ],
               "default": "SOFT_FAIL"
             }
           }
         },
         "tlsType": {
-          "description": "What kind of TLS connections to establish between the gateways in our cluster and gateways in other clusters. This setting MUST be the same on all Gateways that need to communicate via HTTPS.",
+          "description": "The type of TLS connections to establish between the gateways in the cluster and gateways in other clusters. This setting MUST be the same on all gateways that communicate via HTTPS.",
           "oneOf": [
-            {"const": "ONE_WAY", "title": "Establishes a regular TLS connection, where the server gateway will be authenticated."},
+            {"const": "ONE_WAY", "title": "Establishes a regular TLS connection, where the server gateway is authenticated."},
             {"const": "MUTUAL", "title": "Establishes a mutual TLS connection, where both the server and client gateway are authenticated."}
           ],
           "default": "ONE_WAY"
@@ -72,60 +72,60 @@
       }
     },
     "maxRequestSize": {
-      "description": "The maximum request size accepted by the gateway, in bytes. Any requests crossing that threshold will be rejected.",
+      "description": "The maximum request size, in bytes, accepted by the gateway. The gateway rejects requests larger than the specified size.",
       "type": "number",
       "default": 5e8,
       "minimum": 1e7
     },
     "connectionConfig": {
-      "description": "Controls the TCP connection pool to peer gateways.",
+      "description": "Settings for the TCP connection pool to peer gateways.",
       "type": "object",
       "default": {},
       "properties": {
         "maxClientConnections": {
-          "description": "Maximum size of the connection pool.",
+          "description": "The maximum size of the connection pool.",
           "type": "integer",
           "default": 100,
           "minimum": 1,
           "maximum": 10000
         },
         "acquireTimeout": {
-          "description": "Time (in seconds) after which a connection request will fail.",
+          "description": "The time, in seconds, after which a connection request fails.",
           "type": "integer",
           "default": 10,
           "minimum": 1,
           "maximum": 3000
         },
         "connectionIdleTimeout": {
-          "description": "Time (in seconds) after which an inactive connection in the pool will be released (closed).",
+          "description": "The time, in seconds, after which an inactive connection in the pool will be released (closed).",
           "type": "integer",
           "default": 60,
           "minimum": 1,
           "maximum": 3000
         },
         "responseTimeout": {
-          "description": "Time (in milli seconds) after which a message delivery is considered failed.",
+          "description": "The time, in milliseconds, after which the delivery of a message is considered failed.",
           "type": "integer",
           "default": 1000,
           "minimum": 100,
           "maximum": 10000
         },
         "retryDelay": {
-          "description": "Time (in milli seconds) after which a message is retried, when previously failed.",
+          "description": "The time, in milliseconds, after which a message that previously failed is retried.",
           "type": "integer",
           "default": 1000,
           "minimum": 100,
           "maximum": 10000
         },
         "initialReconnectionDelay": {
-          "description": "The initial time (in seconds) to wait before trying to reconnect.",
+          "description": "The initial time, in seconds, to wait before trying to reconnect.",
           "type": "integer",
           "default": 1,
           "minimum": 1,
           "maximum": 3000
         },
         "maxReconnectionDelay": {
-          "description": "The maximum time (in seconds) to delay before trying to reconnect.",
+          "description": "The maximum time, in seconds, to delay before trying to reconnect.",
           "type": "integer",
           "default": 16,
           "minimum": 1,
