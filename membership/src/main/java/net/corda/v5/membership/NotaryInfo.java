@@ -5,6 +5,7 @@ import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
 
 import java.security.PublicKey;
+import java.util.Collection;
 
 /**
  * <p>Stores information about a notary service available in the network.</p>
@@ -14,12 +15,14 @@ import java.security.PublicKey;
  * <ul>
  * <li>Java:<pre>{@code
  * MemberX500Name name = notaryInfo.getName();
- * String pluginClass = notaryInfo.getPluginClass();
+ * String protocol = notaryInfo.getProtocol();
+ * Collection<Integer> protocolVersions = notaryInfo.getProtocolVersions();
  * PublicKey publicKey = notaryInfo.getPublicKey();
  * }</pre></li>
  * <li>Kotlin:<pre>{@code
  * val name = notaryInfo.name
- * val pluginClass = notaryInfo.pluginClass
+ * val protocol = notaryInfo.protocol
+ * val protocolVersions = notaryInfo.protocolVersions
  * val publicKey = notaryInfo.publicKey
  * }</pre></li>
  * </ul>
@@ -32,9 +35,14 @@ public interface NotaryInfo {
     @NotNull MemberX500Name getName();
 
     /**
-     * @return The type of notary plugin class used for this notary.
+     * @return The name of the flow protocol used by this notary.
      */
-    @NotNull String getPluginClass();
+    @NotNull String getProtocol();
+
+    /**
+     * @return List of versions supported for the flow protocol used by this notary.
+     */
+    @NotNull Collection<Integer> getProtocolVersions();
 
     /**
      * @return The public key of the notary service, which will be a composite key of all notary virtual nodes keys.
