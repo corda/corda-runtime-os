@@ -26,6 +26,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Random
 import java.util.UUID
 import kotlin.test.assertNotNull
@@ -58,7 +59,7 @@ class SigningRepositoryTest {
         keyMaterial = byteArrayOf(),
         encodingVersion = 1,
         algorithmName = "AES",
-        rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),,
+        rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
         isParentKeyManaged = true,
         parentKeyReference = "root"
     )
