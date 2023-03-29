@@ -118,32 +118,32 @@ internal class KryoCheckpointSerializerTest {
         assertThat(tested.someString).isEqualTo(tester.someString)
     }
 
-    //@Test
+    @Test
     fun `ArrayList iterator can checkpoint without error`() {
         runTestWithCollection(ArrayList())
     }
 
-    //@Test
+    @Test
     fun `HashSet iterator can checkpoint without error`() {
         runTestWithCollection(HashSet())
     }
 
-    //@Test
+    @Test
     fun `LinkedHashSet iterator can checkpoint without error`() {
         runTestWithCollection(LinkedHashSet())
     }
 
-    //@Test
+    @Test
     fun `HashMap iterator can checkpoint without error`() {
         runTestWithCollection(HashMap())
     }
 
-    //@Test
+    @Test
     fun `LinkedHashMap iterator can checkpoint without error`() {
         runTestWithCollection(LinkedHashMap())
     }
 
-    //@Test
+    @Test
     fun `LinkedList iterator can checkpoint without error`() {
         runTestWithCollection(LinkedList())
     }
