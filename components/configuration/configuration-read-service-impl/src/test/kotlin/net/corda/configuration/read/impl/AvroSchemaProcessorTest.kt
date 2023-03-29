@@ -11,7 +11,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.anyList
-import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -88,13 +87,7 @@ class AvroSchemaProcessorTest {
     }
 
      @Test
-    fun `publishNewSchemas publishes schemas added during onSnapshot`() {
-         val processor = AvroSchemaProcessor(coordinator, avroSchemaRegistry)
-
-         processor.onSnapshot(mapOf(catSchemaFingerPrint to catSchemaJson))
-
-         processor.publishNewSchemas(publisher)
-
+    fun `publishNewSchemas only publishes schemas not part of onSnapshot`() {
          whenever(publisher.publish(any())).doAnswer {
              // verifying early as the list gets cleared
              @Suppress("UNCHECKED_CAST")
@@ -104,11 +97,16 @@ class AvroSchemaProcessorTest {
              // record is cat
              val record = records.single()
              assertSoftly { a ->
-                 a.assertThat(record.key).isEqualTo(catSchemaFingerPrint)
-                 a.assertThat(record.value).isEqualTo(catSchemaJson)
+                 a.assertThat(record.key).isEqualTo(dogSchemaFingerPrint)
+                 // turning into schemas to test real equality, ignoring JSON formatting differences.
+                 a.assertThat(Schema.Parser().parse(record.value)).isEqualTo(Schema.Parser().parse(dogSchemaJson))
              }
              null
          }
+
+         val processor = AvroSchemaProcessor(coordinator, avroSchemaRegistry)
+         processor.onSnapshot(mapOf(catSchemaFingerPrint to catSchemaJson))
+         processor.publishNewSchemas(publisher)
 
          verify(publisher).publish(anyList())
     }

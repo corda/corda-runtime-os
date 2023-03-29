@@ -39,13 +39,16 @@ internal class AvroSchemaProcessor(
             .filter { (fingerprint, _) ->
                 !avroSchemaRegistry.containsSchema(fingerprint)
             }
-            .forEach { (fingerprint, schemaJson) ->
+            .forEach { (_, schemaJson) ->
                 val schema = Schema.Parser().parse(schemaJson)
                 avroSchemaRegistry.addSchemaOnly(schema)
-                // Record any schemas we know about that aren't already in the topic
-                recordsToWrite.add(Record(AVRO_SCHEMA_TOPIC, fingerprint, schema.toString()))
             }
 
+        val schemasMissingFromSnapshot =
+            avroSchemaRegistry.schemasByFingerprintSnapshot.filter { !currentData.containsKey(it.key) }
+
+        // Record any schemas we know about that aren't already in the topic snapshot
+        recordsToWrite.addAll(schemasMissingFromSnapshot.map { Record(AVRO_SCHEMA_TOPIC, it.key, it.value.toString()) })
         if (recordsToWrite.isNotEmpty()) {
             logger.info("Queued ${recordsToWrite.size} Avro schemas to write to topic.")
         }
