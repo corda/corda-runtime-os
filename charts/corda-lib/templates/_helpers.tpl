@@ -82,10 +82,12 @@ tolerations for node taints
 tolerations:
 {{- range .Values.tolerations }}
 - key: {{ required "Must specify key for toleration" .key }}
-  operator: {{ default "Equal" .operator }}
+  {{- with .operator }}
+  operator: {{ . }}
+  {{- end }}
   effect: {{ required ( printf "Must specify effect for toleration with key %s" .key ) .effect }}
   {{- if not (eq .operator "Exist") }}
-  value: {{ required "Must specify value for toleration" .value }}
+  value: {{ required ( printf "Must specify value for toleration with key %s and operator not equal to 'Exist'" .key ) .value }}
   {{- end }}
 {{- end }}
 {{- end }}
