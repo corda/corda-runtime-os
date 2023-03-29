@@ -10,6 +10,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.versioning.Version
+import java.security.cert.CertificateException
+import java.security.cert.CertificateFactory
 
 internal class MGMRegistrationContextValidator(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
@@ -85,7 +87,11 @@ internal class MGMRegistrationContextValidator(
         context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
             require(isNotEmpty()) { "No TLS trust store was provided." }
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
+            this.map { key ->
+                validateTrustrootCert(context[key]!!, key)
+            }
         }
+
         context.keys.filter { SESSION_KEY_IDS.format("[0-9]+").toRegex().matches(it) }.apply {
             require(isNotEmpty()) { "No session key was provided." }
             require(orderVerifier.isOrdered(this, 3)) { "Provided session keys are incorrectly numbered." }
@@ -99,6 +105,15 @@ internal class MGMRegistrationContextValidator(
                 "A cluster configured with TLS type of $clusterTlsType can not register " +
                 "an MGM with TLS type $contextRegistrationTlsType"
             )
+        }
+    }
+
+    fun validateTrustrootCert(pemCert: String, key: String) {
+        try {
+            CertificateFactory.getInstance("X.509").generateCertificate(pemCert.byteInputStream())
+        } catch (ex: CertificateException) {
+            throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
+                    "was not a valid PEM certificate.")
         }
     }
 }
