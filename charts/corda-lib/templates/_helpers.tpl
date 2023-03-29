@@ -530,24 +530,18 @@ TLS Secret creation
 {{- if not $existingSecret }}
 {{- $caName := printf "%s Self-Signed Certification Authority" $kind }}
 {{- $ca := genCA $caName 1000 }}
-{{- $interName := printf  "%s Intermediary Cert" $kind }}
-{{- $interCert := genSignedCert $interName nil nil 365 $ca }}
-{{- $cert := genSignedCert $kind nil $altNames 365 $interCert }}
-{{- $certChain :=  printf "%s\n%s" $interCert.Cert $ca.Cert }}
+{{- $cert := genSignedCert $kind nil $altNames 365 $ca }}
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: {{ $secretName }}
-  annotations:
-    "helm.sh/hook-weight": "-1"
-    "helm.sh/hook": pre-install
   labels:
     {{- include "corda.labels" $ | nindent 4 }}
 type: Opaque
 data:
   {{ $crtSecretKey }}: {{ $cert.Cert | b64enc | quote }}
   {{ $keySecretKey }}: {{ $cert.Key | b64enc | quote }}
-  {{ $caSecretKey }}: {{ $certChain | b64enc | quote }}
+  {{ $caSecretKey }}: {{ $ca.Cert | b64enc | quote }}
 {{- end }}
 {{- end }}
