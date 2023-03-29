@@ -170,15 +170,20 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         }
 
         val result = dbRecords.mapNotNull { dbRecord ->
-            deserializeValue(dbRecord.value)?.let {
+            val deserializedValue = deserializeValue(dbRecord.value)
+            val isDeserialized = deserializedValue != null || dbRecord.value == null
+
+            if (isDeserialized) {
                 CordaConsumerRecord(
                     dbRecord.topic,
                     dbRecord.partition,
                     dbRecord.recordOffset,
                     deserializeKey(dbRecord.key),
-                    it,
+                    deserializedValue,
                     dbRecord.timestamp.toEpochMilli()
                 )
+            } else {
+                null
             }
         }
 
