@@ -77,13 +77,13 @@ class SessionInitExecutor(
             )
 
             return FlowMapperResult(
-                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, true),
                 listOf(hackyConfirm)
             )
         }
 
         return FlowMapperResult(
-            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, false),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
         )
     }
