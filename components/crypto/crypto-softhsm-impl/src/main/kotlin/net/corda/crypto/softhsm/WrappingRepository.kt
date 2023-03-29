@@ -16,14 +16,15 @@ interface WrappingRepository : Closeable {
      *
      * @param alias A name for the wrapping key, must be unique within the tenant.
      * @param key The key material and metadata about version and algorithm.
+     * @return The wrapping key that was persisted.
      */
-    fun saveKey(alias: String, key: WrappingKeyInfo)
+    fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo
 
     /**
      * Find a wrapping key in the database
      *
      * @param alias The name for the  wrapping key, as previously passed into save.
-     * @return The wrapping key material and metadatabout about version and algoirthm.
+     * @return The wrapping key material and metadata about version and algorithm.
      */
     fun findKey(alias: String): WrappingKeyInfo?
 }

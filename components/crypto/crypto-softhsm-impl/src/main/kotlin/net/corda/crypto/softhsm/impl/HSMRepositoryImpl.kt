@@ -84,8 +84,7 @@ class HSMRepositoryImpl(
                 deprecatedAt = 0
             )
 
-            em.persist(categoryAssociation)
-            categoryAssociation.toHSMAssociation()
+            em.merge(categoryAssociation).toHSMAssociation()
         }
     }
 
@@ -127,13 +126,14 @@ class HSMRepositoryImpl(
 
     private fun generateRandomShortAlias() =
         toHex(UUID.randomUUID().toString().toByteArray()).take(12)
-
-    private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
-        id,
-        hsmAssociation.tenantId,
-        hsmAssociation.hsmId,
-        category,
-        hsmAssociation.masterKeyAlias,
-        deprecatedAt
-    )
 }
+
+// NOTE: this should be on the Entity.
+internal fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
+    id,
+    hsmAssociation.tenantId,
+    hsmAssociation.hsmId,
+    category,
+    hsmAssociation.masterKeyAlias,
+    deprecatedAt
+)
