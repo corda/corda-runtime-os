@@ -34,9 +34,12 @@ class SessionInitExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val isInteropEvent = when(sessionInit.contextSessionProperties["isInteropSession"]) {
-        "true" -> true
-        else -> false
+    private val isInteropEvent = run {
+        val sessionProperties = sessionInit.contextSessionProperties.items.associate { it.key to it.value }
+        when (sessionProperties["isInteropSession"]) {
+            "true" -> true
+            else -> false
+        }
     }
 
     private val messageDirection = sessionEvent.messageDirection
