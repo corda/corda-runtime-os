@@ -532,7 +532,7 @@ TLS Secret creation
 {{- if not $altNames }}
 {{-   $altNames = list }}
 {{- end }}
-{{- $altNames = ( append $altNames ( printf "%s.%s.svc" $serviceName $.Release.Namespace ) ) }}
+{{- $altNames = ( concat $altNames (list ( printf "%s.%s" $serviceName $.Release.Namespace ) ( printf "%s.%s.svc" $serviceName $.Release.Namespace ) ) ) }}
 {{- $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
 ---
 apiVersion: v1
@@ -540,7 +540,7 @@ kind: Secret
 metadata:
   name: {{ $secretName }}
   annotations:
-    certificate/altNames: {{ toString ( toStrings ( $altNames ) ) | quote }}
+    certificate/altNames: {{ ( join "," $altNames ) | quote }}
   labels:
     {{- include "corda.labels" $ | nindent 4 }}
 type: Opaque
