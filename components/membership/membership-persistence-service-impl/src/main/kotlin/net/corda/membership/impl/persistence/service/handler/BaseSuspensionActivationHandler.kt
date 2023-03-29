@@ -79,6 +79,9 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
                     newStatus,
                     now,
                     member.memberContext,
+                    member.memberSignatureKey,
+                    member.memberSignatureContent,
+                    member.memberSignatureSpec,
                     serializedMgmContext,
                     member.serialNumber + 1
                 )

@@ -5,6 +5,7 @@ import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -26,7 +27,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -98,7 +98,7 @@ class GroupParametersWriterServiceTest {
     private val serializedGroupParameters = "group-params".toByteArray()
 
     private val sigBytes = "signature".toByteArray()
-    private val signature = DigitalSignature.WithKey(
+    private val signature = DigitalSignatureWithKey(
         publicKey,
         sigBytes
     )

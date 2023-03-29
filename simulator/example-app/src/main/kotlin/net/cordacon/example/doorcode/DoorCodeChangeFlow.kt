@@ -1,5 +1,6 @@
 package net.cordacon.example.doorcode
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
@@ -11,14 +12,15 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
@@ -43,6 +45,9 @@ class DoorCodeChangeFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -70,8 +75,8 @@ class DoorCodeChangeFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun getMemberFromSignature(signature: DigitalSignatureAndMetadata) =
-        memberLookup.lookup(signature.by)?.name ?: error("Member for consensual signature not found")
+    private fun getMemberFromSignature(signature: DigitalSignatureAndMetadata): MemberX500Name =
+        memberLookup.lookup(signature.by, digestService).name
 
     @Suspendable
     private fun initiateSessions(participants: List<MemberX500Name>) =
@@ -97,6 +102,9 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     @Suspendable
     override fun call(session: FlowSession) {
 
@@ -106,11 +114,20 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
         }
         val requiredSignatories = finalizedSignedTransaction.toLedgerTransaction().requiredSignatories
         val actualSignatories = finalizedSignedTransaction.signatures.map { it.by }.toSet()
-        check(requiredSignatories == actualSignatories) {
+        check(requiredSignatories.size == actualSignatories.size &&
+                actualSignatories.all { keyIdMatchesKey(it, requiredSignatories) }) {
             "Signatories were not as expected. Expected:\n    " + requiredSignatories.joinToString("\n    ") +
                     "and got:\n    " + actualSignatories.joinToString("\n    ")
         }
         log.info("Finished responder flow - $finalizedSignedTransaction")
+    }
+
+    private fun keyIdMatchesKey(keyId: SecureHash, keys: Set<PublicKey>): Boolean {
+        val digestAlgorithm = DigestAlgorithmName(keyId.algorithm)
+        val keyIdsToKeys = keys.associateBy {
+            digestService.hash(it.encoded, digestAlgorithm)
+        }
+        return keyIdsToKeys.containsKey(keyId)
     }
 }
 
@@ -119,13 +136,13 @@ class DoorCodeQueryFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
-    lateinit var serializationService: SerializationService
-
-    @CordaInject
     lateinit var consensualLedgerService: ConsensualLedgerService
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -137,7 +154,7 @@ class DoorCodeQueryFlow : ClientStartableFlow {
         return jsonMarshallingService.format(
             DoorCodeQueryResponse(
                 (tx.toLedgerTransaction().states[0] as DoorCodeConsensualState).code,
-                tx.signatures.map { checkNotNull(memberLookup.lookup(it.by)?.name) }.toSet()
+                tx.signatures.map { checkNotNull(memberLookup.lookup(it.by, digestService).name) }.toSet()
             )
         )
     }
@@ -170,3 +187,20 @@ class DoorCodeConsensualState(val code: DoorCode, private val participants: List
 
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
 }
+
+// TODO Should we be adding a `MemberLookup.lookup(keyId: SecureHash): MemberInfo`?
+@Suspendable
+private fun MemberLookup.lookup(keyId: SecureHash, digestService: DigestService): MemberInfo {
+    val digestAlgorithmOfKeyId = keyId.algorithm
+    val knownKeysByKeyIds = lookup().flatMap {
+        it.ledgerKeys
+    }.associateBy {
+        it.fullIdHash(digestService, digestAlgorithmOfKeyId)
+    }
+
+    val signatureKey = knownKeysByKeyIds[keyId] ?: error("Member for consensual signature not found")
+    return lookup(signatureKey)!!
+}
+
+private fun PublicKey.fullIdHash(digestService: DigestService, digestName: String): SecureHash =
+    digestService.hash(this.encoded, DigestAlgorithmName(digestName))

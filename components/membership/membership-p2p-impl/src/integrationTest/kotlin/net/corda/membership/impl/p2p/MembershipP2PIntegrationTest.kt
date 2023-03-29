@@ -320,7 +320,6 @@ class MembershipP2PIntegrationTest {
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
             fakeSigWithKey,
             fakeSigSpec,
-            true,
             0L,
         )
 

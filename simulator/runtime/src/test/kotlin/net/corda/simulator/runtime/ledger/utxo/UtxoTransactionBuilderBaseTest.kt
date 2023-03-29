@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
@@ -11,7 +13,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
@@ -38,7 +39,7 @@ class UtxoTransactionBuilderBaseTest {
         // Given a key has been generated on the node, so the SigningService can sign with it
         val signingService = mock<SigningService>()
         whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
-            .thenReturn(DigitalSignature.WithKey(publicKeys[0], "My fake signed things".toByteArray()))
+            .thenReturn(DigitalSignatureWithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
 
         val notaryLookup = mock<NotaryLookup>()
@@ -96,7 +97,7 @@ class UtxoTransactionBuilderBaseTest {
 
         // And the signatures should have come from the signing service
         assertThat(tx.signatures.size, `is`(1))
-        assertThat(tx.signatures[0].by, `is`(publicKeys[0]))
+        assertThat(tx.signatures[0].by, `is`(publicKeys[0].fullIdHash()))
         assertThat(String(tx.signatures[0].signature.bytes), `is`("My fake signed things"))
         assertThat(tx.signatures[0].metadata.timestamp, `is`(Instant.EPOCH))
         assertThat(ledgerTx.referenceStateRefs.size, `is`(1))

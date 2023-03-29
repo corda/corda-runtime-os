@@ -3,10 +3,10 @@ package net.corda.ledger.consensual.testkit
 import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.testkit.createExample
-import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.v5.application.crypto.DigestService
@@ -30,7 +30,7 @@ fun getConsensualSignedTransactionExample(
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    transactionSignatureService: TransactionSignatureService,
+    transactionSignatureService: TransactionSignatureServiceInternal,
     cpkPackageSeed: String? = null
 ): ConsensualSignedTransaction {
     val wireTransaction = getWireTransactionExample(

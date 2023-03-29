@@ -44,6 +44,10 @@ dependencies {
     implementation "org.apache.qpid:proton-j:$protonjVersion"
     implementation 'org.slf4j:slf4j-api'
 
+    testImplementation project(':libs:crypto:cipher-suite')
+    testImplementation project(':libs:crypto:cipher-suite-impl')
+    testImplementation project(':libs:crypto:crypto-core')
+    testImplementation project(':libs:crypto:crypto-serialization-impl')
     testImplementation project(':testing:test-serialization')
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

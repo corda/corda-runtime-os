@@ -1,6 +1,6 @@
 package net.corda.membership.lib
 
-import net.corda.v5.crypto.DigitalSignature
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.v5.crypto.SignatureSpec
 
 /**
@@ -10,7 +10,7 @@ interface SignedGroupParameters : InternalGroupParameters {
     /**
      * The MGM's signature over the AVRO serialised group parameters stored as [bytes].
      */
-    val signature: DigitalSignature.WithKey
+    val signature: DigitalSignatureWithKey
 
     /**
      * The signature spec for the MGM's signature.

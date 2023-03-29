@@ -10,8 +10,8 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -43,7 +43,6 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.RPCSender
@@ -588,13 +587,18 @@ class MembershipQueryClientImplTest {
         fun `it will returns the correct data in case of successful valid result`() {
             postConfigChangedEvent()
             val status =
-                RegistrationStatusDetails(
+                RegistrationRequestDetails(
                     clock.instant(),
                     clock.instant(),
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk1".toByteArray()),
+                        ByteBuffer.wrap("ct1".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy", null, null),
                     "test reason",
                     0L,
                 )
@@ -615,21 +619,9 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
-            assertThat(result.getOrThrow())
-                .isEqualTo(
-                    RegistrationRequestStatus(
-                        status = status.registrationStatus,
-                        registrationId = status.registrationId,
-                        registrationSent = status.registrationSent,
-                        registrationLastModified = status.registrationLastModified,
-                        protocolVersion = status.registrationProtocolVersion,
-                        memberContext = status.memberProvidedContext,
-                        reason = status.reason,
-                        serial = status.serial,
-                    )
-                )
+            assertThat(result.getOrThrow()).isEqualTo(status)
         }
         @Test
         fun `it will returns the correct data in case of successful null result`() {
@@ -651,7 +643,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result.getOrThrow())
                 .isNull()
@@ -676,7 +668,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -700,7 +692,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -723,7 +715,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(response)
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -736,23 +728,33 @@ class MembershipQueryClientImplTest {
         fun `it will returns the correct data in case of successful valid result`() {
             postConfigChangedEvent()
             val statuses = listOf(
-                RegistrationStatusDetails(
+                RegistrationRequestDetails(
                     clock.instant(),
                     clock.instant(),
                     RegistrationStatus.PENDING_MANUAL_APPROVAL,
                     "id 1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk1".toByteArray()),
+                        ByteBuffer.wrap("ct1".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy1", null, null),
                     "test reason 1",
                     0L,
                 ),
-                RegistrationStatusDetails(
+                RegistrationRequestDetails(
                     clock.instant(),
                     clock.instant(),
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk2".toByteArray()),
+                        ByteBuffer.wrap("ct2".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy2", null, null),
                     "test reason 2",
                     1L,
                 ),
@@ -774,23 +776,9 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
-            assertThat(result.getOrThrow())
-                .hasSameElementsAs(
-                    statuses.map {
-                        RegistrationRequestStatus(
-                            status = it.registrationStatus,
-                            registrationId = it.registrationId,
-                            registrationSent = it.registrationSent,
-                            registrationLastModified = it.registrationLastModified,
-                            protocolVersion = it.registrationProtocolVersion,
-                            memberContext = it.memberProvidedContext,
-                            reason = it.reason,
-                            serial = it.serial,
-                        )
-                    }
-                )
+            assertThat(result.getOrThrow()).isEqualTo(statuses)
         }
         @Test
         fun `it will returns an error when the result is unexpected`() {
@@ -812,7 +800,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -836,7 +824,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -859,7 +847,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(response)
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }

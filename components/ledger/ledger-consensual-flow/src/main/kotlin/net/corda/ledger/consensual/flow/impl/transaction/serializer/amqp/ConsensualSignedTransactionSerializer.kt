@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
@@ -25,8 +25,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class ConsensualSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    @Reference(service = TransactionSignatureServiceInternal::class)
+    private val transactionSignatureService: TransactionSignatureServiceInternal
 ) : BaseProxySerializer<ConsensualSignedTransactionInternal, ConsensualSignedTransactionProxy>(),
     UsedByFlow {
 

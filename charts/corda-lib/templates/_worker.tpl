@@ -72,6 +72,7 @@ spec:
         fsGroup: 1000
       {{- end }}
       {{- include "corda.imagePullSecrets" $ | nindent 6 }}
+      {{- include "corda.tolerations" $ | nindent 6 }}
       {{- with $.Values.serviceAccount.name  }}
       serviceAccountName: {{ . }}
       {{- end }}
