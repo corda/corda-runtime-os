@@ -127,27 +127,6 @@ REST TLS keystore secret name
 {{- end }}
 
 {{/*
-REST TLS certificate key
-*/}}
-{{- define "corda.restTlsCrtSecretKey" -}}
-{{ .Values.workers.rest.tls.crt.secretKey | default "crt" }}
-{{- end }}
-
-{{/*
-REST TLS private key secret key
-*/}}
-{{- define "corda.restTlsKeySecretKey" -}}
-{{ .Values.workers.rest.tls.key.secretKey | default "key" }}
-{{- end }}
-
-{{/*
-REST TLS CA cert secret key
-*/}}
-{{- define "corda.restTlsCaSecretKey" -}}
-{{ .Values.workers.rest.tls.ca.secretKey | default "ca" }}
-{{- end }}
-
-{{/*
 Initial REST API admin secret username key
 */}}
 {{- define "corda.restApiAdminSecretUsernameKey" -}}
@@ -531,7 +510,10 @@ TLS Secret creation
 {{- if not $existingSecret }}
 {{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
 {{- $ca := genCA $caName 1000 }}
-{{- append $altNames ( printf "%s.%s.svc" $serviceName .Release.Namespace ) }}
+{{- if not $altNames }}
+{{-   $altNames = list }}
+{{- end }}
+{{- $altNames = ( append $altNames ( printf "%s.%s.svc" $serviceName $.Release.Namespace ) ) }}
 {{- $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
 ---
 apiVersion: v1

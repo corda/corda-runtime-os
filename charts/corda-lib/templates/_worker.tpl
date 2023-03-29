@@ -8,7 +8,7 @@ Worker deployment.
 {{- $optionalArgs := dict }}
 {{- if gt (len .) 3 }}{{ $optionalArgs = index . 3 }}{{ end }}
 {{- with index . 1 }}
-{{- with .service }}
+{{-   with .service }}
 ---
 apiVersion: v1
 kind: Service
@@ -35,7 +35,7 @@ spec:
   - name: http
     port: {{ .port }}
     targetPort: http
-{{- end }}
+{{-   end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -209,9 +209,9 @@ spec:
             name: "jaas-conf"
             readOnly: true
           {{- end }}
-          {{- if eq "rest" $worker }}
+          {{- if .tls }}
           - mountPath: "/tls"
-            name: "resttls"
+            name: "tlsmount"
             readOnly: true
           {{- end }}
           {{- if $.Values.dumpHostPath }}
@@ -332,16 +332,16 @@ spec:
               - key: {{ $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
                 path: "ca.crt"
         {{- end -}}
-        {{- if eq "rest" $worker }}
-        - name: resttls
+        {{- if .tls }}
+        - name: tlsmount
           secret:
-            secretName: {{ include "corda.restTlsSecretName" $ | quote }}
+            secretName: {{ $optionalArgs.tlsSecretName | quote }}
             items:
-              - key: {{ include "corda.restTlsCrtSecretKey" $ | quote }}
+              - key: {{ .tls.crt.secretKey | quote }}
                 path: "tls.crt"
-              - key: {{ include "corda.restTlsKeySecretKey" $ | quote }}
+              - key: {{ .tls.key.secretKey | quote }}
                 path: "tls.key"
-              - key: {{ include "corda.restTlsCaSecretKey" $ | quote }}
+              - key: {{ .tls.ca.secretKey | quote }}
                 path: "ca.crt"
         {{- end -}}
         {{- if $.Values.kafka.sasl.enabled  }}

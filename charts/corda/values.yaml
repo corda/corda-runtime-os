@@ -742,24 +742,20 @@ workers:
               key: ""
     # REST Worker TLS configuration
     tls:
-      # the name of the secret to derive information below
+      # -- the name of the K8s secret to derive information about certificate, private key and CA certificate
       secretName: ""
-      generation:
-        altNames:
-          - "*.c5.r3.com"
-          - "*.another.one.r3.com"
       # TLS Certificate configuration
       crt:
         # -- the TLS Certificate secret key
-        secretKey: ""
+        secretKey: "tls.crt"
       # TLS Certificate private key configuration
       key:
         # -- the TLS Certificate private key secret key
-        secretKey: ""
+        secretKey: "tls.key"
       # Certification Authority(CA) certificates chain configuration
       ca:
         # -- the CA certificates chain secret key
-        secretKey: ""
+        secretKey: "ca.crt"
 
   # P2P link manager worker configuration
   p2pLinkManager:
