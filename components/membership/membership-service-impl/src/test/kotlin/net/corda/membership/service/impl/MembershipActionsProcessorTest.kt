@@ -12,6 +12,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -51,6 +52,7 @@ class MembershipActionsProcessorTest {
             MembershipActionsRequest(Unit),
         )))
 
+        verify(distributeMemberInfoActionHandler.constructed().last(), never()).process(any(), any())
         assertThat(result).isEmpty()
     }
 }
