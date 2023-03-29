@@ -311,6 +311,9 @@
             <column name="operation_in_progress" type="VARCHAR(255)">
                 <constraints nullable="true"/>
             </column>
+            <column name="external_messaging_route_config" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
             <!-- audit -->
             <column name="entity_version" type="INT">
                 <constraints nullable="false"/>

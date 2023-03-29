@@ -68,6 +68,12 @@
       "type": [ "null", "string" ]
     },
     {
+      "name": "externalMessagingRouteConfig",
+      "type": [ "null", "string" ],
+      "default": null,
+      "doc": "Route configuration used for external messaging. Null value means that no configuration was provided."
+    },
+    {
       "name": "version",
       "type": "int"
     },
