@@ -10,7 +10,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
@@ -223,10 +222,12 @@ data class UtxoSignedTransactionImpl(
     @Suspendable
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
         val publicKey = getNotaryPublicKeyByKeyId(signature.by)
-            ?: throw CordaRuntimeException( // todo transition to TransactionSignatureException
+            ?: throw TransactionSignatureException(
+                id,
                 "Notary signature has not been created by the notary for this transaction. " +
                         "Notary public key: $notaryKey " +
-                        "Notary signature key Id: ${signature.by}"
+                        "Notary signature key Id: ${signature.by}",
+                null
             )
 
         try {

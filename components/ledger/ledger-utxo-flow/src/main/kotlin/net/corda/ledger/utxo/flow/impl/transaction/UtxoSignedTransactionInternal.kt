@@ -5,7 +5,6 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
@@ -69,8 +68,7 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      *  - is made by the notary of the transaction
      *  - is valid
      *
-     * @throws CordaRuntimeException if not made by the notary // todo: change this to TransactionSignatureException
-     * @throws TransactionSignatureException if the signature is invalid
+     * @throws TransactionSignatureException if the signature is invalid or if not made by the notary
      */
     @Suspendable
     fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
