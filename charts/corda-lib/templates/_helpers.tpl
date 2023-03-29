@@ -525,14 +525,21 @@ TLS Secret creation
 {{- $crtSecretKey := index . 5 }}
 {{- $keySecretKey := index . 6 }}
 {{- $caSecretKey := index . 7 }}
-{{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
-{{- if not $existingSecret }}
-{{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
-{{- $ca := genCA $caName 1000 }}
+{{- $altNameAnnotationKey := "certificate/altNames" }}
 {{- if not $altNames }}
 {{-   $altNames = list }}
 {{- end }}
 {{- $altNames = ( concat $altNames (list ( printf "%s.%s" $serviceName $.Release.Namespace ) ( printf "%s.%s.svc" $serviceName $.Release.Namespace ) ) ) }}
+{{- $altNamesAsString := ( join "," $altNames ) }}
+{{- $create := true }}
+{{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
+{{- if $existingSecret }}
+{{- $annotationValue := get $existingSecret.metadata.annotations $altNameAnnotationKey }}
+{{- $create = not ( eq $annotationValue $altNamesAsString ) }}
+{{- end }}
+{{- if $create }}
+{{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
+{{- $ca := genCA $caName 1000 }}
 {{- $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
 ---
 apiVersion: v1
@@ -540,7 +547,7 @@ kind: Secret
 metadata:
   name: {{ $secretName }}
   annotations:
-    certificate/altNames: {{ ( join "," $altNames ) | quote }}
+    {{ $altNameAnnotationKey }}: {{ $altNamesAsString | quote }}
   labels:
     {{- include "corda.labels" $ | nindent 4 }}
 type: Opaque
