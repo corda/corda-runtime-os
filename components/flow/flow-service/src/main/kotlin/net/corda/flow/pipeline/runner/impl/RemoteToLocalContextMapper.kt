@@ -41,8 +41,8 @@ fun remoteToLocalContextMapper(
 @Suppress("NestedBlockDepth")
 fun renameInitiatorProps(keyValuePairList: KeyValuePairList) = KeyValueStore().apply {
     keyValuePairList.items.forEach { kvp ->
-        if (!kvp.key.contains("corda.initiator")) {
-            if (kvp.key.contains("corda.")) {
+        if (!kvp.key.startsWith("corda.initiator")) {
+            if (kvp.key.startsWith("corda.")) {
                 this[kvp.key.replace("corda.", "corda.initiator.")] = kvp.value
             } else {
                 this[kvp.key] = kvp.value
