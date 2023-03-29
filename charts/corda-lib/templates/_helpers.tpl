@@ -520,7 +520,7 @@ TLS Secret creation
 */}}
 {{- define "corda.tlsSecret" -}}
 {{- $ := index . 0 }}
-{{- $kind := index . 1 }}
+{{- $purpose := index . 1 }}
 {{- $altNames := index . 2 }}
 {{- $secretName := index . 3 }}
 {{- $crtSecretKey := index . 4 }}
@@ -528,9 +528,9 @@ TLS Secret creation
 {{- $caSecretKey := index . 6 }}
 {{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
 {{- if not $existingSecret }}
-{{- $caName := printf "%s Self-Signed Certification Authority" $kind }}
+{{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
 {{- $ca := genCA $caName 1000 }}
-{{- $cert := genSignedCert $kind nil $altNames 365 $ca }}
+{{- $cert := genSignedCert $purpose nil $altNames 365 $ca }}
 ---
 apiVersion: v1
 kind: Secret
