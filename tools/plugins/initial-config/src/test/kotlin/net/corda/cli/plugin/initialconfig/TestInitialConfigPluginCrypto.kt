@@ -2,6 +2,7 @@ package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
@@ -20,30 +21,26 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import picocli.CommandLine
 
 class TestInitialConfigPluginCrypto {
     @Test
     fun `Should output missing options`() {
+        checkMissingArgs("'passphrase' must be set for CORDA type secrets.", "create-crypto-config")
+        checkMissingArgs("'salt' must be set for CORDA type secrets.", "create-crypto-config", "-p", "pass")
+    }
+
+    private fun checkMissingArgs(expectedErrorMessage: String, vararg args:String) {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
+
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
-            ).setColorScheme(colorScheme).execute("create-crypto-config")
+            ).setColorScheme(colorScheme).execute(*args)
         }
-        println(outText)
-        assertThat(outText).contains("Missing required options:")
-        assertThat(outText).contains("-l, --location=<location>")
-        assertThat(outText).contains("location to write the sql output to.")
-        assertThat(outText).contains("-p, --passphrase=<passphrase>")
-        assertThat(outText).contains("Passphrase for the encrypting secrets service.")
-        assertThat(outText).contains("-s, --salt=<salt>")
-        assertThat(outText).contains("Salt for the encrypting secrets service.")
-        assertThat(outText).contains("-wp, --wrapping-passphrase=<softHsmRootPassphrase>")
-        assertThat(outText).contains("Passphrase for the SOFT HSM root wrapping key.")
-        assertThat(outText).contains("-ws, --wrapping-salt=<softHsmRootSalt>")
-        assertThat(outText).contains("Salt for the SOFT HSM root wrapping key.")
+        assertThat(outText).contains(expectedErrorMessage)
     }
 
     @Suppress("MaxLineLength")
@@ -98,6 +95,28 @@ class TestInitialConfigPluginCrypto {
             assertThat(it.getValue("wrappingKeyMap.salt").render()).contains("encryptedSecret")
             assertThat(it.getValue("wrappingKeyMap.passphrase").render()).contains("configSecret")
             assertThat(it.getValue("wrappingKeyMap.passphrase").render()).contains("encryptedSecret")
+        }
+    }
+
+    @Test
+    fun `Should be able to create default initial crypto configuration without random wrapping key for Vault`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        val outText = SystemLambda.tapSystemOutNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute(
+                "create-crypto-config",
+                "-t", "VAULT"
+            )
+        }
+        println(outText)
+        assertThat(outText).startsWith(expectedPrefix)
+        val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
+        val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
+        assertGeneratedJson(json) {
+            assertThrows<ConfigException.Missing> { it.getValue("wrappingKeyMap.salt") }
+            assertThrows<ConfigException.Missing> { it.getValue("wrappingKeyMap.passphrase") }
         }
     }
 

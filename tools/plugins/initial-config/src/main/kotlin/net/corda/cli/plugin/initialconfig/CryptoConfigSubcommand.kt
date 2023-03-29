@@ -1,6 +1,7 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -10,6 +11,7 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
+import java.lang.IllegalArgumentException
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.Base64
@@ -23,70 +25,61 @@ import java.util.Base64
     ]
 )
 class CryptoConfigSubcommand : Runnable {
+    enum class SecretsServiceType {
+        CORDA, VAULT
+    }
+
     @CommandLine.Option(
         names = ["-s", "--salt"],
-        required = true,
-        description = ["Salt for the encrypting secrets service."]
+        description = ["Salt for the encrypting secrets service. Mandatory for CORDA type secrets service."]
     )
-    lateinit var salt: String
+    var salt: String? = null
 
     @CommandLine.Option(
         names = ["-p", "--passphrase"],
-        required = true,
-        description = ["Passphrase for the encrypting secrets service."]
+        description = ["Passphrase for the encrypting secrets service. Mandatory for CORDA type secrets service."]
     )
-    lateinit var passphrase: String
+    var passphrase: String? = null
 
     @CommandLine.Option(
         names = ["-ws", "--wrapping-salt"],
-        required = false,
-        description = ["Salt for the SOFT HSM root wrapping key."]
+        description = ["Salt for the SOFT HSM root wrapping key. Used only by CORDA type secrets service."]
     )
     var softHsmRootSalt: String? = null
 
     @CommandLine.Option(
         names = ["-wp", "--wrapping-passphrase"],
-        required = false,
-        description = ["Passphrase for the SOFT HSM root wrapping key."]
+        description = ["Passphrase for the SOFT HSM root wrapping key. Used only by CORDA type secrets service."]
     )
     var softHsmRootPassphrase: String? = null
 
     @CommandLine.Option(
         names = ["-l", "--location"],
-        required = false,
         description = ["location to write the sql output to."]
     )
     var location: String? = null
 
+    @CommandLine.Option(
+        names = ["-t", "--type"],
+        description = ["Secrets service type. Valid values: \${COMPLETION-CANDIDATES}. Default: \${DEFAULT-VALUE}. " +
+                "Specifying CORDA generates a Config snippet based on 'passphrase' and 'salt', which are used to generate " +
+                "a root key for the built in secrets service. Specifying VAULT generates a Config without these properties" +
+                "as they are never used if using the Vault secrets service."]
+    )
+    var type: SecretsServiceType = SecretsServiceType.CORDA
+
     override fun run() {
-        val random = SecureRandom()
-        // For now we produce a config which will use [EncryptionSecretsServiceFactory].
-        // This could be generalised to also allow other secrets addons to be configured, see CORE-10049
-        val smartConfigFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseString(
-                """
-            ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=${passphrase}
-            ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=${salt}
-        """.trimIndent()
-            ),
-            listOf(EncryptionSecretsServiceFactory())
-        )
-        val wrappingPassphraseDefined = (if (softHsmRootPassphrase.isNullOrBlank()) {
-            random.randomString()
+        val (wrappingPassphraseSecret, wrappingSaltSecret) = if (type == SecretsServiceType.CORDA) {
+            checkParamPassed(passphrase)
+                { "'passphrase' must be set for CORDA type secrets." }
+            checkParamPassed(salt)
+                { "'salt' must be set for CORDA type secrets." }
+
+            createWrappingPassphraseAndSaltSecrets()
         } else {
-            softHsmRootPassphrase!!
-        })
-        val wrappingSaltDefined = (if (softHsmRootSalt.isNullOrBlank()) {
-            random.randomString()
-        } else {
-            softHsmRootSalt!!
-        })
-        val wrappingPassphraseSecret =
-            smartConfigFactory.makeSecret(wrappingPassphraseDefined, "corda-master-wrapping-key-passphrase")
-                .toSafeConfig()
-                .root()
-        val wrappingSaltSecret =
-            smartConfigFactory.makeSecret(wrappingSaltDefined, "corda-master-wrapping-key-salt").toSafeConfig().root()
+            Pair(null, null)
+        }
+
         val config = createDefaultCryptoConfig(wrappingPassphraseSecret, wrappingSaltSecret).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
@@ -114,8 +107,42 @@ class CryptoConfigSubcommand : Runnable {
         }
     }
 
+    private fun createWrappingPassphraseAndSaltSecrets(): Pair<ConfigObject, ConfigObject> {
+        val random = SecureRandom()
+
+        val smartConfigFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseString(
+                """
+                ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=${passphrase}
+                ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=${salt}
+            """.trimIndent()
+            ), listOf(EncryptionSecretsServiceFactory())
+        )
+        val wrappingPassphraseDefined = (if (softHsmRootPassphrase.isNullOrBlank()) {
+            random.randomString()
+        } else {
+            softHsmRootPassphrase!!
+        })
+        val wrappingSaltDefined = (if (softHsmRootSalt.isNullOrBlank()) {
+            random.randomString()
+        } else {
+            softHsmRootSalt!!
+        })
+        val wrappingPassphraseSecret =
+            smartConfigFactory.makeSecret(wrappingPassphraseDefined, "corda-master-wrapping-key-passphrase").toSafeConfig().root()
+        val wrappingSaltSecret =
+            smartConfigFactory.makeSecret(wrappingSaltDefined, "corda-master-wrapping-key-salt").toSafeConfig().root()
+        return Pair(wrappingPassphraseSecret, wrappingSaltSecret)
+    }
+
     private fun SecureRandom.randomString(length: Int = 32): String = ByteArray(length).let {
         this.nextBytes(it)
         Base64.getEncoder().encodeToString(it)
+    }
+
+    private inline fun checkParamPassed(value: String?, lazyMessage: () -> String) = if (value.isNullOrBlank()) {
+        throw IllegalArgumentException(lazyMessage())
+    } else {
+        value
     }
 }

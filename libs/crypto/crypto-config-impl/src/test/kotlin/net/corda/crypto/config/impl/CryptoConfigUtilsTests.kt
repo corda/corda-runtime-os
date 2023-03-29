@@ -1,5 +1,6 @@
 package net.corda.crypto.config.impl
 
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
@@ -91,6 +92,16 @@ class CryptoConfigUtilsTests {
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Possible to create default config without wrapping key values`() {
+        val config = createDefaultCryptoConfig(null, null)
+        val softWorker = config.hsm(SOFT_HSM_ID)
+        val hsmCfg = softWorker.hsm.cfg
+
+        assertThrows<ConfigException.Missing> { hsmCfg.getString("wrappingKeyMap.salt") }
+        assertThrows<ConfigException.Missing> { hsmCfg.getString("wrappingKeyMap.passphrase") }
     }
 
     @Test

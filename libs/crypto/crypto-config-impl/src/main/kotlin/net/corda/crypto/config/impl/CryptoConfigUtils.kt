@@ -244,7 +244,7 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
 // TODO - get this from the JSON config schema, or eliminate this function
-fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
+fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any?, wrappingKeySalt: Any?): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         .withValue(
             CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
@@ -307,15 +307,20 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                                     "maximumSize" to 1000
                                 )
                             ),
-                            "wrappingKeyMap" to mapOf(
+                            "wrappingKeyMap" to mutableMapOf(
                                 "name" to "CACHING",
-                                "salt" to wrappingKeySalt,
-                                "passphrase" to wrappingKeyPassphrase,
                                 "cache" to mapOf(
                                     "expireAfterAccessMins" to 60,
                                     "maximumSize" to 1000
                                 )
-                            ),
+                            ).also {
+                                if (wrappingKeySalt != null) {
+                                    it["salt"] = wrappingKeySalt
+                                }
+                                if (wrappingKeyPassphrase != null) {
+                                    it["passphrase"] = wrappingKeyPassphrase
+                                }
+                            },
                             "wrapping" to mapOf(
                                 "name" to "DEFAULT"
                             )
