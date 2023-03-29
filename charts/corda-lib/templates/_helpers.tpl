@@ -475,7 +475,7 @@ Secret creation
 {{-     if and $v.required ( not $field.value ) }}
 {{-       fail ( printf "Must specify %s.%s.valueFrom.secretKeyRef.name or %s.%s.value" $path $k $path $k ) }}
 {{-     end }}
-{{-     if or $field.value $v.generate $v.explicit }}
+{{-     if or $field.value $v.generate }}
 {{-       $create = true }}
 {{-     end }}
 {{-   end }}
@@ -498,7 +498,7 @@ data:
 {{-   if not $field.valueFrom.secretKeyRef.name }}
 {{-     if $field.value }}
   {{ $k }}: {{ $field.value | b64enc | quote }}
-{{-     else if (or $v.generate $v.explicit) }}
+{{-     else if $v.generate }}
 {{-       $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
 {{-       $existingValue := "" }}
 {{-       if $existingSecret }}
@@ -507,11 +507,7 @@ data:
 {{-       if $existingValue }}
   {{ $k }}: {{ $existingValue }}
 {{-       else }}
-{{-         if $v.generate }}
   {{ $k }}: {{ randAlphaNum $v.generate | b64enc | quote }}
-{{-         else if $v.explicit }}
-  {{ $k }}: {{ $v.explicit | b64enc | quote }}
-{{-         end }}
 {{-       end }}
 {{-     end }}
 {{-   end }}
