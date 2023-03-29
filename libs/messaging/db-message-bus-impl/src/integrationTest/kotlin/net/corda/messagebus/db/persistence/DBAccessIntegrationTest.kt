@@ -95,6 +95,23 @@ class DBAccessIntegrationTest {
     }
 
     @Test
+    fun `Can read a list of topics`() {
+        val dbAccess = DBAccess(emf)
+
+        val topic1 = randomId()
+        val topic2 = randomId()
+        val topic3 = randomId()
+
+        dbAccess.createTopic(topic1, 2)
+        dbAccess.createTopic(topic2, 2)
+        dbAccess.createTopic(topic3, 2)
+
+        val topics = dbAccess.getAllTopics()
+
+        assertThat(topics).contains(topic1, topic2, topic3)
+    }
+
+    @Test
     fun `DBWriter writes topic records`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
         val topic = randomId()
@@ -216,7 +233,10 @@ class DBAccessIntegrationTest {
         dbAccess.writeOffsets(offsets)
 
         val results =
-            query(CommittedPositionEntry::class.java, "from topic_consumer_offset where topic='$topic' order by partition, record_offset")
+            query(
+                CommittedPositionEntry::class.java,
+                "from topic_consumer_offset where topic='$topic' order by partition, record_offset"
+            )
         assertThat(results).size().isEqualTo(offsets.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).usingRecursiveComparison().isEqualTo(offsets[index])
