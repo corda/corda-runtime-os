@@ -82,6 +82,9 @@ internal class MGMRegistrationContextValidator(
             context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No session trust store was provided." }
                 require(orderVerifier.isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
+                this.map { key ->
+                    validateTrustrootCert(context[key]!!, key)
+                }
             }
         }
         context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {

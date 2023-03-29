@@ -2,7 +2,6 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.impl.registration.staticnetwork.TestUtils
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -10,7 +9,6 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.membership.MembershipSchema
-import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -59,7 +57,7 @@ class MGMRegistrationContextValidatorTest {
                 PKI_TLS to "TLS PKI property",
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",
-                TRUSTSTORE_SESSION.format(0) to "session truststore",
+                TRUSTSTORE_SESSION.format(0) to r3comCert,
                 TRUSTSTORE_TLS.format(0) to r3comCert
             )
 
@@ -185,8 +183,16 @@ class MGMRegistrationContextValidatorTest {
     }
 
     @Test
-    fun `invalid trust root will throw an exception`() {
+    fun `invalid TLS trust root will throw an exception`() {
         val context = validTestContext + (TRUSTSTORE_TLS.format(0) to "invalid-pem-payload")
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(context)
+        }
+    }
+
+    @Test
+    fun `invalid session trust root will throw an exception`() {
+        val context = validTestContext + (TRUSTSTORE_SESSION.format(0) to "invalid-pem-payload")
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(context)
         }
