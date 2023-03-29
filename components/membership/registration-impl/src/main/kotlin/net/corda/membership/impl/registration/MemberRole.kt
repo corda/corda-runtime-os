@@ -58,7 +58,7 @@ internal sealed class MemberRole {
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 protocol = protocol,
-                protocolVersions = protocolVersions,
+                protocolVersions = protocolVersions
             )
         }
     }
