@@ -33,8 +33,13 @@ class SessionInitExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val isInteropEvent = when(sessionInit.contextSessionProperties["isInteropSession"]) {
+        "true" -> true
+        else -> false
+    }
+
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, sessionEvent.isInteropEvent())
+    private val outputTopic = getSessionEventOutputTopic(messageDirection, isInteropEvent)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -57,7 +62,7 @@ class SessionInitExecutor(
 
         // Send a session confirm message in response to the session init.
         // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
-        if (sessionEvent.isInteropEvent()) {
+        if (isInteropEvent) {
             val hackyConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,

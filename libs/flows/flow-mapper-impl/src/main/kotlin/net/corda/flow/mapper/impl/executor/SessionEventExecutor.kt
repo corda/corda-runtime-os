@@ -36,12 +36,11 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, sessionEvent.isInteropEvent())
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             handleNullState()
-        } else if (sessionEvent.isInteropEvent()) {
+        } else if (flowMapperState.isInteropSession) {
             processOtherSessionEventsInterop(flowMapperState)
         } else {
             processOtherSessionEvents(flowMapperState)
@@ -86,6 +85,8 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
+        val outputTopic = getSessionEventOutputTopic(messageDirection, flowMapperState.isInteropSession)
+
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
             Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
         } else {
