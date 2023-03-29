@@ -239,6 +239,56 @@
             "properties": {},
             "examples": [{}]
         },
+        "tolerations": {
+            "type": "array",
+            "default": [],
+            "title": "custom tolerations for all workers and bootstrap jobs",
+            "required": [
+                "key",
+                "effect"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "default": "",
+                    "title": "toleration key",
+                    "examples": [
+                        "corda"
+                    ]
+                },
+                "operator": {
+                    "type": "string",
+                    "default": "Equal",
+                    "title": "toleration operator",
+                    "examples": [
+                        "Equal"
+                    ]
+                },
+                "value": {
+                    "type": "string",
+                    "default": "",
+                    "title": "toleration value",
+                    "examples": [
+                        "testing"
+                    ]
+                },
+                "effect": {
+                    "type": "string",
+                    "default": "",
+                    "title": "toleration effect",
+                    "examples": [
+                        "NoSchedule"
+                    ]
+                }
+            },
+            "examples": [{
+                "key": "corda",
+                "operator": "Equal",
+                "value": "testing",
+                "effect": "NoSchedule"
+            }]
+        },
         "db": {
             "type": "object",
             "default": {},

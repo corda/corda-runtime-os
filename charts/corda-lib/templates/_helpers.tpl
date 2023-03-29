@@ -75,6 +75,25 @@ securityContext:
 {{- end }}
 
 {{/*
+tolerations for node taints
+*/}}
+{{- define "corda.tolerations" -}}
+{{- if .Values.tolerations }}
+tolerations:
+{{- range .Values.tolerations }}
+- key: {{ required "Must specify key for toleration" .key }}
+  {{- with .operator }}
+  operator: {{ . }}
+  {{- end }}
+  effect: {{ required ( printf "Must specify effect for toleration with key %s" .key ) .effect }}
+  {{- if not (eq .operator "Exist") }}
+  value: {{ required ( printf "Must specify value for toleration with key %s and operator not equal to 'Exist'" .key ) .value }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Log4j volume
 */}}
 {{- define "corda.log4jVolume" -}}

@@ -6,6 +6,7 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
@@ -25,7 +26,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -415,7 +415,7 @@ class NonValidatingNotaryServerFlowImplTest {
             on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
                 NotarizationRequestSignature(
-                    DigitalSignature.WithKeyId(
+                    DigitalSignatureWithKeyId(
                         charlieKeyId,
                         "ABC".toByteArray()
                     ),

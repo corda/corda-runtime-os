@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.signing
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.SigningService
@@ -47,7 +48,7 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
                 keyParameters
             )
         ).toByteArray()
-        return DigitalSignature.WithKeyId(publicKey.fullIdHash(), opaqueBytes)
+        return DigitalSignatureWithKeyId(publicKey.fullIdHash(), opaqueBytes)
     }
 
     /**

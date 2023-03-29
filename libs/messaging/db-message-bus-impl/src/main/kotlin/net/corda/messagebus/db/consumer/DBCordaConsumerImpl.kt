@@ -11,6 +11,7 @@ import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
@@ -22,12 +23,13 @@ import kotlin.concurrent.withLock
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
-    private val consumerConfig: ResolvedConsumerConfig,
+    consumerConfig: ResolvedConsumerConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup,
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
+    private var headerSerializer: MessageHeaderSerializer
 ) : CordaConsumer<K, V> {
 
     companion object {
@@ -174,7 +176,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                 dbRecord.recordOffset,
                 deserializeKey(dbRecord.key),
                 deserializeValue(dbRecord.value),
-                dbRecord.timestamp.toEpochMilli()
+                dbRecord.timestamp.toEpochMilli(),
+                headerSerializer.deserialize(dbRecord.headers ?: "{}")
             )
         }
         if (result.isNotEmpty()) {
