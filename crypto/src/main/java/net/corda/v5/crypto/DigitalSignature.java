@@ -19,9 +19,9 @@ public class DigitalSignature extends OpaqueBytes {
     public static class WithKeyId extends DigitalSignature {
 
         /**
-         * Creates a new {@code WithKeyId} using the specified key id and the signature ({@code bytes}).
+         * Creates a new {@code WithKeyId} using the specified key ID and the signature ({@code bytes}).
          *
-         * @param by      The id of the public key (public key hash) whose corresponding private key used to sign the data
+         * @param by      The ID of the public key (public key hash) whose corresponding private key used to sign the data
          *                (as if an instance of the {@link CompositeKey} is passed to the sign operation it may contain
          *                keys which are not actually owned by the member).
          * @param bytes   The signature.

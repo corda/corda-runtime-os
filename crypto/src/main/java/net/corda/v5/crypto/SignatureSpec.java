@@ -15,17 +15,17 @@ import java.security.spec.PSSParameterSpec;
 public class SignatureSpec {
     /**
      * The signature-scheme name as required to create {@link java.security.Signature} objects
-     * (e.g. <code>SHA256withECDSA</code>).
+     * (for example, <code>SHA256withECDSA</code>).
      */
     private final String signatureName;
 
     /**
-     * Construct a signature spec
+     * Construct a signature spec.
      *
      * @param signatureName The signature-scheme name as required to create {@link java.security.Signature}
-     *                      objects (e.g. <code>SHA256withECDSA</code>).
+     *                      objects (for example, <code>SHA256withECDSA</code>).
      *                      <p>
-     *                      When used for signing the [signatureName] must match the corresponding key scheme, e.g. you cannot use
+     *                      When used for signing, the [signatureName] must match the corresponding key scheme, for example, you cannot use
      *                      <code>SHA256withECDSA</code> with <code>RSA</code> keys.
      */
     public SignatureSpec(@NotNull String signatureName) {
@@ -169,16 +169,16 @@ public class SignatureSpec {
     /**
      * Converts a {@link SignatureSpec} object to a string representation containing the [signatureName].
      *
-     * @return a string containing the signature name
+     * @return A string containing the signature name.
      */
     public @NotNull String toString() {
         return this.signatureName;
     }
 
     /**
-     * Alternative access getter for the signature name, for completeness; same result as [toString].
+     * Alternative access getter for the signature name for completeness; same result as [toString].
      *
-     * @return a string containing the signature name.
+     * @return A string containing the signature name.
      */
     public final @NotNull String getSignatureName() {
         return this.signatureName;
@@ -187,7 +187,7 @@ public class SignatureSpec {
     /**
      * Obtain a hash code for the signature name.
      *
-     * @return the hash code
+     * @return The hash code.
      */
     public int hashCode() {
         return this.signatureName.hashCode();

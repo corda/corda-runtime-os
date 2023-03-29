@@ -52,18 +52,18 @@ public final class IndexedMerkleLeaf {
     }
 
     /**
-     * Obtain the index of this leaf
+     * Obtain the index of this leaf.
      *
-     * @return integer leaf index
+     * @return Integer leaf index.
      */
     public int getIndex() {
         return index;
     }
 
     /**
-     * Obtain the nonce of this tree leaf
+     * Obtain the nonce of this tree leaf.
      *
-     * @return nonce as a byte array
+     * @return Nonce as a byte array.
      */
     @Nullable
     public byte[] getNonce() {
@@ -73,7 +73,7 @@ public final class IndexedMerkleLeaf {
     /**
      * Obtain the data for this leaf.
      *
-     * @return leaf data as a byte array
+     * @return Leaf data as a byte array.
      */
     @NotNull
     public byte[] getLeafData() {

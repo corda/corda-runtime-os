@@ -18,9 +18,9 @@ import java.util.List;
 public interface MerkleProof {
 
     /**
-     * Get the type of the proof
+     * Get the type of the proof.
      *
-     * @return Type of the proof
+     * @return Type of the proof.
      */
     @NotNull
     MerkleProofType getProofType();
