@@ -69,6 +69,12 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                     ],
                     "wrappingKeyMap": {
                         "name": "CACHING",
+                        "salt": "<plain-text-value>",
+                        "passphrase": {
+                            "configSecret": {
+                                "encryptedSecret": "<encrypted-value>"
+                            }
+                        },
                         "cache": {
                             "expireAfterAccessMins": 60,
                             "maximumSize": 100
@@ -330,7 +336,7 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                             )
                         )
                     )
-            )
+                )
             )
         )
         .withValue(

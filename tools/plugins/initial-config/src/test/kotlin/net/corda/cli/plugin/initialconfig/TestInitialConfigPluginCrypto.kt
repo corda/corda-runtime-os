@@ -2,6 +2,7 @@ package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
@@ -19,13 +20,12 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import picocli.CommandLine
 
 class TestInitialConfigPluginCrypto {
     @Test
-    @Disabled
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()

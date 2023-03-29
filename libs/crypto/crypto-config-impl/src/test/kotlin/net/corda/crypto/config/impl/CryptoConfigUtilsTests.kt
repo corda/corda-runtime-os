@@ -1,5 +1,6 @@
 package net.corda.crypto.config.impl
 
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
