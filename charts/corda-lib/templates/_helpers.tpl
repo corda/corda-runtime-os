@@ -521,16 +521,18 @@ TLS Secret creation
 {{- define "corda.tlsSecret" -}}
 {{- $ := index . 0 }}
 {{- $purpose := index . 1 }}
-{{- $altNames := index . 2 }}
-{{- $secretName := index . 3 }}
-{{- $crtSecretKey := index . 4 }}
-{{- $keySecretKey := index . 5 }}
-{{- $caSecretKey := index . 6 }}
+{{- $serviceName := index . 2 }}
+{{- $altNames := index . 3 }}
+{{- $secretName := index . 4 }}
+{{- $crtSecretKey := index . 5 }}
+{{- $keySecretKey := index . 6 }}
+{{- $caSecretKey := index . 7 }}
 {{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
 {{- if not $existingSecret }}
 {{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
 {{- $ca := genCA $caName 1000 }}
-{{- $cert := genSignedCert $purpose nil $altNames 365 $ca }}
+{{- append $altNames ( printf "%s.%s.svc" $serviceName .Release.Namespace ) }}
+{{- $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
 ---
 apiVersion: v1
 kind: Secret
