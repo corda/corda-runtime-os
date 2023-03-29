@@ -1346,7 +1346,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "default": "",
-                                            "title": "The name of the secret to derive information below. If missing, a new secret will be created and certificates/keys generated."
+                                            "title": "The name of the Kubernetes secret containing the certificate, private key and CA certificate. If not specified, a new secret will be created and certificates/keys generated."
                                         },
                                         "generation": {
                                             "type": "object",
