@@ -1,0 +1,23 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
+    workflow {
+        name "Packaging Verification Test"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    cordapp project(':testing:cpbs:packaging-verification-contract-v1')
+    cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
+    cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server')
+}

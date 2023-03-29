@@ -11,6 +11,7 @@ import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
 import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
+import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -21,6 +22,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * Builder for a DB Producer.
  */
+@Suppress("Unused")
 @Component(service = [CordaProducerBuilder::class])
 class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
@@ -58,15 +60,16 @@ class DBCordaProducerBuilderImpl @Activate constructor(
             CordaTransactionalDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
                 DBAccess(emf),
-                getWriteOffsets(resolvedConfig)
+                getWriteOffsets(resolvedConfig),
+                MessageHeaderSerializerImpl()
             )
         } else {
             CordaAtomicDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
                 DBAccess(emf),
-                getWriteOffsets(resolvedConfig)
+                getWriteOffsets(resolvedConfig),
+                MessageHeaderSerializerImpl()
             )
         }
     }
-
 }

@@ -10,6 +10,7 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -40,6 +41,7 @@ internal class DBCordaConsumerImplTest {
 
         private val serializedKey = "key".toByteArray()
         private val serializedValue = "value".toByteArray()
+        private const val serializedHeader = "{}"
 
         private val partition0 = CordaTopicPartition(topic, 0)
         private val partition1 = CordaTopicPartition(topic, 1)
@@ -63,7 +65,8 @@ internal class DBCordaConsumerImplTest {
             consumerGroup,
             keyDeserializer,
             valueDeserializer,
-            null
+            null,
+            MessageHeaderSerializerImpl()
         )
     }
 
@@ -111,6 +114,7 @@ internal class DBCordaConsumerImplTest {
                 0,
                 serializedKey,
                 serializedValue,
+                serializedHeader,
                 TransactionRecordEntry("id", TransactionState.COMMITTED),
                 timestamp
             )
@@ -143,10 +147,46 @@ internal class DBCordaConsumerImplTest {
         val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
 
         val pollResult = listOf(
-            TopicRecordEntry(topic, 0, 0, serializedKey, serializedValue, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 2, serializedKey, serializedValue, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 5, serializedKey, serializedValue, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 7, serializedKey, serializedValue, transactionRecord1, timestamp),
+            TopicRecordEntry(
+                topic,
+                0,
+                0,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                2,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                5,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                7,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
@@ -174,6 +214,7 @@ internal class DBCordaConsumerImplTest {
                 offset,
                 serializedKey,
                 serializedValue,
+                serializedHeader,
                 TransactionRecordEntry("id", TransactionState.COMMITTED),
                 timestamp
             )
@@ -247,10 +288,46 @@ internal class DBCordaConsumerImplTest {
         val transactionRecord2 = TransactionRecordEntry("id2", TransactionState.PENDING)
 
         val pollResult = listOf(
-            TopicRecordEntry(topic, 0, 0, serializedKey, serializedValue, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 2, serializedKey, serializedValue, transactionRecord1, timestamp),
-            TopicRecordEntry(topic, 0, 5, serializedKey, serializedValue, transactionRecord2, timestamp),
-            TopicRecordEntry(topic, 0, 7, serializedKey, serializedValue, transactionRecord2, timestamp),
+            TopicRecordEntry(
+                topic,
+                0,
+                0,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                2,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord1,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                5,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord2,
+                timestamp
+            ),
+            TopicRecordEntry(
+                topic,
+                0,
+                7,
+                serializedKey,
+                serializedValue,
+                serializedHeader,
+                transactionRecord2,
+                timestamp
+            ),
         )
         val expectedRecords = listOf(
             CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
@@ -321,6 +398,7 @@ internal class DBCordaConsumerImplTest {
                 0,
                 serializedKey,
                 serializedValue,
+                serializedHeader,
                 TransactionRecordEntry("id", TransactionState.COMMITTED),
                 Instant.parse("2022-01-01T00:00:00.00Z")
             )
@@ -350,7 +428,8 @@ internal class DBCordaConsumerImplTest {
                 consumerGroup,
                 keyDeserializer,
                 valueDeserializer,
-                null
+                null,
+                MessageHeaderSerializerImpl()
             )
         }
 
@@ -363,8 +442,8 @@ internal class DBCordaConsumerImplTest {
 
     @Test
     fun `consumer returns correct values for beginning and end offsets`() {
-        val earliestPositions = mapOf(partition0 to 1, partition1 to 3, partition2 to 6)
-        val latestPositions = mapOf(partition0 to 10, partition1 to 30, partition2 to 60)
+        val earliestPositions = mapOf(partition0 to 1L, partition1 to 3L, partition2 to 6L)
+        val latestPositions = mapOf(partition0 to 10L, partition1 to 30L, partition2 to 60L)
         whenever(dbAccess.getEarliestRecordOffset(any())).thenAnswer { earliestPositions }
         whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer { latestPositions }
 
