@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.BootConfig
@@ -14,6 +15,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -60,10 +62,14 @@ internal class ConfigurationReadServiceTest {
             whenever(getMessagingConfig(any(), anyOrNull())).thenReturn(messagingConfig)
         }
 
+        val avroSchemaRegistry = mock<AvroSchemaRegistry>()
+        val publisherFactory = mock<PublisherFactory>()
+
         LifecycleTest<ConfigurationReadService>{
             addDependency(subName)
 
-            ConfigurationReadServiceImpl(coordinatorFactory, subscriptionFactory, configMerger)
+            ConfigurationReadServiceImpl(
+                coordinatorFactory, subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
         }.run {
             testClass.start()
             testClass.bootstrapConfig(bootConfig)
