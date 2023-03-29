@@ -140,7 +140,7 @@ data class UtxoSignedTransactionImpl(
             }
         }.toSet()
 
-        // isFulfilledBy() helps to make this working with CompositeKeys.
+        // isKeyFulfilledBy() helps to make this working with CompositeKeys.
         return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatures) }.toSet()
     }
 
@@ -165,7 +165,7 @@ data class UtxoSignedTransactionImpl(
             }
         }.toSet()
 
-        // isFulfilledBy() helps to make this working with CompositeKeys.
+        // isKeyFulfilledBy() helps to make this working with CompositeKeys.
         val missingSignatories = signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(

@@ -85,7 +85,7 @@ class ConsensualSignedTransactionImpl(
             }
         }.toSet()
 
-        // isFulfilledBy() helps to make this working with CompositeKeys.
+        // isKeyFulfilledBy() helps to make this working with CompositeKeys.
         return requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatures) }.toSet()
     }
 
@@ -111,7 +111,7 @@ class ConsensualSignedTransactionImpl(
             }
         }.toSet()
 
-        // isFulfilledBy() helps to make this working with CompositeKeys.
+        // isKeyFulfilledBy() helps to make this working with CompositeKeys.
         val missingSignatories = requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
