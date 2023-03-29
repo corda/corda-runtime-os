@@ -1355,7 +1355,7 @@
                                             "properties": {
                                                 "altNames": {
                                                     "type": "array",
-                                                    "title": "Alternative names to be include into a certificate when generated."
+                                                    "title": "Alternative names to be included in a certificate when generated."
                                                 }
                                             }
                                         },
