@@ -1,6 +1,7 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
@@ -76,7 +77,7 @@ class SessionInitExecutor(
                         sessionEvent.initiatedIdentity,
                         0,
                         emptyList(),
-                        SessionConfirm(KeyValuePairList(emptyList()))
+                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair("isInteropSession", "true"))))
                     )
                 )
             )
