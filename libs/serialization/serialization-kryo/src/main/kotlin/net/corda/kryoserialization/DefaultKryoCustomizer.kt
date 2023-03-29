@@ -95,8 +95,13 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
                 addDefaultSerializer(Iterator::class.java, object: BaseSerializerFactory<IteratorSerializer>() {
-                    override fun newSerializer(kryo: Kryo, type: Class<*>) =
-                        IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
+                    override fun newSerializer(kryo: Kryo, type: Class<*>) : IteratorSerializer {
+                        val config = CompatibleFieldSerializer.CompatibleFieldSerializerConfig().apply {
+                            ignoreSyntheticFields = false
+                            extendedFieldNames = true
+                        }
+                        return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type, config))
+                    }
                 })
 
                 addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>>() {
