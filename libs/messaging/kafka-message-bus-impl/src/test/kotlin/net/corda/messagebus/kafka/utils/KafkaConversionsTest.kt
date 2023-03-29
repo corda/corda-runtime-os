@@ -114,7 +114,7 @@ internal class KafkaConversionsTest {
 
         kafkaConsumerRecord.headers().add("h1", headerData)
 
-        val result = kafkaConsumerRecord.toCordaConsumerRecord<String, Int>("prefix1_","key1",null)
+        val result = kafkaConsumerRecord.toCordaConsumerRecord<String, Int>("prefix1_", "key1", null)
 
         assertThat(result.topic).isEqualTo("topic1")
         assertThat(result.partition).isEqualTo(1)
@@ -122,8 +122,6 @@ internal class KafkaConversionsTest {
         assertThat(result.key).isEqualTo("key1")
         assertThat(result.value).isNull()
         assertThat(result.headers).containsExactly("h1" to "h_value")
-
-
     }
 
     @Test
