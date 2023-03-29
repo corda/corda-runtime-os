@@ -36,10 +36,10 @@ internal class AvroSchemaProcessor(
 
         // Read external schemas
         currentData
-            .filter { (fingerprint, _) ->
+            .filterKeys { fingerprint ->
                 !avroSchemaRegistry.containsSchema(fingerprint)
             }
-            .values.forEach {schemaJson ->
+            .values.forEach { schemaJson ->
                 val schema = Schema.Parser().parse(schemaJson)
                 avroSchemaRegistry.addSchemaOnly(schema)
             }
