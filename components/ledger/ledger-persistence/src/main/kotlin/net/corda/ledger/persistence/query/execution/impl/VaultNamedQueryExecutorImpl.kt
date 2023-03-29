@@ -8,7 +8,6 @@ import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
-import net.corda.ledger.persistence.utxo.impl.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.getEncumbranceGroup
@@ -159,23 +158,21 @@ class VaultNamedQueryExecutorImpl @Activate constructor(
             ?.associateBy { it.transactionId to it.leafIndex }
             ?: emptyMap()
 
-        val utxoComponentDtos = componentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.map {
-            val info = outputInfos[it.transactionId to it.leafIndex]
+        return componentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.map {
+            val serializedInfo = outputInfos[it.transactionId to it.leafIndex]
 
-            requireNotNull(info) {
+            requireNotNull(serializedInfo) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
-            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
-        } ?: emptyList()
 
-        return utxoComponentDtos.map {
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
+            val info = serializationService.deserialize<UtxoOutputInfoComponent>(serializedInfo.data)
             val contractState = serializationService.deserialize<ContractState>(it.data)
+
             StateAndRefImpl(
                 state = TransactionStateImpl(contractState, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                 ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
             )
-        }
+        } ?: emptyList()
     }
 
     private fun validateParameters(request: FindWithNamedQuery) {
