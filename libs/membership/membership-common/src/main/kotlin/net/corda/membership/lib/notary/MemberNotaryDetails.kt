@@ -4,6 +4,7 @@ import net.corda.v5.base.types.MemberX500Name
 
 data class MemberNotaryDetails(
     val serviceName: MemberX500Name,
-    val servicePlugin: String?,
+    val serviceProtocol: String?,
+    val serviceProtocolVersions: Collection<Int>,
     val keys: Collection<MemberNotaryKey>
 )

@@ -43,7 +43,7 @@ class UtxoTransactionBuilderBaseTest {
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
 
         val notaryLookup = mock<NotaryLookup>()
-        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", notaryKey)))
+        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey)))
 
         // And our configuration has a special clock
         val clock = mock<Clock>()
@@ -107,7 +107,7 @@ class UtxoTransactionBuilderBaseTest {
     @Test
     fun `should fail when mandatory fields are missing in the transactions`() {
         val notaryLookup = mock<NotaryLookup>()
-        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", notaryKey)))
+        whenever(notaryLookup.notaryServices).thenReturn(listOf( BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey)))
         val builder = UtxoTransactionBuilderBase(
             signingService = mock(),
             persistenceService = mock(),

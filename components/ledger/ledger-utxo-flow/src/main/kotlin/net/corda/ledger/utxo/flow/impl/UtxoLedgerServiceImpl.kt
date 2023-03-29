@@ -150,11 +150,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suppress("ThrowsCount")
     internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): Class<PluggableNotaryClientFlow> {
 
-        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary }?.pluginClass
+        val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
             ?: throw CordaRuntimeException(
-                "Plugin class not found for notary service " +
-                        "${notary} . This means that no notary service matching this name " +
-                        "has been registered on the network."
+                "Notary service $notary has not been registered on the network."
             )
 
         val sandboxGroupContext = currentSandboxGroupContext.get()
@@ -164,9 +162,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 "Cannot get flow protocol store for current sandbox group context"
             )
 
-        // Hard-code supportedVersions to 1 for now, need MGM change to supply this, at which point
-        // we can pass in (see CORE-9740)
-        val flowName = protocolStore.initiatorForProtocol(protocolName, supportedVersions = listOf(1))
+        val flowName = protocolStore.initiatorForProtocol(notaryInfo.protocol, notaryInfo.protocolVersions)
 
         val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName)
 
