@@ -121,6 +121,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             )
         )
 
+        @Suppress("ThrowsCount")
         fun getInstance(config: SmartConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             val wrappingKeyMapConfig = config.getConfig("wrappingKeyMap")

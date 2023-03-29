@@ -7,7 +7,6 @@ import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import java.util.UUID
-import java.io.InvalidObjectException
 import java.time.LocalDate
 import java.time.ZoneOffset
 import javax.persistence.EntityManagerFactory
