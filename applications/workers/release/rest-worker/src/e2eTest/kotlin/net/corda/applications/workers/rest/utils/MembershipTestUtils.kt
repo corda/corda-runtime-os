@@ -121,7 +121,7 @@ fun createMemberRegistrationContext(
             }.isNotEmpty
         it["corda.roles.0"] = "notary"
         it["corda.notary.service.name"] = "C=GB,L=London,O=NotaryService, OU=${memberE2eCluster.uniqueName}"
-        it["corda.notary.service.flow.protocol.name"] = "net.corda.notary.NonValidatingNotary"
+        it["corda.notary.service.flow.protocol.name"] = "com.r3.corda.notary.plugin.nonvalidating"
         it["corda.notary.service.flow.protocol.version.0"] = "1"
         it["corda.notary.keys.0.id"] = notaryKeyId!!
         it["corda.notary.keys.0.signature.spec"] = SIGNATURE_SPEC
