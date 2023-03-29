@@ -114,12 +114,12 @@ class InteropProcessor(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
                 AppMessage(AuthenticatedMessage(AuthenticatedMessageHeader(
                     destinationIdentity,
-                    sourceIdentity,
+                    sourceIdentity, //TODO replace groups with alias one
                     //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
                     Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                     sessionEvent.sessionId + "-" + UUID.randomUUID(),
                     "",
-                    Constants.FLOW_SESSION_SUBSYSTEM,
+                    SUBSYSTEM,
                     MembershipStatusFilter.ACTIVE
                 ), ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
             )
