@@ -27,12 +27,14 @@ class NotaryLookupImplTest {
     private val bobPublicKeyCompose = mock<PublicKey>()
     private val notaryServiceAlice: NotaryInfo = mock {
         on { name } doReturn alice
-        on { pluginClass } doReturn "net.corda.Plugin1"
+        on { protocol } doReturn "net.corda.Plugin1"
+        on { protocolVersions } doReturn setOf(1, 2)
         on { publicKey } doReturn alicePublicKeyCompose
     }
     private val notaryServiceBob: NotaryInfo = mock {
         on { name } doReturn bob
-        on { pluginClass } doReturn "net.corda.Plugin2"
+        on { protocol } doReturn "net.corda.Plugin2"
+        on { protocolVersions } doReturn setOf(3, 4)
         on { publicKey } doReturn bobPublicKeyCompose
     }
     private val notaries = listOf(
@@ -63,12 +65,14 @@ class NotaryLookupImplTest {
 
         assertThat(notaries).anySatisfy {
             assertThat(it.name).isEqualTo(alice)
-            assertThat(it.pluginClass).isEqualTo("net.corda.Plugin1")
+            assertThat(it.protocol).isEqualTo("net.corda.Plugin1")
             assertThat(it.publicKey).isEqualTo(alicePublicKeyCompose)
+            assertThat(it.protocolVersions).containsExactlyInAnyOrder(1, 2)
         }.anySatisfy {
             assertThat(it.name).isEqualTo(bob)
-            assertThat(it.pluginClass).isEqualTo("net.corda.Plugin2")
+            assertThat(it.protocol).isEqualTo("net.corda.Plugin2")
             assertThat(it.publicKey).isEqualTo(bobPublicKeyCompose)
+            assertThat(it.protocolVersions).containsExactlyInAnyOrder(3, 4)
         }.hasSize(2)
     }
 
@@ -84,6 +88,7 @@ class NotaryLookupImplTest {
             MemberNotaryDetails(
                 alice,
                 "net.corda.Plugin1",
+                emptyList(),
                 emptyList()
             )
         )
@@ -111,7 +116,8 @@ class NotaryLookupImplTest {
     fun `lookup by service name will return the correct information`() {
         val info = lookup.lookup(bob)
 
-        assertThat(info?.pluginClass).isEqualTo("net.corda.Plugin2")
+        assertThat(info?.protocol).isEqualTo("net.corda.Plugin2")
+        assertThat(info?.protocolVersions).containsExactlyInAnyOrder(3, 4)
     }
 
     @Test
