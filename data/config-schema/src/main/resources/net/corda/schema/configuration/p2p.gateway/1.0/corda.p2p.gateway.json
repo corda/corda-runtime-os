@@ -32,7 +32,7 @@
             "maximum": 65535
           },
           "urlPath": {
-            "description": "The URL path the gateway server will listen to.",
+            "description": "The URL path the gateway server will listen on.",
             "type": "string",
             "default": "/",
             "pattern": "^\\/[\\/.a-zA-Z0-9-]*$"
