@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.KeyValuePairList
 import java.util.stream.Stream
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
@@ -63,16 +64,19 @@ class FlowGlobalPostProcessorImplTest {
         this.sessionId = SESSION_ID_1
         this.hasScheduledCleanup = false
         this.counterpartyIdentity = ALICE_X500_HOLDING_IDENTITY
+        this.counterpartySessionProperties = KeyValuePairList(emptyList())
     }
     private val sessionState2 = SessionState().apply {
         this.sessionId = SESSION_ID_2
         this.hasScheduledCleanup = false
         this.counterpartyIdentity = ALICE_X500_HOLDING_IDENTITY
+        this.counterpartySessionProperties = KeyValuePairList(emptyList())
     }
     private val sessionState3 = SessionState().apply {
         this.sessionId = SESSION_ID_3
         this.status = SessionStateType.CREATED
         this.counterpartyIdentity = BOB_X500_HOLDING_IDENTITY
+        this.counterpartySessionProperties = KeyValuePairList(emptyList())
     }
     private val sessionEvent1 = SessionEvent().apply {
         this.sessionId = SESSION_ID_1
