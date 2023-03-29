@@ -101,11 +101,11 @@ class DBAccessIntegrationTest {
         val transactionRecord = TransactionRecordEntry(randomId())
 
         val records = listOf(
-            TopicRecordEntry(topic, 0, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 0, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 1, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 2, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 3, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 2, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 3, 0, key, value, "", transactionRecord, timestamp = timestamp),
         )
 
         val dbAccess = DBAccess(emf)
@@ -135,22 +135,22 @@ class DBAccessIntegrationTest {
         dbAccess.writeTransactionRecord(transactionRecord2)
         dbAccess.writeTransactionRecord(transactionRecord3)
         val partition5 = listOf(
-            TopicRecordEntry(topic, 5, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 5, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 5, 3, key, value, transactionRecord2, timestamp = timestamp),
-            TopicRecordEntry(topic, 5, 4, key, value, transactionRecord2, timestamp = timestamp),
-            TopicRecordEntry(topic, 5, 5, key, value, transactionRecord3, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 3, key, value, "", transactionRecord2, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 4, key, value, "", transactionRecord2, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 5, key, value, "", transactionRecord3, timestamp = timestamp),
         )
         val partition6 = listOf(
-            TopicRecordEntry(topic, 6, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 6, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 6, 2, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 6, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 6, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 6, 2, key, value, "", transactionRecord, timestamp = timestamp),
         )
         val partition7 = listOf(
-            TopicRecordEntry(topic, 7, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 7, 0, key, value, "", transactionRecord, timestamp = timestamp),
         )
         val partition8 = listOf(
-            TopicRecordEntry(topic, 8, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 8, 0, key, value, "", transactionRecord, timestamp = timestamp),
         )
         val records = partition5 + partition6 + partition7 + partition8
 
@@ -249,20 +249,20 @@ class DBAccessIntegrationTest {
         dbAccess.writeTransactionRecord(transactionRecord)
 
         val records = listOf(
-            TopicRecordEntry(topic, 0, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 0, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 1, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 1, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 1, 2, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 1, 3, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 2, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 2, 7, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic, 3, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic2, 0, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic2, 1, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic2, 2, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic2, 3, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic2, 4, 2, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 2, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 3, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 2, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 2, 7, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 3, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 0, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 1, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 2, 0, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 3, 1, key, value, "", transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 4, 2, key, value, "", transactionRecord, timestamp = timestamp),
         )
 
         dbAccess.writeRecords(records)
@@ -340,15 +340,15 @@ class DBAccessIntegrationTest {
 
         dbAccess.writeRecords(
             listOf(
-                TopicRecordEntry(topic, 0, 1, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 0, 2, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 0, 3, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 1, 6, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 1, 7, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 1, 8, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 2, 7, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 2, 8, key, value, transactionRecord, timestamp = timestamp),
-                TopicRecordEntry(topic, 2, 9, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 1, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 2, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 3, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 1, 6, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 1, 7, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 1, 8, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 2, 7, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 2, 8, key, value, "", transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 2, 9, key, value, "", transactionRecord, timestamp = timestamp),
             )
         )
 
@@ -361,9 +361,9 @@ class DBAccessIntegrationTest {
         // Shouldn't matter as transactionRecord2 is still pending
         dbAccess.writeRecords(
             listOf(
-                TopicRecordEntry(topic, 0, 5, key, value, transactionRecord2, timestamp = timestamp),
-                TopicRecordEntry(topic, 0, 6, key, value, transactionRecord2, timestamp = timestamp),
-                TopicRecordEntry(topic, 0, 7, key, value, transactionRecord2, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 5, key, value, "", transactionRecord2, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 6, key, value, "", transactionRecord2, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 7, key, value, "", transactionRecord2, timestamp = timestamp),
             )
         )
 

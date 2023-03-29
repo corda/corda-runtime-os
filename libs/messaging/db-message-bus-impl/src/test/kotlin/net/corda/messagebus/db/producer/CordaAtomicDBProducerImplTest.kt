@@ -33,7 +33,7 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer inserts atomic transaction record on initialization`() {
         val dbAccess: DBAccess = mock()
-        CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
+        CordaAtomicDBProducerImpl(mock(), dbAccess, mock(), mock())
         verify(dbAccess).writeAtomicTransactionRecord()
     }
 
@@ -43,7 +43,7 @@ internal class CordaAtomicDBProducerImplTest {
         whenever(dbAccess.writeTransactionRecord(any())).thenAnswer {
             throw RollbackException("I already have this!")
         }
-        CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
+        CordaAtomicDBProducerImpl(mock(), dbAccess, mock(), mock())
     }
 
     @Test
@@ -63,7 +63,8 @@ internal class CordaAtomicDBProducerImplTest {
         val producer = CordaAtomicDBProducerImpl(
             serializer,
             dbAccess,
-            writeOffsets
+            writeOffsets,
+            mock()
         )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
@@ -95,7 +96,8 @@ internal class CordaAtomicDBProducerImplTest {
         val producer = CordaAtomicDBProducerImpl(
             serializer,
             dbAccess,
-            writeOffsets
+            writeOffsets,
+            mock()
         )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
@@ -117,7 +119,7 @@ internal class CordaAtomicDBProducerImplTest {
     fun `atomic producer does not allow transactional calls`() {
         val dbAccess: DBAccess = mock()
 
-        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
+        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock(), mock())
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.beginTransaction()
@@ -141,7 +143,7 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `producer correctly closes down dbAccess when closed`() {
         val dbAccess: DBAccess = mock()
-        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
+        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock(), mock())
         producer.close()
         verify(dbAccess).close()
     }
