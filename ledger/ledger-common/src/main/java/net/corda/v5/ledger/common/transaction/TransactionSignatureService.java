@@ -2,6 +2,7 @@ package net.corda.v5.ledger.common.transaction;
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService;
+import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
 import net.corda.v5.crypto.merkle.MerkleProof;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +14,7 @@ import java.util.List;
  * TransactionSignatureService can be used to sign and verify transaction signatures.
  * It supports both single and batch signatures.
  */
+@DoNotImplement
 public interface TransactionSignatureService {
 
     /**

@@ -1,6 +1,7 @@
 package net.corda.v5.crypto.merkle;
 
 import net.corda.v5.base.annotations.CordaSerializable;
+import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.crypto.SecureHash;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,6 +16,7 @@ import java.util.List;
  * when you want to <code>verify</code>} if the leaves to be checked are part of a {@link MerkleTree} with the specific root.
  */
 @CordaSerializable
+@DoNotImplement
 public interface MerkleProof {
 
     /**
