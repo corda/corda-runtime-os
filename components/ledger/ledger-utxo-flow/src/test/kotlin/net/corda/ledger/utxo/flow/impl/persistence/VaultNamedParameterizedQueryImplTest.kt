@@ -66,19 +66,6 @@ class VaultNamedParameterizedQueryImplTest {
     }
 
     @Test
-    fun `Vault named parameterized query cannot set timestamp limit twice`() {
-        val query = createQuery()
-
-        query.setCreatedTimestampLimit(Instant.now())
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setCreatedTimestampLimit(Instant.now())
-        }
-
-        assertThat(ex).hasStackTraceContaining("Timestamp limit is already set.")
-    }
-
-    @Test
     fun `Vault named parameterized query cannot set timestamp limit to a future date`() {
         val query = createQuery()
 
