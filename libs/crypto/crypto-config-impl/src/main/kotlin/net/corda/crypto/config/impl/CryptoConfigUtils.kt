@@ -63,14 +63,12 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                             "maximumSize": 1000
                         }
                     },
+                    "defaultWrappingKey" : "root1",
+                    "wrappingKeys" : [
+                         {"alias": "root1", "passphrase": "B"}
+                    ],
                     "wrappingKeyMap": {
                         "name": "CACHING",
-                        "salt": "<plain-text-value>",
-                        "passphrase": {
-                            "configSecret": {
-                                "encryptedSecret": "<encrypted-value>"
-                            }
-                        },
                         "cache": {
                             "expireAfterAccessMins": 60,
                             "maximumSize": 100
@@ -82,7 +80,7 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                             "name": "..",
                             "cfg": {}
                         }
-                    }
+                    },
                 }
             }
         },
@@ -118,11 +116,6 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                 ],
                 "cfg": {
                     "username": "user",
-                    "passphrase": {
-                        "configSecret": {
-                            "encryptedSecret": "<encrypted-value>"
-                        }
-                    },
                     "partition": "whatever"
                 }
             }
@@ -307,8 +300,8 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                                     ConfigValueFactory.fromAnyRef(
                                         mapOf(
                                             "alias" to "root1",
-                                            "salt" to "A",
-                                            "passphrase" to "B"
+                                            "salt" to wrappingKeySalt,
+                                            "passphrase" to wrappingKeyPassphrase,
                                         )
                                     )
                                 ),
@@ -326,8 +319,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                                 ),
                                 "wrappingKeyMap" to mapOf(
                                     "name" to "CACHING",
-                                    "salt" to wrappingKeySalt,
-                                    "passphrase" to wrappingKeyPassphrase,
                                     "cache" to mapOf(
                                         "expireAfterAccessMins" to 60,
                                         "maximumSize" to 1000
