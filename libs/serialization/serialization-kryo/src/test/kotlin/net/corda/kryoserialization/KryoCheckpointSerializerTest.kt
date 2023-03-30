@@ -174,6 +174,9 @@ internal class KryoCheckpointSerializerTest {
         for (i in 1..20) {
             collection.add(i)
         }
+        for (i in 16 until 20) {
+            collection.remove(i)
+        }
 
         val iterator = collection.iterator()
         iterator.next()
@@ -201,6 +204,9 @@ internal class KryoCheckpointSerializerTest {
 
         for (i in 1..20) {
             collection[i] = i
+        }
+        for (i in 16 until 20) {
+            collection.remove(i)
         }
 
         val iterator = collection.iterator()
