@@ -21,7 +21,8 @@ internal class RecordFactoryImpl(
     override fun createVirtualNodeInfoRecord(
         holdingIdentity: HoldingIdentity,
         cpiIdentifier: CpiIdentifier,
-        dbConnections: VirtualNodeDbConnections
+        dbConnections: VirtualNodeDbConnections,
+        externalMessagingRouteConfig: String?
     ): Record<*, *> {
         val virtualNodeInfo = with(dbConnections) {
             VirtualNodeInfo(
@@ -33,6 +34,7 @@ internal class RecordFactoryImpl(
                 cryptoDmlConnectionId,
                 uniquenessDdlConnectionId,
                 uniquenessDmlConnectionId,
+                externalMessagingRouteConfig = externalMessagingRouteConfig,
                 timestamp = clock.instant(),
             ).toAvro()
         }
