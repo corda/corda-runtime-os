@@ -38,7 +38,11 @@ abstract class CryptoRepositoryTest {
                     )
                 )
                 val dbConfig =
-                    DbUtils.getEntityManagerConfiguration("${this::class.java.simpleName}-$k")
+                    DbUtils.getEntityManagerConfiguration(
+                        inMemoryDbName = "${this::class.java.simpleName}-$k",
+                        schemaName = k,
+                        createSchema = true
+                    )
                 dbConfig.dataSource.connection.use { connection ->
                     LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
                 }
