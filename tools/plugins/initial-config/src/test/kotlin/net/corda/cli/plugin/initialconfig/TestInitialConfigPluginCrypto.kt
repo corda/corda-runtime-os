@@ -5,7 +5,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.cryptoConnectionFactory
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.config.impl.hsmMap
@@ -156,9 +155,6 @@ class TestInitialConfigPluginCrypto {
             listOf(EncryptionSecretsServiceFactory())
         )
         val config = smartConfigFactory.create(ConfigFactory.parseString(json))
-        val connectionFactory = config.cryptoConnectionFactory()
-        assertEquals(5, connectionFactory.expireAfterAccessMins)
-        assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)

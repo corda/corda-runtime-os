@@ -41,9 +41,6 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Default config should have expected values`() {
         val config = createDefaultCryptoConfig("master-passphrase", "master-salt")
-        val connectionFactory = config.cryptoConnectionFactory()
-        assertEquals(5, connectionFactory.expireAfterAccessMins)
-        assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
@@ -110,9 +107,6 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Test config should have expected values`() {
         val config = createDefaultCryptoConfig("pass", "salt")
-        val connectionFactory = config.cryptoConnectionFactory()
-        assertEquals(5, connectionFactory.expireAfterAccessMins)
-        assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
@@ -366,14 +360,6 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.hsmRegistrationBusProcessor()
-        }
-    }
-
-    @Test
-    fun `cryptoConnectionFactory should throw IllegalStateException if value is not found`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.cryptoConnectionFactory()
         }
     }
 

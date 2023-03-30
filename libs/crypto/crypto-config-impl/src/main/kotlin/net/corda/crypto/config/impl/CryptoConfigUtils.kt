@@ -145,7 +145,6 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
  */
 
 private const val HSM_ID = "hsmId"
-const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
 const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
 const val MAXIMUM_SIZE = "maximumSize"
 private const val SIGNING_SERVICE_OBJ = "signingService"
@@ -164,13 +163,6 @@ fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
     )
 
 fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSecretsImpl(this)
-
-fun SmartConfig.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
-    try {
-        CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ))
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $CRYPTO_CONNECTION_FACTORY_OBJ.", e)
-    }
 
 fun SmartConfig.signingService(): CryptoSigningServiceConfig =
     try {
@@ -240,14 +232,6 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 @Suppress("LongMethod")
 fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
-        .withValue(
-            CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
-                mapOf(
-                    CryptoConnectionsFactoryConfig::expireAfterAccessMins.name to 5,
-                    CryptoConnectionsFactoryConfig::maximumSize.name to 3
-                )
-            )
-        )
         .withValue(
             SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
                 mapOf(
