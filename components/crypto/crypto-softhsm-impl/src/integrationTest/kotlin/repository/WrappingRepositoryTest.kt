@@ -29,7 +29,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun saveKey(emf: EntityManagerFactory) {
         val keyAlias = "save-key-${UUID.randomUUID()}"
-        val repo = WrappingRepositoryImpl(emf)
+        val repo = WrappingRepositoryImpl(emf, "test")
 
         val savedKey = repo.saveKey(keyAlias, wrappingKeyInfo)
 
@@ -49,7 +49,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `saveKey duplicate alias should throw`(emf: EntityManagerFactory) {
         val keyAlias = "save-key-${UUID.randomUUID()}"
-        val repo = WrappingRepositoryImpl(emf)
+        val repo = WrappingRepositoryImpl(emf, "test")
 
         repo.saveKey(keyAlias, wrappingKeyInfo)
 
