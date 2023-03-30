@@ -1337,6 +1337,62 @@
                                             "annotations": {}
                                         }
                                     ]
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "title": "REST Worker TLS configuration",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "secretName": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The name of the Kubernetes secret containing the certificate, private key and CA certificate. If not specified, a new secret will be created and certificates/keys generated."
+                                        },
+                                        "generation": {
+                                            "type": "object",
+                                            "title": "Optional parameters to be used during TLS certificate generation.",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "altNames": {
+                                                    "type": "array",
+                                                    "title": "Alternative names to be included in a certificate when generated."
+                                                }
+                                            }
+                                        },
+                                        "crt": {
+                                            "title": "TLS Certificate configuration",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the certificate value"
+                                                }
+                                            }
+                                        },
+                                        "key": {
+                                            "title": "TLS Certificate private key configuration",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the private key value"
+                                                }
+                                            }
+                                        },
+                                        "ca": {
+                                            "title": "Certification Authority(CA) certificates chain configuration",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the CA certificate chain value"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             "examples": [
