@@ -87,7 +87,8 @@ class TestWrappingRepository {
         val repo = WrappingRepositoryImpl(
             mock {
                 on { createEntityManager() } doReturn em
-            }
+            },
+            "test"
         )
         val savedKey = repo.saveKey("a", wrappingKeyInfo)
         verify(em).merge(argThat<WrappingKeyEntity>{
