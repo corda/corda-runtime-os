@@ -26,6 +26,9 @@ class ConsensualSignedTransactionImpl(
 ) : ConsensualSignedTransactionInternal {
 
     private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
+    private val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        toLedgerTransaction().requiredSignatories
+    }
 
     init {
         require(signatures.isNotEmpty()) {
@@ -61,7 +64,7 @@ class ConsensualSignedTransactionImpl(
         )
     }
 
-    private fun getSignatoryKeyFromKeyId(keyId: SecureHash, requiredSignatories: Set<PublicKey>): PublicKey? {
+    private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
         return keyIdToSignatories.getOrPut(keyId.algorithm) {
             requiredSignatories.map { signatory ->
                 getLeafKeys(signatory).map {
@@ -74,10 +77,8 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        // TODO See if adding the following as property breaks CordaSerializable
-        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
         val signatoriesWithValidSignatures = signatures.mapNotNull {
-            val signatureKey = getSignatoryKeyFromKeyId(it.by, requiredSignatories)
+            val signatureKey = getSignatoryKeyFromKeyId(it.by)
             if (signatureKey == null) {
                 null
             } else {
@@ -95,10 +96,8 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun verifySignatures() {
-        // TODO See if adding the following as property breaks CordaSerializable
-        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
         val signatoriesWithValidSignatures = signatures.mapNotNull {
-            val signatureKey = getSignatoryKeyFromKeyId(it.by, requiredSignatories)
+            val signatureKey = getSignatoryKeyFromKeyId(it.by)
             if (signatureKey == null) {
                 null
             } else {
@@ -127,9 +126,7 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun verifySignature(signature: DigitalSignatureAndMetadata) {
-        // TODO See if adding the following as property breaks CordaSerializable
-        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
-        val publicKey = getSignatoryKeyFromKeyId(signature.by, requiredSignatories)
+        val publicKey = getSignatoryKeyFromKeyId(signature.by)
             ?: return
 
         try {
