@@ -62,7 +62,6 @@ internal class KryoCheckpointSerializerTest {
             DefaultKryoCustomizer.customize(
                 Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver())
                     .apply {
-                        isRegistrationRequired = false
                         // This serializer shouldn't be used
                         addDefaultSerializer(Externalizable::class.java, ExternalizableKryoSerializer<Externalizable>())
                     },
@@ -104,7 +103,7 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
             )

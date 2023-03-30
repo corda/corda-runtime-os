@@ -36,7 +36,7 @@ internal class SingletonSerializeAsTokenSerializerTest {
 
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 mapOf(SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(emptyMap())),
                 ClassSerializer(sandboxGroup)
             )
@@ -56,7 +56,7 @@ internal class SingletonSerializeAsTokenSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(Tester::class.java))
         val deserializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
             )

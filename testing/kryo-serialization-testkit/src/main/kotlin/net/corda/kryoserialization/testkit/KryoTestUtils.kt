@@ -27,7 +27,6 @@ fun createCheckpointSerializer(
     val checkpointSerializer =
         KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup) { classResolver ->
             Kryo(classResolver, MapReferenceResolver()).also { kryo ->
-                kryo.isRegistrationRequired = false
                 kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
             }
         }.let { builder ->
