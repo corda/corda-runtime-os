@@ -14,6 +14,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.messaging.interop.FacadeInvocation
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.session.manager.Constants
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -191,7 +192,7 @@ class FlowMessagingImpl @Activate constructor(
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
         val propertiesBuilder = FlowContextPropertiesBuilder {
-            it.put("isInteropSession", "true")
+            it.put(Constants.FLOW_PROTOCOL_INTEROP, "true")
         }
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, propertiesBuilder)
     }

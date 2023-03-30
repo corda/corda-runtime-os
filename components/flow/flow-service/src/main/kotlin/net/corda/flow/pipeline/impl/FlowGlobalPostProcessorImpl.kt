@@ -16,6 +16,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
+import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
@@ -85,8 +86,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
      * @return True if the state, corresponds to an interop session, false otherwise.
      */
     private fun SessionState.isInteropSessionState(): Boolean {
-        val sessionProperties = counterpartySessionProperties.items.associate { it.key to it.value }
-        return sessionProperties["isInteropSession"]?.equals("true") ?: false
+        val sessionProperties = counterpartySessionProperties?.items?.associate { it.key to it.value }
+        return sessionProperties?.get(Constants.FLOW_PROTOCOL_INTEROP)?.equals("true") ?: false
     }
 
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {

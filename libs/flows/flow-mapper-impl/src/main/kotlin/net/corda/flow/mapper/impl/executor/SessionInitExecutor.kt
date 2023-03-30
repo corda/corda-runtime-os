@@ -16,6 +16,7 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -36,7 +37,7 @@ class SessionInitExecutor(
 
     private val isInteropEvent = run {
         val sessionProperties = sessionInit.contextSessionProperties.items.associate { it.key to it.value }
-        when (sessionProperties["isInteropSession"]) {
+        when (sessionProperties[Constants.FLOW_PROTOCOL_INTEROP]) {
             "true" -> true
             else -> false
         }
@@ -80,7 +81,7 @@ class SessionInitExecutor(
                         sessionEvent.initiatedIdentity,
                         0,
                         emptyList(),
-                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair("isInteropSession", "true"))))
+                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair(Constants.FLOW_PROTOCOL_INTEROP, "true"))))
                     )
                 )
             )
