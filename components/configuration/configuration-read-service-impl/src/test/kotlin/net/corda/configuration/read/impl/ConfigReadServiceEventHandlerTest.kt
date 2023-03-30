@@ -8,8 +8,10 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -65,6 +67,8 @@ internal class ConfigReadServiceEventHandlerTest {
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var avroSchemaProcessor: AvroSchemaProcessor
     private lateinit var messagingConfig: SmartConfig
+    private lateinit var configSubReg: RegistrationHandle
+    private lateinit var avroSubReg: RegistrationHandle
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
@@ -72,9 +76,20 @@ internal class ConfigReadServiceEventHandlerTest {
     private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
     @BeforeEach
     fun setUp() {
-        coordinator = mock()
-        configSubscription = mock()
-        avroSchemaSubscription = mock()
+        val configSubscriptionName = mock<LifecycleCoordinatorName>()
+        val avroSchemaSubscriptionName = mock<LifecycleCoordinatorName>()
+        avroSubReg = mock()
+        configSubReg = mock()
+        coordinator = mock {
+            on { followStatusChangesByName(setOf(configSubscriptionName)) }.thenReturn(configSubReg)
+            on { followStatusChangesByName(setOf(avroSchemaSubscriptionName)) }.thenReturn(avroSubReg)
+        }
+        configSubscription = mock() {
+            on { subscriptionName }.thenReturn(configSubscriptionName)
+        }
+        avroSchemaSubscription = mock() {
+            on { subscriptionName }.thenReturn(avroSchemaSubscriptionName)
+        }
         subscriptionFactory = mock {
             on {
                 createCompactedSubscription<String, SmartConfig>(
@@ -154,6 +169,17 @@ internal class ConfigReadServiceEventHandlerTest {
         configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
         verify(configSubscription).close()
         verify(avroSchemaSubscription).close()
+    }
+
+    @Test
+    fun `stopping closes all sub registrations`() {
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
+        configReadServiceEventHandler.processEvent(SetupConfigSubscription(), coordinator)
+        configReadServiceEventHandler.processEvent(SetupAvroSchemaSubscription(), coordinator)
+        configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
+
+        verify(configSubReg).close()
+        verify(avroSubReg).close()
     }
 
     @Test
@@ -245,6 +271,7 @@ internal class ConfigReadServiceEventHandlerTest {
             messagingConfig
         )
         verify(avroSchemaSubscription).start()
+        verify(coordinator).followStatusChangesByName(setOf(avroSchemaSubscription.subscriptionName))
     }
 
     @Test
