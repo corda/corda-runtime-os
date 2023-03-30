@@ -46,7 +46,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.secondValue
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 internal class ConfigReadServiceEventHandlerTest {
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
