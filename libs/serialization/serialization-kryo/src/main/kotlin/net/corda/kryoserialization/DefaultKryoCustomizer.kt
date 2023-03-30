@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
@@ -15,6 +16,7 @@ import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
+import net.corda.kryoserialization.serializers.IteratorSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
@@ -74,6 +76,16 @@ class DefaultKryoCustomizer {
                 for ((clazz, serializer) in externalSerializers) {
                     addDefaultSerializer(clazz, serializer)
                 }
+
+                addDefaultSerializer(Iterator::class.java, object: BaseSerializerFactory<IteratorSerializer>() {
+                    override fun newSerializer(kryo: Kryo, type: Class<*>) : IteratorSerializer {
+                        val config = CompatibleFieldSerializer.CompatibleFieldSerializerConfig().apply {
+                            ignoreSyntheticFields = false
+                            extendedFieldNames = true
+                        }
+                        return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type, config))
+                    }
+                })
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
