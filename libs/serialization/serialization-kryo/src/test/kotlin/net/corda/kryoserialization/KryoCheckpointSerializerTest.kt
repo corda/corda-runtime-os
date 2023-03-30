@@ -118,6 +118,16 @@ internal class KryoCheckpointSerializerTest {
         assertThat(tested.someString).isEqualTo(tester.someString)
     }
 
+    class ChildOfArrayList<T>(size: Int) : ArrayList<T>(size) {
+        // Kryo needs a no-arg constructor.
+        constructor() : this(0)
+    }
+
+    @Test
+    fun `ChildOfArrayList iterator can checkpoint without error`() {
+        runTestWithCollection(ChildOfArrayList())
+    }
+
     @Test
     fun `ArrayList iterator can checkpoint without error`() {
         runTestWithCollection(ArrayList())
@@ -155,13 +165,13 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup()
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
             )
         )
 
-        for (i in 1..10) {
+        for (i in 1..20) {
             collection.add(i)
         }
 
@@ -183,13 +193,13 @@ internal class KryoCheckpointSerializerTest {
         val sandboxGroup = mockSandboxGroup()
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()).apply { isRegistrationRequired = false },
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
             )
         )
 
-        for (i in 1..10) {
+        for (i in 1..20) {
             collection[i] = i
         }
 
