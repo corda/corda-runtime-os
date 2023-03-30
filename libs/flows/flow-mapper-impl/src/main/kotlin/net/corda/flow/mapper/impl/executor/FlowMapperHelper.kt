@@ -30,11 +30,15 @@ fun generateFlowId(): String {
  * Outbound records should be directed to the p2p out topic.
  * @return the output topic based on [messageDirection].
  */
-fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
+fun getSessionEventOutputTopic(messageDirection: MessageDirection, isInterop: Boolean): String {
     return if (messageDirection == MessageDirection.INBOUND) {
         Schemas.Flow.FLOW_EVENT_TOPIC
     } else {
-        Schemas.P2P.P2P_OUT_TOPIC
+        if (isInterop) {
+            Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
+        } else {
+            Schemas.P2P.P2P_OUT_TOPIC
+        }
     }
 }
 

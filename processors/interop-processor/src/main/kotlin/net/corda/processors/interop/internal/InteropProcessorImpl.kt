@@ -2,6 +2,7 @@ package net.corda.processors.interop.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.InteropService
+import net.corda.interop.filter.InteropP2PFilterService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -27,7 +28,9 @@ class InteropProcessorImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = InteropService::class)
-    private val interopService: InteropService
+    private val interopService: InteropService,
+    @Reference(service = InteropP2PFilterService::class)
+    private val interopP2PFilterService: InteropP2PFilterService
 ) : InteropProcessor {
 
     private companion object {
@@ -36,6 +39,7 @@ class InteropProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
+        ::interopP2PFilterService,
         ::interopService
     )
 

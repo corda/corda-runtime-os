@@ -23,7 +23,8 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
+//import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -83,7 +84,7 @@ class InteropService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)
+                            setOf(MESSAGING_CONFIG)//, FLOW_CONFIG)
                         )
                     }
                 } else {
@@ -98,6 +99,7 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        //val flowConfig = event.config.getConfig(FLOW_CONFIG)
         //TODO temporary code (commented and uncommented) to setup members of interop group,
         // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()
@@ -120,29 +122,44 @@ class InteropService @Activate constructor(
             }
         }
 
-        coordinator.createManagedResource(CLEANUP_TASK) {
-            ScheduledTaskState(
-                Executors.newSingleThreadScheduledExecutor(),
-                publisherFactory.createPublisher(
-                    PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
-                    messagingConfig
-                ),
-                mutableMapOf()
-            )
-        }
+//        coordinator.createManagedResource(CLEANUP_TASK) {
+//            ScheduledTaskState(
+//                Executors.newSingleThreadScheduledExecutor(),
+//                publisherFactory.createPublisher(
+//                    PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
+//                    messagingConfig
+//                ),
+//                mutableMapOf()
+//            )
+//        }
+//        val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
+//        coordinator.createManagedResource(SUBSCRIPTION) {
+//            subscriptionFactory.createStateAndEventSubscription(
+//                SubscriptionConfig(CONSUMER_GROUP, Schemas.P2P.P2P_IN_TOPIC),
+//                InteropProcessor(
+//                    cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
+//                    subscriptionFactory, messagingConfig, facadeToFlowMapperService
+//                ),
+//                messagingConfig,
+//                InteropListener(newScheduledTaskState)
+//            )
+//        }
+//        coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
+
         val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
         coordinator.createManagedResource(SUBSCRIPTION) {
-            subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, FLOW_INTEROP_EVENT_TOPIC),
                 InteropProcessor(
                     cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
                     subscriptionFactory, messagingConfig, facadeToFlowMapperService
                 ),
                 messagingConfig,
-                InteropListener(newScheduledTaskState)
-            )
+                null
+            ).also {
+                it.start()
+            }
         }
-        coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
 
         logger.info("Publishing seed message")
         publisher?.publish(registrationService.seedMessage())
