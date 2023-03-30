@@ -4,6 +4,7 @@ import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
 import net.corda.crypto.softhsm.impl.toHSMAssociation
+import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -48,6 +49,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
         assertThat(loaded).isEqualTo(ai)
     }
 
+    @ParameterizedTest
     @MethodSource("emfs")
     fun `when associate unique generate alias`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
@@ -161,6 +163,66 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
             val two = loaded.singleOrNull { it.hsmId == hsmId2 }
             assertions.assertThat(two).isNotNull
             assertions.assertThat(two?.usages).isEqualTo(1)
+        }
+    }
+
+    /**
+     * As the category association can be changed over time the unique index is defined as
+     * "tenant_id, category, deprecated_at" to allow reassignment back to original, e.g. like
+     * "T1,LEDGER,WS1" -> "T1,LEDGER,WS2" -> "T1,LEDGER,WS1"
+     * Uniqueness of "tenant_id, category, deprecated_at" gives ability to have
+     * ONLY one active (where deprecated_at=0) association
+     */
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `can save HSMCategoryAssociationEntity with duplicate category and hsm association`(emf: EntityManagerFactory) {
+        val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
+        val repo = HSMRepositoryImpl(emf, tenantId)
+
+        // save one
+        repo.associate(
+            tenantId,
+            category,
+            "hsm-id",
+            MasterKeyPolicy.SHARED
+        )
+
+        // get it back using plain JPA
+        var loaded = emf.createEntityManager().use {
+            it
+                .createQuery("FROM ${HSMCategoryAssociationEntity::class.simpleName} AS t " +
+                        "WHERE t.tenantId = :tenantId AND t.category = :category")
+                .setParameter("tenantId", tenantId)
+                .setParameter("category", category)
+                .singleResult as HSMCategoryAssociationEntity
+        }
+
+        // save with another with a different deprecated_at field should work
+        emf.createEntityManager().transaction {
+            it.persist(HSMCategoryAssociationEntity(
+                id = UUID.randomUUID().toString(),
+                tenantId = loaded.tenantId,
+                category = loaded.category,
+                hsmAssociation = loaded.hsmAssociation,
+                timestamp = loaded.timestamp,
+                deprecatedAt = loaded.deprecatedAt + 1 // only changed field.
+            ))
+        }
+
+        // but saving it with the same should fail
+        assertThrows<PersistenceException> {
+            emf.createEntityManager().transaction {
+                it.persist(
+                    HSMCategoryAssociationEntity(
+                        id = UUID.randomUUID().toString(),
+                        tenantId = loaded.tenantId,
+                        category = loaded.category,
+                        hsmAssociation = loaded.hsmAssociation,
+                        timestamp = loaded.timestamp,
+                        deprecatedAt = loaded.deprecatedAt
+                    )
+                )
+            }
         }
     }
 }
