@@ -1,8 +1,17 @@
 -tester: biz.aQute.tester.junit-platform
--runfw: org.apache.felix.framework;
+-runfw: org.apache.felix.framework
+-resolve.effective: resolve,active
 -runee: JavaSE-11
 -runtrace: true
+
+# Enable debugging.
 #-runjdb: 5006
+
+-runvm: \
+    --illegal-access=deny
+
+-runsystemcapabilities: \
+    osgi.service;objectClass:List<String>='net.corda.membership.groupparams.writer.service.GroupParametersWriterService';effective:=active
 
 -runsystempackages: \
     sun.security.x509
@@ -11,7 +20,6 @@
     bnd.identity;id='net.corda.registration-impl',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
-    bnd.identity;id='net.corda.crypto-client-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.membership-impl',\
@@ -28,7 +36,7 @@
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\
-    bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='org.hsqldb.hsqldb'
 
 -runstartlevel: \
     order=sortbynameversion,\
