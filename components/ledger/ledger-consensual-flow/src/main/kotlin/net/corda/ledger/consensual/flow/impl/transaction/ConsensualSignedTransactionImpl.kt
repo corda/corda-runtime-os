@@ -8,6 +8,7 @@ import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -23,6 +24,8 @@ class ConsensualSignedTransactionImpl(
     override val wireTransaction: WireTransaction,
     private val signatures: List<DigitalSignatureAndMetadata>
 ) : ConsensualSignedTransactionInternal {
+
+    private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
 
     init {
         require(signatures.isNotEmpty()) {
@@ -58,14 +61,16 @@ class ConsensualSignedTransactionImpl(
         )
     }
 
-    private fun getSignatoryKeyFromKeyId(keyId: SecureHash, signatoriesKeys: Set<PublicKey>): PublicKey? {
-        val keyIdsToSignatories = signatoriesKeys.associateBy {// todo cache this
-            transactionSignatureService.getIdOfPublicKey(
-                it,
-                keyId.algorithm
-            )
-        }
-        return keyIdsToSignatories[keyId]
+    private fun getSignatoryKeyFromKeyId(keyId: SecureHash, requiredSignatories: Set<PublicKey>): PublicKey? {
+        return keyIdToSignatories.getOrPut(keyId.algorithm) {
+            requiredSignatories.map { signatory ->
+                getLeafKeys(signatory).map {
+                    transactionSignatureService.getIdOfPublicKey(
+                        it, keyId.algorithm
+                    ) to it
+                }
+            }.flatten().toMap()
+        }[keyId]
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
@@ -165,5 +170,12 @@ class ConsensualSignedTransactionImpl(
 
     override fun getSignatures(): List<DigitalSignatureAndMetadata> {
         return signatures
+    }
+
+    private fun getLeafKeys(publicKey: PublicKey): List<PublicKey> {
+        return when (publicKey) {
+            is CompositeKey -> publicKey.leafKeys.toList()
+            else -> listOf(publicKey)
+        }
     }
 }

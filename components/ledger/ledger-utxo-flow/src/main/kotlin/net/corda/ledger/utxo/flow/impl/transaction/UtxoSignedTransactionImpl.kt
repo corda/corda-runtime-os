@@ -33,6 +33,9 @@ data class UtxoSignedTransactionImpl(
     private val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransactionInternal {
 
+    private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
+    private val keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
+
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
         verifyMetadata(wireTransaction.metadata)
@@ -113,13 +116,15 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
-        val keyIdsToSignatories = signatories.associateBy {// todo cache this
-            transactionSignatureServiceInternal.getIdOfPublicKey(
-                it,
-                keyId.algorithm
-            )
-        }
-        return keyIdsToSignatories[keyId]
+        return keyIdToSignatories.getOrPut(keyId.algorithm) {
+            signatories.flatMap { signatory ->
+                getLeafKeys(signatory).map {
+                    transactionSignatureServiceInternal.getIdOfPublicKey(
+                        it, keyId.algorithm
+                    ) to it
+                }
+            }.toMap()
+        }[keyId]
     }
 
     // Against signatories. Notary/Unknown signatures are ignored.
@@ -174,13 +179,13 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
-        val keyIdNotary = getNotaryKeys().associateBy {// todo cache this
-            transactionSignatureServiceInternal.getIdOfPublicKey(
-                it,
-                keyId.algorithm
-            )
-        }
-        return keyIdNotary[keyId]
+        return keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
+            getLeafKeys(notaryKey).associateBy {
+                transactionSignatureServiceInternal.getIdOfPublicKey(
+                    it, keyId.algorithm
+                )
+            }
+        }[keyId]
     }
 
     override fun verifyAttachedNotarySignature() {
@@ -274,10 +279,10 @@ data class UtxoSignedTransactionImpl(
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
     }
 
-    private fun getNotaryKeys(): List<PublicKey> {
-        return when (val owningKey = notaryKey) {
-            is CompositeKey -> owningKey.leafKeys.toList()
-            else -> listOf(owningKey)
+    private fun getLeafKeys(publicKey: PublicKey): List<PublicKey> {
+        return when (publicKey) {
+            is CompositeKey -> publicKey.leafKeys.toList()
+            else -> listOf(publicKey)
         }
     }
 }
