@@ -13,7 +13,12 @@ internal data class BootstrapConfigProvided(val config: SmartConfig) : Lifecycle
 /**
  * The service should create its subscription to the message bus.
  */
-internal class SetupSubscription : LifecycleEvent
+internal class SetupAvroSchemaSubscription : LifecycleEvent
+
+/**
+ * The service should create its subscription to the message bus.
+ */
+internal class SetupConfigSubscription : LifecycleEvent
 
 /**
  * New configuration has been received
