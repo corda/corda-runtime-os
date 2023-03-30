@@ -13,6 +13,7 @@ import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -26,6 +27,10 @@ class HSMRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
     val tenantId: String,
 ) : HSMRepository {
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun close() = entityManagerFactory.close()
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
@@ -46,6 +51,8 @@ class HSMRepositoryImpl(
             } else {
                 result[0].toHSMAssociation()
             }
+        }.also {
+            logger.info("Looked up tenant association for $tenantId $category with wrapping key alias ${it?.masterKeyAlias}")
         }
 
     override fun getHSMUsage(): List<HSMUsage> = entityManagerFactory.createEntityManager().use {
@@ -85,6 +92,8 @@ class HSMRepositoryImpl(
             )
 
             em.merge(categoryAssociation).toHSMAssociation()
+        }.also {
+            logger.trace("Stored tenant association $tenantId $category with wrapping key alias ${it.masterKeyAlias}")
         }
     }
 
@@ -121,6 +130,7 @@ class HSMRepositoryImpl(
         )
 
         entityManager.persist(association)
+        logger.info("Making new association tenant $tenantId wrapping key alias ${association.masterKeyAlias}")
         return association
     }
 

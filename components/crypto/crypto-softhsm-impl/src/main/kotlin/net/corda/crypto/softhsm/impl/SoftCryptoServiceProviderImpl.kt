@@ -118,7 +118,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 dbConnectionManager,
                 virtualNodeInfoReadService,
                 jpaEntitiesRegistry
-            )
+            ),
+            tenantId
         )
 
         @Suppress("ThrowsCount")

@@ -113,13 +113,17 @@ class CryptoServiceFactoryImpl @Activate constructor(
             logger.debug { "Getting the crypto service for tenantId '$tenantId', category '$category'." }
             val association = hsmStore.findTenantAssociation(tenantId, category)
                 ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
-            if(association.hsmId != hsmId) {
+            if (association.hsmId != hsmId) {
                 throw InvalidParamsException(
                     "This hsmId '$hsmId' is not configured to handle tenant '$tenantId' " +
                             "with category '$category' and association '$association'."
                 )
             }
-            logger.info("Creating {}: association={}", CryptoServiceRef::class.simpleName, association)
+            logger.trace(
+                "Using {}: association={} wrapping key alias ${association.masterKeyAlias} tenant $tenantId category $category",
+                CryptoServiceRef::class.simpleName,
+                association
+            )
             return CryptoServiceRef(
                 tenantId = association.tenantId,
                 category = association.category,

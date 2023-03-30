@@ -62,7 +62,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun findKey(emf: EntityManagerFactory) {
         val keyAlias = "find-key-${UUID.randomUUID()}"
-        val repo = WrappingRepositoryImpl(emf)
+        val repo = WrappingRepositoryImpl(emf, "test")
         repo.saveKey(keyAlias, wrappingKeyInfo)
 
         val loadedKey = repo.findKey(keyAlias)
@@ -73,7 +73,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `findKey return null for non existing alias`(emf: EntityManagerFactory) {
-        val repo = WrappingRepositoryImpl(emf)
+        val repo = WrappingRepositoryImpl(emf, "test")
         val loadedKey = repo.findKey(UUID.randomUUID().toString())
         assertThat(loadedKey).isNull()
     }
