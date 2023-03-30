@@ -3,7 +3,6 @@ package net.corda.crypto.config.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.validation.impl.ConfigurationValidatorFactoryImpl
@@ -51,7 +50,6 @@ class CryptoConfigUtilsTests {
         assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
         assertThat(softWorker.hsm.categories).hasSize(1)
         assertEquals("*", softWorker.hsm.categories[0].category)
         assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
@@ -117,7 +115,6 @@ class CryptoConfigUtilsTests {
         assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
         assertThat(softWorker.hsm.categories).hasSize(1)
         assertEquals("*", softWorker.hsm.categories[0].category)
         assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
@@ -283,9 +280,6 @@ class CryptoConfigUtilsTests {
             retryConfig.attemptTimeoutMills
         }
         val hsmConfig = CryptoHSMConfig.HSMConfig(configFactory.create(ConfigFactory.empty()))
-        assertThrows<IllegalStateException> {
-            hsmConfig.name
-        }
         assertThrows<IllegalStateException> {
             hsmConfig.categories
         }

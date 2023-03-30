@@ -165,7 +165,6 @@ class TestInitialConfigPluginCrypto {
         assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(CryptoConsts.SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
         assertThat(softWorker.hsm.categories).hasSize(1)
         assertEquals("*", softWorker.hsm.categories[0].category)
         assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)

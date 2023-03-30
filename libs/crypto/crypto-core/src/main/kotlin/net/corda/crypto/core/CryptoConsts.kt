@@ -5,7 +5,6 @@ package net.corda.crypto.core
  */
 object CryptoConsts {
     const val SOFT_HSM_ID = "SOFT"
-    const val SOFT_HSM_SERVICE_NAME = "SOFT"
 
     /**
      * Constants defining HSM categories.
