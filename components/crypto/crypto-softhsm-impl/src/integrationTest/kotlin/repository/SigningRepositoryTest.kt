@@ -11,6 +11,7 @@ import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
@@ -20,8 +21,11 @@ import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.crypto.softhsm.impl.toDto
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.v5.base.types.LayeredPropertyMap
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.junit.jupiter.api.TestInstance
@@ -34,7 +38,7 @@ import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -105,7 +109,12 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         )
 
     private fun createLayeredPropertyMapFactory(): LayeredPropertyMapFactory {
-        return mock<LayeredPropertyMapFactory>()
+        return object : LayeredPropertyMapFactory {
+            override fun createMap(properties: Map<String, String?>): LayeredPropertyMap {
+                return LayeredPropertyMapImpl(properties, PropertyConverter(emptyMap()))
+            }
+
+        }
     }
 
     private val wrappingKeys = mutableMapOf<EntityManagerFactory, WrappingKeyInfo>()
@@ -232,17 +241,110 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             .isEqualTo(info)
     }
 
-//    @ParameterizedTest
-//    @MethodSource("emfs")
-//    fun query(emf: EntityManagerFactory) {
-//
-//    }
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `query by tenant id`(emf: EntityManagerFactory) {
+        val allKeys = createdKeys.getOrElse(emf) {
+            createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
+        val found = query(emf,0, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
+        assertThat(found).containsExactlyElementsOf(
+            allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.take(2))
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `query by category`(emf: EntityManagerFactory) {
+        val allKeys = createdKeys.getOrElse(emf) {
+            createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
+        val found = query(
+            emf,0, 2, SigningKeyOrderBy.CATEGORY_DESC, mapOf("category" to allKeys.first().category))
+        assertThat(found).containsExactlyElementsOf(
+            allKeys.filter { it.category == allKeys.first().category }.sortedByDescending { it.category }.take(2))
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `query by schemeCodeName`(emf: EntityManagerFactory) {
+        val allKeys = createdKeys.getOrElse(emf) {
+            createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
+        val found = query(
+            emf,0, 2,
+            SigningKeyOrderBy.ALIAS, mapOf("schemeCodeName" to allKeys.first().schemeCodeName))
+        assertThat(found).containsExactlyElementsOf(
+            allKeys
+                .filter { it.schemeCodeName == allKeys.first().schemeCodeName }
+                .sortedBy { it.alias }
+                .take(2))
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `query by alias`(emf: EntityManagerFactory) {
+        val allKeys = createdKeys.getOrElse(emf) {
+            createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
+        val found = query(
+            emf,0, 2,
+            SigningKeyOrderBy.ALIAS,
+            mapOf("alias" to allKeys.first{ null != it.externalId }.alias!!))
+        assertThat(found).containsExactlyElementsOf(
+            allKeys
+                .filter { it.alias == allKeys.first().alias }
+                .sortedBy { it.alias }
+                .take(2))
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `query by externalId`(emf: EntityManagerFactory) {
+        val allKeys = createdKeys.getOrElse(emf) {
+            createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
+        val found = query(
+            emf,0, 2,
+            SigningKeyOrderBy.ALIAS,
+            mapOf("externalId" to allKeys.first { null != it.externalId }.externalId!!))
+        assertThat(found).containsExactlyElementsOf(
+            allKeys
+                .filter { it.externalId == allKeys.first().externalId }
+                .sortedBy { it.externalId }
+                .take(2))
+    }
+
+    private fun query(
+        emf: EntityManagerFactory,
+        skip: Int,
+        take: Int,
+        orderBy: SigningKeyOrderBy,
+        filters: Map<String, String>,
+    ): Collection<SigningKeyInfo> {
+        val repo = SigningRepositoryImpl(
+            emf,
+            defaultTenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        return repo.query(skip, take, orderBy, filters)
+    }
+
 
     @ParameterizedTest
     @MethodSource("emfs")
     fun lookupByPublicKeyShortHashes(emf: EntityManagerFactory) {
-        if(!createdKeys.containsKey(emf))
+        val allKeys = createdKeys.getOrElse(emf) {
             createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
 
         val repo = SigningRepositoryImpl(
             emf,
@@ -251,7 +353,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             digestService,
             createLayeredPropertyMapFactory(),
         )
-        val allKeys = createdKeys[emf]!!
+
         val lookFor = allKeys.map {
             parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService))
         }
@@ -263,8 +365,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun lookupByPublicKeyHashes(emf: EntityManagerFactory) {
-        if(!createdKeys.containsKey(emf))
+        val allKeys = createdKeys.getOrElse(emf) {
             createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
 
         val repo = SigningRepositoryImpl(
             emf,
@@ -273,7 +377,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             digestService,
             createLayeredPropertyMapFactory(),
         )
-        val allKeys = createdKeys[emf]!!
+
         val lookFor = allKeys.map {
             ShortHash.of(parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService)))
         }
