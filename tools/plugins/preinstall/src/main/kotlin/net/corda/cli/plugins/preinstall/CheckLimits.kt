@@ -27,7 +27,11 @@ data class ResourceConfig(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Resources(
     @JsonProperty("resources")
-    val resources: ResourceConfig,
+    val resources: ResourceConfig
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Workers(
     @JsonProperty("bootstrap")
     val bootstrap: Resources?,
     @JsonProperty("workers")
@@ -66,14 +70,10 @@ class CheckLimits : Runnable {
 
     // used for logging
     private fun log(s: String, level: Int) {
-        if (level == ERROR) {
-            println("[ERROR] $s")
-        }
-        else if (verbose && level == INFO) {
-            println("[INFO] $s")
-        }
-        else if (debug && level == DEBUG) {
-            println("[DEBUG] $s")
+        when (level) {
+            ERROR -> println("[ERROR] $s")
+            INFO -> if (verbose) println("[INFO] $s")
+            DEBUG -> if (debug) println("[DEBUG] $s")
         }
     }
 
@@ -153,24 +153,35 @@ class CheckLimits : Runnable {
             return
         }
 
-        lateinit var yaml: Resources
+        lateinit var innerYaml: Resources
         try {
             val mapper: ObjectMapper = YAMLMapper()
-            yaml = mapper.readValue(file, Resources::class.java)
+            innerYaml = mapper.readValue(file, Resources::class.java)
         }
         catch ( e: ValueInstantiationException ) {
             log("Could not parse the YAML file at $path.", ERROR)
+            return
         }
 
-        var check: Boolean = checkResources(yaml.resources, "resources")
-        yaml.bootstrap?.let { check = check && checkResources(it.resources, "bootstrap") }
-        yaml.workers?.let { check = check && checkResources(it.resources, "workers") }
-        yaml.db?.let { check = check && checkResources(it.resources, "DB") }
-        yaml.flow?.let { check = check && checkResources(it.resources, "flow") }
-        yaml.membership?.let { check = check && checkResources(it.resources, "membership") }
-        yaml.rest?.let { check = check && checkResources(it.resources, "rest") }
-        yaml.p2pLinkManager?.let { check = check && checkResources(it.resources, "P2P link manager") }
-        yaml.p2pGateway?.let { check = check && checkResources(it.resources, "P2P gateway") }
+        lateinit var outerYaml: Workers
+        var check: Boolean = checkResources(innerYaml.resources, "resources")
+
+        try {
+            val mapper: ObjectMapper = YAMLMapper()
+            outerYaml = mapper.readValue(file, Workers::class.java)
+        }
+        catch ( e: ValueInstantiationException ) {
+            log("Could not parse the YAML file at $path.", ERROR)
+            return
+        }
+        outerYaml.bootstrap?.let { check = check && checkResources(it.resources, "bootstrap") }
+        outerYaml.workers?.let { check = check && checkResources(it.resources, "workers") }
+        outerYaml.db?.let { check = check && checkResources(it.resources, "DB") }
+        outerYaml.flow?.let { check = check && checkResources(it.resources, "flow") }
+        outerYaml.membership?.let { check = check && checkResources(it.resources, "membership") }
+        outerYaml.rest?.let { check = check && checkResources(it.resources, "rest") }
+        outerYaml.p2pLinkManager?.let { check = check && checkResources(it.resources, "P2P link manager") }
+        outerYaml.p2pGateway?.let { check = check && checkResources(it.resources, "P2P gateway") }
 
         if (check) {println("[INFO] All resource requests are appropriate and are under the set limits.")}
     }

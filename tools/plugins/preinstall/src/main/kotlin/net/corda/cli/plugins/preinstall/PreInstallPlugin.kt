@@ -23,6 +23,9 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "preinstall", subcommands = [CheckLimits::class], description = ["Preinstall checks for corda."])
-    class PluginEntryPoint : CordaCliPlugin
+    @CommandLine.Command(name = "preinstall",
+        subcommands = [CheckLimits::class, CheckPostgres::class],
+        description = ["Preinstall checks for corda."])
+    class PreInstallPluginEntry : CordaCliPlugin
+
 }
