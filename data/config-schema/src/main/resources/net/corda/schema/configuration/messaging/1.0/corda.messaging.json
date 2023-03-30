@@ -104,7 +104,7 @@
       "default": {}
     },
     "maxAllowedMessageSize": {
-      "description": "The maximum size, in bytes, for messages. Corda breaks messages exceeding this size into smaller messages before sending.",
+      "description": "The maximum size, in bytes, for messages. Corda breaks messages exceeding this size into smaller messages before sending. This value must be lower than the maximum message size configured on the message bus itself. If the Corda configuration value is set to a value higher than that of the message bus, messages will not be sent.",
       "type": "integer",
       "default": 972800,
       "minimum": 512000,
