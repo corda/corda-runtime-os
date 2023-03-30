@@ -553,7 +553,7 @@ internal class SessionManagerImpl(
         }
 
         val responderMemberInfo = membershipGroupReaderProvider
-            .lookup(sessionInfo.ourId, sessionInfo.counterpartyId, sessionInfo.status)
+            .lookup(sessionInfo.ourId, sessionInfo.counterpartyId, MembershipStatusFilter.ALL_STATUSES)
         if (responderMemberInfo == null) {
             logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
@@ -629,7 +629,7 @@ internal class SessionManagerImpl(
         }
 
         val memberInfo = membershipGroupReaderProvider.lookup(
-            sessionCounterparties.ourId, sessionCounterparties.counterpartyId, sessionCounterparties.status
+            sessionCounterparties.ourId, sessionCounterparties.counterpartyId, MembershipStatusFilter.ALL_STATUSES
         )
         if (memberInfo == null) {
             logger.peerNotInTheMembersMapWarning(
@@ -692,7 +692,7 @@ internal class SessionManagerImpl(
             val peerMemberInfo = membershipGroupReaderProvider.lookupByKey(
                 localIdentity,
                 message.source.initiatorPublicKeyHash.array(),
-                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
+                MembershipStatusFilter.ALL_STATUSES
             )
             if (peerMemberInfo == null) {
                 null
@@ -757,7 +757,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         initiatorIdentityData.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                        MembershipStatusFilter.ALL_STATUSES,
                     )
             }
         if (peer == null) {

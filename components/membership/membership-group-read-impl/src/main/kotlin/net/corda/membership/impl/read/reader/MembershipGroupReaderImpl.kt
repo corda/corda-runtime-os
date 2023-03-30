@@ -56,6 +56,7 @@ class MembershipGroupReaderImpl(
 
     private fun List<MemberInfo>.filterBy(filter: MembershipStatusFilter): List<MemberInfo> {
         return when (filter) {
+            MembershipStatusFilter.ALL_STATUSES -> this
             MembershipStatusFilter.PENDING -> this.filter { it.status == MEMBER_STATUS_PENDING }
             MembershipStatusFilter.ACTIVE -> this.filter { it.status == MEMBER_STATUS_ACTIVE }
             MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING ->

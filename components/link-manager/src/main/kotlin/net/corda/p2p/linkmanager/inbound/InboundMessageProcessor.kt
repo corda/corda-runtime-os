@@ -30,6 +30,7 @@ import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
@@ -122,33 +123,33 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
             is SessionManager.SessionDirection.Inbound -> {
-                messages.addAll(
-                    processLinkManagerPayload(
-                        sessionDirection.counterparties,
-                        sessionDirection.session,
-                        sessionId,
-                        message
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    messages.addAll(
+                        processLinkManagerPayload(
+                            sessionDirection.counterparties, sessionDirection.session, sessionId, message
+                        )
                     )
-                )
+                }
             }
             is SessionManager.SessionDirection.Outbound -> {
-                MessageConverter.extractPayload(
-                    sessionDirection.session,
-                    sessionId,
-                    message,
-                    MessageAck::fromByteBuffer
-                )?.let {
-                    when (val ack = it.ack) {
-                        is AuthenticatedMessageAck -> {
-                            logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
-                            sessionManager.messageAcknowledged(sessionId)
-                            messages.add(makeMarkerForAckMessage(ack))
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    MessageConverter.extractPayload(
+                        sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer
+                    )?.let {
+                        when (val ack = it.ack) {
+                            is AuthenticatedMessageAck -> {
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                                messages.add(makeMarkerForAckMessage(ack))
+                            }
+
+                            is HeartbeatMessageAck -> {
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                            }
+
+                            else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                         }
-                        is HeartbeatMessageAck -> {
-                            logger.debug { "Processing heartbeat ack from session $sessionId." }
-                            sessionManager.messageAcknowledged(sessionId)
-                        }
-                        else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                     }
                 }
             }
@@ -296,6 +297,18 @@ internal class InboundMessageProcessor(
             .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
             .withTag(CordaMetrics.Tag.MessageType, messageType)
             .build().increment()
+    }
+
+    private fun <T> checkAllowedCommunication(counterparties: SessionManager.Counterparties, func: () -> T): T? {
+        val reader = membershipGroupReaderProvider.getGroupReader(counterparties.ourId)
+        val memberInfoSet = setOf(reader.lookup(counterparties.ourId.x500Name), reader.lookup(counterparties.counterpartyId.x500Name))
+        if (memberInfoSet.contains(null)) {
+            if (memberInfoSet.none { it?.isMgm == true }) {
+                logger.warn("TODO")
+                return null
+            }
+        }
+        return func.invoke()
     }
 
     override val keyClass = String::class.java

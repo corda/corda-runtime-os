@@ -249,6 +249,13 @@ class MembershipGroupReaderImplTest {
     }
 
     @Test
+    fun `lookup returns members of all statuses`() {
+        val allMembers = listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo)
+        mockMemberList(allMembers)
+        assertEquals(allMembers, membershipGroupReaderImpl.lookup(MembershipStatusFilter.ALL_STATUSES))
+    }
+
+    @Test
     fun `lookup returns pending members only`() {
         mockMemberList(listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo))
         assertEquals(listOf(alicePendingMemberInfo), membershipGroupReaderImpl.lookup(MembershipStatusFilter.PENDING))

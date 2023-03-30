@@ -10,6 +10,7 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -151,7 +152,8 @@ internal class OutboundMessageProcessor(
 
         val destMemberInfo = membershipGroupReaderProvider.lookup(
             message.header.source.toCorda(),
-            message.header.destination.toCorda()
+            message.header.destination.toCorda(),
+            MembershipStatusFilter.ALL_STATUSES
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
@@ -233,7 +235,7 @@ internal class OutboundMessageProcessor(
             membershipGroupReaderProvider.lookup(
                 source,
                 destination,
-                messageAndKey.message.header.statusFilter
+                MembershipStatusFilter.ALL_STATUSES
             ) != null
         ) {
             val markers = if (isReplay) {
