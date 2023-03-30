@@ -486,6 +486,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             notaryServiceName,
             "Notary Plugin A",
+            listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
@@ -506,6 +507,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             null,
+            emptyList(),
             emptyList()
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
@@ -520,6 +522,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             " ",
+            listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
@@ -534,6 +537,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             "pluginType",
+            listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
@@ -548,6 +552,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "pluginType",
+            listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
@@ -565,6 +570,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Plugin A",
+            listOf(1),
             listOf(mock())
         )
         val mockNotary = mock<NotaryInfo> {
@@ -583,6 +589,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Plugin A",
+            listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
@@ -597,6 +604,7 @@ class StartRegistrationHandlerTest {
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             "pluginType",
+            listOf(1),
             listOf(mock())
         )
         val bobInfo: MemberInfo = mock {

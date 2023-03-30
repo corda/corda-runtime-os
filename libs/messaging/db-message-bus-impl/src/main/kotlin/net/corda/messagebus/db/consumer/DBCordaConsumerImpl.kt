@@ -165,23 +165,31 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
         if (!recordsAvailable(fromOffset, topicPartition, timeout)) return emptyList()
 
-        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
-
-        val result = dbRecords.takeWhile {
+        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords).takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
-        }.map { dbRecord ->
-            CordaConsumerRecord(
-                dbRecord.topic,
-                dbRecord.partition,
-                dbRecord.recordOffset,
-                deserializeKey(dbRecord.key),
-                deserializeValue(dbRecord.value),
-                dbRecord.timestamp.toEpochMilli(),
-                headerSerializer.deserialize(dbRecord.headers ?: "{}")
-            )
         }
-        if (result.isNotEmpty()) {
-            seek(topicPartition, result.last().offset + 1)
+
+        val result = dbRecords.mapNotNull { dbRecord ->
+            val deserializedValue = deserializeValue(dbRecord.value)
+            val isDeserialized = deserializedValue != null || dbRecord.value == null
+
+            if (isDeserialized) {
+                CordaConsumerRecord(
+                    dbRecord.topic,
+                    dbRecord.partition,
+                    dbRecord.recordOffset,
+                    deserializeKey(dbRecord.key),
+                    deserializedValue,
+                    dbRecord.timestamp.toEpochMilli(),
+                    headerSerializer.deserialize(dbRecord.headers ?: "{}")
+                )
+            } else {
+                null
+            }
+        }
+
+        if (dbRecords.isNotEmpty()) {
+            seek(topicPartition, dbRecords.last().recordOffset + 1)
         }
         return result
     }

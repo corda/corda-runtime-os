@@ -55,6 +55,9 @@ serviceAccount:
 # -- extra annotations (applied to all workers only)
 annotations: {}
 
+# tolerations to schedule worker and bootstrap pods on nodes with matching taints 
+tolerations: []
+
 # Database configuration
 db:
   # Cluster database configuration
