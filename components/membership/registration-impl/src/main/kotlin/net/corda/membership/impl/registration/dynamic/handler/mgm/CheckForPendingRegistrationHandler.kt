@@ -23,8 +23,10 @@ class CheckForPendingRegistrationHandler(
     override val commandType = CheckForPendingRegistration::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: CheckForPendingRegistration): RegistrationHandlerResult {
-        val outputCommand = try{
+        val outputCommand = try {
             state?.let {
+                null
+            } ?: run {
                 logger.info("Looking for the next request for member ${command.registeringMember.x500Name}.")
                 val nextRequest = membershipQueryClient.queryRegistrationRequests(
                     command.mgm.toCorda(),
@@ -40,6 +42,7 @@ class CheckForPendingRegistrationHandler(
                 } else {
                     logger.info("There are no registration requests queued " +
                             "for member ${command.registeringMember.x500Name}.")
+                    null
                 }
             }
         } catch (ex: Exception) {
