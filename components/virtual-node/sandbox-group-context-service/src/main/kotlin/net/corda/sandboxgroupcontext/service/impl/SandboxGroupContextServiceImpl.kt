@@ -143,10 +143,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
     override fun initCache(type: SandboxGroupType, capacity: Long) {
         if (capacity != cache.capacities[type]) {
-            val oldCache = cache
-            cache = oldCache.resize(type, capacity)
-            oldCache.close()
-            logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacities, capacity)
+            logger.info("Changing Sandbox cache capacity for type {} from {} to {}", type, cache.capacities[type], capacity)
+            cache = cache.resize(type, capacity)
         }
     }
 
