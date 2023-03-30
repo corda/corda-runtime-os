@@ -289,6 +289,38 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
+    fun `save same key for 2 tenants should work`(emf: EntityManagerFactory) {
+        val info = createPrivateKeyInfo()
+        saveWrappingKey(emf, info.masterKeyAlias!!)
+
+        val ctx = createSigningWrappedKeySaveContext(info)
+
+        // save first
+        val repo = SigningRepositoryImpl(
+            emf,
+            info.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+        repo.savePrivateKey(ctx)
+
+        // clone
+        val secondKeyInfo = info.copy(tenantId = "${info.tenantId.take(4)}-buddy")
+
+        // should also work
+        val repo2 = SigningRepositoryImpl(
+            emf,
+            secondKeyInfo.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+        repo2.savePrivateKey(createSigningWrappedKeySaveContext(secondKeyInfo))
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
     fun `query by tenant id`(emf: EntityManagerFactory) {
         val allKeys = createdKeys.getOrElse(emf) {
             createdKeys[emf] = createKeys(emf)
@@ -297,6 +329,18 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val found = query(emf,0, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
         assertThat(found).containsExactlyElementsOf(
             allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.take(2))
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `query by tenant id - page 2`(emf: EntityManagerFactory) {
+        val allKeys = createdKeys.getOrElse(emf) {
+            createdKeys[emf] = createKeys(emf)
+            createdKeys[emf]!!
+        }
+        val found = query(emf,2, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
+        assertThat(found).containsExactlyElementsOf(
+            allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.drop(2).take(2))
     }
 
     @ParameterizedTest
@@ -461,6 +505,13 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         }
         val found = repo.lookupByPublicKeyShortHashes(lookFor.toSet())
         assertThat(found).containsExactlyInAnyOrderElementsOf(allKeys)
+
+        // additionally going to assert that looking up by full hash should result in the same
+        val lookFor2 = allKeys.map {
+            parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService))
+        }
+        val found2 = repo.lookupByPublicKeyHashes(lookFor2.toSet())
+        assertThat(found2).containsExactlyInAnyOrderElementsOf(found)
     }
 
     @ParameterizedTest
