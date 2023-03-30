@@ -90,6 +90,7 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -323,7 +324,7 @@ class SynchronisationIntegrationTest {
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
-            eventually {
+            eventually(10.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
