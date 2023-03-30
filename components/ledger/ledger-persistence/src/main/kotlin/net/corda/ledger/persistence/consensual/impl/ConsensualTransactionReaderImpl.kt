@@ -23,6 +23,7 @@ class ConsensualTransactionReaderImpl(
 
     private companion object {
         const val CORDA_ACCOUNT = "corda.account"
+        const val CORDA_INITIATOR_ACCOUNT = "corda.initiator.account"
     }
 
     private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction.transaction.array())
@@ -31,7 +32,7 @@ class ConsensualTransactionReaderImpl(
         get() = signedTransaction.id
 
     override val account: String
-        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
+        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT || it.key == CORDA_INITIATOR_ACCOUNT}?.value
             ?: throw NullParameterException("Flow external event context property '${CORDA_ACCOUNT}' not set")
 
     override val status: TransactionStatus
