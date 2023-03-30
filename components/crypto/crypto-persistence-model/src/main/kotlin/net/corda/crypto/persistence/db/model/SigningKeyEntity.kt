@@ -26,8 +26,8 @@ class SigningKeyEntity(
      * Synthetic UUID of the key pair
      */
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    var id: UUID,
+    @Column(name = "id", nullable = false)
+    val id: UUID,
 
     /**
      * Tenant which the key belongs to.
@@ -68,7 +68,7 @@ class SigningKeyEntity(
     /**
      * The public key of the pair.
      */
-    @Column(name = "public_key", nullable = false, updatable = false, columnDefinition="BLOB")
+    @Column(name = "public_key", nullable = false, updatable = false, columnDefinition = "BLOB")
     var publicKey: ByteArray,
 
     /**
@@ -104,7 +104,7 @@ class SigningKeyEntity(
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
-    var status: SigningKeyEntityStatus
+    var status: SigningKeyEntityStatus,
 ) {
         override fun hashCode() = id.hashCode()
         override fun equals(other: Any?) = other != null && other is SigningKeyEntity && other.id.equals(id)
