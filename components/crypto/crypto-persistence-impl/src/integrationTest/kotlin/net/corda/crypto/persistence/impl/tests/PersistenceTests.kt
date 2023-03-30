@@ -639,7 +639,8 @@ class PersistenceTests {
     )
 
     private fun makeWrappingRepo(tenantId: String) = WrappingRepositoryImpl(
-        getEntityManagerFactory(tenantId, dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry)
+        getEntityManagerFactory(tenantId, dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry),
+        tenantId
     )
 
     @Test

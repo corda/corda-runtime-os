@@ -112,7 +112,8 @@ class SigningRepositoryImpl(
                     ?.let {
                         it.id
                     }
-            } ?: throw InvalidParamsException("unable to find master wrapping key ${context.masterKeyAlias}")
+            }
+                ?: throw InvalidParamsException("unable to find master wrapping key ${context.masterKeyAlias} in tenant $tenantId")
         }
 
         val materialEntity = SigningKeyMaterialEntity(

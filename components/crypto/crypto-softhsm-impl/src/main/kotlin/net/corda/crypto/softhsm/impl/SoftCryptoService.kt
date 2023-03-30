@@ -113,6 +113,7 @@ class SoftCryptoService(
         wrappingRepositoryFactory.create(context.get("tenantId") ?: CryptoTenants.CRYPTO).use {
             it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
         }
+        logger.trace("Stored wrapping key alias $wrappingKeyAlias context ${context.toString()}")
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
