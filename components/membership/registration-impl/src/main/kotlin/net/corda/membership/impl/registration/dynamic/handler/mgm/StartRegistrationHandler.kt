@@ -7,10 +7,12 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
@@ -71,16 +73,17 @@ internal class StartRegistrationHandler(
     override val commandType = StartRegistration::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
-        val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
-            with(command) {
-                Triple(
-                    toRegistrationRequest(),
-                    destination.toCorda(),
-                    source.toCorda()
-                )
-            }
+        if (state == null) throw MissingRegistrationStateException
+        val (registrationId, mgmHoldingId, pendingMemberHoldingId) = Triple(
+            state.registrationId, state.mgm.toCorda(), state.registeringMember.toCorda()
+        )
 
         val (outputCommand, outputStates) = try {
+            val requestDetails = membershipQueryClient.queryRegistrationRequest(mgmHoldingId, registrationId).getOrThrow()
+            validateRegistrationRequest(requestDetails == null) {
+                "Could not find registration request with ID `$registrationId`."
+            }
+            val registrationRequest = requestDetails!!.toRegistrationRequest(pendingMemberHoldingId)
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
@@ -166,11 +169,7 @@ internal class StartRegistrationHandler(
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(
-                registrationRequest.registrationId,
-                pendingMemberHoldingId.toAvro(),
-                mgmHoldingId.toAvro()
-            ),
+            state,
             listOf(
                 Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
             ) + outputStates
@@ -222,15 +221,15 @@ internal class StartRegistrationHandler(
         }!!
     }
 
-    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
+    private fun RegistrationRequestDetails.toRegistrationRequest(member: HoldingIdentity): RegistrationRequest {
         return RegistrationRequest(
             RegistrationStatus.RECEIVED_BY_MGM,
-            memberRegistrationRequest.registrationId,
-            source.toCorda(),
-            memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.memberSignature,
-            memberRegistrationRequest.memberSignatureSpec,
-            memberRegistrationRequest.serial,
+            registrationId,
+            member,
+            memberProvidedContext.toByteBuffer(),
+            memberSignature,
+            memberSignatureSpec,
+            serial,
         )
     }
 

@@ -78,7 +78,7 @@ internal class QueueRegistrationHandler(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
                     key,
-                    RegistrationCommand((CheckForPendingRegistration(command.member, command.mgm)))
+                    RegistrationCommand((CheckForPendingRegistration(command.member, command.mgm, 0)))
                 )
             )
         )
