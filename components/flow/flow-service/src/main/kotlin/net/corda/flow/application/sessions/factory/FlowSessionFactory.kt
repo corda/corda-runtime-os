@@ -12,6 +12,7 @@ interface FlowSessionFactory {
      * Creates a [FlowSession] which represents a session created in a flow by user code.
      *
      * @param sessionId The session id of the [FlowSession].
+     * @param isInteropSession Signal to the flow processor that this is an interop session.
      * @param x500Name The X500 name of the counterparty the [FlowSession] interacts with.
      * @param flowContextPropertiesBuilder An optional builder of context properties
      *
@@ -19,10 +20,11 @@ interface FlowSessionFactory {
      */
     fun createInitiatingFlowSession(
         sessionId: String,
+        isInteropSession: Boolean,
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession
-    
+
     /**
      * Creates a [FlowSession] which represents a session passed to an initiated flow.
      *

@@ -12,8 +12,9 @@ import net.corda.v5.base.types.MemberX500Name
 data class SessionInfo(
     val sessionId: String,
     val counterparty: MemberX500Name,
+    val isInteropSession: Boolean = false,
     val contextUserProperties: Map<String, String> = emptyMap(),
     val contextPlatformProperties: Map<String, String> = emptyMap()
 ) {
-    override fun toString() = "SessionInfo(sessionId=$sessionId, counterparty=$counterparty) "
+    override fun toString() = "SessionInfo(sessionId=$sessionId, counterparty=$counterparty, interopSession=$isInteropSession) "
 }

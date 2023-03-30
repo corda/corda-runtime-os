@@ -11,6 +11,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_INTEROP
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -77,13 +78,14 @@ class InitiateFlowRequestService @Activate constructor(
 
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
 
-        val sessionContext = KeyValueStore().apply {
-            put(FLOW_PROTOCOL, protocolName)
-            put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString())
-        }
-
         checkpoint.putSessionStates(
             sessionsNotInitiated.map {
+                val sessionContext = KeyValueStore().apply {
+                    put(FLOW_PROTOCOL, protocolName)
+                    put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString().lowercase())
+                    put(FLOW_PROTOCOL_INTEROP, it.isInteropSession.toString())
+                }
+
                 flowSessionManager.sendInitMessage(
                     checkpoint,
                     it.sessionId,

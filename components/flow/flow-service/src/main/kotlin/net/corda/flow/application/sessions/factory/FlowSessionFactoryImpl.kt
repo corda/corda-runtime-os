@@ -33,6 +33,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
+                    false,
                     flowFiberService,
                     serializationService,
                     FlatSerializableContext(
@@ -49,6 +50,7 @@ class FlowSessionFactoryImpl @Activate constructor(
 
     override fun createInitiatingFlowSession(
         sessionId: String,
+        isInteropSession: Boolean,
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
@@ -57,6 +59,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
+                    isInteropSession,
                     flowFiberService,
                     serializationService,
                     createInitiatingFlowContextProperties(

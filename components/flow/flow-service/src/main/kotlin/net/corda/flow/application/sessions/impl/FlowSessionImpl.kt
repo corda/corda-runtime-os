@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory
 class FlowSessionImpl(
     private val counterparty: MemberX500Name,
     private val sourceSessionId: String,
+    private val isInteropSession: Boolean,
     private val flowFiberService: FlowFiberService,
     private val serializationService: SerializationServiceInternal,
     private val flowContext: FlowContext,
@@ -161,6 +162,7 @@ class FlowSessionImpl(
         return SessionInfo(
             sourceSessionId,
             counterparty,
+            isInteropSession,
             contextUserProperties = flowContext.flattenUserProperties(),
             contextPlatformProperties = flowContext.flattenPlatformProperties()
         )
