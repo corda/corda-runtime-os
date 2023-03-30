@@ -34,7 +34,7 @@ class KafkaProducerPartitioner : Partitioner {
     override fun partition(topic: String, key: Any, keyBytes: ByteArray, value: Any?, valueBytes: ByteArray?, cluster: Cluster): Int {
         val keyBytesToPartition = if (key is ChunkKey) {
             logger.trace { "Found ChunkKey. Using real bytes $keyBytes for partitioning" }
-            key.realKey.array()
+            key.realKey.array().clone()
         } else {
             keyBytes
         }
