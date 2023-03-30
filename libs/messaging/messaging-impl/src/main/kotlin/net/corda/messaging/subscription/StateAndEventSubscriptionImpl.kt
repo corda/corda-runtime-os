@@ -47,10 +47,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
-    companion object {
-        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
-    }
-
     private val log = LoggerFactory.getLogger(config.loggerName)
 
     private var nullableProducer: CordaProducer? = null
@@ -184,7 +180,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
-                val batches = getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT)).iterator()
+                val batches = getEventsByBatch(stateAndEventConsumer.pollEvents()).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     rebalanceOccurred = tryProcessBatchOfEvents(batches.next())
                 }

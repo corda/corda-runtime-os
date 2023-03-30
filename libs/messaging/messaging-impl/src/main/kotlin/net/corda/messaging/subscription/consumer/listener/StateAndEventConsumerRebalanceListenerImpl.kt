@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, Pair<Long, S>>,
-    stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
+    private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
 ) : StateAndEventConsumerRebalanceListener {
@@ -23,8 +23,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
-
-    private val eventConsumer = stateAndEventConsumer.eventConsumer
     private val stateConsumer = stateAndEventConsumer.stateConsumer
 
     /**
@@ -34,18 +32,16 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
         val partitionIds = partitions.map{ it.partition }.joinToString(",")
         log.info("Consumer (${config.clientId}) group name ${config.group} for topic ${config.topic} partition assigned: $partitionIds.")
+        stateAndEventConsumer.onPartitionsAssigned(partitions.toSet())
 
         val newStatePartitions = partitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() + newStatePartitions
-        stateConsumer.assign(statePartitions)
-        stateConsumer.seekToBeginning(newStatePartitions)
 
         // Initialise the housekeeping here but the sync and updates
         // will be handled in the normal poll cycle
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         partitionsToSync.putAll(syncablePartitions)
-        eventConsumer.pause(syncablePartitions.map { CordaTopicPartition(config.topic, it.first) })
 
         statePartitions.forEach {
             currentStates.computeIfAbsent(it.partition) {
@@ -63,16 +59,12 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
         val partitionIds = partitions.map{ it.partition }.joinToString(",")
         log.info("Consumer (${config.clientId}) group name ${config.group} for topic ${config.topic} partition revoked: $partitionIds.")
-        val removedStatePartitions = partitions.toStateTopics()
-        val statePartitions = stateConsumer.assignment() - removedStatePartitions.toSet()
-        stateConsumer.assign(statePartitions)
-        for (topicPartition in removedStatePartitions) {
-            val partitionId = topicPartition.partition
+        stateAndEventConsumer.onPartitionsRevoked(partitions.toSet())
+        val removedPartitionIds = partitions.map { it.partition }
+        for (partitionId in removedPartitionIds) {
             partitionsToSync.remove(partitionId)
 
-            stateAndEventListener?.let { listener ->
-                listener.onPartitionLost(getStatesForPartition(partitionId))
-            }
+            stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
 
             currentStates[partitionId]?.let { partitionStates ->
                 mapFactory.destroyMap(partitionStates)
