@@ -241,6 +241,7 @@ class FlowRunnerImplTest {
             OperationalStatus.ACTIVE,
             OperationalStatus.ACTIVE,
             null,
+            null,
             1,
             Instant.now()
         )
