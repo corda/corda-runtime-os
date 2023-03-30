@@ -328,7 +328,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
         def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
         if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
+            logger.info("Authenticating against Artifactory for base image resolution")
             baseImage.addCredential(registryUsername.get(), registryPassword.get())
+            builder = Jib.from(baseImage)
+        }
+        else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) && (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())){
+            logger.info("Authenticating against Docker Hub for base image resolution")
+            baseImage.addCredential(dockerHubUsername.get(), dockerHubPassword.get())
             builder = Jib.from(baseImage)
         }
         builder

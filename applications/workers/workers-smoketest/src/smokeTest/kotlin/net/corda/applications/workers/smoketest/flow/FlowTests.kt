@@ -675,6 +675,19 @@ class FlowTests {
     }
 
     @Test
+    fun `Crypto - CompositeKeyGenerator works in flows`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_CompositeKeyGenerator_works_in_flows"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_CompositeKeyGenerator_works_in_flows")
+        assertThat(flowResult.result).isEqualTo("SUCCESS")
+    }
+
+    @Test
     fun `Context is propagated to initiated and sub flows`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "context_propagation"

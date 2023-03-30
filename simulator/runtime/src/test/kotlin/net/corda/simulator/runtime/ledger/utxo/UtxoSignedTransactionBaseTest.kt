@@ -157,7 +157,7 @@ class UtxoSignedTransactionBaseTest {
         // When we convert to the entity and back again
         val entity = tx.toEntity()
         val txFromEntity = UtxoSignedTransactionBase.fromEntity(
-            entity, BaseNotaryInfo(notaryX500, "", notaryKey),
+            entity, BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey),
             signingService, serializationService, persistenceService, config
         )
 

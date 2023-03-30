@@ -3,6 +3,13 @@ package net.corda.membership.impl.registration
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.impl.registration.MemberRole.Companion.extractRolesFromContext
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -23,9 +30,11 @@ class MemberRoleTest {
         assertThat(
             extractRolesFromContext(
                 mapOf(
-                    "corda.roles.0" to "notary",
-                    "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-                    "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                    "${ROLES_PREFIX}.0" to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                    String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
+                    String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2",
                 )
             )
         )
@@ -33,7 +42,8 @@ class MemberRoleTest {
             .allMatch {
                 it == MemberRole.Notary(
                     MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"),
-                    "net.corda.notary.MyNotaryService"
+                    "net.corda.notary.MyNotaryService",
+                    setOf(1, 2),
                 )
             }
     }
@@ -43,11 +53,11 @@ class MemberRoleTest {
         assertThat(
             extractRolesFromContext(
                 mapOf(
-                    "corda.roles.0" to "notary",
-                    "corda.roles.1" to "notary",
-                    "corda.roles.2" to "notary",
-                    "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-                    "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                    "${ROLES_PREFIX}.0" to "notary",
+                    "${ROLES_PREFIX}.1" to "notary",
+                    "${ROLES_PREFIX}.2" to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 )
             )
         )
@@ -55,11 +65,11 @@ class MemberRoleTest {
     }
 
     @Test
-    fun `accept context when notary plugin is missing`() {
+    fun `accept context when notary protocol is missing`() {
         val roles = extractRolesFromContext(
             mapOf(
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
             )
         )
 
@@ -69,7 +79,26 @@ class MemberRoleTest {
                 it is MemberRole.Notary
             }
             .allSatisfy {
-                assertThat((it as? MemberRole.Notary)?.plugin).isNull()
+                assertThat((it as? MemberRole.Notary)?.protocol).isNull()
+            }
+    }
+
+    @Test
+    fun `protocol versions is empty when no versions are specified`() {
+        val roles = extractRolesFromContext(
+            mapOf(
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+            )
+        )
+
+        assertThat(roles.toList())
+            .hasSize(1)
+            .allSatisfy {
+                it is MemberRole.Notary
+            }
+            .allSatisfy {
+                assertThat((it as? MemberRole.Notary)?.protocolVersions).isEmpty()
             }
     }
 
@@ -78,8 +107,8 @@ class MemberRoleTest {
         assertThrows<IllegalArgumentException> {
             extractRolesFromContext(
                 mapOf(
-                    "corda.roles.0" to "notary",
-                    "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                    "${ROLES_PREFIX}.0" to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 )
             )
         }
@@ -90,9 +119,9 @@ class MemberRoleTest {
         assertThrows<IllegalArgumentException> {
             extractRolesFromContext(
                 mapOf(
-                    "corda.roles.0" to "notary",
-                    "corda.notary.service.name" to "NOP",
-                    "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                    "${ROLES_PREFIX}.0" to "notary",
+                    NOTARY_SERVICE_NAME to "NOP",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 )
             )
         }
@@ -103,7 +132,7 @@ class MemberRoleTest {
         assertThrows<IllegalArgumentException> {
             extractRolesFromContext(
                 mapOf(
-                    "corda.roles.0" to "another",
+                    "${ROLES_PREFIX}.0" to "another",
                 )
             )
         }
@@ -114,7 +143,7 @@ class MemberRoleTest {
         assertThrows<IllegalArgumentException> {
             extractRolesFromContext(
                 mapOf(
-                    "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 )
             )
         }
@@ -123,22 +152,24 @@ class MemberRoleTest {
     @Test
     fun `toMemberInfo returns the correct information`() {
         val key1Hash = PublicKeyHash.calculate("test".toByteArray())
-        val key1 = mock<KeyDetails>() {
+        val key1 = mock<KeyDetails> {
             on { pem } doReturn "pem1"
             on { hash } doReturn key1Hash
             on { spec } doReturn SignatureSpec.RSA_SHA256
         }
         val key2Hash = PublicKeyHash.calculate("test2".toByteArray())
-        val key2 = mock<KeyDetails>() {
+        val key2 = mock<KeyDetails> {
             on { pem } doReturn "pem2"
             on { hash } doReturn key2Hash
             on { spec } doReturn SignatureSpec.ECDSA_SHA512
         }
         val roles = extractRolesFromContext(
             mapOf(
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2",
             )
         )
 
@@ -148,15 +179,17 @@ class MemberRoleTest {
 
         assertThat(info)
             .containsExactlyInAnyOrder(
-                "corda.roles.0" to "notary",
-                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
-                "corda.notary.keys.0.pem" to "pem1",
-                "corda.notary.keys.0.hash" to key1Hash.toString(),
-                "corda.notary.keys.0.signature.spec" to "SHA256withRSA",
-                "corda.notary.keys.1.pem" to "pem2",
-                "corda.notary.keys.1.hash" to key2Hash.toString(),
-                "corda.notary.keys.1.signature.spec" to "SHA512withECDSA",
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_KEY_PEM, 0) to "pem1",
+                String.format(NOTARY_KEY_HASH, 0) to key1Hash.toString(),
+                String.format(NOTARY_KEY_SPEC, 0) to "SHA256withRSA",
+                String.format(NOTARY_KEY_PEM, 1) to "pem2",
+                String.format(NOTARY_KEY_HASH, 1) to key2Hash.toString(),
+                String.format(NOTARY_KEY_SPEC, 1) to "SHA512withECDSA",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2",
             )
     }
 }

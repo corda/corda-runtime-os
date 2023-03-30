@@ -39,6 +39,7 @@ object StaticNetworkGroupParametersUtils {
      */
     fun KeyValuePairList.addNotary(
         notary: MemberInfo,
+        currentProtocolVersions: Collection<Int>,
         keyEncodingService: KeyEncodingService,
         clock: Clock
     ): KeyValuePairList? {
@@ -62,6 +63,7 @@ object StaticNetworkGroupParametersUtils {
                 deserializedParams,
                 notaryDetails,
                 notaryServiceNumber,
+                currentProtocolVersions,
                 keyEncodingService,
                 logger,
                 clock
