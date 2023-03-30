@@ -2,6 +2,9 @@ package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.typesafe.config.ConfigList
+import com.typesafe.config.ConfigObject
+import com.typesafe.config.ConfigValue
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -34,6 +37,8 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.InvalidParameterException
+import java.util.InvalidPropertiesFormatException
 
 const val KEY_MAP_TRANSIENT_NAME = "TRANSIENT"
 const val KEY_MAP_CACHING_NAME = "CACHING"
@@ -116,15 +121,30 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             )
         )
 
+        @Suppress("ThrowsCount")
         fun getInstance(config: SmartConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             val wrappingKeyMapConfig = config.getConfig("wrappingKeyMap")
-            val rootWrappingKey =
-                WrappingKeyImpl.derive(
-                    schemeMetadata,
-                    wrappingKeyMapConfig.getString("salt"),
-                    wrappingKeyMapConfig.getString("passphrase")
-                )
+            val keysList: ConfigList = config.getList("wrappingKeys")
+            val unmanagedWrappingKeys: Map<String, WrappingKey> =
+                keysList.map { it: ConfigValue ->
+                    when (it) {
+                        is ConfigObject -> {
+                            val alias = it["alias"]?.unwrapped()
+                            if (!(alias is String)) throw InvalidParameterException("alias missing or invalid")
+                            val salt = it["salt"]?.unwrapped()
+                            if (!(salt is String)) throw InvalidParameterException("salt missing or invalid")
+                            val passphrase = it["passphrase"]?.unwrapped()
+                            if (!(passphrase is String)) throw InvalidPropertiesFormatException("passphrase missingo rinalid")
+                            alias to WrappingKeyImpl.derive(schemeMetadata, passphrase, salt)
+                        }
+                        else -> throw InvalidParameterException("unexpected item ")
+                    }
+                }.toMap()
+            val defaultUnmanagedWrappingKeyName = config.getString("defaultWrappingKey")
+            require(unmanagedWrappingKeys.containsKey(defaultUnmanagedWrappingKeyName)) {
+                "default key $defaultUnmanagedWrappingKeyName must be in wrappingKeys"
+            }
             val wrappingKeyCacheConfig = wrappingKeyMapConfig.getConfig("cache")
             // TODO drop this compatibility code that supports name between KEY_MAP_TRANSIENT_NAME and if so disables caching
             val wrappingKeyCache: Cache<String, WrappingKey> = cacheFactoryImpl.build(
@@ -155,7 +175,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 wrappingRepositoryFactory = ::openRepository,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
-                rootWrappingKey = rootWrappingKey,
+                defaultUnmanagedWrappingKeyName = defaultUnmanagedWrappingKeyName,
+                unmanagedWrappingKeys = unmanagedWrappingKeys,
                 wrappingKeyCache = wrappingKeyCache,
                 privateKeyCache = privateKeyCache,
                 keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
