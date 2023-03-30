@@ -124,6 +124,8 @@ class MGMRegistrationServiceTest {
         const val ECDH_KEY_STRING = "5678"
         const val ECDH_KEY_ID = "BBC123456789"
         const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
+
+        private val trustrootCert = this::class.java.getResource("/r3Com.pem")!!.readText()
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -283,10 +285,8 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.trustroot.session.0"
-                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.trustroot.tls.0"
-                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.trustroot.session.0" to trustrootCert,
+        "corda.group.trustroot.tls.0" to trustrootCert,
     )
 
     private fun postStartEvent() {
@@ -435,10 +435,8 @@ class MGMRegistrationServiceTest {
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
-                        "trustroot.session.0"
-                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                        "trustroot.tls.0"
-                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                        "trustroot.session.0" to trustrootCert,
+                        "trustroot.tls.0" to trustrootCert,
                     ).entries
                 )
             registrationService.stop()
@@ -556,8 +554,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties =
                 properties + mapOf(
-                    "corda.group.trustroot.tls.100" to
-                            "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                    "corda.group.trustroot.tls.100" to trustrootCert
                 )
             registrationService.start()
 

@@ -43,7 +43,7 @@ class MGMRegistrationContextValidatorTest {
     )
 
     companion object {
-        private val r3comCert = this::class.java.getResource("/r3Com.pem")!!.readText()
+        private val trustrootCert = this::class.java.getResource("/r3Com.pem")!!.readText()
 
         private val validTestContext
             get() = mutableMapOf(
@@ -57,8 +57,8 @@ class MGMRegistrationContextValidatorTest {
                 PKI_TLS to "TLS PKI property",
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",
-                TRUSTSTORE_SESSION.format(0) to r3comCert,
-                TRUSTSTORE_TLS.format(0) to r3comCert
+                TRUSTSTORE_SESSION.format(0) to trustrootCert,
+                TRUSTSTORE_TLS.format(0) to trustrootCert
             )
 
         @JvmStatic
