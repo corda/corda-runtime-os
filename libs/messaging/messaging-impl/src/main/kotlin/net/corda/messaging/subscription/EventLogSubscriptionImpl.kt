@@ -239,6 +239,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                         it
                     )
                 })
+                deadLetterRecords.clear()
             }
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
