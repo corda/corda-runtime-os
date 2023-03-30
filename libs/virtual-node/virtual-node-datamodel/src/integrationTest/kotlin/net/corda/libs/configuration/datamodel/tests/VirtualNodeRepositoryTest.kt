@@ -82,7 +82,9 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI $i",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash())
+                TestRandom.secureHash(),
+                externalMessagingRouteConfig = null
+            )
         }
 
         // Now check the query - and also we should look at the console output for this
@@ -114,7 +116,9 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI ${UUID.randomUUID()}",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash())
+                TestRandom.secureHash(),
+                externalMessagingRouteConfig = null
+            )
         }
 
         // Now check the query - and also we should look at the console output for this
@@ -158,7 +162,9 @@ class VirtualNodeRepositoryTest {
                 entityManagerFactory,
                 "Test CPI $i ${UUID.randomUUID()}",
                 "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash())
+                TestRandom.secureHash(),
+                externalMessagingRouteConfig = null
+            )
         }
 
         val virtualNode = entityManagerFactory.createEntityManager().use {
@@ -171,7 +177,14 @@ class VirtualNodeRepositoryTest {
     @Test
     fun put() {
         val cpiSignerSummaryHash = TestRandom.secureHash()
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", cpiSignerSummaryHash)
+        val vnode =
+            VNodeTestUtils.newVNode(
+                entityManagerFactory,
+                "Testing ${UUID.randomUUID()}",
+                "1.0",
+                cpiSignerSummaryHash,
+                externalMessagingRouteConfig = null
+            )
 
         val hi = vnode.holdingIdentity.toHoldingIdentity()
         val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, cpiSignerSummaryHash)
@@ -187,6 +200,7 @@ class VirtualNodeRepositoryTest {
                 vnode.cryptoDMLConnectionId!!,
                 vnode.uniquenessDDLConnectionId,
                 vnode.uniquenessDMLConnectionId,
+                externalMessagingRouteConfig = null
             )
         }
 
@@ -218,7 +232,9 @@ class VirtualNodeRepositoryTest {
                     null,
                     UUID.randomUUID(),
                     null,
-                    UUID.randomUUID())
+                    UUID.randomUUID(),
+                    externalMessagingRouteConfig = null
+                )
             }
         }
     }
@@ -227,11 +243,18 @@ class VirtualNodeRepositoryTest {
     fun updateVirtualNodeState() {
         val cpiSignerSummaryHash = TestRandom.secureHash()
         val vnode = VNodeTestUtils
-            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", cpiSignerSummaryHash)
+            .newVNode(
+                entityManagerFactory,
+                "Testing ${UUID.randomUUID()}",
+                "1.0",
+                cpiSignerSummaryHash,
+                externalMessagingRouteConfig = null
+            )
 
         entityManagerFactory.createEntityManager().use {
             VirtualNodeRepositoryImpl().updateVirtualNodeState(
-                it, vnode.holdingIdentity.holdingIdentityShortHash, OperationalStatus.INACTIVE)
+                it, vnode.holdingIdentity.holdingIdentityShortHash, OperationalStatus.INACTIVE
+            )
         }
 
         val changedEntity = entityManagerFactory.createEntityManager().use {
@@ -249,7 +272,13 @@ class VirtualNodeRepositoryTest {
     fun `upgrade virtual node CPI test`() {
         val signerSummaryHash = TestRandom.secureHash()
         val testName = "Testing ${UUID.randomUUID()}"
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
+        val vnode = VNodeTestUtils.newVNode(
+            entityManagerFactory,
+            testName,
+            "v1",
+            signerSummaryHash,
+            externalMessagingRouteConfig = null
+        )
 
         entityManagerFactory.createEntityManager().transaction { em ->
             //cpiMetadataRepository = CpiMetadataRepositoryImpl()
@@ -266,7 +295,7 @@ class VirtualNodeRepositoryTest {
                 holdingIdentityShortHash,
                 testName, "v2", signerSummaryHash.toString(),
                 requestId, requestTimestamp, "serializedRequest"
-                )
+            )
         }
         assertThat(upgradeVirtualNodeInfo).isNotNull
         assertThat(upgradeVirtualNodeInfo.cpiIdentifier.name).isEqualTo(testName)
@@ -297,9 +326,18 @@ class VirtualNodeRepositoryTest {
         val operationId = UUID.randomUUID().toString()
         val requestId = UUID.randomUUID().toString()
 
-        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
-            OperationType.UPGRADE, Instant.now())
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
+        val operation = VirtualNodeOperationEntity(
+            operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE, Instant.now()
+        )
+        val vnode = VNodeTestUtils.newVNode(
+            entityManagerFactory,
+            testName,
+            "v1",
+            signerSummaryHash,
+            operation,
+            externalMessagingRouteConfig = null
+        )
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().completedOperation(it, vnode.holdingIdentityId)
@@ -330,9 +368,18 @@ class VirtualNodeRepositoryTest {
         val operationId = UUID.randomUUID().toString()
         val requestId = UUID.randomUUID().toString()
 
-        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
-            OperationType.UPGRADE, Instant.now())
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash, operation)
+        val operation = VirtualNodeOperationEntity(
+            operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE, Instant.now()
+        )
+        val vnode = VNodeTestUtils.newVNode(
+            entityManagerFactory,
+            testName,
+            "v1",
+            signerSummaryHash,
+            operation,
+            externalMessagingRouteConfig = null
+        )
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().failedOperation(
@@ -372,7 +419,13 @@ class VirtualNodeRepositoryTest {
         val testName = "Testing ${UUID.randomUUID()}"
         val requestId = UUID.randomUUID().toString()
 
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash)
+        val vnode = VNodeTestUtils.newVNode(
+            entityManagerFactory,
+            testName,
+            "v1",
+            signerSummaryHash,
+            externalMessagingRouteConfig = null
+        )
 
         entityManagerFactory.createEntityManager().transaction {
             VirtualNodeRepositoryImpl().failedOperation(
