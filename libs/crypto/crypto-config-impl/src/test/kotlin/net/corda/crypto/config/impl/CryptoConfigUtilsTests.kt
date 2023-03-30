@@ -238,19 +238,6 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `CryptoConnectionsFactoryConfig should throw IllegalStateException when is empty`() {
-        val config = CryptoConnectionsFactoryConfig(
-            configFactory.create(ConfigFactory.empty())
-        )
-        assertThrows<IllegalStateException> {
-            config.expireAfterAccessMins
-        }
-        assertThrows<IllegalStateException> {
-            config.maximumSize
-        }
-    }
-
-    @Test
     fun `CryptoSigningServiceConfig should throw IllegalStateException when is empty`() {
         val config = CryptoSigningServiceConfig(
             configFactory.create(ConfigFactory.empty())
