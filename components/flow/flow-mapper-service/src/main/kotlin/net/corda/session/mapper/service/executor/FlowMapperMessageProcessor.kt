@@ -1,6 +1,5 @@
 package net.corda.session.mapper.service.executor
 
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.ExecuteCleanup
@@ -16,6 +15,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * The [FlowMapperMessageProcessor] receives states and events that are keyed by strings. These strings can be either:
@@ -47,8 +47,10 @@ class FlowMapperMessageProcessor(
             val result = executor.execute()
             StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
         } else {
-            logger.debug { "Ignoring event (isExpiredSessionEvent: ${isExpiredSessionEvent(value)}, " +
-                    "isValidState: ${isValidState(state, value)})" }
+            logger.debug {
+                "Ignoring event (isExpiredSessionEvent: ${isExpiredSessionEvent(value)}, " +
+                        "isValidState: ${isValidState(state, value)})"
+            }
             StateAndEventProcessor.Response(state, emptyList())
         }
     }
@@ -56,7 +58,7 @@ class FlowMapperMessageProcessor(
     /**
      * Only allow events to be processed when one of the following criteria is met:
      * - the messages are for a new state.
-     * - the state is set to [FlowMapperStateType.OPEN],
+     * - the state is set to [FlowMapperStateType.OPEN], [FlowMappperStateType.CLOSING], [FlowMapperStateType.ERROR],
      * - it is a cleanup event
      * @param state the current state for this mapper event
      * @param mapperEvent the mapper event
@@ -64,8 +66,9 @@ class FlowMapperMessageProcessor(
      * a [SessionEvent]
      */
     private fun isValidState(state: FlowMapperState?, mapperEvent: FlowMapperEvent): Boolean {
-        return state == null || state.status == FlowMapperStateType.OPEN
-                || mapperEvent.payload is ExecuteCleanup || mapperEvent.payload is ScheduleCleanup
+        return state == null || state.status == FlowMapperStateType.OPEN || state.status == FlowMapperStateType.CLOSING
+                || state.status == FlowMapperStateType.ERROR || mapperEvent.payload is ExecuteCleanup
+                || mapperEvent.payload is ScheduleCleanup
     }
 
     /**

@@ -1,13 +1,15 @@
 package net.corda.flow.mapper.impl.executor
 
-import java.time.Instant
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
@@ -15,6 +17,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionEventExecutor(
@@ -80,12 +83,35 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-            Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+        val state = flowMapperState.status
+        val event = sessionEvent.payload
+        if (state == FlowMapperStateType.CLOSING || event !is SessionError) {
+
+            //ACK
+
+            val outputRecord = if (messageDirection == MessageDirection.INBOUND) {
+                Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+            } else {
+                Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+            }
+
+            return FlowMapperResult(flowMapperState, listOf(outputRecord))
+
+        } else if (state == FlowMapperStateType.OPEN) {
+
+            val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
+                Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+            } else {
+                Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+            }
+
+            return FlowMapperResult(flowMapperState, listOf(outputRecord))
+
+        } else if (state == FlowMapperStateType.ERROR || event is SessionError) {
+            //report error
         } else {
-            Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+            //throw exception?
         }
 
-        return FlowMapperResult(flowMapperState, listOf(outputRecord))
     }
 }
