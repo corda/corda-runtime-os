@@ -71,7 +71,7 @@ class ConsensualSignedTransactionImpl(
     override fun getMissingSignatories(): Set<PublicKey> {
         // TODO See if adding the following as property breaks CordaSerializable
         val requiredSignatories = this.toLedgerTransaction().requiredSignatories
-        val appliedSignatures = signatures.mapNotNull {
+        val signatoriesWithValidSignatures = signatures.mapNotNull {
             val signatureKey = getSignatoryKeyFromKeyId(it.by, requiredSignatories)
             if (signatureKey == null) {
                 null
@@ -86,13 +86,13 @@ class ConsensualSignedTransactionImpl(
         }.toSet()
 
         // isKeyFulfilledBy() helps to make this working with CompositeKeys.
-        return requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatures) }.toSet()
+        return requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, signatoriesWithValidSignatures) }.toSet()
     }
 
     override fun verifySignatures() {
         // TODO See if adding the following as property breaks CordaSerializable
         val requiredSignatories = this.toLedgerTransaction().requiredSignatories
-        val appliedSignatories = signatures.mapNotNull {
+        val signatoriesWithValidSignatures = signatures.mapNotNull {
             val signatureKey = getSignatoryKeyFromKeyId(it.by, requiredSignatories)
             if (signatureKey == null) {
                 null
@@ -111,7 +111,7 @@ class ConsensualSignedTransactionImpl(
         }.toSet()
 
         // isKeyFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
+        val missingSignatories = requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, signatoriesWithValidSignatures) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
