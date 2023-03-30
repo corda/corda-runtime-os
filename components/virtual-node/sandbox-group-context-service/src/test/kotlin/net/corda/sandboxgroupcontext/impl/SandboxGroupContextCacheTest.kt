@@ -103,14 +103,12 @@ class SandboxGroupContextCacheTest {
         // Trigger some evictions, close should not be invoked (there's at least one strong reference to the context)
         @Suppress("UnusedPrivateMember")
         for (i in 1..count.toInt()) {
-            cache.get(
-                VirtualNodeContext(
-                    holdingIdentity = createTestHoldingIdentity("CN=Bob-$i, O=Bob Corp, L=LDN, C=GB", "group"),
-                    cpkFileChecksums = emptySet(),
-                    sandboxGroupType = SandboxGroupType.FLOW,
-                    serviceFilter = createRandomFilter()
-            )
-            ) { mockSandboxContext() }
+            cache.get(VirtualNodeContext(
+                holdingIdentity = createTestHoldingIdentity("CN=Bob-$i, O=Bob Corp, L=LDN, C=GB", "group"),
+                cpkFileChecksums = emptySet(),
+                sandboxGroupType = SandboxGroupType.FLOW,
+                serviceFilter = createRandomFilter()
+            )) { mockSandboxContext() }
         }
         verify(sandboxContext1, never()).close()
 
@@ -218,7 +216,6 @@ class SandboxGroupContextCacheTest {
                 puts = 1.0,
                 hits = 1.0,
                 misses = 1.0,
-                evictions = 0.0
             )
         }
     }
@@ -231,7 +228,6 @@ class SandboxGroupContextCacheTest {
         eventually(duration = ofSeconds(TIMEOUT)) {
             verifyCacheMetrics(
                 misses = 1.0,
-                evictions = 0.0
             )
         }
     }
@@ -250,7 +246,6 @@ class SandboxGroupContextCacheTest {
                 puts = 1.0,
                 hits = 1.0,
                 misses = 1.0,
-                evictions = 0.0
             )
         }
     }
@@ -282,7 +277,6 @@ class SandboxGroupContextCacheTest {
                 puts = 1.0,
                 hits = 1.0,
                 misses = 1.0,
-                evictions = 0.0
             )
         }
     }
