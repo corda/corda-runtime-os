@@ -1,5 +1,6 @@
 package net.corda.schema.registry
 
+import net.corda.data.Fingerprint
 import org.apache.avro.Schema
 import java.nio.ByteBuffer
 
@@ -34,7 +35,7 @@ interface AvroSchemaRegistry {
     )
 
     /**
-     * Adds a new [schema] to this registry, without the explicit encoder/decoder.
+     * Adds a new [schema] to this registry, if it doesn't already exist, without the explicit encoder/decoder.
      *
      * This may be necessary when, for example, a new schema for a known type is added (as in object evolution).
      * The given schema can then be used to determine how the object was serialized and, therefore, how to read
@@ -85,6 +86,16 @@ interface AvroSchemaRegistry {
      * @return the class type of the object encoded in [bytes].
      */
     fun getClassType(bytes: ByteBuffer) : Class<*>
+
+    /**
+     * @return true if the Registry has a schema with the given [Fingerprint].
+     */
+    fun containsSchema(fingerPrint: Fingerprint): Boolean
+
+    /**
+     * Snapshot of all [Schema]s in the registry, keyed by [Fingerprint].
+     */
+    val schemasByFingerprintSnapshot: Map<Fingerprint, Schema>
 }
 
 /**

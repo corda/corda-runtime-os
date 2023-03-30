@@ -495,7 +495,9 @@ class P2PLayerEndToEndTest {
         private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
-        private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory, configMerger)
+        private val avroSchemaRegistry = AvroSchemaRegistryImpl()
+        private val configReadService = ConfigurationReadServiceImpl(
+            lifecycleCoordinatorFactory, subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
         private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val linkManagerConfig by lazy {

@@ -90,7 +90,8 @@ internal class CreateVirtualNodeOperationHandler(
                     holdingId,
                     vNodeDbs,
                     cpiMetadata.id,
-                    request.updateActor
+                    request.updateActor,
+                    externalMessagingRouteConfig = null
                 )
             }
 
@@ -107,7 +108,14 @@ internal class CreateVirtualNodeOperationHandler(
                 mutableListOf(recordFactory.createMgmInfoRecord(holdingId, mgmInfo))
             }
 
-            records.add(recordFactory.createVirtualNodeInfoRecord(holdingId, cpiMetadata.id, vNodeConnections))
+            records.add(
+                recordFactory.createVirtualNodeInfoRecord(
+                    holdingId,
+                    cpiMetadata.id,
+                    vNodeConnections,
+                    externalMessagingRouteConfig = null
+                )
+            )
 
             execLog.measureExecTime("publish virtual node and MGM info") {
                 createVirtualNodeService.publishRecords(records)

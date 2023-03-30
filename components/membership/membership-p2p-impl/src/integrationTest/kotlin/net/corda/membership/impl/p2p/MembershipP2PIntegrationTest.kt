@@ -83,6 +83,7 @@ import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
@@ -229,7 +230,7 @@ class MembershipP2PIntegrationTest {
                 messagingConfig = bootConfig
             ).also { it.start() }
 
-            eventually {
+            eventually(duration = 10.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")

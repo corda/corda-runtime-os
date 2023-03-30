@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.runner.impl
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
@@ -14,12 +15,18 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("LongParameterList")
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberFactory::class)
@@ -27,7 +34,13 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFactory::class)
     private val flowFactory: FlowFactory,
     @Reference(service = FlowFiberExecutionContextFactory::class)
-    private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory
+    private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider,
 ) : FlowRunner {
     override fun runFlow(
         context: FlowEventContext<Any>,
@@ -43,6 +56,7 @@ class FlowRunnerImpl @Activate constructor(
                     resumeFlow(context, flowContinuation)
                 }
             }
+
             else -> resumeFlow(context, flowContinuation)
         }
     }
@@ -51,12 +65,18 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         startFlowEvent: StartFlow
     ): FiberFuture {
+
+        val contextPlatformProperties = getPropertiesWithCpiMetadata(
+            context.checkpoint.holdingIdentity,
+            startFlowEvent.startContext.contextPlatformProperties
+        )
+
         return startFlow(
             context,
             createFlow = { sgc -> flowFactory.createFlow(startFlowEvent, sgc) },
             updateFlowStackItem = { },
             contextUserProperties = emptyKeyValuePairList(),
-            contextPlatformProperties = startFlowEvent.startContext.contextPlatformProperties
+            contextPlatformProperties = contextPlatformProperties
         )
     }
 
@@ -83,7 +103,10 @@ class FlowRunnerImpl @Activate constructor(
             },
             updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },
             contextUserProperties = localContext.userProperties,
-            contextPlatformProperties = localContext.platformProperties
+            contextPlatformProperties = getPropertiesWithCpiMetadata(
+                context.checkpoint.holdingIdentity,
+                localContext.platformProperties
+            )
         )
     }
 
@@ -118,4 +141,32 @@ class FlowRunnerImpl @Activate constructor(
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         return flowFiberFactory.createAndResumeFlowFiber(fiberContext, flowContinuation)
     }
+
+    @Suppress("NestedBlockDepth")
+    private fun getPropertiesWithCpiMetadata(
+        holdingIdentity: HoldingIdentity,
+        contextProperties: KeyValuePairList
+    ) = virtualNodeInfoReadService.get(holdingIdentity)?.let {
+        KeyValueStore().apply {
+
+            // Copy other properties first so that they wont override current values
+            contextProperties.items.forEach { prop ->
+                this[prop.key] = prop.value
+            }
+
+            cpiInfoReadService.get(it.cpiIdentifier)?.let { metadata ->
+
+                this[FlowContextPropertyKeys.CPI_NAME] = metadata.cpiId.name
+                this[FlowContextPropertyKeys.CPI_VERSION] = metadata.cpiId.version
+                this[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH] =
+                    metadata.cpiId.signerSummaryHash.toHexString()
+                this[FlowContextPropertyKeys.CPI_FILE_CHECKSUM] = metadata.fileChecksum.toHexString()
+
+                this[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION] =
+                    platformInfoProvider.localWorkerPlatformVersion.toString()
+                this[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION] =
+                    platformInfoProvider.localWorkerSoftwareVersion
+            }
+        }.avro
+    } ?: contextProperties
 }

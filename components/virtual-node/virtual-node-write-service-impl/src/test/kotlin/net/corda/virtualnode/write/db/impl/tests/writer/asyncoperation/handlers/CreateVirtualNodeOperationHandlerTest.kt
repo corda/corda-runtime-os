@@ -151,7 +151,8 @@ class CreateVirtualNodeOperationHandlerTest {
             ALICE_HOLDING_ID1,
             virtualNodeDbs,
             CPI_IDENTIFIER1,
-            request.updateActor
+            request.updateActor,
+            null
         )
     }
 
@@ -161,14 +162,15 @@ class CreateVirtualNodeOperationHandlerTest {
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any())).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(null))).thenReturn(
             dbConnections
         )
         whenever(
             recordFactory.createVirtualNodeInfoRecord(
                 ALICE_HOLDING_ID1,
                 CPI_IDENTIFIER1,
-                dbConnections
+                dbConnections,
+                externalMessagingRouteConfig = null
             )
         ).thenReturn(
             virtualNodeInfoRecord
@@ -189,14 +191,15 @@ class CreateVirtualNodeOperationHandlerTest {
         val mgmInfoRecord = Record("mgm", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any())).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(null))).thenReturn(
             dbConnections
         )
         whenever(
             recordFactory.createVirtualNodeInfoRecord(
                 ALICE_HOLDING_ID1,
                 CPI_IDENTIFIER1,
-                dbConnections
+                dbConnections,
+                externalMessagingRouteConfig = null
             )
         ).thenReturn(
             virtualNodeInfoRecord
@@ -261,14 +264,15 @@ class CreateVirtualNodeOperationHandlerTest {
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any())).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(null))).thenReturn(
             dbConnections
         )
         whenever(
             recordFactory.createVirtualNodeInfoRecord(
                 ALICE_HOLDING_ID1,
                 CPI_IDENTIFIER1,
-                dbConnections
+                dbConnections,
+                externalMessagingRouteConfig = null
             )
         ).thenReturn(virtualNodeInfoRecord)
 

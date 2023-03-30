@@ -47,7 +47,8 @@ interface VirtualNodeRepository {
         cryptoDDLConnectionId: UUID?,
         cryptoDMLConnectionId: UUID,
         uniquenessDDLConnectionId: UUID?,
-        uniquenessDMLConnectionId: UUID?
+        uniquenessDMLConnectionId: UUID?,
+        externalMessagingRouteConfig: String?
     )
 
     /**

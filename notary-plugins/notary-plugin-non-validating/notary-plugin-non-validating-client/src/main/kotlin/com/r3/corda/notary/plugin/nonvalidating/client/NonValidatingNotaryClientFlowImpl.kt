@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
  * send-and-receive logic, and it will also initiate the server side of the non-validating notary.
  */
-@InitiatingFlow(protocol = "net.corda.notary.NonValidatingNotary")
+@InitiatingFlow(protocol = "com.r3.corda.notary.plugin.nonvalidating", version = [1])
 class NonValidatingNotaryClientFlowImpl(
     private val stx: UtxoSignedTransaction,
     private val notaryRepresentative: MemberX500Name
