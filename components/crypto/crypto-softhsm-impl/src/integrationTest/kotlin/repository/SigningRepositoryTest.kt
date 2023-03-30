@@ -6,6 +6,7 @@ import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
@@ -29,10 +30,12 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.lang.IllegalArgumentException
 import java.security.PublicKey
 import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
@@ -40,6 +43,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.*
 import javax.persistence.EntityManagerFactory
+import javax.persistence.PersistenceException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SigningRepositoryTest : CryptoRepositoryTest() {
@@ -218,6 +222,26 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
+    fun `savePublicKey twice fails`(emf: EntityManagerFactory) {
+        val info = createNewPubKeyInfo()
+        val ctx = createSigningPublicKeySaveContext(info)
+
+        val repo = SigningRepositoryImpl(
+            emf,
+            info.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        repo.savePublicKey(ctx)
+        assertThrows<PersistenceException> {
+            repo.savePublicKey(ctx)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
     fun `savePrivateKey and find by alias`(emf: EntityManagerFactory) {
         val info = createPrivateKeyInfo()
         saveWrappingKey(emf, info.masterKeyAlias!!)
@@ -239,6 +263,28 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         assertThat(found)
             .usingRecursiveComparison().ignoringFields("timestamp")
             .isEqualTo(info)
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `savePrivateKey twice fails`(emf: EntityManagerFactory) {
+        val info = createPrivateKeyInfo()
+        saveWrappingKey(emf, info.masterKeyAlias!!)
+
+        val ctx = createSigningWrappedKeySaveContext(info)
+
+        val repo = SigningRepositoryImpl(
+            emf,
+            info.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        repo.savePrivateKey(ctx)
+        assertThrows<PersistenceException> {
+            repo.savePrivateKey(ctx)
+        }
     }
 
     @ParameterizedTest
@@ -364,6 +410,38 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
+    fun `lookupByPublicKeyShortHashes returns empty when none found`(emf: EntityManagerFactory) {
+        val repo = SigningRepositoryImpl(
+            emf,
+            defaultTenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        val found = repo.lookupByPublicKeyHashes(setOf(SecureHashUtils.randomSecureHash()))
+        assertThat(found).isEmpty()
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `lookupByPublicKeyShortHashes throws when asking too many`(emf: EntityManagerFactory) {
+        val repo = SigningRepositoryImpl(
+            emf,
+            defaultTenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        assertThrows<IllegalArgumentException> {
+            val keys = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map { SecureHashUtils.randomSecureHash() }
+            repo.lookupByPublicKeyHashes(keys.toSet())
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
     fun lookupByPublicKeyHashes(emf: EntityManagerFactory) {
         val allKeys = createdKeys.getOrElse(emf) {
             createdKeys[emf] = createKeys(emf)
@@ -382,7 +460,38 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             ShortHash.of(parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService)))
         }
         val found = repo.lookupByPublicKeyShortHashes(lookFor.toSet())
-
         assertThat(found).containsExactlyInAnyOrderElementsOf(allKeys)
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `lookupByPublicKeyHashes returns empty if none found`(emf: EntityManagerFactory) {
+        val repo = SigningRepositoryImpl(
+            emf,
+            defaultTenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        val found = repo.lookupByPublicKeyShortHashes(setOf(ShortHash.of(SecureHashUtils.randomSecureHash())))
+        assertThat(found).isEmpty()
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `lookupByPublicKeyHashes throws when asking too many`(emf: EntityManagerFactory) {
+        val repo = SigningRepositoryImpl(
+            emf,
+            defaultTenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory(),
+        )
+
+        assertThrows<IllegalArgumentException> {
+            val keys = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map { ShortHash.of(SecureHashUtils.randomSecureHash()) }
+            repo.lookupByPublicKeyShortHashes(keys.toSet())
+        }
     }
 }
