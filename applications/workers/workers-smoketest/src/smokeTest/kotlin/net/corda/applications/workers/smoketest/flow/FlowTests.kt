@@ -38,6 +38,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
+import net.corda.v5.application.flows.FlowContextPropertyKeys
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -440,6 +441,25 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
     }
 
+    @Test
+    fun `CPI metadata is available in a flow`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "get_cpi_metadata"
+            data = emptyMap()
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val flowResult = awaitRpcFlowFinished(bobHoldingId, requestId).mapFlowJsonResult()
+        val result = jacksonObjectMapper.readValue<Map<String, Any>>(flowResult["result"] as String)
+
+        assertThat(result["cpiName"] as String).isEqualTo(applicationCpiName)
+        assertThat(result["cpiVersion"] as String).isNotNull.isNotEmpty
+        assertThat(result["cpiFileChecksum"] as String).isNotNull.isNotEmpty
+        assertThat(result["cpiSignerSummaryHash"] as String).isNotNull.isNotEmpty
+        assertThat(result["initialPlatformVersion"] as String).isNotNull.isNotEmpty
+        assertThat(result["initialSoftwareVersion"] as String).isNotNull.isNotEmpty
+    }
+
     private fun persistDog(id: UUID): FlowStatus {
         val requestBody = RpcSmokeTestInput().apply {
             command = "persistence_persist"
@@ -710,31 +730,41 @@ class FlowTests {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "null",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               },
               "rpcSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               },
               "initiatedFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set",
-                "user3": "user3-set"
+                "user3": "user3-set",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "$applicationCpiName"
               },
               "initiatedSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set-ContextPropagationInitiatedFlow",
-                "user3": "user3-set"
+                "user3": "user3-set",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "$applicationCpiName"
               },
               "rpcFlowAtComplete": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "null",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               }
             }
             """.trimJson()

@@ -9,6 +9,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -68,6 +69,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
         "json_serialization" to this::jsonSerialization,
+        "get_cpi_metadata" to { getCpiMetadata() },
         "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows
     )
 
@@ -463,6 +465,19 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         return memberInfo.name.toString()
     }
 
+    @Suspendable
+    private fun getCpiMetadata(): String {
+        return """{
+            "cpiName": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_NAME]}",
+            "cpiVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]}",
+            "cpiSignerSummaryHash": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]}",
+            "cpiFileChecksum": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]}",
+            
+            "initialPlatformVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION]}",
+            "initialSoftwareVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION]}"
+        }""".trimIndent()
+    }
+
     private fun RpcSmokeTestInput.getValue(key: String): String {
         return checkNotNull(this.data?.get(key)) { "Failed to find key '${key}' in the RPC input args" }
     }
@@ -488,7 +503,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         // Second test checks platform custom serializer/deserializer of MemberX500Name, the serializer should be run
         // implicitly when JsonSerializationFlowOutput is formatted
         val memberX500NameString = input.getValue("vnode")
-        val memberX500NameDeserialized = jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
+        val memberX500NameDeserialized =
+            jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
 
         val output = JsonSerializationFlowOutput(
             firstTest = jsonOutput,
