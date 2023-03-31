@@ -36,28 +36,42 @@ object QqqTicker {
             clock.instant(),
             name,
         )
-        val last = ticks.lastOrNull()
+        //val last = ticks.lastOrNull()
         ticks.push(tick)
-        if (last != null) {
+        /*if (last != null) {
             logger.info(
                 "From ${last.display()} to ${tick.display()} " +
                     "took ${Duration.between(last.time, tick.time).toMillis()} millis",
             )
         } else {
             logger.info("Started with ${tick.display()}")
-        }
+        }*/
+    }
+    fun reset() {
+        ticks.clear()
     }
 
     fun report() {
         val duration = Duration.between(ticks.last.time, ticks.first.time).toMillis()
         logger.info("Ticks Report - took $duration millis")
-        ticks.reversed().zipWithNext { last, tick ->
+        val maxs = ticks.reversed().zipWithNext { last, tick ->
             val took = Duration.between(last.time, tick.time).toMillis()
             val per = took.toDouble() / duration.toDouble()
-            logger.info(
-                "\t From ${last.display()} to ${tick.display()} " +
-                    "took $took millis (${df.format(per)})",
-            )
+            if(per > 0.05) {
+                val text = "\t From ${last.display()} to ${tick.display()} " +
+                        "took $took millis (${df.format(per)})"
+                logger.info(text)
+                took to text
+            } else {
+                took to "short"
+            }
+        }.sortedBy {
+            it.first
+        }.takeLast(6)
+            .map { it.second }
+        logger.info("Maximal usage")
+        maxs.forEach { text ->
+            logger.info(text)
         }
     }
 }

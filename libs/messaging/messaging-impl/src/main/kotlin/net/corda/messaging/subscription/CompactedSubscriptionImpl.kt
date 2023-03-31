@@ -16,6 +16,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.QqqTicker
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -118,6 +119,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun pollAndProcessSnapshot(consumer: CordaConsumer<K, V>) {
+        QqqTicker.tick("pollAndProcessSnapshot 1 ${hashCode()}")
         val partitions = consumer.assignment()
         val endOffsets = consumer.endOffsets(partitions)
         val snapshotEnds = endOffsets.toMutableMap()
@@ -125,9 +127,12 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
         val currentData = getLatestValues()
         currentData.clear()
+        QqqTicker.tick("pollAndProcessSnapshot 2 ${hashCode()}")
 
         while (snapshotEnds.isNotEmpty()) {
+            QqqTicker.tick("pollAndProcessSnapshot 2.1 ${hashCode()} $consumer ${config.pollTimeout}")
             val consumerRecords = consumer.poll(config.pollTimeout)
+            QqqTicker.tick("pollAndProcessSnapshot 2.2 ${hashCode()} $consumer")
 
             consumerRecords.forEach {
                 val value = it.value
@@ -145,8 +150,13 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
+        QqqTicker.tick("pollAndProcessSnapshot 3 ${hashCode()}")
 
-        snapshotMeter.recordCallable { processor.onSnapshot(currentData) }
+        snapshotMeter.recordCallable {
+            QqqTicker.tick("pollAndProcessSnapshot 4 ${hashCode()}")
+            processor.onSnapshot(currentData)
+            QqqTicker.tick("pollAndProcessSnapshot 5 ${hashCode()}")
+        }
     }
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>) {

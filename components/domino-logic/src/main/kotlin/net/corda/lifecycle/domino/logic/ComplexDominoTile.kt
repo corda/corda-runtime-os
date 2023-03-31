@@ -133,6 +133,7 @@ class ComplexDominoTile(
 
     private inner class Handler(private val configurationChangeHandler: ConfigurationChangeHandler<*>) : ConfigurationHandler {
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
+            QqqTicker.tick("onNewConfiguration for ${coordinatorName.componentName} ($changedKeys)")
             if (changedKeys.contains(configurationChangeHandler.key)) {
                 val newConfiguration = config[configurationChangeHandler.key]
                 if (newConfiguration != null) {

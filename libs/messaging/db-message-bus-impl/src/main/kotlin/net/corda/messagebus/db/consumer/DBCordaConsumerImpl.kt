@@ -14,6 +14,7 @@ import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.utilities.QqqTicker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -155,24 +156,29 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private fun recordsAvailable(fromOffset: Long, topicPartition: CordaTopicPartition, timeout: Duration): Boolean {
         if (getLastOffsetPosition(topicPartition) >= fromOffset) return true
         if (timeout <= Duration.ZERO) return false
-        Thread.sleep(timeout.toMillis())
+        Thread.sleep(timeout.toMillis() / 100)
         return getLastOffsetPosition(topicPartition) >= fromOffset
     }
 
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
+        QqqTicker.tick("in poll 1")
         val topicPartition = getNextTopicPartition() ?: return emptyList()
         val fromOffset = position(topicPartition)
 
+        QqqTicker.tick("in poll 2")
         if (!recordsAvailable(fromOffset, topicPartition, timeout)) return emptyList()
+        QqqTicker.tick("in poll 3")
 
         val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords).takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
         }
+        QqqTicker.tick("in poll 4")
 
         val result = dbRecords.mapNotNull { dbRecord ->
             val deserializedValue = deserializeValue(dbRecord.value)
             val isDeserialized = deserializedValue != null || dbRecord.value == null
 
+            QqqTicker.tick("in poll 5")
             if (isDeserialized) {
                 CordaConsumerRecord(
                     dbRecord.topic,
@@ -187,10 +193,12 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                 null
             }
         }
+        QqqTicker.tick("in poll 6")
 
         if (dbRecords.isNotEmpty()) {
             seek(topicPartition, dbRecords.last().recordOffset + 1)
         }
+        QqqTicker.tick("in poll 7")
         return result
     }
 

@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.QqqTicker
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -39,12 +40,14 @@ internal class ConfigProcessor(
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         val config = mergeConfigs(currentData)
+        QqqTicker.tick("ConfigProcessor onSnapshot- ${currentData.keys}")
 
         if (config.values.any { !it.isEmpty }) {
             currentData.forEach { (configSection, configuration) ->
                 addToCache(configSection, configuration)
             }
 
+            QqqTicker.tick("posting (onSnapshot) ${config.keys}")
             coordinator.postEvent(NewConfigReceived(config))
         }
     }
@@ -54,6 +57,7 @@ internal class ConfigProcessor(
         oldValue: Configuration?,
         currentData: Map<String, Configuration>
     ) {
+        QqqTicker.tick("ConfigProcessor onNext- ${newRecord.key}")
         addToCache(newRecord.key, newRecord.value)
 
         val newConfig = newRecord.value?.toSmartConfig()
@@ -65,6 +69,7 @@ internal class ConfigProcessor(
                 "$newConfigKey configuration: " +
                         newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
             } // this can dump out all the configuration including the defaults
+            QqqTicker.tick("posting (onNext) ${config.keys}")
             coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
         } else {
             logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }

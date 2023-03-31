@@ -212,6 +212,7 @@ class LinkManagerIntegrationTest {
 
             logger.info("Publishing valid configuration")
             val validConfig = createLinkManagerConfiguration(replayPeriod)
+            QqqTicker.reset()
             QqqTicker.tick("Publish configuration")
             configPublisher.publishLinkManagerConfig(validConfig)
             QqqTicker.tick("Published configuration")
