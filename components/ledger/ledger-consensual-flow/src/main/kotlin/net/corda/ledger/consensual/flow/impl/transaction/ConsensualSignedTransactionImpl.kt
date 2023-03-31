@@ -77,7 +77,7 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        val signatoriesWithValidSignatures = signatures.mapNotNull {
+        val publicKeysWithValidSignatures = signatures.mapNotNull {
             val signatureKey = getSignatoryKeyFromKeyId(it.by)
             if (signatureKey == null) {
                 null
@@ -92,11 +92,11 @@ class ConsensualSignedTransactionImpl(
         }.toSet()
 
         // isKeyFulfilledBy() helps to make this working with CompositeKeys.
-        return requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, signatoriesWithValidSignatures) }.toSet()
+        return requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, publicKeysWithValidSignatures) }.toSet()
     }
 
     override fun verifySignatures() {
-        val signatoriesWithValidSignatures = signatures.mapNotNull {
+        val publicKeysWithValidSignatures = signatures.mapNotNull {
             val signatureKey = getSignatoryKeyFromKeyId(it.by)
             if (signatureKey == null) {
                 null
@@ -115,7 +115,7 @@ class ConsensualSignedTransactionImpl(
         }.toSet()
 
         // isKeyFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, signatoriesWithValidSignatures) }.toSet()
+        val missingSignatories = requiredSignatories.filterNot { KeyUtils.isKeyFulfilledBy(it, publicKeysWithValidSignatures) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,

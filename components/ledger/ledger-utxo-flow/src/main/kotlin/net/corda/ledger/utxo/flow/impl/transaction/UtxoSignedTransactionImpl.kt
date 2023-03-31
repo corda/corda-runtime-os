@@ -129,7 +129,7 @@ data class UtxoSignedTransactionImpl(
 
     // Against signatories. Notary/Unknown signatures are ignored.
     override fun getMissingSignatories(): Set<PublicKey> {
-        val signatoriesWithValidSignatures = signatures.mapNotNull {
+        val publicKeysWithValidSignatures = signatures.mapNotNull {
             val publicKey = getSignatoryKeyFromKeyId(it.by)
             if (publicKey == null) {
                 null
@@ -144,12 +144,12 @@ data class UtxoSignedTransactionImpl(
         }.toSet()
 
         // isKeyFulfilledBy() helps to make this working with CompositeKeys.
-        return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, signatoriesWithValidSignatures) }.toSet()
+        return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, publicKeysWithValidSignatures) }.toSet()
     }
 
     // Against signatories. Notary/unknown signatures are ignored
     override fun verifySignatorySignatures() {
-        val signatoriesWithValidSignatures = signatures.mapNotNull {
+        val publicKeysWithValidSignatures = signatures.mapNotNull {
             val publicKey = getSignatoryKeyFromKeyId(it.by)
             if (publicKey == null) {
                 null// We do not care about non-notary/non-signatory keys
@@ -168,7 +168,7 @@ data class UtxoSignedTransactionImpl(
         }.toSet()
 
         // isKeyFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, signatoriesWithValidSignatures) }.toSet()
+        val missingSignatories = signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, publicKeysWithValidSignatures) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
