@@ -28,7 +28,7 @@ public interface UtxoLedgerService {
      */
     @NotNull
     @Suspendable
-    UtxoTransactionBuilder getTransactionBuilder();
+    UtxoTransactionBuilder createTransactionBuilder();
 
     /**
      * Resolves the specified {@link StateRef} instances into {@link StateAndRef} instances of the specified {@link ContractState} type.

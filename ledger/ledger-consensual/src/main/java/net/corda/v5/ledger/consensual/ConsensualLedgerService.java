@@ -26,7 +26,7 @@ public interface ConsensualLedgerService {
      */
     @NotNull
     @Suspendable
-    ConsensualTransactionBuilder getTransactionBuilder();
+    ConsensualTransactionBuilder createTransactionBuilder();
 
     /**
      * Finds a {@link ConsensualSignedTransaction} in the vault by its transaction ID.
