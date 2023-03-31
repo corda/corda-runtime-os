@@ -1,4 +1,4 @@
-package net.corda.utilities
+package net.corda.utilities.crypto
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

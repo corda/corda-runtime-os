@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.common
 
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.utilities.publicKeyFactory
+import net.corda.utilities.crypto.publicKeyFactory
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 

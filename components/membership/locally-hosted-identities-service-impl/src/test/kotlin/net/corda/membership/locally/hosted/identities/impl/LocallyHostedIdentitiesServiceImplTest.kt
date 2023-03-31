@@ -271,6 +271,25 @@ class LocallyHostedIdentitiesServiceImplTest {
         }
 
         @Test
+        fun `onSnapshot will ignore entry with invalid public key`() {
+            val identityEntry = HostedIdentityEntry(
+                identity.toAvro(),
+                "tlsTenantId",
+                listOf("tlsCertificate"),
+                HostedIdentitySessionKeyAndCert(
+                    "anotherSessionPublicKey",
+                    listOf("sessionCertificate"),
+                ),
+                emptyList(),
+            )
+            processor.firstValue.onSnapshot(
+                mapOf("id1" to identityEntry),
+            )
+
+            assertThat(service.getIdentityInfo(identity)).isNull()
+        }
+
+        @Test
         fun `onNext will add the identities`() {
             val newRecord = mock<Record<String, HostedIdentityEntry>> {
                 on { value } doReturn identityEntry

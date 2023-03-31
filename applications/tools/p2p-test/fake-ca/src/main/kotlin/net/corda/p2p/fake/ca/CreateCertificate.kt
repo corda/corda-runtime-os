@@ -2,7 +2,7 @@ package net.corda.p2p.fake.ca
 
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.fake.ca.Ca.Companion.CA_NAME
-import net.corda.utilities.publicKeyFactory
+import net.corda.utilities.crypto.publicKeyFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
