@@ -52,7 +52,7 @@ class DbConfigSubcommand : Runnable {
 
     @Option(
         names = ["-p", "--password"],
-        description = ["Password name for the database connection. Used only by CORDA type secrets service."]
+        description = ["Password name for the database connection."]
     )
     var password: String? = null
 

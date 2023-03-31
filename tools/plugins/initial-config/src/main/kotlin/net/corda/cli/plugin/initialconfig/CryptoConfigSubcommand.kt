@@ -1,12 +1,12 @@
 package net.corda.cli.plugin.initialconfig
 
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
+import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import picocli.CommandLine
 import java.io.File
@@ -60,25 +60,35 @@ class CryptoConfigSubcommand : Runnable {
     var location: String? = null
 
     @CommandLine.Option(
+        names = ["-v", "--vault-path"],
+        description = ["Vault path of the secrets located in HashiCorp Vault. Used only by VAULT type secrets service."]
+    )
+    var vaultPath: String? = null
+
+    @CommandLine.Option(
+        names = ["-ks", "--key-salt"],
+        description = ["Vault key for the secrets service salt. Used only by VAULT type secrets service."]
+    )
+    var vaultKeySalt: String? = null
+
+    @CommandLine.Option(
+        names = ["-kp", "--key-passphrase"],
+        description = ["Vault key for the secrets service passphrase. Used only by VAULT type secrets service."]
+    )
+    var vaultKeyPassphrase: String? = null
+
+    @CommandLine.Option(
         names = ["-t", "--type"],
         description = ["Secrets service type. Valid values: \${COMPLETION-CANDIDATES}. Default: \${DEFAULT-VALUE}. " +
-                "Specifying CORDA generates a Config snippet based on 'passphrase' and 'salt', which are used to generate " +
-                "a root key for the built in secrets service. Specifying VAULT generates a Config without these properties" +
-                "as they are never used if using the Vault secrets service."]
+                "Specifying CORDA generates a Config snippet with a wrapping passphrase and salt encoded with the Corda " +
+                "built in encryption secrets service. The passphrase and salt for the Corda encryption secrets service must " +
+                "be passed as parameters for this type. Specifying VAULT generates a Config where the wrapping passphrase " +
+                "and salt are to be extracted from Vault. The Vault path and keys must be passed as parameters for this type."]
     )
     var type: SecretsServiceType = SecretsServiceType.CORDA
 
     override fun run() {
-        val (wrappingPassphraseSecret, wrappingSaltSecret) = if (type == SecretsServiceType.CORDA) {
-            checkParamPassed(passphrase)
-                { "'passphrase' must be set for CORDA type secrets." }
-            checkParamPassed(salt)
-                { "'salt' must be set for CORDA type secrets." }
-
-            createWrappingPassphraseAndSaltSecrets()
-        } else {
-            Pair(null, null)
-        }
+        val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets()
 
         val config = createDefaultCryptoConfig(wrappingPassphraseSecret, wrappingSaltSecret).root().render(ConfigRenderOptions.concise())
 
@@ -108,31 +118,49 @@ class CryptoConfigSubcommand : Runnable {
     }
 
     private fun createWrappingPassphraseAndSaltSecrets(): Pair<ConfigObject, ConfigObject> {
-        val random = SecureRandom()
+        val secretsService: SecretsCreateService = when (type) {
+            SecretsServiceType.CORDA -> EncryptionSecretsServiceImpl(
+                checkParamPassed(passphrase)
+                { "'passphrase' must be set for CORDA type secrets." },
+                checkParamPassed(salt)
+                { "'salt' must be set for CORDA type secrets." })
 
-        val smartConfigFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseString(
-                """
-                ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=${passphrase}
-                ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=${salt}
-            """.trimIndent()
-            ), listOf(EncryptionSecretsServiceFactory())
-        )
-        val wrappingPassphraseDefined = (if (softHsmRootPassphrase.isNullOrBlank()) {
-            random.randomString()
-        } else {
-            softHsmRootPassphrase!!
-        })
-        val wrappingSaltDefined = (if (softHsmRootSalt.isNullOrBlank()) {
-            random.randomString()
-        } else {
-            softHsmRootSalt!!
-        })
+            SecretsServiceType.VAULT -> VaultSecretConfigGenerator(
+                checkParamPassed(vaultPath)
+                { "'vaultPath' must be set for VAULT type secrets." })
+        }
+
+        val (passphraseSecretValue, saltSecretValue) = generateSecretValuesForType()
+
         val wrappingPassphraseSecret =
-            smartConfigFactory.makeSecret(wrappingPassphraseDefined, "corda-master-wrapping-key-passphrase").toSafeConfig().root()
+            secretsService.createValue(passphraseSecretValue, "corda-master-wrapping-key-passphrase").root()
         val wrappingSaltSecret =
-            smartConfigFactory.makeSecret(wrappingSaltDefined, "corda-master-wrapping-key-salt").toSafeConfig().root()
+            secretsService.createValue(saltSecretValue, "corda-master-wrapping-key-salt").root()
         return Pair(wrappingPassphraseSecret, wrappingSaltSecret)
+    }
+
+    private fun generateSecretValuesForType(): Pair<String, String> {
+        return if (type == SecretsServiceType.VAULT) {
+            Pair(
+                checkParamPassed(vaultKeyPassphrase) { "'vaultKeyPassphrase' must be set for VAULT type secrets." },
+                checkParamPassed(vaultKeySalt) { "'vaultKeySalt' must be set for VAULT type secrets." }
+            )
+        } else { // type == SecretsServiceType.CORDA
+            val random = SecureRandom()
+
+            // Use the salt and passphrase passed to the plugin by the user, or generate random ones if not supplied
+            val wrappingPassphraseDefined = (if (softHsmRootPassphrase.isNullOrBlank()) {
+                random.randomString()
+            } else {
+                softHsmRootPassphrase!!
+            })
+            val wrappingSaltDefined = (if (softHsmRootSalt.isNullOrBlank()) {
+                random.randomString()
+            } else {
+                softHsmRootSalt!!
+            })
+            Pair(wrappingPassphraseDefined, wrappingSaltDefined)
+        }
     }
 
     private fun SecureRandom.randomString(length: Int = 32): String = ByteArray(length).let {
