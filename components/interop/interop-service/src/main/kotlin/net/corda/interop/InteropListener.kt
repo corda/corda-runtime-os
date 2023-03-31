@@ -36,7 +36,7 @@ class InteropListener(
                     publisher?.publish(
                         listOf(
                             Record(
-                                Schemas.P2P.P2P_IN_TOPIC, key, FlowMapperEvent(
+                                Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, key, FlowMapperEvent(
                                     ExecuteCleanup()
                                 )
                             )
@@ -63,7 +63,7 @@ class InteropListener(
             val expiryTime = state.value?.expiryTime
             if (status == InteropStateType.INVALID) {
                 if (expiryTime == null) {
-                    log.error("Expiry time not set for FlowMapperState with status of CLOSING on key ${state.key}")
+                    log.error("Expiry time not set for InteropState with status of CLOSING on key ${state.key}")
                 } else {
                     setupCleanupTimer(state.key, expiryTime)
                 }
@@ -79,7 +79,7 @@ class InteropListener(
             executorService.schedule(
                 {
                     log.info("Clearing up mapper state for key $eventKey")
-                    publisher?.publish(listOf(Record(Schemas.P2P.P2P_IN_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup()))))
+                    publisher?.publish(listOf(Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup()))))
                 },
                 expiryTime - clock.millis(),
                 TimeUnit.MILLISECONDS
