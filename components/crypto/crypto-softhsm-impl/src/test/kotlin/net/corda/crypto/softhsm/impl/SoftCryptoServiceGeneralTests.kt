@@ -32,7 +32,7 @@ class SoftCryptoServiceGeneralTests {
     private val schemeMetadata = CipherSchemeMetadataImpl()
     private val UNSUPPORTED_SIGNATURE_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
     private val cryptoRepositoryWrapping = TestWrappingRepository()
-    private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf())
+    private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf(), 1, "wrappingKey")
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
     private val service = makeSoftCryptoService(

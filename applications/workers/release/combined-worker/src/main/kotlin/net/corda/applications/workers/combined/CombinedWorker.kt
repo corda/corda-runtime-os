@@ -132,7 +132,7 @@ class CombinedWorker @Activate constructor(
         // to include in the defaults, so we need to pass in a SmartConfigFactory since that's what we use to
         // make secrets.
         //
-        // In the future, perhaps we can simply rely on the schema for crypto defaults, and not suppy a
+        // In the future, perhaps we can simply rely on the schema for crypto defaults, and not supply a
         // default passphrase and salt but instead require them to be specified.
 
         PostgresDbSetup(
