@@ -41,6 +41,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
@@ -88,12 +89,17 @@ class LocallyHostedIdentitiesServiceImplTest {
         ),
         emptyList(),
     )
+    private val publicKey = mock<PublicKey>()
+    private val publicKeyFactory = mock<(String)->PublicKey> {
+        on { invoke("sessionPublicKey") } doReturn publicKey
+    }
 
     private val service = LocallyHostedIdentitiesServiceImpl(
         coordinatorFactory,
         subscriptionFactory,
         configurationReadService,
         certificateFactory,
+        publicKeyFactory,
         sleeper,
     )
 
@@ -251,6 +257,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 IdentityInfo(
                     identity,
                     certificates,
+                    publicKey,
                 )
             )
         }
@@ -271,6 +278,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 IdentityInfo(
                     identity,
                     certificates,
+                    publicKey,
                 )
             )
         }

@@ -28,16 +28,19 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [LocallyHostedIdentitiesService::class])
+@Suppress("LongParameterList")
 class LocallyHostedIdentitiesServiceImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val configurationReadService: ConfigurationReadService,
     private val certificateFactory: CertificateFactory,
+    private val publicKeyFactory: (String) -> PublicKey,
     private val sleeper: ((Long) -> Unit),
 ) : LocallyHostedIdentitiesService {
     @Activate constructor(
@@ -46,12 +49,13 @@ class LocallyHostedIdentitiesServiceImpl(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService
+        configurationReadService: ConfigurationReadService,
     ): this(
         coordinatorFactory,
         subscriptionFactory,
         configurationReadService,
         CertificateFactory.getInstance("X.509"),
+        ::publicKeyFactory,
         {
             Thread.sleep(it)
         }
@@ -167,6 +171,7 @@ class LocallyHostedIdentitiesServiceImpl(
         return IdentityInfo(
             identity = this.holdingIdentity.toCorda(),
             tlsCertificates = this.tlsCertificates.toCertificates(),
+            preferredSessionKey = publicKeyFactory(this.preferredSessionKeyAndCert.sessionPublicKey),
         )
     }
 

@@ -21,26 +21,43 @@ class Verifier(
         data: ByteArray
     ) = verify(
         keyEncodingService.decodePublicKey(signature.publicKey.array()),
-        signature,
+        signature.bytes.array(),
         signatureSpecAvro,
         data
     )
 
+    fun verify(
+        acceptableKeys: Collection<PublicKey>,
+        signature: CryptoSignatureWithKey,
+        signatureSpecAvro: CryptoSignatureSpec,
+        data: ByteArray,
+    ) {
+        val key = keyEncodingService.decodePublicKey(signature.publicKey.array())
+        if (!acceptableKeys.contains(key)) {
+            throw IllegalArgumentException("The signature public key is not one of the acceptable keys.")
+        }
+        verify(
+            keyEncodingService.decodePublicKey(signature.publicKey.array()),
+            signature.bytes.array(),
+            signatureSpecAvro,
+            data,
+        )
+    }
 
     fun verify(
         publicKey: PublicKey,
-        signature: CryptoSignatureWithKey,
+        signature: ByteArray,
         signatureSpecAvro: CryptoSignatureSpec,
-        data: ByteArray
+        data: ByteArray,
     ) {
         val signatureSpec = signatureSpecAvro.signatureName?.let {
             SignatureSpec(it)
         } ?: throw CordaRuntimeException("Can not find signature spec")
         signatureVerificationService.verify(
             data,
-            signature.bytes.array(),
+            signature,
             publicKey,
-            signatureSpec
+            signatureSpec,
         )
     }
 }

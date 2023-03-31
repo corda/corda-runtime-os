@@ -24,7 +24,7 @@ class MembershipActionsProcessorTest {
     private val distributeMemberInfoActionHandler = Mockito.mockConstruction(DistributeMemberInfoActionHandler::class.java) { mock, _ ->
         whenever(mock.process(any(), any())) doReturn emptyList()
     }
-    private val processor = MembershipActionsProcessor(mock(), mock(), mock(), mock(), mock(), mock(), mock(), mock())
+    private val processor = MembershipActionsProcessor(mock(), mock(), mock(), mock(), mock(), mock(), mock(), mock(), mock())
 
     @AfterEach
     fun cleanUp() {

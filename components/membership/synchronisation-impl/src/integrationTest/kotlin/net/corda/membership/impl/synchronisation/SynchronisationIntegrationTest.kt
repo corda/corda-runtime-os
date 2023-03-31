@@ -51,6 +51,7 @@ import net.corda.membership.impl.synchronisation.dummy.MgmTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
+import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.EPOCH_KEY
@@ -172,6 +173,9 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var groupParametersWriterService: GroupParametersWriterService
+
+        @InjectService(timeout = 5000)
+        lateinit var testLocallyHostedIdentitiesService: TestLocallyHostedIdentitiesService
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
@@ -323,6 +327,7 @@ class SynchronisationIntegrationTest {
             virtualNodeInfoReadService.start()
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
+            testLocallyHostedIdentitiesService.setPreferredSessionKey(mgm.toCorda(), mgmSessionKey)
 
             eventually(10.seconds) {
                 logger.info("Waiting for required services to start...")
