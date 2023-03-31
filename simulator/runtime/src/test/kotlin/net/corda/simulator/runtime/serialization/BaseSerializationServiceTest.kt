@@ -1,8 +1,8 @@
 package net.corda.simulator.runtime.serialization
 
+import net.corda.base.internal.OpaqueBytes
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.instanceOf

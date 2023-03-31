@@ -56,7 +56,7 @@ class ConsensualSignedTransactionBase(
         val serializer = BaseSerializationService()
         val transactionEntity = ConsensualTransactionEntity(
             // TODO consider adding `SecureHash.getBytes()`
-            String((id as SecureHashImpl).bytes),
+            String((id as SecureHashImpl).getBytes()),
             serializer.serialize(ledgerTransaction.states).bytes,
             ledgerTransaction.timestamp
         )
