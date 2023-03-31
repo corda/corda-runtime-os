@@ -75,7 +75,7 @@ class SimUtxoLedgerServiceTest {
         )
 
         // When we get a builder
-        val createdBuilder = ledgerService.getTransactionBuilder()
+        val createdBuilder = ledgerService.createTransactionBuilder()
 
         // Then it should be created by the factory
         assertThat(createdBuilder, `is`(builder))

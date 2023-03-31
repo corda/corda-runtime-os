@@ -219,7 +219,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
         val myKey = memberLookup.myInfo().ledgerKeys.first()
-        return utxoLedgerService.getTransactionBuilder()
+        return utxoLedgerService.createTransactionBuilder()
                 .setNotary(notaryServerName)
                 .addCommand(TestCommand())
                 .run {

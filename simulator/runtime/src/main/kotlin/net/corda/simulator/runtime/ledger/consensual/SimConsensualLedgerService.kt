@@ -59,7 +59,7 @@ class SimConsensualLedgerService(
         return ConsensualSignedTransactionBase.fromEntity(entity, signingService, serializationService, configuration)
     }
 
-    override fun getTransactionBuilder(): ConsensualTransactionBuilder {
+    override fun createTransactionBuilder(): ConsensualTransactionBuilder {
         return consensualTransactionBuilderFactory.createConsensualTxBuilder(
             signingService,
             memberLookup,

@@ -102,7 +102,7 @@ class TransferStatesFlow : ClientStartableFlow {
             outputStates += SimpleState(transferRequest.value, listOf(counterpartyMember.ledgerKeys.first()), issuerName)
 
             log.info("Creating transaction")
-            val signedTransaction = utxoLedgerService.transactionBuilder.setNotary(notary.name)
+            val signedTransaction = utxoLedgerService.createTransactionBuilder().setNotary(notary.name)
                 .addInputStates(tokenClaim.claimedTokens.map { it.stateRef })
                 .addOutputStates(outputStates)
                 .addSignatories(listOf(counterpartyMember.ledgerKeys.first(), myPublicKey))
