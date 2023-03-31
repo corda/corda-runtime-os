@@ -31,12 +31,12 @@ class MultiClusterDynamicNetworkTest {
 
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).apply {
         addMember(createTestMember("Alice"))
-        // Blocked by CORE-11878
-        // addMember(createTestMember("Notary", E2eClusterMemberRole.NOTARY))
+        addMember(createTestMember("Notary", E2eClusterMemberRole.NOTARY))
     }
 
     private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).apply {
         addMember(createTestMember("Bob"))
+        addMember(createTestMember("Charlie"))
     }
 
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).apply {

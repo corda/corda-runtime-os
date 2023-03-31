@@ -1,15 +1,13 @@
 package net.corda.crypto.persistence.db.model
 
 import net.corda.db.schema.DbSchema
-import java.io.Serializable
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.Column
-import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
 import javax.persistence.Id
-import javax.persistence.IdClass
 import javax.persistence.Table
 
 /**
@@ -22,20 +20,24 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_SIGNING_KEY_TABLE)
-@IdClass(SigningKeyEntityPrimaryKey::class)
 @Suppress("LongParameterList")
 class SigningKeyEntity(
+    /*
+     * Synthetic UUID of the key pair
+     */
+    @Id
+    @Column(name = "id", nullable = false)
+    val id: UUID,
+
     /**
      * Tenant which the key belongs to.
      */
-    @Id
     @Column(name = "tenant_id", nullable = false, updatable = false, length = 12)
     var tenantId: String,
 
     /**
      * The short key id, which is calculated as SHA256 converted to HEX string with only first 12 characters if it.
      */
-    @Id
     @Column(name = "key_id", nullable = false, updatable = false, length = 12)
     var keyId: String,
 
@@ -48,8 +50,8 @@ class SigningKeyEntity(
     /**
      * When the key was generated.
      */
-    @Column(name = "timestamp", nullable = false, updatable = false)
-    var timestamp: Instant,
+    @Column(name = "created", nullable = false)
+    var created: Instant,
 
     /**
      * HSM category where the private key of the pair was generated.
@@ -66,26 +68,14 @@ class SigningKeyEntity(
     /**
      * The public key of the pair.
      */
-    @Column(name = "public_key", nullable = false, updatable = false, columnDefinition="BLOB")
+    @Column(name = "public_key", nullable = false, updatable = false, columnDefinition = "BLOB")
     var publicKey: ByteArray,
-
-    /**
-     * If the private key was wrapped that array will contain the encrypted private key.
-     */
-    @Column(name = "key_material", nullable = true, updatable = false, columnDefinition="BLOB")
-    var keyMaterial: ByteArray?,
 
     /**
      * Encoding version of the key.
      */
     @Column(name = "encoding_version", nullable = true, updatable = false)
     var encodingVersion: Int?,
-
-    /**
-     * If the private key was wrapped that defines the alias of the wrapping which was used to wrap it.
-     */
-    @Column(name = "master_key_alias", nullable = true, updatable = false, length = 64)
-    var masterKeyAlias: String?,
 
     /**
      * The key's alias as assigned by a tenant, must be unique per tenant. Note that it should not be used
@@ -114,11 +104,8 @@ class SigningKeyEntity(
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
-    var status: SigningKeyEntityStatus
-)
-
-@Embeddable
-data class SigningKeyEntityPrimaryKey(
-    val tenantId: String,
-    val keyId: String
-): Serializable
+    var status: SigningKeyEntityStatus,
+) {
+        override fun hashCode() = id.hashCode()
+        override fun equals(other: Any?) = other != null && other is SigningKeyEntity && other.id.equals(id)
+}

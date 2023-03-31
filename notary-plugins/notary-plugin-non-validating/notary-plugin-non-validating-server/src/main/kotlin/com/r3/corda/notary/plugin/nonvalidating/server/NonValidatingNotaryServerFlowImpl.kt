@@ -28,9 +28,10 @@ import org.slf4j.LoggerFactory
 
 /**
  * The server-side implementation of the non-validating notary logic.
- * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
+ * This will be initiated by the client side of this notary plugin,
+ * [NonValidatingNotaryClientFlowImpl][com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClientFlowImpl]
  */
-@InitiatedBy(protocol = "net.corda.notary.NonValidatingNotary")
+@InitiatedBy(protocol = "com.r3.corda.notary.plugin.nonvalidating", version = [1])
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
@@ -104,8 +105,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
 
-            // CORE-11837: Use ledger key
-            val otherPartySessionKey = otherMemberInfo.sessionInitiationKeys.first()
+            val otherPartySessionKey = otherMemberInfo.ledgerKeys.first()
 
             validateRequestSignature(
                 request,

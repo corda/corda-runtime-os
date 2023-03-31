@@ -60,6 +60,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -460,12 +461,11 @@ class P2PLayerEndToEndTest {
             val context = mock<MemberContext> {
                 on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpointInfo)
                 on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn identity.groupId
+                on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(keyPair.public)
             }
             return mock {
                 on { name } doReturn identity.name
                 on { memberProvidedContext } doReturn context
-                on { sessionInitiationKeys } doReturn listOf(keyPair.public)
-
             }
         }
     }
@@ -495,7 +495,9 @@ class P2PLayerEndToEndTest {
         private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
-        private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory, configMerger)
+        private val avroSchemaRegistry = AvroSchemaRegistryImpl()
+        private val configReadService = ConfigurationReadServiceImpl(
+            lifecycleCoordinatorFactory, subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
         private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val linkManagerConfig by lazy {

@@ -75,6 +75,25 @@ securityContext:
 {{- end }}
 
 {{/*
+tolerations for node taints
+*/}}
+{{- define "corda.tolerations" -}}
+{{- if .Values.tolerations }}
+tolerations:
+{{- range .Values.tolerations }}
+- key: {{ required "Must specify key for toleration" .key }}
+  {{- with .operator }}
+  operator: {{ . }}
+  {{- end }}
+  effect: {{ required ( printf "Must specify effect for toleration with key %s" .key ) .effect }}
+  {{- if not (eq .operator "Exist") }}
+  value: {{ required ( printf "Must specify value for toleration with key %s and operator not equal to 'Exist'" .key ) .value }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Log4j volume
 */}}
 {{- define "corda.log4jVolume" -}}
@@ -117,6 +136,13 @@ Initial REST API admin password secret name
 */}}
 {{- define "corda.restApiAdminPasswordSecretName" -}}
 {{ .Values.bootstrap.restApiAdmin.password.valueFrom.secretKeyRef.name | default (include "corda.restApiAdminSecretName" .) }}
+{{- end }}
+
+{{/*
+REST TLS keystore secret name
+*/}}
+{{- define "corda.restTlsSecretName" -}}
+{{ .Values.workers.rest.tls.secretName | default (printf "%s-rest-tls" (include "corda.fullname" .)) }}
 {{- end }}
 
 {{/*
@@ -485,5 +511,49 @@ data:
 {{-   end }}
 {{- end }}
 {{- end }}
+{{- end }}
+{{- end }}
+{{/*
+TLS Secret creation
+*/}}
+{{- define "corda.tlsSecret" -}}
+{{- $ := index . 0 }}
+{{- $purpose := index . 1 }}
+{{- $serviceName := index . 2 }}
+{{- $altNames := index . 3 }}
+{{- $secretName := index . 4 }}
+{{- $crtSecretKey := index . 5 }}
+{{- $keySecretKey := index . 6 }}
+{{- $caSecretKey := index . 7 }}
+{{- $altNameAnnotationKey := "certificate/altNames" }}
+{{- if not $altNames }}
+{{-   $altNames = list }}
+{{- end }}
+{{- $altNames = ( concat $altNames (list ( printf "%s.%s" $serviceName $.Release.Namespace ) ( printf "%s.%s.svc" $serviceName $.Release.Namespace ) ) ) }}
+{{- $altNamesAsString := ( join "," $altNames ) }}
+{{- $create := true }}
+{{- $existingSecret := lookup "v1" "Secret" $.Release.Namespace $secretName }}
+{{- if $existingSecret }}
+{{- $annotationValue := get $existingSecret.metadata.annotations $altNameAnnotationKey }}
+{{- $create = not ( eq $annotationValue $altNamesAsString ) }}
+{{- end }}
+{{- if $create }}
+{{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
+{{- $ca := genCA $caName 1000 }}
+{{- $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secretName }}
+  annotations:
+    {{ $altNameAnnotationKey }}: {{ $altNamesAsString | quote }}
+  labels:
+    {{- include "corda.labels" $ | nindent 4 }}
+type: Opaque
+data:
+  {{ $crtSecretKey }}: {{ $cert.Cert | b64enc | quote }}
+  {{ $keySecretKey }}: {{ $cert.Key | b64enc | quote }}
+  {{ $caSecretKey }}: {{ $ca.Cert | b64enc | quote }}
 {{- end }}
 {{- end }}

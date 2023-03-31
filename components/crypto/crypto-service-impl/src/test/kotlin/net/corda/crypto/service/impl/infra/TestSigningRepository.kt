@@ -114,13 +114,11 @@ class TestSigningRepository: SigningRepository {
             SigningKeyOrderBy.CATEGORY -> filtered.sortedBy { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME -> filtered.sortedBy { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS -> filtered.sortedBy { it.alias }
-            SigningKeyOrderBy.MASTER_KEY_ALIAS -> filtered.sortedBy { it.masterKeyAlias }
             SigningKeyOrderBy.EXTERNAL_ID -> filtered.sortedBy { it.externalId }
             SigningKeyOrderBy.TIMESTAMP_DESC -> filtered.sortedByDescending { it.timestamp }
             SigningKeyOrderBy.CATEGORY_DESC -> filtered.sortedByDescending { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> filtered.sortedByDescending { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }
-            SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> filtered.sortedByDescending { it.masterKeyAlias }
             SigningKeyOrderBy.EXTERNAL_ID_DESC -> filtered.sortedByDescending { it.externalId }
             SigningKeyOrderBy.ID_DESC -> filtered.sortedByDescending { it.id.value }
         }.drop(skip).take(take)

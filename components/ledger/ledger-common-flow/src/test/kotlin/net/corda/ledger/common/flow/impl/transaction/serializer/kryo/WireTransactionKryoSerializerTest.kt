@@ -4,7 +4,7 @@ import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

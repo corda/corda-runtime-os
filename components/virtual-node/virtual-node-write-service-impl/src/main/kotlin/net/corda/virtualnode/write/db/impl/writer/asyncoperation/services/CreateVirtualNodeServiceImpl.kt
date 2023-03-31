@@ -127,7 +127,8 @@ internal class CreateVirtualNodeServiceImpl(
         holdingIdentity: HoldingIdentity,
         vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>,
         cpiId: CpiIdentifier,
-        updateActor: String
+        updateActor: String,
+        externalMessagingRouteConfig: String?
     ): VirtualNodeDbConnections {
         try {
             return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
@@ -152,6 +153,7 @@ internal class CreateVirtualNodeServiceImpl(
                     dbConnections.cryptoDmlConnectionId,
                     dbConnections.uniquenessDdlConnectionId,
                     dbConnections.uniquenessDmlConnectionId,
+                    externalMessagingRouteConfig = externalMessagingRouteConfig
                 )
 
                 dbConnections

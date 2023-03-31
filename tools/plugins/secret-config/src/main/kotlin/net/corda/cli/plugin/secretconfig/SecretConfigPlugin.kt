@@ -2,6 +2,7 @@ package net.corda.cli.plugin.secretconfig
 
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.cli.api.CordaCliPlugin
+import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.libs.configuration.secret.SecretsCreateService

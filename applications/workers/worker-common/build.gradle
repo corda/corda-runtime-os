@@ -45,4 +45,9 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
+
+    // Required for enterprise addons, so must appear in all worker JARs even if they don't use them
+    runtimeOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    runtimeOnly "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    runtimeOnly project(":libs:cache:cache-caffeine")
 }

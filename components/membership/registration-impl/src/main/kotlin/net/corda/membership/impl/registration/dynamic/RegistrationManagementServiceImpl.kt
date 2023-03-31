@@ -2,9 +2,6 @@ package net.corda.membership.impl.registration.dynamic
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
@@ -58,12 +55,6 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-    @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = MerkleTreeProvider::class)
-    private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
 ) : RegistrationManagementService {
@@ -170,9 +161,6 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         cordaAvroSerializationFactory,
                         membershipPersistenceClient,
                         membershipQueryClient,
-                        cryptoOpsClient,
-                        cipherSchemeMetadata,
-                        merkleTreeProvider,
                         membershipConfig,
                         groupParametersWriterService,
                     ),

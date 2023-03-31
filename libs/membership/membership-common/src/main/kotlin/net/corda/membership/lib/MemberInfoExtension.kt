@@ -133,7 +133,8 @@ class MemberInfoExtension {
          */
         const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
-        const val NOTARY_SERVICE_PLUGIN = "corda.notary.service.plugin"
+        const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
+        const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.version.%s"
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
@@ -193,6 +194,13 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
+
+        /**
+         * The member session initiation keys
+         */
+        @JvmStatic
+        val MemberInfo.sessionInitiationKeys: Collection<PublicKey>
+            get() = memberProvidedContext.parseList(SESSION_KEYS)
 
         /**
          * [PublicKeyHash] for the session initiation key.

@@ -40,6 +40,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
+import net.corda.utilities.seconds
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -212,20 +213,20 @@ class LinkManagerIntegrationTest {
             logger.info("Publishing valid configuration")
             val validConfig = createLinkManagerConfiguration(replayPeriod)
             configPublisher.publishLinkManagerConfig(validConfig)
-            eventually {
+            eventually(duration = 10.seconds) {
                 assertThat(linkManager.isRunning).isTrue
             }
 
             logger.info("Publishing invalid configuration")
             val invalidConfig = createLinkManagerConfiguration(-1)
             configPublisher.publishLinkManagerConfig(invalidConfig)
-            eventually {
+            eventually(duration = 10.seconds) {
                 assertThat(linkManager.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
             }
 
             logger.info("Publishing valid configuration again")
             configPublisher.publishLinkManagerConfig(validConfig)
-            eventually {
+            eventually(duration = 10.seconds) {
                 assertThat(linkManager.isRunning).isTrue
             }
         }

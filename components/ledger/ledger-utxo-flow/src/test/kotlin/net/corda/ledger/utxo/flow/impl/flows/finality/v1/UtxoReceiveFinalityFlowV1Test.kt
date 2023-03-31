@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -24,7 +25,6 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -440,7 +440,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKeyId(publicKey.fullIdHash(), byteArray),
+            DigitalSignatureWithKeyId(publicKey.fullIdHash(), byteArray),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }

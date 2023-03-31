@@ -101,7 +101,8 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         cryptoDDLConnectionId: UUID?,
         cryptoDMLConnectionId: UUID,
         uniquenessDDLConnectionId: UUID?,
-        uniquenessDMLConnectionId: UUID?
+        uniquenessDMLConnectionId: UUID?,
+        externalMessagingRouteConfig: String?
     ) {
         val signerSummaryHash = cpiId.signerSummaryHash.toString()
         val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value)
@@ -129,6 +130,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             cryptoDMLConnectionId = cryptoDMLConnectionId,
             uniquenessDDLConnectionId = uniquenessDDLConnectionId,
             uniquenessDMLConnectionId = uniquenessDMLConnectionId,
+            externalMessagingRouteConfig = externalMessagingRouteConfig
         )
 
         entityManager.persist(foundVNode)
