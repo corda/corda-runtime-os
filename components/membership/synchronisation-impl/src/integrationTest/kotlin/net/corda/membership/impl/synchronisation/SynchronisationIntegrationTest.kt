@@ -324,7 +324,7 @@ class SynchronisationIntegrationTest {
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
-            eventually(10.seconds) {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")

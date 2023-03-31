@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -55,7 +57,10 @@ class SigningServiceGeneralTests {
         @JvmStatic
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
-        }
+       }
+
+        @JvmStatic
+        fun keyOrders() = KeyOrderBy.values()
     }
 
     @Test
@@ -300,39 +305,39 @@ class SigningServiceGeneralTests {
         )
     }
 
-    @Test
-    fun `Should pass order by to lookup function`() {
-        KeyOrderBy.values().forEach { orderBy ->
-            val skip = 17
-            val take = 21
-            val tenantId: String = UUID.randomUUID().toString()
-            val repo = mock<SigningRepository> {
-                on { query(any(), any(), any(), any()) } doReturn emptyList()
-            }
-            val signingService = SigningServiceImpl(
-                signingRepositoryFactory = { repo },
-                cryptoServiceFactory = mock(),
-                schemeMetadata = schemeMetadata,
-                digestService = mock(),
-                cache = mock(),
-            )
-            val filter = emptyMap<String, String>()
-            val result = signingService.querySigningKeys(
-                tenantId,
-                skip,
-                take,
-                orderBy,
-                filter
-            )
-            assertThat(result).isNotNull
-            assertThat(result.size).isEqualTo(0)
-            verify(repo, times(1)).query(
-                skip,
-                take,
-                SigningKeyOrderBy.valueOf(orderBy.toString()),
-                filter
-            )
+
+    @ParameterizedTest
+    @MethodSource("keyOrders")
+    fun `Should pass order by to lookup function`(orderBy: KeyOrderBy) {
+        val skip = 17
+        val take = 21
+        val tenantId: String = UUID.randomUUID().toString()
+        val repo = mock<SigningRepository> {
+            on { query(any(), any(), any(), any()) } doReturn emptyList()
         }
+        val signingService = SigningServiceImpl(
+            signingRepositoryFactory = { repo },
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata,
+            digestService = mock(),
+            cache = mock(),
+        )
+        val filter = emptyMap<String, String>()
+        val result = signingService.querySigningKeys(
+            tenantId,
+            skip,
+            take,
+            orderBy,
+            filter
+        )
+        assertThat(result).isNotNull
+        assertThat(result.size).isEqualTo(0)
+        verify(repo, times(1)).query(
+            skip,
+            take,
+            SigningKeyOrderBy.valueOf(orderBy.toString()),
+            filter
+        )
     }
 
     @Test
