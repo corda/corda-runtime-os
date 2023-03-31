@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.ledger.consensual
 
 import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -9,7 +10,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import org.hamcrest.MatcherAssert.assertThat
@@ -155,7 +155,7 @@ class ConsensualSignedTransactionBaseTest {
 
     private fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = now()) = DigitalSignatureAndMetadata(
         DigitalSignatureWithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
-        DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
+        DigitalSignatureMetadata(timestamp, SignatureSpecImpl("dummySignatureName"), mapOf())
     )
 
     @CordaSerializable

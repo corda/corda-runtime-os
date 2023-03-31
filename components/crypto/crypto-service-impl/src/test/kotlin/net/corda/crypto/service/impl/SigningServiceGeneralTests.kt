@@ -1,12 +1,10 @@
 package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import java.security.PublicKey
-import java.time.Instant
-import java.util.UUID
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
@@ -30,7 +28,6 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -48,6 +45,9 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.security.PublicKey
+import java.time.Instant
+import java.util.UUID
 
 class SigningServiceGeneralTests {
     companion object {
@@ -82,7 +82,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
-                signatureSpec = SignatureSpec("NONE"),
+                signatureSpec = SignatureSpecImpl("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
@@ -109,7 +109,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
-                signatureSpec = SignatureSpec("NONE"),
+                signatureSpec = SignatureSpecImpl("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )

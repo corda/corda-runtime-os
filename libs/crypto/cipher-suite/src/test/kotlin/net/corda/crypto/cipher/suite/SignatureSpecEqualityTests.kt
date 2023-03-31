@@ -1,7 +1,6 @@
 package net.corda.crypto.cipher.suite
 
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -12,10 +11,10 @@ import kotlin.test.assertTrue
 
 class SignatureSpecEqualityTests {
     companion object {
-        private val SIGNATURE_SPEC_1 = SignatureSpec("SHA256withRSA")
-        private val SIGNATURE_SPEC_10 = SignatureSpec("SHA256withRSA")
-        private val SIGNATURE_SPEC_100 = SignatureSpec("sha256WITHrsa")
-        private val SIGNATURE_SPEC_2 = SignatureSpec("SHA384withRSA")
+        private val SIGNATURE_SPEC_1 = SignatureSpecImpl("SHA256withRSA")
+        private val SIGNATURE_SPEC_10 = SignatureSpecImpl("SHA256withRSA")
+        private val SIGNATURE_SPEC_100 = SignatureSpecImpl("sha256WITHrsa")
+        private val SIGNATURE_SPEC_2 = SignatureSpecImpl("SHA384withRSA")
         private val PARAMETERIZED_SIGNATURE_SPEC_1 = ParameterizedSignatureSpec(
             "RSASSA-PSS",
             PSSParameterSpec(

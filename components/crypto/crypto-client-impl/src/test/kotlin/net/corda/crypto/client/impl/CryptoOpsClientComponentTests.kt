@@ -3,6 +3,7 @@ package net.corda.crypto.client.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.component.impl.exceptionFactories
@@ -55,7 +56,6 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -753,7 +753,7 @@ class CryptoOpsClientComponentTests {
             schemeMetadata.encodeAsByteArray(keyPair.public)
         )
         val data = ByteBuffer.wrap(UUID.randomUUID().toString().toByteArray())
-        val signature = signData(schemeMetadata, SignatureSpec.ECDSA_SHA256, keyPair, data.array())
+        val signature = signData(schemeMetadata, SignatureSpecs.ECDSA_SHA256, keyPair, data.array())
         val spec = CryptoSignatureSpec(
             "NONEwithECDSA",
             DigestAlgorithmName.SHA2_256.name,
@@ -805,7 +805,7 @@ class CryptoOpsClientComponentTests {
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, SignatureSpec.ECDSA_SHA256, keyPair, data)
+        val signature = signData(schemeMetadata, SignatureSpecs.ECDSA_SHA256, keyPair, data)
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
@@ -820,7 +820,7 @@ class CryptoOpsClientComponentTests {
         assertArrayEquals(signature, result.value.bytes)
         val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
-        assertEquals(SignatureSpec.ECDSA_SHA256.signatureName, command.signatureSpec.signatureName)
+        assertEquals(SignatureSpecs.ECDSA_SHA256.signatureName, command.signatureSpec.signatureName)
         assertNull(command.signatureSpec.customDigestName)
         assertNull(command.signatureSpec.params)
         assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
@@ -837,7 +837,7 @@ class CryptoOpsClientComponentTests {
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, SignatureSpec.ECDSA_SHA256, keyPair, data)
+        val signature = signData(schemeMetadata, SignatureSpecs.ECDSA_SHA256, keyPair, data)
         val spec = CustomSignatureSpec(
             signatureName = "NONEwithECDSA",
             customDigestName = DigestAlgorithmName.SHA2_256

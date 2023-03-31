@@ -7,6 +7,7 @@ import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
@@ -18,12 +19,10 @@ import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import org.assertj.core.api.Assertions.assertThat
-
 import java.util.UUID
 import kotlin.test.assertTrue
 
@@ -93,7 +92,7 @@ class SoftCryptoServiceGeneralTests {
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = service.supportedSchemes.keys.first { it.codeName == ECDSA_SECP256R1_CODE_NAME },
-                    signatureSpec = SignatureSpec.ECDSA_SHA256
+                    signatureSpec = SignatureSpecs.ECDSA_SHA256
                 ),
                 ByteArray(0),
                 defaultContext
@@ -113,7 +112,7 @@ class SoftCryptoServiceGeneralTests {
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256
+                    signatureSpec = SignatureSpecs.ECDSA_SHA256
                 ),
                 ByteArray(0),
                 defaultContext
@@ -133,7 +132,7 @@ class SoftCryptoServiceGeneralTests {
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = service.supportedSchemes.keys.first { it.codeName == X25519_CODE_NAME },
-                    signatureSpec = SignatureSpec.EDDSA_ED25519
+                    signatureSpec = SignatureSpecs.EDDSA_ED25519
                 ),
                 ByteArray(0),
                 defaultContext
