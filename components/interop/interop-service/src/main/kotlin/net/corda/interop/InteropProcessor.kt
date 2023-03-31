@@ -134,9 +134,9 @@ class InteropProcessor(
                         AuthenticatedMessageHeader(
                             destinationIdentity,
                             net.corda.data.identity.HoldingIdentity(
-                                state?.aliasHoldingIdentity,
+                                state?.aliasHoldingIdentity ?: sourceIdentity.x500Name,
                                 destinationIdentity.groupId
-                            ),
+                            ), //TODO CORE-10422 replace groups with alias one
                             //TODO CORE-12208 adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest,
                             // use hardcoded 500000 for now
                             Instant.ofEpochMilli(
