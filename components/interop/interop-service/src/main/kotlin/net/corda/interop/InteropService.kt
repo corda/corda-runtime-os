@@ -137,8 +137,7 @@ class InteropService @Activate constructor(
             subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_INTEROP_EVENT_TOPIC),
                 InteropProcessor(
-                    cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
-                    subscriptionFactory, messagingConfig, facadeToFlowMapperService
+                    cordaAvroSerializationFactory, membershipGroupReaderProvider, facadeToFlowMapperService
                 ),
                 messagingConfig,
                 InteropListener(newScheduledTaskState)

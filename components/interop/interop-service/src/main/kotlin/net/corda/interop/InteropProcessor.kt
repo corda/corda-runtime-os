@@ -1,6 +1,6 @@
 package net.corda.interop
 
-//TODO import commented out - see TODO adding FLOW_CONFIG below:
+//TODO CORE-12208 import commented out - see TODO adding FLOW_CONFIG below:
 //import net.corda.schema.configuration.FlowConfig
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -19,13 +19,10 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.impl.InteropMessageTransformer
-import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.session.manager.Constants
@@ -40,9 +37,6 @@ import java.util.UUID
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val subscriptionFactory: SubscriptionFactory,
-    private val config: SmartConfig,
     private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : StateAndEventProcessor<String, InteropState, FlowMapperEvent> {
 
@@ -142,9 +136,10 @@ class InteropProcessor(
                             net.corda.data.identity.HoldingIdentity(
                                 state?.aliasHoldingIdentity,
                                 destinationIdentity.groupId
-                            ), //TODO replace groups with alias one
-                            //TODO adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
-                            Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                            ),
+                            //TODO CORE-12208 adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
+                            Instant.ofEpochMilli(
+                                sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                             sessionEvent.sessionId + "-" + UUID.randomUUID(),
                             "",
                             SUBSYSTEM,
