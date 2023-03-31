@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.bytes
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
@@ -16,14 +17,13 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.NotaryInfo
@@ -230,9 +230,9 @@ class UtxoSignedTransactionBase(
     }
 
     private fun signWithMetadata(key: PublicKey, timestamp: Instant) : DigitalSignatureAndMetadata {
-        val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpec.ECDSA_SHA256)
+        val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpecs.ECDSA_SHA256)
         return DigitalSignatureAndMetadata(signature,
-            DigitalSignatureMetadata(timestamp, SignatureSpec.ECDSA_SHA256, mapOf()))
+            DigitalSignatureMetadata(timestamp, SignatureSpecs.ECDSA_SHA256, mapOf()))
     }
 
     override fun equals(other: Any?): Boolean {

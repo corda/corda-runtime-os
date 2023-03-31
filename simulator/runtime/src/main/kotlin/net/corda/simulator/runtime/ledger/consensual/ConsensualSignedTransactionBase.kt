@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.ledger.consensual
 
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
@@ -11,7 +13,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -126,10 +127,10 @@ class ConsensualSignedTransactionBase(
     override fun toLedgerTransaction(): ConsensualLedgerTransaction = ledgerTransaction
 
     private fun signWithMetadata(key: PublicKey, timestamp: Instant): DigitalSignatureAndMetadata {
-        val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpec.ECDSA_SHA256)
+        val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpecs.ECDSA_SHA256)
         return DigitalSignatureAndMetadata(
             signature,
-            DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
+            DigitalSignatureMetadata(timestamp, SignatureSpecImpl("dummySignatureName"), mapOf())
         )
     }
 

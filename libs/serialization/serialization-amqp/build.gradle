@@ -49,6 +49,7 @@ dependencies {
     testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(':libs:crypto:crypto-serialization-impl')
     testImplementation project(':testing:test-serialization')
+    testImplementation project(':libs:crypto:cipher-suite')
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

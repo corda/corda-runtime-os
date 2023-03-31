@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
@@ -100,7 +101,6 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -807,7 +807,7 @@ class StaticMemberRegistrationServiceTest {
                         it.publicKeyHash == PublicKeyHash.calculate(defaultKey)
                     }
                     .allMatch {
-                        it.spec.signatureName == SignatureSpec.RSA_SHA512.signatureName
+                        it.spec.signatureName == SignatureSpecs.RSA_SHA512.signatureName
                     }
             }
         }
