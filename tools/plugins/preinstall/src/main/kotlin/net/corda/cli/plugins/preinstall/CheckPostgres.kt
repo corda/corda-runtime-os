@@ -11,10 +11,12 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import picocli.CommandLine
-import java.io.File
-
-import picocli.CommandLine.Parameters
 import picocli.CommandLine.Option
+import picocli.CommandLine.Parameters
+import java.io.File
+import java.sql.DriverManager
+import java.sql.SQLException
+import java.util.Base64
 
 data class SecretValues(
     @JsonProperty("valueFrom")
@@ -29,11 +31,16 @@ data class SecretValues(
     val name: String?
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Credentials(
     @JsonProperty("username")
     val username: SecretValues,
     @JsonProperty("password")
-    val password: SecretValues
+    val password: SecretValues,
+    @JsonProperty("host")
+    val host: String,
+    @JsonProperty("port")
+    val port: Int? = 5432
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,12 +53,6 @@ data class Cluster(
 data class DB(
     @JsonProperty("db")
     val db: Cluster
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class Bootstrap(
-    @JsonProperty("bootstrap")
-    val bootstrap: DB
 )
 
 @CommandLine.Command(name = "check-postgres", description = ["Check that the postgres DB is up and that the credentials work."])
@@ -96,6 +97,9 @@ class CheckPostgres : Runnable {
         } catch (e: KubernetesClientException) {
             log("Could not read secret $secretName with key $secretKey.", ERROR)
             null
+        } catch (e: NullPointerException) {
+            log("Could not read secret $secretName with key $secretKey.", ERROR)
+            null
         }
     }
 
@@ -108,19 +112,19 @@ class CheckPostgres : Runnable {
             return
         }
 
-        lateinit var yaml: Bootstrap
+        lateinit var yaml: DB
         try {
             val mapper: ObjectMapper = YAMLMapper()
-            yaml = mapper.readValue(file, Bootstrap::class.java)
+            yaml = mapper.readValue(file, DB::class.java)
         }
         catch ( e: ValueInstantiationException) {
             log("Could not parse the YAML file at $path.", ERROR)
             return
         }
 
-        val userSecretKey: String? = yaml.bootstrap.db.cluster.username.valueFrom?.secretKeyRef?.key
-        val userSecretName: String? = yaml.bootstrap.db.cluster.username.valueFrom?.secretKeyRef?.name
-        var username: String? = yaml.bootstrap.db.cluster.username.value
+        val userSecretKey: String? = yaml.db.cluster.username.valueFrom?.secretKeyRef?.key
+        val userSecretName: String? = yaml.db.cluster.username.valueFrom?.secretKeyRef?.name
+        var username: String? = yaml.db.cluster.username.value
 
         username = username ?: run {
             if (namespace == null) {
@@ -129,19 +133,22 @@ class CheckPostgres : Runnable {
                 return
             }
             if (userSecretKey == null)  {
-                log("Username secret key could not be found.", ERROR)
+                log("Username secret key could not be parsed.", ERROR)
                 return
             }
             if (userSecretName == null) {
-                log("Username secret name could not be found.", ERROR)
+                log("Username secret name could not be parsed.", ERROR)
                 return
             }
-            getSecret(userSecretName, userSecretKey) ?: return
+            getSecret(userSecretName, userSecretKey) ?: run{
+                log("Username secret could not be found in namespace $namespace.", ERROR)
+                return
+            }
         }
 
-        val passwordSecretKey: String? = yaml.bootstrap.db.cluster.password.valueFrom?.secretKeyRef?.key
-        val passwordSecretName: String? = yaml.bootstrap.db.cluster.password.valueFrom?.secretKeyRef?.name
-        var password: String? = yaml.bootstrap.db.cluster.password.value
+        val passwordSecretKey: String? = yaml.db.cluster.password.valueFrom?.secretKeyRef?.key
+        val passwordSecretName: String? = yaml.db.cluster.password.valueFrom?.secretKeyRef?.name
+        var password: String? = yaml.db.cluster.password.value
 
         password = password ?: run {
             if (namespace == null) {
@@ -157,10 +164,27 @@ class CheckPostgres : Runnable {
                 log("Password secret name could not be found.", ERROR)
                 return
             }
-            getSecret(passwordSecretName, passwordSecretKey) ?: return
+            val encoded: String = getSecret(passwordSecretName, passwordSecretKey) ?: run{
+                log("Password secret could not be found in namespace $namespace.", ERROR)
+                return
+            }
+            String(Base64.getDecoder().decode(encoded))
         }
 
-        println("User: $username Password: $password")
+        val url = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/postgres"
+
+        try {
+            Class.forName("org.postgresql.Driver")
+            val connection = DriverManager.getConnection(url, username, password)
+            println(connection.isValid(0))
+        }
+        catch(e: SQLException) {
+            e.cause?.let{
+                log("${e.message} Caused by ${e.cause}", ERROR)
+            } ?: run {
+                log("${e.message}", ERROR)
+            }
+        }
     }
 
 }
