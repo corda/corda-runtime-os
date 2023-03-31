@@ -40,6 +40,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
+import net.corda.utilities.QqqTicker
 import net.corda.utilities.seconds
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -100,7 +101,6 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var  groupParametersReaderService: GroupParametersReaderService
-
     }
 
     private val replayPeriod = 2000
@@ -212,10 +212,14 @@ class LinkManagerIntegrationTest {
 
             logger.info("Publishing valid configuration")
             val validConfig = createLinkManagerConfiguration(replayPeriod)
+            QqqTicker.tick("Publish configuration")
             configPublisher.publishLinkManagerConfig(validConfig)
+            QqqTicker.tick("Published configuration")
             eventually(duration = 10.seconds) {
                 assertThat(linkManager.isRunning).isTrue
             }
+            QqqTicker.tick("LinkManager is running")
+            QqqTicker.report()
 
             logger.info("Publishing invalid configuration")
             val invalidConfig = createLinkManagerConfiguration(-1)
