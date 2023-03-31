@@ -12,6 +12,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEY_PATH
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.jcajce.provider.asymmetric.x509.CertificateFactory
+import org.bouncycastle.openssl.PEMKeyPair
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.slf4j.Logger
@@ -140,7 +141,12 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
 
         val privateKeyInfo = File(tlsKeyPath).reader().use { keyReader ->
             val pemParser = PEMParser(keyReader)
-            PrivateKeyInfo.getInstance(pemParser.readObject())
+            val pemObject = pemParser.readObject()
+            if (pemObject is PEMKeyPair) {
+                pemObject.privateKeyInfo
+            } else {
+                PrivateKeyInfo.getInstance(pemObject)
+            }
         }
         return JcaPEMKeyConverter().getPrivateKey(privateKeyInfo)
     }

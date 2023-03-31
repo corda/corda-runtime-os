@@ -8,7 +8,7 @@ Worker deployment.
 {{- $optionalArgs := dict }}
 {{- if gt (len .) 3 }}{{ $optionalArgs = index . 3 }}{{ end }}
 {{- with index . 1 }}
-{{- with .service }}
+{{-   with .service }}
 ---
 apiVersion: v1
 kind: Service
@@ -35,7 +35,7 @@ spec:
   - name: http
     port: {{ .port }}
     targetPort: http
-{{- end }}
+{{-   end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -210,12 +210,17 @@ spec:
             name: "jaas-conf"
             readOnly: true
           {{- end }}
+          {{- if .tls }}
+          - mountPath: "/tls"
+            name: "tlsmount"
+            readOnly: true
+          {{- end }}
           {{- if $.Values.dumpHostPath }}
           - mountPath: /dumps
             name: dumps
             subPathExpr: $(K8S_POD_NAME)
           {{- end }}
-          {{ include "corda.log4jVolumeMount" $ | nindent 10 }}
+          {{- include "corda.log4jVolumeMount" $ | nindent 10 }}
         ports:
         {{- if .debug.enabled }}
           - name: debug
@@ -328,6 +333,18 @@ spec:
               - key: {{ $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
                 path: "ca.crt"
         {{- end -}}
+        {{- if .tls }}
+        - name: tlsmount
+          secret:
+            secretName: {{ $optionalArgs.tlsSecretName | quote }}
+            items:
+              - key: {{ .tls.crt.secretKey | quote }}
+                path: "tls.crt"
+              - key: {{ .tls.key.secretKey | quote }}
+                path: "tls.key"
+              - key: {{ .tls.ca.secretKey | quote }}
+                path: "ca.crt"
+        {{- end -}}
         {{- if $.Values.kafka.sasl.enabled  }}
         - name: jaas-conf
           emptyDir: {}
@@ -338,7 +355,7 @@ spec:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
         {{- end }}
-        {{ include "corda.log4jVolume" $ | nindent 8 }}
+        {{- include "corda.log4jVolume" $ | nindent 8 }}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
