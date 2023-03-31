@@ -122,6 +122,11 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                 ],
                 "cfg": {
                     "username": "user",
+                    "passphrase": {
+                        "configSecret": {
+                            "encryptedSecret": "<encrypted-value>"
+                        }
+                    },
                     "partition": "whatever"
                 }
             }
@@ -243,8 +248,7 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
 // TODO - get this from the JSON config schema, or eliminate this function
-@Suppress("LongMethod")
-fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
+fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any?, wrappingKeySalt: Any?): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         .withValue(
             CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
