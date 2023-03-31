@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/external.messaging/1.0/corda.external.messaging.json",
+  "title": "Corda External Messaging Configuration Schema",
+  "description": "Configuration schema for external messaging.",
+  "type": "object",
+  "properties": {
+    "routeDefaults": {
+      "description": "Defines the default values used when creating external messaging routes.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "receiveTopicPattern": {
+          "type": "string",
+          "default": "ext.$HOLDING_ID.$CHANNEL_NAME.receive",
+          "pattern": "^(ext|EXT)([a-zA-Z0-9\\._\\-]|\\$HOLDING_ID|\\$CHANNEL_NAME){1,100}$",
+          "description": "The pattern used to generate the external app receiving topic."
+        },
+        "active": {
+          "type": "boolean",
+          "default": true,
+          "description": "The default activation type."
+        },
+        "inactiveResponseType": {
+          "description": "The default behaviour of the external messaging API when publishing to an inactive route.",
+          "oneOf": [
+            {
+              "const": "ERROR",
+              "title": "The API will throw an exception if a flow publishes a message to an inactive topic"
+            },
+            {
+              "const": "IGNORE",
+              "title": "The API will respond as normal, but discard the published message."
+            }
+          ],
+          "default": "ERROR"
+        },
+        "additionalProperties": false
+      },
+      "additionalProperties": false
+    }
+  }
+}

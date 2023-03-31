@@ -2,6 +2,7 @@ package net.corda.schema.configuration.provider.impl
 
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.EXTERNAL_MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -32,6 +33,7 @@ class SchemaProviderConfigImplTest {
             DB_CONFIG,
             FLOW_CONFIG,
             MESSAGING_CONFIG,
+            EXTERNAL_MESSAGING_CONFIG,
             UTXO_LEDGER_CONFIG,
             P2P_LINK_MANAGER_CONFIG,
             P2P_GATEWAY_CONFIG,

@@ -16,8 +16,8 @@
         "properties": {
           "name": {
             "type": "string",
-            "$comment": "The name of the channels accepts alphanumeric values, underscores, periods, and dashes. Empty strings are not accepted and the max. length is 255 characters. Also topics with a period . or underscore _ could collide in internal data structures, so you are advised to use either but not both.",
-            "pattern": "^[a-zA-Z0-9-_\\.]{1,255}$",
+            "$comment": "The name of the channels accepts alphanumeric values, underscores, periods, and dashes. Empty strings are not accepted and the max. length is 100 characters. Also topics with a period . or underscore _ could collide in internal data structures, so you are advised to use either but not both.",
+            "pattern": "^[a-zA-Z0-9-_\\.]{1,100}$",
             "description": "The name of the channel to which external services can listen to for messages."
           },
           "type": {

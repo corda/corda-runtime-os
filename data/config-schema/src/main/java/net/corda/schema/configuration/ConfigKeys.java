@@ -13,6 +13,7 @@ public final class ConfigKeys {
     public static final String DB_CONFIG = "corda.db";
     public static final String FLOW_CONFIG = "corda.flow";
     public static final String MESSAGING_CONFIG = "corda.messaging";
+    public static final String EXTERNAL_MESSAGING_CONFIG = "corda.externalMessaging";
     public static final String UTXO_LEDGER_CONFIG = "corda.ledger.utxo";
     public static final String P2P_LINK_MANAGER_CONFIG = "corda.p2p.linkManager";
     public static final String P2P_GATEWAY_CONFIG = "corda.p2p.gateway";
