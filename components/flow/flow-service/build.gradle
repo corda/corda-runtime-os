@@ -42,6 +42,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation project(":libs:cache:cache-caffeine")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-ledger-utxo"
