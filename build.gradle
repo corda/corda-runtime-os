@@ -42,7 +42,6 @@ snyk {
     autoUpdate = true
 }
 
-def rootProjectDir = rootDir
 def revision = {
     if (System.getenv("CORDA_REVISION")) {
         return System.getenv("CORDA_REVISION")
