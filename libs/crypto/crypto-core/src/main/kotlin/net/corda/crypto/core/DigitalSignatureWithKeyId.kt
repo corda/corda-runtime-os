@@ -1,6 +1,6 @@
 package net.corda.crypto.core
 
-import net.corda.v5.base.types.OpaqueBytes
+import net.corda.base.internal.OpaqueBytes
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 

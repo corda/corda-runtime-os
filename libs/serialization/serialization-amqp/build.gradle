@@ -29,8 +29,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
-    implementation "net.corda:corda-base"
 
+    api project(':libs:base-internal')
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
