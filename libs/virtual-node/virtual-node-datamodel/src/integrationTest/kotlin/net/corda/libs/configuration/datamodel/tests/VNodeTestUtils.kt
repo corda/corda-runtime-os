@@ -24,7 +24,8 @@ internal object VNodeTestUtils {
         cpiVersion: String,
         cpiSignerSummaryHash: SecureHash,
         virtualNodeOperationEntity: VirtualNodeOperationEntity? = null,
-        holdingIdentityEntity: HoldingIdentityEntity? = null
+        holdingIdentityEntity: HoldingIdentityEntity? = null,
+        externalMessagingRouteConfig: String?,
     ): VirtualNodeEntity {
 
         println("Creating VNode for testing: $cpiName, $cpiVersion, $cpiSignerSummaryHash")
@@ -43,7 +44,8 @@ internal object VNodeTestUtils {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
-            operationInProgress = virtualNodeOperationEntity
+            operationInProgress = virtualNodeOperationEntity,
+            externalMessagingRouteConfig = externalMessagingRouteConfig
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->

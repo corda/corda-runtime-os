@@ -42,12 +42,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
@@ -66,6 +66,7 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
@@ -228,7 +229,7 @@ class MemberRegistrationIntegrationTest {
                 )
             )
 
-            eventually {
+            eventually(10.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -334,8 +335,8 @@ class MemberRegistrationIntegrationTest {
                     with(map { pair -> pair.key }) {
                         it.assertThat(contains(String.format(LEDGER_KEYS_KEY, 0))).isTrue
                         it.assertThat(contains(String.format(LEDGER_KEY_HASHES_KEY, 0))).isTrue
-                        it.assertThat(contains(PARTY_SESSION_KEY)).isTrue
-                        it.assertThat(contains(SESSION_KEY_HASH)).isTrue
+                        it.assertThat(contains(PARTY_SESSION_KEYS_PEM.format(0))).isTrue
+                        it.assertThat(contains(SESSION_KEYS_HASH.format(0))).isTrue
                         it.assertThat(contains(REGISTRATION_ID)).isTrue
                     }
 
@@ -402,8 +403,8 @@ class MemberRegistrationIntegrationTest {
             )
                 .publicKeyId()
         return mapOf(
-            "corda.session.key.id" to sessionKeyId,
-            "corda.session.key.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+            "corda.session.keys.0.id" to sessionKeyId,
+            "corda.session.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
             "corda.ledger.keys.0.id" to ledgerKeyId,

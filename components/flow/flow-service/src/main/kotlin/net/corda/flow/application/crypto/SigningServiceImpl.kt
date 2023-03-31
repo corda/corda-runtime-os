@@ -1,6 +1,8 @@
 package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
@@ -35,10 +37,17 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
-        return externalEventExecutor.execute(
+    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKeyId {
+        val digitalSignatureWithKey = externalEventExecutor.execute(
             CreateSignatureExternalEventFactory::class.java,
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
+        )
+
+        return DigitalSignatureWithKeyId(
+            // TODO the following static conversion to key id needs to be replaced with fetching the key id from crypto worker DB
+            //  as recorded in https://r3-cev.atlassian.net/browse/CORE-12033
+            digitalSignatureWithKey.by.fullIdHash(),
+            digitalSignatureWithKey.bytes
         )
     }
 

@@ -133,6 +133,9 @@ class QueryMemberInfoHandlerTest {
         "OK",
         clock.instant(),
         memberContextBytes,
+        "pk-$otherX500Name".toByteArray(),
+        "sig-$otherX500Name".toByteArray(),
+        "dummySignatureSpec",
         mgmContextBytes,
         1L
     )

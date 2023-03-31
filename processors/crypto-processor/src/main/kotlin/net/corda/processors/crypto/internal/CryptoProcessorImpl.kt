@@ -6,14 +6,12 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -36,6 +34,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -45,12 +44,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = SigningKeyStore::class)
-    private val signingKeyStore: SigningKeyStore,
     @Reference(service = HSMStore::class)
     private val hsmStore: HSMStore,
-    @Reference(service = SigningServiceFactory::class)
-    private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
     private val cryptoOspService: CryptoOpsBusService,
     @Reference(service = SoftCryptoServiceProvider::class)
@@ -73,7 +68,7 @@ class CryptoProcessorImpl @Activate constructor(
     private val vnodeInfo: VirtualNodeInfoReadService
 ) : CryptoProcessor {
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     init {
@@ -83,9 +78,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::signingKeyStore,
         ::hsmStore,
-        ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
         ::cryptoOpsClient,

@@ -23,10 +23,12 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSI
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_NONCE_INFO
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
+import net.corda.p2p.crypto.util.hash
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
+import java.security.Key
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -200,6 +202,9 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
         }
     }
 
+    fun hash(key: Key): ByteArray {
+        return messageDigest.hash(key.encoded)
+    }
 }
 
 internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(this).array()

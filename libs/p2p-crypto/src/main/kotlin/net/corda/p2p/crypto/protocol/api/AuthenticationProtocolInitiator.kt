@@ -85,7 +85,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
             myPublicDHKey = keyPair.public.encoded
 
             val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
-            val identity = InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)), groupId)
+            val identity = InitiatorHandshakeIdentity(ByteBuffer.wrap(hash(ourPublicKey)), groupId)
             initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), supportedModes.toList(), identity)
             step = Step.SENT_MY_DH_KEY
             initiatorHelloMessage!!
@@ -128,10 +128,10 @@ class AuthenticationProtocolInitiator(val sessionId: String,
             val initiatorRecordHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, PROTOCOL_VERSION,
                 sessionId, 1, Instant.now().toEpochMilli())
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
-            val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
+            val responderPublicKeyHash = ByteBuffer.wrap(hash(theirPublicKey))
             val initiatorHandshakePayload = InitiatorHandshakePayload(
                 InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, ourCertificates),
-                ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
+                ByteBuffer.wrap(hash(ourPublicKey)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
             )
@@ -165,10 +165,11 @@ class AuthenticationProtocolInitiator(val sessionId: String,
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      */
     @Suppress("ThrowsCount")
-    fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
-                                     theirX500Name: MemberX500Name,
-                                     theirPublicKey: PublicKey,
-                                     theirSignatureSpec: SignatureSpec) {
+    fun validatePeerHandshakeMessage(
+        responderHandshakeMessage: ResponderHandshakeMessage,
+        theirX500Name: MemberX500Name,
+        theirPublicKeys: Collection<Pair<PublicKey, SignatureSpec>>,
+    ) {
         return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE, {}) {
             val responderRecordHeader = responderHandshakeMessage.header.toByteBuffer().array()
             try {
@@ -189,10 +190,10 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 ByteBuffer.allocate(0)
             )
 
-            // check responder's public key hash matches requested one
-            if (!responderHandshakePayload.responderPublicKeyHash.array().contentEquals(messageDigest.hash(theirPublicKey.encoded))) {
-                throw InvalidHandshakeResponderKeyHash()
-            }
+            // Find the correct key
+            val (theirPublicKey, theirSignatureSpec) = theirPublicKeys.firstOrNull { (key, _) ->
+                responderHandshakePayload.responderPublicKeyHash.array().contentEquals(hash(key))
+            } ?: throw InvalidHandshakeResponderKeyHash()
 
             // validate signature
             val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +

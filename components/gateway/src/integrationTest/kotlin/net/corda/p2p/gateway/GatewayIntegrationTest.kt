@@ -6,7 +6,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.StringWriter
 import java.net.ConnectException
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
-import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
 import java.net.http.HttpResponse.BodyHandlers
@@ -64,18 +63,19 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
-import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
 import net.corda.schema.Schemas.P2P.GATEWAY_TLS_TRUSTSTORES
@@ -98,7 +98,6 @@ import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -260,9 +259,13 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        serverAddress.host,
-                        serverAddress.port,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                serverAddress.host,
+                                serverAddress.port,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     ),
@@ -302,9 +305,13 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        serverAddress.host,
-                        serverAddress.port,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                serverAddress.host,
+                                serverAddress.port,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     ),
@@ -349,6 +356,79 @@ class GatewayIntegrationTest : TestBase() {
 
         @Test
         @Timeout(30)
+        fun `http client to gateway with a few servers`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val serverCount = 5
+            val ports = (1..serverCount).map {
+                getOpenPort()
+            }
+            val serversAddresses = ports.map { port ->
+                URI.create("https://www.alice.net:$port/$port/")
+            }
+            val serversConfigurations = serversAddresses.map {  serverAddress ->
+                GatewayServerConfiguration(
+                    serverAddress.host,
+                    serverAddress.port,
+                    serverAddress.path,
+                )
+            }
+            val gatewayMessages = serversAddresses.associateWith { url ->
+                val linkInMessage = LinkInMessage(authenticatedP2PMessage(url.toString()))
+                GatewayMessage(url.toString(), linkInMessage.payload)
+            }
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serversConfigurations,
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                alice.cryptoOpsClient,
+                avroSchemaRegistry
+            ).usingLifecycle {
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
+                it.startAndWaitForStarted()
+                gatewayMessages.forEach { (serverAddress, gatewayMessage) ->
+                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null)
+                    HttpClient(
+                        serverInfo,
+                        bobSslConfig,
+                        NioEventLoopGroup(1),
+                        NioEventLoopGroup(1),
+                        ConnectionConfiguration(),
+                    ).use { client ->
+                        client.start()
+                        val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
+                        assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        assertThat(httpResponse.payload).isNotNull
+                        val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
+                        assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+                    }
+                }
+            }
+
+            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
+            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, serverCount).mapNotNull {
+                it.value as? LinkInMessage
+            }.mapNotNull {
+                it.payload as? AuthenticatedDataMessage
+            }.map {
+                it.payload
+            }.map {
+                String(it.array())
+            }
+            assertThat(publishedRecords)
+                .hasSize(serverCount)
+                .containsExactlyInAnyOrderElementsOf(gatewayMessages.map { it.key.toString() })
+        }
+
+        @Test
+        @Timeout(30)
         fun `requests with extremely large payloads are rejected`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
@@ -359,9 +439,13 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        serverAddress.host,
-                        serverAddress.port,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                serverAddress.host,
+                                serverAddress.port,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     ),
@@ -402,9 +486,13 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        serverAddress.host,
-                        serverAddress.port,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                serverAddress.host,
+                                serverAddress.port,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     ),
@@ -481,37 +569,29 @@ class GatewayIntegrationTest : TestBase() {
             val configPublisher = ConfigPublisher()
 
             val messageReceivedLatch = AtomicReference(CountDownLatch(1))
-            val listenToOutboundMessages = object : ListenerWithServer() {
-                override fun onOpen(event: HttpConnectionEvent) {
-                    assertThat(event.channel.localAddress()).isInstanceOfSatisfying(InetSocketAddress::class.java) {
-                        assertThat(it.port).isEqualTo(recipientServerUrl.port)
-                    }
-                }
-
-                override fun onRequest(request: HttpRequest) {
+            val listenToOutboundMessages = object : RequestListener {
+                override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
                     val receivedGatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
                     val p2pMessage = LinkInMessage(receivedGatewayMessage.payload)
                     assertThat(p2pMessage.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
                         assertThat(String(it.payload.array())).isEqualTo("link out")
                     }
-                    server?.write(HttpResponseStatus.OK, ByteArray(0), request.source)
+                    httpWriter.write(HttpResponseStatus.OK, request.source)
                     messageReceivedLatch.get().countDown()
                 }
             }
             HttpServer(
                 listenToOutboundMessages,
-                GatewayConfiguration(
+                MAX_REQUEST_SIZE,
+                GatewayServerConfiguration(
                     recipientServerUrl.host,
                     recipientServerUrl.port,
                     "/",
-                    aliceSslConfig,
-                    MAX_REQUEST_SIZE
                 ),
                 aliceKeyStore,
                 null,
             ).use { recipientServer ->
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
-                listenToOutboundMessages.server = recipientServer
                 recipientServer.startAndWaitForStarted()
                 Gateway(
                     configPublisher.readerService,
@@ -529,7 +609,9 @@ class GatewayIntegrationTest : TestBase() {
                     }.map {
                         URI.create("https://www.alice.net:$it")
                     }.forEach { url ->
-                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
+                        configPublisher.publishConfig(GatewayConfiguration(
+                            listOf(GatewayServerConfiguration(url.host, url.port, "/",)),
+                            aliceSslConfig, MAX_REQUEST_SIZE))
                         eventually(duration = 20.seconds) {
                             assertThat(gateway.isRunning).isTrue
                         }
@@ -588,9 +670,13 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        serverAddress.host,
-                        serverAddress.port,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                serverAddress.host,
+                                serverAddress.port,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -658,8 +744,8 @@ class GatewayIntegrationTest : TestBase() {
             val servers = serverUrls.map { serverUrl ->
                 URI.create(serverUrl)
             }.map { serverUri ->
-                val serverListener = object : ListenerWithServer() {
-                    override fun onRequest(request: HttpRequest) {
+                val serverListener = object : RequestListener {
+                    override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
                         val gatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
                         val p2pMessage = LinkInMessage(gatewayMessage.payload)
                         assertThat(
@@ -667,18 +753,17 @@ class GatewayIntegrationTest : TestBase() {
                         )
                             .isEqualTo("Target-$serverUri")
                         val gatewayResponse = GatewayResponse(gatewayMessage.id)
-                        server?.write(HttpResponseStatus.OK, avroSchemaRegistry.serialize(gatewayResponse).array(), request.source)
+                        httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(gatewayResponse).array())
                         deliveryLatch.countDown()
                     }
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, "/", bobSslConfig, MAX_REQUEST_SIZE),
+                    MAX_REQUEST_SIZE,
+                    GatewayServerConfiguration(serverUri.host, serverUri.port, "/"),
                     chipKeyStore,
                     null,
-                ).also {
-                    serverListener.server = it
-                }
+                )
             }.onEach {
                 it.startAndWaitForStarted()
             }
@@ -689,9 +774,13 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        gatewayAddress.first,
-                        gatewayAddress.second,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                gatewayAddress.first,
+                                gatewayAddress.second,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -800,9 +889,13 @@ class GatewayIntegrationTest : TestBase() {
                 Gateway(
                     createConfigurationServiceFor(
                         GatewayConfiguration(
-                            aliceGatewayAddress.host,
-                            aliceGatewayAddress.port,
-                            "/",
+                            listOf(
+                                GatewayServerConfiguration(
+                                    aliceGatewayAddress.host,
+                                    aliceGatewayAddress.port,
+                                    "/",
+                                )
+                            ),
                             aliceSslConfig,
                             MAX_REQUEST_SIZE
                         ),
@@ -818,9 +911,14 @@ class GatewayIntegrationTest : TestBase() {
                 Gateway(
                     createConfigurationServiceFor(
                         GatewayConfiguration(
-                            bobGatewayAddress.host,
-                            bobGatewayAddress.port,
-                            "/",
+                            listOf(
+                                GatewayServerConfiguration(
+                                    bobGatewayAddress.host,
+                                    bobGatewayAddress.port,
+                                    "/",
+
+                                )
+                            ),
                             bobSslConfig,
                             MAX_REQUEST_SIZE
                         ),
@@ -910,9 +1008,13 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing good config")
                 configPublisher.publishConfig(
                     GatewayConfiguration(
-                        host,
-                        port,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                host,
+                                port,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -924,9 +1026,13 @@ class GatewayIntegrationTest : TestBase() {
                 // -20 is invalid port, serer should fail
                 configPublisher.publishConfig(
                     GatewayConfiguration(
-                        host,
-                        -20,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                host,
+                                -20,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -944,9 +1050,13 @@ class GatewayIntegrationTest : TestBase() {
                 val anotherPort = getOpenPort()
                 configPublisher.publishConfig(
                     GatewayConfiguration(
-                        host,
-                        anotherPort,
-                        "/",
+                        listOf(
+                            GatewayServerConfiguration(
+                                host,
+                                anotherPort,
+                                "/",
+                            )
+                        ),
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -1025,9 +1135,13 @@ class GatewayIntegrationTest : TestBase() {
             val configPublisher = ConfigPublisher()
             configPublisher.publishConfig(
                 GatewayConfiguration(
-                    aliceAddress.host,
-                    aliceAddress.port,
-                    "/",
+                    listOf(
+                        GatewayServerConfiguration(
+                            aliceAddress.host,
+                            aliceAddress.port,
+                            "/",
+                        )
+                    ),
                     aliceSslConfig,
                     MAX_REQUEST_SIZE
                 ),
@@ -1115,7 +1229,11 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Change the host
-                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
+                configPublisher.publishConfig(
+                    GatewayConfiguration(
+                        listOf(GatewayServerConfiguration(bobAddress.host, bobAddress.port, "/")),
+                        aliceSslConfig, MAX_REQUEST_SIZE)
+                )
                 val bobKeyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 server.publishKeyStoreCertificatesAndKeys(bobKeyStore, aliceHoldingIdentity)
@@ -1238,9 +1356,13 @@ class GatewayIntegrationTest : TestBase() {
                 Gateway(
                     createConfigurationServiceFor(
                         GatewayConfiguration(
-                            aliceGatewayAddress.host,
-                            aliceGatewayAddress.port,
-                            "/",
+                            listOf(
+                                GatewayServerConfiguration(
+                                    aliceGatewayAddress.host,
+                                    aliceGatewayAddress.port,
+                                    "/",
+                                )
+                            ),
                             aliceSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),
@@ -1256,9 +1378,13 @@ class GatewayIntegrationTest : TestBase() {
                 Gateway(
                     createConfigurationServiceFor(
                         GatewayConfiguration(
-                            bobGatewayAddress.host,
-                            bobGatewayAddress.port,
-                            "/",
+                            listOf(
+                                GatewayServerConfiguration(
+                                    bobGatewayAddress.host,
+                                    bobGatewayAddress.port,
+                                    "/",
+                                )
+                            ),
                             bobSslConfig.copy(tlsType = TlsType.MUTUAL),
                             MAX_REQUEST_SIZE
                         ),

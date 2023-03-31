@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.kryo
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -26,7 +27,8 @@ class ConsensualSignedTransactionKryoSerializerTest: ConsensualLedgerTest() {
                 DigitalSignatureAndMetadata::class.java,
                 consensualSignedTransactionExample.signatures[0].by::class.java,
                 emptyMap<String, String>()::class.java,
-                DigitalSignature.WithKey::class.java,
+                DigitalSignature.WithKeyId::class.java,
+                DigitalSignatureWithKeyId::class.java,
                 SignatureSpec::class.java,
                 mapOf("" to "")::class.java
             )

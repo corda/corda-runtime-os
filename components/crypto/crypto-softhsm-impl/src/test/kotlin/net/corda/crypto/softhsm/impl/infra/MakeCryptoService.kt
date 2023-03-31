@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.softhsm.CryptoRepository
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -22,11 +22,12 @@ fun makeSoftCryptoService(
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
         WrappingKeyImpl.generateWrappingKey(it)
     },
-    cryptoRepository: CryptoRepository = TestCryptoRepository(),
+    wrappingRepository: WrappingRepository = TestWrappingRepository(),
 ) = SoftCryptoService(
-    cryptoRepository = cryptoRepository,
+    wrappingRepositoryFactory = { wrappingRepository },
     schemeMetadata = schemeMetadata,
-    rootWrappingKey = rootWrappingKey,
+    defaultUnmanagedWrappingKeyName = "root",
+    unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
     digestService = PlatformDigestServiceImpl(schemeMetadata),
     wrappingKeyCache = wrappingKeyCache,
     privateKeyCache = privateKeyCache,

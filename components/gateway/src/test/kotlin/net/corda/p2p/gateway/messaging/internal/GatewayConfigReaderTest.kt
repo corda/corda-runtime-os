@@ -6,6 +6,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -35,7 +36,11 @@ class GatewayConfigReaderTest {
         val gatewayConfigReader = GatewayConfigReader(coordinatorFactory, configReadService)
         val connectionConfig = ConnectionConfiguration().copy(maxClientConnections = 1)
         val sslConfiguration = mock<SslConfiguration>()
-        val gatewayConfig = GatewayConfiguration("", 1, "/", sslConfiguration, 1000, connectionConfig)
+        val gatewayConfig = GatewayConfiguration(listOf(
+            GatewayServerConfiguration(
+                "", 1, "/"
+            )
+        ), sslConfiguration, 1000, connectionConfig)
 
         val future = configChangeHandler!!.applyNewConfiguration(gatewayConfig, null, mock())
         assertThat(future.isDone).isTrue
@@ -53,7 +58,12 @@ class GatewayConfigReaderTest {
     @Test
     fun `configuration handler returns no change if configuration is the same as before`() {
         val gatewayConfigReader = GatewayConfigReader(coordinatorFactory, configReadService)
-        val gatewayConfig = GatewayConfiguration("", 1, "/", mock(), 1000, gatewayConfigReader.connectionConfig)
+        val gatewayConfig = GatewayConfiguration(
+            listOf(
+                GatewayServerConfiguration("", 1, "/")
+            ),
+            mock(), 1000, gatewayConfigReader.connectionConfig
+        )
 
         val future = configChangeHandler!!.applyNewConfiguration(gatewayConfig, null, mock())
         assertThat(future.isDone).isTrue

@@ -16,6 +16,12 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
 class MemberNotaryDetailsConverterTest {
+    private companion object {
+        const val SERVICE_NAME = "service.name"
+        const val SERVICE_PROTOCOL = "service.flow.protocol.name"
+        const val PROTOCOL_VERSIONS_PREFIX = "service.flow.protocol.version"
+    }
+
     private val publicKeyOne = mock<PublicKey> {
         on { encoded } doReturn byteArrayOf(1, 2, 3)
     }
@@ -29,8 +35,10 @@ class MemberNotaryDetailsConverterTest {
     private val hashOne = PublicKeyHash.calculate(publicKeyOne).value
     private val hashTwo = PublicKeyHash.calculate(publicKeyTwo).value
     private val context = mock<ConversionContext> {
-        on { value("service.name") } doReturn "O=Service, L=London, C=GB"
-        on { value("service.plugin") } doReturn "net.corda.membership.Plugin"
+        on { value(SERVICE_NAME) } doReturn "O=Service, L=London, C=GB"
+        on { value(SERVICE_PROTOCOL) } doReturn "net.corda.membership.Protocol"
+        on { value("$PROTOCOL_VERSIONS_PREFIX.0") } doReturn "1"
+        on { value("$PROTOCOL_VERSIONS_PREFIX.1") } doReturn "2"
         on { value("keys.0.hash") } doReturn hashOne
         on { value("keys.0.pem") } doReturn "PEM1"
         on { value("keys.0.signature.spec") } doReturn SignatureSpec.ECDSA_SHA512.signatureName
@@ -47,7 +55,8 @@ class MemberNotaryDetailsConverterTest {
 
         assertSoftly { softly ->
             softly.assertThat(notaryDetails.serviceName).isEqualTo(MemberX500Name.parse("O=Service, L=London, C=GB"))
-            softly.assertThat(notaryDetails.servicePlugin).isEqualTo("net.corda.membership.Plugin")
+            softly.assertThat(notaryDetails.serviceProtocol).isEqualTo("net.corda.membership.Protocol")
+            softly.assertThat(notaryDetails.serviceProtocolVersions).containsExactlyInAnyOrder(1, 2)
             softly.assertThat(notaryDetails.keys.toList())
                 .hasSize(2)
                 .anySatisfy {
@@ -73,7 +82,7 @@ class MemberNotaryDetailsConverterTest {
 
     @Test
     fun `convert throws exception if service name is missing`() {
-        whenever(context.value("service.name")).doReturn(null)
+        whenever(context.value(SERVICE_NAME)).doReturn(null)
 
         assertThrows<ValueNotFoundException> {
             converter.convert(context)
@@ -81,10 +90,18 @@ class MemberNotaryDetailsConverterTest {
     }
 
     @Test
-    fun `convert return null plugin if plugin is not set`() {
-        whenever(context.value("service.plugin")).doReturn(null)
+    fun `convert return null protocol if protocol is not set`() {
+        whenever(context.value(SERVICE_PROTOCOL)).doReturn(null)
 
-        assertThat(converter.convert(context).servicePlugin).isNull()
+        assertThat(converter.convert(context).serviceProtocol).isNull()
+    }
+
+    @Test
+    fun `convert return empty list if protocol versions is not set`() {
+        whenever(context.value("$PROTOCOL_VERSIONS_PREFIX.0")).doReturn(null)
+        whenever(context.value("$PROTOCOL_VERSIONS_PREFIX.1")).doReturn(null)
+
+        assertThat(converter.convert(context).serviceProtocolVersions).isEmpty()
     }
 
     @Test

@@ -23,7 +23,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -62,6 +62,7 @@ class UtxoTransactionReaderImpl(
 
     private companion object {
         const val CORDA_ACCOUNT = "corda.account"
+        const val CORDA_INITIATOR_ACCOUNT = "corda.initiator.account"
     }
 
     private val serializer = sandbox.getSerializationService()
@@ -72,7 +73,7 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.id
 
     override val account: String
-        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
+        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT || it.key == CORDA_INITIATOR_ACCOUNT}?.value
             ?: throw NullParameterException("Flow external event context property '${CORDA_ACCOUNT}' not set")
 
     override val privacySalt: PrivacySalt
@@ -113,7 +114,7 @@ class UtxoTransactionReaderImpl(
 
         return inputsGroupedByTransactionId.flatMap { inputsByTransactionId ->
 
-            val transaction = persistenceService.findTransaction(
+            val (transaction, _) = persistenceService.findTransaction(
                 id = inputsByTransactionId.key.toString(),
                 transactionStatus = TransactionStatus.VERIFIED
             )

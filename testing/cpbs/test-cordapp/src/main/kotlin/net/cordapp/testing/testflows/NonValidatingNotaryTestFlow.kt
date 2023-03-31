@@ -11,7 +11,10 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeyUtils
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -20,6 +23,7 @@ import net.corda.v5.membership.NotaryInfo
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -98,10 +102,17 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
                 findNotaryVNodeName()
             ))
 
+            // TODO The below is static and needs aligning if signatures > 1
+            val signatureKeyId = signatures.single().signature.by
+            val notaryKeyThatSigned =
+                findSignatureKeyFromKeyId(signatureKeyId, notaryServiceInfo.publicKey)
+                    ?: throw IllegalStateException("Signatory key id doesn't match received signature key id")
+
+            // TODO The below check is redundant now
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
             signatures.forEach {
-                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(it.by))) {
+                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(notaryKeyThatSigned))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }
@@ -112,6 +123,26 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             stx.inputStateRefs.map { it.toString() },
             stx.referenceStateRefs.map { it.toString() }
         ))
+    }
+
+    @Suspendable
+    private fun findSignatureKeyFromKeyId(
+        keyId: SecureHash,
+        notaryServiceKey: PublicKey
+    ): PublicKey? {
+        val digestAlgoName = DigestAlgorithmName(keyId.algorithm)
+        val notaryKeysByIds =
+            (notaryServiceKey as? CompositeKey)?.leafKeys?.associateBy {
+                digestService.hash(it.encoded, digestAlgoName)
+            } ?:
+            // notary service key is plain key
+            mapOf(
+                digestService.hash(
+                    notaryServiceKey.encoded,
+                    digestAlgoName
+                ) to notaryServiceKey
+            )
+        return notaryKeysByIds[keyId]
     }
 
     /**
@@ -187,7 +218,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         referenceStateRefs: List<String>,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
-        val myKey = memberLookup.myInfo().sessionInitiationKey
+        val myKey = memberLookup.myInfo().ledgerKeys.first()
         return utxoLedgerService.getTransactionBuilder()
                 .setNotary(notaryServerName)
                 .addCommand(TestCommand())

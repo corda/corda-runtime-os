@@ -53,7 +53,7 @@ internal class VirtualNodeEntityRepository(
 
     /** Reads CPI metadata from the database. */
     override fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
-        val cpiMetadataEntity = entityManagerFactory.use {
+        val cpiMetadataEntity = entityManagerFactory.createEntityManager().use {
             it.transaction {
                 it.createQuery(
                     "SELECT cpi FROM CpiMetadataEntity cpi " +

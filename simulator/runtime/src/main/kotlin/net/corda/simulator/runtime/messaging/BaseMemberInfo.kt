@@ -32,10 +32,6 @@ data class BaseMemberInfo(
 
     override fun getName(): MemberX500Name = name
 
-    override fun getSessionInitiationKey(): PublicKey {
-        TODO("Not yet implemented")
-    }
-
     override fun getLedgerKeys(): MutableList<PublicKey> = ledgerKeys.toMutableList()
 
     override fun getPlatformVersion(): Int {

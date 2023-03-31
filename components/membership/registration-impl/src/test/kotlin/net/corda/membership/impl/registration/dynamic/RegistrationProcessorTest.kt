@@ -78,7 +78,6 @@ class  RegistrationProcessorTest {
                 memberContext.toByteBuffer(),
                 signature,
                 CryptoSignatureSpec("", null, null),
-                true,
                 0L,
             )
 
@@ -196,10 +195,6 @@ class  RegistrationProcessorTest {
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
             membershipQueryClient,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
             mock(),
             mock(),
         )

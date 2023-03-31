@@ -38,7 +38,7 @@ class NonValidatingNotaryClientFlowImplTest {
         const val DUMMY_PLATFORM_VERSION = 9001
 
         /* Signature */
-        val mockRequestSignature = mock<DigitalSignature.WithKey>()
+        val mockRequestSignature = mock<DigitalSignature.WithKeyId>()
         val dummyUniquenessSignature = DigitalSignatureAndMetadata(
             mock(),
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
@@ -123,7 +123,7 @@ class NonValidatingNotaryClientFlowImplTest {
     private fun createClient(flowMessaging: FlowMessaging): NonValidatingNotaryClientFlowImpl {
         val mockMemberInfo = mock<MemberInfo> {
             on { platformVersion } doReturn DUMMY_PLATFORM_VERSION
-            on { sessionInitiationKey } doReturn mock()
+            on { ledgerKeys } doReturn listOf(mock())
         }
 
         val mockBuilder = mock<UtxoFilteredTransactionBuilder> {

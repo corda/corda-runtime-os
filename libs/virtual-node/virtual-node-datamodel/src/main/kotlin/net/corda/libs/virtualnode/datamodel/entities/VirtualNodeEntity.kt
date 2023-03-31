@@ -38,6 +38,7 @@ import javax.persistence.Version
  * @param flowOperationalStatus The virtual node's ability to run flows, to have checkpoints, to continue in-progress flows.
  * @param vaultDbOperationalStatus The virtual node's ability to perform persistence operations on the virtual node's vault.
  * @param operationInProgress Details of the current operation in progress.
+ * @param externalMessagingRouteConfig Route configuration for external messaging.
  */
 @Entity
 @Table(name = VIRTUAL_NODE_DB_TABLE)
@@ -99,6 +100,9 @@ internal class VirtualNodeEntity(
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
 
+    @Column(name = "external_messaging_route_config", nullable = true)
+    var externalMessagingRouteConfig: String? = null,
+
     @Column(name = "insert_ts", insertable = false)
     var insertTimestamp: Instant? = null,
 
@@ -139,6 +143,7 @@ internal class VirtualNodeEntity(
             flowOperationalStatus,
             vaultDbOperationalStatus,
             operationInProgress?.requestId,
+            externalMessagingRouteConfig,
             entityVersion,
             insertTimestamp!!,
             isDeleted

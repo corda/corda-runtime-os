@@ -33,12 +33,15 @@ class BaseNotaryLookupFactory: NotaryLookupFactory {
  */
 data class BaseNotaryInfo(
     private val name: MemberX500Name,
-    private val pluginClass: String,
+    private val protocol: String,
+    private val protocolVersions: Collection<Int>,
     private val publicKey: PublicKey
 ):NotaryInfo {
     override fun getName(): MemberX500Name = name
 
-    override fun getPluginClass(): String = pluginClass
+    override fun getProtocolVersions(): Collection<Int> = protocolVersions
+
+    override fun getProtocol(): String = protocol
 
     override fun getPublicKey(): PublicKey = publicKey
 }

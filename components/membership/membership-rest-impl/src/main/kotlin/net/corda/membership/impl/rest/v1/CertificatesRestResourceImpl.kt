@@ -6,8 +6,10 @@ import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.lifecycle.Lifecycle
@@ -109,6 +111,8 @@ class CertificatesRestResourceImpl @Activate constructor(
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
+        validateTenantId(tenantId)
+
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
@@ -421,5 +425,22 @@ class CertificatesRestResourceImpl @Activate constructor(
             }
         }
         return name.x500Principal
+    }
+
+    private fun validateTenantId(tenantId: String) {
+        val isValidShortHash = try {
+            ShortHash.parse(tenantId)
+            true
+        } catch (e: ShortHashException) {
+            false
+        }
+        val isValidClusterTenant = (tenantId == P2P || tenantId == REST)
+
+        if (!isValidShortHash && !isValidClusterTenant) {
+            throw InvalidInputDataException(
+                "Provided tenantId ($tenantId) was not valid. " +
+                        "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
+            )
+        }
     }
 }

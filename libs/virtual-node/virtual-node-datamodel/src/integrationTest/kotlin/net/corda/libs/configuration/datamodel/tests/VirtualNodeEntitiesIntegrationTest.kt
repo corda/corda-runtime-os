@@ -95,7 +95,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val cpiSignerSummaryHash = TestRandom.secureHash()
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, externalMessagingRouteConfig = null)
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -114,7 +114,7 @@ class VirtualNodeEntitiesIntegrationTest {
             em.persist(holdingIdentityEntity)
         }
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity, externalMessagingRouteConfig = null)
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -135,7 +135,7 @@ class VirtualNodeEntitiesIntegrationTest {
             OperationType.UPGRADE,
             Instant.now()
         )
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity, externalMessagingRouteConfig = null)
 
         val foundEntity = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
         val operationEntity =

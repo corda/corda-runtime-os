@@ -15,7 +15,7 @@ logging:
   level: "info"
 
 bootstrap:
-  initialAdminUser:
+  restApiAdmin:
     password:
       value: "admin"
   db:

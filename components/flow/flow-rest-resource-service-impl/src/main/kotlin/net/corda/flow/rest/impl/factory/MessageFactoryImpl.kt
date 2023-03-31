@@ -16,7 +16,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
-@Component(immediate = true, service = [MessageFactory::class])
+@Component(service = [MessageFactory::class])
 class MessageFactoryImpl : MessageFactory {
 
     override fun createStartFlowEvent(

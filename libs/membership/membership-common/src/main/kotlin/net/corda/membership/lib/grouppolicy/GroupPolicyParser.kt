@@ -3,17 +3,20 @@ package net.corda.membership.lib.grouppolicy
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import kotlin.jvm.Throws
 
 interface GroupPolicyParser {
 
     companion object {
+        private val mapper = ObjectMapper()
+
         /**
          * Gets the file format version for the given JSON string representation of the group policy file.
          *
@@ -25,9 +28,11 @@ interface GroupPolicyParser {
          */
         fun getFileFormatVersion(groupPolicyJson: String): Int {
             try {
-                return ObjectMapper().readTree(groupPolicyJson).get(FILE_FORMAT_VERSION)?.asInt()
-                    ?: throw CordaRuntimeException("Failed to parse group policy file. " +
-                            "Could not find `$FILE_FORMAT_VERSION` in the JSON")
+                return mapper.readTree(groupPolicyJson).get(FILE_FORMAT_VERSION)?.asInt()
+                    ?: throw CordaRuntimeException(
+                        "Failed to parse group policy file. " +
+                                "Could not find `$FILE_FORMAT_VERSION` in the JSON"
+                    )
             } catch (e: JsonParseException) {
                 throw CordaRuntimeException("Failed to parse group policy file", e)
             }
@@ -42,11 +47,17 @@ interface GroupPolicyParser {
          */
         fun groupIdFromJson(groupPolicyJson: String): String {
             try {
-                return ObjectMapper().readTree(groupPolicyJson).get(GROUP_ID)?.asText()
+                return mapper.readTree(groupPolicyJson).get(GROUP_ID)?.asText()
                     ?: throw GroupPolicyIdNotFoundException()
             } catch (e: JsonParseException) {
                 throw GroupPolicyParseException(e.originalMessage, e)
             }
+        }
+
+        fun isStaticNetwork(groupPolicyJson: String): Boolean = try {
+            mapper.readTree(groupPolicyJson).get(PROTOCOL_PARAMETERS)?.get(STATIC_NETWORK) != null
+        } catch (e: JsonParseException) {
+            false
         }
     }
 

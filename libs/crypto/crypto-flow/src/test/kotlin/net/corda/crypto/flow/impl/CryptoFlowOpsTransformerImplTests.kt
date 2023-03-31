@@ -2,6 +2,7 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
@@ -27,7 +28,6 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -506,8 +506,8 @@ class CryptoFlowOpsTransformerImplTests {
             SignFlowCommand::class.java
         )
         val result = buildTransformer().transform(response)
-        assertThat(result).isInstanceOf(DigitalSignature.WithKey::class.java)
-        val resultSignature = result as DigitalSignature.WithKey
+        assertThat(result).isInstanceOf(DigitalSignatureWithKey::class.java)
+        val resultSignature = result as DigitalSignatureWithKey
         assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
         assertArrayEquals(signature, resultSignature.bytes)
     }

@@ -36,6 +36,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
             val mockNotaryDetails = MemberNotaryDetails(
                 notary,
                 null,
+                emptyList(),
                 emptyList()
             )
             val mockMemberContext: MemberContext = mock {
@@ -46,7 +47,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
             }
             return mock {
                 on { name } doReturn MemberX500Name.parse(memberName)
-                on { sessionInitiationKey } doReturn mock()
+                on { ledgerKeys } doReturn listOf(mock())
                 on { memberProvidedContext } doReturn mockMemberContext
             }
         }

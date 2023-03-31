@@ -4,6 +4,8 @@ import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -42,11 +44,11 @@ fun mockMemberInfo(
     val context = mock<MemberContext> {
         on { parse(GROUP_ID, String::class.java) } doReturn holdingIdentity.groupId
         on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpoints)
+        on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(publicKey)
     }
     return mock {
         on { memberProvidedContext } doReturn context
         on { name } doReturn holdingIdentity.x500Name
-        on { sessionInitiationKey } doReturn publicKey
         on { serial } doReturn serialNumber
     }
 }
@@ -72,7 +74,7 @@ fun mockMembers(members: Collection<HoldingIdentity>, serialNumber: Long = 1,): 
         return digest()
     }
     val hashToInfo = identities.values.associateBy {
-        val publicKeyHash = PublicKeyHash.parse(messageDigest.hash(it.sessionInitiationKey.encoded))
+        val publicKeyHash = PublicKeyHash.parse(messageDigest.hash(it.sessionInitiationKeys.first().encoded))
         publicKeyHash
     }
     return object : MembershipGroupReaderProvider {
