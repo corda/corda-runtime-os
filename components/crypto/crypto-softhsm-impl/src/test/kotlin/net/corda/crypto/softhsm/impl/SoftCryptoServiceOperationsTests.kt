@@ -1,5 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -18,7 +19,6 @@ import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
-import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME

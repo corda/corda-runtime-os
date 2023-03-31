@@ -1,6 +1,6 @@
 package net.corda.serialization
 
-import net.corda.v5.base.types.ByteSequence
+import net.corda.base.internal.ByteSequence
 import net.corda.v5.serialization.SerializedBytes
 
 /**

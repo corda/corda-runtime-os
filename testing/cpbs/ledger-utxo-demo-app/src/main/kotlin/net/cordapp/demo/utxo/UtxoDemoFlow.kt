@@ -67,7 +67,7 @@ class UtxoDemoFlow : ClientStartableFlow {
             )
 
             val notary = notaryLookup.notaryServices.single()
-            val txBuilder = utxoLedgerService.getTransactionBuilder()
+            val txBuilder = utxoLedgerService.createTransactionBuilder()
 
             val signedTransaction = txBuilder
                 .setNotary(notary.name)

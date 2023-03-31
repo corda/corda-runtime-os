@@ -1,8 +1,6 @@
 package net.cordapp.testing.smoketests.flow
 
 import net.corda.v5.application.crypto.CompositeKeyGenerator
-import java.time.Instant
-import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -22,7 +20,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.testing.bundles.dogs.Dog
 import net.cordapp.testing.smoketests.flow.context.launchContextPropagationFlows
@@ -33,6 +30,8 @@ import net.cordapp.testing.smoketests.flow.messages.JsonSerializationOutput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -336,13 +335,16 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
+        val signatureSpec =
+            signatureSpecService.defaultSignatureSpec(publicKey)
+                ?: throw IllegalStateException("Default signature spec not found for key")
+        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
         log.info("Crypto - Signature $signedBytes received")
         digitalSignatureVerificationService.verify(
             bytesToSign,
             signedBytes.bytes,
             publicKey,
-            SignatureSpec.ECDSA_SHA256
+            signatureSpec
         )
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
@@ -356,14 +358,20 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
+        val signatureSpec =
+            signatureSpecService.defaultSignatureSpec(publicKey)
+                ?: throw IllegalStateException("Default signature spec not found for key")
+        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
         log.info("Crypto - Signature $signedBytes received")
         return try {
+            val invalidSignatureSpec =
+                signatureSpecService.defaultSignatureSpec(publicKey, DigestAlgorithmName.SHA2_512)
+                    ?: throw IllegalStateException("Default signature spec not found for key")
             digitalSignatureVerificationService.verify(
                 bytesToSign,
                 signedBytes.bytes,
                 publicKey,
-                SignatureSpec.RSA_SHA256
+                invalidSignatureSpec
             )
             false
         } catch (e: CryptoSignatureException) {

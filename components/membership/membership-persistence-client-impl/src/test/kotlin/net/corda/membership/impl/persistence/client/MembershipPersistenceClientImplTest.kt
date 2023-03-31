@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -57,8 +58,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -71,7 +72,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -175,7 +175,7 @@ class MembershipPersistenceClientImplTest {
         publicKey,
         signatureBytes
     )
-    private val mockSignatureSpec = SignatureSpec.ECDSA_SHA256
+    private val mockSignatureSpec = SignatureSpecs.ECDSA_SHA256
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsByteArray(publicKey) } doReturn publicKeyBytes
     }

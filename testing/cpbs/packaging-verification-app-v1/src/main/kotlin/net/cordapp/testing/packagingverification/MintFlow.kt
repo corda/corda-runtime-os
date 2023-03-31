@@ -60,7 +60,7 @@ class MintFlow : ClientStartableFlow {
 
         log.info("Creating signed transaction")
 
-        val signedTransaction = utxoLedgerService.transactionBuilder
+        val signedTransaction = utxoLedgerService.createTransactionBuilder()
             .setNotary(notary.name)
             .addOutputStates(states)
             .addSignatories(listOf(publicKey))

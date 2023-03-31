@@ -1,6 +1,7 @@
 @file:JvmName("AMQPSerializationScheme")
 package net.corda.internal.serialization
 
+import net.corda.base.internal.ByteSequence
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
@@ -47,7 +48,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.utilities.toSynchronised
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections

@@ -22,7 +22,7 @@ import java.security.spec.AlgorithmParameterSpec
  * and the decryption using the public key.
  */
 class CustomSignatureSpec(
-    signatureName: String,
+    private val signatureName: String,
     /**
      * Digest algorithm name.
      */
@@ -31,7 +31,7 @@ class CustomSignatureSpec(
      * Signature parameters.
      */
     val params: AlgorithmParameterSpec?
-) : SignatureSpec(signatureName) {
+) : SignatureSpec {
 
     /**
      * Creates an instance of the [CustomSignatureSpec] with specified signature name and the digest name,
@@ -42,14 +42,25 @@ class CustomSignatureSpec(
      * @param customDigestName digest algorithm name (e.g. "SHA512")
      */
     constructor(signatureName: String, customDigestName: DigestAlgorithmName)
-        : this(signatureName, customDigestName, null)
+            : this(signatureName, customDigestName, null) {
+        require(signatureName.isNotBlank()) { "The signatureName must not be blank." }
+    }
 
-    /**
-     * Converts a [CustomSignatureSpec] object to a string representation.
-     */
-    override fun toString(): String = if(params != null) {
+    override fun toString(): String = if (params != null) {
         "$signatureName:$customDigestName:${params::class.java.simpleName}"
     } else {
         "$signatureName:$customDigestName"
+    }
+
+    override fun getSignatureName(): String {
+        return this.signatureName
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return this === other || other != null && other is CustomSignatureSpec && other.signatureName == this.signatureName
+    }
+
+    override fun hashCode(): Int {
+        return this.signatureName.hashCode()
     }
 }

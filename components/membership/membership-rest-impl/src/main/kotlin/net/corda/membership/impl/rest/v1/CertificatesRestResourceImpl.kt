@@ -1,6 +1,8 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
@@ -82,13 +84,13 @@ class CertificatesRestResourceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
-            GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
-            RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
-            SM2_CODE_NAME to SignatureSpec.SM2_SM3,
-            SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpecs.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpecs.ECDSA_SHA256,
+            EDDSA_ED25519_TEMPLATE to SignatureSpecs.EDDSA_ED25519,
+            GOST3410_GOST3411_TEMPLATE to SignatureSpecs.GOST3410_GOST3411,
+            RSA_CODE_NAME to SignatureSpecs.RSA_SHA512,
+            SM2_CODE_NAME to SignatureSpecs.SM2_SM3,
+            SPHINCS256_CODE_NAME to SignatureSpecs.SPHINCS256_SHA512,
         )
 
         fun getSignatureSpec(
@@ -96,7 +98,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             defaultSpec: String?
         ): SignatureSpec {
             if (defaultSpec != null) {
-                return SignatureSpec(defaultSpec)
+                return SignatureSpecImpl(defaultSpec)
             }
 
             return defaultCodeNameToSpec[key.schemeCodeName]
