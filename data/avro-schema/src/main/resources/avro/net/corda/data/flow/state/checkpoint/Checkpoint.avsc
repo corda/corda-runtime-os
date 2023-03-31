@@ -10,6 +10,11 @@
       "doc": "Internal, globally unique key for a flow instance."
     },
     {
+      "name": "initialPlatformVersion",
+      "type": "int",
+      "doc": "The platform version at the time the flow was started."
+    },
+    {
       "name": "pipelineState",
       "type": "net.corda.data.flow.state.checkpoint.PipelineState",
       "doc": "State required by the pipeline, e.g. to support retries."
