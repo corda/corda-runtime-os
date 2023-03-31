@@ -6,6 +6,7 @@ import java.security.PublicKey
 
 @BelongsToContract(TestContract::class)
 class TestUtxoState(
+    val identifier: Int,
     val testField: String,
     private val participants: List<PublicKey>,
     val participantNames: List<String>
