@@ -8,16 +8,22 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.membership.MembershipSchema
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.versioning.Version
 import java.security.cert.CertificateException
+import java.security.cert.CertificateExpiredException
 import java.security.cert.CertificateFactory
+import java.security.cert.CertificateNotYetValidException
+import java.security.cert.X509Certificate
+import java.util.Date
 
 internal class MGMRegistrationContextValidator(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val orderVerifier: OrderVerifier = OrderVerifier(),
     private val p2pEndpointVerifier: P2pEndpointVerifier = P2pEndpointVerifier(orderVerifier),
     private val configurationGetService: ConfigurationGetService,
+    private val clock: Clock
 ) {
 
     private companion object {
@@ -35,6 +41,8 @@ internal class MGMRegistrationContextValidator(
             )
         }
     }
+
+    private val certificateFactory = CertificateFactory.getInstance("X.509")
 
     @Suppress("ThrowsCount")
     @Throws(MGMRegistrationContextValidationException::class)
@@ -111,12 +119,25 @@ internal class MGMRegistrationContextValidator(
         }
     }
 
-    fun validateTrustrootCert(pemCert: String, key: String) {
-        try {
-            CertificateFactory.getInstance("X.509").generateCertificate(pemCert.byteInputStream())
+    @Suppress("ThrowsCount")
+    private fun validateTrustrootCert(pemCert: String, key: String) {
+        val certificate = try {
+            certificateFactory.generateCertificate(pemCert.byteInputStream())
         } catch (ex: CertificateException) {
             throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
                     "was not a valid PEM certificate.")
+        }
+
+        try {
+            (certificate as X509Certificate).checkValidity(Date.from(clock.instant()))
+        } catch (ex: Exception) {
+            when(ex) {
+                is CertificateExpiredException, is CertificateNotYetValidException -> {
+                    throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
+                    "does not have a valid validity period.")
+                }
+                else -> throw ex
+            }
         }
     }
 }

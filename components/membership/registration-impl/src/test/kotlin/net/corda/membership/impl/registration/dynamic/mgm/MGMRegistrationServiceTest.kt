@@ -85,6 +85,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -93,10 +94,12 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -114,6 +117,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.Calendar
+import java.util.GregorianCalendar
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -289,6 +294,11 @@ class MGMRegistrationServiceTest {
         "corda.group.trustroot.tls.0" to trustrootCert,
     )
 
+    private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
+    val mockClock = Mockito.mockConstruction(UTCClock::class.java) {
+        mock, _ -> whenever(mock.instant()).thenReturn(validCertificateDate.toInstant())
+    }
+
     private fun postStartEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StartEvent(), coordinator)
     }
@@ -321,6 +331,11 @@ class MGMRegistrationServiceTest {
             ),
             coordinator
         )
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        mockClock.close()
     }
 
     @Nested

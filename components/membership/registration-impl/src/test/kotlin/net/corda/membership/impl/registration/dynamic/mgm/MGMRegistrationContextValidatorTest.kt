@@ -9,6 +9,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.membership.MembershipSchema
+import net.corda.test.util.time.TestClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -22,6 +23,8 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.Calendar
+import java.util.GregorianCalendar
 
 class MGMRegistrationContextValidatorTest {
 
@@ -37,9 +40,13 @@ class MGMRegistrationContextValidatorTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
 
+    private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
+    private val clock = TestClock(validCertificateDate.toInstant())
+
     private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
         membershipSchemaValidatorFactory,
         configurationGetService = configurationGetService,
+        clock = clock
     )
 
     companion object {
@@ -195,6 +202,16 @@ class MGMRegistrationContextValidatorTest {
         val context = validTestContext + (TRUSTSTORE_SESSION.format(0) to "invalid-pem-payload")
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(context)
+        }
+    }
+
+    @Test
+    fun `certificate with invalid validity period as trust root will throw an exception`() {
+        val futureDate = GregorianCalendar(2035, Calendar.FEBRUARY, 12)
+        clock.setTime(futureDate.toInstant())
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(validTestContext)
         }
     }
 }
