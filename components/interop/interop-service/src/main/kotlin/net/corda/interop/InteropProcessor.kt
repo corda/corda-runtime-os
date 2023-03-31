@@ -137,7 +137,8 @@ class InteropProcessor(
                                 state?.aliasHoldingIdentity,
                                 destinationIdentity.groupId
                             ),
-                            //TODO CORE-12208 adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest, use hardcoded 500000 for now
+                            //TODO CORE-12208 adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest,
+                            // use hardcoded 500000 for now
                             Instant.ofEpochMilli(
                                 sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                             sessionEvent.sessionId + "-" + UUID.randomUUID(),
