@@ -308,6 +308,13 @@ class SigningServiceImpl(
                 )
             }
             require(ref.masterKeyAlias != null) { "The master key alias must be defined for tenant $tenantId category $category" }
+            logger.trace(
+                "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${ref.masterKeyAlias}",
+                tenantId,
+                category,
+                alias
+            )
+
             val generatedKey = ref.instance.generateKeyPair(
                 KeyGenerationSpec(scheme, alias, ref.masterKeyAlias),
                 context + mapOf(

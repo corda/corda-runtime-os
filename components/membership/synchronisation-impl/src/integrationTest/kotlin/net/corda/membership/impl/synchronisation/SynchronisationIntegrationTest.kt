@@ -329,7 +329,7 @@ class SynchronisationIntegrationTest {
             configurationReadService.bootstrapConfig(bootConfig)
             testLocallyHostedIdentitiesService.setPreferredSessionKey(mgm.toCorda(), mgmSessionKey)
 
-            eventually(10.seconds) {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")

@@ -35,6 +35,7 @@ import net.corda.membership.groupparams.writer.service.GroupParametersWriterServ
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire

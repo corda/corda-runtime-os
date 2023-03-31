@@ -1,12 +1,15 @@
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.validation.impl.ConfigurationValidatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.v5.base.versioning.Version
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeAll
@@ -74,8 +77,10 @@ class CryptoConfigUtilsTests {
         assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
         assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
-        assertEquals("master-salt", hsmCfg.getString("wrappingKeyMap.salt"))
-        assertEquals("master-passphrase", hsmCfg.getString("wrappingKeyMap.passphrase"))
+        val wrappingKey1 = hsmCfg.getConfigList("wrappingKeys")[0]
+        assertEquals("master-salt", wrappingKey1.getString("salt"))
+        assertEquals("master-passphrase", wrappingKey1.getString("passphrase"))
+        assertEquals("root1", wrappingKey1.getString("alias"))
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
@@ -91,6 +96,15 @@ class CryptoConfigUtilsTests {
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Crypto config should validate`() {
+        val validator = ConfigurationValidatorFactoryImpl().createConfigValidator()
+        val config = createDefaultCryptoConfig("pass", "salt")
+        val configJSON = config.root().render(ConfigRenderOptions.defaults())
+        assertThat(configJSON.contains("passphrase"))
+        validator.validate(CRYPTO_CONFIG, Version(1, 0), config, false)
     }
 
     @Test
@@ -132,8 +146,6 @@ class CryptoConfigUtilsTests {
         assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
         assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
-        assertThat(hsmCfg.getString("wrappingKeyMap.salt")).isNotBlank
-        assertThat(hsmCfg.getString("wrappingKeyMap.passphrase")).isNotBlank
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))

@@ -234,7 +234,6 @@ class MemberInfoTest {
         assertEquals(memberInfo, recreatedMemberInfo)
         assertEquals(memberInfo?.ledgerKeys, recreatedMemberInfo?.ledgerKeys)
         assertEquals(memberInfo?.name, recreatedMemberInfo?.name)
-        assertEquals(memberInfo?.sessionInitiationKeys, recreatedMemberInfo?.sessionInitiationKeys)
         assertEquals(memberInfo?.endpoints, recreatedMemberInfo?.endpoints)
         assertEquals(memberInfo?.modifiedTime, recreatedMemberInfo?.modifiedTime)
         assertEquals(memberInfo?.isActive, recreatedMemberInfo?.isActive)

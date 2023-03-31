@@ -12,6 +12,7 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
@@ -46,6 +47,12 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
     ): FiberFuture {
+        if (context.checkpoint.initialPlatformVersion != platformInfoProvider.localWorkerPlatformVersion) {
+            throw FlowFatalException("Platform has been modified from version " +
+                    "${context.checkpoint.initialPlatformVersion} to version " +
+                    "${platformInfoProvider.localWorkerPlatformVersion}.  The flow must be restarted.")
+        }
+
         return when (val receivedEvent = context.inputEvent.payload) {
             is StartFlow -> startFlow(context, receivedEvent)
             is SessionEvent -> {

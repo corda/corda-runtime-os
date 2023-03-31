@@ -7,8 +7,9 @@ import java.util.concurrent.ConcurrentHashMap
 class TestWrappingRepository(
     val keys: ConcurrentHashMap<String, WrappingKeyInfo> = ConcurrentHashMap(),
 ) : WrappingRepository {
-    override fun saveKey(alias: String, key: WrappingKeyInfo) {
+    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo {
         keys[alias] = key
+        return key
     }
 
     override fun findKey(alias: String): WrappingKeyInfo? = keys[alias]
