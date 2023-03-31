@@ -25,7 +25,7 @@ import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
 import java.time.Instant
 
-class HardcodedInteropMemberRegistrationService  {
+class InteropMembersProducer  {
 
     companion object {
         private val DUMMY_CERTIFICATE =
@@ -34,7 +34,6 @@ class HardcodedInteropMemberRegistrationService  {
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
     }
 
-    //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
     fun createAliasMemberInfo(
         alias: net.corda.virtualnode.HoldingIdentity,
         real: net.corda.virtualnode.HoldingIdentity,

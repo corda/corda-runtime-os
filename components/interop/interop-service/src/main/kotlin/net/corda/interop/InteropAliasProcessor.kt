@@ -9,10 +9,9 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
-@Suppress("LongParameterList")
 class InteropAliasProcessor(
     private val publisher: Publisher,
-    private val tempService: HardcodedInteropMemberRegistrationService,
+    private val interopMembersProducer: InteropMembersProducer,
     private val aliases: MutableList<Pair<net.corda.virtualnode.HoldingIdentity,
             net.corda.virtualnode.HoldingIdentity>> = mutableListOf()
 ) : CompactedProcessor<String, HostedIdentityEntry> {
@@ -55,13 +54,9 @@ class InteropAliasProcessor(
             return holdIdentity.copy(x500Name = newName)
         }
 
-        fun addAliasSubstringToOrganisationName(newIdentity: HostedIdentityEntry): net.corda.virtualnode.HoldingIdentity {
-            return addAliasSubstringToOrganisationName(newIdentity.toHoldingIdentity())
-        }
+        fun addAliasSubstringToOrganisationName(newIdentity: HostedIdentityEntry): net.corda.virtualnode.HoldingIdentity =
+             addAliasSubstringToOrganisationName(newIdentity.holdingIdentity.toCorda())
 
-        private fun HostedIdentityEntry.toHoldingIdentity(): net.corda.virtualnode.HoldingIdentity {
-            return this.holdingIdentity.toCorda()
-        }
     }
 
     override fun onNext(
@@ -89,19 +84,19 @@ class InteropAliasProcessor(
     }
 
     private fun addEntry(entry: HostedIdentityEntry) {
-        val info = entry.toHoldingIdentity()
+        val info = entry.holdingIdentity.toCorda()
         identityMappingCache[entry.holdingIdentity.x500Name.toString()] = info
         val newIdentity = entry
-        val holdIdentity = newIdentity.toHoldingIdentity()
+        val holdIdentity = newIdentity.holdingIdentity.toCorda()
         if (!holdIdentity.x500Name.organization.contains("Alias")) {
             val syntheticName = addAliasSubstringToOrganisationName(newIdentity)
-            val syntheticIdentities = listOf(tempService.createHostedAliasIdentity(syntheticName))
+            val syntheticIdentities = listOf(interopMembersProducer.createHostedAliasIdentity(syntheticName))
             logger.info("Adding $syntheticIdentities")
             publisher.publish(syntheticIdentities)
             aliases.add(Pair(syntheticName, holdIdentity))
             if (aliases.size >= 2) {
                 val syntheticMemberInfos = aliases.flatMap { (alias, real) ->
-                    tempService.createAliasMemberInfo(alias, real, aliases.map { it.first })
+                    interopMembersProducer.createAliasMemberInfo(alias, real, aliases.map { it.first })
                 }
                 logger.info("Adding $syntheticMemberInfos")
                 publisher.publish(syntheticMemberInfos)

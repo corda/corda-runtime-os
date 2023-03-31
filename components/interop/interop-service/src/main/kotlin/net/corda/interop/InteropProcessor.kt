@@ -36,7 +36,6 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
-@Suppress("LongParameterList")
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
