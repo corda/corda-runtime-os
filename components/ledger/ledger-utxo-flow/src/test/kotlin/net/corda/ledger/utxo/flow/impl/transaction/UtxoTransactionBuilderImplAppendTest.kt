@@ -33,13 +33,13 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
 
     @BeforeEach
     fun beforeEach() {
-        originalTransactionalBuilder = utxoLedgerService.transactionBuilder
+        originalTransactionalBuilder = utxoLedgerService.createTransactionBuilder()
     }
 
     @Test
     fun `Appending empty to empty returns an empty`() {
         val result = originalTransactionalBuilder.append(UtxoTransactionBuilderContainer())
-        assertEquals(utxoLedgerService.transactionBuilder, result)
+        assertEquals(utxoLedgerService.createTransactionBuilder(), result)
     }
 
     @Test

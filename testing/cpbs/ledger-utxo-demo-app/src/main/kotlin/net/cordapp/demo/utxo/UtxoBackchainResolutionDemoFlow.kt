@@ -84,7 +84,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 
-            val txBuilder = utxoLedgerService.getTransactionBuilder()
+            val txBuilder = utxoLedgerService.createTransactionBuilder()
             val signedTransaction = txBuilder
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
@@ -97,7 +97,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx2 = utxoLedgerService.getTransactionBuilder()
+            val tx2 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -107,7 +107,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx3 = utxoLedgerService.getTransactionBuilder()
+            val tx3 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -117,7 +117,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx4 = utxoLedgerService.getTransactionBuilder()
+            val tx4 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -126,7 +126,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx5 = utxoLedgerService.getTransactionBuilder()
+            val tx5 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -135,7 +135,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx6 = utxoLedgerService.getTransactionBuilder()
+            val tx6 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -145,7 +145,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx7 = utxoLedgerService.getTransactionBuilder()
+            val tx7 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -154,7 +154,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx8 = utxoLedgerService.getTransactionBuilder()
+            val tx8 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -165,7 +165,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx9 = utxoLedgerService.getTransactionBuilder()
+            val tx9 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -174,7 +174,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx10 = utxoLedgerService.getTransactionBuilder()
+            val tx10 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
@@ -183,7 +183,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .toSignedTransaction()
 
-            val tx11 = utxoLedgerService.getTransactionBuilder()
+            val tx11 = utxoLedgerService.createTransactionBuilder()
                 .setNotary(members.first().name)
                 .setTimeWindowUntil(Instant.now().plus(10, ChronoUnit.DAYS))
                 .addCommand(TestCommand())
