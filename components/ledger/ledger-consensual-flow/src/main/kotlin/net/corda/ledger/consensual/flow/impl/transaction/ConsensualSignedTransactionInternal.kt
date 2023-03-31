@@ -39,6 +39,7 @@ interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
 
     /**
      * Gets the missing signatories from the current [ConsensualSignedTransactionInternal].
+     * It does not verify the available ones.
      *
      * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [ConsensualSignedTransactionInternal].
      */
@@ -51,5 +52,12 @@ interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
      */
     fun verifySignatures()
 
+    /**
+     * Verify if a signature of a signatory is valid.
+     * It does not throw if the signature is not one of the signatories regardless of the validity since
+     * the public key is not available, the validity cannot be verified.
+     *
+     * @throws TransactionSignatureException if signature is owned by a signatory, and it is not valid.
+     */
     fun verifySignature(signature: DigitalSignatureAndMetadata)
 }

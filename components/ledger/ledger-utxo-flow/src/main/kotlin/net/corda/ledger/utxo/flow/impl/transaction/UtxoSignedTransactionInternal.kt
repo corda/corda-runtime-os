@@ -39,6 +39,7 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
 
     /**
      * Gets the missing signatories from the current [UtxoSignedTransactionInternal].
+     * It does not verify the available ones.
      *
      * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransactionInternal].
      */
@@ -70,7 +71,7 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
     fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
 
     /**
-     * Verify if a signature is one of the signatories is valid.
+     * Verify if a signature of a signatory is valid.
      * It does not throw if the signature is not one of the signatories regardless of the validity since
      * the public key is not available, the validity cannot be verified.
      *
