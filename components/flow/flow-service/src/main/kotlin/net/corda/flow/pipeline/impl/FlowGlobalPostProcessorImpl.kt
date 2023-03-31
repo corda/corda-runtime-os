@@ -16,7 +16,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
-import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
@@ -81,15 +80,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
-    /**
-     * Returns true if a session state belongs to an interop session. This is currently
-     * @return True if the state, corresponds to an interop session, false otherwise.
-     */
-    private fun SessionState.isInteropSessionState(): Boolean {
-        val sessionProperties = counterpartySessionProperties?.items?.associate { it.key to it.value }
-        return sessionProperties?.get(Constants.FLOW_PROTOCOL_INTEROP)?.equals("true") ?: false
-    }
-
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
@@ -100,7 +90,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
          * This check is not performed for interop sessions, where the counterparty exists on another cluster.
          */
-        if (!counterpartyExists && !sessionState.isInteropSessionState()) {
+        if (!counterpartyExists && !sessionState.isInteropSession) {
             val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
             val expiryTime = maxOf(
                 sessionState.lastReceivedMessageTime,
