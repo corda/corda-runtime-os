@@ -126,7 +126,7 @@ class FlowFiberImpl(
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         removeCurrentSandboxGroupContext()
-        parkAndCustomSerialize { _ ->
+        parkAndCustomSerialize { fiber ->
             resetLoggingContext()
             log.trace { "Parking..." }
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
@@ -135,8 +135,8 @@ class FlowFiberImpl(
                 .build()
                 .recordCallable {
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
-                }
-            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
+                }!!
+            flowCompletion.complete(FlowIORequest.FlowSuspended(fiber, ByteBuffer.wrap(fiberState), request))
         }
 
         resetLoggingContext()

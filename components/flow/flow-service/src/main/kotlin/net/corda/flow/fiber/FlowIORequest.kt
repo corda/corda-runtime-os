@@ -1,5 +1,6 @@
 package net.corda.flow.fiber
 
+import co.paralleluniverse.fibers.Fiber
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.flow.application.sessions.SessionInfo
@@ -93,6 +94,7 @@ interface FlowIORequest<out R> {
      * @property output the IO request that caused the suspension.
      */
     data class FlowSuspended<SUSPENDRETURN>(
+        val cacheableFiber: Fiber<Any>,
         val fiber: ByteBuffer,
         val output: FlowIORequest<SUSPENDRETURN>
     ) : FlowIORequest<Unit>
