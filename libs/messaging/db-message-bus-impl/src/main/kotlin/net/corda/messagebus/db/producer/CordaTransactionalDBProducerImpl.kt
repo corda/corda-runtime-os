@@ -13,6 +13,7 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
+import net.corda.messagebus.db.util.Sleeper
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
@@ -21,11 +22,11 @@ import java.util.UUID
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
-class CordaTransactionalDBProducerImpl(
+internal class CordaTransactionalDBProducerImpl(
     private val serializer: CordaAvroSerializer<Any>,
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
-    private val headerSerializer: MessageHeaderSerializer
+    private val headerSerializer: MessageHeaderSerializer,
 ) : CordaProducer {
 
     companion object {
@@ -89,6 +90,7 @@ class CordaTransactionalDBProducerImpl(
         }
 
         doSendRecordsToTopicAndDB(dbRecords)
+        recordsWithPartitions.map { it.second.topic }.toSet().forEach { Sleeper.wakeUp(it) }
     }
 
     private fun doSendRecordsToTopicAndDB(

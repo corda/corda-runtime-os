@@ -12,6 +12,7 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
+import net.corda.messagebus.db.util.Sleeper
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
@@ -29,7 +30,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
-    private var headerSerializer: MessageHeaderSerializer
+    private var headerSerializer: MessageHeaderSerializer,
 ) : CordaConsumer<K, V> {
 
     companion object {
@@ -155,7 +156,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private fun recordsAvailable(fromOffset: Long, topicPartition: CordaTopicPartition, timeout: Duration): Boolean {
         if (getLastOffsetPosition(topicPartition) >= fromOffset) return true
         if (timeout <= Duration.ZERO) return false
-        Thread.sleep(timeout.toMillis())
+        Sleeper.sleep(timeout, topicPartition.topic)
         return getLastOffsetPosition(topicPartition) >= fromOffset
     }
 

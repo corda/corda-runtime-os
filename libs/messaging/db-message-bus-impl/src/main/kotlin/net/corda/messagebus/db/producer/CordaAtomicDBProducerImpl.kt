@@ -10,16 +10,17 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
+import net.corda.messagebus.db.util.Sleeper
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
-class CordaAtomicDBProducerImpl(
+internal class CordaAtomicDBProducerImpl(
     private val serializer: CordaAvroSerializer<Any>,
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
-    private val headerSerializer: MessageHeaderSerializer
+    private val headerSerializer: MessageHeaderSerializer,
 ) : CordaProducer {
 
     init {
@@ -69,6 +70,7 @@ class CordaAtomicDBProducerImpl(
         }
 
         doSendRecordsToTopicAndDB(dbRecords)
+        recordsWithPartitions.map { it.second.topic }.toSet().forEach { Sleeper.wakeUp(it) }
     }
 
     private fun doSendRecordsToTopicAndDB(
