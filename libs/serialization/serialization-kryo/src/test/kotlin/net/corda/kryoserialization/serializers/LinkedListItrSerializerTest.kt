@@ -10,7 +10,7 @@ import java.util.LinkedList
 internal class LinkedListItrSerializerTest {
     @Test
     fun `LinkedListItr serializer returns correct iterator`() {
-        val kryo = Kryo()
+        val kryo = Kryo().apply { isRegistrationRequired = false }
         val output = Output(100)
         val iterator = LinkedList(listOf(0, 1, "2", "boo")).listIterator(2)
         LinkedListItrSerializer.write(kryo, output, iterator)

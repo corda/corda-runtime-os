@@ -9,7 +9,7 @@ import net.corda.sandbox.SandboxGroup
 class ClassSerializer(
     private val sandboxGroup: SandboxGroup
 ) : Serializer<Class<*>>() {
-    override fun read(kryo: Kryo, input: Input, type: Class<Class<*>>): Class<*> {
+    override fun read(kryo: Kryo, input: Input, type: Class<out Class<*>>): Class<*> {
         return sandboxGroup.getClass(input.readString(), input.readString())
     }
 
