@@ -5,7 +5,6 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
-import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -67,14 +66,15 @@ class QueueRegistrationHandlerTest {
     @Test
     fun `invoke returns check pending registration command as next step`() {
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
-            assertThat(updatedState).isNotNull
+            assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)
             assertThat(outputStates.first().value).isInstanceOf(RegistrationCommand::class.java)
             val registrationCommand = outputStates.first().value as RegistrationCommand
             assertThat(registrationCommand.command).isInstanceOf(CheckForPendingRegistration::class.java)
             val outputCommand = registrationCommand.command as CheckForPendingRegistration
             assertThat(outputCommand.mgm).isEqualTo(mgm)
-            assertThat(outputCommand.registeringMember).isEqualTo(member)
+            assertThat(outputCommand.member).isEqualTo(member)
+            assertThat(outputCommand.numberOfRetriesSoFar).isEqualTo(0)
         }
     }
 
@@ -83,10 +83,25 @@ class QueueRegistrationHandlerTest {
         whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
             .thenReturn(MembershipPersistenceResult.Failure("error happened"))
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
+            assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)
             assertThat(outputStates.first().value).isInstanceOf(RegistrationCommand::class.java)
             val registrationCommand = outputStates.first().value as RegistrationCommand
             assertThat(registrationCommand.command).isInstanceOf(QueueRegistration::class.java)
+            val outputCommand = registrationCommand.command as QueueRegistration
+            assertThat(outputCommand.mgm).isEqualTo(mgm)
+            assertThat(outputCommand.member).isEqualTo(member)
+            assertThat(outputCommand.memberRegistrationRequest).isEqualTo(registrationRequest)
+            assertThat(outputCommand.numberOfRetriesSoFar).isEqualTo(1)
+        }
+    }
+
+    @Test
+    fun `discard if max retries exceeded`() {
+        val inputCommand = RegistrationCommand(QueueRegistration(mgm, member, registrationRequest, 10))
+        with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
+            assertThat(updatedState).isNull()
+            assertThat(outputStates).isEmpty()
         }
     }
 }

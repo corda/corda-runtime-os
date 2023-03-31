@@ -79,15 +79,15 @@ internal class StartRegistrationHandler(
         )
 
         val (outputCommand, outputStates) = try {
+            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
             val requestDetails = membershipQueryClient.queryRegistrationRequest(mgmHoldingId, registrationId).getOrThrow()
-            validateRegistrationRequest(requestDetails == null) {
+            validateRegistrationRequest(requestDetails != null) {
                 "Could not find registration request with ID `$registrationId`."
             }
             val registrationRequest = requestDetails!!.toRegistrationRequest(pendingMemberHoldingId)
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
-            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
             logger.info("Persisting the received registration request.")
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {

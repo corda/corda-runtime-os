@@ -55,14 +55,10 @@ class CheckForPendingRegistrationHandler(
             }
         } catch (ex: Exception) {
             logger.warn("Exception happened while looking for the next request to process. Will re-try again.", ex)
-            Pair(
-                null,
-                CheckForPendingRegistration(command.mgm, command.member, command.numberOfRetriesSoFar + 1)
-            )
+            increaseNumberOfRetries(command)
         }
         return if(outputCommand != null) {
             RegistrationHandlerResult(
-                // create state to make sure we process one registration at the same time
                 outputState,
                 listOf(
                     Record(Schemas.Membership.REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
@@ -85,6 +81,7 @@ class CheckForPendingRegistrationHandler(
         return if(nextRequest != null) {
             logger.info("Retrieved next request for member ${command.member.x500Name} " +
                     "with ID `${nextRequest.registrationId}` from the database. Proceeding with registration.")
+            // create state to make sure we process one registration at the same time
             Pair(RegistrationState(nextRequest.registrationId, command.member, command.mgm), StartRegistration())
         } else {
             logger.info("There are no registration requests queued " +
@@ -92,4 +89,9 @@ class CheckForPendingRegistrationHandler(
             Pair(null, null)
         }
     }
+
+    private fun increaseNumberOfRetries(command: CheckForPendingRegistration) = Pair(
+        null,
+        CheckForPendingRegistration(command.mgm, command.member, command.numberOfRetriesSoFar + 1)
+    )
 }

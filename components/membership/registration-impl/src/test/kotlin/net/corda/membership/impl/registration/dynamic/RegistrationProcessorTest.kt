@@ -81,13 +81,7 @@ class  RegistrationProcessorTest {
                 0L,
             )
 
-        val startRegistrationCommand = RegistrationCommand(
-            StartRegistration(
-                mgmHoldingIdentity,
-                holdingIdentity,
-                registrationRequest
-            )
-        )
+        val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
         val verificationRequest = VerificationRequest(
             registrationId,

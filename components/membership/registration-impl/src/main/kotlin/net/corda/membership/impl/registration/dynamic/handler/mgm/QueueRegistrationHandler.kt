@@ -33,7 +33,7 @@ internal class QueueRegistrationHandler(
             } else {
                 logger.warn(
                     "Max re-tries exceeded for registration with ID `$registrationId`." +
-                            "Registration is discarded."
+                            " Registration is discarded."
                 )
                 Pair(null, emptyList())
             }
@@ -78,7 +78,7 @@ internal class QueueRegistrationHandler(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
                     key,
-                    RegistrationCommand((CheckForPendingRegistration(command.member, command.mgm, 0)))
+                    RegistrationCommand((CheckForPendingRegistration(command.mgm, command.member, 0)))
                 )
             )
         )
