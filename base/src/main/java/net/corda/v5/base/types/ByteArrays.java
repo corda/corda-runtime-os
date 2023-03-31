@@ -1,41 +1,18 @@
 package net.corda.v5.base.types;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public final class ByteArrays {
-    static void requireNotNull(@Nullable Object obj, @NotNull String message) {
-        if (obj == null) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
     private ByteArrays() {}
-
-    /**
-     * Wrap {@code size} bytes from this {@code byte[]} starting from {@code offset} into a new {@code byte[]}.
-     */
-    @NotNull
-    public static OpaqueBytesSubSequence sequence(@NotNull byte[] bytes, int offset, int size) {
-        return new OpaqueBytesSubSequence(bytes, offset, size);
-    }
-
-    @NotNull
-    public static OpaqueBytesSubSequence sequence(@NotNull byte[] bytes, int offset) {
-        return sequence(bytes, offset, bytes.length);
-    }
-
-    @NotNull
-    public static OpaqueBytesSubSequence sequence(@NotNull byte[] bytes) {
-        return sequence(bytes, 0);
-    }
 
     /**
      * Converts this {@code byte[]} into a {@link String} of hexadecimal digits.
      */
     @NotNull
     public static String toHexString(@NotNull byte[] bytes) {
-        requireNotNull(bytes, "bytes may not be null");
+        if (bytes == null) {
+            throw new IllegalArgumentException("bytes may not be null");
+        }
         return printHexBinary(bytes);
     }
 
@@ -57,7 +34,9 @@ public final class ByteArrays {
      */
     @NotNull
     public static byte[] parseAsHex(@NotNull String str) {
-        requireNotNull(str, "str may not be null");
+        if (str == null) {
+            throw new IllegalArgumentException("str may not be null");
+        }
         return parseHexBinary(str);
     }
 
