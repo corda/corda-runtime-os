@@ -138,6 +138,7 @@ public final class Schemas {
         public static final String MEMBERSHIP_ASYNC_REQUEST_TOPIC = "membership.async.request";
         public static final String MEMBERSHIP_ASYNC_REQUEST_STATE_TOPIC = getStateAndEventStateTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC);
         public static final String MEMBERSHIP_ASYNC_REQUEST_DLQ_TOPIC = getStateAndEventDLQTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC);
+        public static final String MEMBERSHIP_ACTIONS_TOPIC = "membership.actions";
 
         public static final String EVENT_TOPIC = "membership.event";
 

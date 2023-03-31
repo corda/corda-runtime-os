@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "DistributeMemberInfo",
+  "namespace": "net.corda.data.membership.actions.request",
+  "doc": "Distribute an updated member info to the rest of the network.",
+  "fields": [
+    {
+      "name": "mgm",
+      "doc": "The membership group manager of the group.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "updatedMember",
+      "doc": "The member which has been updated.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "minimumGroupParametersEpoch",
+      "doc": "The minimum group parameter epoch to be distribute (if null we use the latest version). If the group parameters with this epoch hasn't been published, then the membership actions processor will requeue this request to retry later.",
+      "type": ["null", "int"]
+    },
+    {
+      "name": "minimumUpdatedMemberSerial",
+      "doc": "The serial number of the minimum version of the updated members' memberInfo to distribute (if null we use the latest version). If the member info with this serial hasn't been published, then the membership actions processor will requeue this request to retry later.",
+      "type": ["null", "long"]
+    }
+  ]
+}

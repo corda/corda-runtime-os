@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MembershipActionsRequest",
+  "namespace": "net.corda.data.membership.actions.request",
+  "doc": "Request for a membership action.",
+  "fields": [
+    {
+      "name": "request",
+      "doc": "Request's payload, depends on the requested action.",
+      "type": ["DistributeMemberInfo"]
+    }
+  ]
+}
