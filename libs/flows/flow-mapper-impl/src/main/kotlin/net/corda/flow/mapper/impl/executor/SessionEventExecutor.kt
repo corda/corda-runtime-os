@@ -88,6 +88,7 @@ class SessionEventExecutor(
         if (state == FlowMapperStateType.CLOSING || event !is SessionError) {
 
             //ACK
+            //generate Ack from SessionManagerImpl (lift private method?), extract last generated number from a Close to make the message.
 
             val outputRecord = if (messageDirection == MessageDirection.INBOUND) {
                 Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
