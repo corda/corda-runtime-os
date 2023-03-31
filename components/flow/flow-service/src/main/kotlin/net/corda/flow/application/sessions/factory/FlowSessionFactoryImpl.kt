@@ -11,6 +11,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -23,11 +24,16 @@ class FlowSessionFactoryImpl @Activate constructor(
     private val serializationService: SerializationServiceInternal
 ) : FlowSessionFactory {
 
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun createInitiatedFlowSession(
         sessionId: String,
         x500Name: MemberX500Name,
         contextProperties: Map<String, String>
     ): FlowSession {
+        log.info("createInitiatedFlowSession sessionId=$sessionId, counterparty=$x500Name")
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 FlowSessionImpl(

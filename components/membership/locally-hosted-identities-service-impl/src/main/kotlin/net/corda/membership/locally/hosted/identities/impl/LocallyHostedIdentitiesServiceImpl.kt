@@ -113,6 +113,7 @@ class LocallyHostedIdentitiesServiceImpl(
                 }
             }
             is ConfigChangedEvent -> {
+                logger.info("ConfigChangedEvent" )
                 coordinator.createManagedResource(SUBSCRIPTION_RESOURCE_NAME) {
                     subscriptionFactory.createCompactedSubscription(
                         subscriptionConfig = SubscriptionConfig(
@@ -138,6 +139,7 @@ class LocallyHostedIdentitiesServiceImpl(
             oldValue: HostedIdentityEntry?,
             currentData: Map<String, HostedIdentityEntry>,
         ) {
+            logger.info("onNext currentData=${currentData.size} newRecord=${newRecord}" )
             val newEntry = newRecord.value
             if (newEntry == null) {
                 if (oldValue != null) {
@@ -151,6 +153,7 @@ class LocallyHostedIdentitiesServiceImpl(
         }
 
         override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
+            logger.info("onSnapshot=${currentData.size}" )
             currentData.values.forEach {
                 addEntry(it)
             }

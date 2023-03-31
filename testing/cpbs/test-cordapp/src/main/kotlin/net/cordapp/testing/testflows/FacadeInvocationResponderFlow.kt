@@ -12,7 +12,8 @@ class FacadeInvocationResponderFlow : ResponderFlow {
     }
     override fun call(session: FlowSession) {
         log.info("FacadeInvocationResponderFlow.call() starting")
-        val request = session.receive(Object::class.java)
-        session.send(request)
+        val request = session.receive(String::class.java)
+        log.info("FacadeInvocationResponderFlow.call(): $request")
+        session.send("Bye")
     }
 }

@@ -20,7 +20,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         }
     }
 
-    private val alterEgoX500Name = MemberX500Name.parse("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB")
+    private val alterEgoX500Name = MemberX500Name.parse("C=GB, L=London, O=Bob Alias")
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -30,7 +30,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("FacadeInfocationFlow.call() starting")
+        log.info("FacadeInvocationFlow.call() starting")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
