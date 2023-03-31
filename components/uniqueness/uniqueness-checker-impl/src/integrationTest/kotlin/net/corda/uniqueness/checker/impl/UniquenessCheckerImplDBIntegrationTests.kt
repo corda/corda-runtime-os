@@ -886,7 +886,49 @@ class UniquenessCheckerImplDBIntegrationTests {
         }
 
         @Test
-        fun `Single tx with same state used for input and ref state is successful`() {
+        fun `Single tx with same input state specified twice fails`() {
+            val state = generateUnspentStates(1).single()
+
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(listOf(state, state))
+                    .build()
+            ).let { responses ->
+                org.junit.jupiter.api.assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate input states detected: ${listOf(state)}"
+                        )
+                    }
+                )
+            }
+        }
+
+        @Test
+        fun `Single tx with same reference state specified twice fails`() {
+            val state = generateUnspentStates(1).single()
+
+            processRequests(
+                newRequestBuilder()
+                    .setReferenceStates(listOf(state, state))
+                    .build()
+            ).let { responses ->
+                org.junit.jupiter.api.assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate reference states detected: ${listOf(state)}"
+                        )
+                    }
+                )
+            }
+        }
+
+        @Test
+        fun `Single tx with same state used for input and ref state fails`() {
             val state = generateUnspentStates(1)
 
             processRequests(
@@ -895,9 +937,15 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setReferenceStates(state)
                     .build()
             ).let { responses ->
-                assertAll(
+                org.junit.jupiter.api.assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], testClock) }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "A state cannot be both an input and a reference input in the same " +
+                                    "request. Offending states: $state"
+                        )
+                    }
                 )
             }
         }
