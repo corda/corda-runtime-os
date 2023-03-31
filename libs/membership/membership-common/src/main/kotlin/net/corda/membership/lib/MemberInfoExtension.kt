@@ -196,6 +196,13 @@ class MemberInfoExtension {
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
         /**
+         * The member session initiation keys
+         */
+        @JvmStatic
+        val MemberInfo.sessionInitiationKeys: Collection<PublicKey>
+            get() = memberProvidedContext.parseList(SESSION_KEYS)
+
+        /**
          * [PublicKeyHash] for the session initiation key.
          * The hash value should be stored in the member context, but as a fallback it is calculated if not available.
          * It is preferable to always store this in the member context to avoid the repeated calculation.
