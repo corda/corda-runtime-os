@@ -2,12 +2,27 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <!--
+     For now, the schema must be identical between here and the 
+     virtual node schema (in ../../vnode-crypto/migration/crypto-creation-v1.0.xml)
+     since the crypto processor uses the same code irrespective of where the table resides.
+     
+     We could just include the same changeset files in both cases, but that might confuse readers
+     and liquibase, so instead we have to keep the content in sync.  
+     -->
     <changeSet author="R3.Corda" id="crypto-creation-v1.0">
         <createTable tableName="crypto_wrapping_key">
+            <column name="id" type="UUID">
+                <constraints nullable="false"/>>
+            </column>
             <column name="alias" type="VARCHAR(64)">
                 <constraints nullable="false"/>
             </column>
-            <column name="created" type="TIMESTAMP">
+            <!-- generation of the wrapping key; higher generation numbers to be used to replaced expiring wrapping keys -->
+            <column name="generation" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="encoding_version" type="INT">
@@ -19,11 +34,29 @@
             <column name="key_material" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>
+            <column name="rotation_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <!-- If true, the parent key is a wrapping key in this table, and 
+               parent_key_reference is the id of that wrapping key. If false, the parent_key
+               is a corda config path. -->  
+            <column name="is_parent_key_managed" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <!-- the identity of the key used for key_material; may reference a root wrapping key outside the database, 
+                 so there is no foreign key constraint -->
+            <column name="parent_key_reference" type="VARCHAR(256)">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
-        <addPrimaryKey  columnNames="alias"
+        <addPrimaryKey  columnNames="id"
                         tableName="crypto_wrapping_key"
                         constraintName="crypto_wrapping_key_pk"/>
-
+        <addUniqueConstraint columnNames="alias, generation"
+                             tableName="crypto_wrapping_key"
+                             constraintName="alias_and_generation_are_unique"/>
+        <!-- TODO FK constraint back to crypto_wrapping_key on parent_key_reference when is_parentkey_managed=true, if possible
+             (or remodel so we can) -->
         <createTable tableName="crypto_hsm_association">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
@@ -88,16 +121,21 @@
         and liquibase, so instead we have to keep the content in sync.  
         -->
         <createTable tableName="crypto_signing_key">
+            <column name="id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
             <column name="tenant_id" type="VARCHAR(12)">
                 <constraints nullable="false"/>
             </column>
+            <!-- short hash (first 12 hex chars of SHA256) of the public key --> 
             <column name="key_id" type="CHAR(12)">
                 <constraints nullable="false"/>
             </column>
+            <!-- full SHA256hash of the public key -->
             <column name="full_key_id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="timestamp" type="TIMESTAMP">
+            <column name="created" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="category" type="VARCHAR(64)">
@@ -109,13 +147,7 @@
             <column name="public_key" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>
-            <column name="key_material" type="VARBINARY(1048576)">
-                <constraints nullable="true"/>
-            </column>
             <column name="encoding_version" type="INT">
-                <constraints nullable="true"/>
-            </column>
-            <column name="master_key_alias" type="VARCHAR(64)">
                 <constraints nullable="true"/>
             </column>
             <column name="alias" type="VARCHAR(64)">
@@ -135,6 +167,9 @@
             </column>
         </createTable>
         <addPrimaryKey constraintName="crypto_signing_key_pk"
+                       tableName="crypto_signing_key"
+                       columnNames="id"/>
+        <addUniqueConstraint constraintName="crypto_signing_key_unique"
                        tableName="crypto_signing_key"
                        columnNames="tenant_id, key_id"/>
         <createIndex indexName="crypto_signing_key_full_key_idx"
@@ -156,5 +191,25 @@
             <column name="tenant_id"/>
             <column name="alias"/>
         </createIndex>
+        <createTable tableName="crypto_signing_key_material">
+            <column name="wrapping_key_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signing_key_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signing_key_material" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- when the key material was generated -->
+            <column name="created" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey constraintName="crypto_signing_key_material_pk"
+                       tableName="crypto_signing_key_material"
+                       columnNames="signing_key_id, wrapping_key_id"/>
+        <!-- TODO FK constraint to crypto_wrapping_key on (wrapping_key_alias, wrapping_key_generation) -->
+        <!-- TODO FK constraint to crypto_signing_key on (signing_key_alias, signing_key_generation) -->
     </changeSet>
 </databaseChangeLog>
