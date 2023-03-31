@@ -285,6 +285,7 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         @Suppress("unchecked_cast")
         val txs = session.receive(List::class.java) as List<Pair<Int, SecureHash>>
+        @Suppress("unchecked_cast")
         val tx3 = session.receive(Pair::class.java) as Pair<Int, SecureHash>
 
         txs.map { (index, id) -> index to utxoLedgerService.findSignedTransaction(id) }
@@ -311,6 +312,7 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
             require(tx == null) { "Transaction TX${tx3.first} should not be resolved at this point" }
         }
 
+        @Suppress("unchecked_cast")
         val txs2 = session.receive(List::class.java) as List<Pair<Int, SecureHash>>
 
         txs2.map { (index, id) -> index to utxoLedgerService.findSignedTransaction(id) }
