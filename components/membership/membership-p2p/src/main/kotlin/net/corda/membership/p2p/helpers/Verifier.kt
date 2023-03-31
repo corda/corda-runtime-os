@@ -37,7 +37,7 @@ class Verifier(
             throw IllegalArgumentException("The signature public key is not one of the acceptable keys.")
         }
         verify(
-            keyEncodingService.decodePublicKey(signature.publicKey.array()),
+            key,
             signature.bytes.array(),
             signatureSpecAvro,
             data,

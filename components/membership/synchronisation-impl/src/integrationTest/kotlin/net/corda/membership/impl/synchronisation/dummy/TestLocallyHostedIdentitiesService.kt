@@ -11,11 +11,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
-import java.security.PublicKey
 import java.util.concurrent.ConcurrentHashMap
 
 interface TestLocallyHostedIdentitiesService : LocallyHostedIdentitiesService {
-    fun setPreferredSessionKey(id: HoldingIdentity, key: PublicKey)
+    fun setIdentityInfo(info: IdentityInfo)
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -31,20 +30,14 @@ class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
             coordinator.updateStatus(LifecycleStatus.UP)
         }
     }
-    private val publicKeys = ConcurrentHashMap<HoldingIdentity, PublicKey>()
+    private val identities = ConcurrentHashMap<HoldingIdentity, IdentityInfo>()
 
-    override fun setPreferredSessionKey(id: HoldingIdentity, key: PublicKey) {
-        publicKeys[id] = key
+    override fun setIdentityInfo(info: IdentityInfo) {
+        identities[info.identity] = info
     }
 
     override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
-        return publicKeys[identity]?.let { key ->
-            IdentityInfo(
-                identity,
-                emptyList(),
-                key,
-            )
-        }
+        return identities[identity]
     }
 
     override val isRunning: Boolean

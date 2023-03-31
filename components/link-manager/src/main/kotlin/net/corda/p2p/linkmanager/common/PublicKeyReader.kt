@@ -1,10 +1,8 @@
 package net.corda.p2p.linkmanager.common
 
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+import net.corda.utilities.publicKeyFactory
 import net.corda.v5.crypto.SignatureSpec
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import java.security.PublicKey
 
 internal class PublicKeyReader {
@@ -25,18 +23,7 @@ internal class PublicKeyReader {
         }
     }
     fun loadPublicKey(pem: String): PublicKey {
-        return PEMParser(pem.reader()).use { parser ->
-            generateSequence {
-                parser.readObject()
-            }.map {
-                if (it is SubjectPublicKeyInfo) {
-                    JcaPEMKeyConverter().getPublicKey(it)
-                } else {
-                    null
-                }
-            }.filterNotNull()
-                .firstOrNull()
-        } ?: throw InvalidPem(pem)
+        return publicKeyFactory(pem.reader()) ?: throw InvalidPem(pem)
     }
     class InvalidPem(pem: String) : Exception("Invalid public key PEM: $pem")
     class UnsupportedAlgorithm(algorithm: String) : Exception("Unsupported algorithm $algorithm")

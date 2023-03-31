@@ -21,6 +21,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.millis
+import net.corda.utilities.publicKeyFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -28,6 +29,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.io.Reader
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -40,7 +42,7 @@ class LocallyHostedIdentitiesServiceImpl(
     private val subscriptionFactory: SubscriptionFactory,
     private val configurationReadService: ConfigurationReadService,
     private val certificateFactory: CertificateFactory,
-    private val publicKeyFactory: (String) -> PublicKey,
+    private val publicKeyFactory: (Reader) -> PublicKey?,
     private val sleeper: ((Long) -> Unit),
 ) : LocallyHostedIdentitiesService {
     @Activate constructor(
@@ -171,7 +173,9 @@ class LocallyHostedIdentitiesServiceImpl(
         return IdentityInfo(
             identity = this.holdingIdentity.toCorda(),
             tlsCertificates = this.tlsCertificates.toCertificates(),
-            preferredSessionKey = publicKeyFactory(this.preferredSessionKeyAndCert.sessionPublicKey),
+            preferredSessionKey = publicKeyFactory(
+                this.preferredSessionKeyAndCert.sessionPublicKey.reader(),
+            ) ?: throw CordaRuntimeException("Invalid session public key PEM"),
         )
     }
 

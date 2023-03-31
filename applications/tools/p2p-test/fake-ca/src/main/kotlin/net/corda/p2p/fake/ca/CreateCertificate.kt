@@ -2,9 +2,7 @@ package net.corda.p2p.fake.ca
 
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.fake.ca.Ca.Companion.CA_NAME
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import net.corda.utilities.publicKeyFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -76,17 +74,6 @@ class CreateCertificate : Runnable {
     }
 
     private fun readPemPublicKey(keyFile: File): PublicKey {
-        return PEMParser(keyFile.reader()).use { parser ->
-            generateSequence {
-                parser.readObject()
-            }.map {
-                if (it is SubjectPublicKeyInfo) {
-                    JcaPEMKeyConverter().getPublicKey(it)
-                } else {
-                    null
-                }
-            }.filterNotNull()
-                .firstOrNull()
-        } ?: throw FakeCaException("Invalid public key file")
+        return publicKeyFactory(keyFile.reader()) ?: throw FakeCaException("Invalid public key file")
     }
 }

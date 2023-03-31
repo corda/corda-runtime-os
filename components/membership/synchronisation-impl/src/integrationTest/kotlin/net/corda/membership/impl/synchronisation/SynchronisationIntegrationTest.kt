@@ -63,6 +63,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -327,7 +328,13 @@ class SynchronisationIntegrationTest {
             virtualNodeInfoReadService.start()
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
-            testLocallyHostedIdentitiesService.setPreferredSessionKey(mgm.toCorda(), mgmSessionKey)
+            testLocallyHostedIdentitiesService.setIdentityInfo(
+                IdentityInfo(
+                    mgm.toCorda(),
+                    emptyList(),
+                    mgmSessionKey,
+                )
+            )
 
             eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")

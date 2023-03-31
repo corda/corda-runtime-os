@@ -41,6 +41,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.io.Reader
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -50,7 +51,7 @@ class LocallyHostedIdentitiesServiceImplTest {
     private val coordinator = mock<LifecycleCoordinator> {
         on { status } doReturn LifecycleStatus.UP
         on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
-            val generator : () -> Resource = it.getArgument(1)
+            val generator: () -> Resource = it.getArgument(1)
             generator.invoke()
         }
     }
@@ -77,7 +78,7 @@ class LocallyHostedIdentitiesServiceImplTest {
     private val sleeper = mock<((Long) -> Unit)>()
     private val identity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=LONDON, C=GB"),
-        "group"
+        "group",
     )
     private val identityEntry = HostedIdentityEntry(
         identity.toAvro(),
@@ -90,8 +91,14 @@ class LocallyHostedIdentitiesServiceImplTest {
         emptyList(),
     )
     private val publicKey = mock<PublicKey>()
-    private val publicKeyFactory = mock<(String)->PublicKey> {
-        on { invoke("sessionPublicKey") } doReturn publicKey
+    private val publicKeyFactory = mock<(Reader) -> PublicKey?> {
+        on {
+            invoke(
+                argThat {
+                    this.readText() == "sessionPublicKey"
+                },
+            )
+        } doReturn publicKey
     }
 
     private val service = LocallyHostedIdentitiesServiceImpl(
@@ -109,13 +116,13 @@ class LocallyHostedIdentitiesServiceImplTest {
         fun `start event will follow changes`() {
             handler.firstValue.processEvent(
                 StartEvent(),
-                coordinator
+                coordinator,
             )
 
             verify(coordinator).followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                )
+                ),
             )
         }
 
@@ -123,13 +130,13 @@ class LocallyHostedIdentitiesServiceImplTest {
         fun `stop event will close all the resources`() {
             handler.firstValue.processEvent(
                 StopEvent(),
-                coordinator
+                coordinator,
             )
 
             verify(coordinator).closeManagedResources(
                 argThat {
                     size == 3
-                }
+                },
             )
         }
 
@@ -137,7 +144,7 @@ class LocallyHostedIdentitiesServiceImplTest {
         fun `stop event will set the status to down`() {
             handler.firstValue.processEvent(
                 StopEvent(),
-                coordinator
+                coordinator,
             )
 
             verify(coordinator).updateStatus(LifecycleStatus.DOWN)
@@ -150,7 +157,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                     mock(),
                     LifecycleStatus.UP,
                 ),
-                coordinator
+                coordinator,
             )
 
             verify(configurationReadService).registerComponentForUpdates(
@@ -158,7 +165,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 setOf(
                     ConfigKeys.BOOT_CONFIG,
                     ConfigKeys.MESSAGING_CONFIG,
-                )
+                ),
             )
         }
 
@@ -169,7 +176,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                     mock(),
                     LifecycleStatus.DOWN,
                 ),
-                coordinator
+                coordinator,
             )
 
             verify(coordinator).closeManagedResources(argThat { size == 1 })
@@ -182,7 +189,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                     mock(),
                     LifecycleStatus.DOWN,
                 ),
-                coordinator
+                coordinator,
             )
 
             verify(coordinator).updateStatus(LifecycleStatus.DOWN)
@@ -194,10 +201,10 @@ class LocallyHostedIdentitiesServiceImplTest {
                 ConfigChangedEvent(
                     emptySet(),
                     mapOf(
-                        ConfigKeys.MESSAGING_CONFIG to messagingConfig
+                        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
                     ),
                 ),
-                coordinator
+                coordinator,
             )
 
             verify(subscription).start()
@@ -225,6 +232,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             assertThat(service.isRunning).isTrue
         }
     }
+
     @Nested
     inner class ProcessorTest {
         @BeforeEach
@@ -233,10 +241,10 @@ class LocallyHostedIdentitiesServiceImplTest {
                 ConfigChangedEvent(
                     emptySet(),
                     mapOf(
-                        ConfigKeys.MESSAGING_CONFIG to messagingConfig
+                        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
                     ),
                 ),
-                coordinator
+                coordinator,
             )
         }
 
@@ -250,7 +258,7 @@ class LocallyHostedIdentitiesServiceImplTest {
         @Test
         fun `onSnapshot will add the identities`() {
             processor.firstValue.onSnapshot(
-                mapOf("id1" to identityEntry)
+                mapOf("id1" to identityEntry),
             )
 
             assertThat(service.getIdentityInfo(identity)).isEqualTo(
@@ -258,7 +266,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                     identity,
                     certificates,
                     publicKey,
-                )
+                ),
             )
         }
 
@@ -271,7 +279,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             processor.firstValue.onNext(
                 newRecord,
                 null,
-                emptyMap()
+                emptyMap(),
             )
 
             assertThat(service.getIdentityInfo(identity)).isEqualTo(
@@ -279,14 +287,14 @@ class LocallyHostedIdentitiesServiceImplTest {
                     identity,
                     certificates,
                     publicKey,
-                )
+                ),
             )
         }
 
         @Test
         fun `onNext will remove the old identities`() {
             processor.firstValue.onSnapshot(
-                mapOf("id1" to identityEntry)
+                mapOf("id1" to identityEntry),
             )
             val newRecord = mock<Record<String, HostedIdentityEntry>> {
                 on { value } doReturn null
@@ -295,7 +303,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             processor.firstValue.onNext(
                 newRecord,
                 identityEntry,
-                emptyMap()
+                emptyMap(),
             )
 
             assertThat(service.getIdentityInfo(identity)).isNull()
@@ -309,7 +317,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             processor.firstValue.onNext(
                 newRecord,
                 null,
-                emptyMap()
+                emptyMap(),
             )
 
             assertDoesNotThrow {
@@ -326,10 +334,10 @@ class LocallyHostedIdentitiesServiceImplTest {
                 ConfigChangedEvent(
                     emptySet(),
                     mapOf(
-                        ConfigKeys.MESSAGING_CONFIG to messagingConfig
+                        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
                     ),
                 ),
-                coordinator
+                coordinator,
             )
         }
 
@@ -345,7 +353,7 @@ class LocallyHostedIdentitiesServiceImplTest {
         @Test
         fun `it return the identity if exists`() {
             processor.firstValue.onSnapshot(
-                mapOf("id1" to identityEntry)
+                mapOf("id1" to identityEntry),
             )
 
             assertThat(service.getIdentityInfo(identity)).isNotNull
@@ -354,7 +362,7 @@ class LocallyHostedIdentitiesServiceImplTest {
         @Test
         fun `it will not sleep if the identity if exists`() {
             processor.firstValue.onSnapshot(
-                mapOf("id1" to identityEntry)
+                mapOf("id1" to identityEntry),
             )
 
             service.getIdentityInfo(identity)
@@ -373,7 +381,7 @@ class LocallyHostedIdentitiesServiceImplTest {
         fun `it will return the correct value after sleeping once`() {
             whenever(sleeper.invoke(any())).doAnswer {
                 processor.firstValue.onSnapshot(
-                    mapOf("id1" to identityEntry)
+                    mapOf("id1" to identityEntry),
                 )
             }
 
@@ -382,5 +390,4 @@ class LocallyHostedIdentitiesServiceImplTest {
             assertThat(service.getIdentityInfo(identity)).isNotNull
         }
     }
-
 }
