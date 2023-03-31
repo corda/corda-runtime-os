@@ -14,6 +14,7 @@ import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("Unused")
 @Component(service = [FlowRequestHandler::class])
@@ -24,6 +25,10 @@ class FlowFailedRequestHandler @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.FlowFailed> {
     override val type = FlowIORequest.FlowFailed::class.java
+
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): WaitingFor {
         return WaitingFor(null)
@@ -44,7 +49,7 @@ class FlowFailedRequestHandler @Activate constructor(
             flowRecordFactory.createFlowStatusRecord(status),
             flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))
         )
-
+        log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
         return context.copy(outputRecords = context.outputRecords + records)
     }
