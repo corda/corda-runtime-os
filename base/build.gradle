@@ -17,7 +17,3 @@ dependencies {
     testApi 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
-
-tasks.withType(Test).configureEach {
-    jvmArgs '--add-opens', 'java.base/java.nio=ALL-UNNAMED'
-}
