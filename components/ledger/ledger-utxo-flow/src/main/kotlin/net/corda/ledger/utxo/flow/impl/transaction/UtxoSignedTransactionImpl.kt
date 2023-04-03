@@ -204,7 +204,7 @@ data class UtxoSignedTransactionImpl(
             } else {
                 null
             }
-        }
+        }.toSet()
         // If the notary service key (composite key) is provided we need to make sure it contains the key the
         // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
         if (!KeyUtils.isKeyInSet(
