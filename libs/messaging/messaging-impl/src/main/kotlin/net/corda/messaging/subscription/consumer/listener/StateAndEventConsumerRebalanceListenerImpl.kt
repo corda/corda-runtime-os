@@ -22,7 +22,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
     private val currentStates = partitionState.currentStates
-    private val partitionsToSync = partitionState.partitionsToSync
     private val stateConsumer = stateAndEventConsumer.stateConsumer
 
     /**
@@ -41,7 +40,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         // will be handled in the normal poll cycle
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
-        partitionsToSync.putAll(syncablePartitions)
 
         statePartitions.forEach {
             currentStates.computeIfAbsent(it.partition) {
@@ -62,7 +60,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         stateAndEventConsumer.onPartitionsRevoked(partitions.toSet())
         val removedPartitionIds = partitions.map { it.partition }
         for (partitionId in removedPartitionIds) {
-            partitionsToSync.remove(partitionId)
 
             stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
 

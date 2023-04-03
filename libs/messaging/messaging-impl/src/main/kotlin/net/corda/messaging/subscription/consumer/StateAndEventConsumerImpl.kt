@@ -35,6 +35,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         // Event poll timeout
         private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
+
+        private const val STATE_TOPIC_SUFFIX = ".state"
     }
 
     //single threaded executor per state and event consumer
@@ -80,7 +82,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         inSyncPartitions.addAll(inSync)
         updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
         stateAndEventListener?.let { listener ->
-            for (partition in partitions) {
+            for (partition in inSync) {
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
             }
         }
@@ -151,7 +153,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
             log.debug { "Processing state: $state" }
-            updateInMemoryState(state)
+            val partition = CordaTopicPartition(state.topic.removeSuffix(STATE_TOPIC_SUFFIX), state.partition)
+            if (partition in partitionsToSync) {
+                updateInMemoryState(state)
+            }
         }
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {

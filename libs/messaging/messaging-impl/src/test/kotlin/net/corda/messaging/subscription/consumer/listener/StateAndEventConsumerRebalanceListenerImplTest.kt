@@ -31,8 +31,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
         val partitionId = partitions.first().partition
         val partitionState =
             StateAndEventPartitionState<String, String>(
-                mutableMapOf(partitionId to mutableMapOf()),
-                mutableMapOf(partitionId to Long.MAX_VALUE)
+                mutableMapOf(partitionId to mutableMapOf())
             )
         val rebalanceListener =
             StateAndEventConsumerRebalanceListenerImpl(
@@ -55,11 +54,9 @@ class StateAndEventConsumerRebalanceListenerImplTest {
     @Test
     fun testPartitionsAssigned() {
         val (stateAndEventListener, stateAndEventConsumer, mapFactory, partitions) = setupMocks()
-        val partitionId = partitions.first().partition
         val partitionState =
             StateAndEventPartitionState<String, String>(
-                mutableMapOf(),
-                mutableMapOf(partitionId to Long.MAX_VALUE)
+                mutableMapOf()
             )
         val rebalanceListener =
             StateAndEventConsumerRebalanceListenerImpl(
@@ -88,8 +85,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
             2 to mutableMapOf("K2" to Pair(2L, "value2"))
         )
         val partitionState = StateAndEventPartitionState(
-            currentState,
-            mutableMapOf()
+            currentState
         )
 
         val rebalanceListener = StateAndEventConsumerRebalanceListenerImpl(

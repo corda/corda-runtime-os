@@ -1,4 +1,4 @@
-package net.corda.messaging.subscription.consumer.wrapper
+package net.corda.messaging.subscription.consumer
 
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -7,9 +7,7 @@ import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.StateAndEventConsumer
-import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
-import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
+import net.corda.schema.Schemas.getStateAndEventStateTopic
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -39,8 +37,7 @@ class StateAndEventConsumerImplTest {
         val partitionId = partitions.first().partition
         val partitionState =
             StateAndEventPartitionState<String, String>(
-                mutableMapOf(partitionId to mutableMapOf()),
-                mutableMapOf(partitionId to Long.MAX_VALUE)
+                mutableMapOf(partitionId to mutableMapOf())
             )
         val consumer =
             StateAndEventConsumerImpl(
@@ -68,7 +65,7 @@ class StateAndEventConsumerImplTest {
                         "value1"
                     )
                 )
-            ), mutableMapOf(partitionId to Long.MAX_VALUE)
+            )
         )
         val consumer =
             StateAndEventConsumerImpl(
@@ -89,8 +86,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
-            mutableMapOf(partitionId to Long.MAX_VALUE)
+            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
         )
         val consumer =
             StateAndEventConsumerImpl(
@@ -118,8 +114,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
-            mutableMapOf(partitionId to Long.MAX_VALUE)
+            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
         )
         val consumer =
             StateAndEventConsumerImpl(
@@ -132,16 +127,21 @@ class StateAndEventConsumerImplTest {
 
         val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, "key1", "value1", 0)
         whenever(stateConsumer.poll(any())).thenReturn(listOf(record))
+        val statePartitions = partitions.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }
+        whenever(stateConsumer.beginningOffsets(statePartitions))
+            .thenReturn(statePartitions.associateWith { 0L })
+        whenever(stateConsumer.endOffsets(statePartitions))
+            .thenReturn(statePartitions.associateWith { 1L })
+        whenever(stateConsumer.position(any()))
+            .thenReturn(1L)
 
+        consumer.onPartitionsAssigned(partitions)
         consumer.pollAndUpdateStates(true)
 
-        verify(stateConsumer, times(1)).assignment()
+        verify(stateConsumer, times(4)).assignment()
         verify(stateConsumer, times(1)).poll(any())
         verify(stateConsumer, times(1)).poll(any())
         verify(stateAndEventListener, times(1)).onPartitionSynced(mapOf("key1" to "value1"))
-
-        // partitionsToSync should have had the synced partition removed
-        assertThat(partitionState.partitionsToSync.size).isEqualTo(0)
     }
 
     @Test
@@ -149,8 +149,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
-            mutableMapOf(partitionId to Long.MAX_VALUE)
+            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
         )
 
         val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, "key1", "value1", 0)
@@ -170,12 +169,6 @@ class StateAndEventConsumerImplTest {
         verify(stateConsumer, times(1)).poll(any())
         verify(stateConsumer, times(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
-
-        // When false is passed to pollAndUpdateStates to indicate not to try and process whether partitions are synced
-        // or not, partitionsToSync should remain untouched, even though we return a record from the poll above which
-        // corresponds to a state which would otherwise have marked the partition as synced.
-        assertThat(partitionState.partitionsToSync.size).isEqualTo(1)
-        assertThat(partitionState.partitionsToSync[partitionId]).isEqualTo(Long.MAX_VALUE)
     }
 
     @Test
@@ -185,8 +178,7 @@ class StateAndEventConsumerImplTest {
         val key = "key1"
         val originalState = Pair(Long.MIN_VALUE, "value0")
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf(key to originalState)),
-            mutableMapOf()
+            mutableMapOf(partitionId to mutableMapOf(key to originalState))
         )
 
         val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, key, "value1", 0)
@@ -213,8 +205,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
-            mutableMapOf(partitionId to Long.MAX_VALUE)
+            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
         )
         val consumer = StateAndEventConsumerImpl(
             config,
@@ -253,21 +244,34 @@ class StateAndEventConsumerImplTest {
             .thenReturn(assignedEventTopicPartitions)
             .thenReturn(assignedEventTopicPartitionsAfterRebalance)
 
-        val pausedStateTopicPartitions = setOf(CordaTopicPartition(TOPIC, 10))
-        val assignedStateTopicPartitions =
-            setOf(CordaTopicPartition(TOPIC, 10), CordaTopicPartition(TOPIC, 11), CordaTopicPartition(TOPIC, 12))
-        val assignedStateTopicPartitionsAfterRebalance =
-            setOf(CordaTopicPartition(TOPIC, 10), CordaTopicPartition(TOPIC, 11))
+        val pausedStateTopicPartitions = setOf(CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 0))
+        val assignedStateTopicPartitions = assignedEventTopicPartitions.map {
+            CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition)
+        }.toSet()
+        val assignedStateTopicPartitionsAfterRebalance = assignedEventTopicPartitionsAfterRebalance.map {
+            CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition)
+        }.toSet()
         whenever(stateConsumer.paused())
             .thenReturn(pausedStateTopicPartitions)
         whenever(stateConsumer.assignment())
             .thenReturn(assignedStateTopicPartitions)
+            .thenReturn(assignedStateTopicPartitions)
+            .thenReturn(assignedStateTopicPartitions)
             .thenReturn(assignedStateTopicPartitionsAfterRebalance)
+        whenever(stateConsumer.beginningOffsets(any()))
+            .thenReturn(assignedStateTopicPartitions.associateWith { 0L })
+        whenever(stateConsumer.endOffsets(any()))
+            .thenReturn(mapOf(
+                CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 0) to 1L,
+                CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 1) to 0L,
+                CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 2) to 0L
+            ))
 
         val consumer = StateAndEventConsumerImpl(
             config, eventConsumer, stateConsumer, StateAndEventPartitionState
-                (mutableMapOf(), mutableMapOf()), stateAndEventListener
+                (mutableMapOf()), stateAndEventListener
         )
+        consumer.onPartitionsAssigned(assignedEventTopicPartitions)
         consumer.resetPollInterval()
 
         val eventConsumerOrder = inOrder(eventConsumer)
@@ -294,7 +298,6 @@ class StateAndEventConsumerImplTest {
     @Test
     fun `repartition during reset poll interval throws exception and resumes correct partitions`() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
-        val partitionIdBeingSynced = mutableMapOf(0 to 10L, 2 to 10L)
         val pausedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
         val assignedEventTopicPartitions = setOf(
             CordaTopicPartition(TOPIC, 0),
@@ -316,7 +319,7 @@ class StateAndEventConsumerImplTest {
             .thenReturn(assignedEventTopicPartitionsAfterRebalance)
 
         val stateAndEventPartitionState =
-            StateAndEventPartitionState<String, String>(mutableMapOf(), partitionIdBeingSynced, false)
+            StateAndEventPartitionState<String, String>(mutableMapOf(), false)
         val consumer = StateAndEventConsumerImpl(
             config,
             eventConsumer,
@@ -367,7 +370,7 @@ class StateAndEventConsumerImplTest {
 
         val consumer = StateAndEventConsumerImpl(
             config, eventConsumer, stateConsumer, StateAndEventPartitionState
-                (mutableMapOf(), mutableMapOf()), stateAndEventListener
+                (mutableMapOf()), stateAndEventListener
         )
 
         val latch = CountDownLatch(1)
@@ -389,7 +392,6 @@ class StateAndEventConsumerImplTest {
     @Test
     fun `repartition during wait for future to finish throws exception and resumes correct partitions`() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
-        val partitionIdBeingSynced = mutableMapOf(0 to 10L, 2 to 10L)
         val pausedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
         val assignedEventTopicPartitions = setOf(
             CordaTopicPartition(TOPIC, 0),
@@ -411,7 +413,7 @@ class StateAndEventConsumerImplTest {
             .thenReturn(assignedEventTopicPartitionsAfterRebalance)
 
         val stateAndEventPartitionState =
-            StateAndEventPartitionState<String, String>(mutableMapOf(), partitionIdBeingSynced, false)
+            StateAndEventPartitionState<String, String>(mutableMapOf(), false)
         val consumer = StateAndEventConsumerImpl(
             config,
             eventConsumer,
