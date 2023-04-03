@@ -119,7 +119,8 @@ class InteropProcessor(
                     UUID.randomUUID().toString(),
                     null,
                     InteropStateType.VALID,
-                    destinationAlias.x500Name.toString()
+                    destinationAlias.x500Name.toString(),
+                    destinationAlias.groupId
                 ), listOf(Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent)))
             )
 
