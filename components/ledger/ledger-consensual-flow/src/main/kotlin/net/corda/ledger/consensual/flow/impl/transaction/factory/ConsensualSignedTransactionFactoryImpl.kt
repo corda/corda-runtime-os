@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
@@ -9,6 +10,7 @@ import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFacto
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
 import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
@@ -63,6 +65,10 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
+        check((wireTransaction.metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroups.size){
+            "Number of component groups in metadata structure description does not match with the real number!"
+        }
+
         verifyTransaction(wireTransaction)
 
         val signaturesWithMetadata =
@@ -96,7 +102,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private fun consensualMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-        TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
+        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to consensualComponentGroupStructure
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

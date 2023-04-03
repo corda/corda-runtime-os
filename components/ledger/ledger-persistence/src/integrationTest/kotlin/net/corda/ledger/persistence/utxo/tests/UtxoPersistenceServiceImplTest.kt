@@ -525,8 +525,7 @@ class UtxoPersistenceServiceImplTest {
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val transactionMetadata = transactionMetadataExample(
-            cpkPackageSeed = seed,
-            numberOfComponentGroups = UtxoComponentGroup.values().size
+            cpkPackageSeed = seed
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),

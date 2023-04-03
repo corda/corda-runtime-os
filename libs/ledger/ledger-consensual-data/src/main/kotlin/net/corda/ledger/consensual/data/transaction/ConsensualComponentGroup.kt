@@ -1,5 +1,9 @@
 package net.corda.ledger.consensual.data.transaction
 
+import net.corda.v5.ledger.consensual.ConsensualState
+import java.security.PublicKey
+import java.time.Instant
+
 /**
  * Specifies Consensual transaction component groups' enum.
  * For which each property corresponds to a transaction component group.
@@ -21,3 +25,11 @@ enum class ConsensualComponentGroup {
     OUTPUT_STATES,
     OUTPUT_STATE_TYPES
 }
+
+val consensualComponentGroupStructure = listOf(
+    listOf("metadata"),
+    listOf(Instant::class.java.name),
+    listOf(PublicKey::class.java.name),
+    listOf(ConsensualState::class.java.name),
+    listOf("OutputInfo"),
+)
