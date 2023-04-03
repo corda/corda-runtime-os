@@ -183,14 +183,14 @@ class FlowMessagingImpl @Activate constructor(
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, false, x500Name, flowContextPropertiesBuilder)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
     }
 
     @Suspendable
     private fun createInteropFlowSession(x500Name: MemberX500Name): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, true, x500Name, null)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, null, true)
     }
 
     private fun checkFlowCanBeInitiated() {

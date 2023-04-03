@@ -14,8 +14,10 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.session.manager.Constants
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -72,13 +74,20 @@ class FlowRunnerImpl @Activate constructor(
             remotePlatformContextProperties = sessionInitEvent.contextPlatformProperties
         )
 
+        val isInteropSessionInit = run {
+            sessionInitEvent.contextSessionProperties?.let {
+                KeyValueStore(it)[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true")
+            } ?: false
+        }
+
         return startFlow(
             context,
             createFlow = { sgc ->
                 flowFactory.createInitiatedFlow(
                     flowStartContext,
                     sgc,
-                    localContext.counterpartySessionProperties
+                    localContext.counterpartySessionProperties,
+                    isInteropSessionInit
                 )
             },
             updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },

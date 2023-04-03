@@ -26,14 +26,15 @@ class FlowSessionFactoryImpl @Activate constructor(
     override fun createInitiatedFlowSession(
         sessionId: String,
         x500Name: MemberX500Name,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropSession: Boolean
     ): FlowSession {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
-                    false,
+                    isInteropSession,
                     flowFiberService,
                     serializationService,
                     FlatSerializableContext(
@@ -50,9 +51,9 @@ class FlowSessionFactoryImpl @Activate constructor(
 
     override fun createInitiatingFlowSession(
         sessionId: String,
-        isInteropSession: Boolean,
         x500Name: MemberX500Name,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
+        isInteropSession: Boolean
     ): FlowSession {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
