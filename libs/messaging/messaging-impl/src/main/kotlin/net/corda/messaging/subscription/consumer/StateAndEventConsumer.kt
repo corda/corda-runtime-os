@@ -44,6 +44,13 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
     fun pollEvents(): List<CordaConsumerRecord<K, E>>
 
     /**
+     * Reset the event consumer to its last committed position.
+     *
+     * Should be invoked if processing of a batch of events fails to ensure that they are polled again.
+     */
+    fun resetEventOffsetPosition()
+
+    /**
      * Get the in memory state value for a given [key]
      */
     fun getInMemoryStateValue(key: K): S?

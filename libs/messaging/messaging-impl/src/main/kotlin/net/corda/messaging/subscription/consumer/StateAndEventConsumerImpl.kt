@@ -1,13 +1,10 @@
 package net.corda.messaging.subscription.consumer
 
-import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
@@ -15,7 +12,11 @@ import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
@@ -215,6 +216,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 listOf()
             }
         }
+    }
+
+    override fun resetEventOffsetPosition() {
+        eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
     }
 
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {

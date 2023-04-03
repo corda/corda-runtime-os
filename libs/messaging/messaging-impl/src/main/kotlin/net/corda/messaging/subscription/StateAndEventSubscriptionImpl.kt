@@ -345,7 +345,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         "producerClientId ${config.clientId}. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
-            eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+            stateAndEventConsumer.resetEventOffsetPosition()
         } else {
             val message = "Failed to process records from topic $eventTopic, group ${config.group}, " +
                     "producerClientId ${config.clientId}. " +
