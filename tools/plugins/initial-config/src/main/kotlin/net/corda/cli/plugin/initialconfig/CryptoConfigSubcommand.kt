@@ -43,13 +43,13 @@ class CryptoConfigSubcommand : Runnable {
 
     @CommandLine.Option(
         names = ["-ws", "--wrapping-salt"],
-        description = ["Salt for the SOFT HSM root wrapping key. Used only by CORDA type secrets service."]
+        description = ["Salt for the SOFT HSM root wrapping key."]
     )
     var softHsmRootSalt: String? = null
 
     @CommandLine.Option(
         names = ["-wp", "--wrapping-passphrase"],
-        description = ["Passphrase for the SOFT HSM root wrapping key. Used only by CORDA type secrets service."]
+        description = ["Passphrase for the SOFT HSM root wrapping key."]
     )
     var softHsmRootPassphrase: String? = null
 
@@ -67,15 +67,15 @@ class CryptoConfigSubcommand : Runnable {
 
     @CommandLine.Option(
         names = ["-ks", "--key-salt"],
-        description = ["Vault key for the secrets service salt. Used only by VAULT type secrets service."]
+        description = ["Vault key for the wrapping key salt. Used only by VAULT type secrets service."]
     )
-    var vaultKeySalt: String? = null
+    var vaultWrappingKeySalt: String? = null
 
     @CommandLine.Option(
         names = ["-kp", "--key-passphrase"],
-        description = ["Vault key for the secrets service passphrase. Used only by VAULT type secrets service."]
+        description = ["Vault key for the wrapping key service passphrase. Used only by VAULT type secrets service."]
     )
-    var vaultKeyPassphrase: String? = null
+    var vaultWrappingKeyPassphrase: String? = null
 
     @CommandLine.Option(
         names = ["-t", "--type"],
@@ -142,8 +142,8 @@ class CryptoConfigSubcommand : Runnable {
     private fun generateSecretValuesForType(): Pair<String, String> {
         return if (type == SecretsServiceType.VAULT) {
             Pair(
-                checkParamPassed(vaultKeyPassphrase) { "'vaultKeyPassphrase' must be set for VAULT type secrets." },
-                checkParamPassed(vaultKeySalt) { "'vaultKeySalt' must be set for VAULT type secrets." }
+                checkParamPassed(vaultWrappingKeyPassphrase) { "'vaultWrappingKeyPassphrase' must be set for VAULT type secrets." },
+                checkParamPassed(vaultWrappingKeySalt) { "'vaultWappiingKeySalt' must be set for VAULT type secrets." }
             )
         } else { // type == SecretsServiceType.CORDA
             val random = SecureRandom()
