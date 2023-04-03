@@ -16,6 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 
@@ -25,6 +26,10 @@ class FlowFiberFactoryImpl @Activate constructor(
     @Reference(service = FlowFiberCache::class)
     private val flowFiberCache: FlowFiberCache
 ) : FlowFiberFactory {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
         "Same thread scheduler",
@@ -65,11 +70,19 @@ class FlowFiberFactoryImpl @Activate constructor(
     }
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
-        return flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowId) as FlowFiberImpl?
-            ?: flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
-                flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
-                FlowFiberImpl::class.java
-            )
+        val cachedFiber: FlowFiberImpl? = try {
+            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowId) as FlowFiberImpl?
+        } catch (e: Exception) {
+            // shouldn't really be possible to get in here
+            logger.warn("Failure casting flow fiber from checkpoint for flow ${flowFiberExecutionContext.flowCheckpoint.flowId}. " +
+                    "Removing and skipping cache.")
+            flowFiberCache.remove(flowFiberExecutionContext.flowCheckpoint.flowId)
+            null
+        }
+        return cachedFiber ?: flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
+            flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
+            FlowFiberImpl::class.java
+        )
     }
 
     @Deactivate
