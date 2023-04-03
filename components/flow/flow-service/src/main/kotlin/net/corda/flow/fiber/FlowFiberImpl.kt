@@ -136,7 +136,7 @@ class FlowFiberImpl(
                 .recordCallable {
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }!!
-            flowCompletion.complete(FlowIORequest.FlowSuspended(fiber, ByteBuffer.wrap(fiberState), request))
+            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, fiber))
         }
 
         resetLoggingContext()

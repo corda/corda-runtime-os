@@ -189,7 +189,7 @@ class FlowEventPipelineImpl(
                 output = flowResult
             }
             is FlowIORequest.FlowSuspended<*> -> {
-                flowFiberCache.put(context.checkpoint.flowId, flowResult.cacheableFiber)
+                flowResult.cacheableFiber?.let { flowFiberCache.put(context.checkpoint.flowId, it) }
                 context.checkpoint.serializedFiber = flowResult.fiber
                 output = flowResult.output
             }
