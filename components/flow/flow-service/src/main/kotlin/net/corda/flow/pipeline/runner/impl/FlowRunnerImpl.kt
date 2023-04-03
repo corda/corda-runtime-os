@@ -75,7 +75,7 @@ class FlowRunnerImpl @Activate constructor(
         )
 
         val isInteropSessionInit = sessionInitEvent.contextSessionProperties?.let { sessionProperties ->
-            KeyValueStore(sessionProperties)[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true")
+            KeyValueStore(sessionProperties)[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true")
         } ?: false
 
         return startFlow(

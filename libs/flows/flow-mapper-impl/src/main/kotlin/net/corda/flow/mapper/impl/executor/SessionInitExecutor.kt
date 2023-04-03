@@ -37,7 +37,7 @@ class SessionInitExecutor(
 
     private val isInteropSessionInit = sessionInit.contextSessionProperties?.let { properties ->
         val map = properties.items.associate { it.key to it.value }
-        map[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true") ?: false
+        map[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true") ?: false
     } ?: false
 
     private val messageDirection = sessionEvent.messageDirection
@@ -64,7 +64,7 @@ class SessionInitExecutor(
 
         // Send a session confirm message in response to the session init.
         // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
-        if (isInteropEvent) {
+        if (isInteropSessionInit) {
             val hackyConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
@@ -78,7 +78,7 @@ class SessionInitExecutor(
                         sessionEvent.initiatedIdentity,
                         0,
                         emptyList(),
-                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair(Constants.FLOW_PROTOCOL_INTEROP, "true"))))
+                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair(Constants.FLOW_SESSION_IS_INTEROP, "true"))))
                     )
                 )
             )

@@ -30,7 +30,7 @@ class SessionInitProcessorSend(
     }
 
     private val isInteropSessionInit = (sessionEvent.payload as SessionInit).contextSessionProperties?.let { properties ->
-        KeyValueStore(properties)[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true")
+        KeyValueStore(properties)[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true")
     } ?: false
 
     override fun execute(): SessionState {
