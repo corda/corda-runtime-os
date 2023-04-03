@@ -14,6 +14,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -45,7 +46,8 @@ class DistributeMemberInfoActionHandler(
     merkleTreeProvider: MerkleTreeProvider,
     private val membershipConfig: SmartConfig,
     private val groupReaderProvider: MembershipGroupReaderProvider,
-    private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
+    locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient, locallyHostedIdentitiesService),
     private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
         merkleTreeProvider,
         cordaAvroSerializationFactory
