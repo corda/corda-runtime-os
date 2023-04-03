@@ -31,12 +31,9 @@ class SessionInitProcessorReceive(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val isInteropSessionInit = run {
-        val sessionInit = sessionEvent.payload as SessionInit
-        sessionInit.contextSessionProperties?.let {
-            KeyValueStore(it)[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true")
-        } ?: false
-    }
+    private val isInteropSessionInit = (sessionEvent.payload as SessionInit).contextSessionProperties?.let { properties ->
+        KeyValueStore(properties)[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true")
+    } ?: false
 
     override fun execute(): SessionState {
         return if (sessionState != null) {
