@@ -61,6 +61,7 @@ class UtxoDemoFlow : ClientStartableFlow {
                 }
             }
             val testUtxoState = TestUtxoState(
+                1,
                 request.input,
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
                 request.members + listOf(myInfo.name.toString())
