@@ -17,7 +17,6 @@ fun utxoTransactionMetadataExample(cpkPackageSeed: String? = null) = Transaction
     TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
     TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(cpkPackageSeed),
     TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-    TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure
-// TODO
-// Membership group parameters hash
+    TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
+    TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to "MEMBERSHIP_GROUP_PARAMETERS_HASH"
 ))

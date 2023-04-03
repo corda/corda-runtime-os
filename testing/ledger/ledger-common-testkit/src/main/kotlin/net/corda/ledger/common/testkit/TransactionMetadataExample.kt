@@ -46,7 +46,8 @@ fun transactionMetadataExample(
             TransactionMetadataImpl.CPI_METADATA_KEY to cpiMetadata,
             TransactionMetadataImpl.CPK_METADATA_KEY to cpkMetadata,
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-            TransactionMetadataImpl.COMPONENT_GROUPS_KEY to componenGroupStructure
+            TransactionMetadataImpl.COMPONENT_GROUPS_KEY to componenGroupStructure,
+            TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to "MEMBERSHIP_GROUP_PARAMETERS_HASH"
         ) + transactionSubTypePart
     )
 }

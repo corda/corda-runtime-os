@@ -24,6 +24,7 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         const val CPK_METADATA_KEY = "cpkMetadata"
         const val COMPONENT_GROUPS_KEY = "componentGroups"
         const val SCHEMA_VERSION_KEY = "schemaVersion"
+        const val MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY = "membershipGroupParametersHash"
     }
 
     override fun equals(other: Any?): Boolean {
