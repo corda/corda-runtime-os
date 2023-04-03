@@ -337,8 +337,7 @@ class SandboxGroupContextCacheTest {
         misses: Double = 0.0,
         evictions: Double = 0.0,
     ) {
-        val typeName = sandboxType.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-        val cacheName = "Sandbox-Cache-$typeName"
+        val cacheName = "sandbox-cache-${sandboxType}"
 
         val cachePuts = CordaMetrics.registry
             .find("cache.puts")

@@ -14,6 +14,7 @@ import java.lang.ref.WeakReference
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 internal class SandboxGroupContextCacheImpl private constructor(
     override val capacities: Map<SandboxGroupType, Long>,
@@ -45,10 +46,43 @@ internal class SandboxGroupContextCacheImpl private constructor(
     ) : SandboxGroupContext by wrappedSandboxGroupContext
 
     /**
-     * Changes to [newCapacity] the maximum size for the [sandboxGroupType]'s cache.
+     * Builds a cache for the specified SandboxGroup [type] with [capacity] maximum size.
+     */
+    private fun buildSandboxGroupTypeCache(
+        type: SandboxGroupType,
+        capacity: Long
+    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper> = CacheFactoryImpl().build(
+        "sandbox-cache-${type}",
+        Caffeine.newBuilder()
+            .maximumSize(capacity)
+            // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
+            // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
+            // is not referenced anymore).
+            .removalListener { key, context, cause ->
+                purgeExpiryQueue()
+                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+                    toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
+                }
+
+                logger.info(
+                    "Evicting {} sandbox for {} [{}]",
+                    key!!.sandboxGroupType,
+                    key.holdingIdentity.x500Name,
+                    cause.name
+                )
+            }
+    )
+
+    /**
+     * Creates the cache for the given [sandboxGroupType] with [newCapacity] maximum size, if not created yet.
+     * Changes the maximum size for the [sandboxGroupType]'s cache to [newCapacity] if the cache already exists.
      */
     override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache {
-        caches.atType(sandboxGroupType).policy().eviction().ifPresent {
+        val sandboxCache = caches.computeIfAbsent(sandboxGroupType) {
+            buildSandboxGroupTypeCache(sandboxGroupType, newCapacity)
+        }
+
+        sandboxCache.policy().eviction().ifPresent {
             it.maximum = newCapacity
         }
 
@@ -96,37 +130,21 @@ internal class SandboxGroupContextCacheImpl private constructor(
         }
     }
 
-    private val caches: Map<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>> =
-        capacities.entries.associate { (type, capacity) ->
-            type to CacheFactoryImpl().build(
-                "Sandbox-Cache-${type.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }}",
-                Caffeine.newBuilder()
-                    .maximumSize(capacity)
-                    // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
-                    // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
-                    // is not referenced anymore).
-                    .removalListener { key, context, cause ->
-                        purgeExpiryQueue()
-                        (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                            toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
-                        }
-
-                        logger.info(
-                            "Evicting {} sandbox for {} [{}]",
-                            key!!.sandboxGroupType,
-                            key.holdingIdentity.x500Name,
-                            cause.name
-                        )
-                    }
-            )
-        }
+    private val caches: ConcurrentMap<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>> =
+        ConcurrentHashMap(capacities.entries.associate { (type, capacity) ->
+            type to buildSandboxGroupTypeCache(type, capacity)
+        })
 
     override fun flush(): CompletableFuture<*> {
         purgeExpiryQueue()
-        val map = HashMap(caches.asMap())
+
+        val map = mutableMapOf<VirtualNodeContext, SandboxGroupContextWrapper>()
         caches.values.forEach {
-            it.invalidateAll(map.keys)
+            val tmp = HashMap(it.asMap())
+            it.invalidateAll(tmp.keys)
             it.cleanUp()
+
+            map.putAll(tmp)
         }
 
         return when (map.size) {
@@ -160,9 +178,9 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
     override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         purgeExpiryQueue()
-        val sandboxCache = caches.atType(virtualNodeContext.sandboxGroupType)
 
-        return sandboxCache.getIfPresent(virtualNodeContext)?.let { ctx ->
+        val sandboxCache = caches[virtualNodeContext.sandboxGroupType]
+        return sandboxCache?.getIfPresent(virtualNodeContext)?.let { ctx ->
             sandboxCache.invalidate(virtualNodeContext)
             sandboxCache.cleanUp()
             ctx.completion
@@ -174,7 +192,13 @@ internal class SandboxGroupContextCacheImpl private constructor(
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext {
         purgeExpiryQueue()
-        val sandboxCache = caches.atType(virtualNodeContext.sandboxGroupType)
+
+        val sandboxCache = caches.computeIfAbsent(virtualNodeContext.sandboxGroupType) {
+            buildSandboxGroupTypeCache(
+                virtualNodeContext.sandboxGroupType,
+                capacities.forSandboxGroupType(virtualNodeContext.sandboxGroupType)
+            )
+        }
 
         return sandboxCache.get(virtualNodeContext) {
             logger.info(
@@ -190,23 +214,14 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
     override fun close() {
         purgeExpiryQueue()
+
         caches.values.forEach {
             it.invalidateAll()
             it.cleanUp()
         }
     }
 
-    private fun Map<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>>.asMap():
-            Map<VirtualNodeContext, SandboxGroupContextWrapper> {
-        val ret = mutableMapOf<VirtualNodeContext, SandboxGroupContextWrapper>()
-        values.forEach {
-            ret.putAll(it.asMap())
-        }
-
-        return ret
-    }
-
-    private fun Map<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>>.atType(type: SandboxGroupType) =
-        this[type] ?: // we should never actually get here.  If we do it's a problem in the creation of the map
+    private fun Map<SandboxGroupType, Long>.forSandboxGroupType(type: SandboxGroupType) =
+        this[type] ?: // we should never actually get here. If we do it's a problem in the creation of the map
         throw CordaRuntimeException("An invalid sandbox group type ($type) has been used in the ${this::class.java.name}")
 }
