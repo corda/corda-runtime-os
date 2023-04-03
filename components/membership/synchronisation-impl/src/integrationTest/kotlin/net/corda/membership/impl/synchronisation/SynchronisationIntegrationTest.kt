@@ -52,6 +52,7 @@ import net.corda.membership.impl.synchronisation.dummy.MgmTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
+import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.EPOCH_KEY
@@ -63,6 +64,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -172,6 +174,9 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var groupParametersWriterService: GroupParametersWriterService
+
+        @InjectService(timeout = 5000)
+        lateinit var testLocallyHostedIdentitiesService: TestLocallyHostedIdentitiesService
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
@@ -323,6 +328,13 @@ class SynchronisationIntegrationTest {
             virtualNodeInfoReadService.start()
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
+            testLocallyHostedIdentitiesService.setIdentityInfo(
+                IdentityInfo(
+                    mgm.toCorda(),
+                    emptyList(),
+                    mgmSessionKey,
+                )
+            )
 
             eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")

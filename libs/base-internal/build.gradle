@@ -13,3 +13,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }
+
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-opens', 'java.base/java.nio=ALL-UNNAMED'
+}

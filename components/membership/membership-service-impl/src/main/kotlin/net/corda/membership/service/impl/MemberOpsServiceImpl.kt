@@ -21,6 +21,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -74,6 +75,8 @@ class MemberOpsServiceImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
 ) : MemberOpsService {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -124,7 +127,8 @@ class MemberOpsServiceImpl @Activate constructor(
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                     LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
-                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                    LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
                 )
             )
         }
@@ -233,6 +237,7 @@ class MemberOpsServiceImpl @Activate constructor(
                 merkleTreeProvider,
                 membershipConfig,
                 membershipGroupReaderProvider,
+                locallyHostedIdentitiesService,
             )
             val actionsSubscription = subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(
