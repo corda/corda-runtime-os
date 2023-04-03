@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 @Suppress("MaxLineLength")
 class WireTransactionFactoryImplTest : CommonLedgerTest() {
-    private val metadata = transactionMetadataExample(numberOfComponentGroups = 1)
+    private val metadata = transactionMetadataExample()
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
     private val privacySalt = getPrivacySalt()
@@ -104,7 +104,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction without CPK metadata throws`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1, cpkMetadata = emptyList())
+        val metadata = transactionMetadataExample(cpkMetadata = emptyList())
         val metadataJson = jsonMarshallingService.format(metadata)
         assertThatThrownBy {
             wireTransactionFactory.create(
@@ -119,7 +119,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction with Consensual settings`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1,
+        val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
             transactionSubType = null)
         val metadataJson = jsonMarshallingService.format(metadata)
@@ -133,7 +133,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction with Consensual settings with transaction subtype throws`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1,
+        val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
             transactionSubType = "GENERAL")
         val metadataJson = jsonMarshallingService.format(metadata)
@@ -151,7 +151,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction with Utxo settings`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1,
+        val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "GENERAL")
         val metadataJson = jsonMarshallingService.format(metadata)
@@ -165,7 +165,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction with Consensual settings without transaction subtype throws`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1,
+        val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = null)
         val metadataJson = jsonMarshallingService.format(metadata)
@@ -183,7 +183,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction with Consensual settings with unknown transaction subtype throws`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1,
+        val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "UNKNOWN")
         val metadataJson = jsonMarshallingService.format(metadata)
@@ -201,7 +201,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction with unknown ledger model throws`() {
-        val metadata = transactionMetadataExample(numberOfComponentGroups = 1,
+        val metadata = transactionMetadataExample(
             ledgerModel = "unknown"
         )
         val metadataJson = jsonMarshallingService.format(metadata)

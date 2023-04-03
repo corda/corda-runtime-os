@@ -19,7 +19,6 @@ fun WireTransactionFactory.createExample(
 ): WireTransaction {
     val metadata =
         transactionMetadataExample(
-            numberOfComponentGroups = componentGroups.size + 1,
             ledgerModel = ledgerModel,
             transactionSubType = transactionSubType
         )
@@ -28,7 +27,11 @@ fun WireTransactionFactory.createExample(
 
     val allGroupLists = listOf(
         listOf(canonicalJson.toByteArray()),
-    ) + componentGroups
+    ) +
+            componentGroups +
+            List(
+                (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() - 1 - componentGroups.size,
+            ) { emptyList() }
     return create(allGroupLists)
 }
 
@@ -39,8 +42,7 @@ fun getWireTransactionExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     componentGroupLists: List<List<ByteArray>> = defaultComponentGroups,
-    numberOfComponentGroups: Int = componentGroupLists.size + 1,
-    metadata: TransactionMetadata = transactionMetadataExample(numberOfComponentGroups = numberOfComponentGroups),
+    metadata: TransactionMetadata = transactionMetadataExample(),
 ): WireTransaction {
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)

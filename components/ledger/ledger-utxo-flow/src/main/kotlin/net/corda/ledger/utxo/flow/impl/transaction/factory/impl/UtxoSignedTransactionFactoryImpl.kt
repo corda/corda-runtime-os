@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
@@ -10,6 +11,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
@@ -68,6 +70,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
+        check((wireTransaction.metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroups.size){
+            "Number of component groups in metadata structure description does not match with the real number!"
+        }
 
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 
@@ -100,7 +105,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
         TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
-        TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to UtxoComponentGroup.values().size
+        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray {
@@ -148,33 +153,25 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         return UtxoComponentGroup.values().sorted().map { componentGroupIndex ->
             when (componentGroupIndex) {
-                UtxoComponentGroup.METADATA -> listOf(metadataBytes)
-                UtxoComponentGroup.NOTARY -> notaryGroup.map {
-                    serializationService.serialize(it!!).bytes
-                }
-                UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories.map {
-                    serializationService.serialize(it).bytes
-                }
-                UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo.map {
-                    serializationService.serialize(it).bytes
-                }
-                UtxoComponentGroup.COMMANDS_INFO -> commandsInfo.map {
-                    serializationService.serialize(it).bytes
-                }
-                UtxoComponentGroup.DATA_ATTACHMENTS -> utxoTransactionBuilder.attachments.map {
-                    serializationService.serialize(it).bytes
-                }
-                UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateRefs.map {
-                    serializationService.serialize(it).bytes
-                }
+                UtxoComponentGroup.METADATA -> listOf(1)// This will be populated later
+                UtxoComponentGroup.NOTARY -> notaryGroup.map { it!! }
+                UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories
+                UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo
+                UtxoComponentGroup.COMMANDS_INFO -> commandsInfo
+                UtxoComponentGroup.DATA_ATTACHMENTS -> utxoTransactionBuilder.attachments
+                UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateRefs
                 UtxoComponentGroup.OUTPUTS -> outputTransactionStates.map {
-                    serializationService.serialize(it.contractState).bytes
+                    it.contractState
                 }
-                UtxoComponentGroup.COMMANDS -> utxoTransactionBuilder.commands.map {
-                    serializationService.serialize(it).bytes
-                }
-                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceStateRefs.map {
-                    serializationService.serialize(it).bytes
+                UtxoComponentGroup.COMMANDS -> utxoTransactionBuilder.commands
+                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceStateRefs
+            }
+        }.mapIndexed { index, i ->
+            if (index == 0) {
+                listOf(metadataBytes)
+            } else {
+                i.map { j ->
+                    serializationService.serialize(j).bytes
                 }
             }
         }
