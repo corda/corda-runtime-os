@@ -66,28 +66,30 @@ class ConsensualSignedTransactionImpl(
     }
 
     private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
-        return keyIdToSignatories.getOrPut(keyId.algorithm) {
+        val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to signatories for the relevant algorithm
             requiredSignatories.map { signatory ->
-                getLeafKeys(signatory).map {
+                getKeyOrLeafKeys(signatory).map {
                     transactionSignatureService.getIdOfPublicKey(
                         it, keyId.algorithm
                     ) to it
                 }
             }.flatten().toMap()
-        }[keyId]
+        }
+        return keyIdToPublicKey[keyId]
     }
 
     // Unknown signatures are ignored
     override fun getMissingSignatories(): Set<PublicKey> {
-        return collectMissingSignatories(collectPublicKeysToSignatorySignatures())
+        return getMissingSignatories(getPublicKeysToSignatorySignatures())
     }
 
     // Unknown signatures are ignored
     override fun verifySignatures() {
         val publicKeysToSignatures =
-            collectPublicKeysToSignatorySignatures()
+            getPublicKeysToSignatorySignatures()
 
-        val missingSignatories = collectMissingSignatories(publicKeysToSignatures)
+        val missingSignatories = getMissingSignatories(publicKeysToSignatures)
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
@@ -110,7 +112,7 @@ class ConsensualSignedTransactionImpl(
         }
     }
 
-    private fun collectMissingSignatories(publicKeysToSignatures: Map<PublicKey, DigitalSignatureAndMetadata>): Set<PublicKey> {
+    private fun getMissingSignatories(publicKeysToSignatures: Map<PublicKey, DigitalSignatureAndMetadata>): Set<PublicKey> {
         val publicKeysWithSignatures = publicKeysToSignatures.keys.toHashSet()
 
         // TODO CORE-12207 isKeyFulfilledBy is not the most efficient
@@ -120,9 +122,10 @@ class ConsensualSignedTransactionImpl(
             .toSet()
     }
 
-    private fun collectPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
-        return signatures.map { (getSignatoryKeyFromKeyId(it.by) ?: return@map null) to it }
-            .filterNotNull() // We do not care about non-notary/non-signatory keys
+    private fun getPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
+        return signatures.mapNotNull { // We do not care about non-notary/non-signatory keys
+            (getSignatoryKeyFromKeyId(it.by) ?: return@mapNotNull null) to it
+        }
             .toMap()
     }
 
@@ -170,7 +173,7 @@ class ConsensualSignedTransactionImpl(
         return signatures
     }
 
-    private fun getLeafKeys(publicKey: PublicKey): List<PublicKey> {
+    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
         return when (publicKey) {
             is CompositeKey -> publicKey.leafKeys.toList()
             else -> listOf(publicKey)

@@ -116,28 +116,30 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
-        return keyIdToSignatories.getOrPut(keyId.algorithm) {
+        val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to signatories for the relevant algorithm
             signatories.flatMap { signatory ->
-                getLeafKeys(signatory).map {
+                getKeyOrLeafKeys(signatory).map {
                     transactionSignatureServiceInternal.getIdOfPublicKey(
                         it, keyId.algorithm
                     ) to it
                 }
             }.toMap()
-        }[keyId]
+        }
+        return keyIdToPublicKey[keyId]
     }
 
     // Notary/unknown signatures are ignored.
     override fun getMissingSignatories(): Set<PublicKey> {
-        return collectMissingSignatories(collectPublicKeysToSignatorySignatures())
+        return getMissingSignatories(getPublicKeysToSignatorySignatures())
     }
 
     // Notary/unknown signatures are ignored
     override fun verifySignatorySignatures() {
         val publicKeysToSignatures =
-            collectPublicKeysToSignatorySignatures()
+            getPublicKeysToSignatorySignatures()
 
-        val missingSignatories = collectMissingSignatories(publicKeysToSignatures)
+        val missingSignatories = getMissingSignatories(publicKeysToSignatures)
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
@@ -160,7 +162,7 @@ data class UtxoSignedTransactionImpl(
         }
     }
 
-    private fun collectMissingSignatories(publicKeysToSignatures: Map<PublicKey, DigitalSignatureAndMetadata>): Set<PublicKey> {
+    private fun getMissingSignatories(publicKeysToSignatures: Map<PublicKey, DigitalSignatureAndMetadata>): Set<PublicKey> {
         val publicKeysWithSignatures = publicKeysToSignatures.keys.toHashSet()
 
         // TODO CORE-12207 isKeyFulfilledBy is not the most efficient
@@ -170,20 +172,23 @@ data class UtxoSignedTransactionImpl(
             .toSet()
     }
 
-    private fun collectPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
-        return signatures.map { (getSignatoryKeyFromKeyId(it.by) ?: return@map null) to it }
-            .filterNotNull() // We do not care about non-notary/non-signatory keys
+    private fun getPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
+        return signatures.mapNotNull {// We do not care about non-notary/non-signatory keys
+            (getSignatoryKeyFromKeyId(it.by) ?: return@mapNotNull null) to it
+        }
             .toMap()
     }
 
     private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
-        return keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
-            getLeafKeys(notaryKey).associateBy {
+        val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to the notary for the relevant algorithm
+            getKeyOrLeafKeys(notaryKey).associateBy {
                 transactionSignatureServiceInternal.getIdOfPublicKey(
                     it, keyId.algorithm
                 )
             }
-        }[keyId]
+        }
+        return keyIdToPublicKey[keyId]
     }
 
     override fun verifyAttachedNotarySignature() {
@@ -277,7 +282,7 @@ data class UtxoSignedTransactionImpl(
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
     }
 
-    private fun getLeafKeys(publicKey: PublicKey): List<PublicKey> {
+    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
         return when (publicKey) {
             is CompositeKey -> publicKey.leafKeys.toList()
             else -> listOf(publicKey)
