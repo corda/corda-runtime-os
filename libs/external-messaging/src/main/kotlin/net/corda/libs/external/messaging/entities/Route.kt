@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class Route(
     @JsonProperty("channelName")
-    val channelName:String,
+    val channelName: String,
     @JsonProperty("externalReceiveTopicName")
-    val externalReceiveTopicName:String,
+    val externalReceiveTopicName: String,
     @JsonProperty("active")
-    val active:Boolean,
+    val active: Boolean,
     @JsonProperty("inactiveResponseType")
     val inactiveResponseType: InactiveResponseType
 )

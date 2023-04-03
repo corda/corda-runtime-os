@@ -8,6 +8,7 @@ import net.corda.rest.asynchronous.v1.AsyncOperationState
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.OperationalStatus
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -200,22 +201,24 @@ class MessageConverterTest {
         val expectedHoldingIdentityRestResponse = HoldingIdentityRestResponse(aliceX500, groupId, shortHash, longHash)
         val expectedCpiRestResponse = CpiIdentifierRestResponse(cpiName, cpiVersion, exampleSecureHash.toString())
 
-        assertThat(result.holdingIdentity).isEqualTo(expectedHoldingIdentityRestResponse)
-        assertThat(result.cpiIdentifier).isEqualTo(expectedCpiRestResponse)
-        assertThat(result.vaultDdlConnectionId).isEqualTo(vaultDdlConnectionId.toString())
+        assertSoftly {
+            assertThat(result.holdingIdentity).isEqualTo(expectedHoldingIdentityRestResponse)
+            assertThat(result.cpiIdentifier).isEqualTo(expectedCpiRestResponse)
+            assertThat(result.vaultDdlConnectionId).isEqualTo(vaultDdlConnectionId.toString())
 
-        assertThat(result.vaultDdlConnectionId).isEqualTo(vaultDdlConnectionId.toString())
-        assertThat(result.vaultDmlConnectionId).isEqualTo(vaultDmlConnectionId.toString())
-        assertThat(result.cryptoDdlConnectionId).isEqualTo(cryptoDdlConnectionId.toString())
-        assertThat(result.cryptoDmlConnectionId).isEqualTo(cryptoDmlConnectionId.toString())
-        assertThat(result.uniquenessDdlConnectionId).isEqualTo(uniquenessDdlConnectionId.toString())
-        assertThat(result.uniquenessDmlConnectionId).isEqualTo(uniquenessDmlConnectionId.toString())
-        assertThat(result.hsmConnectionId).isEqualTo(hsmConnectionId.toString())
-        assertThat(result.flowP2pOperationalStatus).isEqualTo(flowP2pOperationalStatus)
-        assertThat(result.flowStartOperationalStatus).isEqualTo(flowStartOperationalStatus)
-        assertThat(result.flowOperationalStatus).isEqualTo(flowOperationalStatus)
-        assertThat(result.vaultDbOperationalStatus).isEqualTo(vaultDbOperationalStatus)
-        assertThat(result.externalMessagingRouteConfiguration).isEqualTo(routeConfiguration)
+            assertThat(result.vaultDdlConnectionId).isEqualTo(vaultDdlConnectionId.toString())
+            assertThat(result.vaultDmlConnectionId).isEqualTo(vaultDmlConnectionId.toString())
+            assertThat(result.cryptoDdlConnectionId).isEqualTo(cryptoDdlConnectionId.toString())
+            assertThat(result.cryptoDmlConnectionId).isEqualTo(cryptoDmlConnectionId.toString())
+            assertThat(result.uniquenessDdlConnectionId).isEqualTo(uniquenessDdlConnectionId.toString())
+            assertThat(result.uniquenessDmlConnectionId).isEqualTo(uniquenessDmlConnectionId.toString())
+            assertThat(result.hsmConnectionId).isEqualTo(hsmConnectionId.toString())
+            assertThat(result.flowP2pOperationalStatus).isEqualTo(flowP2pOperationalStatus)
+            assertThat(result.flowStartOperationalStatus).isEqualTo(flowStartOperationalStatus)
+            assertThat(result.flowOperationalStatus).isEqualTo(flowOperationalStatus)
+            assertThat(result.vaultDbOperationalStatus).isEqualTo(vaultDbOperationalStatus)
+            assertThat(result.externalMessagingRouteConfiguration).isEqualTo(routeConfiguration)
+        }
 
         verify(routeConfigSerializer).deserialize(externalMessagingRouteConfig)
     }
