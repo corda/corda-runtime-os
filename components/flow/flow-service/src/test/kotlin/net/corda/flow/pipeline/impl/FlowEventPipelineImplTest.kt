@@ -7,6 +7,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.FlowFiberCache
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.Interruptable
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
@@ -101,6 +102,8 @@ class FlowEventPipelineImplTest {
         whenever(get(any())).thenReturn(virtualNodeInfo)
     }
 
+    private val flowFiberCache = mock<FlowFiberCache>()
+
     private fun buildPipeline(output: FlowIORequest<*>? = null): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
@@ -110,6 +113,7 @@ class FlowEventPipelineImplTest {
             flowGlobalPostProcessor,
             inputContext,
             virtualNodeInfoReadService,
+            flowFiberCache,
             output
         )
     }
@@ -152,7 +156,8 @@ class FlowEventPipelineImplTest {
         val mockContext = mock<FlowEventContext<Any>> {
             whenever(it.checkpoint).thenReturn(mockCheckpoint)
         }
-        val pipeline = FlowEventPipelineImpl(mapOf(), mapOf(), mapOf(), mock(), mock(), mockContext, virtualNodeInfoReadService)
+        val pipeline =
+            FlowEventPipelineImpl(mapOf(), mapOf(), mapOf(), mock(), mock(), mockContext, virtualNodeInfoReadService, flowFiberCache)
 
         val mockVirtualNode = mock<VirtualNodeInfo> {
             whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
@@ -169,7 +174,7 @@ class FlowEventPipelineImplTest {
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
         val flowResult = FlowIORequest.SubFlowFinished(emptyList())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
-        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
+        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult, mock())
 
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowFiberFuture.future.get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)).thenReturn(
