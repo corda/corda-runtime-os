@@ -19,6 +19,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
@@ -30,6 +31,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
 @Component(service = [InteropService::class], immediate = true)
@@ -59,6 +61,7 @@ class InteropService @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
         private const val GROUP_NAME = "interop_alias_translator"
+        private const val CLEANUP_TASK = "CLEANUP_TASK"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
@@ -118,19 +121,30 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
+
+        coordinator.createManagedResource(CLEANUP_TASK) {
+            ScheduledTaskState(
+                Executors.newSingleThreadScheduledExecutor(),
+                publisherFactory.createPublisher(
+                    PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
+                    messagingConfig
+                ),
+                mutableMapOf()
+            )
+        }
+        val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
         coordinator.createManagedResource(SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
+            subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_INTEROP_EVENT_TOPIC),
                 InteropProcessor(
-                    cordaAvroSerializationFactory, membershipGroupReaderProvider, coordinatorFactory,
-                    subscriptionFactory, messagingConfig, facadeToFlowMapperService
+                    cordaAvroSerializationFactory, membershipGroupReaderProvider, facadeToFlowMapperService
                 ),
                 messagingConfig,
-                null
-            ).also {
-                it.start()
-            }
+                InteropListener(newScheduledTaskState)
+            )
         }
+        coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
+        coordinator.updateStatus(LifecycleStatus.UP)
 
         logger.info("Publishing seed message")
         publisher?.publish(registrationService.seedMessage())
@@ -142,10 +156,12 @@ class InteropService @Activate constructor(
 
     override fun start() {
         coordinator.start()
+        membershipGroupReaderProvider.start()
     }
 
     override fun stop() {
         coordinator.stop()
+        membershipGroupReaderProvider.stop()
     }
 
     @Suppress("unused")
