@@ -534,7 +534,7 @@ spec:
   jobLabel: corda
   selector:
     matchLabels:
-      app.kubernetes.io/name: corda
+      app.kubernetes.io/name: {{ include "corda.name" . }}
 {{- end }}
 {{- end }}
 
