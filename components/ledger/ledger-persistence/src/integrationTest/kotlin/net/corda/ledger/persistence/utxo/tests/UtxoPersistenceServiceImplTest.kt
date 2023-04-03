@@ -37,9 +37,8 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -105,7 +104,8 @@ class UtxoPersistenceServiceImplTest {
             .also {
                 it.initialize(512)
             }.genKeyPair().public
-        private val notaryExample = Party(notaryX500Name, publicKeyExample)
+        private val notaryExampleName = notaryX500Name
+        private val notaryExampleKey = publicKeyExample
         private val transactionInputs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
         private val transactionOutputs = listOf(TestContractState1(), TestContractState2())
     }
@@ -152,19 +152,19 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
+        val retval = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
 
-        assertThat(dbSignedTransaction).isEqualTo(transaction)
+        assertThat(retval).isEqualTo(transaction to "U")
     }
 
     @Test
-    fun `find signed transaction with different status returns null`() {
+    fun `find signed transaction with different status returns null to Status`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
+        val retval = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
 
-        assertThat(dbSignedTransaction).isNull()
+        assertThat(retval).isEqualTo(null to "U")
     }
 
     @Test
@@ -418,7 +418,7 @@ class UtxoPersistenceServiceImplTest {
                         ).bytes
                     )
                     assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        digest("SHA-256", signature.by.encoded).toString()
+                        signature.by.toString()
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
@@ -477,7 +477,7 @@ class UtxoPersistenceServiceImplTest {
                         transaction,
                         index,
                         serializationService.serialize(signature).bytes,
-                        digest("SHA-256", signature.by.encoded).toString(),
+                        signature.by.toString(),
                         createdTs
                     )
                 }
@@ -529,10 +529,10 @@ class UtxoPersistenceServiceImplTest {
             listOf("group2_component1".toByteArray()),
             listOf(
                 UtxoOutputInfoComponent(
-                    null, null, notaryExample, TestContractState1::class.java.name, "contract tag"
+                    null, null, notaryExampleName, notaryExampleKey, TestContractState1::class.java.name, "contract tag"
                 ).toBytes(),
                 UtxoOutputInfoComponent(
-                    null, null, notaryExample, TestContractState2::class.java.name, "contract tag"
+                    null, null, notaryExampleName, notaryExampleKey, TestContractState2::class.java.name, "contract tag"
                 ).toBytes()
             ),
             listOf("group4_component1".toByteArray()),
@@ -606,8 +606,12 @@ class UtxoPersistenceServiceImplTest {
                         return C::class.java
                     }
 
-                    override fun getNotary(): Party {
-                        return notaryExample
+                    override fun getNotaryName(): MemberX500Name {
+                        return notaryExampleName
+                    }
+
+                    override fun getNotaryKey(): PublicKey {
+                        return publicKeyExample
                     }
 
                     override fun getEncumbranceGroup(): EncumbranceGroup? {

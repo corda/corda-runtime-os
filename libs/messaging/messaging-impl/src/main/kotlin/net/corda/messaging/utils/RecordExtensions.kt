@@ -14,7 +14,7 @@ fun <K : Any, V : Any> CordaConsumerRecord<K, V>.toEventLogRecord(): EventLogRec
 }
 
 fun Record<*, *>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
-    return CordaProducerRecord(this.topic, this.key, this.value)
+    return CordaProducerRecord(this.topic, this.key, this.value, this.headers)
 }
 
 fun List<Record<*, *>>.toCordaProducerRecords(): List<CordaProducerRecord<*, *>> {

@@ -2,6 +2,9 @@ package net.corda.flow.state
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.flow.FlowKey
@@ -28,15 +31,10 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
@@ -112,6 +110,7 @@ class FlowCheckpointImplTest {
             flowId = "F1"
             flowState = newFlowState
             pipelineState = newPipelineState
+            initialPlatformVersion = 50000
         }
     }
 
@@ -171,6 +170,13 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint()
 
         assertThat(createFlowCheckpoint(checkpoint).flowId).isEqualTo("F1")
+    }
+
+    @Test
+    fun `existing checkpoint - sets initial platform version`() {
+        val checkpoint = setupAvroCheckpoint()
+
+        assertThat(createFlowCheckpoint(checkpoint).initialPlatformVersion).isEqualTo(50000)
     }
 
     @Test
@@ -250,10 +256,8 @@ class FlowCheckpointImplTest {
             contextPlatformProperties = platformPropertiesLevel0.avro
         }
 
-        val cpk = mock<SecureHash>()
+        val cpk = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "abc".toByteArray())
         val cpks = setOf(cpk)
-        whenever(cpk.bytes).thenReturn("abc".toByteArray())
-        whenever(cpk.algorithm).thenReturn(DigestAlgorithmName.SHA2_256.name)
 
         val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
         flowCheckpoint.initFlowState(flowStartContext, cpks)
@@ -521,9 +525,8 @@ class FlowCheckpointImplTest {
             identity = BOB_X500_HOLDING_IDENTITY
             contextPlatformProperties = platformPropertiesLevel0.avro
         }
-        val cpk = mock<SecureHash>()
+        val cpk = SecureHashImpl("dummyDigestAlgo", byteArrayOf(0x00))
         val cpks = setOf(cpk)
-        whenever(cpk.bytes).thenReturn(byteArrayOf())
 
         flowCheckpoint.initFlowState(context, cpks)
         flowCheckpoint.putSessionState(SessionState().apply { sessionId = "sid1" })

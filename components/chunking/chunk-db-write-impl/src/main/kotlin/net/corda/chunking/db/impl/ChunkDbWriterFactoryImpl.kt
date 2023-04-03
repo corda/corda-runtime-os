@@ -14,6 +14,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,6 +29,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
+import net.corda.chunking.db.impl.validation.ExternalChannelsConfigValidatorImpl
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 
 @Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -38,6 +41,8 @@ class ChunkDbWriterFactoryImpl(
     private val certificatesService: CertificatesService,
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    private val networkInfoWriter: NetworkInfoWriter,
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -52,6 +57,10 @@ class ChunkDbWriterFactoryImpl(
         membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
         @Reference(service = MembershipGroupPolicyValidator::class)
         membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+        @Reference(service = ConfigurationValidatorFactory::class)
+        configurationValidatorFactory: ConfigurationValidatorFactory,
+        @Reference(service = NetworkInfoWriter::class)
+        networkInfoWriter: NetworkInfoWriter
     ) : this(
         subscriptionFactory,
         publisherFactory,
@@ -59,6 +68,8 @@ class ChunkDbWriterFactoryImpl(
         certificatesService,
         membershipSchemaValidatorFactory,
         membershipGroupPolicyValidator,
+        configurationValidatorFactory,
+        networkInfoWriter,
     )
 
     companion object {
@@ -86,6 +97,7 @@ class ChunkDbWriterFactoryImpl(
             messagingConfig,
             bootConfig,
             entityManagerFactory,
+            networkInfoWriter,
             statusTopic,
             cpiInfoWriteService
         )
@@ -110,16 +122,18 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
+        networkInfoWriter: NetworkInfoWriter,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
-        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
+        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
+        val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createConfigValidator())
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,
@@ -127,6 +141,7 @@ class ChunkDbWriterFactoryImpl(
             cpiInfoWriteService,
             membershipSchemaValidator,
             membershipGroupPolicyValidator,
+            externalChannelsConfigValidator,
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,

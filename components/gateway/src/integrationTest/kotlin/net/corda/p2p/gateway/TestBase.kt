@@ -45,6 +45,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
@@ -116,10 +117,6 @@ open class TestBase {
         tlsType = TlsType.ONE_WAY,
     )
     protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
-    protected val daleSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL),
-        tlsType = TlsType.ONE_WAY,
-    )
     protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
@@ -144,7 +141,9 @@ open class TestBase {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
                 InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
-                configMerger
+                configMerger,
+                AvroSchemaRegistryImpl(),
+                CordaPublisherFactory(configurationTopicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory),
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
@@ -165,10 +164,17 @@ open class TestBase {
         }
 
         fun publishConfig(configuration: GatewayConfiguration) {
+            val servers = ConfigValueFactory.fromIterable(
+                configuration.serversConfiguration.map {
+                    mapOf(
+                        "hostAddress" to it.hostAddress,
+                        "hostPort" to it.hostPort,
+                        "urlPath" to it.urlPath,
+                    )
+                }
+            )
             val publishConfig = ConfigFactory.empty()
-                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
-                .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
+                .withValue("serversConfiguration", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))

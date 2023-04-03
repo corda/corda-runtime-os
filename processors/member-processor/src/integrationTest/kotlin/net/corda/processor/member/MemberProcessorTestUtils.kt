@@ -17,6 +17,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.registration.RegistrationProxy
@@ -233,7 +234,7 @@ class MemberProcessorTestUtils {
 
         fun lookUpBySessionKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
             val result = member?.let {
-                groupReader.lookupBySessionKey(it.sessionInitiationKey.calculateHash())
+                groupReader.lookupBySessionKey(it.sessionInitiationKeys.first().calculateHash())
             }
             assertNotNull(result)
             result!!

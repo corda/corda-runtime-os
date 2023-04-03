@@ -2,6 +2,7 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -21,11 +22,11 @@ class SignerFactoryTest {
         val publicKey = mock<PublicKey>()
         val memberContext = mock<MemberContext> {
             on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn "GroupId"
+            on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(publicKey)
         }
         val mgm = mock<MemberInfo> {
             on { memberProvidedContext } doReturn memberContext
             on { name } doReturn MemberX500Name.parse("C=GB,L=London,O=mgm")
-            on { sessionInitiationKey } doReturn publicKey
         }
 
         val signer = factory.createSigner(mgm)

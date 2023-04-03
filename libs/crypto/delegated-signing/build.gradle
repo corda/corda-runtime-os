@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    implementation project(':libs:crypto:cipher-suite')
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'

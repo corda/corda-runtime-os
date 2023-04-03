@@ -11,8 +11,8 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -20,7 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -38,7 +38,6 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -95,7 +94,7 @@ class MemberLookupRestResourceTest {
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
     private val mgmName = "O=MGM, L=London, C=GB"
-    private val mgmHoldingIdentity  = createTestHoldingIdentity(mgmName, "0")
+    private val mgmHoldingIdentity = createTestHoldingIdentity(mgmName, "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
@@ -129,7 +128,7 @@ class MemberLookupRestResourceTest {
     ): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
             PARTY_NAME to name,
-            PARTY_SESSION_KEY to KNOWN_KEY,
+            String.format(PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
             GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
@@ -177,11 +176,10 @@ class MemberLookupRestResourceTest {
     }
 
     private val testEntries = mapOf(
-        MPV_KEY to "1",
         EPOCH_KEY to "1",
         MODIFIED_TIME_KEY to clock.instant().toString(),
     )
-    private val mockGroupParameters = mock<GroupParameters> {
+    private val mockGroupParameters = mock<InternalGroupParameters> {
         on { entries } doReturn testEntries.entries
     }
     private val groupReader: MembershipGroupReader = mock {
@@ -485,7 +483,6 @@ class MemberLookupRestResourceTest {
         @Test
         fun `viewGroupParameters correctly returns group parameters as JSON string`() {
             val expectedGroupParamsMap = mapOf(
-                MPV_KEY to "1",
                 EPOCH_KEY to "1",
                 MODIFIED_TIME_KEY to clock.instant().toString(),
             )

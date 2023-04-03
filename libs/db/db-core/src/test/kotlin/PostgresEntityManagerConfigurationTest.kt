@@ -11,15 +11,13 @@ class PostgresEntityManagerConfigurationTest {
     @Test
     fun `set default config values`() {
         val dataSourceFactory = mock<DataSourceFactory>() {
-            on { create(any(), any(), any(), any(), any(), any()) } doReturn (mock())
+            on { create(any(), any(), any(), any(), any(), any(),any(), any(), any(), any(), any(), any()) } doReturn (mock())
         }
 
         PostgresDataSourceFactory(dataSourceFactory).create(
             "jdbcUrl",
             "user",
             "pass",
-            true,
-            20
         )
 
         verify(dataSourceFactory).create(
@@ -27,8 +25,14 @@ class PostgresEntityManagerConfigurationTest {
             eq("jdbcUrl"),
             eq("user"),
             eq("pass"),
-            eq(true),
-            eq(20)
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
         )
     }
 }

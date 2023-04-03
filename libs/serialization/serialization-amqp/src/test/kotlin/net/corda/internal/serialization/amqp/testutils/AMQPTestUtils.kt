@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp.testutils
 
+import net.corda.base.internal.OpaqueBytes
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.BytesAndSchemas
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
@@ -13,6 +14,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.internal.serialization.unwrap
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
 import net.corda.utilities.copyTo
@@ -20,7 +22,6 @@ import net.corda.utilities.div
 import net.corda.utilities.isDirectory
 import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toPath
-import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
 import org.junit.jupiter.api.Test
@@ -140,7 +141,7 @@ inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
 @Throws(NotSerializableException::class)
 inline fun <reified T : Any> DeserializationInput.deserialize(
     bytes: SerializedBytes<T>
-): T = deserialize(bytes, T::class.java, testSerializationContext)
+): T = deserialize(bytes.unwrap(), T::class.java, testSerializationContext)
 
 @Throws(NotSerializableException::class)
 fun <T : Any> SerializationOutput.serializeAndReturnSchema(

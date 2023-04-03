@@ -46,7 +46,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
             val contractState = serializationService.deserialize<ContractState>(it.data)
             StateAndRefImpl(
-                state = TransactionStateImpl(contractState as T, info.notary, info.getEncumbranceGroup()),
+                state = TransactionStateImpl(contractState as T, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                 ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
             )
         }
@@ -63,7 +63,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
             val contractState = serializationService.deserialize<ContractState>(it.data)
             StateAndRefImpl(
-                state = TransactionStateImpl(contractState, info.notary, info.getEncumbranceGroup()),
+                state = TransactionStateImpl(contractState, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                 ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
             )
         }

@@ -116,7 +116,7 @@ class UtxoFinalityFlowV1(
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
                 log.debug {
-                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
+                    "Added signature $signature by (key id) ${signature.by} from ${session.counterparty} for transaction " +
                             transactionId
                 }
             }
@@ -134,11 +134,11 @@ class UtxoFinalityFlowV1(
         log.debug { "Verifying all signatures for transaction $transactionId." }
 
         try {
-            transaction.verifySignatures()
+            transaction.verifySignatorySignatures()
         } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
-                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
-                        signatures.map { it.by.encoded }
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +
+                        signatures.map { it.by }
             }
             val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
                 "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
@@ -181,7 +181,7 @@ class UtxoFinalityFlowV1(
     private fun notarize(
         transaction: UtxoSignedTransactionInternal
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
-        val notary = transaction.notary
+        val notary = transaction.notaryName
 
         val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
 
@@ -233,8 +233,8 @@ class UtxoFinalityFlowV1(
         }
         var notarizedTransaction = transaction
         notarySignatures.forEach { signature ->
-            notarizedTransaction = try {
-                verifyAndAddNotarySignature(notarizedTransaction, signature)
+            try {
+                notarizedTransaction = verifyAndAddNotarySignature(notarizedTransaction, signature)
             } catch (e: Exception) {
                 val message = e.message ?: "Notary signature verification failed."
                 flowMessaging.sendAll(
@@ -264,7 +264,7 @@ class UtxoFinalityFlowV1(
     ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
             pluggableNotaryClientFlow.kotlin.primaryConstructor!!.call(
-                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notary)
+                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
             )
         })
     }

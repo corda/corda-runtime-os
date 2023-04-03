@@ -5,6 +5,7 @@ import java.util.Properties
 import java.util.stream.Stream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.messagebus.api.configuration.AdminConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -266,6 +267,22 @@ class MessageBusConfigResolverTest {
         }
     }
 
+    @Test
+    fun `resolve config for admin`(){
+        val messageBusConfig = loadTestConfig(TEST_CONFIG)
+        val resolver = MessageBusConfigResolver(smartConfigFactory)
+        val  properties = resolver.resolve(messageBusConfig, AdminConfig(CLIENT_ID))
+
+        val expectedProperties = getExpectedProducerProperties(
+            mapOf(
+                CLIENT_ID_PROP to "admin-test-client-id",
+                BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+            )
+        )
+
+        assertAdminProperties(expectedProperties, properties)
+    }
+
     private fun loadTestConfig(resource: String): SmartConfig {
         val url = this::class.java.classLoader.getResource(resource)
             ?: throw IllegalArgumentException("Failed to find $resource")
@@ -300,5 +317,10 @@ class MessageBusConfigResolverTest {
         assertEquals(expected[ACKS_PROP], actual[ACKS_PROP])
         assertEquals(expected[BOOTSTRAP_SERVERS_PROP], actual[BOOTSTRAP_SERVERS_PROP])
         assertEquals(expected[SSL_KEYSTORE_PROP], actual[SSL_KEYSTORE_PROP])
+    }
+
+    private fun assertAdminProperties(expected: Properties, actual: Properties) {
+        assertEquals(expected[CLIENT_ID_PROP], actual[CLIENT_ID_PROP])
+        assertEquals(expected[BOOTSTRAP_SERVERS_PROP], actual[BOOTSTRAP_SERVERS_PROP])
     }
 }

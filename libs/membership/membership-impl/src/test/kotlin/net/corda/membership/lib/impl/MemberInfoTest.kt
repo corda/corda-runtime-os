@@ -15,7 +15,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -109,7 +109,7 @@ class MemberInfoTest {
             memberProvidedContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to "O=Alice,L=London,C=GB",
-                    PARTY_SESSION_KEY to KEY,
+                    String.format(PARTY_SESSION_KEYS, 0) to KEY,
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                     *convertPublicKeys().toTypedArray(),
                     *convertEndpoints().toTypedArray(),
@@ -234,7 +234,6 @@ class MemberInfoTest {
         assertEquals(memberInfo, recreatedMemberInfo)
         assertEquals(memberInfo?.ledgerKeys, recreatedMemberInfo?.ledgerKeys)
         assertEquals(memberInfo?.name, recreatedMemberInfo?.name)
-        assertEquals(memberInfo?.sessionInitiationKey, recreatedMemberInfo?.sessionInitiationKey)
         assertEquals(memberInfo?.endpoints, recreatedMemberInfo?.endpoints)
         assertEquals(memberInfo?.modifiedTime, recreatedMemberInfo?.modifiedTime)
         assertEquals(memberInfo?.isActive, recreatedMemberInfo?.isActive)

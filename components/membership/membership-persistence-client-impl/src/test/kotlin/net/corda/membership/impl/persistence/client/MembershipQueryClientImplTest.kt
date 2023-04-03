@@ -7,11 +7,11 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -28,6 +28,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -42,7 +43,6 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.RPCSender
@@ -148,7 +148,12 @@ class MembershipQueryClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipQueryClient = MembershipQueryClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock, layeredPropertyMapFactory
+            coordinatorFactory,
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            clock,
+            layeredPropertyMapFactory
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())
@@ -261,17 +266,15 @@ class MembershipQueryClientImplTest {
 
     private fun buildResponse(
         rsContext: MembershipResponseContext,
-        success: Boolean,
         payload: Any?
     ) = MembershipPersistenceResponse(
         rsContext,
-        if (success) payload else PersistenceFailedResponse("Error")
+        payload
     )
 
     @Suppress("LongParameterList")
     private fun mockPersistenceResponse(
-        success: Boolean,
-        payload: List<PersistentMemberInfo>?,
+        payload: Any?,
         reqTimestampOverride: Instant? = null,
         reqIdOverride: String? = null,
         rsTimestampOverride: Instant? = null,
@@ -289,8 +292,7 @@ class MembershipQueryClientImplTest {
             CompletableFuture.completedFuture(
                 buildResponse(
                     rsContext,
-                    success,
-                    payload?.let { MemberInfoQueryResponse(it) }
+                    payload
                 )
             )
         }
@@ -299,7 +301,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `request to persistence service is as expected`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, listOf(mock()))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock())))
 
         membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
 
@@ -318,7 +320,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for all member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, listOf(mock()))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock())))
 
         val queryResult = membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
         assertThat(queryResult)
@@ -329,7 +331,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `failed request for all member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(false, null)
+        mockPersistenceResponse(PersistenceFailedResponse("Error"))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity)).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -339,7 +341,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for list of member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, listOf(mock()))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock())))
 
         val queryResult = membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))
         assertThat(queryResult)
@@ -350,7 +352,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `failed request for list of member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(false, null)
+        mockPersistenceResponse(PersistenceFailedResponse("Error"))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -360,7 +362,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for member info with no results is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(true, emptyList())
+        mockPersistenceResponse(MemberInfoQueryResponse(emptyList()))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Success::class.java
@@ -371,8 +373,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in holding identity between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -384,8 +385,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in request timestamp between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -397,8 +397,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in request ID between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             reqIdOverride = "Group ID 3"
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -410,8 +409,7 @@ class MembershipQueryClientImplTest {
     fun `Response timestamp before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            true,
-            emptyList(),
+            MemberInfoQueryResponse(emptyList()),
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -589,13 +587,18 @@ class MembershipQueryClientImplTest {
         fun `it will returns the correct data in case of successful valid result`() {
             postConfigChangedEvent()
             val status =
-                RegistrationStatusDetails(
+                RegistrationRequestDetails(
                     clock.instant(),
                     clock.instant(),
-                    RegistrationStatus.PENDING_APPROVAL_FLOW,
+                    RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk1".toByteArray()),
+                        ByteBuffer.wrap("ct1".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy", null, null),
                     "test reason",
                     0L,
                 )
@@ -616,21 +619,9 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
-            assertThat(result.getOrThrow())
-                .isEqualTo(
-                    RegistrationRequestStatus(
-                        status = status.registrationStatus,
-                        registrationId = status.registrationId,
-                        registrationSent = status.registrationSent,
-                        registrationLastModified = status.registrationLastModified,
-                        protocolVersion = status.registrationProtocolVersion,
-                        memberContext = status.memberProvidedContext,
-                        reason = status.reason,
-                        serial = status.serial,
-                    )
-                )
+            assertThat(result.getOrThrow()).isEqualTo(status)
         }
         @Test
         fun `it will returns the correct data in case of successful null result`() {
@@ -652,7 +643,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result.getOrThrow())
                 .isNull()
@@ -677,7 +668,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -701,7 +692,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -724,7 +715,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(response)
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestStatus(ourHoldingIdentity, "id")
+            val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -737,23 +728,33 @@ class MembershipQueryClientImplTest {
         fun `it will returns the correct data in case of successful valid result`() {
             postConfigChangedEvent()
             val statuses = listOf(
-                RegistrationStatusDetails(
+                RegistrationRequestDetails(
                     clock.instant(),
                     clock.instant(),
-                    RegistrationStatus.PENDING_APPROVAL_FLOW,
+                    RegistrationStatus.PENDING_MANUAL_APPROVAL,
                     "id 1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk1".toByteArray()),
+                        ByteBuffer.wrap("ct1".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy1", null, null),
                     "test reason 1",
                     0L,
                 ),
-                RegistrationStatusDetails(
+                RegistrationRequestDetails(
                     clock.instant(),
                     clock.instant(),
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk2".toByteArray()),
+                        ByteBuffer.wrap("ct2".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy2", null, null),
                     "test reason 2",
                     1L,
                 ),
@@ -775,23 +776,9 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
-            assertThat(result.getOrThrow())
-                .hasSameElementsAs(
-                    statuses.map {
-                        RegistrationRequestStatus(
-                            status = it.registrationStatus,
-                            registrationId = it.registrationId,
-                            registrationSent = it.registrationSent,
-                            registrationLastModified = it.registrationLastModified,
-                            protocolVersion = it.registrationProtocolVersion,
-                            memberContext = it.memberProvidedContext,
-                            reason = it.reason,
-                            serial = it.serial,
-                        )
-                    }
-                )
+            assertThat(result.getOrThrow()).isEqualTo(statuses)
         }
         @Test
         fun `it will returns an error when the result is unexpected`() {
@@ -813,7 +800,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -837,7 +824,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -860,7 +847,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(response)
             }
 
-            val result = membershipQueryClient.queryRegistrationRequestsStatus(ourHoldingIdentity)
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
@@ -897,7 +884,6 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        true,
                         MutualTlsListAllowedCertificatesResponse(
                             listOf(
                                 ourX500Name.toString(),
@@ -929,12 +915,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        false,
-                        MutualTlsListAllowedCertificatesResponse(
-                            listOf(
-                                ourX500Name.toString(),
-                            )
-                        )
+                        PersistenceFailedResponse("Error")
                     )
                 )
             }
@@ -961,7 +942,6 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        true,
                         "ooops"
                     )
                 )
@@ -1246,6 +1226,46 @@ class MembershipQueryClientImplTest {
             val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class QueryStaticNetworkInfo {
+        private val groupId = UUID(0, 1).toString()
+        private val groupParameters = KeyValuePairList(emptyList())
+        private val mgmPublicSigningKey = ByteBuffer.wrap("123".toByteArray())
+        private val mgmPrivateSigningKey = ByteBuffer.wrap("456".toByteArray())
+        private val version = 1
+
+        private val info = StaticNetworkInfo(
+            groupId,
+            groupParameters,
+            mgmPublicSigningKey,
+            mgmPrivateSigningKey,
+            version
+        )
+
+        @Test
+        fun `Can successfully query`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(StaticNetworkInfoQueryResponse(info))
+
+            val result = membershipQueryClient.queryStaticNetworkInfo(groupId)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Success::class.java)
+            assertThat(result.getOrThrow()).isEqualTo(info)
+        }
+
+        @Test
+        fun `Failure to get expected response results in failure`() {
+            class BadResponse
+            postConfigChangedEvent()
+            mockPersistenceResponse(BadResponse())
+
+            val result = membershipQueryClient.queryStaticNetworkInfo(groupId)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+            assertThat((result as MembershipQueryResult.Failure).errorMsg).contains("Failed to retrieve static network")
         }
     }
 }

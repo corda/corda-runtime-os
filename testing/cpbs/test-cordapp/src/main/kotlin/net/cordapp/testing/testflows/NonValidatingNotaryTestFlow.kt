@@ -10,15 +10,20 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeyUtils
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.membership.NotaryInfo
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -75,10 +80,10 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
         val isIssuance = params.inputStateRefs.isEmpty()
 
-        val notaryServiceParty = findNotaryServiceParty()
+        val notaryServiceInfo = findNotaryService()
 
         val stx = buildSignedTransaction(
-            notaryServiceParty,
+            notaryServiceInfo.name,
             params.outputStateCount,
             params.inputStateRefs,
             params.referenceStateRefs,
@@ -94,13 +99,20 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             // that we can spend
             val signatures = flowEngine.subFlow(NonValidatingNotaryClientFlowImpl(
                 stx,
-                findNotaryVNodeParty()
+                findNotaryVNodeName()
             ))
 
+            // TODO The below is static and needs aligning if signatures > 1
+            val signatureKeyId = signatures.single().signature.by
+            val notaryKeyThatSigned =
+                findSignatureKeyFromKeyId(signatureKeyId, notaryServiceInfo.publicKey)
+                    ?: throw IllegalStateException("Signatory key id doesn't match received signature key id")
+
+            // TODO The below check is redundant now
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
             signatures.forEach {
-                require(KeyUtils.isKeyInSet(notaryServiceParty.owningKey, listOf(it.by))) {
+                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(notaryKeyThatSigned))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }
@@ -111,6 +123,26 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             stx.inputStateRefs.map { it.toString() },
             stx.referenceStateRefs.map { it.toString() }
         ))
+    }
+
+    @Suspendable
+    private fun findSignatureKeyFromKeyId(
+        keyId: SecureHash,
+        notaryServiceKey: PublicKey
+    ): PublicKey? {
+        val digestAlgoName = DigestAlgorithmName(keyId.algorithm)
+        val notaryKeysByIds =
+            (notaryServiceKey as? CompositeKey)?.leafKeys?.associateBy {
+                digestService.hash(it.encoded, digestAlgoName)
+            } ?:
+            // notary service key is plain key
+            mapOf(
+                digestService.hash(
+                    notaryServiceKey.encoded,
+                    digestAlgoName
+                ) to notaryServiceKey
+            )
+        return notaryKeysByIds[keyId]
     }
 
     /**
@@ -155,9 +187,9 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      * and will be used by the finality flow to do the VNode selection itself.
      */
     @Suspendable
-    private fun findNotaryServiceParty(): Party {
-        val notary = notaryLookup.notaryServices.single()
-        return Party(notary.name, notary.publicKey)
+    private fun findNotaryService(): NotaryInfo {
+        return notaryLookup.notaryServices.single()
+
     }
 
     /**
@@ -165,13 +197,13 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      * logic like the one we have in the finality flow. When we call the plugin directly we must select a VNode
      * beforehand as the plugin has no logic for VNode selection.
      */
-    private fun findNotaryVNodeParty(): Party {
+    private fun findNotaryVNodeName(): MemberX500Name {
         // We cannot use the notary virtual node lookup service in this flow so we need to do this hack
         val notary = memberLookup.lookup().first {
             it.name.commonName?.contains("notary", ignoreCase = true) ?: false
         }
 
-        return Party(notary.name, notary.sessionInitiationKey)
+        return notary.name
     }
 
     /**
@@ -180,15 +212,15 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      */
     @Suspendable
     private fun buildSignedTransaction(
-        notaryServerParty: Party,
+        notaryServerName: MemberX500Name,
         outputStateCount: Int,
         inputStateRefs: List<String>,
         referenceStateRefs: List<String>,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
-        val myKey = memberLookup.myInfo().sessionInitiationKey
-        return utxoLedgerService.getTransactionBuilder()
-                .setNotary(notaryServerParty)
+        val myKey = memberLookup.myInfo().ledgerKeys.first()
+        return utxoLedgerService.createTransactionBuilder()
+                .setNotary(notaryServerName)
                 .addCommand(TestCommand())
                 .run {
                     // TODO CORE-8726 Since the builder will always be copied with the new attributes,

@@ -5,6 +5,7 @@ import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.AdminConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.kafka.producer.KafkaProducerPartitioner
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
@@ -71,6 +72,19 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
 
         logger.debug {"Kafka properties for role $rolePath: $properties" }
         return properties
+    }
+
+    /**
+     * Resolve the provided configuration and return a valid set of Kafka properties suitable for the given role
+     * as well as a concrete class containing user configurable admin values.
+     *
+     * @param messageBusConfig The supplied message bus configuration. Must match the schema used in the defaults and enforced
+     *               config files included with this library.
+     * @param adminConfig User configurable values.
+     * @return Resolved kafka properties
+     */
+    fun resolve(messageBusConfig: SmartConfig, adminConfig: AdminConfig): Properties {
+        return  resolve(messageBusConfig, "admin.admin", adminConfig.toSmartConfig())
     }
 
     /**
@@ -163,6 +177,18 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
                     CLIENT_ID_PATH to clientId,
                     GROUP_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to transactionalId
+                )
+            )
+        )
+    }
+
+    private fun AdminConfig.toSmartConfig(): SmartConfig {
+        return smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    CLIENT_ID_PATH to clientId,
+                    GROUP_PATH to "<undefined>",
+                    TRANSACTIONAL_ID_PATH to "<undefined>"
                 )
             )
         )

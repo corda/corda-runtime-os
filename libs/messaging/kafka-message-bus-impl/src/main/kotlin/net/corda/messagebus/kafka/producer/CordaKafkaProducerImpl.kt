@@ -6,6 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
+import net.corda.messagebus.kafka.utils.toKafkaRecord
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -15,7 +16,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
 import org.apache.kafka.clients.producer.Producer
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.AuthorizationException
@@ -98,7 +98,7 @@ class CordaKafkaProducerImpl(
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
-            producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value), callback?.toKafkaCallback())
+            producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
         }
     }
 
@@ -126,7 +126,7 @@ class CordaKafkaProducerImpl(
         }
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(ProducerRecord(topicPrefix + it.topic, partition, it.key, it.value))
+            producer.send(it.toKafkaRecord(topicPrefix,partition))
         }
     }
 

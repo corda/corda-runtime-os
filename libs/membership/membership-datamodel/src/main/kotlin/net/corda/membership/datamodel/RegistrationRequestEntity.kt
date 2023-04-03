@@ -52,8 +52,31 @@ class RegistrationRequestEntity(
     @Column(nullable = false, updatable = false, columnDefinition = "BLOB")
     val context: ByteArray,
 
+    /**
+     * Signature key of member signature, can be sued to verify the signature.
+     */
+    @Column(name = "signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val signatureKey: ByteArray,
+
+    /**
+     * Byte array of the member signature, exactly as returned by crypto signing operations.
+     */
+    @Column(name = "signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val signatureContent: ByteArray,
+
+    /**
+     * Signature spec of member signature.
+     */
+    // TODO Are we going to be storing `ParameterizedSignatureSpec` here?
+    //  If so need to consider saving extra signature spec parameters as recorded in https://r3-cev.atlassian.net/browse/CORE-11685
+    @Column(name = "signature_spec", nullable = false, updatable = false)
+    val signatureSpec: String,
+
+    /**
+     * Latest serial seen by the member when calling registration.
+     */
     @Column(name = "serial", nullable = true)
-    val serial: Long,
+    val serial: Long?,
 
     /**
      * Reason why the request is in the status specified by [status].

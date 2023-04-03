@@ -16,7 +16,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -75,7 +75,7 @@ class ConfigTests {
             WORKSPACE_DIR,
             TEMP_DIR,
             "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
-            "$BOOT_DB_PARAMS.$DB_KEY_ONE"
+            "$BOOT_DB.$DB_KEY_ONE"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -84,7 +84,7 @@ class ConfigTests {
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
         assertEquals(VALUE_MAX_SIZE, config.getString(BOOT_MAX_ALLOWED_MSG_SIZE))
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
-        assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB.$DB_KEY_ONE"))
     }
 
     @Test
@@ -196,8 +196,8 @@ class ConfigTests {
         dbWorker.startup(args.toTypedArray())
         val config = dbProcessor.config!!
 
-        assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
-        assertEquals(DB_VAL_TWO, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_TWO"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB.$DB_KEY_ONE"))
+        assertEquals(DB_VAL_TWO, config.getAnyRef("$BOOT_DB.$DB_KEY_TWO"))
     }
 
     /** A [DBProcessor] that stores the passed-in config in [config] for inspection. */
@@ -225,6 +225,7 @@ class ConfigTests {
 
     private class DummyValidatorFactory : ConfigurationValidatorFactory {
         override fun createConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
+        override fun createCordappConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
     }
 
     private class DummyConfigurationValidator : ConfigurationValidator {

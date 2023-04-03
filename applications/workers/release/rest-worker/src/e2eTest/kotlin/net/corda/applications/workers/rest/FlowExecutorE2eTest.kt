@@ -41,7 +41,8 @@ class FlowExecutorE2eTest {
                 "-t",
                 "https://${cordaCluster.clusterConfig.restHost}:${cordaCluster.clusterConfig.restPort}",
                 "-v",
-                randomVNodeHash
+                randomVNodeHash,
+                "-k"
             )
         )
         assertThat(result.exitCode).withFailMessage(result.stdErr).isEqualTo(0)

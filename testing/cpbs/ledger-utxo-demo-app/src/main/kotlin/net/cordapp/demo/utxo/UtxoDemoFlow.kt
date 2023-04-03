@@ -13,7 +13,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
@@ -68,10 +67,10 @@ class UtxoDemoFlow : ClientStartableFlow {
             )
 
             val notary = notaryLookup.notaryServices.single()
-            val txBuilder = utxoLedgerService.getTransactionBuilder()
+            val txBuilder = utxoLedgerService.createTransactionBuilder()
 
             val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.publicKey))
+                .setNotary(notary.name)
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
@@ -81,11 +80,11 @@ class UtxoDemoFlow : ClientStartableFlow {
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 
             return try {
-                val finalizedSignedTransaction = utxoLedgerService.finalize(
+                val finalizationResult = utxoLedgerService.finalize(
                     signedTransaction,
                     sessions
                 )
-                finalizedSignedTransaction.id.toString().also {
+                finalizationResult.transaction.id.toString().also {
                     log.info("Success! Response: $it")
                 }
 
@@ -113,7 +112,7 @@ class UtxoResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
+            val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
                 val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
                 if (state.testField == "fail") {
                     log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
@@ -121,7 +120,7 @@ class UtxoResponderFlow : ResponderFlow {
                 }
                 log.info("Verified the transaction- ${ledgerTransaction.id}")
             }
-            log.info("Finished responder flow - ${finalizedSignedTransaction.id}")
+            log.info("Finished responder flow - ${finalizationResult.transaction.id}")
         } catch (e: Exception) {
             log.warn("Exceptionally finished responder flow", e)
         }

@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
+import net.corda.base.internal.sequence
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.utilities.exactAdd
-import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import org.bouncycastle.asn1.ASN1EncodableVector
@@ -11,7 +11,6 @@ import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.ASN1Primitive
 import org.bouncycastle.asn1.DERBitString
 import org.bouncycastle.asn1.DERSequence
-
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey
@@ -36,7 +35,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // will improve efficiency, because keys with bigger "weights" are the first to be checked and thus the
         // threshold requirement might be met earlier without requiring a full [children] scan.
         private val descWeightComparator =
-            compareBy<CompositeKeyNodeAndWeight>({ -it.weight }, { sequence(it.node.encoded) })
+            compareBy<CompositeKeyNodeAndWeight>({ -it.weight }, { it.node.encoded.sequence() })
 
         fun createFromKeys(keys: List<PublicKey>, threshold: Int?) =
             create(keys.map { CompositeKeyNodeAndWeight(it, 1) }, threshold)

@@ -1,11 +1,18 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
+-resolve.effective: resolve,active
 -runee: JavaSE-11
 -runtrace: true
 
 # Canonicalise the permissions paths
 -runvm: \
-    -Djdk.io.permissionsUseCanonicalPath=true
+    -Djdk.io.permissionsUseCanonicalPath=true,\
+    --illegal-access=deny
+
+-runsystemcapabilities: \
+    osgi.service;objectClass:List<String>='net.corda.lifecycle.LifecycleCoordinatorFactory';effective:=active,\
+    osgi.service;objectClass:List<String>='net.corda.configuration.read.ConfigurationReadService';effective:=active,\
+    osgi.service;objectClass:List<String>='org.osgi.service.condpermadmin.ConditionalPermissionAdmin';effective:=active
 
 -runsystempackages: \
     sun.security.x509

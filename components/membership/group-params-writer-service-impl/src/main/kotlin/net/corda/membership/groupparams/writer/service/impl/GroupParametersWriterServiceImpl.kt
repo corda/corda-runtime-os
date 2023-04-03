@@ -3,7 +3,10 @@ package net.corda.membership.groupparams.writer.service.impl
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.layeredpropertymap.toAvro
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,6 +18,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -22,14 +27,14 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
+import java.nio.ByteBuffer
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 @Component(service = [GroupParametersWriterService::class])
 class GroupParametersWriterServiceImpl @Activate constructor(
@@ -39,6 +44,8 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
 ) : GroupParametersWriterService {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -63,12 +70,14 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) = impl.put(recordKey, recordValue)
+    override fun put(recordKey: HoldingIdentity, recordValue: InternalGroupParameters) =
+        impl.put(recordKey, recordValue)
 
     override fun remove(recordKey: HoldingIdentity) = impl.remove(recordKey)
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
+
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
     private var _publisher: Publisher? = null
@@ -83,13 +92,13 @@ class GroupParametersWriterServiceImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerGroupParametersWriterService : AutoCloseable {
-        fun put(recordKey: HoldingIdentity, recordValue: GroupParameters)
+        fun put(recordKey: HoldingIdentity, recordValue: InternalGroupParameters)
 
         fun remove(recordKey: HoldingIdentity)
     }
 
     private object InactiveImpl : InnerGroupParametersWriterService {
-        override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) =
+        override fun put(recordKey: HoldingIdentity, recordValue: InternalGroupParameters) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
         override fun remove(recordKey: HoldingIdentity) =
@@ -100,7 +109,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerGroupParametersWriterService {
-        override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) {
+        override fun put(recordKey: HoldingIdentity, recordValue: InternalGroupParameters) {
             publisher.publish(
                 listOf(
                     Record(
@@ -173,6 +182,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
+
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()
@@ -189,9 +199,23 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         ).also { it.start() }
         activate(coordinator)
     }
-}
 
-fun GroupParameters.toAvro(owner: HoldingIdentity) = GroupParametersAvro(
-    owner.toAvro(),
-    this.toAvro()
-)
+    private fun InternalGroupParameters.toAvro(owner: HoldingIdentity): PersistentGroupParameters {
+        val signed = this as? SignedGroupParameters
+        return PersistentGroupParameters(
+            owner.toAvro(),
+            AvroGroupParameters(
+                ByteBuffer.wrap(bytes),
+                signed?.let {
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.signature.by)),
+                        ByteBuffer.wrap(it.signature.bytes)
+                    )
+                },
+                signed?.let {
+                    CryptoSignatureSpec(it.signatureSpec.signatureName, null, null)
+                }
+            )
+        )
+    }
+}

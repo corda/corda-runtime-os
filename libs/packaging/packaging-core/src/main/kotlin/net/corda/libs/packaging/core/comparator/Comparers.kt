@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.core.comparator
 
+import net.corda.crypto.core.bytes
 import net.corda.libs.packaging.core.Identifier
 import net.corda.v5.crypto.SecureHash
 import java.util.Arrays

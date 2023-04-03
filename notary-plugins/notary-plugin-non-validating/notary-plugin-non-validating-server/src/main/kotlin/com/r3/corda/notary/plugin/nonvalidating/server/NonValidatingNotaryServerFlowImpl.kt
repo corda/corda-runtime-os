@@ -8,6 +8,7 @@ import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
@@ -17,7 +18,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -29,9 +29,10 @@ import org.slf4j.LoggerFactory
 
 /**
  * The server-side implementation of the non-validating notary logic.
- * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
+ * This will be initiated by the client side of this notary plugin,
+ * [NonValidatingNotaryClientFlowImpl][com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClientFlowImpl]
  */
-@InitiatedBy(protocol = "net.corda.notary.NonValidatingNotary")
+@InitiatedBy(protocol = "com.r3.corda.notary.plugin.nonvalidating", version = [1])
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
@@ -56,6 +57,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var digestService: DigestService
 
+    @CordaInject
+    private lateinit var signatureSpecService: SignatureSpecService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
@@ -67,7 +71,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         signatureVerifier: DigitalSignatureVerificationService,
         memberLookup: MemberLookup,
         transactionSignatureService: TransactionSignatureService,
-        digestService: DigestService
+        digestService: DigestService,
+        signatureSpecService: SignatureSpecService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
@@ -75,6 +80,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         this.memberLookup = memberLookup
         this.transactionSignatureService = transactionSignatureService
         this.digestService = digestService
+        this.signatureSpecService = signatureSpecService
     }
 
     /**
@@ -105,11 +111,11 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
 
-            val otherParty = Party(otherMemberInfo.name, otherMemberInfo.sessionInitiationKey)
+            val otherPartySessionKey = otherMemberInfo.ledgerKeys.first()
 
             validateRequestSignature(
                 request,
-                otherParty,
+                otherPartySessionKey,
                 serializationService,
                 signatureVerifier,
                 requestPayload.requestSignature,
@@ -180,9 +186,14 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
         // The notary component is not needed by us but we validate that it is present just in case
-        requireNotNull(filteredTx.notary) {
-            "Notary component could not be found on the transaction"
+        requireNotNull(filteredTx.notaryName) {
+            "Notary name component could not be found on the transaction"
         }
+
+        requireNotNull(filteredTx.notaryKey) {
+            "Notary key component could not be found on the transaction"
+        }
+
 
         requireNotNull(filteredTx.metadata) {
             "Metadata component could not be found on the transaction"
@@ -211,7 +222,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             filteredTx.timeWindow!!,
             inputStates.values.values.toList(),
             refStates.values.values.toList(),
-            filteredTx.notary!!
+            filteredTx.notaryName!!,
+            filteredTx.notaryKey!!
         )
     }
 

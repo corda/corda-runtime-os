@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.verify.internal
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.hash
 import net.corda.v5.crypto.DigestAlgorithmName
