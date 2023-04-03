@@ -188,6 +188,35 @@
                 }
             ]
         },
+        "podMonitor": {
+            "type": "object",
+            "title": "PodMonitor configuration",
+            "additionalProperties": false,
+            "required": [
+                "enabled"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "enable pod monitor creation to identify endpoints to scrape",
+                    "examples": [
+                        false
+                    ]
+                },
+                "labels": {
+                    "type": "object",
+                    "default": {},
+                    "title": "labels that can be used so PodMonitor is discovered by Prometheus",
+                    "examples": [{}]
+                }
+            },
+            "examples": [
+                {
+                    "enabled": false
+                }
+            ]
+        },
         "dumpHostPath": {
             "type": "string",
             "default": "",

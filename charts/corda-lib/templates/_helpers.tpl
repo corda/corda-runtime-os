@@ -518,23 +518,26 @@ data:
 Pod Monitor creation
 */}}
 {{- define "corda.podMonitor" -}}
+{{- if .Values.podMonitor.enabled }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: corda
   labels:
-    release: kube-prometheus-stack
+  {{- range $k, $v := .Values.podMonitor.labels }}
+    {{ $k }}: {{ $v | quote }}
+  {{- end }}
 spec:
   podMetricsEndpoints:
   - port: monitor
   jobLabel: corda
-  namespaceSelector:
-    any: true
   selector:
     matchLabels:
       app.kubernetes.io/name: corda
 {{- end }}
+{{- end }}
+
 {{/*
 TLS Secret creation
 */}}
