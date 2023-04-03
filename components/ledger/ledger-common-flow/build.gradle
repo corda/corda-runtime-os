@@ -30,6 +30,7 @@ dependencies {
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:platform-info')
+    implementation project(':components:membership:membership-group-read')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     testImplementation project(':libs:membership:membership-common')
