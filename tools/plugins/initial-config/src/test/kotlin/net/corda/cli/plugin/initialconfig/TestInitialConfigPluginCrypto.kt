@@ -14,7 +14,6 @@ import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.InvalidParamsException
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
-import java.lang.IllegalArgumentException
 import java.security.InvalidParameterException
 
 class TestInitialConfigPluginCrypto {
