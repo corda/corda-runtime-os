@@ -9,12 +9,13 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import picocli.CommandLine
+import picocli.CommandLine.ParameterException
 import java.io.File
 import java.io.FileWriter
-import java.lang.IllegalArgumentException
+import java.security.InvalidParameterException
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.Base64
+import java.util.*
 
 @CommandLine.Command(
     name = "create-crypto-config",
@@ -28,6 +29,10 @@ class CryptoConfigSubcommand : Runnable {
     enum class SecretsServiceType {
         CORDA, VAULT
     }
+
+    @CommandLine.Spec
+    var spec: CommandLine.Model.CommandSpec? = null // injected by picocli
+
 
     @CommandLine.Option(
         names = ["-s", "--salt"],
@@ -169,7 +174,8 @@ class CryptoConfigSubcommand : Runnable {
     }
 
     private inline fun checkParamPassed(value: String?, lazyMessage: () -> String) = if (value.isNullOrBlank()) {
-        throw IllegalArgumentException(lazyMessage())
+        val specNotNull = spec ?: throw InvalidParameterException(lazyMessage())
+        throw ParameterException(specNotNull.commandLine(), lazyMessage())
     } else {
         value
     }
