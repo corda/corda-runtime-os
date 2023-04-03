@@ -43,7 +43,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
-@Disabled
 class CompactedSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig

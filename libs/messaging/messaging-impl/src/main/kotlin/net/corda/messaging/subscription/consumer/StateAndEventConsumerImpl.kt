@@ -69,6 +69,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             beginning < end
         }
 
+        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
+
         // Out of sync partitions need assigning to the state consumer to bring us into sync.
         partitionsToSync.addAll(needsSync)
         eventConsumer.pause(needsSync)
@@ -94,7 +96,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         partitionsToSync.removeAll(partitions)
         inSyncPartitions.addAll(partitions)
 
-        log.info("Listener is $stateAndEventListener. Sending partitions")
         stateAndEventListener?.let { listener ->
             for (partition in partitions) {
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
@@ -127,7 +128,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             StatePartitionOperation.ADD -> oldAssignment + statePartitions
             StatePartitionOperation.REMOVE -> oldAssignment - statePartitions
         }
-        log.info("Assigning partitions $partitions to the state consumer")
+        log.debug { "Assigning partitions $newAssignment to the state consumer" }
         stateConsumer.assign(newAssignment)
     }
 

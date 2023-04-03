@@ -34,7 +34,6 @@ import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
-@Disabled
 class PublisherIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig

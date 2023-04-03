@@ -56,7 +56,6 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
-@Disabled
 class DurableSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
