@@ -138,10 +138,6 @@ class InteropService @Activate constructor(
         }
         coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
         coordinator.updateStatus(LifecycleStatus.UP)
-
-        logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage())
-        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean

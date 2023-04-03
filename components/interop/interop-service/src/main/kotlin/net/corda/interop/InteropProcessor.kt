@@ -19,10 +19,7 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.InteropAliasProcessor.Companion.addAliasSubstringToOrganisationName
-import net.corda.interop.InteropAliasProcessor.Companion.removeAliasSubstringFromOrganisationName
 import net.corda.interop.service.InteropFacadeToFlowMapperService
-import net.corda.interop.service.impl.InteropMessageTransformer
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -64,7 +61,7 @@ class InteropProcessor(
     ): StateAndEventProcessor.Response<InteropState> {
         val sessionEvent = event.value?.payload
         if (sessionEvent == null) {
-            logger.warn("Dropping message with empty payload, key $key.")
+            logger.warn("Dropping message with empty payload.")
             return StateAndEventProcessor.Response(state, emptyList())
         }
 
@@ -142,14 +139,16 @@ class InteropProcessor(
                 x500Name = addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
                 groupId = INTEROP_GROUP_ID
             }
-            val translatedDestination = (state?.aliasHoldingIdentity ?: destinationIdentity).apply {
+            val translatedDestination = (destinationIdentity).apply {
                 groupId = INTEROP_GROUP_ID
+                val alisFromState = state?.aliasHoldingIdentity
+                if (alisFromState != null) x500Name = alisFromState
             }
             logger.info("OUTBOUND: $translatedSource -> $translatedDestination")
 
             return StateAndEventProcessor.Response(
                 state,
-            listOf( Record(
+            listOf(Record(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
                 AppMessage(
                     AuthenticatedMessage(
@@ -159,7 +158,8 @@ class InteropProcessor(
                             //TODO CORE-12208 adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest,
                             // use hardcoded 500000 for now
                             Instant.ofEpochMilli(
-                                sessionEvent.timestamp.toEpochMilli() + 500000),//+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                                sessionEvent.timestamp.toEpochMilli() + 500000),
+                            //+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
                             sessionEvent.sessionId + "-" + UUID.randomUUID(),
                             "",
                             SUBSYSTEM,
