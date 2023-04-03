@@ -894,7 +894,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setInputStates(listOf(state, state))
                     .build()
             ).let { responses ->
-                org.junit.jupiter.api.assertAll(
+                assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
                         assertMalformedRequestResponse(
@@ -915,7 +915,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setReferenceStates(listOf(state, state))
                     .build()
             ).let { responses ->
-                org.junit.jupiter.api.assertAll(
+                assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
                         assertMalformedRequestResponse(
@@ -937,7 +937,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setReferenceStates(state)
                     .build()
             ).let { responses ->
-                org.junit.jupiter.api.assertAll(
+                assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
                         assertMalformedRequestResponse(
