@@ -334,7 +334,6 @@ class StateAndEventSubscriptionIntegrationTest {
 
     @Test
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
-    @Disabled
     fun `create topics, start one statevent sub, publish records, slow processor for first record, 1 record sent DLQ and verify`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC5_TEMPLATE))
 
@@ -385,7 +384,6 @@ class StateAndEventSubscriptionIntegrationTest {
 
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
-    @Disabled
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC6_TEMPLATE))
 
@@ -426,7 +424,6 @@ class StateAndEventSubscriptionIntegrationTest {
 
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
-    @Disabled
     fun `create topics, start one statevent sub, publish incorrect records with two keys, update state and output records and verify`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC7_TEMPLATE))
 

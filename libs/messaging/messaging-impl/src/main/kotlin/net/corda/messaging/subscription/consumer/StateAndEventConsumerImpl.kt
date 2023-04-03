@@ -56,7 +56,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private var pollIntervalCutoff = 0L
 
     override fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>) {
-        log.info("Assigning partitions: $partitions")
+        log.info("Assigning partitions: $partitions. Current synced: $inSyncPartitions, current to be synced $partitionsToSync")
         // Split these partitions into those that need synchronizing (i.e. those with states on) and those that do not
         val statePartitions = partitions.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }
         updateStateConsumerAssignment(partitions, StatePartitionOperation.ADD)
@@ -77,6 +77,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         // Mark all those already in sync as such.
         inSyncPartitions.addAll(inSync)
         updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
+        stateAndEventListener?.let { listener ->
+            for (partition in partitions) {
+                listener.onPartitionSynced(getStatesForPartition(partition.partition))
+            }
+        }
     }
 
     private fun onPartitionsSynchronized(partitions: Set<CordaTopicPartition>) {
@@ -89,6 +94,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         partitionsToSync.removeAll(partitions)
         inSyncPartitions.addAll(partitions)
 
+        log.info("Listener is $stateAndEventListener. Sending partitions")
         stateAndEventListener?.let { listener ->
             for (partition in partitions) {
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
@@ -97,7 +103,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun onPartitionsRevoked(partitions: Set<CordaTopicPartition>) {
-        log.info("Removing partitons: $partitions")
+        log.info("Removing partitions: $partitions")
         // Remove any assignments and clear state from tracked partitions.
         updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
         partitionsToSync.removeAll(partitions)
@@ -149,9 +155,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {
             log.info("State consumer in group ${config.group} is syncing partitions: $partitionsToSync")
-            val synchedPartitions = removeAndReturnSyncedPartitions()
-            if (synchedPartitions.isNotEmpty()) {
-                onPartitionsSynchronized(synchedPartitions)
+            val syncedPartitions = removeAndReturnSyncedPartitions()
+            if (syncedPartitions.isNotEmpty()) {
+                onPartitionsSynchronized(syncedPartitions)
             }
         }
     }
@@ -174,13 +180,34 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun pollEvents(): List<CordaConsumerRecord<K, E>> {
-        return if (inSyncPartitions.isNotEmpty()) {
-            eventConsumer.poll(EVENT_POLL_TIMEOUT)
-        } else if (System.currentTimeMillis() > pollIntervalCutoff) {
-            pollIntervalCutoff = getNextPollIntervalCutoff()
-            eventConsumer.poll(EVENT_POLL_TIMEOUT)
-        } else {
-            listOf()
+        return when {
+            inSyncPartitions.isNotEmpty() -> {
+                eventConsumer.poll(EVENT_POLL_TIMEOUT)
+            }
+            partitionsToSync.isEmpty() -> {
+                // Call poll more frequently to trigger a rebalance of the event consumer.
+                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
+                    if (inSyncPartitions.isEmpty() && it.isNotEmpty()) {
+                        // This shouldn't happen - it implies events have been returned from partitions that haven't
+                        // been synced yet.
+                        log.warn("${it.size} events were returned from non-synced partitions.")
+                    }
+                }
+            }
+            System.currentTimeMillis() > pollIntervalCutoff -> {
+                // Poll here to keep us in the consumer group.
+                pollIntervalCutoff = getNextPollIntervalCutoff()
+                eventConsumer.poll(Duration.ZERO).also {
+                    if (inSyncPartitions.isEmpty() && it.isNotEmpty()) {
+                        // This shouldn't happen - it implies events have been returned from partitions that haven't
+                        // been synced yet.
+                        log.warn("${it.size} events were returned from non-synced partitions.")
+                    }
+                }
+            }
+            else -> {
+                listOf()
+            }
         }
     }
 
