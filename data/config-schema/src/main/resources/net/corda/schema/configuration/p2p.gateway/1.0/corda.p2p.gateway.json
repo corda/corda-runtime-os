@@ -106,14 +106,14 @@
         "responseTimeout": {
           "description": "The time, in milliseconds, after which the delivery of a message is considered failed.",
           "type": "integer",
-          "default": 1000,
+          "default": 3000,
           "minimum": 100,
           "maximum": 10000
         },
         "retryDelay": {
           "description": "The time, in milliseconds, after which a message that previously failed is retried.",
           "type": "integer",
-          "default": 1000,
+          "default": 2000,
           "minimum": 100,
           "maximum": 10000
         },
