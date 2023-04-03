@@ -14,6 +14,7 @@ import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -21,23 +22,29 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
+import java.lang.IllegalArgumentException
+import java.security.InvalidParameterException
 
 class TestInitialConfigPluginCrypto {
     @Test
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        val outText = SystemLambda.tapSystemErrNormalized {
+        var outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config")
         }
+        try {
+            app.run({})
+        } catch(e: InvalidParameterException) {
+            outText += e.message?:""
+        }
         println(outText)
-        assertThat(outText).contains("Missing required options:")
+        assertThat(outText).contains("'passphrase' must be set for CORDA type secrets.")
         assertThat(outText).contains("-l, --location=<location>")
         assertThat(outText).contains("location to write the sql output to.")
         assertThat(outText).contains("-p, --passphrase=<passphrase>")
-        assertThat(outText).contains("Passphrase for the encrypting secrets service.")
         assertThat(outText).contains("-s, --salt=<salt>")
         assertThat(outText).contains("Salt for the encrypting secrets service.")
         assertThat(outText).contains("-wp, --wrapping-passphrase=<softHsmRootPassphrase>")
