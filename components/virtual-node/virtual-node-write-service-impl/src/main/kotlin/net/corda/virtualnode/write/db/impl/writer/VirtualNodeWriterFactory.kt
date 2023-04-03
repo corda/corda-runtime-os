@@ -10,6 +10,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGeneratorImpl
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
@@ -59,10 +60,10 @@ internal class VirtualNodeWriterFactory(
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    fun create(messagingConfig: SmartConfig): VirtualNodeWriter {
+    fun create(messagingConfig: SmartConfig, externalMsgConfig: SmartConfig): VirtualNodeWriter {
         val publisher = createPublisher(messagingConfig)
         val rpcSubscription = createRPCSubscription(messagingConfig, publisher)
-        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, publisher)
+        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, externalMsgConfig, publisher)
         return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, publisher)
     }
 
@@ -71,6 +72,7 @@ internal class VirtualNodeWriterFactory(
      */
     private fun createAsyncOperationSubscription(
         messagingConfig: SmartConfig,
+        externalMsgConfig: SmartConfig,
         publisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
@@ -104,6 +106,7 @@ internal class VirtualNodeWriterFactory(
                 recordFactory,
                 groupPolicyParser,
                 publisher,
+                ExternalMessagingRouteConfigGeneratorImpl(externalMsgConfig),
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
             )
         )

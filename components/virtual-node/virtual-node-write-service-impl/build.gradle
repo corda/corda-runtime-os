@@ -7,6 +7,7 @@ description "Configuration Write Service Impl"
 
 dependencies {
     api project(':libs:virtual-node:virtual-node-info')
+    implementation project(path: ':libs:external-messaging')
 
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 

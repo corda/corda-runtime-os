@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 
 /**
@@ -15,5 +16,6 @@ internal data class CpiMetadataLite(
     val id: CpiIdentifier,
     val fileChecksum: SecureHash,
     val mgmGroupId: String,
-    val groupPolicy: String
+    val groupPolicy: String,
+    val cpks: Set<CpkMetadata> // Todo: Not sure what Lite means but by adding this new field this data class becomes anything but light
 )

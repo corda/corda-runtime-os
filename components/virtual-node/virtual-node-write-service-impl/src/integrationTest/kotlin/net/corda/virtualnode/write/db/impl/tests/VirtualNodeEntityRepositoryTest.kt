@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -18,8 +19,6 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.*
-import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VirtualNodeEntityRepositoryTest {
@@ -70,7 +69,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash))
         val expectedCpiMetadata =
-            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy")
+            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy", emptySet())
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -82,7 +81,7 @@ internal class VirtualNodeEntityRepositoryTest {
                 "Test Group Policy",
                 "Test Group ID",
                 "Request ID",
-                emptySet(),
+                emptySet() // Todo: This should actually not be empty. We should be testing that this field is being properly set when the CpiMetadataLite is creeated
             )
         }
 
@@ -129,7 +128,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiId = CpiIdentifier("Test CPI 2", "2.0", parseSecureHash(signerSummaryHash))
         val mgmGroupId = "Test Group ID 2"
         val groupPolicy = "Test Group Policy 2"
-        val expectedCpiMetadata = CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), mgmGroupId, groupPolicy)
+        val expectedCpiMetadata = CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), mgmGroupId, groupPolicy, emptySet())
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(

@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.EXTERNAL_MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -34,17 +36,17 @@ class VirtualNodeWriteConfigHandlerTests {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriter = mock<VirtualNodeWriter>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(config)).thenReturn(vnodeWriter)
+            whenever(create(eq(config), any())).thenReturn(vnodeWriter)
         }
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
         val event = ConfigChangedEvent(
             setOf(REST_CONFIG, MESSAGING_CONFIG),
-            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config, EXTERNAL_MESSAGING_CONFIG to config)
         )
         eventHandler.processEvent(event, coordinator)
 
-        verify(vnodeWriterFactory).create(config)
+        verify(vnodeWriterFactory).create(eq(config), any())
         verify(vnodeWriter).start()
         verify(coordinator).updateStatus(UP)
     }
@@ -53,7 +55,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets coordinator to down and throws if virtual node writer cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any())).thenAnswer { throw IllegalStateException() }
+            whenever(create(any(), any())).thenAnswer { throw IllegalStateException() }
         }
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
@@ -65,7 +67,12 @@ class VirtualNodeWriteConfigHandlerTests {
         val e = assertThrows<VirtualNodeWriteServiceException> {
             val event = ConfigChangedEvent(
                 setOf(REST_CONFIG, MESSAGING_CONFIG),
-                mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+                mapOf(
+                    REST_CONFIG to config,
+                    BOOT_CONFIG to config,
+                    MESSAGING_CONFIG to config,
+                    EXTERNAL_MESSAGING_CONFIG to config
+                )
             )
             eventHandler.processEvent(event, coordinator)
         }
@@ -81,7 +88,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets status to UP if VirtualNodeRPCOps is running`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any())).thenReturn(mock())
+            whenever(create(any(), any())).thenReturn(mock())
         }
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
 
@@ -92,7 +99,7 @@ class VirtualNodeWriteConfigHandlerTests {
 
         val event = ConfigChangedEvent(
             setOf(REST_CONFIG, MESSAGING_CONFIG),
-            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config, EXTERNAL_MESSAGING_CONFIG to config)
         )
 
         eventHandler.processEvent(event, coordinator)
