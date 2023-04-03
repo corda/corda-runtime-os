@@ -78,13 +78,14 @@ class InitiateFlowRequestService @Activate constructor(
 
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
 
+        val sessionContext = KeyValueStore().apply {
+            put(FLOW_PROTOCOL, protocolName)
+            put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString().lowercase())
+        }
+
         checkpoint.putSessionStates(
             sessionsNotInitiated.map {
-                val sessionContext = KeyValueStore().apply {
-                    put(FLOW_PROTOCOL, protocolName)
-                    put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString().lowercase())
-                    put(FLOW_PROTOCOL_INTEROP, it.isInteropSession.toString())
-                }
+                sessionContext.put(FLOW_PROTOCOL_INTEROP, it.isInteropSession.toString())
 
                 flowSessionManager.sendInitMessage(
                     checkpoint,
