@@ -26,6 +26,7 @@ import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.test.util.time.toSafeWindowsPrecision
 import net.corda.v5.base.types.LayeredPropertyMap
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -71,7 +72,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             masterKeyAlias = null,
             externalId = "e-$unique",
             encodingVersion = null,
-            timestamp = Instant.now(),
+            timestamp = Instant.now().toSafeWindowsPrecision(),
             hsmId = "hi-$unique".take(36),
             status = SigningKeyStatus.NORMAL
         )
