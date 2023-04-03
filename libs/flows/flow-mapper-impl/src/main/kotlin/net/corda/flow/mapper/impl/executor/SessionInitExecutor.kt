@@ -35,16 +35,13 @@ class SessionInitExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val isInteropEvent = run {
-        val sessionProperties = sessionInit.contextSessionProperties.items.associate { it.key to it.value }
-        when (sessionProperties[Constants.FLOW_PROTOCOL_INTEROP]) {
-            "true" -> true
-            else -> false
-        }
-    }
+    private val isInteropSessionInit = sessionInit.contextSessionProperties?.let { properties ->
+        val map = properties.items.associate { it.key to it.value }
+        map[Constants.FLOW_PROTOCOL_INTEROP]?.equals("true") ?: false
+    } ?: false
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, isInteropEvent)
+    private val outputTopic = getSessionEventOutputTopic(messageDirection, isInteropSessionInit)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
