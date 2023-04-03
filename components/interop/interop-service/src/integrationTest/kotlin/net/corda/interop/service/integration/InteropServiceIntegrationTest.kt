@@ -1,5 +1,6 @@
 package net.corda.interop.service.integration
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
@@ -8,13 +9,14 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropService
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -27,6 +29,8 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
@@ -64,13 +68,16 @@ class InteropServiceIntegrationTest {
     lateinit var publisherFactory: PublisherFactory
 
     @InjectService(timeout = 4000)
+    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+    // no secrets needed -> empty config
+    private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
+
+    @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
     @InjectService(timeout = 4000)
     lateinit var configService: ConfigurationReadService
-
-    @InjectService(timeout = 4000)
-    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
     @InjectService(timeout = 4000)
     lateinit var membershipGroupReaderProvider: TestGroupReaderProvider
@@ -78,9 +85,10 @@ class InteropServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var interopService: InteropService
 
-    private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-        .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+    private val messagingConfig = SmartConfigImpl.empty()
+        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+        .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
@@ -89,7 +97,7 @@ class InteropServiceIntegrationTest {
     fun setup() {
         if (!setup) {
             setup = true
-            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), bootConfig)
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
         }
     }
@@ -191,15 +199,24 @@ class InteropServiceIntegrationTest {
 
 
     private fun setupConfig(publisher: Publisher) {
+        val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
         publishConfig(publisher)
         configService.start()
         configService.bootstrapConfig(bootConfig)
         membershipGroupReaderProvider.start()
     }
 
+    private val bootConf = """
+        $INSTANCE_ID=1
+        $BUS_TYPE = INMEMORY
+        ${BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE} = 1000000
+
+    """
+
     private fun publishConfig(publisher: Publisher) {
         val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -243,6 +260,31 @@ class InteropServiceIntegrationTest {
     }
 }
 
+@Suppress("LongParameterList")
+fun buildSessionEvent(
+    messageDirection: MessageDirection,
+    initiatingIdentity: HoldingIdentity,
+    initiatedIdentity: HoldingIdentity,
+    sessionId: String,
+    sequenceNum: Int?,
+    payload: Any? = null,
+    receivedSequenceNum: Int = 0,
+    outOfOrderSeqNums: List<Int> = listOf(0),
+    timestamp: Instant = Instant.now()
+): SessionEvent {
+    return SessionEvent.newBuilder()
+        .setSessionId(sessionId)
+        .setMessageDirection(messageDirection)
+        .setSequenceNum(sequenceNum)
+        .setInitiatingIdentity(initiatingIdentity)
+        .setInitiatedIdentity(initiatedIdentity)
+        .setPayload(payload)
+        .setTimestamp(timestamp)
+        .setReceivedSequenceNum(receivedSequenceNum)
+        .setOutOfOrderSequenceNums(outOfOrderSeqNums)
+        .build()
+}
+
 class FlowMapperEventCounter(
     private val key: String,
     private val latch: CountDownLatch,
@@ -274,7 +316,27 @@ class P2POutMessageCounter(
     var recordCount = 0
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
         for (event in events) {
-            println("Event : $event")
+            recordCount++
+            if (recordCount > expectedRecordCount) {
+                fail("Expected record count exceeded in events processed for this key")
+            }
+            latch.countDown()
+
+        }
+        return emptyList()
+    }
+}
+
+class EventMapperCounter(
+    private val key: String,
+    private val latch: CountDownLatch,
+    private val expectedRecordCount: Int
+) : DurableProcessor<String, FlowMapperEvent> {
+    override val keyClass = String::class.java
+    override val valueClass = FlowMapperEvent::class.java
+    var recordCount = 0
+    override fun onNext(events: List<Record<String, FlowMapperEvent>>): List<Record<*, *>> {
+        for (event in events) {
             recordCount++
             if (recordCount > expectedRecordCount) {
                 fail("Expected record count exceeded in events processed for this key")
