@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
+import javax.persistence.EntityManagerFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -27,7 +28,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import javax.persistence.EntityManagerFactory
 
 /** Tests of [VirtualNodeWriterFactory]. */
 class VirtualNodeWriterFactoryTests {
@@ -54,11 +54,12 @@ class VirtualNodeWriterFactoryTests {
     fun `factory creates a publisher with the correct configuration`() {
         val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB)
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
+        val externalMsgConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
             getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock())
-        virtualNodeWriterFactory.create(expectedConfig)
+        virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
     }
@@ -76,6 +77,7 @@ class VirtualNodeWriterFactoryTests {
             "virtual.node.async.operation.group", Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
         )
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
+        val externalMsgConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
@@ -83,7 +85,7 @@ class VirtualNodeWriterFactoryTests {
         )
 
         val processor = argumentCaptor<VirtualNodeAsyncOperationProcessor>()
-        virtualNodeWriterFactory.create(expectedConfig)
+        virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
         verify(subscriptionFactory).createDurableSubscription(eq(subscriptionConfig), processor.capture(), eq(expectedConfig), eq(null))

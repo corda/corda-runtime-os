@@ -42,13 +42,16 @@ internal class VirtualNodeWriteEventHandler(
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
+        // This methods must be updated to process events relate to the EXTERNAL_MESSAGING_CONFIG
         val msgConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        val externalMsgConfig = event.config.getConfig(ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
 
         try {
             virtualNodeWriter?.close()
             virtualNodeWriter = virtualNodeWriterFactory
-                .create(msgConfig)
+                .create(msgConfig, externalMsgConfig)
                 .apply { start() }
+
             coordinator.updateStatus(UP)
         } catch (e: Exception) {
             coordinator.updateStatus(ERROR)
@@ -79,7 +82,10 @@ internal class VirtualNodeWriteEventHandler(
                 UP -> {
                     configUpdateHandle?.close()
                     configUpdateHandle =
-                        configReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
+                        configReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
+                        )
                 }
                 ERROR -> coordinator.postEvent(StopEvent(errored = true))
                 else -> Unit
