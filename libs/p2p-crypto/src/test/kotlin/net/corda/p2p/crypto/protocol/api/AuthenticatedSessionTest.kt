@@ -1,11 +1,11 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -19,7 +19,7 @@ class AuthenticatedSessionTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+    private val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -73,7 +73,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            listOf(partyASessionKey.public to SignatureSpec.ECDSA_SHA256)
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -91,7 +91,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpec.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
         )
 
         // Both sides generate session secrets
@@ -153,7 +153,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            listOf(partyASessionKey.public to SignatureSpec.ECDSA_SHA256),
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -171,7 +171,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpec.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
         )
 
         // Both sides generate session secrets
@@ -224,7 +224,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            listOf(partyASessionKey.public to SignatureSpec.ECDSA_SHA256),
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -242,7 +242,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpec.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
         )
 
         // Both sides generate session secrets

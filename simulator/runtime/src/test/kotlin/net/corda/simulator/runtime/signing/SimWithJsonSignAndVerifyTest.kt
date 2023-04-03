@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.signing
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.simulator.crypto.HsmCategory
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -15,14 +15,14 @@ class SimWithJsonSignAndVerifyTest {
     @Test
     fun `should be able to sign and verify some bytes`() {
         val signed = SimWithJsonSigningService(keyStore)
-            .sign("Hello!".toByteArray(), key, SignatureSpec.ECDSA_SHA256)
+            .sign("Hello!".toByteArray(), key, SignatureSpecs.ECDSA_SHA256)
 
         assertDoesNotThrow {
             SimWithJsonSignatureVerificationService().verify(
                 "Hello!".toByteArray(),
                 signed.bytes,
                 key,
-                SignatureSpec.ECDSA_SHA256
+                SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -31,14 +31,14 @@ class SimWithJsonSignAndVerifyTest {
     fun `should fail to verify if the key is not the same key`() {
         val newKey = keyStore.generateKey("another-alias", HsmCategory.LEDGER, "any scheme will do")
         val signed = SimWithJsonSigningService(keyStore)
-            .sign("Hello!".toByteArray(), key, SignatureSpec.ECDSA_SHA256)
+            .sign("Hello!".toByteArray(), key, SignatureSpecs.ECDSA_SHA256)
 
         assertThrows<CryptoSignatureException> {
             SimWithJsonSignatureVerificationService().verify(
                 "Hello!".toByteArray(),
                 signed.bytes,
                 newKey,
-                SignatureSpec.ECDSA_SHA256
+                SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -46,14 +46,14 @@ class SimWithJsonSignAndVerifyTest {
     @Test
     fun `should fail to verify if the signature spec does not match`() {
         val signed = SimWithJsonSigningService(keyStore)
-            .sign("Hello!".toByteArray(), key, SignatureSpec.ECDSA_SHA256)
+            .sign("Hello!".toByteArray(), key, SignatureSpecs.ECDSA_SHA256)
 
         assertThrows<CryptoSignatureException> {
             SimWithJsonSignatureVerificationService().verify(
                 "Hello!".toByteArray(),
                 signed.bytes,
                 key,
-                SignatureSpec.ECDSA_SHA384
+                SignatureSpecs.ECDSA_SHA384
             )
         }
     }
@@ -61,14 +61,14 @@ class SimWithJsonSignAndVerifyTest {
     @Test
     fun `should fail to verify if original data does not match`() {
         val signed = SimWithJsonSigningService(keyStore)
-            .sign("Hello!".toByteArray(), key, SignatureSpec.ECDSA_SHA256)
+            .sign("Hello!".toByteArray(), key, SignatureSpecs.ECDSA_SHA256)
 
         assertThrows<CryptoSignatureException> {
             SimWithJsonSignatureVerificationService().verify(
                 "Goodbye!".toByteArray(),
                 signed.bytes,
                 key,
-                SignatureSpec.ECDSA_SHA256
+                SignatureSpecs.ECDSA_SHA256
             )
         }
     }

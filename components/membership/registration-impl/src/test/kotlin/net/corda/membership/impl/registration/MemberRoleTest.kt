@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.membership.impl.registration.MemberRole.Companion.extractRolesFromContext
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
@@ -11,7 +12,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PRO
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -155,13 +155,13 @@ class MemberRoleTest {
         val key1 = mock<KeyDetails> {
             on { pem } doReturn "pem1"
             on { hash } doReturn key1Hash
-            on { spec } doReturn SignatureSpec.RSA_SHA256
+            on { spec } doReturn SignatureSpecs.RSA_SHA256
         }
         val key2Hash = PublicKeyHash.calculate("test2".toByteArray())
         val key2 = mock<KeyDetails> {
             on { pem } doReturn "pem2"
             on { hash } doReturn key2Hash
-            on { spec } doReturn SignatureSpec.ECDSA_SHA512
+            on { spec } doReturn SignatureSpecs.ECDSA_SHA512
         }
         val roles = extractRolesFromContext(
             mapOf(

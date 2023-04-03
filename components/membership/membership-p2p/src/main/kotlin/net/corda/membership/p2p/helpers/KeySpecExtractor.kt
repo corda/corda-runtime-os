@@ -1,5 +1,6 @@
 package net.corda.membership.p2p.helpers
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.ShortHash
@@ -24,33 +25,33 @@ class KeySpecExtractor(
             get() = defaultCodeNameToSpec[schemeCodeName]
 
         private val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            EDDSA_ED25519_CODE_NAME to SignatureSpec.EDDSA_ED25519,
-            GOST3410_GOST3411_CODE_NAME to SignatureSpec.GOST3410_GOST3411,
-            RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
-            SM2_CODE_NAME to SignatureSpec.SM2_SM3,
-            SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpecs.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpecs.ECDSA_SHA256,
+            EDDSA_ED25519_CODE_NAME to SignatureSpecs.EDDSA_ED25519,
+            GOST3410_GOST3411_CODE_NAME to SignatureSpecs.GOST3410_GOST3411,
+            RSA_CODE_NAME to SignatureSpecs.RSA_SHA512,
+            SM2_CODE_NAME to SignatureSpecs.SM2_SM3,
+            SPHINCS256_CODE_NAME to SignatureSpecs.SPHINCS256_SHA512,
         )
         private val validSpecsNames = mapOf(
             ECDSA_SECP256K1_CODE_NAME to listOf(
-                SignatureSpec.ECDSA_SHA256,
-                SignatureSpec.ECDSA_SHA384,
-                SignatureSpec.ECDSA_SHA512,
+                SignatureSpecs.ECDSA_SHA256,
+                SignatureSpecs.ECDSA_SHA384,
+                SignatureSpecs.ECDSA_SHA512,
             )
                 .map { it.signatureName },
             ECDSA_SECP256R1_CODE_NAME to listOf(
-                SignatureSpec.ECDSA_SHA256,
-                SignatureSpec.ECDSA_SHA384,
-                SignatureSpec.ECDSA_SHA512,
+                SignatureSpecs.ECDSA_SHA256,
+                SignatureSpecs.ECDSA_SHA384,
+                SignatureSpecs.ECDSA_SHA512,
             )
                 .map { it.signatureName },
-            EDDSA_ED25519_CODE_NAME to listOf(SignatureSpec.EDDSA_ED25519.signatureName),
-            GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpec.GOST3410_GOST3411.signatureName),
-            RSA_CODE_NAME to listOf(SignatureSpec.RSA_SHA256, SignatureSpec.RSA_SHA384, SignatureSpec.RSA_SHA512)
+            EDDSA_ED25519_CODE_NAME to listOf(SignatureSpecs.EDDSA_ED25519.signatureName),
+            GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpecs.GOST3410_GOST3411.signatureName),
+            RSA_CODE_NAME to listOf(SignatureSpecs.RSA_SHA256, SignatureSpecs.RSA_SHA384, SignatureSpecs.RSA_SHA512)
                 .map { it.signatureName },
-            SM2_CODE_NAME to listOf(SignatureSpec.SM2_SM3.signatureName),
-            SPHINCS256_CODE_NAME to listOf(SignatureSpec.SPHINCS256_SHA512.signatureName),
+            SM2_CODE_NAME to listOf(SignatureSpecs.SM2_SM3.signatureName),
+            SPHINCS256_CODE_NAME to listOf(SignatureSpecs.SPHINCS256_SHA512.signatureName),
         )
 
         fun CryptoSigningKey.validateSpecName(specName: String) {

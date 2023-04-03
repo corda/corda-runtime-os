@@ -218,9 +218,8 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         referenceStateRefs: List<String>,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
-        // CORE-11837: Use notary key instead
-        val myKey = memberLookup.myInfo().sessionInitiationKeys.first()
-        return utxoLedgerService.getTransactionBuilder()
+        val myKey = memberLookup.myInfo().ledgerKeys.first()
+        return utxoLedgerService.createTransactionBuilder()
                 .setNotary(notaryServerName)
                 .addCommand(TestCommand())
                 .run {

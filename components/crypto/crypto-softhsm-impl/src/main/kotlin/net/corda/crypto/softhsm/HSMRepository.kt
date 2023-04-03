@@ -7,7 +7,7 @@ import java.io.Closeable
 
 interface HSMRepository : Closeable {
     /**
-     * Finds a tenant association with an HSM wfor the given category.
+     * Finds a tenant association with an HSM for the given category.
      */
     fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo?
 
