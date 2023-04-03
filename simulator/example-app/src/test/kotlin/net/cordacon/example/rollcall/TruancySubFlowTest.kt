@@ -27,6 +27,7 @@ class TruancySubFlowTest {
         val simulator = Simulator()
         val truancyRecord = TruancyRecord(
             listOf(bob),
+            mock(),
             mock()
         )
 

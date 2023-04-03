@@ -46,6 +46,13 @@ class ConfigSecretHelper {
                 }
             }
         }
+        if (node.isArray) {
+            var i = 0
+            for (fieldNode in node.toList()) {
+                hideSecretsRecursive(node, fieldNode, secrets, newPath, i.toString())
+                i++
+            }
+        }
 
         return secrets
     }

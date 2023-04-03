@@ -5,6 +5,7 @@ import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
@@ -18,6 +19,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
@@ -79,8 +81,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val memberCharlieMemberInfo = mock<MemberInfo> {
             on { name } doReturn memberCharlieName
-            // CORE-11837: Use ledger key
-            on { sessionInitiationKeys } doReturn listOf(memberCharlieKey)
+            on { ledgerKeys } doReturn listOf(memberCharlieKey)
         }
 
         // Default signature verifier, no verification
@@ -90,6 +91,8 @@ class NonValidatingNotaryServerFlowImplTest {
         }
 
         val mockTransactionSignatureService = mock<TransactionSignatureService>()
+
+        val mockSignatureSpecService = mock<SignatureSpecService>()
     }
 
     @BeforeEach
@@ -419,6 +422,7 @@ class NonValidatingNotaryServerFlowImplTest {
                         charlieKeyId,
                         "ABC".toByteArray()
                     ),
+                    SignatureSpecs.RSA_SHA256,
                     DUMMY_PLATFORM_VERSION
                 ),
                 notaryServiceKey
@@ -460,7 +464,8 @@ class NonValidatingNotaryServerFlowImplTest {
             sigVerifier,
             mockMemberLookup,
             mockTransactionSignatureService,
-            mockDigestService
+            mockDigestService,
+            mockSignatureSpecService
         )
 
         server.call(paramOrDefaultSession)

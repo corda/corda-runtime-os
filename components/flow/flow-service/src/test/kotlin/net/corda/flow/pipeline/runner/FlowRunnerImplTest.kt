@@ -16,12 +16,13 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.SESSION_ID_1
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
@@ -45,9 +46,11 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -64,8 +67,8 @@ class FlowRunnerImplTest {
     private val cpiInfoReadService = mock<CpiInfoReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
-    private val platformInfoProvider = mock<PlatformInfoProvider>()
     private val fiberFuture = mock<FiberFuture>()
+    private val platformInfoProvider = mock<PlatformInfoProvider> { on { localWorkerPlatformVersion} doReturn 50000 }
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessions = mutableListOf() }
     private var clientFlow = mock<ClientStartableFlow>()
@@ -101,8 +104,8 @@ class FlowRunnerImplTest {
         )
         whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
-        whenever(platformInfoProvider.localWorkerPlatformVersion).thenReturn(1)
-        whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("1")
+        whenever(flowCheckpoint.initialPlatformVersion).thenReturn(50000)
+        whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("50000")
     }
 
     @BeforeEach
@@ -225,6 +228,18 @@ class FlowRunnerImplTest {
         assertThat(result).isSameAs(fiberFuture)
     }
 
+    @Test
+    fun `resuming a flow fails when the platform version is different`() {
+        val flowContinuation = FlowContinuation.Run()
+        val context = buildFlowEventContext<Any>(flowCheckpoint, Wakeup())
+
+        whenever(flowCheckpoint.initialPlatformVersion).thenReturn(500100)
+
+        assertThatExceptionOfType(FlowFatalException::class.java).isThrownBy {
+            flowRunner.runFlow(context, flowContinuation)
+        }
+    }
+
     private fun getMockVNodeInfo(): VirtualNodeInfo {
         return VirtualNodeInfo(
             BOB_X500_HOLDING_IDENTITY.toCorda(),
@@ -240,6 +255,7 @@ class FlowRunnerImplTest {
             OperationalStatus.ACTIVE,
             OperationalStatus.ACTIVE,
             OperationalStatus.ACTIVE,
+            null,
             null,
             1,
             Instant.now()

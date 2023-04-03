@@ -72,7 +72,7 @@ class IssueLandTitleFlow: ClientStartableFlow {
 
         // Setting time-window is mandatory
         val transaction = utxoLedgerService
-            .transactionBuilder
+            .createTransactionBuilder()
             .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
             .setNotary(notary.name)
             .addOutputState(landTitleState)

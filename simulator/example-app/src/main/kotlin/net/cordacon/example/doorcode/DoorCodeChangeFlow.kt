@@ -57,7 +57,7 @@ class DoorCodeChangeFlow : ClientStartableFlow {
 
         val doorCodeState = DoorCodeConsensualState(newDoorCode, participants.map { getPublicKey(it) })
 
-        val txBuilder = consensualLedgerService.getTransactionBuilder()
+        val txBuilder = consensualLedgerService.createTransactionBuilder()
         val signedTransaction = txBuilder
             .withStates(doorCodeState)
             .toSignedTransaction()

@@ -163,6 +163,7 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
             membershipSchemaValidatorFactory,
             configurationGetService = configurationGetService,
+            clock = UTCClock()
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,

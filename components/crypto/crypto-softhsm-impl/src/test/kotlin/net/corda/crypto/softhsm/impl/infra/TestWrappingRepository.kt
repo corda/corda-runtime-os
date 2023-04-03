@@ -9,8 +9,9 @@ class TestWrappingRepository(
 ) : WrappingRepository {
     val findCounter = mutableMapOf<String, Int>()
 
-    override fun saveKey(alias: String, key: WrappingKeyInfo) {
+    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo {
         keys[alias] = key
+        return key
     }
 
     override fun findKey(alias: String): WrappingKeyInfo? {

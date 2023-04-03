@@ -4,6 +4,8 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -11,7 +13,6 @@ import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.spec.AlgorithmParameterSpec
@@ -75,7 +76,7 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
             CustomSignatureSpec(signatureName, DigestAlgorithmName(customDigestName), algorithmParams)
         }
         algorithmParams != null -> ParameterizedSignatureSpec(signatureName, algorithmParams)
-        else -> SignatureSpec(signatureName)
+        else -> SignatureSpecImpl(signatureName)
     }
 }
 

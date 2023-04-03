@@ -715,6 +715,14 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for REST worker service
       annotations: {}
+    # REST worker ingress configuration
+    ingress:
+      # -- the annotations for the REST worker ingress
+      annotations: {}
+      # -- the className for the REST worker ingress
+      className: ""
+      # -- the hosts for the REST worker ingress
+      hosts: []
     # REST worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the REST worker
@@ -743,6 +751,26 @@ workers:
               name: ""
               # -- the REST worker SASL password secret key for client connection to Kafka
               key: ""
+    # REST Worker TLS configuration
+    tls:
+      # -- the name of the Kubernetes secret containing the certificate, private key and CA certificate; if not specified, a new secret will be created and certificates/keys generated
+      secretName: ""
+      # Optional parameters to be used during TLS certificate generation.
+      generation:
+        # -- Alternative names to be included in a certificate when generated.
+        altNames: []
+      # TLS Certificate configuration
+      crt:
+        # -- the TLS Certificate secret key
+        secretKey: "tls.crt"
+      # TLS Certificate private key configuration
+      key:
+        # -- the TLS Certificate private key secret key
+        secretKey: "tls.key"
+      # Certification Authority(CA) certificates chain configuration
+      ca:
+        # -- the CA certificates chain secret key
+        secretKey: "ca.crt"
 
   # P2P link manager worker configuration
   p2pLinkManager:

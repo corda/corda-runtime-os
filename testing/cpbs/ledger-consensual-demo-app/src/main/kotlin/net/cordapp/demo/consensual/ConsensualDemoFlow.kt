@@ -59,7 +59,7 @@ class ConsensualDemoFlow : ClientStartableFlow {
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
-            val txBuilder = consensualLedgerService.getTransactionBuilder()
+            val txBuilder = consensualLedgerService.createTransactionBuilder()
 
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)

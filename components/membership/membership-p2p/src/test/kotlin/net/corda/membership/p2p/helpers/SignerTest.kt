@@ -1,5 +1,6 @@
 package net.corda.membership.p2p.helpers
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -7,7 +8,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -38,7 +38,7 @@ class SignerTest {
                 tenantId = tenantId,
                 publicKey = publicKey,
                 data = data,
-                signatureSpec = SignatureSpec.RSA_SHA512
+                signatureSpec = SignatureSpecs.RSA_SHA512
             )
         ).doReturn(signature)
 

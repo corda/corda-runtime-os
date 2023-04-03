@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -19,7 +20,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -66,7 +66,7 @@ class PersistGroupParametersHandlerTest {
         ByteBuffer.wrap(sigContent)
     )
     private val signatureSpec = CryptoSignatureSpec(
-        SignatureSpec.ECDSA_SHA256.signatureName, null, null
+        SignatureSpecs.ECDSA_SHA256.signatureName, null, null
     )
 
     private val newSignedParams = SignedGroupParameters(

@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.bytes
@@ -94,7 +95,6 @@ import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -324,7 +324,7 @@ class SynchronisationIntegrationTest {
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
-            eventually(10.seconds) {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -492,7 +492,7 @@ class SynchronisationIntegrationTest {
         val members: List<MemberInfo> = mutableListOf(participantInfo)
         val signedMembers = members.map {
             val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
-            val memberSignatureSpec = SignatureSpec.ECDSA_SHA256
+            val memberSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
@@ -504,7 +504,7 @@ class SynchronisationIntegrationTest {
                     ByteBuffer.wrap(withKey.bytes)
                 )
             }
-            val mgmSignatureSpec = SignatureSpec.ECDSA_SHA256
+            val mgmSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
@@ -545,7 +545,7 @@ class SynchronisationIntegrationTest {
         val mgmSignatureGroupParameters = cryptoOpsClient.sign(
             mgm.toCorda().shortHash.value,
             mgmSessionKey,
-            SignatureSpec.ECDSA_SHA256,
+            SignatureSpecs.ECDSA_SHA256,
             serializedGroupParameters
         ).let { withKey ->
             CryptoSignatureWithKey(
@@ -556,7 +556,7 @@ class SynchronisationIntegrationTest {
         val signedGroupParameters = SignedGroupParameters(
             ByteBuffer.wrap(serializedGroupParameters),
             mgmSignatureGroupParameters,
-            CryptoSignatureSpec(SignatureSpec.ECDSA_SHA256.signatureName, null, null)
+            CryptoSignatureSpec(SignatureSpecs.ECDSA_SHA256.signatureName, null, null)
         )
 
         val membershipPackage = MembershipPackage.newBuilder()

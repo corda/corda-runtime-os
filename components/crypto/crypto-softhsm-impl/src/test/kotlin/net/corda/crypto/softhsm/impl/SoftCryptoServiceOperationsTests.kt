@@ -1,5 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -18,7 +19,6 @@ import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
-import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -60,7 +60,9 @@ class SoftCryptoServiceOperationsTests {
                     knownWrappingKeyAlias to WrappingKeyInfo(
                         WRAPPING_KEY_ENCODING_VERSION,
                         knownWrappingKey.algorithm,
-                        knownWrappingKeyMaterial
+                        knownWrappingKeyMaterial,
+                        1,
+                        "root",
                     )
                 ).toMap()
             )
@@ -364,12 +366,17 @@ class SoftCryptoServiceOperationsTests {
         val info1 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected1.algorithm,
-            rootWrappingKey.wrap(expected1)
+            rootWrappingKey.wrap(expected1),
+            1,
+            "root"
+
         )
         val info2 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected2.algorithm,
-            rootWrappingKey.wrap(expected2)
+            rootWrappingKey.wrap(expected2),
+            1,
+            "root"
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
@@ -409,7 +416,8 @@ class SoftCryptoServiceOperationsTests {
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
-                rootWrappingKey.wrap(knownWrappingKey)
+                rootWrappingKey.wrap(knownWrappingKey),
+                1, "enoch"
             )
         )
         assertThrows<IllegalArgumentException> {
@@ -425,10 +433,12 @@ class SoftCryptoServiceOperationsTests {
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
-                rootWrappingKey.wrap(knownWrappingKey)
+                rootWrappingKey.wrap(knownWrappingKey),
+                1,
+                "Enoch"
             )
         )
-        assertThrows<IllegalArgumentException> {
+        assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
     }
@@ -448,7 +458,7 @@ class SoftCryptoServiceOperationsTests {
         val unknownAlias = UUID.randomUUID().toString()
         assertNull(wrappingRepository.findKey(storeAlias))
         assertNull(wrappingRepository.findKey(unknownAlias))
-        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf()))
+        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
         assertNotNull(wrappingRepository.findKey(storeAlias))
         assertNull(wrappingRepository.findKey(unknownAlias))
     }

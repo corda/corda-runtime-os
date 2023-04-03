@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -34,7 +35,6 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -112,7 +112,7 @@ class AddNotaryToGroupParametersHandlerTest {
             parameters = previousGroupParameters,
             signaturePublicKey = byteArrayOf(0),
             signatureContent = byteArrayOf(1),
-            signatureSpec = SignatureSpec.ECDSA_SHA256.signatureName
+            signatureSpec = SignatureSpecs.ECDSA_SHA256.signatureName
         )
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
