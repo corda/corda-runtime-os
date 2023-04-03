@@ -9,10 +9,14 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
+    implementation "net.corda:corda-config-schema"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:packaging:packaging-core')
+    implementation project(path: ':libs:virtual-node:virtual-node-info')
+    implementation project(path: ':libs:configuration:configuration-core')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
