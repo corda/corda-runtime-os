@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.db.connection.manager.DbConnectionManager
@@ -18,7 +19,6 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -60,7 +60,7 @@ class GroupParametersReconcilerTest {
 
     private val signatureKey = byteArrayOf(1, 2, 3)
     private val signatureContent = byteArrayOf(4, 5, 6)
-    private val signatureSpec = SignatureSpec.ECDSA_SHA256.signatureName
+    private val signatureSpec = SignatureSpecs.ECDSA_SHA256.signatureName
 
     private val signedGroupParametersEntity = GroupParametersEntity(
         epoch = 9,

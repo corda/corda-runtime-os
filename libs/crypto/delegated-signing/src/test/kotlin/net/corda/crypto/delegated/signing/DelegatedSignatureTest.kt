@@ -1,6 +1,6 @@
 package net.corda.crypto.delegated.signing
 
-import net.corda.v5.crypto.ParameterizedSignatureSpec
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -20,7 +20,6 @@ import java.security.PublicKey
 import java.security.Security
 import java.security.Signature
 import java.security.spec.AlgorithmParameterSpec
-import kotlin.math.sign
 
 class DelegatedSignatureTest {
     companion object {

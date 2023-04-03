@@ -21,6 +21,7 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-common'
 
+    api project(':libs:base-internal')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:json-validator')

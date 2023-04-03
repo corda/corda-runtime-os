@@ -39,14 +39,14 @@ import kotlin.test.assertIs
 class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
-    fun `getTransactionBuilder should return a Transaction Builder`() {
-        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
+    fun `createTransactionBuilder should return a Transaction Builder`() {
+        val transactionBuilder = utxoLedgerService.createTransactionBuilder()
         assertIs<UtxoTransactionBuilder>(transactionBuilder)
     }
 
     @Test
-    fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
+    fun `UtxoLedgerServiceImpl createTransactionBuilder() can build a SignedTransaction`() {
+        val transactionBuilder = utxoLedgerService.createTransactionBuilder()
 
         val inputStateAndRef = getExampleStateAndRefImpl(1)
         val inputStateRef = inputStateAndRef.ref

@@ -1,11 +1,11 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
 class Verifier(
@@ -51,7 +51,7 @@ class Verifier(
         data: ByteArray,
     ) {
         val signatureSpec = signatureSpecAvro.signatureName?.let {
-            SignatureSpec(it)
+            SignatureSpecImpl(it)
         } ?: throw CordaRuntimeException("Can not find signature spec")
         signatureVerificationService.verify(
             data,

@@ -2,10 +2,10 @@ package net.corda.membership.lib.impl.converter
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -41,10 +41,10 @@ class MemberNotaryDetailsConverterTest {
         on { value("$PROTOCOL_VERSIONS_PREFIX.1") } doReturn "2"
         on { value("keys.0.hash") } doReturn hashOne
         on { value("keys.0.pem") } doReturn "PEM1"
-        on { value("keys.0.signature.spec") } doReturn SignatureSpec.ECDSA_SHA512.signatureName
+        on { value("keys.0.signature.spec") } doReturn SignatureSpecs.ECDSA_SHA512.signatureName
         on { value("keys.1.hash") } doReturn hashTwo
         on { value("keys.1.pem") } doReturn "PEM2"
-        on { value("keys.1.signature.spec") } doReturn SignatureSpec.RSA_SHA512.signatureName
+        on { value("keys.1.signature.spec") } doReturn SignatureSpecs.RSA_SHA512.signatureName
     }
 
     private val converter = MemberNotaryDetailsConverter(keyEncodingService)
@@ -72,10 +72,10 @@ class MemberNotaryDetailsConverterTest {
                     assertThat(it.publicKeyHash.value).isEqualTo(hashTwo)
                 }
                 .anySatisfy {
-                    assertThat(it.spec.signatureName).isEqualTo(SignatureSpec.ECDSA_SHA512.signatureName)
+                    assertThat(it.spec.signatureName).isEqualTo(SignatureSpecs.ECDSA_SHA512.signatureName)
                 }
                 .anySatisfy {
-                    assertThat(it.spec.signatureName).isEqualTo(SignatureSpec.RSA_SHA512.signatureName)
+                    assertThat(it.spec.signatureName).isEqualTo(SignatureSpecs.RSA_SHA512.signatureName)
                 }
         }
     }

@@ -50,7 +50,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     @BeforeEach
     fun beforeEach() {
         whenever(mockFlowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
-        originalTransactionalBuilder = utxoLedgerService.transactionBuilder
+        originalTransactionalBuilder = utxoLedgerService.createTransactionBuilder()
     }
 
     @Test
@@ -60,7 +60,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
         )
         val returnedTransactionBuilder = callSendFlow()
 
-        assertEquals(utxoLedgerService.transactionBuilder, returnedTransactionBuilder)
+        assertEquals(utxoLedgerService.createTransactionBuilder(), returnedTransactionBuilder)
         verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 

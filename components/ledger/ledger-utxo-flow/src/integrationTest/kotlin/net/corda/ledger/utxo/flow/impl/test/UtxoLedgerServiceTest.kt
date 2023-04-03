@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 class UtxoLedgerServiceTest: UtxoLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
-    fun `getTransactionBuilder should return a Transaction Builder`() {
-        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
+    fun `createTransactionBuilder should return a Transaction Builder`() {
+        val transactionBuilder = utxoLedgerService.createTransactionBuilder()
         assertThat(transactionBuilder).isInstanceOf(UtxoTransactionBuilder::class.java)
     }
 }

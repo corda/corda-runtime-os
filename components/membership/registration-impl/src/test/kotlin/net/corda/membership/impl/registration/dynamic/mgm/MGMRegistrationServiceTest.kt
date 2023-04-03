@@ -85,6 +85,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -93,10 +94,12 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -114,6 +117,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.Calendar
+import java.util.GregorianCalendar
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -124,6 +129,8 @@ class MGMRegistrationServiceTest {
         const val ECDH_KEY_STRING = "5678"
         const val ECDH_KEY_ID = "BBC123456789"
         const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
+
+        private val trustrootCert = this::class.java.getResource("/r3Com.pem")!!.readText()
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -283,11 +290,14 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.trustroot.session.0"
-                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.trustroot.tls.0"
-                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.trustroot.session.0" to trustrootCert,
+        "corda.group.trustroot.tls.0" to trustrootCert,
     )
+
+    private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
+    val mockClock = Mockito.mockConstruction(UTCClock::class.java) {
+        mock, _ -> whenever(mock.instant()).thenReturn(validCertificateDate.toInstant())
+    }
 
     private fun postStartEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -321,6 +331,11 @@ class MGMRegistrationServiceTest {
             ),
             coordinator
         )
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        mockClock.close()
     }
 
     @Nested
@@ -435,10 +450,8 @@ class MGMRegistrationServiceTest {
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
-                        "trustroot.session.0"
-                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                        "trustroot.tls.0"
-                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                        "trustroot.session.0" to trustrootCert,
+                        "trustroot.tls.0" to trustrootCert,
                     ).entries
                 )
             registrationService.stop()
@@ -556,8 +569,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties =
                 properties + mapOf(
-                    "corda.group.trustroot.tls.100" to
-                            "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                    "corda.group.trustroot.tls.100" to trustrootCert
                 )
             registrationService.start()
 

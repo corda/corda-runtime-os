@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.common
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.utilities.crypto.publicKeyFactory
 import net.corda.v5.crypto.SignatureSpec
@@ -17,8 +18,8 @@ internal class PublicKeyReader {
 
         internal fun KeyAlgorithm.getSignatureSpec(): SignatureSpec {
             return when (this) {
-                KeyAlgorithm.RSA -> SignatureSpec.RSA_SHA256
-                KeyAlgorithm.ECDSA -> SignatureSpec.ECDSA_SHA256
+                KeyAlgorithm.RSA -> SignatureSpecs.RSA_SHA256
+                KeyAlgorithm.ECDSA -> SignatureSpecs.ECDSA_SHA256
             }
         }
     }
