@@ -170,9 +170,17 @@ class LocallyHostedIdentitiesServiceImpl(
     }
 
     private fun HostedIdentityEntry.toIdentityInfo(): IdentityInfo? {
-        return publicKeyFactory(
-            this.preferredSessionKeyAndCert.sessionPublicKey.reader(),
-        )?.let { preferredSessionKey ->
+        val preferredSessionKeyPem = this.preferredSessionKeyAndCert.sessionPublicKey
+        val preferredSessionKey = publicKeyFactory(
+            preferredSessionKeyPem.reader(),
+        )
+        return if (preferredSessionKey == null) {
+            logger.warn(
+                "Hosted Identity entry for ${this.holdingIdentity.toCorda()} had invalid " +
+                    "preferred session key (preferredSessionKeyPem). Ignoring this record.",
+            )
+            null
+        } else {
             IdentityInfo(
                 identity = this.holdingIdentity.toCorda(),
                 tlsCertificates = this.tlsCertificates.toCertificates(),
