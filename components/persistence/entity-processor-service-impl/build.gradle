@@ -26,6 +26,7 @@ dependencies {
     implementation project(':components:persistence:entity-processor-service')
     implementation project(':components:persistence:persistence-service-common')
     implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(":components:virtual-node:cpk-read-service")
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 

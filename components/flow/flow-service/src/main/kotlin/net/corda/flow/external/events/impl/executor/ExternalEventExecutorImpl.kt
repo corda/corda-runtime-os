@@ -38,11 +38,13 @@ class ExternalEventExecutorImpl @Activate constructor(
     }
 
     private fun externalContext(flowFiber: FlowFiber): Map<String, String> =
-        with(flowFiber.getExecutionContext().flowCheckpoint.flowContext) {
+        with(flowFiber.getExecutionContext().flowCheckpoint) {
             localToExternalContextMapper(
-                userContextProperties = this.flattenUserProperties(),
-                platformContextProperties = this.flattenPlatformProperties()
-            )
+                userContextProperties = this.flowContext.flattenUserProperties(),
+                platformContextProperties = this.flowContext.flattenPlatformProperties()
+            ) + this.cpkFileHashes
+                .mapIndexed { idx, hash -> "corda.cpk.hash.$idx" to hash.toString() }
+                .toMap()
         }
 
     @Suspendable

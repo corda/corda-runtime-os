@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.processor
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
@@ -10,6 +11,7 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.utilities.withMDC
 import net.corda.utilities.trace
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
@@ -41,7 +43,12 @@ class PersistenceRequestProcessor(
                 withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
-                        val sandbox = entitySandboxService.get(holdingIdentity)
+                        val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                            .filter { it.key.startsWith("corda.cpk.hash.") }
+                            .map { it.value.toSecureHash() }
+                            .toSet()
+
+                        val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
                         delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
                     } catch (e: Exception) {
                         listOf(
@@ -61,5 +68,7 @@ class PersistenceRequestProcessor(
                 }
             }
     }
+
+    private fun String.toSecureHash() = parseSecureHash(this)
 }
 
