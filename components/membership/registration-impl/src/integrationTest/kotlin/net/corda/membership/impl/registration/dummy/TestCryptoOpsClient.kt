@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dummy
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -137,7 +138,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ) = DigitalSignature.WithKey(publicKey, byteArrayOf(1), emptyMap())
+    ) = DigitalSignatureWithKey(publicKey, byteArrayOf(1))
 
     override fun sign(
         tenantId: String,
@@ -145,7 +146,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

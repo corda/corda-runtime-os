@@ -5,6 +5,11 @@ import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_2
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.TestProperties.Companion.charlieName
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -13,8 +18,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 
 class MemberListCacheImplTest {
     private lateinit var memberListCache: MemberListCache
@@ -27,11 +32,23 @@ class MemberListCacheImplTest {
     private val bobIdGroup1 = HoldingIdentity(bob, GROUP_ID_1)
     private val aliceIdGroup2 = HoldingIdentity(alice, GROUP_ID_2)
 
-    private val memberInfo1 = mock<MemberInfo>().apply {
-        whenever(name).thenReturn(bob)
+    private val pendingContext = mock<MGMContext> {
+        on { parse(STATUS, String::class.java) } doReturn MEMBER_STATUS_PENDING
     }
-    private val memberInfo2 = mock<MemberInfo>().apply {
-        whenever(name).thenReturn(charlie)
+    private val activeContext = mock<MGMContext> {
+        on { parse(STATUS, String::class.java) } doReturn MEMBER_STATUS_ACTIVE
+    }
+    private val suspendedContext = mock<MGMContext> {
+        on { parse(STATUS, String::class.java) } doReturn MEMBER_STATUS_SUSPENDED
+    }
+
+    private val bobInfo = mock<MemberInfo> {
+        on { mgmProvidedContext } doReturn activeContext
+        on { name } doReturn bob
+    }
+    private val aliceInfo = mock<MemberInfo> {
+        on { mgmProvidedContext } doReturn activeContext
+        on { name } doReturn alice
     }
 
     @BeforeEach
@@ -46,14 +63,14 @@ class MemberListCacheImplTest {
 
     @Test
     fun `Add member list to cache then read same member from cache`() {
-        memberListCache.put(aliceIdGroup1, listOf(memberInfo1))
-        assertMemberList(lookupWithDefaults(), memberInfo1)
+        memberListCache.put(aliceIdGroup1, listOf(bobInfo))
+        assertMemberList(lookupWithDefaults(), bobInfo)
     }
 
     @Test
     fun `Add single member to cache then read same member from cache`() {
         addToCacheWithDefaults()
-        assertMemberList(lookupWithDefaults(), memberInfo1)
+        assertMemberList(lookupWithDefaults(), bobInfo)
     }
 
     @Test
@@ -71,30 +88,30 @@ class MemberListCacheImplTest {
     @Test
     fun `Cache and lookup for a multiple groups`() {
         addToCacheWithDefaults()
-        addToCacheWithDefaults(aliceIdGroup2, memberInfo = memberInfo2)
+        addToCacheWithDefaults(aliceIdGroup2, memberInfo = aliceInfo)
 
-        assertMemberList(lookupWithDefaults(), memberInfo1)
-        assertMemberList(lookupWithDefaults(aliceIdGroup2), memberInfo2)
+        assertMemberList(lookupWithDefaults(), bobInfo)
+        assertMemberList(lookupWithDefaults(aliceIdGroup2), aliceInfo)
     }
 
     @Test
     fun `get all returns all information from cache`() {
         addToCacheWithDefaults()
-        addToCacheWithDefaults(aliceIdGroup2, memberInfo = memberInfo2)
+        addToCacheWithDefaults(aliceIdGroup2, memberInfo = aliceInfo)
 
         val cache = memberListCache.getAll()
         assertThat(cache.size).isEqualTo(2)
-        assertMemberList(cache.get(aliceIdGroup1), memberInfo1)
-        assertMemberList(cache.get(aliceIdGroup2), memberInfo2)
+        assertMemberList(cache.get(aliceIdGroup1), bobInfo)
+        assertMemberList(cache.get(aliceIdGroup2), aliceInfo)
     }
 
     @Test
     fun `Cache and lookup for multiple members in the same group`() {
         addToCacheWithDefaults()
-        addToCacheWithDefaults(bobIdGroup1, memberInfo = memberInfo2)
+        addToCacheWithDefaults(bobIdGroup1, memberInfo = aliceInfo)
 
-        assertMemberList(lookupWithDefaults(), memberInfo1)
-        assertMemberList(lookupWithDefaults(bobIdGroup1), memberInfo2)
+        assertMemberList(lookupWithDefaults(), bobInfo)
+        assertMemberList(lookupWithDefaults(bobIdGroup1), aliceInfo)
     }
 
     @Test
@@ -106,6 +123,94 @@ class MemberListCacheImplTest {
         }
     }
 
+    @Test
+    fun `Member info discarded if status is the same - active`() {
+        val originalInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn activeContext
+            on { name } doReturn charlie
+
+        }
+        val updatedInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn activeContext
+            on { name } doReturn charlie
+        }
+
+        addToCacheWithDefaults(memberInfo = originalInfo)
+        addToCacheWithDefaults(memberInfo = updatedInfo)
+        assertMemberList(lookupWithDefaults(), updatedInfo)
+    }
+
+    @Test
+    fun `Member info discarded if status is the same - suspended`() {
+        val originalInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn suspendedContext
+            on { name } doReturn charlie
+
+        }
+        val updatedInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn suspendedContext
+            on { name } doReturn charlie
+        }
+
+        addToCacheWithDefaults(memberInfo = originalInfo)
+        addToCacheWithDefaults(memberInfo = updatedInfo)
+        assertMemberList(lookupWithDefaults(), updatedInfo)
+    }
+
+    @Test
+    fun `Member info discarded if status is the same - pending`() {
+        val originalInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn pendingContext
+            on { name } doReturn charlie
+        }
+        val updatedInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn pendingContext
+            on { name } doReturn charlie
+        }
+
+        addToCacheWithDefaults(memberInfo = originalInfo)
+        addToCacheWithDefaults(memberInfo = updatedInfo)
+        assertMemberList(lookupWithDefaults(), updatedInfo)
+    }
+
+    @Test
+    fun `Member info discarded if status is active or suspended`() {
+        val activeInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn activeContext
+            on { name } doReturn charlie
+        }
+        val suspendedInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn suspendedContext
+            on { name } doReturn charlie
+        }
+
+        addToCacheWithDefaults(memberInfo = activeInfo)
+        // suspend member
+        addToCacheWithDefaults(memberInfo = suspendedInfo)
+        assertMemberList(lookupWithDefaults(), suspendedInfo)
+        // activate member
+        addToCacheWithDefaults(memberInfo = activeInfo)
+        assertMemberList(lookupWithDefaults(), activeInfo)
+    }
+
+    @Test
+    fun `Member info not discarded if status is pending and then active`() {
+        val originalInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn pendingContext
+            on { name } doReturn charlie
+        }
+        val updatedInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn activeContext
+            on { name } doReturn charlie
+        }
+
+        addToCacheWithDefaults(memberInfo = originalInfo)
+        addToCacheWithDefaults(memberInfo = updatedInfo)
+        // add extra member
+        addToCacheWithDefaults(memberInfo = bobInfo)
+        assertThat(lookupWithDefaults()).containsExactlyInAnyOrder(bobInfo, originalInfo, updatedInfo)
+    }
+
     private fun lookupWithDefaults(
         holdingIdentity: HoldingIdentity = aliceIdGroup1
     ): List<MemberInfo>? {
@@ -114,7 +219,7 @@ class MemberListCacheImplTest {
 
     private fun addToCacheWithDefaults(
         holdingIdentity: HoldingIdentity = aliceIdGroup1,
-        memberInfo: MemberInfo = memberInfo1
+        memberInfo: MemberInfo = bobInfo
     ) {
         memberListCache.put(holdingIdentity, memberInfo)
     }

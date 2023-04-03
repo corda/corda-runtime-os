@@ -82,7 +82,7 @@ fun createMgmRegistrationContext(
     sessionPkiMode: String = "NoPKI",
     tlsType: String = "OneWay",
 ) = mapOf(
-    "corda.session.key.id" to sessionKeyId,
+    "corda.session.keys.0.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
     "corda.group.protocol.registration"
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
@@ -96,22 +96,37 @@ fun createMgmRegistrationContext(
     "corda.group.tls.version" to "1.3",
     "corda.endpoints.0.connectionURL" to p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1",
-    "corda.group.truststore.tls.0" to caTrustRoot,
-    "corda.group.truststore.session.0" to caTrustRoot,
+    "corda.group.trustroot.tls.0" to caTrustRoot,
+    "corda.group.trustroot.session.0" to caTrustRoot,
 )
 
 fun createMemberRegistrationContext(
+    member: E2eClusterMember,
     memberE2eCluster: E2eCluster,
     sessionKeyId: String,
-    ledgerKeyId: String
-) = mapOf(
-    "corda.session.key.id" to sessionKeyId,
-    "corda.session.key.signature.spec" to SIGNATURE_SPEC,
+    ledgerKeyId: String,
+    notaryKeyId: String? = null
+): Map<String, String> = mutableMapOf(
+    "corda.session.keys.0.id" to sessionKeyId,
+    "corda.session.keys.0.signature.spec" to SIGNATURE_SPEC,
     "corda.ledger.keys.0.id" to ledgerKeyId,
     "corda.ledger.keys.0.signature.spec" to SIGNATURE_SPEC,
     "corda.endpoints.0.connectionURL" to memberE2eCluster.p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1"
-)
+).also {
+    if (member.isNotary()) {
+        assertThat(notaryKeyId)
+            .withFailMessage {
+                "Tried to create registration context for notary member without providing notary key info."
+            }.isNotEmpty
+        it["corda.roles.0"] = "notary"
+        it["corda.notary.service.name"] = "C=GB,L=London,O=NotaryService, OU=${memberE2eCluster.uniqueName}"
+        it["corda.notary.service.flow.protocol.name"] = "com.r3.corda.notary.plugin.nonvalidating"
+        it["corda.notary.service.flow.protocol.version.0"] = "1"
+        it["corda.notary.keys.0.id"] = notaryKeyId!!
+        it["corda.notary.keys.0.signature.spec"] = SIGNATURE_SPEC
+    }
+}
 
 val RestMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
 val RestMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
@@ -172,4 +187,15 @@ fun E2eCluster.lookupMembers(
         .use { client ->
             client.start().proxy.lookup(holdingId).members
         }
+}
+
+inline fun <reified T> E2eCluster.getMemberName(
+    prefix: String
+): String {
+    return mapOf(
+        "O" to "$prefix-${T::class.java.simpleName}",
+        "L" to "London",
+        "C" to "GB",
+        "OU" to uniqueName
+    ).map { "${it.key}=${it.value}" }.joinToString(separator = ", ")
 }

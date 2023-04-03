@@ -57,7 +57,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
     private val testContext: Map<String, String> = mapOf(
         REGISTRATION_PROTOCOL to "valid protocol",
-        SESSION_KEY_ID to "non group policy property"
+        SESSION_KEY_IDS.format(0) to "non group policy property"
     )
 
     private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(

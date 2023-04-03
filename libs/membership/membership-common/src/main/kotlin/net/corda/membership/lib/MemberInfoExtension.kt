@@ -1,6 +1,7 @@
 package net.corda.membership.lib
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
@@ -8,7 +9,6 @@ import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
 import net.corda.utilities.parseSet
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -38,13 +38,15 @@ class MemberInfoExtension {
 
         /** Key name for party property. */
         const val PARTY_NAME = "corda.name"
-        const val PARTY_SESSION_KEY = "corda.session.key"
+        const val SESSION_KEYS = "corda.session.keys"
+        const val PARTY_SESSION_KEYS = "$SESSION_KEYS.%s"
+        const val PARTY_SESSION_KEYS_PEM = "$SESSION_KEYS.%s.pem"
 
         /** Key name for the session key hash **/
-        const val SESSION_KEY_HASH = "corda.session.key.hash"
+        const val SESSION_KEYS_HASH = "$SESSION_KEYS.%s.hash"
 
         /** Key name for the session key signature spec **/
-        const val SESSION_KEY_SIGNATURE_SPEC = "corda.session.key.signature.spec"
+        const val SESSION_KEYS_SIGNATURE_SPEC = "$SESSION_KEYS.%s.signature.spec"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
@@ -74,14 +76,17 @@ class MemberInfoExtension {
         /** Key name for ECDH key property. */
         const val ECDH_KEY = "corda.ecdh.key"
 
-        /** Key name for certificate property. */
-        const val CERTIFICATE = "corda.session.certificate"
-
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
 
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
+
+        /**
+         * Key name for identifying static network MGM property.
+         * A static network MGM is not backed by a virtual node so may need different handling.
+         */
+        const val IS_STATIC_MGM = "corda.mgm.static"
 
         /** Key name for pre-auth token property. */
         const val PRE_AUTH_TOKEN = "corda.auth.token"
@@ -128,18 +133,14 @@ class MemberInfoExtension {
          */
         const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
-        const val NOTARY_SERVICE_PLUGIN = "corda.notary.service.plugin"
+        const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
+        const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.version.%s"
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
 
         /** Key name for TLS certificate subject. */
         const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"
-
-        /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
-        @JvmStatic
-        val MemberInfo.certificate: List<String>
-            get() = memberProvidedContext.parseList(CERTIFICATE)
 
         /** Group identifier. UUID as a String. */
         @JvmStatic
@@ -195,24 +196,42 @@ class MemberInfoExtension {
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
         /**
+         * The member session initiation keys
+         */
+        @JvmStatic
+        val MemberInfo.sessionInitiationKeys: Collection<PublicKey>
+            get() = memberProvidedContext.parseList(SESSION_KEYS)
+
+        /**
          * [PublicKeyHash] for the session initiation key.
          * The hash value should be stored in the member context, but as a fallback it is calculated if not available.
          * It is preferable to always store this in the member context to avoid the repeated calculation.
          */
         @JvmStatic
-        val MemberInfo.sessionKeyHash: PublicKeyHash
-            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: PublicKeyHash.calculate(sessionInitiationKey)
-                .also {
+        val MemberInfo.sessionKeysHash: Collection<PublicKeyHash>
+            get() = memberProvidedContext.parseSet<PublicKeyHash>(SESSION_KEYS_HASH).let { storedKeys ->
+                if (storedKeys.isNotEmpty()) {
+                    storedKeys
+                } else {
                     logger.warn(
                         "Calculating the session key hash for $name in group $groupId. " +
                                 "It is preferable to store this hash in the member context to avoid calculating on each access."
                     )
+                    sessionInitiationKeys.map {
+                        PublicKeyHash.calculate(it)
+                    }
                 }
+            }
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic
         val MemberInfo.isMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
+
+        /** Denotes whether this [MemberInfo] represents a static network MGM. */
+        @JvmStatic
+        val MemberInfo.isStaticMgm: Boolean
+            get() = mgmProvidedContext.parseOrNull(IS_STATIC_MGM) ?: false
 
         /**
          * Returns the pre-auth token from the member info if it is present, and it is a valid UUID.
@@ -226,18 +245,19 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.notaryDetails: MemberNotaryDetails?
-            get() = if (
-                memberProvidedContext
-                    .entries
-                    .filter {
-                        it.key.startsWith(ROLES_PREFIX)
-                    }.any {
-                        it.value == NOTARY_ROLE
-                    }
-            ) {
+            get() = if (isNotary()) {
                 memberProvidedContext.parse("corda.notary")
             } else {
                 null
+            }
+
+        @JvmStatic
+        fun MemberInfo.isNotary(): Boolean = memberProvidedContext
+            .entries
+            .filter {
+                it.key.startsWith(ROLES_PREFIX)
+            }.any {
+                it.value == NOTARY_ROLE
             }
 
         /** Return the key used for hybrid encryption. Only MGMs should have a value set for ecdh key. */
@@ -254,7 +274,7 @@ class MemberInfoExtension {
                 memberProvidedContext.parse(MEMBER_CPI_NAME),
                 memberProvidedContext.parse(MEMBER_CPI_VERSION),
                 memberProvidedContext.parse<String>(MEMBER_CPI_SIGNER_HASH).let {
-                    SecureHash.parse(it)
+                    parseSecureHash(it)
                 }
             )
 

@@ -1,10 +1,10 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.schema.DbSchema.VIRTUAL_NODE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 import java.io.Serializable
 import java.time.Instant
 import java.util.Objects
@@ -12,8 +12,8 @@ import java.util.UUID
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.Enumerated
 import javax.persistence.EnumType
+import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.MapsId
@@ -38,6 +38,7 @@ import javax.persistence.Version
  * @param flowOperationalStatus The virtual node's ability to run flows, to have checkpoints, to continue in-progress flows.
  * @param vaultDbOperationalStatus The virtual node's ability to perform persistence operations on the virtual node's vault.
  * @param operationInProgress Details of the current operation in progress.
+ * @param externalMessagingRouteConfig Route configuration for external messaging.
  */
 @Entity
 @Table(name = VIRTUAL_NODE_DB_TABLE)
@@ -99,6 +100,9 @@ internal class VirtualNodeEntity(
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
 
+    @Column(name = "external_messaging_route_config", nullable = true)
+    var externalMessagingRouteConfig: String? = null,
+
     @Column(name = "insert_ts", insertable = false)
     var insertTimestamp: Instant? = null,
 
@@ -126,7 +130,7 @@ internal class VirtualNodeEntity(
     fun toVirtualNodeInfo(): VirtualNodeInfo {
         return VirtualNodeInfo(
             holdingIdentity.toHoldingIdentity(),
-            CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash)),
+            CpiIdentifier(cpiName, cpiVersion, parseSecureHash(cpiSignerSummaryHash)),
             vaultDDLConnectionId,
             vaultDMLConnectionId!!,
             cryptoDDLConnectionId,
@@ -139,6 +143,7 @@ internal class VirtualNodeEntity(
             flowOperationalStatus,
             vaultDbOperationalStatus,
             operationInProgress?.requestId,
+            externalMessagingRouteConfig,
             entityVersion,
             insertTimestamp!!,
             isDeleted

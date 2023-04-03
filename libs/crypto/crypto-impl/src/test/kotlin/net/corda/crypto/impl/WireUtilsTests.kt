@@ -2,6 +2,8 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.KeyValuePair
@@ -10,8 +12,6 @@ import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ParameterizedSignatureSpec
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
@@ -159,7 +159,7 @@ class WireUtilsTests {
     }
 
     @Test
-    fun `Should convert CryptoSignatureSpec to SignatureSpec`() {
+    fun `Should convert CryptoSignatureSpec to SignatureSpecImpl`() {
         val serializer = mock<AlgorithmParameterSpecEncodingService>()
         val origin = CryptoSignatureSpec(
             "name1",
@@ -167,7 +167,7 @@ class WireUtilsTests {
             null
         )
         val result = origin.toSignatureSpec(serializer)
-        assertEquals(SignatureSpec::class.java, result::class.java)
+        assertEquals(SignatureSpecImpl::class.java, result::class.java)
         assertEquals("name1", result.signatureName)
         Mockito.verify(serializer, never()).deserialize(any())
     }
@@ -212,7 +212,7 @@ class WireUtilsTests {
     @Test
     fun `Should convert SignatureSpec to wire without spec params and without custom digest`() {
         val serializer = mock<AlgorithmParameterSpecEncodingService>()
-        val origin = SignatureSpec("name1")
+        val origin = SignatureSpecImpl("name1")
         val result = origin.toWire(serializer)
         assertEquals("name1", result.signatureName)
         assertNull(result.customDigestName)

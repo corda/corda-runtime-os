@@ -3,7 +3,6 @@ package net.corda.membership.lib.impl
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -31,7 +30,6 @@ class MemberInfoImpl(
     override fun getMemberProvidedContext() = memberProvidedContext
     override fun getMgmProvidedContext() = mgmProvidedContext
     override fun getName(): MemberX500Name = memberProvidedContext.parse(PARTY_NAME)
-    override fun getSessionInitiationKey(): PublicKey = memberProvidedContext.parse(PARTY_SESSION_KEY)
     override fun getLedgerKeys(): List<PublicKey> = memberProvidedContext.parseList(LEDGER_KEYS)
     override fun getPlatformVersion(): Int = memberProvidedContext.parse(PLATFORM_VERSION)
     override fun getSerial(): Long = mgmProvidedContext.parse(SERIAL)

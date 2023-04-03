@@ -39,6 +39,8 @@ class TopicRecordEntry(
     val key: ByteArray,
     @Column(name = "record_value")
     val value: ByteArray?,
+    @Column(name = "record_headers")
+    val headers: String?,
     @ManyToOne
     @JoinColumn(name = "transaction_id")
     val transactionId: TransactionRecordEntry,

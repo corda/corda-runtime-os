@@ -48,7 +48,7 @@ abstract class AbstractPersistenceClient(
     private var registrationHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
-    fun buildMembershipRequestContext(holdingIdentity: HoldingIdentity) = MembershipRequestContext(
+    fun buildMembershipRequestContext(holdingIdentity: HoldingIdentity? = null) = MembershipRequestContext(
         clock.instant(),
         UUID.randomUUID().toString(),
         holdingIdentity

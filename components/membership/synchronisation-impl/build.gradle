@@ -25,6 +25,7 @@ dependencies {
     implementation project(':components:membership:membership-persistence-client')
     implementation project(":components:membership:synchronisation")
     implementation project(':components:membership:membership-group-read')
+    implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation project(':libs:crypto:crypto-core')

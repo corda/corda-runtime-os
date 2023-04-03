@@ -1,17 +1,19 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkFile
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
+import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -29,6 +31,11 @@ import kotlin.streams.toList
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")
+    private val emf = EntityManagerFactoryFactoryImpl().create(
+        "test_unit",
+        CpiEntities.classes.toList(),
+        dbConfig
+    )
 
     private val cpkFileRepository = CpkFileRepositoryImpl()
 
@@ -49,7 +56,7 @@ class CpiEntitiesIntegrationTest {
 
     @AfterAll
     fun cleanUp() {
-        dbConfig.close()
+        emf.close()
     }
 
     @Test
@@ -59,7 +66,7 @@ class CpiEntitiesIntegrationTest {
         val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
 
         val cpkData = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk =
@@ -70,23 +77,13 @@ class CpiEntitiesIntegrationTest {
             )
         val cpi = TestObject.createCpi(cpiId, setOf(cpiCpk))
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
-            em.transaction {
-                it.persist(cpi)
-                it.persist(cpkData)
-                it.flush()
-            }
+        emf.createEntityManager().transaction {
+            it.persist(cpi)
+            it.persist(cpkData)
+            it.flush()
         }
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use {
+        emf.createEntityManager().use {
             val loadedCpiEntity = it.find(
                 CpiMetadataEntity::class.java,
                 CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
@@ -94,7 +91,6 @@ class CpiEntitiesIntegrationTest {
 
             assertThat(loadedCpiEntity.cpks).isEqualTo(cpi.cpks)
         }
-
     }
 
     @Test
@@ -102,7 +98,7 @@ class CpiEntitiesIntegrationTest {
         val cpiId = UUID.randomUUID()
         val cpkId = UUID.randomUUID().toString()
         val cpkData = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk =
@@ -112,11 +108,8 @@ class CpiEntitiesIntegrationTest {
                 "test-cpk", cpkData.fileChecksum
             )
         val cpi = TestObject.createCpi(cpiId, setOf(cpiCpk))
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
+
+        emf.createEntityManager().use { em ->
             em.transaction {
                 it.persist(cpi)
                 it.flush()
@@ -128,7 +121,7 @@ class CpiEntitiesIntegrationTest {
         val cpkVer2 = "2.2.3"
         val cpk2SignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkData2 = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpkMetadataEntity2 = TestObject.createCpk(
@@ -138,11 +131,7 @@ class CpiEntitiesIntegrationTest {
             cpk2SignerSummaryHash,
         )
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
+        emf.createEntityManager().use { em ->
             val loadedCpiEntity = em.find(
                 CpiMetadataEntity::class.java,
                 CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
@@ -170,16 +159,13 @@ class CpiEntitiesIntegrationTest {
             }
         }
 
-        val loadedCpi = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use {
-            it.find(
-                CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
-            )
-        }
+        val loadedCpi =
+            emf.createEntityManager().use {
+                it.find(
+                    CpiMetadataEntity::class.java,
+                    CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                )
+            }
 
         // assert the added one has been fetched eagerly.
         assertThat(loadedCpi.cpks.singleOrNull {
@@ -195,7 +181,7 @@ class CpiEntitiesIntegrationTest {
         val cpkVer = "1.2.3"
         val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkData = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk1 =
@@ -206,11 +192,7 @@ class CpiEntitiesIntegrationTest {
             )
         val cpi1 = TestObject.createCpi(cpiId, setOf(cpiCpk1))
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
+        emf.createEntityManager().use { em ->
             em.transaction {
                 it.persist(cpi1)
                 it.persist(cpkData)
@@ -222,7 +204,7 @@ class CpiEntitiesIntegrationTest {
         val cpk2SignerSummaryHash = TestObject.genRandomChecksum().toString()
         // Create another CPK
         val cpkData2 = CpkFileEntity(
-            SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
+            SecureHashImpl("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk2 =
@@ -232,28 +214,18 @@ class CpiEntitiesIntegrationTest {
                 "test-cpk2", cpkData2.fileChecksum,
             )
         val cpi2 = TestObject.createCpi(cpiId, setOf(cpiCpk1, cpiCpk2))
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
-            em.transaction {
-                it.merge(cpi2)
-                it.persist(cpkData2)
-                it.flush()
-            }
+        emf.transaction {
+            it.merge(cpi2)
+            it.persist(cpkData2)
+            it.flush()
         }
 
-        val loadedCpi = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use {
-            it.find(
-                CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
-            )
-        }
+        val loadedCpi = emf.createEntityManager().use {
+                it.find(
+                    CpiMetadataEntity::class.java,
+                    CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
+                )
+            }
 
         assertThat(loadedCpi.cpks.size).isEqualTo(2)
     }
@@ -262,16 +234,10 @@ class CpiEntitiesIntegrationTest {
     fun `on findCpkChecksumsNotIn an empty set returns all results`() {
         val cpkChecksums = List(3) { TestObject.genRandomChecksum() }
 
-        val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        )
-
-        insertCpkChecksums(cpkChecksums, emFactory)
+        insertCpkChecksums(cpkChecksums, emf)
 
         val fetchedCpkChecksums =
-            emFactory.transaction {
+            emf.transaction {
                 cpkFileRepository.findAll(it).map { it.fileChecksum }
             }
 
@@ -282,16 +248,10 @@ class CpiEntitiesIntegrationTest {
     fun `on findCpkChecksumsNotIn a checksum set returns all but this set`() {
         val cpkChecksums = List(3) { TestObject.genRandomChecksum() }
 
-        val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        )
-
-        insertCpkChecksums(cpkChecksums, emFactory)
+        insertCpkChecksums(cpkChecksums, emf)
 
         val fetchedCpkChecksums =
-            emFactory.transaction {
+            emf.transaction {
                 cpkFileRepository.findAll(it, fileChecksumsToExclude = cpkChecksums.take(2)).map { it.fileChecksum }
             }
 
@@ -303,22 +263,15 @@ class CpiEntitiesIntegrationTest {
         val cpkChecksums = listOf(
             TestObject.genRandomChecksum()
         )
-
-        val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        )
-
-        val insertedCpkFilesEntity = insertCpkChecksums(cpkChecksums, emFactory)
+        val insertedCpkFilesEntity = insertCpkChecksums(cpkChecksums, emf)
 
         val cpkFile =
-            emFactory.transaction {
+            emf.transaction {
                 cpkFileRepository.findById(it, cpkChecksums[0])
             }
 
         val expectedCpkFile = CpkFile(
-            SecureHash.parse(insertedCpkFilesEntity[0].fileChecksum),
+            parseSecureHash(insertedCpkFilesEntity[0].fileChecksum),
             insertedCpkFilesEntity[0].data,
             insertedCpkFilesEntity[0].entityVersion
         )
@@ -327,12 +280,6 @@ class CpiEntitiesIntegrationTest {
 
     @Test
     fun `findAllCpiMetadata properly streams through DB data`() {
-        val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        )
-
         val cpiNames = mutableListOf<String>()
         // Create CPIs First
         for (i in 0..1) {
@@ -356,25 +303,22 @@ class CpiEntitiesIntegrationTest {
             val cpi = TestObject.createCpi(cpiId, cpks.keys)
             cpiNames.add(cpi.name)
 
-            emFactory.use { em ->
-                em.transaction {
-                    it.persist(cpi)
-                    cpks.values.forEach { cpkData ->
-                        it.persist(cpkData)
-                    }
-                    it.flush()
+            emf.transaction {
+                it.persist(cpi)
+                cpks.values.forEach { cpkData ->
+                    it.persist(cpkData)
                 }
+                it.flush()
             }
         }
 
         // Find all - fetches eagerly
         println("**** [START] findAllCpiMetadata query as list ****")
-        val cpisEagerlyLoaded = emFactory.use { em ->
-            em.transaction {
+        val cpisEagerlyLoaded =
+            emf.createEntityManager().use { em ->
                 em.findAllCpiMetadata().toList() // toList here materialises the stream.
             }
             // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
-        }
 
         cpisEagerlyLoaded.filter {
             it.name in cpiNames
@@ -389,18 +333,16 @@ class CpiEntitiesIntegrationTest {
 
         // Repeat the above, but consume from stream
         println("**** [START] findAllCpiMetadata query as stream ****")
-        emFactory.use { em ->
-            em.transaction {
-                val cpisLazyLoaded = em.findAllCpiMetadata()
+        emf.transaction { em ->
+            val cpisLazyLoaded = em.findAllCpiMetadata()
 
-                cpisLazyLoaded.filter {
-                    it.name in cpiNames
-                }.forEach {
-                    assertThat(it.cpks.size).isEqualTo(2)
-                    it.cpks.forEach { cpkMetadataEntity ->
-                        println("****       invoke metadata property ****")
-                        assertThat(cpkMetadataEntity.metadata).isNotNull
-                    }
+            cpisLazyLoaded.filter {
+                it.name in cpiNames
+            }.forEach {
+                assertThat(it.cpks.size).isEqualTo(2)
+                it.cpks.forEach { cpkMetadataEntity ->
+                    println("****       invoke metadata property ****")
+                    assertThat(cpkMetadataEntity.metadata).isNotNull
                 }
             }
         }

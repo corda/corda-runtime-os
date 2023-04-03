@@ -17,7 +17,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -63,8 +62,6 @@ class MGMRegistrationService @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
-    @Reference(service = GroupParametersFactory::class)
-    private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
 ) : MemberRegistrationService {
@@ -136,6 +133,7 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
             membershipSchemaValidatorFactory,
             configurationGetService = configurationGetService,
+            clock = UTCClock()
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,
@@ -178,10 +176,10 @@ class MGMRegistrationService @Activate constructor(
                 mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
 
                 // Publish group parameters to Kafka
-                val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
+                val groupParameters = groupParametersPersistenceResult.getOrThrow()
                 groupParametersWriterService.put(member, groupParameters)
 
-                mgmRegistrationOutputPublisher.createRecords(mgmInfo)
+                mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {
@@ -232,6 +230,7 @@ class MGMRegistrationService @Activate constructor(
             LifecycleStatus.UP -> {
                 activate(coordinator)
             }
+
             else -> {
                 deactivate(coordinator)
             }

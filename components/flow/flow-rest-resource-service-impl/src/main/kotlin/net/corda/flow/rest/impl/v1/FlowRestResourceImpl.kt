@@ -3,9 +3,9 @@ package net.corda.flow.rest.impl.v1
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
-import net.corda.flow.rest.FlowRestResourceServiceException
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
+import net.corda.flow.rest.impl.FlowRestExceptionConstants
 import net.corda.flow.rest.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
@@ -27,10 +27,12 @@ import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -49,7 +51,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
-@Component(service = [FlowRestResource::class, PluggableRestResource::class], immediate = true)
+@Component(service = [FlowRestResource::class, PluggableRestResource::class])
 class FlowRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -77,7 +79,7 @@ class FlowRestResourceImpl @Activate constructor(
 
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
-    private lateinit var onFatalError:() -> Unit
+    private lateinit var onFatalError: () -> Unit
 
     override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
         this.onFatalError = onFatalError
@@ -92,8 +94,10 @@ class FlowRestResourceImpl @Activate constructor(
     private fun validateClientRequestId(clientRequestId: String) {
         if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
             throw BadRequestException(
-                """Supplied Client Request ID "$clientRequestId" is invalid,""" +
-                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}".""")
+                FlowRestExceptionConstants.INVALID_ID.format(
+                    clientRequestId, RbacKeys.CLIENT_REQ_REGEX
+                )
+            )
         }
     }
 
@@ -102,7 +106,7 @@ class FlowRestResourceImpl @Activate constructor(
         startFlow: StartFlowParameters
     ): ResponseEntity<FlowStatusResponse> {
         if (publisher == null) {
-            throw FlowRestResourceServiceException("FlowRestResource has not been initialised ")
+            throw ServiceUnavailableException(FlowRestExceptionConstants.UNINITIALIZED_ERROR)
         }
         if (fatalErrorOccurred) {
             // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
@@ -110,13 +114,16 @@ class FlowRestResourceImpl @Activate constructor(
             // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
             // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
             // closing us down soon. There are other fatal error types, but none are recoverable by definition.
-            throw FlowRestResourceServiceException("Fatal error occurred, can no longer start flows from this worker")
+            throw ServiceUnavailableException(FlowRestExceptionConstants.TEMPORARY_INTERNAL_FAILURE)
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
         if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
-            throw OperationNotAllowedException("Flow start capabilities of virtual node $holdingIdentityShortHash are not operational.")
+            throw OperationNotAllowedException(
+                FlowRestExceptionConstants.NOT_OPERATIONAL
+                    .format(holdingIdentityShortHash)
+            )
         }
 
         val clientRequestId = startFlow.clientRequestId
@@ -125,14 +132,15 @@ class FlowRestResourceImpl @Activate constructor(
         validateClientRequestId(clientRequestId)
 
         if (flowStatus != null) {
-            throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
+            throw ResourceAlreadyExistsException(FlowRestExceptionConstants.ALREADY_EXISTS_ERROR)
         }
 
         val flowClassName = startFlow.flowClassName
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
         if (!startableFlows.contains(flowClassName)) {
             val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-            val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
+            val msg =
+                "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
             val details = mapOf(
                 "CPI-name" to cpiMeta?.cpiId?.name.toString(),
                 "CPI-version" to cpiMeta?.cpiId?.version.toString(),
@@ -148,9 +156,12 @@ class FlowRestResourceImpl @Activate constructor(
         val restContext = CURRENT_REST_CONTEXT.get()
         val principal = restContext.principal
 
-        if (!permissionValidationService.permissionValidator.authorizeUser(principal,
-                "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}")) {
-            throw ForbiddenException("User $principal is not allowed to start a flow: ${startFlow.flowClassName}")
+        if (!permissionValidationService.permissionValidator.authorizeUser(
+                principal,
+                "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}"
+            )
+        ) {
+            throw ForbiddenException(FlowRestExceptionConstants.FORBIDDEN.format(principal, startFlow.flowClassName))
         }
 
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
@@ -182,11 +193,15 @@ class FlowRestResourceImpl @Activate constructor(
         } catch (ex: CordaMessageAPIFatalException) {
             throw markFatalAndReturnFailureException(ex)
         }
-        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsTerminal ->
-            if (failureIsTerminal) {
+        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsFatal ->
+            if (failureIsFatal) {
                 throw markFatalAndReturnFailureException(ex)
             } else {
-                throw failureException(ex)
+                val msg = ex.message ?: ""
+                throw InternalServerException(
+                    FlowRestExceptionConstants.NON_FATAL_ERROR,
+                    mapOf("cause" to ex::class.java.simpleName, "reason" to msg)
+                )
             }
         }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
@@ -194,17 +209,14 @@ class FlowRestResourceImpl @Activate constructor(
 
     private fun markFatalAndReturnFailureException(exception: Exception): Exception {
         fatalErrorOccurred = true
-        log.error("Fatal error occurred, FlowRestResource can no longer start flows, worker expected to terminate.", exception)
+        log.error(FlowRestExceptionConstants.FATAL_ERROR, exception)
         onFatalError()
-        return failureException(exception)
+        throw InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
     }
-
-    private fun failureException(cause: Exception): Exception =
-        FlowRestResourceServiceException("Failed to publish the Start Flow event.", cause)
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
         val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holdingIdentityShortHash}'")
+            ?: throw ResourceNotFoundException(FlowRestExceptionConstants.CPI_NOT_FOUND.format(holdingIdentityShortHash))
         return cpiMeta.cpksMetadata.flatMap {
             it.cordappManifest.clientStartableFlows
         }
@@ -212,13 +224,12 @@ class FlowRestResourceImpl @Activate constructor(
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
         val vNode = getVirtualNode(holdingIdentityShortHash)
-
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
-                "Failed to find the flow status for holding identity='${holdingIdentityShortHash} " +
-                        "and Client Request ID='${clientRequestId}"
+                FlowRestExceptionConstants.FLOW_STATUS_NOT_FOUND.format(
+                    holdingIdentityShortHash, clientRequestId
+                )
             )
-
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
@@ -258,10 +269,14 @@ class FlowRestResourceImpl @Activate constructor(
                 flowStatusFeedRegistration.close()
             }
         } catch (e: WebSocketValidationException) {
-            log.warn("Validation error while registering flow status listener - ${e.message ?: "No exception message provided."}")
+            log.warn(
+                FlowRestExceptionConstants.VALIDATION_ERROR.format(
+                    e.cause?.message ?: FlowRestExceptionConstants.NO_EXCEPTION_MESSAGE
+                )
+            )
             error(e)
         } catch (e: Exception) {
-            log.error("Unexpected error at registerFlowStatusListener")
+            log.error(FlowRestExceptionConstants.UNEXPECTED_ERROR)
             error(e)
         }
     }

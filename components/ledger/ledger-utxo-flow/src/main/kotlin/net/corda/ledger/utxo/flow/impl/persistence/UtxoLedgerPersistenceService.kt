@@ -12,10 +12,12 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  * by the platform.
  */
 interface UtxoLedgerPersistenceService {
+
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id].
      *
      * @param id UTXO signed transaction ID.
+     * @param transactionStatus filter for this status.
      *
      * @return The found UTXO signed transaction, null if it could not be found in the persistence context.
      *
@@ -25,11 +27,29 @@ interface UtxoLedgerPersistenceService {
     fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 
     /**
+     * Find a UTXO signed transaction in the persistence context given it's [id] and return it with its status.
+     *
+     * @param id UTXO signed transaction ID.
+     * @param transactionStatus filter for this status.
+     *
+     * @return The found UTXO signed transaction and its status
+     *      null if it could not be found in the persistence context.
+     *      null to real status if the transaction exists, but its status is not the expected.
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun findTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus = TransactionStatus.VERIFIED
+    ): Pair<UtxoSignedTransaction?, TransactionStatus>?
+
+    /**
      * Persist a [UtxoSignedTransaction] to the store.
      *
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
-     * @param relevantStatesIndexes Indexes of relevant states.
+     * @param visibleStatesIndexes Indexes of visible states.
      *
      * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
      *
@@ -39,7 +59,7 @@ interface UtxoLedgerPersistenceService {
     fun persist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
-        relevantStatesIndexes: List<Int> = emptyList()
+        visibleStatesIndexes: List<Int> = emptyList()
     ): List<CordaPackageSummary>
 
     @Suspendable

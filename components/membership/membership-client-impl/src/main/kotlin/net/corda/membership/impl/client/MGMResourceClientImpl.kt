@@ -3,11 +3,13 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -16,6 +18,7 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -29,12 +32,13 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -42,6 +46,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
@@ -135,13 +140,21 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             requestSubjectX500Name: MemberX500Name?,
             viewHistoric: Boolean,
-        ): Collection<RegistrationRequestStatus>
+        ): Collection<RegistrationRequestDetails>
 
         fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash,
             requestId: UUID,
             approve: Boolean,
             reason: String?,
+        )
+
+        fun suspendMember(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        )
+
+        fun activateMember(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
     }
 
@@ -219,6 +232,14 @@ class MGMResourceClientImpl @Activate constructor(
     override fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
     ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
+
+    override fun suspendMember(
+        holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ) = impl.suspendMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
+
+    override fun activateMember(
+        holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+    ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -321,6 +342,14 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun suspendMember(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun activateMember(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -478,13 +507,13 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
-        ): Collection<RegistrationRequestStatus> {
+        ): Collection<RegistrationRequestDetails> {
             val statuses = if (viewHistoric) {
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
             } else {
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
             }
-            return membershipQueryClient.queryRegistrationRequestsStatus(
+            return membershipQueryClient.queryRegistrationRequests(
                 mgmHoldingIdentity(holdingIdentityShortHash),
                 requestSubjectX500Name,
                 statuses,
@@ -496,17 +525,67 @@ class MGMResourceClientImpl @Activate constructor(
         ) {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
             val requestStatus =
-                membershipQueryClient.queryRegistrationRequestStatus(mgm, requestId.toString()).getOrThrow()
+                membershipQueryClient.queryRegistrationRequest(mgm, requestId.toString()).getOrThrow()
                     ?: throw IllegalArgumentException(
                         "No request with registration request ID '$requestId' was found."
                     )
-            require(requestStatus.status == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
+            require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
             if (approve) {
                 publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
             } else {
                 publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
+            }
+        }
+
+        override fun suspendMember(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        ) {
+            val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
+            val updatedMemberInfo = membershipPersistenceClient.suspendMember(
+                mgm, memberX500Name, serialNumber, reason
+            ).getOrThrow()
+
+            publishMemberInfo(updatedMemberInfo, holdingIdentityShortHash.value, memberShortHash)
+        }
+
+        override fun activateMember(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        ) {
+            val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
+            val updatedMemberInfo = membershipPersistenceClient.activateMember(
+                mgm, memberX500Name, serialNumber, reason
+            ).getOrThrow()
+
+            publishMemberInfo(updatedMemberInfo, holdingIdentityShortHash.value, memberShortHash)
+        }
+
+        private fun validateSuspensionActivationRequest(
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name
+        ): Pair<HoldingIdentity, String> {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+            val memberShortHash = membershipGroupReaderProvider.getGroupReader(mgm)
+                .lookup(memberX500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.let {
+                    require(!it.isMgm) { "This action may not be performed on the MGM." }
+                    it.id
+                } ?: throw NoSuchElementException("Member '$memberX500Name' not found.")
+            return mgm to memberShortHash
+        }
+
+        private fun publishMemberInfo(memberInfo: PersistentMemberInfo, mgm: String, member: String) {
+            try {
+                coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
+                    listOf(
+                        Record(
+                            topic = MEMBER_LIST_TOPIC,
+                            key = "${mgm}-${member}",
+                            value = memberInfo,
+                        )
+                    )
+                )
+            } catch (e: CordaMessageAPIIntermittentException) {
+                // As long as the database update was successful, ignore any failures while publishing to Kafka.
             }
         }
 

@@ -3,13 +3,16 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -36,11 +39,11 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -48,6 +51,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -58,16 +62,19 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -96,9 +103,11 @@ class MGMResourceClientTest {
         const val RULE_LABEL = "rule-label"
         const val RULE_ID = "rule-id"
         const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
+        const val SERIAL = 1L
+        const val REASON = "test"
 
         val RULE_TYPE = ApprovalRuleType.STANDARD
-        val memberName = MemberX500Name.parse("CN=Member,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
+        val memberName = MemberX500Name.parse("CN=Bob,O=Bob,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
         val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
         val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
@@ -110,7 +119,7 @@ class MGMResourceClientTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn VirtualNodeInfo(
             holdingIdentity,
-            CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
+            CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
             null,
             UUID(0, 1),
             null,
@@ -152,14 +161,23 @@ class MGMResourceClientTest {
     }
 
     private val memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
+    private class Operation<T>(
+        private val result: MembershipPersistenceResult<T>,
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = result
 
-    private val alice = createMemberInfo("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
+        override fun createAsyncCommands() = emptyList<Record<*, *>>()
+
+    }
+
+    private val alice = createMemberInfo(mgmX500Name.toString())
+    private val bob = createMemberInfo(memberName.toString(), isMgm = false)
 
     @Suppress("SpreadOperator")
-    private fun createMemberInfo(name: String): MemberInfo = memberInfoFactory.create(
+    private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
             MemberInfoExtension.PARTY_NAME to name,
-            MemberInfoExtension.PARTY_SESSION_KEY to KNOWN_KEY,
+            String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
             MemberInfoExtension.GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
@@ -169,7 +187,7 @@ class MGMResourceClientTest {
         sortedMapOf(
             MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
             MemberInfoExtension.MODIFIED_TIME to clock.instant().toString(),
-            IS_MGM to "true",
+            IS_MGM to isMgm.toString(),
             MemberInfoExtension.SERIAL to "1",
         )
     )
@@ -203,6 +221,8 @@ class MGMResourceClientTest {
 
     private val groupReader: MembershipGroupReader = mock {
         on { lookup(eq(mgmX500Name), any()) } doReturn alice
+        on { lookup(mgmX500Name) } doReturn alice
+        on { lookup(eq(memberName), any()) } doReturn bob
     }
 
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -712,7 +732,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
-                membershipQueryClient.queryRegistrationRequestsStatus(
+                membershipQueryClient.queryRegistrationRequests(
                     holdingIdentity,
                     memberName,
                     listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
@@ -727,7 +747,7 @@ class MGMResourceClientTest {
                 false
             )
 
-            verify(membershipQueryClient).queryRegistrationRequestsStatus(
+            verify(membershipQueryClient).queryRegistrationRequests(
                 holdingIdentity,
                 memberName,
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
@@ -787,10 +807,10 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should publish the correct command when approved`() {
             whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
-            val mockStatus = mock<RegistrationRequestStatus> {
-                on { status } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
             }
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
             )
             mgmResourceClient.start()
@@ -818,10 +838,10 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should publish the correct command when declined`() {
             whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
-            val mockStatus = mock<RegistrationRequestStatus> {
-                on { status } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
             }
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
             )
             mgmResourceClient.start()
@@ -902,10 +922,10 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should fail if request is not pending review`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
-            val mockStatus = mock<RegistrationRequestStatus> {
-                on { status } doReturn RegistrationStatus.SENT_TO_MGM
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.SENT_TO_MGM
             }
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
             )
 
@@ -923,7 +943,7 @@ class MGMResourceClientTest {
         fun `reviewRegistrationRequest should fail if request status cannot be determined`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(null)
             )
 
@@ -1368,6 +1388,276 @@ class MGMResourceClientTest {
             val revokedToken = mgmResourceClient.revokePreAuthToken(shortHash, tokenId, null)
 
             assertThat(revokedToken).isEqualTo(token)
+        }
+    }
+
+    @Nested
+    inner class SuspendMemberTests {
+        @BeforeEach
+        fun setUp() = mgmResourceClient.start()
+
+        @AfterEach
+        fun tearDown() = mgmResourceClient.stop()
+
+        @Test
+        fun `suspendMember should send the correct request`() {
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.suspendMember(
+                    holdingIdentity,
+                    memberName,
+                    SERIAL,
+                    REASON
+                )
+            ).doReturn(
+                Operation(MembershipPersistenceResult.Success(mock()))
+            )
+
+            mgmResourceClient.suspendMember(
+                shortHash,
+                memberName,
+                SERIAL,
+                REASON
+            )
+
+            verify(membershipPersistenceClient).suspendMember(
+                holdingIdentity,
+                memberName,
+                SERIAL,
+                REASON
+            )
+        }
+
+        @Test
+        fun `suspendMember should publish the updated member info`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.suspendMember(shortHash, memberName, SERIAL, REASON)
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.MEMBER_LIST_TOPIC,
+                        "$shortHash-${bob.id}",
+                        mockMemberInfo
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `suspendMember should ignore failure to publish`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            val mockFuture = mock<CompletableFuture<Unit>> {
+                on { getOrThrow() } doThrow CordaMessageAPIIntermittentException("fail")
+            }
+            whenever(publisher.publish(any())).doReturn(listOf(mockFuture))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertDoesNotThrow { mgmResourceClient.suspendMember(shortHash, memberName, SERIAL, REASON) }
+
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `suspendMember should fail if the member cannot be found`() {
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.suspendMember(
+                    ShortHash.of("000000000000"),
+                    memberName
+                )
+            }
+        }
+
+        @Test
+        fun `suspendMember should fail if the member cannot be read`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.suspendMember(shortHash, memberName)
+            }
+        }
+
+        @Test
+        fun `suspendMember should fail if the member is not the MGM`() {
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.suspendMember(shortHash, memberName)
+            }
+        }
+
+        @Test
+        fun `suspendMember should fail if the member to be suspended is the MGM`() {
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.suspendMember(shortHash, mgmX500Name)
+            }
+        }
+
+        @Test
+        fun `suspendMember should fail if the member to be suspended is not found`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(null)
+
+            assertThrows<NoSuchElementException> {
+                mgmResourceClient.suspendMember(shortHash, memberName)
+            }
+        }
+    }
+
+    @Nested
+    inner class ActivateMemberTests {
+        @BeforeEach
+        fun setUp() = mgmResourceClient.start()
+
+        @AfterEach
+        fun tearDown() = mgmResourceClient.stop()
+
+        @Test
+        fun `activateMember should send the correct request`() {
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.activateMember(
+                    holdingIdentity,
+                    memberName,
+                    SERIAL,
+                    REASON
+                )
+            ).doReturn(
+                Operation(MembershipPersistenceResult.Success(mock()))
+            )
+
+            mgmResourceClient.activateMember(
+                shortHash,
+                memberName,
+                SERIAL,
+                REASON
+            )
+
+            verify(membershipPersistenceClient).activateMember(
+                holdingIdentity,
+                memberName,
+                SERIAL,
+                REASON
+            )
+        }
+
+        @Test
+        fun `activateMember should publish the updated member info`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.activateMember(shortHash, memberName, SERIAL, REASON)
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.MEMBER_LIST_TOPIC,
+                        "$shortHash-${bob.id}",
+                        mockMemberInfo
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `activateMember should ignore failure to publish`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            val mockFuture = mock<CompletableFuture<Unit>> {
+                on { getOrThrow() } doThrow CordaMessageAPIIntermittentException("fail")
+            }
+            whenever(publisher.publish(any())).doReturn(listOf(mockFuture))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertDoesNotThrow { mgmResourceClient.activateMember(shortHash, memberName, SERIAL, REASON) }
+
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `activateMember should fail if the member cannot be found`() {
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.activateMember(
+                    ShortHash.of("000000000000"),
+                    memberName
+                )
+            }
+        }
+
+        @Test
+        fun `activateMember should fail if the member cannot be read`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.activateMember(shortHash, memberName)
+            }
+        }
+
+        @Test
+        fun `activateMember should fail if the member is not the MGM`() {
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.activateMember(shortHash, memberName)
+            }
+        }
+
+        @Test
+        fun `activateMember should fail if the member to be activated is the MGM`() {
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.activateMember(shortHash, mgmX500Name)
+            }
+        }
+
+        @Test
+        fun `activateMember should fail if the member to be activated is not found`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(null)
+
+            assertThrows<NoSuchElementException> {
+                mgmResourceClient.activateMember(shortHash, memberName)
+            }
         }
     }
 }

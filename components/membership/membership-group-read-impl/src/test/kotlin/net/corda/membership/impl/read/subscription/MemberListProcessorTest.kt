@@ -13,7 +13,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -28,9 +27,12 @@ import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -85,7 +87,7 @@ class MemberListProcessorTest {
         private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = memberInfoFactory.create(
             sortedMapOf(
                 PARTY_NAME to x500Name,
-                PARTY_SESSION_KEY to knownKeyAsString,
+                String.format(PARTY_SESSION_KEYS, 0) to knownKeyAsString,
                 GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                 *convertPublicKeys().toTypedArray(),
                 *convertEndpoints().toTypedArray(),
@@ -168,6 +170,11 @@ class MemberListProcessorTest {
         }
     }
 
+    @AfterEach
+    fun tearDown() {
+        membershipGroupReadCache.clear()
+    }
+
     @Test
     fun `Key class is String`() {
         assertEquals(String::class.java, memberListProcessor.keyClass)
@@ -200,7 +207,7 @@ class MemberListProcessorTest {
     @Test
     fun `Member list cache is successfully updated with changed record`() {
         memberListProcessor.onSnapshot(memberListFromTopic)
-        val updatedAlice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_ACTIVE)
+        val updatedAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_PENDING)
         val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
@@ -209,9 +216,25 @@ class MemberListProcessorTest {
             alice.mgmProvidedContext.toAvro()
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
-        assertEquals(
-            listOf(bob, charlie, updatedAlice),
-            membershipGroupReadCache.memberListCache.get(aliceIdentity)
+        assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))
+            .containsExactlyInAnyOrder(bob, charlie, updatedAlice)
+    }
+
+    @Test
+    fun `Member list cache is successfully replaced with changed record`() {
+        val oldAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_ACTIVE)
+        val memberList = convertToTestTopicData(listOf(oldAlice), true)
+        memberListProcessor.onSnapshot(memberList)
+        val updatedAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_ACTIVE)
+        val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
+        val newRecord = Record("dummy-topic", topicData.key, topicData.value)
+        val oldValue = PersistentMemberInfo(
+            aliceIdentity.toAvro(),
+            oldAlice.memberProvidedContext.toAvro(),
+            oldAlice.mgmProvidedContext.toAvro()
         )
+        memberListProcessor.onNext(newRecord, oldValue, memberList)
+        assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))
+            .containsExactly(updatedAlice)
     }
 }

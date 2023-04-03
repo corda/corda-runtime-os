@@ -50,6 +50,11 @@ dependencies {
     cpis project(path: ':testing:ledger:ledger-consensual-state-app', configuration: 'cordaCPB')
 }
 
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+}
+
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
     from(configurations.cpis) {

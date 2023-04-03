@@ -15,5 +15,5 @@ dependencies {
     api platform("net.corda:corda-api:$cordaApiVersion")
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'net.corda:corda-serialization'
-    api 'net.corda:corda-base'
+    api project(':libs:base-internal')
 }

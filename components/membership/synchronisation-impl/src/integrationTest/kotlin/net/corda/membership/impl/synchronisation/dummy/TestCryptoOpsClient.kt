@@ -3,6 +3,7 @@ package net.corda.membership.impl.synchronisation.dummy
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -12,7 +13,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
@@ -146,14 +146,14 @@ class TestCryptoOpsClientImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         val keyPair = generatedKeys[publicKey] ?: throw RuntimeException("No such key")
         val signature = Signature.getInstance(
             signatureSpec.signatureName,
         )
         signature.initSign(keyPair.private)
         signature.update(data)
-        return DigitalSignature.WithKey(publicKey, signature.sign(), context)
+        return DigitalSignatureWithKey(publicKey, signature.sign())
     }
 
     override fun sign(
@@ -162,7 +162,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

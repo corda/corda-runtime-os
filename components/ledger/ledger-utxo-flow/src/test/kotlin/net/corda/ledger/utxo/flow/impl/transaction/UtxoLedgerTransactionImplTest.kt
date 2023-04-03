@@ -1,12 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
@@ -27,7 +28,7 @@ internal class UtxoLedgerTransactionImplTest : UtxoLedgerTest() {
     private val referenceStateRef = referenceStateAndRef.ref
 
     private val command = UtxoCommandExample()
-    private val attachment = SecureHash("SHA-256", ByteArray(12))
+    private val attachment = SecureHashImpl("SHA-256", ByteArray(12))
 
     private lateinit var ledgerTransaction: UtxoLedgerTransaction
 
@@ -37,9 +38,10 @@ internal class UtxoLedgerTransactionImplTest : UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val signedTransaction = UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory
+            utxoSignedTransactionFactory,
+            mockNotaryLookup
         )
-            .setNotary(utxoNotaryExample)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addInputState(inputStateRef)

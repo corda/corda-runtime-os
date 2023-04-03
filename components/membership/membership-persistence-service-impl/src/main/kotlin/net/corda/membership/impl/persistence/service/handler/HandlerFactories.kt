@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
@@ -16,8 +17,10 @@ import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
@@ -26,6 +29,7 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoFactory
@@ -83,6 +87,10 @@ internal class HandlerFactories(
         PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
         DeleteApprovalRule::class.java to { DeleteApprovalRuleHandler(persistenceHandlerServices) },
         QueryApprovalRules::class.java to { QueryApprovalRulesHandler(persistenceHandlerServices) },
+        SuspendMember::class.java to { SuspendMemberHandler(persistenceHandlerServices) },
+        ActivateMember::class.java to { ActivateMemberHandler(persistenceHandlerServices) },
+        QueryStaticNetworkInfo::class.java to { QueryStaticNetworkInfoHandler(persistenceHandlerServices) },
+        UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
     )
 
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {

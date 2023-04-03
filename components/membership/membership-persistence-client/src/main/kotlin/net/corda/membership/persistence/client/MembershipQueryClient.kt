@@ -1,13 +1,15 @@
 package net.corda.membership.persistence.client
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -47,10 +49,10 @@ interface MembershipQueryClient : Lifecycle {
      *
      * @return a query result with a matching registration request if the query executed successfully.
      */
-    fun queryRegistrationRequestStatus(
+    fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String
-    ): MembershipQueryResult<RegistrationRequestStatus?>
+    ): MembershipQueryResult<RegistrationRequestDetails?>
 
     /**
      * Query for all the registration requests for a specific holding identity.
@@ -62,12 +64,12 @@ interface MembershipQueryClient : Lifecycle {
      *
      * @return a query result with a matching registration request if the query executed successfully.
      */
-    fun queryRegistrationRequestsStatus(
+    fun queryRegistrationRequests(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name? = null,
         statuses: List<RegistrationStatus> = RegistrationStatus.values().toList(),
         limit: Int? = null
-    ): MembershipQueryResult<List<RegistrationRequestStatus>>
+    ): MembershipQueryResult<List<RegistrationRequestDetails>>
 
     /**
      * Query for members signatures.
@@ -80,7 +82,7 @@ interface MembershipQueryClient : Lifecycle {
     fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>>
+    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>>
 
     /**
      * Query for GroupPolicy.
@@ -131,5 +133,16 @@ interface MembershipQueryClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>>
+
+    /**
+     * Query for the current static network configuration for a group.
+     *
+     * @param groupId The group ID to retrieve the configuration for.
+     *
+     * @return The static network configuration.
+     */
+    fun queryStaticNetworkInfo(
+        groupId: String
+    ): MembershipQueryResult<StaticNetworkInfo>
 }
 

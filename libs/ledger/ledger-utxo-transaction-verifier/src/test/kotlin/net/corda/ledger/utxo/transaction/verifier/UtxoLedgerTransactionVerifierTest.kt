@@ -1,10 +1,14 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.ledger.common.testkit.anotherPublicKeyExample
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
-import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
+import net.corda.ledger.utxo.testkit.notaryX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -40,18 +44,21 @@ class UtxoLedgerTransactionVerifierTest {
         whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
         whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
 
-        whenever(transaction.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))
+        whenever(transaction.id).thenReturn(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)))
         whenever(transaction.signatories).thenReturn(listOf(signatory))
         whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef))
         whenever(transaction.outputContractStates).thenReturn(listOf(state))
         whenever(transaction.inputTransactionStates).thenReturn(listOf(inputTransactionState))
         whenever(transaction.referenceTransactionStates).thenReturn(listOf(referenceTransactionState))
         whenever(transaction.commands).thenReturn(listOf(command))
-        whenever(transaction.notary).thenReturn(utxoNotaryExample)
+        whenever(transaction.notaryName).thenReturn(notaryX500Name)
+        whenever(transaction.notaryKey).thenReturn(publicKeyExample)
         whenever(transaction.metadata).thenReturn(metadata)
 
-        whenever(inputTransactionState.notary).thenReturn(utxoNotaryExample)
-        whenever(referenceTransactionState.notary).thenReturn(utxoNotaryExample)
+        whenever(inputTransactionState.notaryName).thenReturn(notaryX500Name)
+        whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
+        whenever(referenceTransactionState.notaryName).thenReturn(notaryX500Name)
+        whenever(referenceTransactionState.notaryKey).thenReturn(publicKeyExample)
     }
 
     @Test
@@ -105,9 +112,10 @@ class UtxoLedgerTransactionVerifierTest {
 
     @Test
     fun `throws an exception when input and reference states don't have the same notary`() {
-        val anotherNotary = Party(utxoNotaryExample.name, mock())
-        whenever(inputTransactionState.notary).thenReturn(anotherNotary)
-        whenever(referenceTransactionState.notary).thenReturn(utxoNotaryExample)
+        whenever(inputTransactionState.notaryName).thenReturn(notaryX500Name)
+        whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
+        whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
+        whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("Input and reference states' notaries need to be the same.")
@@ -115,9 +123,10 @@ class UtxoLedgerTransactionVerifierTest {
 
     @Test
     fun `throws an exception when input and reference states don't have the same notary passed into the verification`() {
-        val anotherNotary = Party(utxoNotaryExample.name, mock())
-        whenever(inputTransactionState.notary).thenReturn(anotherNotary)
-        whenever(referenceTransactionState.notary).thenReturn(anotherNotary)
+        whenever(inputTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
+        whenever(inputTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
+        whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
+        whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("Input and reference states' notaries need to be the same as the UtxoLedgerTransaction's notary")
@@ -131,7 +140,7 @@ class UtxoLedgerTransactionVerifierTest {
     @Test
     fun `catches exceptions from contract verification and outputs them as failure reasons`() {
         val validContractAState = stateAndRef<MyInvalidContractA>(
-            SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0
+            SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0
         )
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(emptyList())
@@ -159,8 +168,12 @@ class UtxoLedgerTransactionVerifierTest {
                     return C::class.java
                 }
 
-                override fun getNotary(): Party {
-                    return utxoNotaryExample
+                override fun getNotaryName(): MemberX500Name {
+                    return notaryX500Name
+                }
+
+                override fun getNotaryKey(): PublicKey {
+                    return publicKeyExample
                 }
 
                 override fun getEncumbranceGroup(): EncumbranceGroup? {

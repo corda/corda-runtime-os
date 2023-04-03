@@ -11,10 +11,6 @@ import com.typesafe.config.ConfigValue
  */
 @Suppress("TooManyFunctions")
 interface SmartConfig : Config {
-    companion object {
-        const val SECRET_KEY = "configSecret"
-    }
-
     /**
      * Factory for creating similar [SmartConfig] objects.
      */

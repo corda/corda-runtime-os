@@ -2,6 +2,7 @@ package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
 import net.corda.flow.application.serialization.SerializationServiceInternal;
+import net.corda.flow.application.sessions.impl.FlowSessionImpl;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
@@ -12,12 +13,12 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
+import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.types.MemberX500Name;
-import net.corda.v5.serialization.SerializedBytes;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -109,7 +110,7 @@ public class FlowSessionImplJavaTest {
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{1, 2, 3});
-        when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytesImpl(new byte[]{1, 2, 3}));
         when(serializationService.deserializeAndCheckType(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);

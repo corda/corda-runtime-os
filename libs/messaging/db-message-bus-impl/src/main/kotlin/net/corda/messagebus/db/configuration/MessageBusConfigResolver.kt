@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.messagebus.api.configuration.AdminConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.configuration.getStringOrDefault
@@ -48,15 +49,19 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     /**
      * Resolve the provided configuration and return a valid set of DB properties suitable for the given role.
      *
-     * @param messageBusConfig The supplied message bus configuration. Must match the schema used in the defaults and enforced
-     *               config files included with this library.
-     * @param rolePath The role to be configured. This is a path representing the object type being created at the patterns
-     *             layer and a description of which consumer or producer is requested.
+     * @param messageBusConfig The supplied message bus configuration. Must match the schema used in the defaults and
+     * enforced config files included with this library.
+     * @param rolePath The role to be configured. This is a path representing the object type being created at the
+     * patterns layer and a description of which consumer or producer is requested.
      * @param configParams A config object containing parameters to resolve against. Should be obtained from the
-     *                     required configuration provided to the builders.
+     * required configuration provided to the builders.
      * @return DB properties to be used for the given role type based on the bus config and config params
      */
-    private fun resolve(messageBusConfig: SmartConfig, rolePath: String, configParams: SmartConfig): Pair<SmartConfig, DbAccessProperties> {
+    private fun resolve(
+        messageBusConfig: SmartConfig,
+        rolePath: String,
+        configParams: SmartConfig
+    ): Pair<SmartConfig, DbAccessProperties> {
         val busType = messageBusConfig.getString(BUS_TYPE)
         if (busType !in EXPECTED_BUS_TYPES) {
             throw CordaMessageAPIConfigException(
@@ -75,7 +80,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
-        val jdbcProperties = if(busType == DATABASE_BUS_TYPE) {
+        val jdbcProperties = if (busType == DATABASE_BUS_TYPE) {
             DbAccessProperties(
                 dbParams.getStringOrNull(JDBC_URL),
                 dbParams.getStringOrDefault(JDBC_USER, ""),
@@ -105,12 +110,34 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved user configurable consumer values to be used for the given role type
      */
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): ResolvedConsumerConfig {
-        val (dbProperties, jdbcProperties) = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
+        val (dbProperties, jdbcProperties) = resolve(
+            messageBusConfig,
+            consumerConfig.role.configPath,
+            consumerConfig.toSmartConfig()
+        )
         return ResolvedConsumerConfig(
             consumerConfig.group,
             consumerConfig.clientId,
             dbProperties.getInt(DB_MAX_POLL_RECORDS),
             CordaOffsetResetStrategy.valueOf(dbProperties.getString(AUTO_OFFSET_RESET).uppercase()),
+            jdbcProperties.jdbcUrl,
+            jdbcProperties.username,
+            jdbcProperties.password
+        )
+    }
+
+    /**
+     * Resolve the provided configuration and return a valid set of DB properties suitable for the given role
+     * as well as a concrete class containing user configurable admin values.
+     *
+     * @param messageBusConfig The supplied message bus configuration. Must match the schema used in the defaults and
+     * enforced config files included with this library.
+     * @param adminConfig User configurable values.
+     * @return Resolved user configurable consumer values to be used for the given role type
+     */
+    fun resolve(messageBusConfig: SmartConfig, adminConfig: AdminConfig): ResolvedAdminConfig {
+        val (_, jdbcProperties) = resolve(messageBusConfig, "admin.admin", adminConfig.toSmartConfig())
+        return ResolvedAdminConfig(
             jdbcProperties.jdbcUrl,
             jdbcProperties.username,
             jdbcProperties.password
@@ -127,7 +154,11 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved user configurable DB values to be used for the given role type
      */
     fun resolve(messageBusConfig: SmartConfig, producerConfig: ProducerConfig): ResolvedProducerConfig {
-        val (_, jdbcProperties) = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
+        val (_, jdbcProperties) = resolve(
+            messageBusConfig,
+            producerConfig.role.configPath,
+            producerConfig.toSmartConfig()
+        )
         return ResolvedProducerConfig(
             producerConfig.clientId,
             jdbcProperties.jdbcUrl,
@@ -172,6 +203,18 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
                 mapOf(
                     CLIENT_ID_PATH to clientId,
                     INSTANCE_ID_PATH to instanceId,
+                    GROUP_PATH to "<undefined>"
+                )
+            )
+        )
+    }
+
+    private fun AdminConfig.toSmartConfig(): SmartConfig {
+        return smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    CLIENT_ID_PATH to clientId,
+                    INSTANCE_ID_PATH to "<undefined>",
                     GROUP_PATH to "<undefined>"
                 )
             )

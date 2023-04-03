@@ -13,6 +13,7 @@ class RegistrationRequestEntityTest {
     private companion object {
         const val HOLDING_ID_1 = "1B229F6F6C88"
         const val HOLDING_ID_2 = "58B6030FABDD"
+        const val SERIAL = 0L
 
         const val REGISTRATION_STATUS_1 = "status_1"
         const val REGISTRATION_STATUS_2 = "status_2"
@@ -21,6 +22,10 @@ class RegistrationRequestEntityTest {
         const val VALUE_1 = "value_1"
         const val KEY_2 = "key_2"
         const val VALUE_2 = "value_2"
+
+        val signatureKey = "signatureKey".toByteArray()
+        val signatureContent = "signatureContent".toByteArray()
+        const val SIGNATURE_SPEC = "signature_spec"
 
         val randomId: String get() = UUID.randomUUID().toString()
         val currentInstant: Instant get() = Instant.now()
@@ -42,7 +47,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         val e2 = RegistrationRequestEntity(
             registrationId,
@@ -50,7 +59,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_2,
             currentInstant.minusSeconds(5),
             currentInstant.minusSeconds(5),
-            getRegistrationContext(KEY_2 to VALUE_2)
+            getRegistrationContext(KEY_2 to VALUE_2),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         assertEquals(e1, e2)
         assertEquals(e1.hashCode(), e2.hashCode())
@@ -64,7 +77,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         val e2 = RegistrationRequestEntity(
             randomId,
@@ -72,7 +89,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_2,
             currentInstant.minusSeconds(5),
             currentInstant.minusSeconds(5),
-            getRegistrationContext(KEY_2 to VALUE_2)
+            getRegistrationContext(KEY_2 to VALUE_2),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         assertNotEquals(e1, e2)
         assertNotEquals(e1.hashCode(), e2.hashCode())
@@ -86,7 +107,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         assertEquals(e1, e1)
         assertEquals(e1.hashCode(), e1.hashCode())
@@ -100,7 +125,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         assertNotEquals(e1, null)
     }
@@ -113,7 +142,11 @@ class RegistrationRequestEntityTest {
             REGISTRATION_STATUS_1,
             currentInstant,
             currentInstant,
-            getRegistrationContext(KEY_1 to VALUE_1)
+            getRegistrationContext(KEY_1 to VALUE_1),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            SERIAL,
         )
         assertNotEquals(e1, "")
     }

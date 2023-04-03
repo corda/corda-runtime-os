@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeyUtils
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
@@ -29,9 +29,9 @@ class CompositeKeyImplTests {
         private lateinit var alicePublicKey: PublicKey
         private lateinit var bobPublicKey: PublicKey
         private lateinit var charliePublicKey: PublicKey
-        private lateinit var aliceSignature: DigitalSignature.WithKey
-        private lateinit var bobSignature: DigitalSignature.WithKey
-        private lateinit var charlieSignature: DigitalSignature.WithKey
+        private lateinit var aliceSignature: DigitalSignatureWithKey
+        private lateinit var bobSignature: DigitalSignatureWithKey
+        private lateinit var charlieSignature: DigitalSignatureWithKey
         private lateinit var target: CompositeKeyProviderImpl
 
         fun generateKeyPair(spec: KeySpec): KeyPair {
@@ -52,9 +52,9 @@ class CompositeKeyImplTests {
             alicePublicKey = generateKeyPair(ECDSA_SECP256K1_SPEC).public
             bobPublicKey = generateKeyPair(ECDSA_SECP256R1_SPEC).public
             charliePublicKey = generateKeyPair(EDDSA_ED25519_SPEC).public
-            aliceSignature = DigitalSignature.WithKey(alicePublicKey, ByteArray(5) { 255.toByte() }, emptyMap())
-            bobSignature = DigitalSignature.WithKey(bobPublicKey, ByteArray(5) { 255.toByte() }, emptyMap())
-            charlieSignature = DigitalSignature.WithKey(charliePublicKey, ByteArray(5) { 255.toByte() }, emptyMap())
+            aliceSignature = DigitalSignatureWithKey(alicePublicKey, ByteArray(5) { 255.toByte() })
+            bobSignature = DigitalSignatureWithKey(bobPublicKey, ByteArray(5) { 255.toByte() })
+            charlieSignature = DigitalSignatureWithKey(charliePublicKey, ByteArray(5) { 255.toByte() })
             target = CompositeKeyProviderImpl()
         }
     }
@@ -271,11 +271,11 @@ class CompositeKeyImplTests {
         val publicKeyEd1 = charliePublicKey
         val publicKeyEd2 = generateKeyPair(EDDSA_ED25519_SPEC).public
 
-        val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() }, emptyMap())
-        val k1Signature = DigitalSignature.WithKey(publicKeyK1, ByteArray(5) { 255.toByte() }, emptyMap())
-        val r1Signature = DigitalSignature.WithKey(publicKeyR1, ByteArray(5) { 255.toByte() }, emptyMap())
-        val edSignature1 = DigitalSignature.WithKey(publicKeyEd1, ByteArray(5) { 255.toByte() }, emptyMap())
-        val edSignature2 = DigitalSignature.WithKey(publicKeyEd2, ByteArray(5) { 255.toByte() }, emptyMap())
+        val rsaSignature = DigitalSignatureWithKey(publicKeyRSA, ByteArray(5) { 255.toByte() })
+        val k1Signature = DigitalSignatureWithKey(publicKeyK1, ByteArray(5) { 255.toByte() })
+        val r1Signature = DigitalSignatureWithKey(publicKeyR1, ByteArray(5) { 255.toByte() })
+        val edSignature1 = DigitalSignatureWithKey(publicKeyEd1, ByteArray(5) { 255.toByte() })
+        val edSignature2 = DigitalSignatureWithKey(publicKeyEd2, ByteArray(5) { 255.toByte() })
 
         val compositeKey = target.createFromKeys(
             publicKeyRSA,
@@ -311,7 +311,7 @@ class CompositeKeyImplTests {
         assertEquals(composite1.children, composite2.children)
     }
 
-    internal fun Iterable<DigitalSignature.WithKey>.byKeys() = map { it.by }.toSet()
+    internal fun Iterable<DigitalSignatureWithKey>.byKeys() = map { it.by }.toSet()
 
 //    @Test
 //    fun `Test save to keystore`() {

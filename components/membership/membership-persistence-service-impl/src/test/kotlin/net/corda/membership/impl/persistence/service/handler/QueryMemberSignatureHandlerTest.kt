@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
@@ -14,8 +15,8 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
-import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
@@ -111,7 +112,7 @@ class QueryMemberSignatureHandlerTest {
                 HoldingIdentity("name-$it", "group")
             }
         )
-        whenever(entityManager.find(eq(MemberSignatureEntity::class.java), any())).doReturn(null)
+        whenever(entityManager.find(eq(MemberInfoEntity::class.java), any())).doReturn(null)
 
         assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)
@@ -131,15 +132,20 @@ class QueryMemberSignatureHandlerTest {
         val request = QueryMemberSignature(
             members
         )
-        whenever(entityManager.find(eq(MemberSignatureEntity::class.java), any())).doAnswer {
+        whenever(entityManager.find(eq(MemberInfoEntity::class.java), any())).doAnswer {
             val memberKey = it.arguments[1] as MemberInfoEntityPrimaryKey
-            MemberSignatureEntity(
+            MemberInfoEntity(
                 memberKey.groupId,
                 memberKey.memberX500Name,
-                true,
+                false,
+                "ACTIVE",
+                Instant.ofEpochMilli(200),
+                "memberContext".toByteArray(),
                 "pk-${memberKey.memberX500Name}".toByteArray(),
-                "context-${memberKey.memberX500Name}".toByteArray(),
                 "sig-${memberKey.memberX500Name}".toByteArray(),
+                "dummySignatureSpec",
+                "mgmContext".toByteArray(),
+                1L,
             )
         }
         whenever(keyValuePairListDeserializer.deserialize(any())).doAnswer {
@@ -163,16 +169,9 @@ class QueryMemberSignatureHandlerTest {
                     member,
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("pk-${member.x500Name}".toByteArray()),
-                        ByteBuffer.wrap("sig-${member.x500Name}".toByteArray()),
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(
-                                    "key",
-                                    "context-${member.x500Name}",
-                                )
-                            )
-                        ),
-                    )
+                        ByteBuffer.wrap("sig-${member.x500Name}".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummySignatureSpec", null, null)
                 )
             }
         )
@@ -191,15 +190,20 @@ class QueryMemberSignatureHandlerTest {
         val request = QueryMemberSignature(
             members
         )
-        whenever(entityManager.find(eq(MemberSignatureEntity::class.java), any())).doAnswer {
+        whenever(entityManager.find(eq(MemberInfoEntity::class.java), any())).doAnswer {
             val memberKey = it.arguments[1] as MemberInfoEntityPrimaryKey
-            MemberSignatureEntity(
+            MemberInfoEntity(
                 memberKey.groupId,
                 memberKey.memberX500Name,
-                true,
+                false,
+                "ACTIVE",
+                Instant.ofEpochMilli(200),
+                "memberContext".toByteArray(),
                 "pk-${memberKey.memberX500Name}".toByteArray(),
-                byteArrayOf(),
                 "sig-${memberKey.memberX500Name}".toByteArray(),
+                "dummySignatureSpec",
+                "mgmContext".toByteArray(),
+                1L,
             )
         }
 
@@ -212,10 +216,8 @@ class QueryMemberSignatureHandlerTest {
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("pk-${member.x500Name}".toByteArray()),
                         ByteBuffer.wrap("sig-${member.x500Name}".toByteArray()),
-                        KeyValuePairList(
-                            emptyList()
-                        ),
-                    )
+                    ),
+                    CryptoSignatureSpec("dummySignatureSpec", null, null)
                 )
             }
         )

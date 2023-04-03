@@ -7,6 +7,7 @@ import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
@@ -16,6 +17,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.registration.RegistrationProxy
@@ -31,7 +33,6 @@ import net.corda.utilities.millis
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -233,7 +234,7 @@ class MemberProcessorTestUtils {
 
         fun lookUpBySessionKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
             val result = member?.let {
-                groupReader.lookupBySessionKey(it.sessionInitiationKey.calculateHash())
+                groupReader.lookupBySessionKey(it.sessionInitiationKeys.first().calculateHash())
             }
             assertNotNull(result)
             result!!
@@ -299,7 +300,7 @@ class MemberProcessorTestUtils {
         private fun getCpiIdentifier(
             name: String = "INTEGRATION_TEST",
             version: String
-        ) = CpiIdentifier(name, version, SecureHash.parse("SHA-256:0000000000000000"))
+        ) = CpiIdentifier(name, version, parseSecureHash("SHA-256:0000000000000000"))
 
         private fun getCpiMetadata(
             cpiVersion: String,
@@ -307,7 +308,7 @@ class MemberProcessorTestUtils {
             cpiIdentifier: CpiIdentifier = getCpiIdentifier(version = cpiVersion)
         ) = CpiMetadata(
             cpiIdentifier,
-            SecureHash.parse("SHA-256:0000000000000000"),
+            parseSecureHash("SHA-256:0000000000000000"),
             emptyList(),
             groupPolicy,
             -1,

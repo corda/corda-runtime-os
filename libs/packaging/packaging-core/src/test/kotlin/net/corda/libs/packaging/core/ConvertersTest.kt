@@ -1,7 +1,7 @@
 package net.corda.libs.packaging.core
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
@@ -17,6 +17,7 @@ class ConvertersTest {
             Assertions.assertEquals(cpkMetadata1.type, cpkMetadata2.type)
             Assertions.assertEquals(cpkMetadata1.fileChecksum, cpkMetadata2.fileChecksum)
             Assertions.assertEquals(cpkMetadata1.cordappCertificates, cpkMetadata2.cordappCertificates)
+            Assertions.assertEquals(cpkMetadata1.externalChannelsConfig, cpkMetadata2.externalChannelsConfig)
         }
 
         fun assertCordappManifestEquals(m1 : CordappManifest, m2 : CordappManifest) {
@@ -117,7 +118,7 @@ class ConvertersTest {
     fun `CPI․Metadata round trip`() {
         val original = CpiMetadata(
             CpkMetaTestData.cpiId,
-            SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(CpkMetaTestData.random::nextBytes)),
+            SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(CpkMetaTestData.random::nextBytes)),
             listOf(CpkMetaTestData.create()),
             "someString",
             -1,

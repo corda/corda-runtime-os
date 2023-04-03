@@ -8,14 +8,22 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.membership.MembershipSchema
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.versioning.Version
+import java.security.cert.CertificateException
+import java.security.cert.CertificateExpiredException
+import java.security.cert.CertificateFactory
+import java.security.cert.CertificateNotYetValidException
+import java.security.cert.X509Certificate
+import java.util.Date
 
 internal class MGMRegistrationContextValidator(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val orderVerifier: OrderVerifier = OrderVerifier(),
     private val p2pEndpointVerifier: P2pEndpointVerifier = P2pEndpointVerifier(orderVerifier),
     private val configurationGetService: ConfigurationGetService,
+    private val clock: Clock
 ) {
 
     private companion object {
@@ -23,7 +31,6 @@ internal class MGMRegistrationContextValidator(
 
         val errorMessageMap = errorMessageTemplate.run {
             mapOf(
-                SESSION_KEY_ID to format("session key"),
                 ECDH_KEY_ID to format("ECDH key"),
                 REGISTRATION_PROTOCOL to format("registration protocol"),
                 SYNCHRONISATION_PROTOCOL to format("synchronisation protocol"),
@@ -34,6 +41,8 @@ internal class MGMRegistrationContextValidator(
             )
         }
     }
+
+    private val certificateFactory = CertificateFactory.getInstance("X.509")
 
     @Suppress("ThrowsCount")
     @Throws(MGMRegistrationContextValidationException::class)
@@ -81,11 +90,22 @@ internal class MGMRegistrationContextValidator(
             context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No session trust store was provided." }
                 require(orderVerifier.isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
+                this.map { key ->
+                    validateTrustrootCert(context[key]!!, key)
+                }
             }
         }
         context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
             require(isNotEmpty()) { "No TLS trust store was provided." }
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
+            this.map { key ->
+                validateTrustrootCert(context[key]!!, key)
+            }
+        }
+
+        context.keys.filter { SESSION_KEY_IDS.format("[0-9]+").toRegex().matches(it) }.apply {
+            require(isNotEmpty()) { "No session key was provided." }
+            require(orderVerifier.isOrdered(this, 3)) { "Provided session keys are incorrectly numbered." }
         }
         val contextRegistrationTlsType = context[TLS_TYPE]?.let { tlsType ->
             TlsType.fromString(tlsType) ?: throw IllegalArgumentException("Invalid TLS type: $tlsType")
@@ -93,9 +113,31 @@ internal class MGMRegistrationContextValidator(
         val clusterTlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
         if (contextRegistrationTlsType != clusterTlsType) {
             throw IllegalArgumentException(
-                "A cluster with TLS type is $clusterTlsType can not register " +
-                "MGM with TLS type $contextRegistrationTlsType"
+                "A cluster configured with TLS type of $clusterTlsType can not register " +
+                "an MGM with TLS type $contextRegistrationTlsType"
             )
+        }
+    }
+
+    @Suppress("ThrowsCount")
+    private fun validateTrustrootCert(pemCert: String, key: String) {
+        val certificate = try {
+            certificateFactory.generateCertificate(pemCert.byteInputStream())
+        } catch (ex: CertificateException) {
+            throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
+                    "was not a valid PEM certificate.")
+        }
+
+        try {
+            (certificate as X509Certificate).checkValidity(Date.from(clock.instant()))
+        } catch (ex: Exception) {
+            when(ex) {
+                is CertificateExpiredException, is CertificateNotYetValidException -> {
+                    throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
+                    "does not have a valid validity period.")
+                }
+                else -> throw ex
+            }
         }
     }
 }

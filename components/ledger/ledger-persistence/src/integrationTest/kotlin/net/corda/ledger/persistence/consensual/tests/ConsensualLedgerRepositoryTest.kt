@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -32,7 +33,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
@@ -163,7 +164,7 @@ class ConsensualLedgerRepositoryTest {
                             transaction,
                             index,
                             serializationService.serialize(signature).bytes,
-                            digest("SHA-256", signature.by.encoded).toString(),
+                            signature.by.toString(),
                             createdTs
                         )
                     }
@@ -252,7 +253,7 @@ class ConsensualLedgerRepositoryTest {
                         ).bytes
                     )
                     assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        digest("SHA-256", signature.by.encoded).toString()
+                        signature.by.toString()
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
@@ -402,5 +403,5 @@ class ConsensualLedgerRepositoryTest {
     }
 
     private fun digest(algorithm: String, data: ByteArray) =
-        SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(data))
+        SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(data))
 }

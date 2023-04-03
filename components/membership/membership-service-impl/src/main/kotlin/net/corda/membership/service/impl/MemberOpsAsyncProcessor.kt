@@ -98,11 +98,11 @@ internal class MemberOpsAsyncProcessor(
             return Outcome.FAILED_CANNOT_RETRY to emptyList()
         }
         return try {
-            val requestStatus = membershipQueryClient.queryRegistrationRequestStatus(
+            val requestStatus = membershipQueryClient.queryRegistrationRequest(
                 holdingIdentity,
                 request.requestId
             ).getOrThrow()
-            if ((requestStatus != null) && (requestStatus.status != RegistrationStatus.NEW)) {
+            if ((requestStatus != null) && (requestStatus.registrationStatus != RegistrationStatus.NEW)) {
                 // This request had already passed this state. no need to continue.
                 return Outcome.SUCCESS to emptyList()
             }

@@ -1,11 +1,14 @@
 package net.corda.sandboxgroupcontext.service
 
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 interface CacheControl {
-    fun initCache(capacity: Long)
+    fun initCaches(capacity: Long) = SandboxGroupType.values().forEach { initCache(it, capacity) }
+
+    fun initCache(type: SandboxGroupType, capacity: Long)
     fun flushCache(): CompletableFuture<*>
     fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>?
 

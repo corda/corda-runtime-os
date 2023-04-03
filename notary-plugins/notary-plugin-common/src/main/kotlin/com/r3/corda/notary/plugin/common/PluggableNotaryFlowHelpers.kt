@@ -2,8 +2,10 @@
 
 package com.r3.corda.notary.plugin.common
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
@@ -20,11 +22,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
-import java.security.MessageDigest
 import java.security.PublicKey
 
 /**
@@ -33,18 +32,22 @@ import java.security.PublicKey
  * @throws IllegalStateException if the request signature could not be validated.
  */
 @Suspendable
+@Suppress("LongParameterList")
 fun validateRequestSignature(notarizationRequest: NotarizationRequest,
-                             requestingParty: Party,
+                             requestingPartyKey: PublicKey,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
-                             signature: NotarizationRequestSignature
+                             signatureAndSpec: NotarizationRequestSignature,
+                             digestService: DigestService
 ) {
-    val digitalSignature = signature.digitalSignature
-
-    if (requestingParty.owningKey != digitalSignature.by) {
+    val digitalSignature = signatureAndSpec.digitalSignature
+    val digestAlgorithmOfSignatureKeyId = digitalSignature.by.algorithm
+    val requestingPartyKeyId =
+        requestingPartyKey.fullIdHash(digestService, digestAlgorithmOfSignatureKeyId)
+    if (requestingPartyKeyId != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingParty.owningKey.publicKeyId()}, " +
-                    "but received by ${digitalSignature.by.publicKeyId()}}"
+            "Expected a signature by ${requestingPartyKeyId.shortHash}, " +
+                    "but received by ${digitalSignature.by.shortHash}}"
         )
     }
 
@@ -54,8 +57,8 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
         signatureVerifier.verify(
             expectedSignedBytes,
             digitalSignature.bytes,
-            digitalSignature.by,
-            SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
+            requestingPartyKey,
+            signatureAndSpec.signatureSpec
         )
     } catch (e: Exception) {
         throw IllegalStateException("Error while verifying request signature.", e)
@@ -67,16 +70,21 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
 fun generateRequestSignature(notarizationRequest: NotarizationRequest,
                              memberInfo: MemberInfo,
                              serializationService: SerializationService,
-                             signingService: SigningService
+                             signingService: SigningService,
+                             signatureSpecService: SignatureSpecService
 ): NotarizationRequestSignature {
     val serializedRequest = serializationService.serialize(notarizationRequest).bytes
-    val myLegalIdentity = memberInfo.sessionInitiationKey
-    val signature = signingService.sign(
-        serializedRequest,
-        myLegalIdentity,
-        SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
-    )
-    return NotarizationRequestSignature(signature, memberInfo.platformVersion)
+    val myLegalIdentity = memberInfo.ledgerKeys.first()
+    val signatureSpec =
+        signatureSpecService.defaultSignatureSpec(myLegalIdentity)
+            ?: throw IllegalStateException("Default signature spec not found for key")
+    val signature =
+        signingService.sign(
+            serializedRequest,
+            myLegalIdentity,
+            signatureSpec
+        )
+    return NotarizationRequestSignature(signature, signatureSpec, memberInfo.platformVersion)
 }
 
 /**
@@ -139,11 +147,8 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
 
 private const val SHORT_KEY_ID_LENGTH = 12
 
-private fun PublicKey.publicKeyId(): String {
-    val digestAlgorithm = DigestAlgorithmName.SHA2_256.name
-    val fullKeyId = SecureHash(
-        digestAlgorithm,
-        MessageDigest.getInstance(digestAlgorithm).digest(encoded)
-    )
-    return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
-}
+private fun PublicKey.fullIdHash(digestService: DigestService, digestAlgorithmName: String): SecureHash =
+    digestService.hash(this.encoded, DigestAlgorithmName(digestAlgorithmName))
+
+private val SecureHash.shortHash: String
+    get() = this.toHexString().substring(0, SHORT_KEY_ID_LENGTH)

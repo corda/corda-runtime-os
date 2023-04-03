@@ -3,7 +3,10 @@
 
 -runee: JavaSE-11
 -runfw: org.apache.felix.framework
--resolve.effective: active
+-resolve.effective: resolve,active
+
+-runvm: \
+    --illegal-access=deny
 
 #uncomment to remote debug
 #-runjdb: 5005

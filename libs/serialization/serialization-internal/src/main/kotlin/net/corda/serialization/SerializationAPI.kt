@@ -1,7 +1,7 @@
 @file:JvmName("SerializationAPI")
 package net.corda.serialization
 
-import net.corda.v5.base.types.ByteSequence
+import net.corda.base.internal.ByteSequence
 
 typealias SerializationMagic = ByteSequence
 

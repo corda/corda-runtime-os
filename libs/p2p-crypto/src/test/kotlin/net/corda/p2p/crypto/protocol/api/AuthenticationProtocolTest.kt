@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.utils.PemCertificate
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
@@ -31,37 +32,37 @@ class AuthenticationProtocolTest {
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {
-        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpecs.ECDSA_SHA256)
     }
 
     @Test
     fun `authentication protocol works successfully with ECDSA key algorithm`() {
-        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpecs.ECDSA_SHA256)
     }
 
     @Test
     fun `authentication protocol works successfully with RSA signatures`() {
-        val signature = Signature.getInstance(SignatureSpec.RSA_SHA256.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpecs.RSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.RSA_SHA256)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpecs.RSA_SHA256)
     }
 
     @Test
     fun `authentication protocol verifies cert if CertificateCheckMode is CheckCertificate`() {
-        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
@@ -70,7 +71,7 @@ class AuthenticationProtocolTest {
         val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
 
         executeProtocol(
-            partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256,
+            partyASessionKey, partyBSessionKey, signature, SignatureSpecs.ECDSA_SHA256,
             certificateCheckMode = certificateCheckMode, partyACertificate = ourCertificate, partyBCertificate = ourCertificate
         )
         //One validator for AuthenticationProtocolInitiator and one for AuthenticationProtocolResponder
@@ -83,12 +84,12 @@ class AuthenticationProtocolTest {
 
     @Test
     fun `authentication protocol methods are idempotent`() {
-        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, duplicateInvocations = true)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpecs.ECDSA_SHA256, duplicateInvocations = true)
     }
 
     @Suppress("LongParameterList")
@@ -156,8 +157,7 @@ class AuthenticationProtocolTest {
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             aliceX500Name,
-            partyASessionKey.public,
-            signatureSpec
+            listOf(partyASessionKey.public to signatureSpec),
         )
         if (duplicateInvocations) {
             assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, partyACertificate, signingCallbackForA))
@@ -165,8 +165,9 @@ class AuthenticationProtocolTest {
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
                 aliceX500Name,
-                partyASessionKey.public,
-                signatureSpec
+                listOf(
+                    partyASessionKey.public to signatureSpec
+                ),
             )
         }
 
@@ -185,8 +186,7 @@ class AuthenticationProtocolTest {
         protocolInitiator.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            partyBSessionKey.public,
-            signatureSpec
+            listOf(partyBSessionKey.public to signatureSpec),
         )
         if (duplicateInvocations) {
             assertThat(protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, partyBCertificate, signingCallbackForB))
@@ -194,8 +194,7 @@ class AuthenticationProtocolTest {
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
                 aliceX500Name,
-                partyBSessionKey.public,
-                signatureSpec
+                listOf(partyBSessionKey.public to signatureSpec),
             )
         }
     }

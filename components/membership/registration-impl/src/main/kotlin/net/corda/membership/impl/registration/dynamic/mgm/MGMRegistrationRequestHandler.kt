@@ -2,15 +2,14 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -34,10 +33,10 @@ internal class MGMRegistrationRequestHandler (
     fun persistRegistrationRequest(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
-        mgmInfo: MemberInfo
+        mgmInfo: SignedMemberInfo
     ) {
         val serializedMemberContext = keyValuePairListSerializer.serialize(
-            mgmInfo.memberProvidedContext.toWire()
+            mgmInfo.memberInfo.memberProvidedContext.toWire()
         ) ?: throw InvalidMembershipRegistrationException(
             "Failed to serialize the member context for this request."
         )
@@ -48,11 +47,9 @@ internal class MGMRegistrationRequestHandler (
                 registrationId = registrationId.toString(),
                 requester = holdingIdentity,
                 memberContext = ByteBuffer.wrap(serializedMemberContext),
-                signature = CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList())
-                )
+                signature = mgmInfo.memberSignature,
+                signatureSpec = mgmInfo.memberSignatureSpec,
+                serial = 0L,
             )
         ).execute()
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
@@ -63,8 +60,8 @@ internal class MGMRegistrationRequestHandler (
     }
 
     fun throwIfRegistrationAlreadyApproved(holdingIdentity: HoldingIdentity) {
-        val result = membershipQueryClient.queryRegistrationRequestsStatus(holdingIdentity).getOrThrow()
-        result.find { it.status == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
+        val result = membershipQueryClient.queryRegistrationRequests(holdingIdentity).getOrThrow()
+        result.find { it.registrationStatus == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
             throw InvalidMembershipRegistrationException("Registration failed, there is already an approved registration for" +
                 " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}.")
         }

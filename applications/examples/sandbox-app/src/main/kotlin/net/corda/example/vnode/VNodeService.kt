@@ -42,7 +42,7 @@ class VNodeServiceImpl @Activate constructor(
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     init {
-        sandboxGroupContextComponent.initCache(1)
+        sandboxGroupContextComponent.initCaches(1)
     }
 
     override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {

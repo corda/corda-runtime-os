@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.NotSerializableDetailedException
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
@@ -8,7 +9,6 @@ import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
@@ -461,7 +461,7 @@ class EnumEvolvabilityTests {
 
         val sb1 = EvolvabilityTests::class.java.getResource(resource).readBytes()
 
-        val envelope = DeserializationInput(sf).deserializeAndReturnEnvelope(SerializedBytes<WrapsUnknown>(sb1)).envelope
+        val envelope = DeserializationInput(sf).deserializeAndReturnEnvelope(SerializedBytesImpl<WrapsUnknown>(sb1)).envelope
 
         assertTrue(envelope.transformsSchema.types.containsKey(WithUnknownTest::class.java.name))
         assertTrue(envelope.transformsSchema.types[WithUnknownTest::class.java.name]!!.containsKey(TransformTypes.Unknown))

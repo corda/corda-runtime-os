@@ -1,9 +1,11 @@
 package net.corda.p2p.gateway.messaging
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,10 +16,8 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.schema.Schemas.P2P.GATEWAY_TLS_CERTIFICATES
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -239,7 +239,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `when keystore is not using stubs, sign with known publicKey will send the correct data`() {
             val returnedData = "ok".toByteArray()
-            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignatureWithKey(publicKeyOne, returnedData)
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
             dynamicKeyStore.sign(publicKeyOne, spec, data)
@@ -250,7 +250,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `when keystore is not using stubs, sign with known publicKey will return the correct data`() {
             val returnedData = "ok".toByteArray()
-            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignatureWithKey(publicKeyOne, returnedData)
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
 
@@ -277,7 +277,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `onNext will replace the public key`() {
             val returnedData = "ok".toByteArray()
-            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignatureWithKey(publicKeyOne, returnedData)
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
             processorForKeystore.firstValue.onNext(
@@ -395,7 +395,7 @@ class DynamicKeyStoreTest {
             val data = "hello".toByteArray()
             val returnedData = "ok".toByteArray()
             val publicKey = certificates["certificate1"]?.publicKey!!
-            val signatureWithKey = DigitalSignature.WithKey(publicKey, returnedData, emptyMap())
+            val signatureWithKey = DigitalSignatureWithKey(publicKey, returnedData)
             whenever(
                 cryptoOpsClient.sign(
                     "id",

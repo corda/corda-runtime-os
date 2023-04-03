@@ -1,5 +1,7 @@
 package net.corda.uniqueness.backingstore.impl
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -12,6 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.uniqueness.backingstore.BackingStore
@@ -40,13 +43,14 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.time.Instant
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.OptimisticLockException
 import javax.persistence.RollbackException
 
 @Suppress("ForbiddenComment")
-// TODO: Reimplement metrics, config
 /**
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
  */
@@ -80,6 +84,9 @@ open class JPABackingStoreImpl @Activate constructor(
         get() = lifecycleCoordinator.isRunning
 
     override fun session(holdingIdentity: HoldingIdentity, block: (BackingStore.Session) -> Unit) {
+
+        val sessionStartTime = Instant.now().toEpochMilli()
+
         val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
             VirtualNodeDbType.UNIQUENESS.getSchemaName(holdingIdentity.shortHash),
             DbPrivilege.DML,
@@ -96,13 +103,19 @@ open class JPABackingStoreImpl @Activate constructor(
 
         @Suppress("TooGenericExceptionCaught")
         try {
-            block(SessionImpl(entityManager))
+            block(SessionImpl(holdingIdentity, entityManager))
             entityManager.close()
         } catch (e: Exception) {
             // TODO: Need to figure out what exceptions can be thrown when using JPA directly
             // instead of Hibernate and how to handle
             entityManager.close()
             throw e
+        } finally {
+            CordaMetrics.Metric.UniquenessBackingStoreSessionExecutionTime
+                .builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                .build()
+                .record(Duration.ofMillis(Instant.now().toEpochMilli() - sessionStartTime))
         }
     }
 
@@ -117,6 +130,7 @@ open class JPABackingStoreImpl @Activate constructor(
     }
 
     protected open inner class SessionImpl(
+        private val holdingIdentity: HoldingIdentity,
         private val entityManager: EntityManager
     ) : BackingStore.Session {
 
@@ -127,67 +141,101 @@ open class JPABackingStoreImpl @Activate constructor(
         override fun executeTransaction(
             block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit
         ) {
-            for (attemptNumber in 1..MAX_ATTEMPTS) {
-                try {
-                    entityManager.transaction.begin()
-                    block(this, transactionOps)
-                    entityManager.transaction.commit()
-                    return
-                } catch (e: Exception) {
-                    when (e) {
-                        is EntityExistsException,
-                        is RollbackException,
-                        is OptimisticLockException -> {
-                            // [EntityExistsException] Occurs when another worker committed a
-                            // request with conflicting input states. Retry (by not re-throwing the
-                            // exception), because the requests with conflicts are removed from the
-                            // batch by the code passed in as `block`.
+            val transactionStartTime = Instant.now().toEpochMilli()
 
-                            // TODO This is needed because some of the exceptions
-                            //  we retry do not roll the transaction back. Once
-                            //  we improve our error handling in CORE-4983 this
-                            //  won't be necessary
-                            if (entityManager.transaction.isActive) {
-                                entityManager.transaction.rollback()
-                                log.debug { "Rolled back transaction" }
+            try {
+                for (attemptNumber in 1..MAX_ATTEMPTS) {
+                    try {
+                        entityManager.transaction.begin()
+                        block(this, transactionOps)
+                        entityManager.transaction.commit()
+
+                        CordaMetrics.Metric.UniquenessBackingStoreTransactionAttempts
+                            .builder()
+                            .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                            .build()
+                            .record(attemptNumber.toDouble())
+
+                        return
+                    } catch (e: Exception) {
+                        when (e) {
+                            is EntityExistsException,
+                            is RollbackException,
+                            is OptimisticLockException -> {
+                                // [EntityExistsException] Occurs when another worker committed a
+                                // request with conflicting input states. Retry (by not re-throwing the
+                                // exception), because the requests with conflicts are removed from the
+                                // batch by the code passed in as `block`.
+
+                                // TODO This is needed because some of the exceptions
+                                //  we retry do not roll the transaction back. Once
+                                //  we improve our error handling in CORE-4983 this
+                                //  won't be necessary
+                                if (entityManager.transaction.isActive) {
+                                    entityManager.transaction.rollback()
+                                    log.debug { "Rolled back transaction" }
+                                }
+
+                                CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
+                                    .builder()
+                                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                                    .withTag(CordaMetrics.Tag.ErrorType, e.javaClass.simpleName)
+                                    .build()
+                                    .increment()
+
+                                if (attemptNumber < MAX_ATTEMPTS) {
+                                    log.warn(
+                                        "Retrying DB operation. The request might have been " +
+                                                "handled by a different notary worker or a DB error " +
+                                                "occurred when attempting to commit.",
+                                        e
+                                    )
+                                } else {
+                                    throw IllegalStateException(
+                                        "Failed to execute transaction after the maximum number of " +
+                                                "attempts ($MAX_ATTEMPTS).",
+                                        e
+                                    )
+                                }
                             }
 
-                            if (attemptNumber < MAX_ATTEMPTS) {
-                                log.warn(
-                                    "Retrying DB operation. The request might have been " +
-                                            "handled by a different notary worker or a DB error " +
-                                            "occurred when attempting to commit.",
-                                    e
-                                )
-                            } else {
-                                throw IllegalStateException(
-                                    "Failed to execute transaction after the maximum number of " +
-                                            "attempts ($MAX_ATTEMPTS).",
-                                    e
-                                )
+                            else -> {
+                                // TODO: Revisit handled exceptions, this is a subset of what
+                                // we handled in C4
+                                log.warn("Unexpected error occurred", e)
+                                // We potentially leak a database connection, if we don't rollback. When
+                                // the HSM signing operation throws an exception this code path is
+                                // triggered.
+                                if (entityManager.transaction.isActive) {
+                                    entityManager.transaction.rollback()
+                                    log.debug { "Rolled back transaction" }
+                                }
+
+                                CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
+                                    .builder()
+                                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                                    .build()
+                                    .increment()
+
+                                throw e
                             }
-                        }
-                        else -> {
-                            // TODO: Revisit handled exceptions, this is a subset of what
-                            // we handled in C4
-                            log.warn("Unexpected error occurred", e)
-                            // We potentially leak a database connection, if we don't rollback. When
-                            // the HSM signing operation throws an exception this code path is
-                            // triggered.
-                            if (entityManager.transaction.isActive) {
-                                entityManager.transaction.rollback()
-                                log.debug { "Rolled back transaction" }
-                            }
-                            throw e
                         }
                     }
                 }
+            } finally {
+                CordaMetrics.Metric.UniquenessBackingStoreTransactionExecutionTime
+                    .builder()
+                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                    .build()
+                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - transactionStartTime))
             }
         }
 
         override fun getStateDetails(
             states: Collection<UniquenessCheckStateRef>
         ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
+
+            val queryStartTime = Instant.now().toEpochMilli()
 
             val results = HashMap<
                     UniquenessCheckStateRef, UniquenessCheckStateDetails>()
@@ -207,20 +255,29 @@ open class JPABackingStoreImpl @Activate constructor(
             existing.forEach { stateEntity ->
                 val consumingTxId =
                     if (stateEntity.consumingTxId != null) {
-                        SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
+                        SecureHashImpl(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
                     } else null
                 val returnedState = UniquenessCheckStateRefImpl(
-                    SecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
+                    SecureHashImpl(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
                     stateEntity.issueTxOutputIndex)
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
+
+            CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
+                .builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                .withTag(CordaMetrics.Tag.OperationName, "getStateDetails")
+                .build()
+                .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
 
             return results
         }
 
         override fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal> {
+        ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
+
+            val queryStartTime = Instant.now().toEpochMilli()
 
             val txPks = txIds.map {
                 UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
@@ -255,9 +312,16 @@ open class JPABackingStoreImpl @Activate constructor(
                                 "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                     )
                 }
-                val txHash = SecureHash(txEntity.txIdAlgo, txEntity.txId)
+                val txHash = SecureHashImpl(txEntity.txIdAlgo, txEntity.txId)
                 txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
             }.toMap()
+
+            CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
+                .builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                .withTag(CordaMetrics.Tag.OperationName, "getTransactionDetails")
+                .build()
+                .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
 
             return results
         }
@@ -265,6 +329,8 @@ open class JPABackingStoreImpl @Activate constructor(
         private fun getTransactionError(
             txEntity: UniquenessTransactionDetailEntity
         ): UniquenessCheckError? {
+
+            val queryStartTime = Instant.now().toEpochMilli()
 
             val existing = entityManager.createNamedQuery(
                 "UniquenessRejectedTransactionEntity.select",
@@ -278,6 +344,13 @@ open class JPABackingStoreImpl @Activate constructor(
                 jpaBackingStoreObjectMapper().readValue(
                     rejectedTxEntity.errorDetails, UniquenessCheckError::class.java
                 )
+            }.also {
+                CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
+                    .builder()
+                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                    .withTag(CordaMetrics.Tag.OperationName, "getTransactionError")
+                    .build()
+                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
             }
         }
 
@@ -328,6 +401,8 @@ open class JPABackingStoreImpl @Activate constructor(
                 transactionDetails: Collection<Pair<
                         UniquenessCheckRequestInternal, UniquenessCheckResult>>
             ) {
+                val commitStartTime = Instant.now().toEpochMilli()
+
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(
                         UniquenessTransactionDetailEntity(
@@ -349,6 +424,12 @@ open class JPABackingStoreImpl @Activate constructor(
                         )
                     }
                 }
+
+                CordaMetrics.Metric.UniquenessBackingStoreDbCommitTime
+                    .builder()
+                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
+                    .build()
+                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - commitStartTime))
             }
         }
     }

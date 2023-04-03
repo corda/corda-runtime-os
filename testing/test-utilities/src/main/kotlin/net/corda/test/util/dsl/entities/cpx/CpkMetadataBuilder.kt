@@ -1,8 +1,9 @@
 package net.corda.test.util.dsl.entities.cpx
 
-import java.util.UUID
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import net.corda.v5.crypto.SecureHash
+import java.util.UUID
 
 fun cpk(init: CpkMetadataBuilder.() -> Unit): CpkMetadataEntity {
     val cpkBuilder = CpkMetadataBuilder()
@@ -58,13 +59,13 @@ class CpkMetadataBuilder(
 
     fun build(): CpkMetadataEntity {
         return CpkMetadataEntity(
-            (fileChecksumSupplier.invoke() ?: SecureHash(
+            (fileChecksumSupplier.invoke() ?: SecureHashImpl(
                 "SHA-256",
                 "cpk_file_checksum_$randomId".toByteArray()
             )).toString(),
             cpkName ?: "name_$randomId",
             cpkVersion ?: "version_$randomId",
-            (cpkSignerSummaryHash ?: SecureHash("SHA-256", "signerSummaryHash_$randomId".toByteArray())).toString(),
+            (cpkSignerSummaryHash ?: SecureHashImpl("SHA-256", "signerSummaryHash_$randomId".toByteArray())).toString(),
             formatVersion ?: "format_version_$randomId".take(12),
             serializedMetadata ?: "serialized_metadata_$randomId"
         )

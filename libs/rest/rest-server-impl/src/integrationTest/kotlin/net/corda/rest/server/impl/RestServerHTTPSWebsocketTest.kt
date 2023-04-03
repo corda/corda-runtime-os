@@ -2,7 +2,7 @@ package net.corda.rest.server.impl
 
 import net.corda.rest.server.config.models.RestSSLSettings
 import net.corda.rest.server.config.models.RestServerSettings
-import net.corda.rest.ssl.impl.SslCertReadServiceStubImpl
+import net.corda.rest.ssl.impl.SslCertReadServiceImpl
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.multipartDir
@@ -13,6 +13,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.mockito.kotlin.mock
 import java.nio.file.Files
 
 class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
@@ -20,7 +21,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
 
         val LOG = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val sslService = SslCertReadServiceStubImpl {
+        private val sslService = SslCertReadServiceImpl {
             Files.createTempDirectory("RestServerHTTPSWebsocketTest")
         }
 
@@ -31,7 +32,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         @Suppress("unused")
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
-            val keyStoreInfo = sslService.getOrCreateKeyStore()
+            val keyStoreInfo = sslService.getOrCreateKeyStoreInfo(mock())
             val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
 
             restServerSettings = RestServerSettings(

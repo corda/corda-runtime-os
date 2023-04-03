@@ -3,11 +3,11 @@ package net.corda.membership.client
 import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.MemberX500Name
 import java.time.Instant
 import java.util.UUID
@@ -143,7 +143,7 @@ interface MGMResourceClient : Lifecycle {
      * @param viewHistoric Optional. Set this to 'true' to view both pending review and completed (historic) requests.
      * Defaults to 'false' (requests pending review only).
      *
-     * @return Registration requests as a collection of [RegistrationRequestStatus].
+     * @return Registration requests as a collection of [RegistrationRequestDetails].
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
@@ -153,7 +153,7 @@ interface MGMResourceClient : Lifecycle {
         holdingIdentityShortHash: ShortHash,
         requestSubjectX500Name: MemberX500Name?,
         viewHistoric: Boolean,
-    ): Collection<RegistrationRequestStatus>
+    ): Collection<RegistrationRequestDetails>
 
     /**
      * Approve or decline registration requests which require manual approval. This method can only be used for
@@ -175,4 +175,57 @@ interface MGMResourceClient : Lifecycle {
         approve: Boolean,
         reason: String? = null,
     )
+
+    /**
+     * Suspends a member.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param memberX500Name X.500 name of the member being suspended.
+     * @param serialNumber Optional. Serial number of the member's [MemberInfo].
+     * @param reason Optional. Reason for suspension.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If the member to be suspended is the MGM itself.
+     * @throws [NoSuchElementException] If the member to be suspended is not found.
+     */
+    @Throws(
+        CouldNotFindMemberException::class,
+        MemberNotAnMgmException::class,
+        IllegalArgumentException::class,
+        NoSuchElementException::class
+    )
+    fun suspendMember(
+        holdingIdentityShortHash: ShortHash,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long? = null,
+        reason: String? = null,
+    )
+
+    /**
+     * Activates a previously suspended member.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param memberX500Name X.500 name of the member being activated.
+     * @param serialNumber Optional. Serial number of the member's [MemberInfo].
+     * @param reason Optional. Reason for activation.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If the member to be activated is the MGM itself.
+     * @throws [NoSuchElementException] If the member to be activated is not found.
+     */
+    @Throws(
+        CouldNotFindMemberException::class,
+        MemberNotAnMgmException::class,
+        IllegalArgumentException::class,
+        NoSuchElementException::class
+    )
+    fun activateMember(
+        holdingIdentityShortHash: ShortHash,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long? = null,
+        reason: String? = null,
+    )
+
 }

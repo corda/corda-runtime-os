@@ -1,22 +1,22 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.configuration.read.ConfigChangedEvent
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.opsBusProcessor
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.impl.toWire
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
@@ -38,36 +38,22 @@ import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
+@Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
-    private val signingFactory: SigningServiceFactory,
-    event: ConfigChangedEvent
-) : RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
+    private val signingService: SigningService,
+    cryptoConfig: SmartConfig,
+) :
+    RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private fun SigningKeyInfo.toAvro(): CryptoSigningKey =
-            CryptoSigningKey(
-                this.id.value,
-                this.tenantId,
-                this.category,
-                this.alias,
-                this.hsmAlias,
-                ByteBuffer.wrap(this.publicKey),
-                this.schemeCodeName,
-                this.masterKeyAlias,
-                this.encodingVersion,
-                this.externalId,
-                this.created
-            )
 
         private fun avroShortHashesToDto(shortHashes: ShortHashes): List<ShortHash> =
             shortHashes.hashes.map {
@@ -76,11 +62,11 @@ class CryptoOpsBusProcessor(
 
         private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
             secureHashes.hashes.map {
-                SecureHash(it.algorithm, it.bytes.array())
+                SecureHashImpl(it.algorithm, it.bytes.array())
             }
     }
 
-    private val config = event.config.toCryptoConfig().opsBusProcessor()
+    private val config = cryptoConfig.opsBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,
@@ -90,7 +76,6 @@ class CryptoOpsBusProcessor(
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
-            val signingService = signingFactory.getInstance()
             val response = executor.executeWithRetry {
                 handleRequest(request.request, request.context, signingService)
             }
@@ -125,13 +110,13 @@ class CryptoOpsBusProcessor(
             val foundKeys =
                 when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> {
-                        signingService.lookupByIds(
+                        signingService.lookupSigningKeysByPublicKeyShortHash(
                             context.tenantId,
                             avroShortHashesToDto(avroKeyIds)
                         )
                     }
                     is SecureHashes -> {
-                        signingService.lookupByFullIds(
+                        signingService.lookupSigningKeysByPublicKeyHashes(
                             context.tenantId,
                             avroSecureHashesToDto(avroKeyIds)
                         )
@@ -143,7 +128,7 @@ class CryptoOpsBusProcessor(
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {
-            val found = signingService.lookup(
+            val found = signingService.querySigningKeys(
                 tenantId = context.tenantId,
                 skip = request.skip,
                 take = request.take,
@@ -226,8 +211,7 @@ class CryptoOpsBusProcessor(
             )
             return CryptoSignatureWithKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes),
-                signature.context.toWire()
+                ByteBuffer.wrap(signature.bytes)
             )
         }
 
@@ -261,3 +245,18 @@ class CryptoOpsBusProcessor(
         }
     }
 }
+
+fun SigningKeyInfo.toAvro(): CryptoSigningKey =
+    CryptoSigningKey(
+        this.id.value,
+        this.tenantId,
+        this.category,
+        this.alias,
+        this.hsmAlias,
+        ByteBuffer.wrap(this.publicKey),
+        this.schemeCodeName,
+        this.masterKeyAlias,
+        this.encodingVersion,
+        this.externalId,
+        this.timestamp
+    )

@@ -1,5 +1,7 @@
 package net.corda.crypto.merkle.impl
 
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService
@@ -7,7 +9,6 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import java.nio.charset.Charset
@@ -124,7 +125,7 @@ open class NonceHashDigestProvider(
         val merkleTree = MerkleTreeImpl.createMerkleTree(leaves, this)
         val allLeavesProof = merkleTree.createAuditProof(merkleTree.leaves.indices.toList())
         val preHashedLeaves = allLeavesProof.leaves.map {
-            IndexedMerkleLeaf(it.index, null, leafHash(it.index, it.nonce, it.leafData).serialize())
+            IndexedMerkleLeafImpl(it.index, null, leafHash(it.index, it.nonce, it.leafData).serialize())
         }
         return MerkleProofImpl(MerkleProofType.SIZE, allLeavesProof.treeSize, preHashedLeaves, allLeavesProof.hashes)
     }
@@ -183,7 +184,7 @@ internal fun deserialize(bytes: ByteArray, digestService: DigestService): Secure
     val data = bytes.drop(idxOfSeparator + 1).toByteArray()
     val digestLength = digestService.digestLength(digestAlgorithmName)
     return when (data.size) {
-        digestLength -> SecureHash(digestAlgorithmName.name, data)
+        digestLength -> SecureHashImpl(digestAlgorithmName.name, data)
         else -> throw IllegalArgumentException("Provided argument has ${data.size} bytes not $digestLength bytes: $data")
     }
 }

@@ -9,27 +9,11 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
-    cpiForFlowCacheTest {
-        canBeConsumed = false
-        transitive = false
-    }
-    cpiWithoutChangelogs {
-        canBeConsumed = false
-        transitive = false
-    }
     upgradeTestingCpiV1 {
         canBeConsumed = false
         transitive = false
     }
     upgradeTestingCpiV2 {
-        canBeConsumed = false
-        transitive = false
-    }
-    upgradeTestingCpiV3 {
-        canBeConsumed = false
-        transitive = false
-    }
-    upgradeTestingCpiV4 {
         canBeConsumed = false
         transitive = false
     }
@@ -81,18 +65,15 @@ dependencies {
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:mgm', configuration: 'cordaCPB')
-    cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
-    cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
-    upgradeTestingCpiV3 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v3', configuration: 'cordaCPB')
-    upgradeTestingCpiV4 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v4', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(':testing:e2e-test-utilities')
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
+    smokeTestImplementation project(':libs:crypto:crypto-core')
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
@@ -108,21 +89,6 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     }
 
     // These CPBs need to have the same name as the main test-cordapp because they test force-upload to overwrite existing CPIs.
-    // Put the test-cordapp-for-cache-testing cpb into a different folder
-    def cpiForFlowCacheTest = configurations.cpiForFlowCacheTest
-    def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
-    from(cpiForFlowCacheTest) {
-        into cacheTestingDir
-        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
-    }
-
-    // Put the test-cordapp-without-changelogs cpb into a different folder
-    def cpiWithoutChangelogsTest = configurations.cpiWithoutChangelogs
-    def dirForCpiWithoutChangelogs = "META-INF" + File.separator + "cpi-without-changelogs"
-    from(cpiWithoutChangelogsTest) {
-        into dirForCpiWithoutChangelogs
-        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
-    }
 
     // Put the test cordapp for upgrade testing (v1) into a folder
     def upgradeTestingCpiV1 = configurations.upgradeTestingCpiV1
@@ -138,25 +104,13 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
         into upgradeTestingCpiV2Dir
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
     }
-    // Put the test cordapp for upgrade testing (v3) into a folder
-    def upgradeTestingCpiV3 = configurations.upgradeTestingCpiV3
-    def upgradeTestingCpiV3Dir = "META-INF" + File.separator + "upgrade-testing-v3"
-    from(upgradeTestingCpiV3) {
-        into upgradeTestingCpiV3Dir
-        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
-    }
-    // Put the test cordapp for upgrade testing (v4) into a folder
-    def upgradeTestingCpiV4 = configurations.upgradeTestingCpiV4
-    def upgradeTestingCpiV4Dir = "META-INF" + File.separator + "upgrade-testing-v4"
-    from(upgradeTestingCpiV4) {
-        into upgradeTestingCpiV4Dir
-        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
-    }
 }
 
 tasks.register('smokeTest', Test) {
     description = "Runs smoke tests."
     group = "verification"
+
+    dependsOn smokeTestResources
 
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
@@ -177,9 +131,6 @@ tasks.register('smokeTest', Test) {
 
     systemProperty "combinedWorkerHealthHttp",
             project.getProperties().getOrDefault("combinedWorkerHealthHttp", combinedWorker ? "http://localhost:7004/" : null)
-}
 
-
-tasks.named('smokeTest', Test) {
-    dependsOn smokeTestResources
+    jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
 }

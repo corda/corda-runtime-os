@@ -2,7 +2,7 @@
 
 package net.corda.sandbox.internal
 
-import net.corda.v5.crypto.SecureHash
+import net.corda.crypto.core.parseSecureHash
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants
 
@@ -32,7 +32,7 @@ internal object ClassTagV1 {
 
     // Used as placeholders when generating class tags for public sandbox classes.
     internal const val PLACEHOLDER_STRING = "PLACEHOLDER"
-    internal val PLACEHOLDER_HASH = SecureHash.parse("SHA-256:0000000000000000")
+    internal val PLACEHOLDER_HASH = parseSecureHash("SHA-256:0000000000000000")
 }
 
 // The symbolic name of the `sandbox-hooks` bundle.

@@ -17,6 +17,9 @@ import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser.Companion.isStaticNetwork
+import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
@@ -24,13 +27,15 @@ import java.nio.file.Files
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
-import net.corda.libs.packaging.core.CpiIdentifier
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated
  * metadata.
  */
-class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFactory) : CpiPersistence {
+class DatabaseCpiPersistence(
+    private val entityManagerFactory: EntityManagerFactory,
+    private val networkInfoWriter: NetworkInfoWriter
+) : CpiPersistence {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -62,6 +67,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         changelogsExtractedFromCpi: List<CpkDbChangeLog>
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
+            val groupPolicy = getGroupPolicy(em, cpi)
 
             val cpiMetadataEntity = createCpiMetadataEntity(
                 cpi,
@@ -69,6 +75,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 cpiFileChecksum,
                 requestId,
                 groupId,
+                groupPolicy,
                 createCpiCpkRelationships(em, cpi)
             )
 
@@ -261,6 +268,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
+        groupPolicy: String,
         cpiCpkEntities: Set<CpiCpkEntity>
     ): CpiMetadataEntity {
         val cpiMetadata = cpi.metadata
@@ -269,7 +277,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             id = cpiMetadata.cpiId,
             fileName = cpiFileName,
             fileChecksum = checksum,
-            groupPolicy = cpi.metadata.groupPolicy!!,
+            groupPolicy = groupPolicy,
             groupId = groupId,
             fileUploadRequestId = requestId,
             cpks = cpiCpkEntities
@@ -339,6 +347,22 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 "CPI upload $requestId contains a CPI with the same name ($cpiName) and " +
                         "signer ($cpiSignerSummaryHash) as an existing CPI, but a different Group ID."
             )
+        }
+    }
+
+    /**
+     * Process CPI network data and return the processed group policy.
+     */
+    private fun getGroupPolicy(
+        em: EntityManager,
+        cpi: Cpi
+    ): String {
+        val groupPolicy = cpi.metadata.groupPolicy!!
+        return if (isStaticNetwork(groupPolicy)) {
+            networkInfoWriter.parseAndPersistStaticNetworkInfo(em, cpi)
+            networkInfoWriter.injectStaticNetworkMgm(em, groupPolicy)
+        } else {
+            groupPolicy
         }
     }
 }

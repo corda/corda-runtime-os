@@ -4,13 +4,14 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.merkle.impl.mocks.getZeroHash
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -291,7 +292,7 @@ class MerkleTreeTest {
             // Wrong root should not be accepted.
             val wrongRootBytes = root.bytes
             wrongRootBytes[0] = wrongRootBytes[0] xor 1
-            val wrongRootHash = SecureHash(DigestAlgorithmName.SHA2_256D.name, wrongRootBytes)
+            val wrongRootHash = SecureHashImpl(DigestAlgorithmName.SHA2_256D.name, wrongRootBytes)
             assertFalse(proof.verify(wrongRootHash, nonceHashDigestProviderVerify))
 
             // We break the leaves one by one. All of them should break the proof.
@@ -307,7 +308,7 @@ class MerkleTreeTest {
                 val badHashes = proof.hashes.toMutableList()
                 val badHashBytes = badHashes[j].bytes
                 badHashBytes[0] = badHashBytes[0] xor 1
-                badHashes[j] = SecureHash(DigestAlgorithmName.SHA2_256D.name, badHashBytes)
+                badHashes[j] = SecureHashImpl(DigestAlgorithmName.SHA2_256D.name, badHashBytes)
                 val badProof : MerkleProof =
                     MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves, badHashes)
                 assertFalse(badProof.verify(root, nonceHashDigestProviderVerify))
@@ -350,7 +351,7 @@ class MerkleTreeTest {
             val notInProofLeaves = (0 until treeSize).filter { (i in powerSet) }
             if (notInProofLeaves.isNotEmpty()) {
                 val extraIndex = notInProofLeaves.first()
-                val extraLeaf = IndexedMerkleLeaf(extraIndex,
+                val extraLeaf = IndexedMerkleLeafImpl(extraIndex,
                     nonceHashDigestProvider.leafNonce(extraIndex),
                     merkleTree.leaves[extraIndex]
                 )
@@ -425,8 +426,8 @@ class MerkleTreeTest {
     @ParameterizedTest(name = "{0} digest provider should guarantee the same hash used in the whole tree")
     @MethodSource("supportedDigestProviders")
     fun `Digest Providers should guarantee the same hash used in the whole tree`(candidate: MerkleTreeHashDigestProvider) {
-        val matching = SecureHash(digestAlgorithm.name, "abc".toByteArray())
-        val nonMatching = SecureHash(DigestAlgorithmName.SHA2_256.name, "abc".toByteArray())
+        val matching = SecureHashImpl(digestAlgorithm.name, "abc".toByteArray())
+        val nonMatching = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "abc".toByteArray())
         assertThrows(IllegalArgumentException::class.java) {
             candidate.nodeHash(1, matching, nonMatching)
         }

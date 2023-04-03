@@ -26,7 +26,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /** An implementation of [FlowRestResourceService]. */
-@Component(immediate = true, service = [FlowRestResourceService::class])
+@Component(service = [FlowRestResourceService::class])
 internal class FlowRestResourceServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
