@@ -1,6 +1,7 @@
 package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
@@ -28,7 +29,6 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -254,7 +254,7 @@ class CryptoFlowOpsTransformerImplTests {
                 UUID.randomUUID().toString(),
                 knownTenantId,
                 publicKey.encoded,
-                SignatureSpec.EDDSA_ED25519,
+                SignatureSpecs.EDDSA_ED25519,
                 data,
                 knownOperationContext,
                 flowExternalEventContext
@@ -266,7 +266,7 @@ class CryptoFlowOpsTransformerImplTests {
         val command = result.value.request as SignFlowCommand
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
-        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, command.signatureSpec.signatureName)
+        assertEquals(SignatureSpecs.EDDSA_ED25519.signatureName, command.signatureSpec.signatureName)
         assertRequestContext<SignFlowCommand>(result)
         assertOperationContext(knownOperationContext, command.context)
     }
@@ -280,7 +280,7 @@ class CryptoFlowOpsTransformerImplTests {
                 UUID.randomUUID().toString(),
                 knownTenantId,
                 publicKey.encoded,
-                SignatureSpec.EDDSA_ED25519,
+                SignatureSpecs.EDDSA_ED25519,
                 data,
                 emptyMap(),
                 flowExternalEventContext
@@ -292,7 +292,7 @@ class CryptoFlowOpsTransformerImplTests {
         val command = result.value.request as SignFlowCommand
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
-        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, command.signatureSpec.signatureName)
+        assertEquals(SignatureSpecs.EDDSA_ED25519.signatureName, command.signatureSpec.signatureName)
         assertRequestContext<SignFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
     }

@@ -4,6 +4,7 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.merkle.impl.IndexedMerkleLeafImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
@@ -92,7 +93,7 @@ class FilteredTransactionImplTest {
     fun `verification fails when there is no metadata leaf`() {
         filteredTransaction = filteredTransaction(filteredComponentGroups = emptyMap())
 
-        whenever(componentGroupMerkleProof.leaves).thenReturn(listOf(IndexedMerkleLeaf(1, byteArrayOf(), byteArrayOf())))
+        whenever(componentGroupMerkleProof.leaves).thenReturn(listOf(IndexedMerkleLeafImpl(1, byteArrayOf(), byteArrayOf())))
 
         assertThatThrownBy { filteredTransaction.verify() }
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
@@ -615,6 +616,6 @@ class FilteredTransactionImplTest {
     }
 
     private fun indexedMerkleLeaf(index: Int, leafData: ByteArray = byteArrayOf(1, 2, 3)): IndexedMerkleLeaf {
-        return IndexedMerkleLeaf(index, byteArrayOf(), leafData)
+        return IndexedMerkleLeafImpl(index, byteArrayOf(), leafData)
     }
 }

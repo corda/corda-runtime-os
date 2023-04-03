@@ -41,17 +41,15 @@ class SigningKeyLookupBuilder(private val entityManager: EntityManager) {
         when (orderBy) {
             SigningKeyOrderBy.NONE -> Unit
             SigningKeyOrderBy.ID -> ascOrderBy(SigningKeyEntity::keyId)
-            SigningKeyOrderBy.TIMESTAMP -> ascOrderBy(SigningKeyEntity::timestamp)
+            SigningKeyOrderBy.TIMESTAMP -> ascOrderBy(SigningKeyEntity::created)
             SigningKeyOrderBy.CATEGORY -> ascOrderBy(SigningKeyEntity::category)
             SigningKeyOrderBy.SCHEME_CODE_NAME -> ascOrderBy(SigningKeyEntity::schemeCodeName)
             SigningKeyOrderBy.ALIAS -> ascOrderBy(SigningKeyEntity::alias)
-            SigningKeyOrderBy.MASTER_KEY_ALIAS -> ascOrderBy(SigningKeyEntity::masterKeyAlias)
             SigningKeyOrderBy.EXTERNAL_ID -> ascOrderBy(SigningKeyEntity::externalId)
-            SigningKeyOrderBy.TIMESTAMP_DESC -> descOrderBy(SigningKeyEntity::timestamp)
+            SigningKeyOrderBy.TIMESTAMP_DESC -> descOrderBy(SigningKeyEntity::created)
             SigningKeyOrderBy.CATEGORY_DESC -> descOrderBy(SigningKeyEntity::category)
             SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> descOrderBy(SigningKeyEntity::schemeCodeName)
             SigningKeyOrderBy.ALIAS_DESC -> descOrderBy(SigningKeyEntity::alias)
-            SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> descOrderBy(SigningKeyEntity::masterKeyAlias)
             SigningKeyOrderBy.EXTERNAL_ID_DESC -> descOrderBy(SigningKeyEntity::externalId)
             SigningKeyOrderBy.ID_DESC -> descOrderBy(SigningKeyEntity::keyId)
         }

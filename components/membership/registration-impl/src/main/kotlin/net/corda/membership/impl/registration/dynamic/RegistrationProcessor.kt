@@ -1,15 +1,11 @@
 package net.corda.membership.impl.registration.dynamic
 
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
@@ -24,7 +20,6 @@ import net.corda.membership.impl.registration.dynamic.handler.member.PersistMemb
 import net.corda.membership.impl.registration.dynamic.handler.member.ProcessMemberVerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
-import net.corda.membership.impl.registration.dynamic.handler.mgm.DistributeMembershipPackageHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
@@ -45,9 +40,6 @@ class RegistrationProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     membershipPersistenceClient: MembershipPersistenceClient,
     membershipQueryClient: MembershipQueryClient,
-    cryptoOpsClient: CryptoOpsClient,
-    cipherSchemeMetadata: CipherSchemeMetadata,
-    merkleTreeProvider: MerkleTreeProvider,
     membershipConfig: SmartConfig,
     groupParametersWriterService: GroupParametersWriterService,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
@@ -79,16 +71,6 @@ class RegistrationProcessor(
             memberTypeChecker,
             membershipGroupReaderProvider,
             groupParametersWriterService,
-        ),
-        DistributeMembershipPackage::class.java to DistributeMembershipPackageHandler(
-            membershipQueryClient,
-            cipherSchemeMetadata,
-            clock,
-            cryptoOpsClient,
-            cordaAvroSerializationFactory,
-            merkleTreeProvider,
-            membershipConfig,
-            membershipGroupReaderProvider,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,
@@ -151,11 +133,6 @@ class RegistrationProcessor(
                 is ApproveRegistration -> {
                     logger.info("Received approve registration command.")
                     handlers[ApproveRegistration::class.java]?.invoke(state, event)
-                }
-
-                is DistributeMembershipPackage -> {
-                    logger.info("Received distribute membership package command.")
-                    handlers[DistributeMembershipPackage::class.java]?.invoke(state, event)
                 }
 
                 is DeclineRegistration -> {

@@ -1,6 +1,6 @@
 package net.corda.membership.network.writer.staticnetwork
 
-import net.corda.v5.crypto.SignatureSpec
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 object StaticNetworkUtils {
@@ -9,7 +9,7 @@ object StaticNetworkUtils {
         get() = "RSA"
 
     val mgmSignatureSpec
-        get() = SignatureSpec.RSA_SHA256
+        get() = SignatureSpecs.RSA_SHA256
 
     val mgmSigningKeyProvider
         get() = BouncyCastleProvider()

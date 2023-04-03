@@ -1,5 +1,6 @@
 package net.corda.internal.serialization
 
+import net.corda.base.internal.ByteSequence
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.ObjectWithCompatibleContext
@@ -8,7 +9,6 @@ import net.corda.serialization.SerializationEncoding
 import net.corda.serialization.SerializationFactory
 import net.corda.serialization.SerializationMagic
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.LoggerFactory

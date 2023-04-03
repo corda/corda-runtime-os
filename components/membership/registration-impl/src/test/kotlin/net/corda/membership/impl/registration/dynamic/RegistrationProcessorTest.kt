@@ -197,9 +197,6 @@ class  RegistrationProcessorTest {
             membershipQueryClient,
             mock(),
             mock(),
-            mock(),
-            mock(),
-            mock(),
         )
     }
 

@@ -5,6 +5,7 @@ import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
@@ -48,6 +49,9 @@ class NonValidatingNotaryClientFlowImpl(
     @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
 
+    @CordaInject
+    private lateinit var signatureSpecService: SignatureSpecService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
@@ -60,13 +64,15 @@ class NonValidatingNotaryClientFlowImpl(
         memberLookupService: MemberLookup,
         serializationService: SerializationService,
         signingService: SigningService,
-        utxoLedgerService: UtxoLedgerService
+        utxoLedgerService: UtxoLedgerService,
+        signatureSpecService: SignatureSpecService
     ): this(stx, notary) {
         this.flowMessaging = flowMessaging
         this.serializationService = serializationService
         this.memberLookupService = memberLookupService
         this.signingService = signingService
         this.utxoLedgerService = utxoLedgerService
+        this.signatureSpecService = signatureSpecService
     }
 
     /**
@@ -138,7 +144,8 @@ class NonValidatingNotaryClientFlowImpl(
             notarizationRequest,
             memberLookupService.myInfo(),
             serializationService,
-            signingService
+            signingService,
+            signatureSpecService
         )
 
         return NonValidatingNotarizationPayload(
