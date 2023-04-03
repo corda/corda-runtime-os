@@ -523,7 +523,7 @@ Pod Monitor creation
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: corda
+  name: {{ include "corda.name" . }}
   labels:
   {{- range $k, $v := .Values.podMonitor.labels }}
     {{ $k }}: {{ $v | quote }}
@@ -531,7 +531,7 @@ metadata:
 spec:
   podMetricsEndpoints:
   - port: monitor
-  jobLabel: corda
+  jobLabel: {{ include "corda.name" . }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "corda.name" . }}
