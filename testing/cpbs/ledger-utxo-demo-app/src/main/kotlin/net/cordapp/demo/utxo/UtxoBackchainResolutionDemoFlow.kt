@@ -274,7 +274,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
 class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
