@@ -43,9 +43,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
             )
         rebalanceListener.onPartitionsRevoked(partitions)
 
-        val stateConsumer = stateAndEventConsumer.stateConsumer
-        verify(stateConsumer, times(1)).assignment()
-        verify(stateConsumer, times(1)).assign(any())
+        verify(stateAndEventConsumer, times(1)).onPartitionsRevoked(partitions)
         verify(stateAndEventListener, times(1)).onPartitionLost(any())
         verify(mapFactory, times(1)).destroyMap(any())
         assertThat(partitionState.dirty).isTrue
@@ -68,11 +66,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
             )
         rebalanceListener.onPartitionsAssigned(partitions)
 
-        val stateConsumer = stateAndEventConsumer.stateConsumer
-        val eventConsumer = stateAndEventConsumer.eventConsumer
-        verify(stateConsumer, times(1)).seekToBeginning(any())
-        verify(stateConsumer, times(1)).assign(any())
-        verify(eventConsumer, times(1)).pause(any())
+        verify(stateAndEventConsumer, times(1)).onPartitionsAssigned(partitions)
         verify(mapFactory, times(1)).createMap()
         assertThat(partitionState.dirty).isTrue
     }
