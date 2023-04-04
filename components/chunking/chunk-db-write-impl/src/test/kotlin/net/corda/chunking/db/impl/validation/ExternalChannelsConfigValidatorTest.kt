@@ -64,7 +64,7 @@ class ExternalChannelsConfigValidatorTest {
                         },
                         {
                             "name": "1.2.3",
-                            "type": "SEND-RECEIVE"
+                            "type": "SEND_RECEIVE"
                         }
                       ]
                     }

@@ -115,7 +115,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 },
                                 {
                                     "name": "1.2.3",
-                                    "type": "SEND-RECEIVE"
+                                    "type": "SEND_RECEIVE"
                                 }
                             ]
                         }
@@ -130,7 +130,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 },
                                 {
                                     "name": "3.2.1",
-                                    "type": "SEND-RECEIVE"
+                                    "type": "SEND_RECEIVE"
                                 }
                             ]
                         }
