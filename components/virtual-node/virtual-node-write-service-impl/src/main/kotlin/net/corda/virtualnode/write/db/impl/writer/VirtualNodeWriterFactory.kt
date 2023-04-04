@@ -10,7 +10,10 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.external.messaging.ExternalMessagingConfigProviderImpl
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGeneratorImpl
+import net.corda.libs.external.messaging.serialization.ExternalMessagingChannelConfigSerializerImpl
+import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
@@ -106,7 +109,11 @@ internal class VirtualNodeWriterFactory(
                 recordFactory,
                 groupPolicyParser,
                 publisher,
-                ExternalMessagingRouteConfigGeneratorImpl(externalMsgConfig),
+                ExternalMessagingRouteConfigGeneratorImpl(
+                    ExternalMessagingConfigProviderImpl(externalMsgConfig),
+                    ExternalMessagingRouteConfigSerializerImpl(),
+                    ExternalMessagingChannelConfigSerializerImpl()
+                ),
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
             )
         )
@@ -152,7 +159,8 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
 
         val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
-        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
+        val virtualNodeOperationStatusHandler =
+            VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
 
         val processor = VirtualNodeWriterProcessor(
             vNodePublisher,

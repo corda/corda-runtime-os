@@ -42,7 +42,7 @@ internal class VirtualNodeWriteEventHandler(
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        // This methods must be updated to process events relate to the EXTERNAL_MESSAGING_CONFIG
+        // Todo: This methods must be updated to process events relate to the EXTERNAL_MESSAGING_CONFIG and tested
         val msgConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val externalMsgConfig = event.config.getConfig(ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
 

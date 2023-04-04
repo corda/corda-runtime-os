@@ -8,8 +8,11 @@ import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.external.messaging.ExternalMessagingConfigProviderImpl
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGeneratorImpl
 import net.corda.libs.external.messaging.entities.InactiveResponseType
+import net.corda.libs.external.messaging.serialization.ExternalMessagingChannelConfigSerializerImpl
+import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -96,18 +99,23 @@ class ExternalMessagingRouteConfigGeneratorTest {
         val smartConfig =
             genExternalMsgConfig("ext.\$HOLDING_ID\$.\$CHANNEL_NAME\$.receive", false, InactiveResponseType.IGNORE)
 
-        val externalMessagingRouteConfigGenerator = ExternalMessagingRouteConfigGeneratorImpl(smartConfig)
+        val externalMessagingRouteConfigGenerator =
+            ExternalMessagingRouteConfigGeneratorImpl(
+                ExternalMessagingConfigProviderImpl(smartConfig),
+                ExternalMessagingRouteConfigSerializerImpl(),
+                ExternalMessagingChannelConfigSerializerImpl()
+            )
 
         val externalChannelsConfigJson = """
                         {
                             "channels": [
                                 {
                                     "name": "a.b.c",
-                                    "type": "send"
+                                    "type": "SEND"
                                 },
                                 {
                                     "name": "1.2.3",
-                                    "type": "send-receive"
+                                    "type": "SEND-RECEIVE"
                                 }
                             ]
                         }
@@ -118,11 +126,11 @@ class ExternalMessagingRouteConfigGeneratorTest {
                             "channels": [
                                 {
                                     "name": "c.b.a",
-                                    "type": "send"
+                                    "type": "SEND"
                                 },
                                 {
                                     "name": "3.2.1",
-                                    "type": "send-receive"
+                                    "type": "SEND-RECEIVE"
                                 }
                             ]
                         }
