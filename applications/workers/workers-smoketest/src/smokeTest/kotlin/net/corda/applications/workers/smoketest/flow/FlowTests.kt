@@ -978,7 +978,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Notary - Non-validating plugin executes successfully when using the same state for input and ref`() {
+    fun `Notary - Non-validating plugin returns error when using the same state for input and ref`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
@@ -1007,13 +1007,15 @@ class FlowTests {
             inputStates = listOf(issuedStates.first()),
             refStates = listOf(issuedStates.first())
         ) { consumeResult ->
-            val flowResultMap = consumeResult.mapFlowJsonResult()
             assertAll({
-                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-                assertAll({
-                    assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(1)
-                    assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(1)
-                })
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                // This will fail when building the transaction BEFORE reaching the plugin logic so
+                // we don't expect notarization error here
+                assertThat(consumeResult.flowError?.message).contains(
+                    "A state cannot be both an input and a reference input in the same " +
+                            "transaction. Offending states: $issuedStates"
+
+                )
             })
         }
     }
