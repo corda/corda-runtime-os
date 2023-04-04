@@ -7,6 +7,7 @@ import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,14 +23,16 @@ class ContractStateVaultJsonFactoryRegistryImpl @Activate constructor()
     : ContractStateVaultJsonFactoryRegistry, UsedByPersistence {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryRegistryImpl::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryRegistryImpl::class.java)
     }
 
     private val factoryStorage = ConcurrentHashMap<Class<out ContractState>, ContractStateVaultJsonFactory<out ContractState>>()
 
     override fun registerJsonFactory(factory: ContractStateVaultJsonFactory<out ContractState>) {
         if (factoryStorage.putIfAbsent(factory.stateType, factory) != null) {
-            logger.warn("A factory for state class ${factory.stateType} is already registered.")
+            logger.warn("Trying to register factory with type: $factory. " +
+                    "However, a factory with type: ${factoryStorage[factory.stateType]} is already registered " +
+                    "for state class ${factory.stateType}.")
             throw IllegalArgumentException("A factory for state class ${factory.stateType} is already registered.")
         }
     }

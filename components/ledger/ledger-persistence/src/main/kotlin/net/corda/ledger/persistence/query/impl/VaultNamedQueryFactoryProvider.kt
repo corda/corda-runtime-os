@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
@@ -27,7 +28,7 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
 ) : UsedByPersistence, CustomMetadataConsumer {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(VaultNamedQueryFactoryProvider::class.java)
+        val logger: Logger = LoggerFactory.getLogger(VaultNamedQueryFactoryProvider::class.java)
     }
 
     @Suspendable
@@ -35,11 +36,7 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
         val metadataServices = context.getMetadataServices<VaultNamedQueryFactory>()
 
         if (logger.isDebugEnabled) {
-            if (metadataServices.size == 1) {
-                logger.debug("Found 1 vault named query.")
-            } else {
-                logger.debug("Found ${metadataServices.size} vault named queries.")
-            }
+            logger.debug("Number of vault named queries found: ${metadataServices.size}")
         }
 
         // TODO extra checks needed?

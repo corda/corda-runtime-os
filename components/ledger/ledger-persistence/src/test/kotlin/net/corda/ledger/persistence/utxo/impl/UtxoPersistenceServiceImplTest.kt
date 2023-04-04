@@ -172,7 +172,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `Persisting a transaction with no specific JSON factories will result in only using the ContractState factory`() {
+    fun `Persisting a transaction while no JSON factory is present for the given type will result in using the ContractState factory`() {
         val tx = createMockTransaction(listOf(
             createStateAndRef(ContractState { emptyList() }) // State that has no specific factory
         ))
@@ -194,7 +194,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `Persisting a transaction with no JSON factory will result in an empty JSON string being stored`() {
+    fun `Persisting a transaction while zero JSON factory is registered will result in an empty JSON string being stored`() {
         val emptyPersistenceService = UtxoPersistenceServiceImpl(
             mockEmFactory,
             mockRepository,

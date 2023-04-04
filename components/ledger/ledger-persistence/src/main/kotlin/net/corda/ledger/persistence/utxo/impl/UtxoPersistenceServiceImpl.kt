@@ -166,11 +166,7 @@ class UtxoPersistenceServiceImpl constructor(
                 visibleStateIndex,
                 consumed = false,
                 CustomRepresentation(
-                    extractJsonDataFromState(
-                        transaction.getProducedStates()[visibleStateIndex].state.contractState,
-                        factoryStorage,
-                        jsonMarshallingService
-                    )
+                    extractJsonDataFromState(transaction.getProducedStates()[visibleStateIndex].state.contractState)
                 ),
                 nowUtc
             )
@@ -236,9 +232,7 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     private fun extractJsonDataFromState(
-        contractState: ContractState,
-        factoryStorage: ContractStateVaultJsonFactoryRegistry,
-        jsonMarshallingService: JsonMarshallingService
+        contractState: ContractState
     ): String {
         val jsonMap = factoryStorage.getFactoriesForClass(contractState).sortedBy {
             it.stateType.name // Sort the factories by class name, to make the JSON order deterministic

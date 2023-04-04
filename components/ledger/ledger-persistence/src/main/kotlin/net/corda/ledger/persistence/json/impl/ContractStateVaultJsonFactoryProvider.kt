@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
@@ -31,7 +32,7 @@ class ContractStateVaultJsonFactoryProvider @Activate constructor(
 ) : UsedByPersistence, CustomMetadataConsumer {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryProvider::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryProvider::class.java)
     }
 
     init {
@@ -44,11 +45,8 @@ class ContractStateVaultJsonFactoryProvider @Activate constructor(
         val metadataServices = context.getMetadataServices<ContractStateVaultJsonFactory<out ContractState>>()
 
         if (logger.isDebugEnabled) {
-            if (metadataServices.size == 1) {
-                logger.debug("Found 1 contract state vault json factory.")
-            } else {
-                logger.debug("Found ${metadataServices.size} contract state vault json factory.")
-            }
+            logger.debug("Number of contract state vault json factories found: ${metadataServices.size}, " +
+                    "those are: $metadataServices")
         }
 
         metadataServices.forEach {
