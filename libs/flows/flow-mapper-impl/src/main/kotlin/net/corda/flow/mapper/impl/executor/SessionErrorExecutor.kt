@@ -32,8 +32,6 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.CLOSING -> {
                 //log and ignore
-                // ** should we ACK this?? should we ACK everything in CLOSING ?
-                // ** e.g. in CLOSING ACK everything, in ERROR do not (and tell them in error or ignore?) **
                 SessionErrorExecutor.log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
                 FlowMapperResult(null, listOf())
             }

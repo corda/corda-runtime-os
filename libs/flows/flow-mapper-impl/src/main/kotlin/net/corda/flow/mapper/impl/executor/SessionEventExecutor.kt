@@ -106,10 +106,11 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState, instant: Instant): FlowMapperResult {
+        //if event is session error use SessionErrorExecutor
         val state = flowMapperState.status
         val event = sessionEvent.payload
         if (state == FlowMapperStateType.CLOSING || event !is SessionError) {
-        //generate Ack from SessionManagerImpl (lift private method?), extract last generated number from a Close to make the message.
+        //generate Ack from SessionManagerImpl (lift private method), extract last generated number from a Close to make the message.
             generateAck(instant)
 
             val outputRecord = if (messageDirection == MessageDirection.INBOUND) {
