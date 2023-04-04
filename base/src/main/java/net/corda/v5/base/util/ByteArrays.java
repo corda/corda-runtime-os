@@ -1,4 +1,4 @@
-package net.corda.v5.base.types;
+package net.corda.v5.base.util;
 
 import org.jetbrains.annotations.NotNull;
 

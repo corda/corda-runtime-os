@@ -1,6 +1,5 @@
 package net.corda.v5.base.util;
 
-import net.corda.v5.base.types.ByteArrays;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;

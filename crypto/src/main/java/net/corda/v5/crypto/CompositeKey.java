@@ -46,7 +46,7 @@ public interface CompositeKey extends PublicKey {
      * key tree in question, and the total combined weight of all children is calculated for every intermediary node.
      * If all thresholds are satisfied, the composite key requirement is considered to be met.
      */
-    boolean isFulfilledBy(@NotNull Iterable<PublicKey> keysToCheck);
+    boolean isFulfilledBy(@NotNull Set<PublicKey> keysToCheck);
 
     /**
      * Set of all leaf keys of that {@link CompositeKey}.
