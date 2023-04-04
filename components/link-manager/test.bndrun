@@ -1,13 +1,13 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
+-resolve.effective: resolve,active
 -runee: JavaSE-11
 -runtrace: true
 
--resolve.effective: resolve,active
-
 -runvm: \
     -Djava.io.tmpdir=${task.temporaryDir},\
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
+    --illegal-access=deny
+
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\

@@ -1,5 +1,7 @@
 package net.corda.flow.state.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -16,8 +18,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -124,6 +124,9 @@ class FlowCheckpointImpl(
 
     override val maxMessageSize: Long
         get() = config.getLong(MAX_ALLOWED_MSG_SIZE)
+
+    override val initialPlatformVersion: Int
+        get() = checkpoint.initialPlatformVersion
 
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {

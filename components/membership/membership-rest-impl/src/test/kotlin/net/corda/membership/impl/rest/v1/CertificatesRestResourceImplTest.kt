@@ -1,9 +1,11 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -24,10 +26,8 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.SignatureSpec.ECDSA_SHA256
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -122,7 +122,8 @@ class CertificatesRestResourceImplTest {
 
     @Nested
     inner class GenerateCsrTests {
-        private val holdingIdentityShortHash = "id"
+        private val holdingIdentityShortHash = "ABA912AC2432"
+        private val clusterTenantId = P2P
         private val keyId = "AB0123456789"
         private val x500Name = "CN=Alice"
         private val publicKeyBytes = "123".toByteArray()
@@ -144,26 +145,29 @@ class CertificatesRestResourceImplTest {
 
         @BeforeEach
         fun setUp() {
-            whenever(
-                cryptoOpsClient.lookupKeysByIds(
-                    holdingIdentityShortHash,
-                    listOf(ShortHash.of(keyId))
+            val tenantIds = listOf(holdingIdentityShortHash, clusterTenantId)
+            tenantIds.forEach { tenantId ->
+                whenever(
+                    cryptoOpsClient.lookupKeysByIds(
+                        tenantId,
+                        listOf(ShortHash.of(keyId))
+                    )
+                ).doReturn(listOf(key))
+                whenever(
+                    cryptoOpsClient.sign(
+                        eq(tenantId),
+                        eq(publicKey),
+                        argThat<SignatureSpec> { this.signatureName == SignatureSpecs.ECDSA_SHA256.signatureName },
+                        any(),
+                        eq(emptyMap())
+                    )
+                ).doReturn(
+                    DigitalSignatureWithKey(
+                        publicKey,
+                        byteArrayOf(1)
+                    )
                 )
-            ).doReturn(listOf(key))
-            whenever(
-                cryptoOpsClient.sign(
-                    eq(holdingIdentityShortHash),
-                    eq(publicKey),
-                    argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
-                    any(),
-                    eq(emptyMap())
-                )
-            ).doReturn(
-                DigitalSignature.WithKey(
-                    publicKey,
-                    byteArrayOf(1)
-                )
-            )
+            }
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(publicKey)
         }
 
@@ -196,7 +200,7 @@ class CertificatesRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not find key with ID $keyId for id: Repartition Event!")
+            assertThat(details.message).isEqualTo("Could not find key with ID $keyId for $holdingIdentityShortHash: Repartition Event!")
         }
 
         @Test
@@ -212,7 +216,26 @@ class CertificatesRestResourceImplTest {
             verify(cryptoOpsClient).sign(
                 eq(holdingIdentityShortHash),
                 eq(publicKey),
-                argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
+                argThat<SignatureSpec> { this.signatureName == SignatureSpecs.ECDSA_SHA256.signatureName },
+                any(),
+                eq(emptyMap())
+            )
+        }
+
+        @Test
+        fun `it signs the request for valid cluster tenant`() {
+            certificatesOps.generateCsr(
+                P2P,
+                keyId,
+                x500Name,
+                null,
+                null,
+            )
+
+            verify(cryptoOpsClient).sign(
+                eq(P2P),
+                eq(publicKey),
+                argThat<SignatureSpec> { this.signatureName == SignatureSpecs.ECDSA_SHA256.signatureName },
                 any(),
                 eq(emptyMap())
             )
@@ -389,7 +412,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )
@@ -431,7 +454,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )
@@ -473,7 +496,7 @@ class CertificatesRestResourceImplTest {
                     eq(emptyMap())
                 )
             ).doReturn(
-                DigitalSignature.WithKey(
+                DigitalSignatureWithKey(
                     publicKey,
                     byteArrayOf(1)
                 )
@@ -511,6 +534,21 @@ class CertificatesRestResourceImplTest {
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
                     holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    null,
+                    null,
+                )
+            }
+        }
+
+        @Test
+        fun `it throws exception if tenant ID is not valid`() {
+            val invalidTenantId = "XSASD"
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    invalidTenantId,
                     keyId,
                     x500Name,
                     null,

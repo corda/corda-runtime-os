@@ -1,12 +1,12 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec.ECDSA_SHA256
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -53,7 +53,7 @@ class SignatureSpecUtilsTests {
 
     @Test
     fun `getSigningData should return original byte array for SignatureSpec`() {
-        val spec = ECDSA_SHA256
+        val spec = SignatureSpecs.ECDSA_SHA256
         val data = UUID.randomUUID().toString().toByteArray()
         assertArrayEquals(data, spec.getSigningData(digestService, data))
     }

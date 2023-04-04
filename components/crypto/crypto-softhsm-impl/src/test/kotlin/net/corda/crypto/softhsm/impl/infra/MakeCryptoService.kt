@@ -26,7 +26,8 @@ fun makeSoftCryptoService(
 ) = SoftCryptoService(
     wrappingRepositoryFactory = { wrappingRepository },
     schemeMetadata = schemeMetadata,
-    rootWrappingKey = rootWrappingKey,
+    defaultUnmanagedWrappingKeyName = "root",
+    unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
     digestService = PlatformDigestServiceImpl(schemeMetadata),
     wrappingKeyCache = wrappingKeyCache,
     privateKeyCache = privateKeyCache,

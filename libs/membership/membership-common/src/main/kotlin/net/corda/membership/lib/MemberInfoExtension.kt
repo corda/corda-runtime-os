@@ -82,6 +82,12 @@ class MemberInfoExtension {
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
 
+        /**
+         * Key name for identifying static network MGM property.
+         * A static network MGM is not backed by a virtual node so may need different handling.
+         */
+        const val IS_STATIC_MGM = "corda.mgm.static"
+
         /** Key name for pre-auth token property. */
         const val PRE_AUTH_TOKEN = "corda.auth.token"
 
@@ -127,7 +133,8 @@ class MemberInfoExtension {
          */
         const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
-        const val NOTARY_SERVICE_PLUGIN = "corda.notary.service.plugin"
+        const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
+        const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.version.%s"
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
@@ -205,6 +212,13 @@ class MemberInfoExtension {
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
         /**
+         * The member session initiation keys
+         */
+        @JvmStatic
+        val MemberInfo.sessionInitiationKeys: Collection<PublicKey>
+            get() = memberProvidedContext.parseList(SESSION_KEYS)
+
+        /**
          * [PublicKeyHash] for the session initiation key.
          * The hash value should be stored in the member context, but as a fallback it is calculated if not available.
          * It is preferable to always store this in the member context to avoid the repeated calculation.
@@ -230,6 +244,11 @@ class MemberInfoExtension {
         val MemberInfo.isMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
 
+        /** Denotes whether this [MemberInfo] represents a static network MGM. */
+        @JvmStatic
+        val MemberInfo.isStaticMgm: Boolean
+            get() = mgmProvidedContext.parseOrNull(IS_STATIC_MGM) ?: false
+
         /**
          * Returns the pre-auth token from the member info if it is present, and it is a valid UUID.
          */
@@ -242,18 +261,19 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.notaryDetails: MemberNotaryDetails?
-            get() = if (
-                memberProvidedContext
-                    .entries
-                    .filter {
-                        it.key.startsWith(ROLES_PREFIX)
-                    }.any {
-                        it.value == NOTARY_ROLE
-                    }
-            ) {
+            get() = if (isNotary()) {
                 memberProvidedContext.parse("corda.notary")
             } else {
                 null
+            }
+
+        @JvmStatic
+        fun MemberInfo.isNotary(): Boolean = memberProvidedContext
+            .entries
+            .filter {
+                it.key.startsWith(ROLES_PREFIX)
+            }.any {
+                it.value == NOTARY_ROLE
             }
 
         /** Return the key used for hybrid encryption. Only MGMs should have a value set for ecdh key. */

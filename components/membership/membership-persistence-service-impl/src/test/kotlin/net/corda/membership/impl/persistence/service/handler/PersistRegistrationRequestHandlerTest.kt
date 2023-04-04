@@ -15,7 +15,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -56,6 +55,9 @@ class PersistRegistrationRequestHandlerTest {
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
     private val vaultDmlConnectionId = UUID(12, 0)
+    private val signatureKey = "123".toByteArray()
+    private val signatureContent = "456".toByteArray()
+    private val signatureSpec = "dummySignature"
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
@@ -129,19 +131,18 @@ class PersistRegistrationRequestHandlerTest {
             ourRegistrationId,
             ByteBuffer.wrap("89".toByteArray()),
             CryptoSignatureWithKey(
-                ByteBuffer.wrap("123".toByteArray()),
-                ByteBuffer.wrap("456".toByteArray())
+                ByteBuffer.wrap(signatureKey),
+                ByteBuffer.wrap(signatureContent)
             ),
-            CryptoSignatureSpec("dummySignature", null, null),
-            true,
+            CryptoSignatureSpec(signatureSpec, null, null),
             0L,
         )
     )
 
     @Test
     fun `invoke with registration request`() {
-        val mergedEntities = argumentCaptor<Any>()
-        whenever(entityManager.merge(mergedEntities.capture())).doReturn(null)
+        val mergedEntity = argumentCaptor<Any>()
+        whenever(entityManager.merge(mergedEntity.capture())).doReturn(null)
 
         val result = persistRegistrationRequestHandler.invoke(
             getMemberRequestContext(),
@@ -158,7 +159,7 @@ class PersistRegistrationRequestHandlerTest {
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(memberInfoFactory, never()).create(any())
-        with(mergedEntities.firstValue) {
+        with(mergedEntity.firstValue) {
             assertThat(this).isInstanceOf(RegistrationRequestEntity::class.java)
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
@@ -166,15 +167,9 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(entity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
-        }
-        with(mergedEntities.secondValue) {
-            assertThat(this).isInstanceOf(MemberSignatureEntity::class.java)
-            val entity = this as MemberSignatureEntity
-            assertThat(entity.groupId).isEqualTo(ourHoldingIdentity.groupId)
-            assertThat(entity.memberX500Name).isEqualTo(ourHoldingIdentity.x500Name.toString())
-            assertThat(entity.publicKey).isEqualTo("123".toByteArray())
-            assertThat(entity.content).isEqualTo("456".toByteArray())
-            assertThat(entity.signatureSpec).isEqualTo("dummySignature")
+            assertThat(entity.signatureKey).isEqualTo(signatureKey)
+            assertThat(entity.signatureContent).isEqualTo(signatureContent)
+            assertThat(entity.signatureSpec).isEqualTo(signatureSpec)
         }
     }
 

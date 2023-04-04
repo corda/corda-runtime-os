@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.custom
 
+import net.corda.base.internal.OpaqueBytesSubSequence
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
-import net.corda.v5.base.types.OpaqueBytesSubSequence
 import org.junit.jupiter.api.Test
 import java.nio.charset.Charset
 

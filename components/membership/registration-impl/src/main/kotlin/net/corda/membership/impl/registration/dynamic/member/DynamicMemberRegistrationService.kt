@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
@@ -53,16 +54,17 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
@@ -165,6 +167,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
         val sessionKeyIdRegex = SESSION_KEY_ID.format("([0-9]+)").toRegex()
+        val notaryProtocolVersionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("[0-9]+").toRegex()
     }
 
     // for watching the config changes
@@ -298,7 +301,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val memberSignature = cryptoOpsClient.sign(
                     member.shortHash.value,
                     publicKey,
-                    SignatureSpec(signatureSpec),
+                    SignatureSpecImpl(signatureSpec),
                     serializedMemberContext
                 ).let {
                     CryptoSignatureWithKey(
@@ -319,7 +322,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature,
                     CryptoSignatureSpec(signatureSpec, null, null),
-                    true,
                     serialInfo,
                 )
 
@@ -370,7 +372,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                         signature = memberSignature,
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
                         serial = serialInfo,
-                        isPending = true,
                     )
                 ).getOrThrow()
 
@@ -470,6 +471,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
                 }
+                context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
+                    require(orderVerifier.isOrdered(this, 6)) { "Provided notary protocol versions are incorrectly numbered." }
+                }
             }
         }
 
@@ -505,7 +509,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
             if (specFromContext != null) {
                 key.validateSpecName(specFromContext)
-                return SignatureSpec(specFromContext)
+                return SignatureSpecImpl(specFromContext)
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +

@@ -8,6 +8,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
@@ -24,7 +25,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -114,12 +114,12 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val memberContext = mock<KeyValuePairList> {
         on { items } doReturn memberContextKeyValues
     }
-    private val requestStatus = mock<RegistrationRequestStatus> {
-        on { memberContext } doReturn memberContext
+    private val requestStatus = mock<RegistrationRequestDetails> {
+        on { memberProvidedContext } doReturn memberContext
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
-            queryRegistrationRequestStatus(eq(mgm.toCorda()), any())
+            queryRegistrationRequest(eq(mgm.toCorda()), any())
         } doReturn MembershipQueryResult.Success(requestStatus)
     }
     private val groupReader = mock<MembershipGroupReader>()

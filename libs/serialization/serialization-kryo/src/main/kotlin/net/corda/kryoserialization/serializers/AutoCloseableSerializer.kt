@@ -13,7 +13,7 @@ internal object AutoCloseableSerializer : Serializer<AutoCloseable>() {
         throw UnsupportedOperationException(message)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<AutoCloseable>) =
+    override fun read(kryo: Kryo, input: Input, type: Class<out AutoCloseable>) =
         throw IllegalStateException("Should not reach here!")
 }
 

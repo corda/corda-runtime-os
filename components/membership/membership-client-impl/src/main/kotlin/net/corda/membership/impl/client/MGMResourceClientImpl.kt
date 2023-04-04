@@ -9,6 +9,7 @@ import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -34,7 +35,6 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -140,7 +140,7 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
             requestSubjectX500Name: MemberX500Name?,
             viewHistoric: Boolean,
-        ): Collection<RegistrationRequestStatus>
+        ): Collection<RegistrationRequestDetails>
 
         fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash,
@@ -507,13 +507,13 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
-        ): Collection<RegistrationRequestStatus> {
+        ): Collection<RegistrationRequestDetails> {
             val statuses = if (viewHistoric) {
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
             } else {
                 listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
             }
-            return membershipQueryClient.queryRegistrationRequestsStatus(
+            return membershipQueryClient.queryRegistrationRequests(
                 mgmHoldingIdentity(holdingIdentityShortHash),
                 requestSubjectX500Name,
                 statuses,
@@ -525,11 +525,11 @@ class MGMResourceClientImpl @Activate constructor(
         ) {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
             val requestStatus =
-                membershipQueryClient.queryRegistrationRequestStatus(mgm, requestId.toString()).getOrThrow()
+                membershipQueryClient.queryRegistrationRequest(mgm, requestId.toString()).getOrThrow()
                     ?: throw IllegalArgumentException(
                         "No request with registration request ID '$requestId' was found."
                     )
-            require(requestStatus.status == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
+            require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
             if (approve) {

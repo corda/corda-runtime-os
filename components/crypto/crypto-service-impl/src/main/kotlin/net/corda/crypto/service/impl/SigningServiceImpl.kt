@@ -3,7 +3,6 @@ package net.corda.crypto.service.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.InvalidParameterException
-import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -19,6 +18,7 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
@@ -33,10 +33,10 @@ import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -104,7 +104,7 @@ class SigningServiceImpl(
             "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
         }
         // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
-        // querying 
+        // querying
         return signingRepositoryFactory.getInstance(tenantId).use {
             it.query(
                 skip,
@@ -244,8 +244,8 @@ class SigningServiceImpl(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String>,
-    ): DigitalSignature.WithKey {
+        context: Map<String, String>
+    ): DigitalSignatureWithKey {
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
@@ -255,7 +255,7 @@ class SigningServiceImpl(
         else
             SigningAliasSpec(getHsmAlias(record, publicKey, tenantId), publicKey, scheme, signatureSpec)
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
-        return DigitalSignature.WithKey(record.publicKey, signedBytes)
+        return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
 
     override fun deriveSharedSecret(
@@ -308,6 +308,13 @@ class SigningServiceImpl(
                 )
             }
             require(ref.masterKeyAlias != null) { "The master key alias must be defined for tenant $tenantId category $category" }
+            logger.trace(
+                "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${ref.masterKeyAlias}",
+                tenantId,
+                category,
+                alias
+            )
+
             val generatedKey = ref.instance.generateKeyPair(
                 KeyGenerationSpec(scheme, alias, ref.masterKeyAlias),
                 context + mapOf(

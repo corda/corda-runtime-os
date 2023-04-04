@@ -124,6 +124,9 @@ class QueryRegistrationRequestsHandlerTest {
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3),
+                    byteArrayOf(4, 5),
+                    byteArrayOf(6, 7),
+                    "signatureSpec",
                     SERIAL,
                     "test reason"
                 )
@@ -189,6 +192,9 @@ class QueryRegistrationRequestsHandlerTest {
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3),
+                    byteArrayOf(4, 5),
+                    byteArrayOf(6, 7),
+                    "signatureSpec",
                     SERIAL,
                 )
             }

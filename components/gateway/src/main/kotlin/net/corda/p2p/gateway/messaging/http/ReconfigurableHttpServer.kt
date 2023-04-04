@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -8,30 +7,28 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 import net.corda.p2p.gateway.messaging.http.DynamicX509ExtendedTrustManager.Companion.createTrustManagerIfNeeded
 import net.corda.p2p.gateway.messaging.internal.CommonComponents
+import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
-import java.net.SocketAddress
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 internal class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
-    private val listener: HttpServerListener,
+    private val listener: RequestListener,
     private val commonComponents: CommonComponents,
     private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
 ) : LifecycleWithDominoTile {
 
-    @Volatile
-    private var httpServer: HttpServer? = null
-    private val serverLock = ReentrantReadWriteLock()
+    // Map from the server configuration to a server
+    private val httpServers = ConcurrentHashMap<GatewayServerConfiguration, HttpServer>()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -42,13 +39,6 @@ internal class ReconfigurableHttpServer(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
-    fun writeResponse(status: HttpResponseStatus, address: SocketAddress, payload: ByteArray = ByteArray(0)) {
-        serverLock.read {
-            val server = httpServer ?: throw IllegalStateException("Server is not ready")
-            server.write(status, payload, address)
-        }
     }
 
     inner class ReconfigurableHttpServerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
@@ -62,55 +52,65 @@ internal class ReconfigurableHttpServer(
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             val configUpdateResult = CompletableFuture<Unit>()
+            resources.keep {
+                httpServers.values.forEach {
+                    it.close()
+                }
+                httpServers.clear()
+            }
             @Suppress("TooGenericExceptionCaught")
             try {
-                if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                    logger.info(
-                        "New server configuration for ${dominoTile.coordinatorName} on the same port, " +
-                            "HTTP server will have to go down"
-                    )
-                    serverLock.write {
-                        val oldServer = httpServer
-                        httpServer = null
-                        oldServer?.close()
-                        val mutualTlsTrustManager = createTrustManagerIfNeeded(
-                            newConfiguration.sslConfig,
-                            commonComponents.trustStoresMap,
-                            dynamicCertificateSubjectStore,
-                        )
-                        val newServer = HttpServer(
-                            listener,
-                            newConfiguration,
-                            commonComponents.dynamicKeyStore.serverKeyStore,
-                            mutualTlsTrustManager,
-                        )
-                        newServer.start()
-                        resources.keep(newServer)
-                        httpServer = newServer
+                val newServersConfiguration = newConfiguration.serversConfiguration.groupBy {
+                    it.hostAddress to it.hostPort
+                }.values
+                    .map {
+                        val first = it.first()
+                        val others = it.drop(1)
+                            .map { config ->
+                                config.urlPath
+                            }
+                        if (others.isNotEmpty()) {
+                            logger.warn(
+                                "Can not define two servers on ${first.hostAddress}:${first.hostPort}." +
+                                    " Will ignore $others and use only ${first.urlPath}"
+                            )
+                        }
+                        first
                     }
-                } else {
-                    logger.info(
-                        "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                            "${newConfiguration.hostAddress}:${newConfiguration.hostPort}"
-                    )
-                    val mutualTlsTrustManager = createTrustManagerIfNeeded(
-                        newConfiguration.sslConfig,
-                        commonComponents.trustStoresMap,
-                        dynamicCertificateSubjectStore,
-                    )
-                    val newServer = HttpServer(
-                        listener,
-                        newConfiguration,
-                        commonComponents.dynamicKeyStore.serverKeyStore,
-                        mutualTlsTrustManager,
-                    )
-                    newServer.start()
-                    resources.keep(newServer)
-                    serverLock.write {
-                        val oldServer = httpServer
-                        httpServer = null
-                        oldServer?.close()
-                        httpServer = newServer
+                if (newServersConfiguration.isEmpty()) {
+                    throw IllegalArgumentException("No servers defined!")
+                }
+                val mutualTlsTrustManager = createTrustManagerIfNeeded(
+                    newConfiguration.sslConfig,
+                    commonComponents.trustStoresMap,
+                    dynamicCertificateSubjectStore,
+                )
+                val serversToStop = httpServers.filterKeys { configuration ->
+                    !newServersConfiguration.contains(configuration)
+                }
+                httpServers.keys -= serversToStop.keys
+                try {
+                    newServersConfiguration.forEach { serverConfiguration ->
+                        httpServers.compute(serverConfiguration) { _, oldServer ->
+                            oldServer?.close()
+                            logger.info(
+                                "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
+                                    "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}${serverConfiguration.urlPath}"
+                            )
+                            HttpServer(
+                                listener,
+                                newConfiguration.maxRequestSize,
+                                serverConfiguration,
+                                commonComponents.dynamicKeyStore.serverKeyStore,
+                                mutualTlsTrustManager,
+                            ).also {
+                                it.start()
+                            }
+                        }
+                    }
+                } finally {
+                    serversToStop.values.forEach {
+                        it.close()
                     }
                 }
                 configUpdateResult.complete(Unit)

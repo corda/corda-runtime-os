@@ -122,7 +122,7 @@ class FlowMapperServiceIntegrationTest {
             TestP2POutProcessor(testId, p2pLatch, 1), messagingConfig, null
         )
         p2pOutSub.start()
-        assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
+        assertTrue(p2pLatch.await(20, TimeUnit.SECONDS))
         p2pOutSub.close()
 
         //send data back

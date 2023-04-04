@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.persistence
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -35,8 +35,8 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    @Reference(service = TransactionSignatureServiceInternal::class)
+    private val transactionSignatureService: TransactionSignatureServiceInternal
 ) : ConsensualLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable

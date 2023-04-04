@@ -4,27 +4,14 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import java.io.StringWriter
-import java.net.URL
-import java.nio.ByteBuffer
-import java.security.Key
-import java.security.KeyFactory
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.PublicKey
-import java.security.Signature
-import java.security.spec.PKCS8EncodedKeySpec
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
@@ -59,6 +46,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -95,8 +83,6 @@ import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext
@@ -117,6 +103,21 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.slf4j.LoggerFactory
+import java.io.StringWriter
+import java.net.URL
+import java.nio.ByteBuffer
+import java.security.Key
+import java.security.KeyFactory
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.PublicKey
+import java.security.Signature
+import java.security.spec.PKCS8EncodedKeySpec
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 class P2PLayerEndToEndTest {
 
@@ -460,12 +461,11 @@ class P2PLayerEndToEndTest {
             val context = mock<MemberContext> {
                 on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpointInfo)
                 on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn identity.groupId
+                on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(keyPair.public)
             }
             return mock {
                 on { name } doReturn identity.name
                 on { memberProvidedContext } doReturn context
-                on { sessionInitiationKeys } doReturn listOf(keyPair.public)
-
             }
         }
     }
@@ -495,7 +495,9 @@ class P2PLayerEndToEndTest {
         private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
-        private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory, configMerger)
+        private val avroSchemaRegistry = AvroSchemaRegistryImpl()
+        private val configReadService = ConfigurationReadServiceImpl(
+            lifecycleCoordinatorFactory, subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
         private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val linkManagerConfig by lazy {
@@ -520,10 +522,17 @@ class P2PLayerEndToEndTest {
         }
 
         private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
+            val servers = ConfigValueFactory.fromIterable(
+                listOf(
+                    mapOf(
+                        "hostAddress" to domainName,
+                        "hostPort" to port,
+                        "urlPath" to URL_PATH,
+                    )
+                )
+            )
             return ConfigFactory.empty()
-                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
-                .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
-                .withValue("urlPath", ConfigValueFactory.fromAnyRef(URL_PATH))
+                .withValue("serversConfiguration", servers)
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
                 .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(sslConfig.tlsType.toString()))
@@ -592,7 +601,7 @@ class P2PLayerEndToEndTest {
                 signature.initSign(key)
                 (signatureSpec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
                 signature.update(data)
-                DigitalSignature.WithKey(publicKey, signature.sign())
+                DigitalSignatureWithKey(publicKey, signature.sign())
             }
         }
         private val groupPolicyProvider = mockLifeCycle<GroupPolicyProvider> {

@@ -1,7 +1,7 @@
 package net.corda.crypto.delegated.signing
 
-import net.corda.v5.crypto.ParameterizedSignatureSpec
-import net.corda.v5.crypto.SignatureSpec
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import java.io.ByteArrayOutputStream
 import java.security.AlgorithmParameters
 import java.security.PrivateKey
@@ -34,7 +34,7 @@ internal class DelegatedSignature(
         val spec = if (parameterSpec != null) {
             ParameterizedSignatureSpec(signatureName, parameterSpec!!)
         } else {
-            SignatureSpec(signatureName)
+            SignatureSpecImpl(signatureName)
         }
         return try {
             val key = signingKey ?: throw SecurityException(

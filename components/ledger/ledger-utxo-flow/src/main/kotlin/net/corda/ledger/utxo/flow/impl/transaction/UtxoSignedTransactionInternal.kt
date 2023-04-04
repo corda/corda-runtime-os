@@ -39,26 +39,43 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
 
     /**
      * Gets the missing signatories from the current [UtxoSignedTransactionInternal].
+     * It does not verify the available ones.
      *
      * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransactionInternal].
      */
-    @Suspendable
     fun getMissingSignatories(): Set<PublicKey>
 
     /**
-     * Verify all available signatures and whether there are any missing ones.
+     * Verify the signatories' signatures and check if there are any missing one.
+     * It ignores the non-signatory signatures! (including the notary's)
      *
-     * @throws TransactionSignatureException if any signatures are invalid or missing.
+     * @throws TransactionSignatureException if any signatures are missing or invalid.
      */
-    @Suspendable
-    fun verifySignatures()
+    fun verifySignatorySignatures()
 
     /**
      * Verify if notary has signed the transaction.
-     * The signature itself does not get verified!
+     * It checks both the existence and the validity of that signature.
      *
-     * @throws TransactionSignatureException if notary signatures is missing.
+     * @throws TransactionSignatureException if notary signatures is missing or invalid.
      */
-    @Suspendable
-    fun verifyNotarySignatureAttached()
+    fun verifyAttachedNotarySignature()
+
+    /**
+     * Verify if a signature
+     *  - is made by the notary of the transaction
+     *  - is valid
+     *
+     * @throws TransactionSignatureException if the signature is invalid or if not made by the notary
+     */
+    fun verifyNotarySignature(signature: DigitalSignatureAndMetadata)
+
+    /**
+     * Verify if a signature of a signatory is valid.
+     * It does not throw if the signature is not one of the signatories regardless of the validity since
+     * the public key is not available, the validity cannot be verified.
+     *
+     * @throws TransactionSignatureException if signature is owned by a signatory, and it is not valid.
+     */
+    fun verifySignatorySignature(signature: DigitalSignatureAndMetadata)
 }
