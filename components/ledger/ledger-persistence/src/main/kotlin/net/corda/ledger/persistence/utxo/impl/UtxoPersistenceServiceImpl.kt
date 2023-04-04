@@ -23,6 +23,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl constructor(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
