@@ -90,16 +90,26 @@ class ProcessMemberVerificationResponseHandlerTest {
         member,
         mgm
     )
+    private val setRegistrationRequestStatusCommands = listOf(
+        Record(
+            "topic",
+            "key",
+            "value",
+        ),
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn setRegistrationRequestStatusCommands
+    }
 
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setRegistrationRequestStatus(
-                eq(mgm.toCorda()),
-                eq(REGISTRATION_ID),
-                eq(RegistrationStatus.PENDING_AUTO_APPROVAL),
+                any(),
+                any(),
+                any(),
                 anyOrNull()
             )
-        } doReturn mock()
+        } doReturn operation
     }
     private val manuallyApproveAllRule = mock<ApprovalRuleDetails> {
         on { ruleRegex } doReturn APPROVE_ALL_STRING
@@ -168,8 +178,9 @@ class ProcessMemberVerificationResponseHandlerTest {
         verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_AUTO_APPROVAL)
         verifyGetApprovalRules(ApprovalRuleType.STANDARD)
 
-        assertThat(result.outputStates).hasSize(2)
+        assertThat(result.outputStates).hasSize(3)
             .contains(record)
+            .containsAll(setRegistrationRequestStatusCommands)
             .anyMatch {
                 val value = it.value
                 it.key == expectedRegistrationTopicKey &&
@@ -189,7 +200,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         verifyGetApprovalRules(ApprovalRuleType.STANDARD)
 
-        assertThat(result.outputStates).hasSize(1)
+        assertThat(result.outputStates).hasSize(2)
         assertUpdatedState(result)
     }
 
@@ -307,7 +318,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -330,7 +341,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -353,7 +364,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -378,7 +389,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -395,7 +406,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(2)
+            assertThat(result.outputStates).hasSize(3)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -424,7 +435,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)

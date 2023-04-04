@@ -16,6 +16,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -54,7 +55,16 @@ class VerifyMemberHandlerTest {
         member,
         mgm
     )
-
+    private val setRegistrationRequestStatusCommands = listOf(
+        Record(
+            "topic",
+            "key",
+            "value",
+        ),
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn setRegistrationRequestStatusCommands
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setRegistrationRequestStatus(
@@ -62,7 +72,7 @@ class VerifyMemberHandlerTest {
                 REGISTRATION_ID,
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
             )
-        } doReturn mock()
+        } doReturn operation
     }
     private val verificationRequestRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
@@ -105,8 +115,9 @@ class VerifyMemberHandlerTest {
             RegistrationStatus.PENDING_MEMBER_VERIFICATION
         )
 
-        assertThat(result.outputStates).hasSize(1)
+        assertThat(result.outputStates).hasSize(2)
             .contains(verificationRequestRecord)
+            .containsAll(setRegistrationRequestStatusCommands)
     }
 
     @Test
