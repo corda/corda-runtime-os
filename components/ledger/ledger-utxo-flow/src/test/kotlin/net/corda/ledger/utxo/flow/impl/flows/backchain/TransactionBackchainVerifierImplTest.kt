@@ -5,7 +5,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -13,10 +12,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificat
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.getExampleInvalidStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
-import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -43,8 +40,7 @@ class TransactionBackchainVerifierImplTest {
 
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val utxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
-
-    private val metadata = mock<TransactionMetadata>()
+    private val visibilityChecker = mock<VisibilityChecker>()
 
     private val transaction1 = mock<UtxoSignedTransactionInternal>()
     private val transaction2 = mock<UtxoSignedTransactionInternal>()
@@ -55,11 +51,10 @@ class TransactionBackchainVerifierImplTest {
     private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
 
     private val signatory = mock<PublicKey>()
-    private val command = mock<Command>()
-
     private val transactionBackchainVerifier = TransactionBackchainVerifierImpl(
         utxoLedgerPersistenceService,
-        utxoLedgerTransactionVerificationService
+        utxoLedgerTransactionVerificationService,
+        visibilityChecker
     )
 
     @BeforeEach
@@ -83,38 +78,15 @@ class TransactionBackchainVerifierImplTest {
             )
         ).thenReturn(transaction3 to UNVERIFIED)
         whenever(transaction1.toLedgerTransaction()).thenReturn(ledgerTransaction1)
-        whenever(transaction1.notaryName).thenReturn(notaryX500Name)
-        whenever(transaction1.notaryKey).thenReturn(publicKeyExample)
+        whenever(transaction1.outputStateAndRefs).thenReturn(emptyList())
         whenever(transaction2.toLedgerTransaction()).thenReturn(ledgerTransaction2)
-        whenever(transaction2.notaryName).thenReturn(notaryX500Name)
-        whenever(transaction2.notaryKey).thenReturn(publicKeyExample)
+        whenever(transaction2.outputStateAndRefs).thenReturn(listOf(getExampleStateAndRefImpl()))
         whenever(transaction3.toLedgerTransaction()).thenReturn(ledgerTransaction3)
-        whenever(transaction3.notaryName).thenReturn(notaryX500Name)
-        whenever(transaction3.notaryKey).thenReturn(publicKeyExample)
+        whenever(transaction3.outputStateAndRefs).thenReturn(listOf(getExampleStateAndRefImpl()))
         whenever(ledgerTransaction1.id).thenReturn(TX_ID_1)
-        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(getExampleStateAndRefImpl().ref))
-        whenever(ledgerTransaction1.outputContractStates).thenReturn(emptyList())
-        whenever(ledgerTransaction1.inputStateAndRefs).thenReturn(listOf(getExampleStateAndRefImpl()))
-        whenever(ledgerTransaction1.outputStateAndRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction1.signatories).thenReturn(listOf(signatory))
-        whenever(ledgerTransaction1.commands).thenReturn(listOf(command))
-        whenever(ledgerTransaction1.metadata).thenReturn(metadata)
         whenever(ledgerTransaction2.id).thenReturn(TX_ID_2)
-        whenever(ledgerTransaction2.inputStateRefs).thenReturn(listOf(getExampleStateAndRefImpl().ref))
-        whenever(ledgerTransaction2.outputContractStates).thenReturn(emptyList())
-        whenever(ledgerTransaction2.inputStateAndRefs).thenReturn(listOf(getExampleStateAndRefImpl()))
-        whenever(ledgerTransaction2.outputStateAndRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction2.signatories).thenReturn(listOf(signatory))
-        whenever(ledgerTransaction2.commands).thenReturn(listOf(command))
-        whenever(ledgerTransaction2.metadata).thenReturn(metadata)
         whenever(ledgerTransaction3.id).thenReturn(TX_ID_3)
-        whenever(ledgerTransaction3.inputStateRefs).thenReturn(listOf(getExampleStateAndRefImpl().ref))
-        whenever(ledgerTransaction3.outputContractStates).thenReturn(emptyList())
-        whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(getExampleStateAndRefImpl()))
-        whenever(ledgerTransaction3.outputStateAndRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction3.signatories).thenReturn(listOf(signatory))
-        whenever(ledgerTransaction3.commands).thenReturn(listOf(command))
-        whenever(ledgerTransaction3.metadata).thenReturn(metadata)
+        whenever(visibilityChecker.containsMySigningKeys(any())).thenReturn(true)
     }
 
     @Test
@@ -123,11 +95,11 @@ class TransactionBackchainVerifierImplTest {
     }
 
     @Test
-    fun `updates all transaction statuses when all transactions pass verification`() {
+    fun `persists transaction as VERIFIED when all transactions pass verification`() {
         transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_1, VERIFIED)
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_2, VERIFIED)
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_3, VERIFIED)
+        verify(utxoLedgerPersistenceService).persist(transaction1, VERIFIED, emptyList())
+        verify(utxoLedgerPersistenceService).persist(transaction2, VERIFIED, listOf(0))
+        verify(utxoLedgerPersistenceService).persist(transaction3, VERIFIED, listOf(0))
     }
 
     @Test
@@ -135,9 +107,9 @@ class TransactionBackchainVerifierImplTest {
         whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
         whenever(utxoLedgerTransactionVerificationService.verify(ledgerTransaction3)).thenThrow(VERIFICATION_EXCEPTION)
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_1, VERIFIED)
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_2, VERIFIED)
-        verify(utxoLedgerPersistenceService, never()).updateStatus(TX_ID_3, VERIFIED)
+        verify(utxoLedgerPersistenceService).persist(transaction1, VERIFIED, emptyList())
+        verify(utxoLedgerPersistenceService).persist(transaction2, VERIFIED, listOf(0))
+        verify(utxoLedgerPersistenceService, never()).persist(eq(transaction3), eq(VERIFIED), any())
     }
 
     @Test
@@ -147,7 +119,7 @@ class TransactionBackchainVerifierImplTest {
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
         verify(ledgerTransaction2, never()).inputStateAndRefs
         verify(ledgerTransaction3, never()).inputStateAndRefs
-        verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
+        verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
@@ -162,7 +134,7 @@ class TransactionBackchainVerifierImplTest {
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
         verify(ledgerTransaction2, never()).inputStateAndRefs
         verify(ledgerTransaction3, never()).inputStateAndRefs
-        verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
+        verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
@@ -177,21 +149,21 @@ class TransactionBackchainVerifierImplTest {
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
         verify(ledgerTransaction2, never()).inputStateAndRefs
         verify(ledgerTransaction3, never()).inputStateAndRefs
-        verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
+        verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
     fun `throws an exception if a transaction cannot be retrieved from the database`() {
         whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null )
         assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
-        verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
+        verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
     fun `returns false if a transaction comes as invalid from the database`() {
         whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to TransactionStatus.INVALID)
-        assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse()
-        verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
+        assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
+        verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
@@ -199,9 +171,9 @@ class TransactionBackchainVerifierImplTest {
         whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_3, UNVERIFIED)).thenReturn(null)
         assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
 
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_1, VERIFIED)
-        verify(utxoLedgerPersistenceService).updateStatus(TX_ID_2, VERIFIED)
-        verify(utxoLedgerPersistenceService, never()).updateStatus(TX_ID_3, VERIFIED)
+        verify(utxoLedgerPersistenceService).persist(transaction1, VERIFIED, emptyList())
+        verify(utxoLedgerPersistenceService).persist(transaction2, VERIFIED, listOf(0))
+        verify(utxoLedgerPersistenceService, never()).persist(eq(transaction3), eq(VERIFIED), any())
     }
 
     @Test

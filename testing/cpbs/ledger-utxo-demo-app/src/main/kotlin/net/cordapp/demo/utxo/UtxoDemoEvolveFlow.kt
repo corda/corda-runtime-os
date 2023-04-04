@@ -67,6 +67,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
 
             val output =
                 TestUtxoState(
+                    1,
                     request.update,
                     inputState.participants,
                     inputState.participantNames)
