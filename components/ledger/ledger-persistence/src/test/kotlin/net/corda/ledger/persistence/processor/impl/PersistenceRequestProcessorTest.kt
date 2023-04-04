@@ -91,7 +91,7 @@ class PersistenceRequestProcessorTest {
         val failureResponseRecord = Record("", "3", FlowEvent())
         val request2Response = IllegalStateException()
         val handler2 = mock<RequestHandler>().apply { whenever(this.execute()).thenThrow(request2Response) }
-        whenever(responseFactory.errorResponse(request2.flowExternalEventContext, request2Response))
+        whenever(responseFactory.platformErrorResponse(request2.flowExternalEventContext, request2Response))
             .thenReturn(failureResponseRecord)
         whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
 
