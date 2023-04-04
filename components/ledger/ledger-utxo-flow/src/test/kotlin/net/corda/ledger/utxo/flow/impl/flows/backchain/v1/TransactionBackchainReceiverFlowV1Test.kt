@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -27,6 +28,8 @@ class TransactionBackchainReceiverFlowV1Test {
     private companion object {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+
+        // Root transaction
         val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
         val TX_3_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
         val TX_3_INPUT_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)
@@ -180,6 +183,94 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
+    }
+
+    @Test
+    fun `receiving a transaction twice at different points in the backchain retrieves the transaction once and correctly places it in the sorted transactions`() {
+        /*
+       The transaction chain:
+                    tx4
+                   /   \
+               tx2      \
+               /         \
+           tx1            tx5
+            \            /
+             \         /
+              \      /
+               tx3 /
+
+       TX5 will cause TX3 and TX4 to be fetched.
+       TX3 will cause TX1 to be fetched.
+       TX4 will cause TX2 to be fetched
+       TX2 will not cause TX1 to be fetched, but it will cause TX1 to be placed before TX2 and TX3 in the sorted transactions because both
+       transactions depend on it.
+
+       TX5 is not referenced in the test because the dependencies of the transaction are passed into the flow as IDs.
+       */
+
+        val transactionId4 = SecureHashImpl("SHA", byteArrayOf(4, 4, 4, 4))
+        val transactionId3 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
+        val transactionId2 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
+        val transactionId1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+
+        val transaction4 = mock<UtxoSignedTransaction>()
+        val transaction3 = mock<UtxoSignedTransaction>()
+        val transaction2 = mock<UtxoSignedTransaction>()
+        val transaction1 = mock<UtxoSignedTransaction>()
+
+        val transaction2StateRef = StateRef(transactionId2, 0)
+        val transaction1StateRef0 = StateRef(transactionId1, 0)
+        val transaction1StateRef1 = StateRef(transactionId1, 1)
+
+        whenever(transaction4.id).thenReturn(transactionId4)
+        whenever(transaction4.inputStateRefs).thenReturn(listOf(transaction2StateRef))
+
+        whenever(transaction3.id).thenReturn(transactionId3)
+        whenever(transaction3.inputStateRefs).thenReturn(listOf(transaction1StateRef1))
+
+        whenever(transaction2.id).thenReturn(transactionId2)
+        whenever(transaction2.inputStateRefs).thenReturn(listOf(transaction1StateRef0))
+
+        whenever(transaction1.id).thenReturn(transactionId1)
+        whenever(transaction1.inputStateRefs).thenReturn(emptyList())
+
+        whenever(utxoLedgerPersistenceService.find(any(), any())).thenReturn(null)
+
+        whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
+            listOf(transaction3),
+            listOf(transaction4),
+            listOf(transaction1),
+            listOf(transaction2)
+        )
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(transactionId3, transactionId4)).complete()).isEqualTo(
+            listOf(
+                transactionId1,
+                transactionId2,
+                transactionId4,
+                transactionId3
+            )
+        )
+
+        session.inOrder {
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId3)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId4)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId1)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId2)))
+            Unit
+
+        }
+
+        utxoLedgerPersistenceService.inOrder {
+            verify().persistIfDoesNotExist(transaction3, UNVERIFIED)
+            verify().persistIfDoesNotExist(transaction4, UNVERIFIED)
+            verify().persistIfDoesNotExist(transaction1, UNVERIFIED)
+            verify().persistIfDoesNotExist(transaction2, UNVERIFIED)
+            Unit
+        }
     }
 
     private fun callTransactionBackchainReceiverFlow(originalTransactionsToRetrieve: Set<SecureHash>): TopologicalSort {
