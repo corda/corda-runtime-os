@@ -24,6 +24,14 @@ class CryptoHSMConfig(private val config: SmartConfig) {
     }
 
     class HSMConfig(private val config: SmartConfig) {
+        val name: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+            try {
+                config.getString(this::name.name)
+            } catch (e: Throwable) {
+                throw IllegalStateException("Failed to get ${this::name.name}", e)
+            }
+        }
+
         val categories: List<CategoryConfig> by lazy(LazyThreadSafetyMode.PUBLICATION) {
             try {
                 config.getConfigList(this::categories.name).map { CategoryConfig(it) }

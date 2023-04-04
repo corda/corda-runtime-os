@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -250,6 +251,7 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
                     CryptoHSMConfig::hsm.name to mapOf(
+                        CryptoHSMConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
                         CryptoHSMConfig.HSMConfig::categories.name to listOf(
                             mapOf(
                                 CryptoHSMConfig.CategoryConfig::category.name to "*",
