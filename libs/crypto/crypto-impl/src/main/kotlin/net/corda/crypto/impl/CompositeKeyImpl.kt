@@ -165,7 +165,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     override fun getFormat() = ASN1Encoding.DER
 
     // Return true when and if the threshold requirement is met.
-    private fun checkFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
+    private fun checkFulfilledBy(keysToCheck: Set<PublicKey>): Boolean {
         var totalWeight = 0
         children.forEach {
             val node = it.node
