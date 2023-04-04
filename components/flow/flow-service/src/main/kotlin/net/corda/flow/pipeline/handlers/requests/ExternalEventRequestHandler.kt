@@ -34,10 +34,14 @@ class ExternalEventRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         request: FlowIORequest.ExternalEvent
     ): FlowEventContext<Any> {
+        val cpkFileHashes = context.checkpoint.cpkFileHashes
+            .mapIndexed { idx, hash -> "corda.cpk.hash.$idx" to hash.toString() }
+            .toMap()
+
         val flowExternalEventContext = ExternalEventContext.newBuilder()
             .setRequestId(request.requestId)
             .setFlowId(context.checkpoint.flowId)
-            .setContextProperties(keyValuePairListOf(request.contextProperties))
+            .setContextProperties(keyValuePairListOf(request.contextProperties + cpkFileHashes))
             .build()
 
         val eventRecord = externalEventFactoryMap.get(request.factoryClass.name)

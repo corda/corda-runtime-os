@@ -11,7 +11,6 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.utilities.withMDC
 import net.corda.utilities.trace
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
