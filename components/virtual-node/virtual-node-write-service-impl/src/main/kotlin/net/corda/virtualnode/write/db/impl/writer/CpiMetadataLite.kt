@@ -17,5 +17,5 @@ internal data class CpiMetadataLite(
     val fileChecksum: SecureHash,
     val mgmGroupId: String,
     val groupPolicy: String,
-    val cpks: Set<CpkMetadata> // Todo: Not sure what Lite means but by adding this new field this data class becomes anything but light
+    val cpks: Set<CpkMetadata> // Todos: Not sure what Lite means but by adding this new field this data class becomes anything but light
 )
