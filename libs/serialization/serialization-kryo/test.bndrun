@@ -6,7 +6,9 @@
 
 -runvm: \
     -Djava.io.tmpdir=${task.temporaryDir},\
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
+    --add-opens, 'java.base/java.lang.invoke=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.util=ALL-UNNAMED',\
+    --illegal-access=deny
 
 # Enable debugging.
 # -runjdb: 5005

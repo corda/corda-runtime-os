@@ -36,5 +36,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    testImplementation project(':libs:serialization:serialization-amqp')
+    testImplementation project(':libs:crypto:cipher-suite')
     testImplementation project(":testing:crypto-testkit")
 }

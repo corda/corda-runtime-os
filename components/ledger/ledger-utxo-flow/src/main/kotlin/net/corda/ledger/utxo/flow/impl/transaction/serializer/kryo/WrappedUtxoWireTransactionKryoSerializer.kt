@@ -28,7 +28,7 @@ class WrappedUtxoWireTransactionKryoSerializer @Activate constructor(
         output.writeClassAndObject(obj.wireTransaction)
     }
 
-    override fun read(input: CheckpointInput, type: Class<WrappedUtxoWireTransaction>): WrappedUtxoWireTransaction {
+    override fun read(input: CheckpointInput, type: Class<out WrappedUtxoWireTransaction>): WrappedUtxoWireTransaction {
         val wireTransaction = input.readClassAndObject() as WireTransaction
         return WrappedUtxoWireTransaction(
             wireTransaction,

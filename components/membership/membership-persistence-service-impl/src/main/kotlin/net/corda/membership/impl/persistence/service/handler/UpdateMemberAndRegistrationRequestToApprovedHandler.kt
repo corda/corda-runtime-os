@@ -11,7 +11,6 @@ import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationR
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
-import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
@@ -77,8 +76,11 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     MEMBER_STATUS_ACTIVE,
                     now,
                     member.memberContext,
+                    member.memberSignatureKey,
+                    member.memberSignatureContent,
+                    member.memberSignatureSpec,
                     serializedMgmContext,
-                    member.serialNumber
+                    member.serialNumber,
                 )
             )
 
@@ -94,23 +96,6 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             }
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
-
-            val signature = em.find(
-                MemberSignatureEntity::class.java,
-                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
-                LockModeType.PESSIMISTIC_WRITE,
-            ) ?: throw MembershipPersistenceException("Could not find signature for member: ${request.member}")
-
-            em.merge(
-                MemberSignatureEntity(
-                    member.groupId,
-                    member.memberX500Name,
-                    false,
-                    signature.publicKey,
-                    signature.context,
-                    signature.content
-                )
-            )
 
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(

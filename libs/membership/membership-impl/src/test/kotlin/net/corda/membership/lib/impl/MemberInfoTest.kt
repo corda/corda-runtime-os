@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -14,7 +15,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -108,7 +109,7 @@ class MemberInfoTest {
             memberProvidedContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to "O=Alice,L=London,C=GB",
-                    PARTY_SESSION_KEY to KEY,
+                    String.format(PARTY_SESSION_KEYS, 0) to KEY,
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                     *convertPublicKeys().toTypedArray(),
                     *convertEndpoints().toTypedArray(),
@@ -172,9 +173,10 @@ class MemberInfoTest {
 
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
-            ByteBuffer.wrap(byteArrayOf()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(byteArrayOf())
         )
+
+        private val signatureSpec = CryptoSignatureSpec("", null, null)
 
         @BeforeAll
         @JvmStatic
@@ -201,7 +203,9 @@ class MemberInfoTest {
             memberInfo?.memberProvidedContext?.toAvro()?.toByteBuffer(),
             memberInfo?.mgmProvidedContext?.toAvro()?.toByteBuffer(),
             signature,
-            signature
+            signatureSpec,
+            signature,
+            signatureSpec
         )
 
         dataFileWriter.create(signedMemberInfo.schema, avroMemberInfo)
@@ -230,7 +234,6 @@ class MemberInfoTest {
         assertEquals(memberInfo, recreatedMemberInfo)
         assertEquals(memberInfo?.ledgerKeys, recreatedMemberInfo?.ledgerKeys)
         assertEquals(memberInfo?.name, recreatedMemberInfo?.name)
-        assertEquals(memberInfo?.sessionInitiationKey, recreatedMemberInfo?.sessionInitiationKey)
         assertEquals(memberInfo?.endpoints, recreatedMemberInfo?.endpoints)
         assertEquals(memberInfo?.modifiedTime, recreatedMemberInfo?.modifiedTime)
         assertEquals(memberInfo?.isActive, recreatedMemberInfo?.isActive)

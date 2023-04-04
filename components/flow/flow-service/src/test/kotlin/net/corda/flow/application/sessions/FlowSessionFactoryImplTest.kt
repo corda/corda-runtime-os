@@ -6,9 +6,9 @@ import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.asFlowContext
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +38,7 @@ class FlowSessionFactoryImplTest {
     @BeforeEach
     fun setup() {
         serializationService.apply {
-            whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
+            whenever(serialize(HI)).thenReturn(SerializedBytesImpl(HI.toByteArray()))
         }
     }
 

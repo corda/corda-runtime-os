@@ -8,12 +8,13 @@ import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.PublicKey
 
 @Component(
     service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
@@ -33,7 +34,8 @@ class TransactionStateSerializer @Activate constructor() :
         return TransactionStateProxy(
             TransactionStateVersion.VERSION_1,
             obj.contractState,
-            obj.notary,
+            obj.notaryName,
+            obj.notaryKey,
             obj.encumbranceGroup
         )
     }
@@ -42,7 +44,8 @@ class TransactionStateSerializer @Activate constructor() :
         if (proxy.version == TransactionStateVersion.VERSION_1) {
             return TransactionStateImpl(
                 proxy.contractState,
-                proxy.notary,
+                proxy.notaryName,
+                proxy.notaryKey,
                 proxy.encumbrance
             )
         }
@@ -63,7 +66,8 @@ data class TransactionStateProxy(
      * Properties for transaction state serialisation.
      */
     val contractState: ContractState,
-    val notary: Party,
+    val notaryName: MemberX500Name,
+    val notaryKey: PublicKey,
     val encumbrance: EncumbranceGroup?,
 )
 

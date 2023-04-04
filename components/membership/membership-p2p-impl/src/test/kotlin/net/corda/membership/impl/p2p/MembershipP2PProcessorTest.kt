@@ -5,6 +5,7 @@ import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -20,6 +21,12 @@ import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.sync.BloomFilter
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
@@ -27,12 +34,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -74,13 +75,15 @@ class MembershipP2PProcessorTest {
 
     private val memberContext = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
     private val testSig =
-        CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer(), KeyValuePairList(emptyList()))
+        CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer())
+    private val testSigSpec = CryptoSignatureSpec("", null, null)
     private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
         memberContext,
         testSig,
-        true
+        testSigSpec,
+        0L,
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
     private val memberKey: PublicKey = mock()

@@ -1,6 +1,7 @@
 package net.corda.kryoserialization.serializers
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
@@ -35,9 +36,8 @@ internal class SingletonSerializeAsTokenSerializerTest {
 
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 mapOf(SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(emptyMap())),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )
@@ -56,9 +56,8 @@ internal class SingletonSerializeAsTokenSerializerTest {
         val sandboxGroup = mockSandboxGroup(setOf(Tester::class.java))
         val deserializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
-                Kryo(),
+                Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
-                CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )

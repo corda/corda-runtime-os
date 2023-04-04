@@ -1,6 +1,8 @@
 package net.corda.p2p.gateway
 
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -12,8 +14,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.openssl.PEMKeyPair
@@ -76,10 +76,20 @@ internal class TestCryptoOpsClient(
     override fun sign(
         tenantId: String,
         publicKey: PublicKey,
+        digest: DigestAlgorithmName,
+        data: ByteArray,
+        context: Map<String, String>,
+    ): DigitalSignatureWithKey {
+        throw UnsupportedOperationException()
+    }
+
+    override fun sign(
+        tenantId: String,
+        publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>,
-    ): DigitalSignature.WithKey {
+    ): DigitalSignatureWithKey {
         val privateKey = tenantIdToKeys[tenantId]
             ?.get(publicKey)
             ?: throw CordaRuntimeException("Could not find private key")
@@ -95,17 +105,7 @@ internal class TestCryptoOpsClient(
         signature.initSign(privateKey)
         (signatureSpec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
         signature.update(data)
-        return DigitalSignature.WithKey(publicKey, signature.sign(), context)
-    }
-
-    override fun sign(
-        tenantId: String,
-        publicKey: PublicKey,
-        digest: DigestAlgorithmName,
-        data: ByteArray,
-        context: Map<String, String>,
-    ): DigitalSignature.WithKey {
-        throw UnsupportedOperationException()
+        return DigitalSignatureWithKey(publicKey, signature.sign())
     }
 
     override fun lookup(

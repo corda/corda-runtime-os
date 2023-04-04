@@ -1,11 +1,15 @@
 package net.corda.applications.workers.rest
 
+import net.corda.applications.workers.rest.utils.E2eCluster
 import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.applications.workers.rest.utils.E2eClusterMember
+import net.corda.applications.workers.rest.utils.E2eClusterMemberRole
+import net.corda.applications.workers.rest.utils.E2eClusterMemberRole.NOTARY
 import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rest.utils.assertP2pConnectivity
 import net.corda.applications.workers.rest.utils.createStaticMemberGroupPolicyJson
 import net.corda.applications.workers.rest.utils.getCa
+import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardStaticMembers
 import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
@@ -20,12 +24,10 @@ class StaticNetworkTest {
     @TempDir
     lateinit var tempDir: Path
 
-    private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
-        cluster.addMembers(
-            (1..5).map {
-                E2eClusterMember("C=GB, L=London, O=Member-${cluster.uniqueName}")
-            }
-        )
+    private val cordaCluster = E2eClusterFactory.getE2eCluster().apply {
+        addMembers((1..2).map { createTestMember("Member$it") })
+        addMember(createTestMember("Notary", NOTARY))
+        addMembers((3..4).map { createTestMember("Member$it") })
     }
 
     @Test
@@ -67,5 +69,15 @@ class StaticNetworkTest {
             cordaCluster.assertAllMembersAreInMemberList(it, allMembers)
         }
         return groupId
+    }
+
+    private fun E2eCluster.createTestMember(
+        namePrefix: String,
+        role: E2eClusterMemberRole? = null
+    ): E2eClusterMember {
+        val memberName = getMemberName<StaticNetworkTest>(namePrefix)
+        return role?.let {
+            E2eClusterMember(memberName, it)
+        } ?: E2eClusterMember(memberName)
     }
 }

@@ -44,6 +44,7 @@ class SimpleJsonMarshallingService(
         objectMapper.registerModule(module)
         objectMapper.registerModule(standardTypesModule())
         objectMapper.registerModule(publicKeyModule())
+        objectMapper.findAndRegisterModules()
 
         customSerializer.mapKeys { setSerializer(it.key, it.value) }
         customDeserializer.mapKeys { setDeserializer(it.key, it.value) }

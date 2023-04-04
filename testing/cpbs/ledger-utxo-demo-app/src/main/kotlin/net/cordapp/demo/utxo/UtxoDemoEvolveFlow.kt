@@ -77,23 +77,23 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 }
             }
 
-            val signedTransaction = utxoLedgerService.getTransactionBuilder()
+            val signedTransaction = utxoLedgerService.createTransactionBuilder()
                 .addCommand(TestCommand())
                 .addOutputState(output)
                 .addInputState(input.ref)
-                .setNotary(input.state.notary)
+                .setNotary(input.state.notaryName)
                 .setTimeWindowUntil(Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addSignatories(output.participants)
                 .toSignedTransaction()
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 
-            val finalizedSignedTransaction = utxoLedgerService.finalize(
+            val finalizationResult = utxoLedgerService.finalize(
                     signedTransaction,
                     sessions
                 )
 
-            val transactionId = finalizedSignedTransaction.id.toString()
+            val transactionId = finalizationResult.transaction.id.toString()
             EvolveResponse(transactionId, null).also {
                 log.info("Success! Response: $it")
             }
@@ -118,7 +118,7 @@ class UtxoEvolveResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
+            val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
                 val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
                 if (state.testField == "fail") {
                     log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
@@ -126,7 +126,7 @@ class UtxoEvolveResponderFlow : ResponderFlow {
                 }
                 log.info("Verified the transaction- ${ledgerTransaction.id}")
             }
-            log.info("Finished responder flow - ${finalizedSignedTransaction.id}")
+            log.info("Finished responder flow - ${finalizationResult.transaction.id}")
         } catch (e: Exception) {
             log.warn("Exceptionally finished responder flow", e)
         }

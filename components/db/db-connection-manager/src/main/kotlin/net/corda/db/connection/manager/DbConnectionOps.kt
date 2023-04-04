@@ -130,9 +130,9 @@ interface DbConnectionOps {
             EntityManagerFactory
 
     /**
-     * Create ean [EntityManagerFactory] for a given connection ID.
+     * Create an [EntityManagerFactory] for a given connection ID.
      *
-     * A new EMF should be create and impelemenations of this class should not cache it.
+     * A new EMF should be created and implementations of this class should not cache it.
      *
      * @param connectionId
      * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the

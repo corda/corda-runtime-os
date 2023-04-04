@@ -1,12 +1,12 @@
 package net.corda.membership.rest.v1
 
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 
@@ -34,12 +34,12 @@ interface MemberRegistrationRestResource : RestResource {
      * Example usage:
      * ```
      * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationRequest
-     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.key.id": "D2FAF709052F"}))
+     * = MemberRegistrationRequest(context = {"corda.session.keys.0.id": "D2FAF709052F"}))
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the requesting virtual node.
      * @param memberRegistrationRequest The request sent during registration which contains the requested registration
-     * action (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process.
+     *   context map containing data required to initiate the registration process.
      *
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
@@ -60,10 +60,10 @@ interface MemberRegistrationRestResource : RestResource {
         @RestPathParameter(description = "The holding identity ID of the requesting virtual node")
         holdingIdentityShortHash: String,
         @ClientRequestBodyParameter(
-            description = "The request sent during registration which contains the requested registration action" +
-                    " (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
+            description = "The request sent during registration which contains the requested registration " +
+                "context map containing data required to initiate the registration process."
         )
-        memberRegistrationRequest: MemberRegistrationRequest
+        memberRegistrationRequest: MemberRegistrationRequest,
     ): RegistrationRequestProgress
 
     /**
@@ -91,8 +91,8 @@ interface MemberRegistrationRestResource : RestResource {
                 value of null indicated that registration has not started yet
             registrationUpdated: the date and the when the registration has been last updated    
             registrationStatus: the status of the registration request; 
-                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", 
-                "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
+                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", 
+                "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
             memberInfoSubmitted: the properties submitted to MGM during the registration     
         """
     )
@@ -128,8 +128,8 @@ interface MemberRegistrationRestResource : RestResource {
                 value of null indicated that registration has not started yet
             registrationUpdated: the date and the when the registration has been last updated    
             registrationStatus: the status of the registration request; 
-                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", 
-                "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
+                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", 
+                "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
             memberInfoSubmitted: the properties submitted to MGM during the registration     
         """
     )

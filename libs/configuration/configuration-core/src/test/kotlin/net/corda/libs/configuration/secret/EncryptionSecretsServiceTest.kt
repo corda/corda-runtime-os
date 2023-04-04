@@ -1,7 +1,7 @@
 package net.corda.libs.configuration.secret
 
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -16,7 +16,7 @@ class EncryptionSecretsServiceTest {
     val salt = "salt1"
     val configString = """
         root {
-            "${SmartConfig.SECRET_KEY}": {
+            "${ConfigKeys.SECRET_KEY}": {
                 "encryptedSecret":"encrypted_secret1",
             }
         }   
@@ -47,7 +47,7 @@ class EncryptionSecretsServiceTest {
     fun `when secret section empty throw`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
         val config = ConfigFactory.parseString("""
-        root.${SmartConfig.SECRET_KEY} {
+        root.${ConfigKeys.SECRET_KEY} {
         }     
     """.trimIndent())
 
@@ -61,7 +61,7 @@ class EncryptionSecretsServiceTest {
     fun `when encryptedSecret empty or blank throw`(encryptedSecretValue: String) {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
         val config = ConfigFactory.parseString("""
-        root.${SmartConfig.SECRET_KEY} {
+        root.${ConfigKeys.SECRET_KEY} {
             "encryptedSecret":"$encryptedSecretValue",
         }   
     """.trimIndent())
@@ -75,7 +75,7 @@ class EncryptionSecretsServiceTest {
     fun `when encryptedSecret missing throw`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
         val config = ConfigFactory.parseString("""
-        root.${SmartConfig.SECRET_KEY} {
+        root.${ConfigKeys.SECRET_KEY} {
             "foo": "bar"
         }     
     """.trimIndent())

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.uri.URIFetcher
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.schema.validation.MembershipSchemaFetchException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -20,9 +22,10 @@ class MembershipSchemaValidatorImpl(
     private val membershipSchemaProvider: MembershipSchemaProvider
 ) : MembershipSchemaValidator {
     private companion object {
-        private val REGISTERED_SCHEMES = listOf("https", "http")
+        val REGISTERED_SCHEMES = listOf("https", "http")
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val VALIDATION_ERROR = "Exception when validating membership schema."
+        val notaryProtocolVersionRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("[0-9]+").toRegex()
+        const val VALIDATION_ERROR = "Exception when validating membership schema."
     }
 
     private val schemaFactory = buildSchemaFactory()
@@ -63,10 +66,23 @@ class MembershipSchemaValidatorImpl(
             logger.error(errReason, ex)
             throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
+        val serial = registrationContext[SERIAL]?.toLong()
+        val convertedRegistrationContext = mutableMapOf<String, Any>()
+        convertedRegistrationContext.putAll(
+            registrationContext.filterNot { it.key == SERIAL || notaryProtocolVersionRegex.matches(it.key) }
+        )
+        if (serial != null) {
+            convertedRegistrationContext[SERIAL] = serial
+        }
+        convertedRegistrationContext.putAll(
+            registrationContext.filter {
+                notaryProtocolVersionRegex.matches(it.key)
+            }.entries.associate { it.key to it.value.toInt() }
+        )
         val contextAsJson = try {
             objectMapper.readTree(
                 objectMapper.writeValueAsString(
-                    registrationContext
+                    convertedRegistrationContext
                 )
             )
         } catch (ex: Exception) {

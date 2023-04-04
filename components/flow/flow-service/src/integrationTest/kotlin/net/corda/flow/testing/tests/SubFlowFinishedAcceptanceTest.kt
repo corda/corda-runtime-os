@@ -5,6 +5,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
@@ -109,12 +110,12 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Send(mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(mapOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0)
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
@@ -623,7 +624,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
@@ -631,8 +632,8 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
                 sessionCloseEvents()
+                wakeUpEvent()
             }
         }
     }
@@ -648,7 +649,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
@@ -656,8 +657,8 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
                 sessionCloseEvents()
+                wakeUpEvent()
             }
         }
     }

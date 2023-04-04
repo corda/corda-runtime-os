@@ -5,11 +5,10 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
-import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.async.request.RetryCondition
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -39,6 +38,7 @@ import java.util.UUID
 class MemberOpsAsyncProcessorTest {
     private companion object {
         const val FAILURE_REASON = "oops"
+        const val SERIAL = 1L
     }
 
     private val shortHash = ShortHash.of("123123123123")
@@ -53,7 +53,7 @@ class MemberOpsAsyncProcessorTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
-            queryRegistrationRequestStatus(
+            queryRegistrationRequest(
                 any(),
                 any(),
             )
@@ -80,7 +80,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -144,7 +143,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -188,7 +186,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -237,7 +234,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -281,7 +277,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -330,7 +325,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -359,7 +353,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             "223123123123",
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -387,7 +380,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             "nop",
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -406,7 +398,7 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry if the current status is not available`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Failure(
                     FAILURE_REASON
                 )
@@ -421,7 +413,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -440,15 +431,19 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry do nothing if the status is not new any more`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
                         RegistrationStatus.SENT_TO_MGM,
                         "",
+                        0,
                         mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
                     )
                 )
             )
@@ -462,7 +457,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -483,15 +477,19 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should register if the status is new`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
                         RegistrationStatus.NEW,
                         "",
+                        0,
                         mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
                     )
                 )
             )
@@ -505,7 +503,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -524,16 +521,20 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should not retry if status is no longer sent to MGM`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
                         RegistrationStatus.RECEIVED_BY_MGM,
                         "",
+                        0,
                         mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
-                    )
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
+                    ),
                 )
             )
             val id = UUID(0, 1)
@@ -541,7 +542,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -571,15 +571,19 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry if status is stuck in sent to MGM`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
-                        RegistrationStatus.SENT_TO_MGM,
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
+                        RegistrationStatus.NEW,
                         "",
+                        0,
                         mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
                     )
                 )
             )
@@ -588,7 +592,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -618,15 +621,19 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry if status is stuck in new`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    RegistrationRequestStatus(
+                    RegistrationRequestDetails(
+                        Instant.MIN,
+                        Instant.MIN,
                         RegistrationStatus.NEW,
                         "",
+                        0,
                         mock(),
-                        Instant.MIN,
-                        Instant.MIN,
-                        0
+                        mock(),
+                        mock(),
+                        null,
+                        SERIAL,
                     )
                 )
             )
@@ -635,7 +642,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -665,7 +671,7 @@ class MemberOpsAsyncProcessorTest {
 
         @Test
         fun `it should retry if status was not persisted`() {
-            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
                     null
                 )
@@ -675,7 +681,6 @@ class MemberOpsAsyncProcessorTest {
                 RegistrationAsyncRequest(
                     shortHash.value,
                     id.toString(),
-                    RegistrationAction.REQUEST_JOIN,
                     KeyValuePairList(
                         listOf(
                             KeyValuePair(
@@ -717,7 +722,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(
@@ -748,7 +752,6 @@ class MemberOpsAsyncProcessorTest {
                         RegistrationAsyncRequest(
                             shortHash.value,
                             id.toString(),
-                            RegistrationAction.REQUEST_JOIN,
                             KeyValuePairList(
                                 listOf(
                                     KeyValuePair(

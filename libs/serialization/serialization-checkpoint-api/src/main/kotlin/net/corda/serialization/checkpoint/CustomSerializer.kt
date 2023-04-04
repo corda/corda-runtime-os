@@ -1,13 +1,13 @@
 package net.corda.serialization.checkpoint
 
-import net.corda.v5.base.types.ByteSequence
+import net.corda.base.internal.ByteSequence
 
 //Implemented in other modules
 interface CheckpointInternalCustomSerializer<OBJ> {
     val type: Class<OBJ>
 
     fun write(output: CheckpointOutput, obj: OBJ)
-    fun read(input: CheckpointInput, type: Class<OBJ>): OBJ
+    fun read(input: CheckpointInput, type: Class<out OBJ>): OBJ
 }
 
 //Implemented in this Module used in other modules which implement KryoSerializer

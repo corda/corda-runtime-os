@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.base.internal.OpaqueBytesSubSequence
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
-import net.corda.v5.base.types.OpaqueBytesSubSequence
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.NotSerializableException
@@ -11,7 +11,7 @@ import java.io.NotSerializableException
 class AmqpMagicTests {
     @Test
     fun valueIsAsExpected() {
-        Assertions.assertArrayEquals("corda".toByteArray() + byteArrayOf(4, 0), amqpMagic.bytes)
+        Assertions.assertArrayEquals("corda".toByteArray() + byteArrayOf(4, 0), amqpMagic.getBytes())
     }
 
     @Test

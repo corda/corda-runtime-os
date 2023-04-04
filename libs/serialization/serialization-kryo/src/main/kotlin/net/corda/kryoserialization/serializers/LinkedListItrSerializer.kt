@@ -5,7 +5,7 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import java.lang.reflect.Field
-import java.util.*
+import java.util.LinkedList
 
 /**
  * The [ListIterator] has a problem with the default Quasar/Kryo serialisation
@@ -17,11 +17,10 @@ import java.util.*
 */
 internal object LinkedListItrSerializer : Serializer<ListIterator<*>>() {
     // Create a dummy list so that we can get the ListItr from it
-    // The element type of the list doesn't matter.  The iterator is all we want
-    private val DUMMY_LIST = LinkedList<Long>(listOf(1))
-    fun getListItr(): Any  = DUMMY_LIST.listIterator()
+    // The element type of the list doesn't matter. The iterator is all we want.
+    val serializedType: Class<out ListIterator<*>> = LinkedList<Any>(emptyList()).listIterator()::class.java
 
-    private val outerListField: Field = getListItr()::class.java.getDeclaredField("this$0").apply {
+    private val outerListField: Field = serializedType.getDeclaredField("this$0").apply {
         isAccessible = true
     }
 
@@ -30,7 +29,7 @@ internal object LinkedListItrSerializer : Serializer<ListIterator<*>>() {
         output.writeInt(obj.nextIndex())
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<ListIterator<*>>): ListIterator<*> {
+    override fun read(kryo: Kryo, input: Input, type: Class<out ListIterator<*>>): ListIterator<*> {
         val list = kryo.readClassAndObject(input) as LinkedList<*>
         val index = input.readInt()
         return list.listIterator(index)

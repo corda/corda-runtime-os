@@ -94,10 +94,12 @@ class SimFiberBaseTest {
         val signingService = mock<SigningService>()
         val keyStoreFactory = mock<KeyStoreFactory>()
         val keyStore = mock<SimKeyStore>()
-        val fiber = SimFiberBase(signingServiceFactory = signingServiceFactory, keystoreFactory = keyStoreFactory)
 
         whenever(keyStoreFactory.createKeyStore()).thenReturn(keyStore)
+        whenever(keyStore.generateKey(any(), any(), any())).thenReturn(mock())
         whenever(signingServiceFactory.createSigningService(keyStore)).thenReturn(signingService)
+
+        val fiber = SimFiberBase(signingServiceFactory = signingServiceFactory, keystoreFactory = keyStoreFactory)
 
         // When we register a member then create a signing service
         val member = MemberX500Name.parse("O=Alice, L=London, C=GB")
@@ -120,6 +122,11 @@ class SimFiberBaseTest {
         assertThrows<IllegalStateException> { fiber.createSigningService(member) }
     }
 
-
-
+    @Test
+    fun `should register notary and notary signing service for the simulator`(){
+        val fiber = SimFiberBase()
+        val notaryLookup = fiber.createNotaryLookup()
+        assertThat(notaryLookup.notaryServices.size, `is`(1))
+        assertNotNull(fiber.createNotarySigningService())
+    }
 }

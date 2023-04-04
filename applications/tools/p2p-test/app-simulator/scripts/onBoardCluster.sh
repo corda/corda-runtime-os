@@ -145,10 +145,8 @@ upload_certificate() {
 }
 
 register_node() {
-    local TLS_TRUST_STORE=$(cat ./ca/ca/root-certificate.pem | awk 1 ORS='\\n')
-
     local REG_CONTEXT='{
-      "corda.session.key.id": "'$3'",
+      "corda.session.keys.0.id": "'$3'",
       "corda.ledger.keys.0.id": "'$5'",
       "corda.ledger.keys.0.signature.spec": "SHA256withECDSA",
       "corda.endpoints.0.connectionURL": "'$4'",
@@ -159,7 +157,7 @@ register_node() {
 }
 
 register_mgm() {
-    local TLS_TRUST_STORE=$(cat ./ca/ca/root-certificate.pem | awk 1 ORS='\\n')
+    local TLS_TRUST_ROOT=$(cat ./ca/ca/root-certificate.pem | awk 1 ORS='\\n')
     if [[ $MTLS == "Y" ]]; then
       tls_type="Mutual"
     else
@@ -167,7 +165,7 @@ register_mgm() {
     fi
 
     local REG_CONTEXT='{
-      "corda.session.key.id": "'$3'",
+      "corda.session.keys.0.id": "'$3'",
       "corda.ecdh.key.id": "'$5'",
       "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
       "corda.group.protocol.synchronisation": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
@@ -179,8 +177,8 @@ register_mgm() {
       "corda.group.tls.type": "'$tls_type'",
       "corda.endpoints.0.connectionURL": "'$4'",
       "corda.endpoints.0.protocolVersion": "1",
-      "corda.group.truststore.tls.0" : "'$TLS_TRUST_STORE'",
-      "corda.group.truststore.session.0" : "'$TLS_TRUST_STORE'"
+      "corda.group.trustroot.tls.0" : "'$TLS_TRUST_ROOT'",
+      "corda.group.trustroot.session.0" : "'$TLS_TRUST_ROOT'"
     }'
     echo $REG_CONTEXT | jq
     register $1 $2 "$REG_CONTEXT"
@@ -205,7 +203,7 @@ wait_for_approve() {
 }
 
 register() {
-    local COMMAND='{ "memberRegistrationRequest": { "action": "requestJoin", "context": '$3' }}'
+    local COMMAND='{ "memberRegistrationRequest": { "context": '$3' }}'
 
     echo "Registering using:"
     echo $COMMAND | jq

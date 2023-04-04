@@ -14,6 +14,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -82,6 +83,7 @@ import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
@@ -228,7 +230,7 @@ class MembershipP2PIntegrationTest {
                 messagingConfig = bootConfig
             ).also { it.start() }
 
-            eventually {
+            eventually(duration = 10.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -305,9 +307,9 @@ class MembershipP2PIntegrationTest {
         val memberContext = KeyValuePairList(listOf(KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)))
         val fakeSigWithKey = CryptoSignatureWithKey(
             ByteBuffer.wrap(fakeKey.encodeToByteArray()),
-            ByteBuffer.wrap(fakeSig.encodeToByteArray()),
-            KeyValuePairList(emptyList())
+            ByteBuffer.wrap(fakeSig.encodeToByteArray())
         )
+        val fakeSigSpec = CryptoSignatureSpec("", null, null)
         val messageHeader = UnauthenticatedMessageHeader(
             destination.toAvro(),
             source.toAvro(),
@@ -318,7 +320,8 @@ class MembershipP2PIntegrationTest {
             registrationId,
             ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
             fakeSigWithKey,
-            true
+            fakeSigSpec,
+            0L,
         )
 
         var latestHeader: UnauthenticatedRegistrationRequestHeader? = null

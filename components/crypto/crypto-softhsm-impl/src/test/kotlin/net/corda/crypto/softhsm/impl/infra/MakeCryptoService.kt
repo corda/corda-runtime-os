@@ -6,9 +6,8 @@ import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.SoftCryptoService
-import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -18,16 +17,17 @@ import java.security.PublicKey
 fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,
-    wrappingKeyStore: WrappingKeyStore = TestWrappingKeyStore(mock()),
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
         WrappingKeyImpl.generateWrappingKey(it)
-    }
+    },
+    wrappingRepository: WrappingRepository = TestWrappingRepository(),
 ) = SoftCryptoService(
-    wrappingKeyStore = wrappingKeyStore,
+    wrappingRepositoryFactory = { wrappingRepository },
     schemeMetadata = schemeMetadata,
-    rootWrappingKey = rootWrappingKey,
+    defaultUnmanagedWrappingKeyName = "root",
+    unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
     digestService = PlatformDigestServiceImpl(schemeMetadata),
     wrappingKeyCache = wrappingKeyCache,
     privateKeyCache = privateKeyCache,

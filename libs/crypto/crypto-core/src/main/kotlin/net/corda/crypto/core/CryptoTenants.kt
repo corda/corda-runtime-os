@@ -26,7 +26,8 @@ object CryptoTenants {
      */
     val allClusterTenants: Set<String> = setOf(
         P2P,
-        REST
+        REST,
+        // TODO should CRYPTO be here?
     )
 
     /**

@@ -2,9 +2,11 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
@@ -35,8 +37,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -291,18 +291,15 @@ class CryptoFlowOpsBusProcessorTests {
         var passedTenantId = UUID.randomUUID().toString()
         var passedPublicKey = ByteBuffer.allocate(1)
         var passedData = ByteBuffer.allocate(1)
-        var passedContext = KeyValuePairList()
         var passedSignatureSpec = CryptoSignatureSpec()
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedPublicKey = it.getArgument(1)
             passedSignatureSpec = it.getArgument(2)
             passedData = it.getArgument(3)
-            passedContext = it.getArgument(4)
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(signature),
-                passedContext
+                ByteBuffer.wrap(signature)
             )
         }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any(), any())
 
@@ -335,7 +332,7 @@ class CryptoFlowOpsBusProcessorTests {
                             UUID.randomUUID().toString(),
                             tenantId,
                             publicKey.encoded,
-                            SignatureSpec.EDDSA_ED25519,
+                            SignatureSpecs.EDDSA_ED25519,
                             data,
                             operationContext,
                             flowExternalEventContext
@@ -354,15 +351,10 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(tenantId, passedTenantId)
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
         assertArrayEquals(data, passedData.array())
-        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
-        assertNotNull(passedContext.items)
-        assertEquals(1, passedContext.items.size)
-        assertTrue {
-            passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
-        }
+        assertEquals(SignatureSpecs.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-        assertInstanceOf(DigitalSignature.WithKey::class.java, transformed)
-        val transformedSignature = transformed as DigitalSignature.WithKey
+        assertInstanceOf(DigitalSignatureWithKey::class.java, transformed)
+        val transformedSignature = transformed as DigitalSignatureWithKey
         assertArrayEquals(publicKey.encoded, transformedSignature.by.encoded)
         assertArrayEquals(signature, transformedSignature.bytes)
     }

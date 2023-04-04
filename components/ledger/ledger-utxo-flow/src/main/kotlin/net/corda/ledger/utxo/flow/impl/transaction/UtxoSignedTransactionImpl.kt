@@ -2,19 +2,20 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -26,11 +27,14 @@ import java.util.Objects
 @Suppress("TooManyFunctions")
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val transactionSignatureService: TransactionSignatureService,
+    private val transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     private val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransactionInternal {
+
+    private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
+    private val keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
@@ -63,8 +67,12 @@ data class UtxoSignedTransactionImpl(
         return wrappedWireTransaction.outputStateAndRefs
     }
 
-    override fun getNotary(): Party {
-        return wrappedWireTransaction.notary
+    override fun getNotaryName(): MemberX500Name {
+        return wrappedWireTransaction.notaryName
+    }
+
+    override fun getNotaryKey(): PublicKey {
+        return wrappedWireTransaction.notaryKey
     }
 
     override fun getTimeWindow(): TimeWindow {
@@ -82,7 +90,7 @@ data class UtxoSignedTransactionImpl(
     override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
         UtxoSignedTransactionImpl(
             serializationService,
-            transactionSignatureService,
+            transactionSignatureServiceInternal,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures + signature
@@ -91,14 +99,14 @@ data class UtxoSignedTransactionImpl(
     @Suspendable
     override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val newSignatures = try {
-            transactionSignatureService.sign(this, getMissingSignatories())
+            transactionSignatureServiceInternal.sign(this, getMissingSignatories())
         } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
             return Pair(this, emptyList())
         }
         return Pair(
             UtxoSignedTransactionImpl(
                 serializationService,
-                transactionSignatureService,
+                transactionSignatureServiceInternal,
                 utxoLedgerTransactionFactory,
                 wireTransaction,
                 signatures + newSignatures
@@ -107,53 +115,147 @@ data class UtxoSignedTransactionImpl(
         )
     }
 
-    override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.filter {
-            try {
-                transactionSignatureService.verifySignature(this, it)
-                true
-            } catch (e: Exception) {
-                false
-            }
-        }.map { it.by }.toSet()
-
-        // isFulfilledBy() helps to make this working with CompositeKeys.
-        return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
+    private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
+        val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to signatories for the relevant algorithm
+            signatories.flatMap { signatory ->
+                getKeyOrLeafKeys(signatory).map {
+                    transactionSignatureServiceInternal.getIdOfPublicKey(
+                        it, keyId.algorithm
+                    ) to it
+                }
+            }.toMap()
+        }
+        return keyIdToPublicKey[keyId]
     }
 
-    @Suspendable
-    override fun verifySignatures() {
-        val appliedSignatories = signatures.filter {
-            try {
-                transactionSignatureService.verifySignature(this, it)
-                true
-            } catch (e: Exception) {
-                throw TransactionSignatureException(
-                    id,
-                    "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
-                    e
-                )
-            }
-        }.map { it.by }.toSet()
+    // Notary/unknown signatures are ignored.
+    override fun getMissingSignatories(): Set<PublicKey> {
+        return getMissingSignatories(getPublicKeysToSignatorySignatures())
+    }
 
-        // isFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
+    // Notary/unknown signatures are ignored
+    override fun verifySignatorySignatures() {
+        val publicKeysToSignatures =
+            getPublicKeysToSignatorySignatures()
+
+        val missingSignatories = getMissingSignatories(publicKeysToSignatures)
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
                 missingSignatories,
-                "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"
+                "Transaction $id is missing signatures for signatories (encoded) ${
+                    missingSignatories.map { it.encoded }
+                }"
             )
+        }
+        publicKeysToSignatures.forEach { (publicKey, signature) ->
+            try {
+                transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
+            } catch (e: Exception) {
+                throw TransactionSignatureException(
+                    id,
+                    "Failed to verify signature of $signature from $publicKey for transaction $id. Message: ${e.message}",
+                    e
+                )
+            }
         }
     }
 
-    @Suspendable
-    override fun verifyNotarySignatureAttached() {
-        if (!KeyUtils.isKeyInSet(notary.owningKey, signatures.map { it.by })) {
+    private fun getMissingSignatories(publicKeysToSignatures: Map<PublicKey, DigitalSignatureAndMetadata>): Set<PublicKey> {
+        val publicKeysWithSignatures = publicKeysToSignatures.keys.toHashSet()
+
+        // TODO CORE-12207 isKeyFulfilledBy is not the most efficient
+        // isKeyFulfilledBy() helps to make this working with CompositeKeys.
+        return signatories
+            .filterNot { KeyUtils.isKeyFulfilledBy(it, publicKeysWithSignatures) }
+            .toSet()
+    }
+
+    private fun getPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
+        return signatures.mapNotNull {// We do not care about non-notary/non-signatory keys
+            (getSignatoryKeyFromKeyId(it.by) ?: return@mapNotNull null) to it
+        }
+            .toMap()
+    }
+
+    private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
+        val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to the notary for the relevant algorithm
+            getKeyOrLeafKeys(notaryKey).associateBy {
+                transactionSignatureServiceInternal.getIdOfPublicKey(
+                    it, keyId.algorithm
+                )
+            }
+        }
+        return keyIdToPublicKey[keyId]
+    }
+
+    override fun verifyAttachedNotarySignature() {
+        val notaryPublicKeysWithValidSignatures = signatures.mapNotNull {
+            val publicKey = getNotaryPublicKeyByKeyId(it.by)
+            if (publicKey != null) {
+                try {
+                    transactionSignatureServiceInternal.verifySignature(this, it, publicKey)
+                    publicKey
+                } catch (e: Exception) {
+                    throw TransactionSignatureException(
+                        id,
+                        "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
+                        e
+                    )
+                }
+            } else {
+                null
+            }
+        }
+        // If the notary service key (composite key) is provided we need to make sure it contains the key the
+        // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
+        if (!KeyUtils.isKeyInSet(
+                notaryKey,
+                notaryPublicKeysWithValidSignatures
+            )
+        ) {
             throw TransactionSignatureException(
                 id,
                 "There are no notary signatures attached to the transaction.",
                 null
+            )
+        }
+    }
+
+    override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
+        val publicKey = getNotaryPublicKeyByKeyId(signature.by)
+            ?: throw TransactionSignatureException(
+                id,
+                "Notary signature has not been created by the notary for this transaction. " +
+                        "Notary public key: $notaryKey " +
+                        "Notary signature key Id: ${signature.by}",
+                null
+            )
+
+        try {
+            transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
+        } catch (e: Exception) {
+            throw TransactionSignatureException(
+                id,
+                "Failed to verify notary signature of ${signature.signature} for transaction $id. Message: ${e.message}",
+                e
+            )
+        }
+    }
+
+    override fun verifySignatorySignature(signature: DigitalSignatureAndMetadata) {
+        val publicKey = getSignatoryKeyFromKeyId(signature.by)
+            ?: return // We do not care about non-notary/non-signatory signatures.
+
+        try {
+            transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
+        } catch (e: Exception) {
+            throw TransactionSignatureException(
+                id,
+                "Failed to verify signature of ${signature.signature} for transaction $id. Message: ${e.message}",
+                e
             )
         }
     }
@@ -178,5 +280,12 @@ data class UtxoSignedTransactionImpl(
 
     override fun toString(): String {
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
+    }
+
+    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
+        return when (publicKey) {
+            is CompositeKey -> publicKey.leafKeys.toList()
+            else -> listOf(publicKey)
+        }
     }
 }

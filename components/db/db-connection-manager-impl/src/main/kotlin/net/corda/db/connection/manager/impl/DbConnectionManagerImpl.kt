@@ -144,7 +144,7 @@ class DbConnectionManagerImpl (
     }
 
     /**
-     * Creates [EntityManagerFactory] from given [DataSource] and name used to lookpup
+     * Creates [EntityManagerFactory] from given [DataSource] and name used to lookup
      * registered entity classes.
      *
      * @param name Name for lookup in [JpaEntitiesRegistry] to get entity classes

@@ -1,13 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.core.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.crypto.core.toCorda
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
@@ -15,6 +14,8 @@ import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfig
@@ -29,6 +30,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -54,8 +56,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -63,7 +63,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -83,7 +82,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
@@ -164,7 +163,7 @@ class MgmSynchronisationServiceImplTest {
 
     private val memberInfos = listOf(mgmInfo, aliceInfo, bobInfo, daisyInfo)
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
-    private val groupParameters: GroupParameters = mock()
+    private val groupParameters: InternalGroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
         on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
@@ -190,9 +189,11 @@ class MgmSynchronisationServiceImplTest {
         on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
         on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
-        on { generateTree(
-            argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }
-        ) } doReturn matchingMerkleTree
+        on {
+            generateTree(
+                argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }
+            )
+        } doReturn matchingMerkleTree
     }
     private val signatures = createSignatures(memberInfosWithoutMgm)
     private val signature = createSignatures(listOf(bobInfo))
@@ -208,7 +209,7 @@ class MgmSynchronisationServiceImplTest {
             PERSISTENCE_EXCEPTION
         )
         on {
-            queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfosWithoutMgm.map { it.holdingIdentity } ))
+            queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfosWithoutMgm.map { it.holdingIdentity }))
         } doReturn MembershipQueryResult.Success(
             signatures
         )
@@ -316,15 +317,10 @@ class MgmSynchronisationServiceImplTest {
 
     private fun createSignatures(members: List<MemberInfo>) = members.associate {
         val name = it.name.toString()
-        it.holdingIdentity to CryptoSignatureWithKey(
+        it.holdingIdentity to (CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
-            ByteBuffer.wrap("sig-$name".toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("name", name)
-                )
-            )
-        )
+            ByteBuffer.wrap("sig-$name".toByteArray())
+        ) to CryptoSignatureSpec("dummy", null, null))
     }
 
     private fun postStartEvent() {
@@ -470,7 +466,7 @@ class MgmSynchronisationServiceImplTest {
 
     @Test
     fun `processing requests fails when component is not running`() {
-        val ex = assertFailsWith<IllegalStateException>{ synchronisationService.processSyncRequest(mock()) }
+        val ex = assertFailsWith<IllegalStateException> { synchronisationService.processSyncRequest(mock()) }
         assertThat(ex.message).isEqualTo("MgmSynchronisationService is currently inactive.")
     }
 
@@ -481,7 +477,13 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(alice)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(
+            any(),
+            any(),
+            capturedList.capture(),
+            any(),
+            eq(groupParameters)
+        )
         verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
@@ -496,7 +498,13 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(bob)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(
+            any(),
+            any(),
+            capturedList.capture(),
+            any(),
+            eq(groupParameters)
+        )
         verify(mockPublisher, times(1)).publish(eq(listOf(record2)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)

@@ -22,7 +22,7 @@ DB schema will be created automatically when worker is started.
 **NOTES:**
 
 * DB bootstrapping might change as CLI could be used instead, for example. Options are being looked at by the DevEx team.
-* Currently, the bootstrapper expects a postgres connection with the a superuser with credentials `postgres`/`password` 
+* Currently, the bootstrapper expects a Postgres connection for superuser with credentials `postgres`/`password` 
 (as per docker command above). If you need to use different credentials, you can specify them with the following environment variables:
   * `CORDA_DEV_POSTGRES_USER`
   * `CORDA_DEV_POSTGRES_PASSWORD`
@@ -80,6 +80,20 @@ cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-pl
 ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
 cd ../corda-runtime-os/
 ```
+
+### Using custom TLS certificate for REST
+
+Just as with DB parameters there are `-r` command-line arguments introduced which allow passing custom PKCS12 keystore
+along with password as follows:
+```bash
+-rtls.keystore.path=<path_to_keystore> -rtls.keystore.password=<keystore_password>
+```
+
+For your convenience a Keystore along with instructions can be found in this repo under: 
+`applications/workers/release/combined-worker/tls/rest/rest_worker.pfx` the password for it is `mySecretPassword`.
+
+Passing custom keystore is optional, should it is not passed, an embedded self-signed certificate will be used. Also,
+a warning will be written into the log advising how to pass a custom Keystore.
 
 ## Start the worker
 

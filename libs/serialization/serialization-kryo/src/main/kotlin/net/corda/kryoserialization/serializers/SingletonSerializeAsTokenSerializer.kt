@@ -21,7 +21,7 @@ class SingletonSerializeAsTokenSerializer(
         kryo.writeClassAndObject(output, obj.tokenName)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<SingletonSerializeAsToken>): SingletonSerializeAsToken {
+    override fun read(kryo: Kryo, input: Input, type: Class<out SingletonSerializeAsToken>): SingletonSerializeAsToken {
         val token = (kryo.readClassAndObject(input) as? String)
             ?: throw CordaKryoException("Attempt to deserialize a tokenized type: ${type.name}, but no token found.")
         return serializableInstances[token]

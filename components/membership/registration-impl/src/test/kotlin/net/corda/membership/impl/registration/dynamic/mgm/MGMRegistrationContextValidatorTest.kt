@@ -9,6 +9,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.membership.MembershipSchema
+import net.corda.test.util.time.TestClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -22,6 +23,8 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.Calendar
+import java.util.GregorianCalendar
 
 class MGMRegistrationContextValidatorTest {
 
@@ -37,15 +40,21 @@ class MGMRegistrationContextValidatorTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
 
+    private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
+    private val clock = TestClock(validCertificateDate.toInstant())
+
     private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
         membershipSchemaValidatorFactory,
         configurationGetService = configurationGetService,
+        clock = clock
     )
 
     companion object {
+        private val trustrootCert = this::class.java.getResource("/r3Com.pem")!!.readText()
+
         private val validTestContext
             get() = mutableMapOf(
-                SESSION_KEY_ID to "session key",
+                SESSION_KEY_IDS.format(0) to "session key",
                 ECDH_KEY_ID to "ECDH key",
                 REGISTRATION_PROTOCOL to "registration protocol",
                 SYNCHRONISATION_PROTOCOL to "synchronisation protocol",
@@ -55,8 +64,8 @@ class MGMRegistrationContextValidatorTest {
                 PKI_TLS to "TLS PKI property",
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",
-                TRUSTSTORE_SESSION.format(0) to "session truststore",
-                TRUSTSTORE_TLS.format(0) to "tls truststore"
+                TRUSTSTORE_SESSION.format(0) to trustrootCert,
+                TRUSTSTORE_TLS.format(0) to trustrootCert
             )
 
         @JvmStatic
@@ -178,5 +187,31 @@ class MGMRegistrationContextValidatorTest {
         val context = validTestContext + (TLS_TYPE to "one_way")
 
         mgmRegistrationContextValidator.validate(context)
+    }
+
+    @Test
+    fun `invalid TLS trust root will throw an exception`() {
+        val context = validTestContext + (TRUSTSTORE_TLS.format(0) to "invalid-pem-payload")
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(context)
+        }
+    }
+
+    @Test
+    fun `invalid session trust root will throw an exception`() {
+        val context = validTestContext + (TRUSTSTORE_SESSION.format(0) to "invalid-pem-payload")
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(context)
+        }
+    }
+
+    @Test
+    fun `certificate with invalid validity period as trust root will throw an exception`() {
+        val futureDate = GregorianCalendar(2035, Calendar.FEBRUARY, 12)
+        clock.setTime(futureDate.toInstant())
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(validTestContext)
+        }
     }
 }

@@ -8,7 +8,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
-import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
+import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -43,21 +43,24 @@ class SessionCloseProcessorReceive(
         } else {
             val seqNum = sessionEvent.sequenceNum
             val receivedEventsState = sessionState.receivedEventsState
-            val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
+            val lastProcessedSeqNum = receivedEventsState.lastProcessedSequenceNum
             val undeliveredReceivedMessages = receivedEventsState.undeliveredMessages
             val sessionCloseOnQueue = undeliveredReceivedMessages.any { it.payload is SessionClose }
             if (sessionCloseOnQueue || sessionState.status == SessionStateType.CLOSED) {
                 //duplicate
                 logger.debug {
                     "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
-                            "when last processed seqNum was $lastProcessedSequenceNum. Current SessionState: $sessionState"
+                            "when last processed seqNum was $lastProcessedSeqNum. Current SessionState: $sessionState"
                 }
                 sessionState.apply {
                     sendAck = true
                 }
             } else {
-                sessionState.receivedEventsState.undeliveredMessages = undeliveredReceivedMessages.plus(sessionEvent)
-                sessionState.receivedEventsState = recalcReceivedProcessState(receivedEventsState)
+                sessionState.receivedEventsState.apply {
+                    undeliveredMessages = undeliveredMessages.plus(sessionEvent).distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
+                    lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages, lastProcessedSeqNum)
+                }
+
                 logger.trace { "receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState
                     .lastProcessedSequenceNum}, ${sessionState.receivedEventsState}" }
                 processCloseReceivedAndGetState(sessionState)

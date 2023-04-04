@@ -9,6 +9,7 @@ import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
@@ -16,7 +17,7 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
+import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
@@ -24,9 +25,8 @@ import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatus
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -39,11 +39,14 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.asynchronous.v1.AsyncOperationState
+import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.RestContextProvider
@@ -53,13 +56,16 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import net.corda.virtualnode.rest.common.VirtualNodeSender
 import net.corda.virtualnode.rest.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rest.converters.MessageConverter
+import net.corda.virtualnode.rest.converters.impl.MessageConverterImpl
 import net.corda.virtualnode.rest.factories.RequestFactory
 import net.corda.virtualnode.rest.factories.impl.RequestFactoryImpl
+import net.corda.virtualnode.rest.impl.status.CacheLoadCompleteEvent
+import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import net.corda.virtualnode.rest.impl.validation.impl.VirtualNodeValidationServiceImpl
 import org.osgi.service.component.annotations.Activate
@@ -69,22 +75,24 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
-import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 internal class VirtualNodeRestResourceImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    configurationReadService: ConfigurationReadService,
+    private val configurationReadService: ConfigurationReadService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
     private val cpiInfoReadService: CpiInfoReadService,
+    private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
-    private var virtualNodeValidationService: VirtualNodeValidationService,
-    private var restContextProvider: RestContextProvider
+    private val virtualNodeValidationService: VirtualNodeValidationService,
+    private val restContextProvider: RestContextProvider,
+    private val messageConverter: MessageConverter
 ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
 
+    @Suppress("Unused")
     @Activate
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
@@ -96,27 +104,30 @@ internal class VirtualNodeRestResourceImpl(
         @Reference(service = VirtualNodeSenderFactory::class)
         virtualNodeSenderFactory: VirtualNodeSenderFactory,
         @Reference(service = CpiInfoReadService::class)
-        cpiInfoReadService: CpiInfoReadService
+        cpiInfoReadService: CpiInfoReadService,
+        @Reference(service = VirtualNodeStatusCacheService::class)
+        virtualNodeStatusCacheService: VirtualNodeStatusCacheService
     ) : this(
         coordinatorFactory,
         configurationReadService,
         virtualNodeInfoReadService,
         virtualNodeSenderFactory,
         cpiInfoReadService,
+        virtualNodeStatusCacheService,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
         ),
         UTCClock(),
         VirtualNodeValidationServiceImpl(virtualNodeInfoReadService, cpiInfoReadService),
-        RestContextProviderImpl()
+        RestContextProviderImpl(),
+        MessageConverterImpl(ExternalMessagingRouteConfigSerializerImpl())
     )
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
         private const val VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_ASYNC_OPERATION_CLIENT"
@@ -128,8 +139,10 @@ internal class VirtualNodeRestResourceImpl(
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
+        ::configurationReadService,
         ::virtualNodeInfoReadService,
-        ::cpiInfoReadService
+        ::cpiInfoReadService,
+        ::virtualNodeStatusCacheService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
@@ -137,17 +150,10 @@ internal class VirtualNodeRestResourceImpl(
     ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
         when (event) {
             is StartEvent -> {
-                configurationReadService.start()
-                coordinator.createManagedResource(REGISTRATION) {
-                    coordinator.followStatusChangesByName(
-                        setOf(
-                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-                        )
-                    )
-                }
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
+
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
@@ -155,6 +161,7 @@ internal class VirtualNodeRestResourceImpl(
                         coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                         coordinator.postEvent(StopEvent(errored = true))
                     }
+
                     LifecycleStatus.UP -> {
                         // Receive updates to the REST and Messaging config
                         coordinator.createManagedResource(CONFIG_HANDLE) {
@@ -164,15 +171,18 @@ internal class VirtualNodeRestResourceImpl(
                             )
                         }
                     }
+
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
             }
+
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
                     val restConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration =
+                        Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
@@ -180,6 +190,13 @@ internal class VirtualNodeRestResourceImpl(
                             duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
+
+                    virtualNodeStatusCacheService.onConfiguration(messagingConfig)
+                }
+            }
+
+            is CustomEvent -> {
+                if ((event.payload as? CacheLoadCompleteEvent) != null) {
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
             }
@@ -198,7 +215,10 @@ internal class VirtualNodeRestResourceImpl(
      */
     private fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
         val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
-            ?: throw IllegalStateException("Sender not initialized, check component status for ${this.javaClass.name}")
+
+        check(sender != null) {
+            "Sender not initialized, check component status for ${this.javaClass.name}"
+        }
 
         return sender.sendAndReceive(request)
     }
@@ -213,7 +233,7 @@ internal class VirtualNodeRestResourceImpl(
      * @see VirtualNodeInfo
      */
     override fun getAllVirtualNodes(): VirtualNodes {
-        return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
+        return VirtualNodes(virtualNodeInfoReadService.getAll().map(messageConverter::convert))
     }
 
     /**
@@ -230,7 +250,7 @@ internal class VirtualNodeRestResourceImpl(
         val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)
             ?: throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
 
-        return virtualNode.toEndpointType()
+        return messageConverter.convert(virtualNode)
     }
 
     override fun upgradeVirtualNode(
@@ -257,8 +277,20 @@ internal class VirtualNodeRestResourceImpl(
         return ResponseEntity.accepted(AsyncResponse(requestId))
     }
 
-    override fun getVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatuses {
+    override fun getVirtualNodeOperationStatus(requestId: String): AsyncOperationStatus {
         val instant = clock.instant()
+
+        // HACK: until we can update the upgrade process to use the compacted topic,
+        // we switch on request id to decide which status check to run, because the request id for
+        // virtual node creation is a short hash and upgrade is a UUID, we can simply switch on request id length
+        if (requestId.length == ShortHash.LENGTH) {
+            // TODOs: consider adding a short retry step here to ensure the status is replicated in a multi rest
+            // worker setup
+            val status = virtualNodeStatusCacheService.getStatus(requestId)
+                ?: throw ResourceNotFoundException("Failed to find a status for requestId = '$requestId'")
+
+            return messageConverter.convert(status, OperationTypes.CREATE_VIRTUAL_NODE.toString(), requestId)
+        }
 
         // Send request for update to kafka, processed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
@@ -272,21 +304,16 @@ internal class VirtualNodeRestResourceImpl(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatusResponse -> {
                 resolvedResponse.run {
-                    val statuses = this.operationHistory.map {
-                        VirtualNodeOperationStatus(
-                            it.requestId,
-                            it.requestData,
-                            it.requestTimestamp,
-                            it.latestUpdateTimestamp,
-                            it.heartbeatTimestamp,
-                            it.state,
-                            it.errors
-                        )
-                    }
+                    val x = this.operationHistory.first()
 
-                    VirtualNodeOperationStatuses(this.requestId, statuses)
+                    messageConverter.convert(
+                        x,
+                        OperationTypes.UPGRADE_VIRTUAL_NODE.toString(),
+                        null
+                    )
                 }
             }
+
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
@@ -312,8 +339,9 @@ internal class VirtualNodeRestResourceImpl(
     }
 
     /**
-     * Virtual node upgrade request ID deterministically generated using the virtual node identifier, current CPI file checksum
-     * and target CPI file checksum. This provides a level of idempotency preventing the same upgrade from triggering more than once.
+     * Virtual node upgrade request ID deterministically generated using the virtual node identifier, current CPI file
+     * checksum and target CPI file checksum. This provides a level of idempotency preventing the same upgrade from
+     * triggering more than once.
      */
     private fun generateUpgradeRequestId(
         virtualNodeShortId: String, currentCpiFileChecksum: String, targetCpiFileChecksum: String
@@ -323,7 +351,9 @@ internal class VirtualNodeRestResourceImpl(
 
     private fun sendAsync(key: String, request: VirtualNodeAsynchronousRequest) {
         val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
-            ?: throw IllegalStateException("Sender not initialized, check component status for ${this.javaClass.name}")
+        check(sender != null) {
+            "Sender not initialized, check component status for ${this.javaClass.name}"
+        }
 
         return sender.sendAsync(key, request)
     }
@@ -348,6 +378,12 @@ internal class VirtualNodeRestResourceImpl(
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
+        // Write through status cache.
+        virtualNodeStatusCacheService.setStatus(
+            asyncRequest.requestId,
+            createVirtualNodeOperationStatus(asyncRequest.requestId)
+        )
+
         return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
     }
 
@@ -364,7 +400,7 @@ internal class VirtualNodeRestResourceImpl(
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
 
         val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)
-) {
+        ) {
             VirtualNodeStateTransitions.ACTIVE -> VirtualNodeOperationalState.ACTIVE
             VirtualNodeStateTransitions.MAINTENANCE -> VirtualNodeOperationalState.INACTIVE
         }
@@ -389,11 +425,13 @@ internal class VirtualNodeRestResourceImpl(
                     ChangeVirtualNodeStateResponse(holdingIdentityShortHash, newState)
                 }
             }
+
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
     }
 
+    @Suppress("SwallowedException")
     private fun validateStateChange(virtualNodeShortId: String, newState: String): VirtualNodeStateTransitions {
         val state = try {
             VirtualNodeStateTransitions.valueOf(newState.uppercase())
@@ -412,39 +450,28 @@ internal class VirtualNodeRestResourceImpl(
         logger.warn(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
-        return when(exception.errorType) {
-            InvalidStateChangeRuntimeException::class.java.name ->  InvalidStateChangeException(exception.errorMessage)
+        return when (exception.errorType) {
+            InvalidStateChangeRuntimeException::class.java.name -> InvalidStateChangeException(exception.errorMessage)
             VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
             else -> InternalServerException(exception.errorMessage)
         }
     }
 
-    private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =
-        HoldingIdentityEndpointType(x500Name.toString(), groupId, shortHash.value, fullHash)
-
-    private fun net.corda.virtualnode.VirtualNodeInfo.toEndpointType(): VirtualNodeInfo =
-        VirtualNodeInfo(
-            holdingIdentity.toEndpointType(),
-            cpiIdentifier.toEndpointType(),
-            vaultDdlConnectionId?.toString(),
-            vaultDmlConnectionId.toString(),
-            cryptoDdlConnectionId?.toString(),
-            cryptoDmlConnectionId.toString(),
-            uniquenessDdlConnectionId?.toString(),
-            uniquenessDmlConnectionId.toString(),
-            hsmConnectionId.toString(),
-            flowP2pOperationalStatus,
-            flowStartOperationalStatus,
-            flowOperationalStatus,
-            vaultDbOperationalStatus,
-            operationInProgress
-        )
-
-    private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =
-        CpiIdentifier(name, version, signerSummaryHash.toString())
-
     // Mandatory lifecycle methods - def to coordinator
     override val isRunning get() = lifecycleCoordinator.isRunning
     override fun start() = lifecycleCoordinator.start()
     override fun stop() = lifecycleCoordinator.stop()
+
+    private fun createVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatus {
+        val now = Instant.now()
+        return VirtualNodeOperationStatus.newBuilder()
+            .setRequestId(requestId)
+            .setRequestData("{}")
+            .setRequestTimestamp(now)
+            .setLatestUpdateTimestamp(now)
+            .setHeartbeatTimestamp(null)
+            .setState(AsyncOperationState.ACCEPTED.name)
+            .setErrors(null)
+            .build()
+    }
 }

@@ -10,14 +10,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -82,23 +82,24 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
         private const val EPOCH = "5"
-        private const val PLATFORM_VERSION = "5000"
     }
 
     override val groupId: String
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val owningMember: MemberX500Name
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
-    override val groupParameters: GroupParameters
+    override val groupParameters: InternalGroupParameters
         get() = groupParametersFactory.create(
             KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, EPOCH),
-                    KeyValuePair(MPV_KEY, PLATFORM_VERSION),
                     KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
                 )
             )
         )
+    override val signedGroupParameters: SignedGroupParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
     private var members = emptyList<MemberInfo>()
 
     fun loadMembers(memberList: List<MemberInfo>) {

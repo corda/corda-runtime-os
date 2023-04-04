@@ -8,6 +8,44 @@ Worker deployment.
 {{- $optionalArgs := dict }}
 {{- if gt (len .) 3 }}{{ $optionalArgs = index . 3 }}{{ end }}
 {{- with index . 1 }}
+{{- with .ingress }}
+{{- if gt (len .hosts) 0 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $workerName | quote }}
+  labels:
+    {{- include "corda.workerLabels" ( list $ $worker ) | nindent 4 }}
+  {{- with .annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .className }}
+  ingressClassName: {{ . | quote }}
+  {{- end }}
+  tls:
+  {{- range .hosts }}
+    - hosts:
+        - {{ . | quote }}
+      secretName: {{ . | quote }}
+  {{- end }}
+  rules:
+  {{- range .hosts }}
+    - host: {{ . | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $workerName | quote }}
+                port:
+                  name: http
+  {{- end }}
+{{- end }}
+{{- end }}
 {{- with .service }}
 ---
 apiVersion: v1
@@ -35,7 +73,7 @@ spec:
   - name: http
     port: {{ .port }}
     targetPort: http
-{{- end }}
+{{-   end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -72,6 +110,7 @@ spec:
         fsGroup: 1000
       {{- end }}
       {{- include "corda.imagePullSecrets" $ | nindent 6 }}
+      {{- include "corda.tolerations" $ | nindent 6 }}
       {{- with $.Values.serviceAccount.name  }}
       serviceAccountName: {{ . }}
       {{- end }}
@@ -209,12 +248,17 @@ spec:
             name: "jaas-conf"
             readOnly: true
           {{- end }}
+          {{- if .tls }}
+          - mountPath: "/tls"
+            name: "tlsmount"
+            readOnly: true
+          {{- end }}
           {{- if $.Values.dumpHostPath }}
           - mountPath: /dumps
             name: dumps
             subPathExpr: $(K8S_POD_NAME)
           {{- end }}
-          {{ include "corda.log4jVolumeMount" $ | nindent 10 }}
+          {{- include "corda.log4jVolumeMount" $ | nindent 10 }}
         ports:
         {{- if .debug.enabled }}
           - name: debug
@@ -327,6 +371,18 @@ spec:
               - key: {{ $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
                 path: "ca.crt"
         {{- end -}}
+        {{- if .tls }}
+        - name: tlsmount
+          secret:
+            secretName: {{ $optionalArgs.tlsSecretName | quote }}
+            items:
+              - key: {{ .tls.crt.secretKey | quote }}
+                path: "tls.crt"
+              - key: {{ .tls.key.secretKey | quote }}
+                path: "tls.key"
+              - key: {{ .tls.ca.secretKey | quote }}
+                path: "ca.crt"
+        {{- end -}}
         {{- if $.Values.kafka.sasl.enabled  }}
         - name: jaas-conf
           emptyDir: {}
@@ -337,7 +393,7 @@ spec:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
         {{- end }}
-        {{ include "corda.log4jVolume" $ | nindent 8 }}
+        {{- include "corda.log4jVolume" $ | nindent 8 }}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

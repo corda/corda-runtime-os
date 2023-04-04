@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import net.corda.test.util.time.TestClock
@@ -35,12 +34,12 @@ import java.time.Instant
 import kotlin.test.assertFailsWith
 
 class MemberRegistrationRestResourceTest {
-    companion object {
-        private const val HOLDING_IDENTITY_ID = "1234567890ab"
-        private const val INVALID_HOLDING_IDENTITY_ID = "${HOLDING_IDENTITY_ID}00"
-        private val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
-        private const val ACTION = "requestJoin"
-        private val clock = TestClock(Instant.ofEpochSecond(100))
+    private companion object {
+        const val HOLDING_IDENTITY_ID = "1234567890ab"
+        const val INVALID_HOLDING_IDENTITY_ID = "${HOLDING_IDENTITY_ID}00"
+        val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
+        val clock = TestClock(Instant.ofEpochSecond(100))
+        const val SERIAL = 1L
     }
 
     private var coordinatorIsRunning = false
@@ -64,17 +63,12 @@ class MemberRegistrationRestResourceTest {
     )
 
     private val memberResourceClient: MemberResourceClient = mock {
-        on { startRegistration(any()) } doReturn registrationProgress
+        on { startRegistration(any(), any()) } doReturn registrationProgress
     }
 
     private val memberRegistrationRestResource = MemberRegistrationRestResourceImpl(
         lifecycleCoordinatorFactory,
         memberResourceClient,
-    )
-
-    private val registrationRequest = MemberRegistrationRequest(
-        ACTION,
-        context = mock()
     )
 
     @Test
@@ -89,8 +83,8 @@ class MemberRegistrationRestResourceTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
-        memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
-        verify(memberResourceClient).startRegistration(eq(registrationRequest.toDto(HOLDING_IDENTITY_ID)))
+        memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
+        verify(memberResourceClient).startRegistration(ShortHash.of(HOLDING_IDENTITY_ID), emptyMap())
         memberRegistrationRestResource.deactivate("")
         memberRegistrationRestResource.stop()
     }
@@ -99,17 +93,17 @@ class MemberRegistrationRestResourceTest {
     fun `starting registration with invalid member will fail`() {
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
-        whenever(memberResourceClient.startRegistration(any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
+        whenever(memberResourceClient.startRegistration(any(), any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
 
         assertThrows<ResourceNotFoundException> {
-            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
+            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         }
     }
 
     @Test
     fun `startRegistration fails when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
-            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
+            memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         }
         assertThat(ex).hasMessage("MemberRegistrationRestResourceImpl is not running. Operation cannot be fulfilled.")
     }
@@ -120,7 +114,7 @@ class MemberRegistrationRestResourceTest {
         memberRegistrationRestResource.activate("")
 
         assertFailsWith<BadRequestException> {
-            memberRegistrationRestResource.startRegistration(INVALID_HOLDING_IDENTITY_ID, registrationRequest)
+            memberRegistrationRestResource.startRegistration(INVALID_HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
         }
 
         memberRegistrationRestResource.deactivate("")
@@ -146,11 +140,12 @@ class MemberRegistrationRestResourceTest {
     fun `checkRegistrationProgress returns the correct data`() {
         val data = (1..3).map {
             RegistrationRequestStatusDto(
-                "id $it",
-                Instant.ofEpochSecond(20L + it),
-                Instant.ofEpochSecond(200L + it),
-                RegistrationStatusDto.APPROVED,
-                MemberInfoSubmittedDto(mapOf("key $it" to "value"))
+                registrationId = "id $it",
+                registrationSent = Instant.ofEpochSecond(20L + it),
+                registrationUpdated = Instant.ofEpochSecond(200L + it),
+                registrationStatus = RegistrationStatusDto.APPROVED,
+                memberInfoSubmitted = MemberInfoSubmittedDto(mapOf("key $it" to "value")),
+                serial = SERIAL,
             )
         }
         whenever(memberResourceClient.checkRegistrationProgress(holdingIdShortHash)).doReturn(data)
@@ -195,11 +190,12 @@ class MemberRegistrationRestResourceTest {
     @Test
     fun `checkSpecificRegistrationProgress returns the correct data`() {
         val data = RegistrationRequestStatusDto(
-            "id",
-            Instant.ofEpochSecond(20L),
-            Instant.ofEpochSecond(200L),
-            RegistrationStatusDto.APPROVED,
-            MemberInfoSubmittedDto(mapOf("key" to "value"))
+            registrationId = "id",
+            registrationSent = Instant.ofEpochSecond(20L),
+            registrationUpdated = Instant.ofEpochSecond(200L),
+            registrationStatus = RegistrationStatusDto.APPROVED,
+            memberInfoSubmitted = MemberInfoSubmittedDto(mapOf("key" to "value")),
+            serial = SERIAL,
         )
 
         whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(data)

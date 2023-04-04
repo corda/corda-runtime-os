@@ -30,6 +30,8 @@ class UtxoLedgerTransactionVerifier(
          */
         verifySignatories(transaction.signatories)
         verifyInputsAndOutputs(transaction.inputStateRefs, transaction.outputContractStates)
+        verifyNoDuplicateInputsOrReferences(transaction.inputStateRefs, transaction.referenceStateRefs)
+        verifyNoInputAndReferenceOverlap(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyCommands(transaction.commands)
         verifyNotaryIsWhitelisted()
 
@@ -40,16 +42,16 @@ class UtxoLedgerTransactionVerifier(
         verifyInputsAreOlderThanOutputs()
     }
 
-
     private fun verifyInputNotaries() {
         val allInputs = transaction.inputTransactionStates + transaction.referenceTransactionStates
         if (allInputs.isEmpty()) {
             return
         }
-        check(allInputs.map { it.notary }.distinct().size == 1) {
+        check(allInputs.map { Pair(it.notaryName, it.notaryKey) }.distinct().size == 1) {
             "Input and reference states' notaries need to be the same."
         }
-        check(allInputs.first().notary == transaction.notary) {
+        check(allInputs.first().notaryName == transaction.notaryName
+                && allInputs.first().notaryKey == transaction.notaryKey ) {
             "Input and reference states' notaries need to be the same as the $subjectClass's notary."
         }
         // TODO CORE-8958 check rotated notaries

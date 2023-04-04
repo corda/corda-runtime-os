@@ -2,12 +2,13 @@ package net.corda.flow.testing.fakes
 
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.FlowContextProperties
+import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Component
@@ -33,6 +34,10 @@ class FakeFlowFactory : FlowFactory {
     private class FakeFlowSession : FlowSession {
         override fun getCounterparty(): MemberX500Name
             = TODO("Not yet implemented")
+
+        override fun getCounterpartyFlowInfo(): FlowInfo {
+            TODO("Not yet implemented")
+        }
 
         override fun getContextProperties(): FlowContextProperties
             = TODO("Not yet implemented")

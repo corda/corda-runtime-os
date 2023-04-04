@@ -33,11 +33,10 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
     val sessionInit = SessionInit.newBuilder()
         .setCpiId("cpiId")
         .setFlowId(null)
-        .setProtocol("someflow")
-        .setVersions(listOf(1))
         .setPayload(ByteBuffer.wrap("some bytes".toByteArray()))
         .setContextPlatformProperties(emptyKeyValuePairList())
         .setContextUserProperties(emptyKeyValuePairList())
+        .setContextSessionProperties(emptyKeyValuePairList())
         .build()
     return generateSessionEvent(sessionInit, instant, messageDirection)
 }

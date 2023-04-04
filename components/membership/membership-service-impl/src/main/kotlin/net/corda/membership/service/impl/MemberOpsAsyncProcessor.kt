@@ -118,14 +118,14 @@ internal class MemberOpsAsyncProcessor(
             return Outcome.FAILED_CANNOT_RETRY
         }
         return try {
-            val requestStatus = membershipQueryClient.queryRegistrationRequestStatus(
+            val requestStatus = membershipQueryClient.queryRegistrationRequest(
                 holdingIdentity,
                 request.requestId
             ).getOrThrow()
             if (condition == RetryCondition.IS_STATE_SENT_TO_MGM) {
                 if ((requestStatus == null) ||
-                    (requestStatus.status == RegistrationStatus.NEW) ||
-                    (requestStatus.status == RegistrationStatus.SENT_TO_MGM)
+                    (requestStatus.registrationStatus == RegistrationStatus.NEW) ||
+                    (requestStatus.registrationStatus == RegistrationStatus.SENT_TO_MGM)
                 ) {
                     logger.info("Request $registrationId had not received any reply from the MGM. Trying again...")
                 } else {
@@ -133,7 +133,7 @@ internal class MemberOpsAsyncProcessor(
                     return Outcome.SUCCESS_NO_CONDITION
                 }
             } else {
-                if ((requestStatus != null) && (requestStatus.status != RegistrationStatus.NEW)) {
+                if ((requestStatus != null) && (requestStatus.registrationStatus != RegistrationStatus.NEW)) {
                     // This request had already passed this state. no need to continue.
                     return Outcome.SUCCESS_NO_CONDITION
                 }

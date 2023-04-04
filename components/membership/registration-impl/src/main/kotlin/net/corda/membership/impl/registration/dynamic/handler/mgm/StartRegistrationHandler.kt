@@ -14,19 +14,22 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -59,11 +62,11 @@ internal class StartRegistrationHandler(
         cordaAvroSerializationFactory,
         clock,
     ),
+    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val SERIAL_CONST = "1"
     }
 
     private val keyValuePairListDeserializer =
@@ -97,28 +100,38 @@ internal class StartRegistrationHandler(
                 }
             }
 
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request should not be null."
+            }
+
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
-
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            // The MemberX500Name is not a duplicate
-            val existingMemberInfo = membershipQueryClient.queryMemberInfo(
+            val existingMemberInfos = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
-            )
+            ).getOrThrow()
+            // The MemberX500Name is not a duplicate
             validateRegistrationRequest(
-                existingMemberInfo is MembershipQueryResult.Success
-                        && (existingMemberInfo.payload.isEmpty()
-                        || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
-            ) { "The latest member info for given member is in 'Active' status or " +
-                    "there is a member with the same name." }
+                existingMemberInfos.isEmpty() || registrationRequest.serial != 0L
+            ) { "Member already exists with the same X500 name." }
+            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
+            val activeOrSuspendedInfo = existingMemberInfos.lastOrNull {
+                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
+            }
+            validateRegistrationRequest(
+                activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
+            ) {
+                "Registration request was submitted for an older version of member info. " +
+                        "Please submit a new request."
+            }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -133,8 +146,14 @@ internal class StartRegistrationHandler(
             // Validate role-specific information if any role is set
             validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
+            val signedMemberInfo = SignedMemberInfo(
+                pendingMemberInfo,
+                registrationRequest.signature,
+                registrationRequest.signatureSpec
+            )
+
             // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo)).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to persist pending member info. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
@@ -204,6 +223,11 @@ internal class StartRegistrationHandler(
             "Empty member context in the registration request."
         }
 
+        val customFieldsValid = registrationContextCustomFieldsVerifier.verify(memberContext)
+        validateRegistrationRequest(customFieldsValid !is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+            (customFieldsValid as RegistrationContextCustomFieldsVerifier.Result.Failure).reason
+        }
+
         val now = clock.instant().toString()
         return memberInfoFactory.create(
             memberContext.toSortedMap(),
@@ -211,7 +235,7 @@ internal class StartRegistrationHandler(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
                 STATUS to MEMBER_STATUS_PENDING,
-                SERIAL to SERIAL_CONST,
+                SERIAL to (registrationRequest.serial!! + 1).toString(),
             )
         )
     }
@@ -231,7 +255,8 @@ internal class StartRegistrationHandler(
             source.toCorda(),
             memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature,
-            true
+            memberRegistrationRequest.memberSignatureSpec,
+            memberRegistrationRequest.serial,
         )
     }
 
@@ -241,7 +266,7 @@ internal class StartRegistrationHandler(
             validateRegistrationRequest(
                 notary.keys.isNotEmpty()
             ) { "Registering member has role set to 'notary', but has missing notary key details." }
-            notary.servicePlugin?.let {
+            notary.serviceProtocol?.let {
                 validateRegistrationRequest(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }

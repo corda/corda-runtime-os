@@ -3,6 +3,8 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
@@ -21,6 +23,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -36,6 +39,9 @@ import javax.persistence.criteria.Root
 class QueryRegistrationRequestHandlerTest {
     private val holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "groupId")
     private val shortHash = holdingIdentity.toCorda().shortHash
+    private val memberSignatureKey = byteArrayOf(1)
+    private val memberSignatureContent = byteArrayOf(2)
+    private val memberSignatureSpec = "SignatureSpec"
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
@@ -107,6 +113,10 @@ class QueryRegistrationRequestHandlerTest {
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3),
+                    memberSignatureKey,
+                    memberSignatureContent,
+                    memberSignatureSpec,
+                    0L,
                     "test reason"
                 )
             )
@@ -117,6 +127,10 @@ class QueryRegistrationRequestHandlerTest {
         assertThat(result.registrationRequest?.registrationId)
             .isNotNull
             .isEqualTo(registrationId)
+        assertThat(result.registrationRequest.memberSignature)
+            .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(memberSignatureKey), ByteBuffer.wrap(memberSignatureContent)))
+        assertThat(result.registrationRequest.memberSignatureSpec)
+            .isEqualTo(CryptoSignatureSpec(memberSignatureSpec, null, null))
     }
 
     @Test

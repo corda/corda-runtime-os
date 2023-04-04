@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import org.assertj.core.api.Assertions.assertThat
@@ -22,11 +23,10 @@ internal class IteratorSerializerTest {
         list.addAll(listOf(3, 4))
 
         val output = Output(2048)
-        val kryo = Kryo()
+        val kryo = Kryo(CordaClassResolver(mock()), MapReferenceResolver())
         DefaultKryoCustomizer.customize(
             kryo,
             emptyMap(),
-            CordaClassResolver(mock()),
             ClassSerializer(mock())
         )
         val compatibleFieldSerializer: CompatibleFieldSerializer<Iterator<*>> = mock()

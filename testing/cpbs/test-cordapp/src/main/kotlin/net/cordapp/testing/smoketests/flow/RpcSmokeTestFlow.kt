@@ -1,11 +1,13 @@
 package net.cordapp.testing.smoketests.flow
 
+import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -15,8 +17,9 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.testing.bundles.dogs.Dog
 import net.cordapp.testing.smoketests.flow.context.launchContextPropagationFlows
@@ -64,7 +67,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
-        "json_serialization" to this::jsonSerialization
+        "json_serialization" to this::jsonSerialization,
+        "get_cpi_metadata" to { getCpiMetadata() },
+        "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows
     )
 
     @CordaInject
@@ -93,6 +98,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var signatureSpecService: SignatureSpecService
+
+    @CordaInject
+    lateinit var compositeKeyGenerator: CompositeKeyGenerator
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -327,13 +335,16 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
+        val signatureSpec =
+            signatureSpecService.defaultSignatureSpec(publicKey)
+                ?: throw IllegalStateException("Default signature spec not found for key")
+        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
         log.info("Crypto - Signature $signedBytes received")
         digitalSignatureVerificationService.verify(
             bytesToSign,
             signedBytes.bytes,
             publicKey,
-            SignatureSpec.ECDSA_SHA256
+            signatureSpec
         )
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
@@ -347,14 +358,20 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
+        val signatureSpec =
+            signatureSpecService.defaultSignatureSpec(publicKey)
+                ?: throw IllegalStateException("Default signature spec not found for key")
+        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
         log.info("Crypto - Signature $signedBytes received")
         return try {
+            val invalidSignatureSpec =
+                signatureSpecService.defaultSignatureSpec(publicKey, DigestAlgorithmName.SHA2_512)
+                    ?: throw IllegalStateException("Default signature spec not found for key")
             digitalSignatureVerificationService.verify(
                 bytesToSign,
                 signedBytes.bytes,
                 publicKey,
-                SignatureSpec.RSA_SHA256
+                invalidSignatureSpec
             )
             false
         } catch (e: CryptoSignatureException) {
@@ -432,6 +449,21 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         return "success"
     }
 
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun compositeKeyGeneratorWorksInFlows(input: RpcSmokeTestInput): String {
+        val someKeys = memberLookup.lookup().flatMap { it.ledgerKeys }
+        val keysAndWeights = someKeys.map {
+            CompositeKeyNodeAndWeight(it, 1)
+        }
+        val compositeKey = compositeKeyGenerator.create(keysAndWeights, 1)
+        return if (compositeKey is CompositeKey) {
+            "SUCCESS"
+        } else {
+            "FAILURE"
+        }
+    }
+
     @Suspendable
     private fun lookupMember(input: RpcSmokeTestInput): String {
         val memberX500Name = input.getValue("id")
@@ -439,6 +471,19 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         checkNotNull(memberInfo) { IllegalStateException("Failed to find MemberInfo for $memberX500Name") }
 
         return memberInfo.name.toString()
+    }
+
+    @Suspendable
+    private fun getCpiMetadata(): String {
+        return """{
+            "cpiName": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_NAME]}",
+            "cpiVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]}",
+            "cpiSignerSummaryHash": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]}",
+            "cpiFileChecksum": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]}",
+            
+            "initialPlatformVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION]}",
+            "initialSoftwareVersion": "${flowEngine.flowContextProperties[FlowContextPropertyKeys.INITIAL_SOFTWARE_VERSION]}"
+        }""".trimIndent()
     }
 
     private fun RpcSmokeTestInput.getValue(key: String): String {
@@ -466,7 +511,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         // Second test checks platform custom serializer/deserializer of MemberX500Name, the serializer should be run
         // implicitly when JsonSerializationFlowOutput is formatted
         val memberX500NameString = input.getValue("vnode")
-        val memberX500NameDeserialized = jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
+        val memberX500NameDeserialized =
+            jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
 
         val output = JsonSerializationFlowOutput(
             firstTest = jsonOutput,

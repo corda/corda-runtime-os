@@ -1,8 +1,8 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
@@ -11,10 +11,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -28,7 +30,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -39,13 +40,16 @@ class MembershipGroupReaderImplTest {
     private val aliceName = TestProperties.aliceName
     private val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
     private val bobName = TestProperties.bobName
+    private val bobIdGroup1 = HoldingIdentity(bobName, GROUP_ID_1)
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
     }
-    private val groupParameters: GroupParameters = mock()
+    private val unsignedGroupParameters: UnsignedGroupParameters = mock()
+    private val signedGroupParameters: SignedGroupParameters = mock()
     private val groupParametersReaderService: GroupParametersReaderService = mock {
-        on { get(eq(aliceIdGroup1)) } doReturn groupParameters
+        on { get(eq(aliceIdGroup1)) } doReturn unsignedGroupParameters
+        on { getSigned(eq(bobIdGroup1)) } doReturn signedGroupParameters
     }
     private val mockLedgerKey: PublicKey = mock()
     private val mockLedgerKeyAsByteArray = "1234".toByteArray()
@@ -55,15 +59,15 @@ class MembershipGroupReaderImplTest {
     private val mockSessionKeyHash = PublicKeyHash.parse(mockSessionKeyAsByteArray.sha256Bytes())
     private val mockedSuspendedMemberProvidedContext = mock<MemberContext> {
         on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
-        on { parseOrNull(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
+        on { parseSet(eq(SESSION_KEYS_HASH), eq(PublicKeyHash::class.java)) } doReturn setOf(mockSessionKeyHash)
     }
     private val mockedSuspendedMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_SUSPENDED
+        on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(mockSessionKey)
     }
     private val aliceSuspendedMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { ledgerKeys } doReturn listOf(mockLedgerKey)
-        on { sessionInitiationKey } doReturn mockSessionKey
         on { memberProvidedContext } doReturn mockedSuspendedMemberProvidedContext
         on { mgmProvidedContext } doReturn mockedSuspendedMgmProvidedContext
         on { isActive } doReturn false
@@ -71,7 +75,6 @@ class MembershipGroupReaderImplTest {
     private val bobSuspendedMemberInfo: MemberInfo = mock {
         on { name } doReturn bobName
         on { ledgerKeys } doReturn listOf(mockLedgerKey)
-        on { sessionInitiationKey } doReturn mockSessionKey
         on { memberProvidedContext } doReturn mockedSuspendedMemberProvidedContext
         on { mgmProvidedContext } doReturn mockedSuspendedMgmProvidedContext
         on { isActive } doReturn false
@@ -79,8 +82,9 @@ class MembershipGroupReaderImplTest {
 
     private val mockedActiveMemberProvidedContext = mock<MemberContext> {
         on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
-        on { parseOrNull(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
+        on { parseSet(eq(SESSION_KEYS_HASH), eq(PublicKeyHash::class.java)) } doReturn setOf(mockSessionKeyHash)
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
+        on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(mockSessionKey)
     }
     private val mockedActiveMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
@@ -88,7 +92,6 @@ class MembershipGroupReaderImplTest {
     private val aliceActiveMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { ledgerKeys } doReturn listOf(mockLedgerKey)
-        on { sessionInitiationKey } doReturn mockSessionKey
         on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
         on { mgmProvidedContext } doReturn mockedActiveMgmProvidedContext
         on { isActive } doReturn true
@@ -96,7 +99,6 @@ class MembershipGroupReaderImplTest {
     private val bobActiveMemberInfo: MemberInfo = mock {
         on { name } doReturn bobName
         on { ledgerKeys } doReturn listOf(mockLedgerKey)
-        on { sessionInitiationKey } doReturn mockSessionKey
         on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
         on { mgmProvidedContext } doReturn mockedActiveMgmProvidedContext
         on { isActive } doReturn true
@@ -163,7 +165,10 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup known member with pending status based on name`() {
         mockMemberList(listOf(alicePendingMemberInfo, aliceActiveMemberInfo))
-        assertEquals(alicePendingMemberInfo, membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.PENDING))
+        assertEquals(
+            alicePendingMemberInfo,
+            membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.PENDING)
+        )
     }
 
     @Test
@@ -297,7 +302,18 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `group parameters are returned as expected`() {
-        assertThat(membershipGroupReaderImpl.groupParameters).isEqualTo(groupParameters)
-        verify(groupParametersReaderService, times(1)).get(eq(aliceIdGroup1))
+        assertThat(membershipGroupReaderImpl.groupParameters).isEqualTo(unsignedGroupParameters)
+        verify(groupParametersReaderService).get(eq(aliceIdGroup1))
+    }
+
+    @Test
+    fun `signed group parameters are returned as expected`() {
+        val bobGroupReader = MembershipGroupReaderImpl(
+            bobIdGroup1,
+            membershipGroupCache,
+            groupParametersReaderService
+        )
+        assertThat(bobGroupReader.signedGroupParameters).isEqualTo(signedGroupParameters)
+        verify(groupParametersReaderService).getSigned(eq(bobIdGroup1))
     }
 }
