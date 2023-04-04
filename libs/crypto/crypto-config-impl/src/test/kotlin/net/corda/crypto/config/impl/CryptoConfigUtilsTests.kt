@@ -43,8 +43,6 @@ class CryptoConfigUtilsTests {
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
-        assertEquals(3, hsmService.downstreamMaxAttempts)
         assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm(SOFT_HSM_ID)
         assertEquals("", softWorker.workerTopicSuffix)
@@ -108,8 +106,6 @@ class CryptoConfigUtilsTests {
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
-        assertEquals(3, hsmService.downstreamMaxAttempts)
         assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm(SOFT_HSM_ID)
         assertEquals("", softWorker.workerTopicSuffix)
@@ -187,26 +183,10 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `Should be able to get CryptoHSM service config`() {
-        val config = createDefaultCryptoConfig(
-            "master-passphrase", "master-salt"
-        ).hsmService()
-        assertEquals(3, config.downstreamMaxAttempts)
-    }
-
-    @Test
     fun `Should throw IllegalStateException when signing service is missing`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.signingService()
-        }
-    }
-
-    @Test
-    fun `Should throw IllegalStateException when HSM service is missing`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.hsmService()
         }
     }
 

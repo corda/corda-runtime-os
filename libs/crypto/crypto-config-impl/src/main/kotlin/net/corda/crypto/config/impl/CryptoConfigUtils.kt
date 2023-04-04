@@ -189,14 +189,6 @@ fun SmartConfig.hsm(id: String): CryptoHSMConfig {
     }
 }
 
-// TODO Not really used
-fun SmartConfig.hsmService(): CryptoHSMServiceConfig =
-    try {
-        CryptoHSMServiceConfig(getConfig(HSM_SERVICE_OBJ))
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $HSM_SERVICE_OBJ.", e)
-    }
-
 fun SmartConfig.opsBusProcessor(): CryptoBusProcessorConfig =
     try {
         CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(OPS_BUS_PROCESSOR_OBJ))

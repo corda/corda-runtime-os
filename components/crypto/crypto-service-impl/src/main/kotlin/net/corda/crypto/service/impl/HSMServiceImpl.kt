@@ -7,13 +7,10 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.InvalidParamsException
-import net.corda.crypto.impl.retrying.BackoffStrategy
-import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMService
@@ -74,14 +71,7 @@ class HSMServiceImpl @Activate constructor(
 
         private val config = event.config.toCryptoConfig()
 
-        private val hsmConfig = config.hsmService()
-
         private val hsmMap = HSMMap(config, store)
-
-        private val executor = CryptoRetryingExecutor(
-            logger,
-            BackoffStrategy.createBackoff(hsmConfig.downstreamMaxAttempts, listOf(100L))
-        )
 
         fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
