@@ -170,6 +170,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("Endpoint URL ('https://username:password@www.corda.net:8888') had user info specified, which must not be specified.")
+         .hasMessageContaining("Endpoint URL ('https://username:password@www.corda.net:8888') " +
+                 "had user info specified, which must not be specified.")
     }
 }
