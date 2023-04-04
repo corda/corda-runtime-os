@@ -33,11 +33,6 @@ class TestInitialConfigPluginCrypto {
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config")
         }
-        try {
-            app.run({})
-        } catch(e: InvalidParameterException) {
-            outText += e.message?:""
-        }
         println(outText)
         assertThat(outText).contains("'passphrase' must be set for CORDA type secrets.")
         assertThat(outText).contains("-l, --location=<location>")
