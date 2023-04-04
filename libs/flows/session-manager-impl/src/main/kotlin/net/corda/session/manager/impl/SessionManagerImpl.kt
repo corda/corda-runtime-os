@@ -1,7 +1,5 @@
 package net.corda.session.manager.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -9,6 +7,7 @@ import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
@@ -25,6 +24,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 @Component
@@ -188,12 +189,15 @@ class SessionManagerImpl @Activate constructor(
         config: SmartConfig,
     ): List<SessionEvent> {
         //get all events with a timestamp in the past, as well as any acks or errors
-        val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.timestamp <= instant || it.payload is SessionError
-        }
+        val eventsToSend = sessionState.sendEventsState.undeliveredMessages.filter(
+            when (sessionState.status) {
+                SessionStateType.CREATED -> { event: SessionEvent -> event.payload is SessionInit && event.timestamp <= instant }
+                else -> { event: SessionEvent -> event.timestamp <= instant || event.payload is SessionError }
+            }
+        )
 
         //update events with the latest ack info from the current state
-        sessionEvents.forEach { eventToSend ->
+        eventsToSend.forEach { eventToSend ->
             eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
             eventToSend.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
         }
@@ -202,7 +206,7 @@ class SessionManagerImpl @Activate constructor(
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         updateSessionStateSendEvents(sessionState, instant, messageResendWindow)
 
-        return sessionEvents
+        return eventsToSend
     }
 
     /**
