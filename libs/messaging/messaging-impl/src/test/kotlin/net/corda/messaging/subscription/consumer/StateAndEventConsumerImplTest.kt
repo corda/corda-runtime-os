@@ -530,6 +530,107 @@ class StateAndEventConsumerImplTest {
         )
     }
 
+    @Test
+    fun `poll events returns events if some partitions are synced`() {
+        val (listener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(), false)
+        val stateAndEventConsumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            listener
+        )
+        val consumerRecords = listOf(CordaConsumerRecord(TOPIC, 0, 0, "key", "value", 0))
+        whenever(eventConsumer.poll(any())).thenReturn(
+            consumerRecords
+        )
+        // Get one partition in sync and three not in sync
+        val partitions = (0..3).map { CordaTopicPartition(TOPIC, it) }.toSet()
+        val statePartitions = partitions.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }
+        whenever(stateConsumer.beginningOffsets(statePartitions)).thenReturn(
+            statePartitions.associateWith { 0L }
+        )
+        whenever(stateConsumer.endOffsets(statePartitions)).thenReturn(
+            // By using the partition number as an offset, one partition should be treated as in sync (0) and the others
+            // out of sync.
+            statePartitions.associateWith { it.partition.toLong() }
+        )
+        whenever(stateConsumer.assignment())
+            .thenReturn(setOf())
+            .thenReturn(statePartitions.toSet())
+
+        stateAndEventConsumer.onPartitionsAssigned(partitions)
+
+        val events = stateAndEventConsumer.pollEvents()
+        assertThat(events).isEqualTo(consumerRecords)
+        verify(eventConsumer, times(1)).poll(any())
+
+        val events2 = stateAndEventConsumer.pollEvents()
+        assertThat(events2).isEqualTo(consumerRecords)
+        verify(eventConsumer, times(2)).poll(any())
+    }
+
+    @Test
+    fun `poll events polls the event consumer if no partitions are assigned`() {
+        val (listener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(), false)
+        val stateAndEventConsumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            listener
+        )
+        whenever(eventConsumer.poll(any())).thenReturn(
+            emptyList()
+        )
+        val events = stateAndEventConsumer.pollEvents()
+        assertThat(events).isEmpty()
+        verify(eventConsumer, times(1)).poll(any())
+        val events2 = stateAndEventConsumer.pollEvents()
+        assertThat(events2).isEmpty()
+        verify(eventConsumer, times(2)).poll(any())
+    }
+
+    @Test
+    fun `poll events does not poll the event consumer if it has been polled in the last poll interval and no partitions are in sync`() {
+        val (listener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(), false)
+        val stateAndEventConsumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            listener
+        )
+        whenever(eventConsumer.poll(any())).thenReturn(
+            emptyList()
+        )
+        val partitions = (0..3).map { CordaTopicPartition(TOPIC, it) }.toSet()
+        val statePartitions = partitions.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }
+        whenever(stateConsumer.beginningOffsets(statePartitions)).thenReturn(
+            statePartitions.associateWith { 0L }
+        )
+        whenever(stateConsumer.endOffsets(statePartitions)).thenReturn(
+            // No partitions in sync but some partitions assigned.
+            statePartitions.associateWith { it.partition.toLong() + 1 }
+        )
+        whenever(stateConsumer.assignment())
+            .thenReturn(setOf())
+            .thenReturn(statePartitions.toSet())
+
+        stateAndEventConsumer.onPartitionsAssigned(partitions)
+
+        // First poll will update the last polled timestamp, second shouldn't trigger an event consumer poll.
+        val events = stateAndEventConsumer.pollEvents()
+        assertThat(events).isEmpty()
+        verify(eventConsumer, times(1)).poll(any())
+        val events2 = stateAndEventConsumer.pollEvents()
+        assertThat(events2).isEmpty()
+        verify(eventConsumer, times(1)).poll(any())
+    }
+
     private fun setupMocks(): Mocks {
         val listener: StateAndEventListener<String, String> = mock()
         val eventConsumer: CordaConsumer<String, String> = mock()
