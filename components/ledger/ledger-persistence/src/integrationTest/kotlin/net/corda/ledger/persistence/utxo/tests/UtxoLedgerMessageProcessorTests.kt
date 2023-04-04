@@ -13,9 +13,11 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
+import net.corda.flow.utils.toMap
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -152,8 +154,16 @@ class UtxoLedgerMessageProcessorTests {
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
             virtualNodeInfo.holdingIdentity,
-            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
+            EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    cpkFileHashes
+                    .mapIndexed{ idx, hash -> listOf("", idx).joinToString(".") to hash.toString()}
+                    .toMap()
+                )
+            }
         )
+
         responses =
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 

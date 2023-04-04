@@ -16,6 +16,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -23,6 +24,7 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.persistence.utxo.tests.UtxoLedgerMessageProcessorTests
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
@@ -122,7 +124,17 @@ class ConsensualLedgerMessageProcessorTests {
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = TransactionStatus.VERIFIED.value
         val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, emptyList())
-        val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
+        val request = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            persistTransaction,
+            UtxoLedgerMessageProcessorTests.EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    cpkFileHashes
+                        .mapIndexed{ idx, hash -> listOf("", idx).joinToString(".") to hash.toString()}
+                        .toMap()
+                )
+            }
+        )
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
