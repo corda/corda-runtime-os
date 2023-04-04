@@ -9,7 +9,9 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.requests.helper.getSessionsToError
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,7 +24,9 @@ class FlowFailedRequestHandler @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
+    private val flowRecordFactory: FlowRecordFactory,
+    @Reference(service = FlowSessionManager::class)
+    private val flowSessionManager: FlowSessionManager
 ) : FlowRequestHandler<FlowIORequest.FlowFailed> {
     override val type = FlowIORequest.FlowFailed::class.java
 
@@ -37,6 +41,13 @@ class FlowFailedRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
         recordFlowRuntimeMetric(checkpoint, FlowStates.FAILED.toString())
+
+        flowSessionManager.sendErrorMessages(
+            checkpoint,
+            getSessionsToError(checkpoint, checkpoint.sessions.map { it.sessionId }, flowSessionManager),
+            request.exception,
+            Instant.now()
+        )
 
         val status = flowMessageFactory.createFlowFailedStatusMessage(
             checkpoint,

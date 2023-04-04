@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.requests.helper.getSessionsToError
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
@@ -39,7 +40,7 @@ class SubFlowFailedRequestHandler @Activate constructor(
         try {
             checkpoint.putSessionStates(flowSessionManager.sendErrorMessages(
                 checkpoint,
-                getSessionsToError(checkpoint, request),
+                getSessionsToError(checkpoint, request.sessionIds, flowSessionManager),
                 request.throwable,
                 Instant.now()
             ))
@@ -52,12 +53,4 @@ class SubFlowFailedRequestHandler @Activate constructor(
         return context.copy(outputRecords = context.outputRecords + record)
     }
 
-    private fun getSessionsToError(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFailed): List<String> {
-        val erroredSessions =
-            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
-        val closedSessions =
-            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.CLOSED)
-
-        return request.sessionIds - (erroredSessions + closedSessions).map { it.sessionId }
-    }
 }
