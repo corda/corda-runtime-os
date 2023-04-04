@@ -1,10 +1,10 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryStorage
-import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonUtilities.extractJsonDataFromTransaction
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -20,6 +20,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -33,6 +34,10 @@ class UtxoPersistenceServiceImpl constructor(
     private val jsonMarshallingService: JsonMarshallingService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
+
+    private companion object {
+        val log = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
+    }
 
     override fun findTransaction(
         id: String,
@@ -160,7 +165,11 @@ class UtxoPersistenceServiceImpl constructor(
                 visibleStateIndex,
                 consumed = false,
                 CustomRepresentation(
-                    extractJsonDataFromTransaction(transaction, factoryStorage, jsonMarshallingService)
+                    extractJsonDataFromState(
+                        transaction.getProducedStates()[visibleStateIndex].state.contractState,
+                        factoryStorage,
+                        jsonMarshallingService
+                    )
                 ),
                 nowUtc
             )
@@ -222,6 +231,30 @@ class UtxoPersistenceServiceImpl constructor(
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
         entityManagerFactory.transaction { em ->
             repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
+        }
+    }
+
+    private fun extractJsonDataFromState(
+        contractState: ContractState,
+        factoryStorage: ContractStateVaultJsonFactoryStorage,
+        jsonMarshallingService: JsonMarshallingService
+    ): String {
+        // This block will fail with JsonProcessingException if either:
+        // - the JSON string is invalid from any of the factories
+        // - the concatenated map from the different factory outputs is invalid
+        return try {
+            val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
+                it.stateType.name to jsonMarshallingService.parse(
+                    // We need to parse the output string to make it an actual JSON format
+                    it.create(contractState, jsonMarshallingService), Any::class.java
+                )
+            }
+
+            // Reformat the whole map as a string
+            jsonMarshallingService.format(jsonMap)
+        } catch (e: JsonProcessingException) {
+            log.warn("Error while processing JSON, reverting to empty JSON representation.")
+            "{}" // Empty JSON string if we encountered an exception
         }
     }
 }

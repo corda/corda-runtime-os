@@ -105,16 +105,20 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
 
-        assertThat(
+        assertThat(reformatJsonString("""
+            {
+              "net.corda.v5.ledger.utxo.ContractState" : {
+                "participants" : "[]"
+              },
+              "net.corda.ledger.persistence.utxo.impl.DummyState" : {
+                "dummyField" : "DUMMY",
+                "dummyField2" : "DUMMY"
+              }
+            }
+        """.trimIndent()
+        )).isEqualTo(
             // We need to reformat. By default, `JsonMarshallingService` is not pretty printed
             reformatJsonString(persisted.value.json)
-        ).isEqualTo(reformatJsonString("""
-            {
-             "net.corda.v5.ledger.utxo.ContractState.participants" : "[]",
-             "net.corda.ledger.persistence.utxo.impl.DummyState.dummyField" : "DUMMY",
-             "net.corda.ledger.persistence.utxo.impl.DummyState.dummyField2" : "DUMMY"
-            }
-            """.trimIndent())
         )
     }
 
@@ -134,7 +138,9 @@ class UtxoPersistenceServiceImplTest {
             reformatJsonString(persisted.value.json)
         ).isEqualTo(reformatJsonString("""
             {
-             "net.corda.v5.ledger.utxo.ContractState.participants" : "[]"
+                "net.corda.v5.ledger.utxo.ContractState" : {
+                    "participants" : "[]" 
+                }
             }
             """.trimIndent())
         )
