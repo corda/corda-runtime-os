@@ -57,4 +57,11 @@ interface TransactionMetadataInternal : TransactionMetadata {
      * @return The schema version.
      */
     fun getSchemaVersion(): Int
+
+    /**
+     * Gets the hash of the membership group parameters.
+     *
+     * @return Membership group parameters hash
+     */
+    fun getMembershipGroupParametersHash(): String
 }
