@@ -10,18 +10,18 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.time.Instant
 
+@Suppress("LongParameterList")
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     componentGroups: List<List<ByteArray>> = defaultComponentGroups,
     ledgerModel: String = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-    transactionSubType: String? = null
+    transactionSubType: String? = null,
+    metadata: TransactionMetadata = transactionMetadataExample(
+        ledgerModel = ledgerModel,
+        transactionSubType = transactionSubType
+    )
 ): WireTransaction {
-    val metadata =
-        transactionMetadataExample(
-            ledgerModel = ledgerModel,
-            transactionSubType = transactionSubType
-        )
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
