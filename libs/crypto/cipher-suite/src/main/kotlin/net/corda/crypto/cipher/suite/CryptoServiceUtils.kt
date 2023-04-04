@@ -2,7 +2,7 @@
 
 package net.corda.crypto.cipher.suite
 
-import net.corda.v5.base.types.ByteArrays
+import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.MessageAuthenticationCode
 import net.corda.crypto.utils.hmac
 

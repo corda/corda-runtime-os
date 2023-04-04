@@ -71,7 +71,7 @@ class CompositeKeyImplTests {
         val aliceOrBob = target.createFromKeys(alicePublicKey, bobPublicKey)
         assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, aliceSignature.by) }
         assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, bobSignature.by) }
-        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, listOf(aliceSignature.by, bobSignature.by)) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, setOf(aliceSignature.by, bobSignature.by)) }
         assertFalse { KeyUtils.isKeyFulfilledBy(aliceOrBob, charlieSignature.by) }
     }
 
