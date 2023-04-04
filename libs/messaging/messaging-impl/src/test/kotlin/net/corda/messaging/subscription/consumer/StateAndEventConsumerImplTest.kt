@@ -3,6 +3,7 @@ package net.corda.messaging.subscription.consumer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.constants.SubscriptionType
@@ -629,6 +630,21 @@ class StateAndEventConsumerImplTest {
         val events2 = stateAndEventConsumer.pollEvents()
         assertThat(events2).isEmpty()
         verify(eventConsumer, times(1)).poll(any())
+    }
+
+    @Test
+    fun `reset event consumer poll position correctly resets the poll offset`() {
+        val (listener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(), false)
+        val stateAndEventConsumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            listener
+        )
+        stateAndEventConsumer.resetEventOffsetPosition()
+        verify(eventConsumer, times(1)).resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
     }
 
     private fun setupMocks(): Mocks {
