@@ -37,6 +37,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
@@ -688,20 +689,20 @@ internal class SessionManagerImpl(
         }
 
         val sessionManagerConfig = config.get()
-        val (hostedIdentityInSameGroup, peer) = hostedIdentitiesInSameGroup
-            .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
-                val member = membershipGroupReaderProvider
-                    .lookupByKey(
-                        hostedIdentityInSameGroup,
-                        message.source.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
-                    )
-                if (member == null) {
-                    null
-                } else {
-                    hostedIdentityInSameGroup to member
-                }
-            } ?: let {
+        val locallyHostedIdentityWithPeerMemberInfo = hostedIdentitiesInSameGroup.mapNotNull { localIdentity ->
+            val peerMemberInfo = membershipGroupReaderProvider.lookupByKey(
+                localIdentity,
+                message.source.initiatorPublicKeyHash.array(),
+                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
+            )
+            if (peerMemberInfo == null) {
+                null
+            } else {
+                localIdentity to peerMemberInfo
+            }
+        }.maxByOrNull { it.second.serial }
+
+        if (locallyHostedIdentityWithPeerMemberInfo == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -710,6 +711,7 @@ internal class SessionManagerImpl(
             return null
         }
 
+        val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
         val groupPolicy = groupPolicyProvider.getGroupPolicy(hostedIdentityInSameGroup)
         if (groupPolicy == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
@@ -729,8 +731,8 @@ internal class SessionManagerImpl(
         }
         val responderHello = session.generateResponderHello()
 
-        logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peer, groupPolicy.networkType)
+        logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, groupPolicy.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {

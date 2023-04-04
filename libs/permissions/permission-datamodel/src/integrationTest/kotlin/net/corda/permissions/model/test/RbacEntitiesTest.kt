@@ -97,7 +97,7 @@ class RbacEntitiesTest {
             null
         )
         emf.transaction { em -> em.persist(user) }
-        emf.use { em ->
+        emf.createEntityManager().use { em ->
             val retrievedUser = em.createQuery("from User where id = '$id'", user.javaClass).singleResult
             Assertions.assertThat(retrievedUser).isEqualTo(user)
         }

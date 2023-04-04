@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 class ConsensualLedgerServiceTest: ConsensualLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
-    fun `getTransactionBuilder should return a Transaction Builder`() {
-        val transactionBuilder = consensualLedgerService.getTransactionBuilder()
+    fun `createTransactionBuilder should return a Transaction Builder`() {
+        val transactionBuilder = consensualLedgerService.createTransactionBuilder()
         assertThat(transactionBuilder).isInstanceOf(ConsensualTransactionBuilder::class.java)
     }
 }

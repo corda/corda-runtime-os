@@ -1,13 +1,17 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.lifecycle.Lifecycle
@@ -80,13 +84,13 @@ class CertificatesRestResourceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
-            GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
-            RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
-            SM2_CODE_NAME to SignatureSpec.SM2_SM3,
-            SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpecs.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpecs.ECDSA_SHA256,
+            EDDSA_ED25519_TEMPLATE to SignatureSpecs.EDDSA_ED25519,
+            GOST3410_GOST3411_TEMPLATE to SignatureSpecs.GOST3410_GOST3411,
+            RSA_CODE_NAME to SignatureSpecs.RSA_SHA512,
+            SM2_CODE_NAME to SignatureSpecs.SM2_SM3,
+            SPHINCS256_CODE_NAME to SignatureSpecs.SPHINCS256_SHA512,
         )
 
         fun getSignatureSpec(
@@ -94,7 +98,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             defaultSpec: String?
         ): SignatureSpec {
             if (defaultSpec != null) {
-                return SignatureSpec(defaultSpec)
+                return SignatureSpecImpl(defaultSpec)
             }
 
             return defaultCodeNameToSpec[key.schemeCodeName]
@@ -109,6 +113,8 @@ class CertificatesRestResourceImpl @Activate constructor(
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
+        validateTenantId(tenantId)
+
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
@@ -421,5 +427,22 @@ class CertificatesRestResourceImpl @Activate constructor(
             }
         }
         return name.x500Principal
+    }
+
+    private fun validateTenantId(tenantId: String) {
+        val isValidShortHash = try {
+            ShortHash.parse(tenantId)
+            true
+        } catch (e: ShortHashException) {
+            false
+        }
+        val isValidClusterTenant = (tenantId == P2P || tenantId == REST)
+
+        if (!isValidShortHash && !isValidClusterTenant) {
+            throw InvalidInputDataException(
+                "Provided tenantId ($tenantId) was not valid. " +
+                        "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
+            )
+        }
     }
 }

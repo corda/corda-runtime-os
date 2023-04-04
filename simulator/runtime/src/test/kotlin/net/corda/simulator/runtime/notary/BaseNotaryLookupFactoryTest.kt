@@ -16,7 +16,7 @@ class BaseNotaryLookupFactoryTest {
         val fiber = SimFiberBase()
         val notaryX500 = MemberX500Name.parse("CN=SimulatorNotaryService, OU=Simulator, O=R3, L=London, C=GB")
         val notaryKey = mock<PublicKey>()
-        val notaryInfo = BaseNotaryInfo(notaryX500, "", notaryKey)
+        val notaryInfo = BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey)
 
         // When we create a notaryLookup
         val notaryLookup = BaseNotaryLookupFactory().createNotaryLookup(fiber, notaryInfo)

@@ -1,5 +1,6 @@
 package net.corda.simulator
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.simulator.runtime.testutils.createMember
@@ -11,7 +12,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -34,7 +34,7 @@ class SigningTest {
                 val keyHolder = requestBody.getRequestBodyAs(jsonMarshallingService, MemberX500Name::class.java)
                 val publicKey = memberLookup.lookup(keyHolder)?.ledgerKeys?.get(0)
                 checkNotNull(publicKey)
-                signingService.sign("Hello!".toByteArray(), publicKey, SignatureSpec.ECDSA_SHA256)
+                signingService.sign("Hello!".toByteArray(), publicKey, SignatureSpecs.ECDSA_SHA256)
                 return "Signed"
             }
         }

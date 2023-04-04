@@ -13,7 +13,8 @@ import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
+import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.test.util.eventually
 import org.apache.logging.log4j.Level
 import org.assertj.core.api.Assertions.assertThat
@@ -62,25 +63,23 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `simple client POST request`() {
-        val listener = object : ListenerWithServer() {
-            override fun onRequest(request: HttpRequest) {
+        val listener = object : RequestListener {
+            override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
                 assertEquals(clientMessageContent, String(request.payload))
-                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+                httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
             }
         }
         HttpServer(
             listener,
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                aliceSslConfig,
-                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
             null,
         ).use { server ->
-            listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
@@ -103,27 +102,25 @@ class HttpTest : TestBase() {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
-        val listener = object : ListenerWithServer() {
-            override fun onRequest(request: HttpRequest) {
+        val listener = object : RequestListener {
+            override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
                 assertEquals(clientMessageContent, String(request.payload))
-                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+                httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
             }
         }
         val httpServer = HttpServer(
             listener,
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                aliceSslConfig,
-                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
             null,
         )
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
-            listener.server = server
             server.startAndWaitForStarted()
             repeat(threadNo) {
                 val t = thread {
@@ -167,26 +164,24 @@ class HttpTest : TestBase() {
                 (it % 0xFF).toByte()
             }
             .toByteArray()
-        val listener = object : ListenerWithServer() {
-            override fun onRequest(request: HttpRequest) {
+        val listener = object : RequestListener {
+            override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
                 assertTrue(Arrays.equals(hugePayload, request.payload))
-                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+                httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
             }
         }
 
         HttpServer(
             listener,
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                aliceSslConfig,
-                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
             null,
         ).use { server ->
-            listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
@@ -206,25 +201,23 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C5`() {
-        val listener = object : ListenerWithServer() {
-            override fun onRequest(request: HttpRequest) {
-                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+        val listener = object : RequestListener {
+            override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+                httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
             }
         }
 
         HttpServer(
             listener,
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                bobSslConfig,
-                MAX_REQUEST_SIZE
             ),
             bobKeyStore,
             null,
         ).use { server ->
-            listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
@@ -243,25 +236,23 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C4`() {
-        val listener = object : ListenerWithServer() {
-            override fun onRequest(request: HttpRequest) {
-                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+        val listener = object : RequestListener {
+            override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+                httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
             }
         }
 
         HttpServer(
             listener,
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                c4sslConfig,
-                MAX_REQUEST_SIZE
             ),
             c4sslKeyStore,
             null,
         ).use { server ->
-            listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
                 DestinationInfo(serverAddress, partyASNI, partyAx500Name, c4TruststoreKeyStore, null),
@@ -346,17 +337,16 @@ class HttpTest : TestBase() {
     fun `tls handshake fails - requested SNI is not recognized`() {
 
         HttpServer(
-            object : ListenerWithServer() {
-                override fun onRequest(request: HttpRequest) {
-                    server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            object : RequestListener {
+                override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+                    httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
                 }
             },
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                aliceSslConfig,
-                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
             null,
@@ -391,19 +381,17 @@ class HttpTest : TestBase() {
     @Timeout(30)
     @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server presents revoked certificate`() {
-
         HttpServer(
-            object : ListenerWithServer() {
-                override fun onRequest(request: HttpRequest) {
-                    server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            object : RequestListener {
+                override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+                    httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
                 }
             },
-            GatewayConfiguration(
+            MAX_REQUEST_SIZE,
+            GatewayServerConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 "/",
-                bobSslConfig,
-                MAX_REQUEST_SIZE
             ),
             bobKeyStore,
             null,

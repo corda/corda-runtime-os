@@ -2,15 +2,17 @@ package com.r3.corda.notary.plugin.nonvalidating.client
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -38,10 +40,10 @@ class NonValidatingNotaryClientFlowImplTest {
         const val DUMMY_PLATFORM_VERSION = 9001
 
         /* Signature */
-        val mockRequestSignature = mock<DigitalSignature.WithKey>()
+        val mockRequestSignature = mock<DigitalSignature.WithKeyId>()
         val dummyUniquenessSignature = DigitalSignatureAndMetadata(
             mock(),
-            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
+            DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
         )
 
         /* State Refs */
@@ -63,6 +65,9 @@ class NonValidatingNotaryClientFlowImplTest {
             on { id } doReturn txId
             on { notaryName } doReturn MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
             on { notaryKey } doReturn mock<PublicKey>()
+        }
+        val mockSignatureSpecService = mock<SignatureSpecService> {
+            on { defaultSignatureSpec(any()) } doReturn SignatureSpecs.ECDSA_SHA256
         }
     }
 
@@ -123,8 +128,7 @@ class NonValidatingNotaryClientFlowImplTest {
     private fun createClient(flowMessaging: FlowMessaging): NonValidatingNotaryClientFlowImpl {
         val mockMemberInfo = mock<MemberInfo> {
             on { platformVersion } doReturn DUMMY_PLATFORM_VERSION
-            // CORE-11837: Use ledger key
-            on { sessionInitiationKeys } doReturn listOf(mock())
+            on { ledgerKeys } doReturn listOf(mock())
         }
 
         val mockBuilder = mock<UtxoFilteredTransactionBuilder> {
@@ -151,7 +155,8 @@ class NonValidatingNotaryClientFlowImplTest {
             },
             mock {
                 on { filterSignedTransaction(any()) } doReturn mockBuilder
-            }
+            },
+            mockSignatureSpecService
         )
     }
 }

@@ -1,9 +1,9 @@
 package net.corda.cipher.suite.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -54,7 +54,7 @@ class SignatureVerificationServiceGeneralTests {
                 originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256
+                signatureSpec = SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -74,7 +74,7 @@ class SignatureVerificationServiceGeneralTests {
                 originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = ByteArray(0),
                 publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256
+                signatureSpec = SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -94,7 +94,7 @@ class SignatureVerificationServiceGeneralTests {
                 originalData = ByteArray(0),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256
+                signatureSpec = SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -133,7 +133,7 @@ class SignatureVerificationServiceGeneralTests {
                 originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256
+                signatureSpec = SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -153,7 +153,7 @@ class SignatureVerificationServiceGeneralTests {
                 originalData = UUID.randomUUID().toString().toByteArray(),
                 signatureData = ByteArray(0),
                 publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256
+                signatureSpec = SignatureSpecs.ECDSA_SHA256
             )
         }
     }
@@ -173,7 +173,7 @@ class SignatureVerificationServiceGeneralTests {
                 originalData = ByteArray(0),
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 publicKey = publicKey,
-                signatureSpec = SignatureSpec.ECDSA_SHA256
+                signatureSpec = SignatureSpecs.ECDSA_SHA256
             )
         }
     }

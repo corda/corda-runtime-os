@@ -2,7 +2,7 @@ package net.corda.kryoserialization.serializers
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
@@ -37,13 +37,13 @@ class ThrowableSerializer<T>(kryo: Kryo, type: Class<T>) : Serializer<Throwable>
 
     @Suppress("unchecked_cast")
     private val delegate: Serializer<Throwable> =
-        ReflectionSerializerFactory.makeSerializer(kryo, FieldSerializer::class.java, type) as Serializer<Throwable>
+        ReflectionSerializerFactory.newSerializer(kryo, FieldSerializer::class.java, type) as Serializer<Throwable>
 
     override fun write(kryo: Kryo, output: Output, throwable: Throwable) {
         delegate.write(kryo, output, throwable)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<Throwable>): Throwable {
+    override fun read(kryo: Kryo, input: Input, type: Class<out Throwable>): Throwable {
         val throwableRead = delegate.read(kryo, input, type)
         if (throwableRead.suppressed.isEmpty()) {
             throwableRead.setSuppressedToSentinel()

@@ -4,6 +4,15 @@
 -runee: JavaSE-11
 -runtrace: true
 
+-runvm: \
+    --add-opens, 'java.base/java.lang=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.lang.invoke=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.security=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.time=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.util=ALL-UNNAMED',\
+    --add-opens, 'jdk.crypto.ec/sun.security.ec=ALL-UNNAMED',\
+    --illegal-access=deny
+
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.ledger-common-flow',\

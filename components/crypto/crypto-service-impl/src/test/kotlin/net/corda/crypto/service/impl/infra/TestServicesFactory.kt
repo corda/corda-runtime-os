@@ -190,7 +190,8 @@ class TestServicesFactory {
             SoftCryptoService(
                 wrappingRepositoryFactory = { cryptoWrappingRepository },
                 schemeMetadata = schemeMetadata,
-                rootWrappingKey = rootWrappingKey,
+                defaultUnmanagedWrappingKeyName = "test",
+                unmanagedWrappingKeys = mapOf( "test" to rootWrappingKey),
                 digestService = PlatformDigestServiceImpl(schemeMetadata),
                 wrappingKeyCache = null,
                 privateKeyCache = null,

@@ -4,9 +4,16 @@
 -runee: JavaSE-11
 -runtrace: true
 
+-runvm: \
+    --illegal-access=deny
+
 -runrequires: \
     bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='org.apache.felix.framework.security'
+
+-runstartlevel: \
+    order=sortbynameversion,\
+    begin=-1

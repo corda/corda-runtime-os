@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
+import net.corda.base.internal.sequence
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.utilities.exactAdd
-import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import org.bouncycastle.asn1.ASN1EncodableVector
@@ -11,7 +11,6 @@ import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.ASN1Primitive
 import org.bouncycastle.asn1.DERBitString
 import org.bouncycastle.asn1.DERSequence
-
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey
@@ -36,7 +35,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // will improve efficiency, because keys with bigger "weights" are the first to be checked and thus the
         // threshold requirement might be met earlier without requiring a full [children] scan.
         private val descWeightComparator =
-            compareBy<CompositeKeyNodeAndWeight>({ -it.weight }, { sequence(it.node.encoded) })
+            compareBy<CompositeKeyNodeAndWeight>({ -it.weight }, { it.node.encoded.sequence() })
 
         fun createFromKeys(keys: List<PublicKey>, threshold: Int?) =
             create(keys.map { CompositeKeyNodeAndWeight(it, 1) }, threshold)
@@ -166,7 +165,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     override fun getFormat() = ASN1Encoding.DER
 
     // Return true when and if the threshold requirement is met.
-    private fun checkFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
+    private fun checkFulfilledBy(keysToCheck: Set<PublicKey>): Boolean {
         var totalWeight = 0
         children.forEach {
             val node = it.node
@@ -186,7 +185,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
      * key tree in question, and the total combined weight of all children is calculated for every intermediary node.
      * If all thresholds are satisfied, the composite key requirement is considered to be met.
      */
-    override fun isFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
+    override fun isFulfilledBy(keysToCheck: Set<PublicKey>): Boolean {
         // We validate keys only when checking if they're matched, as this checks sub keys as a result.
         // Doing these checks at deserialization/construction time would result in duplicate checks.
         checkValidity()

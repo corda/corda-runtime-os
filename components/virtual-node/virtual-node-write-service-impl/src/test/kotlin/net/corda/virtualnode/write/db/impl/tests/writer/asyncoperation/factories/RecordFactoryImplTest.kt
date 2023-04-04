@@ -28,12 +28,12 @@ class RecordFactoryImplTest {
 
     @Test
     fun `create mgm info record`() {
-        var memberProvidedContext= mock<MemberContext>().apply {
+        var memberProvidedContext = mock<MemberContext>().apply {
             whenever(this.parse("corda.groupId", String::class.java)).thenReturn(GROUP_ID1)
             whenever(entries).thenReturn(setOf())
         }
 
-        var mgmProvidedContext= mock<MGMContext>().apply {
+        var mgmProvidedContext = mock<MGMContext>().apply {
             whenever(entries).thenReturn(setOf())
         }
 
@@ -43,7 +43,7 @@ class RecordFactoryImplTest {
             whenever(this.mgmProvidedContext).thenReturn(mgmProvidedContext)
         }
 
-        val expectedPayload =  PersistentMemberInfo(
+        val expectedPayload = PersistentMemberInfo(
             ALICE_HOLDING_ID1.toAvro(),
             memberProvidedContext.toAvro(),
             mgmProvidedContext.toAvro()
@@ -51,7 +51,7 @@ class RecordFactoryImplTest {
 
         val target = RecordFactoryImpl(mock())
 
-        val result = target.createMgmInfoRecord(ALICE_HOLDING_ID1,mgmMemberInfo)
+        val result = target.createMgmInfoRecord(ALICE_HOLDING_ID1, mgmMemberInfo)
 
         assertThat(result.topic).isEqualTo(MEMBER_LIST_TOPIC)
         assertThat(result.key).isEqualTo("${ALICE_HOLDING_ID1.shortHash}-${MGM_HOLDING_ID1.shortHash}")
@@ -88,7 +88,12 @@ class RecordFactoryImplTest {
 
         val target = RecordFactoryImpl(clock)
 
-        val result = target.createVirtualNodeInfoRecord(ALICE_HOLDING_ID1, CPI_IDENTIFIER1, dbConnections)
+        val result = target.createVirtualNodeInfoRecord(
+            ALICE_HOLDING_ID1,
+            CPI_IDENTIFIER1,
+            dbConnections,
+            externalMessagingRouteConfig = null
+        )
 
         assertThat(result.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
         assertThat(result.key).isEqualTo(ALICE_HOLDING_ID1.toAvro())

@@ -67,6 +67,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
 
             val output =
                 TestUtxoState(
+                    1,
                     request.update,
                     inputState.participants,
                     inputState.participantNames)
@@ -77,7 +78,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 }
             }
 
-            val signedTransaction = utxoLedgerService.getTransactionBuilder()
+            val signedTransaction = utxoLedgerService.createTransactionBuilder()
                 .addCommand(TestCommand())
                 .addOutputState(output)
                 .addInputState(input.ref)

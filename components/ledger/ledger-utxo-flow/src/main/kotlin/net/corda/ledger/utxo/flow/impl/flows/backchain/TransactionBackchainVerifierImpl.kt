@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
+import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
@@ -12,6 +13,7 @@ import net.corda.utilities.trace
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,7 +30,9 @@ class TransactionBackchainVerifierImpl @Activate constructor(
     @Reference(service = UtxoLedgerPersistenceService::class)
     private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
-    private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService
+    private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
+    @Reference(service = VisibilityChecker::class)
+    private val visibilityChecker: VisibilityChecker
 ) : TransactionBackchainVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -70,8 +74,8 @@ class TransactionBackchainVerifierImpl @Activate constructor(
 
                     try {
                         log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
-                        transaction.verifySignatures()
-                        transaction.verifyNotarySignatureAttached()
+                        transaction.verifySignatorySignatures()
+                        transaction.verifyAttachedNotarySignature()
                         utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
                         log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
                     } catch (e: Exception) {
@@ -82,9 +86,9 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                         )
                         return false
                     }
-                    utxoLedgerPersistenceService.updateStatus(transactionId, VERIFIED)
-                    log.trace { "Backchain resolution of $initialTransactionIds - Updated status of transaction $transactionId" +
-                            " to verified" }
+                    val visibleStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
+                    utxoLedgerPersistenceService.persist(transaction, VERIFIED, visibleStatesIndexes)
+                    log.trace { "Backchain resolution of $initialTransactionIds - Stored transaction $transactionId as verified" }
                 }
 
                 else -> {

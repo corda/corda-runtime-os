@@ -1,6 +1,6 @@
 package net.corda.virtualnode.rest.impl.status
 
-import net.corda.data.virtualnode.VirtualNodeOperationStatus
+import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,10 +24,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 
 @Suppress("Unused")
-@Component(immediate = true, service = [VirtualNodeStatusCacheService::class])
+@Component(service = [VirtualNodeStatusCacheService::class])
 class VirtualNodeStatusCacheServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
@@ -38,7 +37,7 @@ class VirtualNodeStatusCacheServiceImpl @Activate constructor(
 ) : VirtualNodeStatusCacheService, CompactedProcessor<String, AvroVirtualNodeOperationStatus> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var vNodeStatusSubscription: CompactedSubscription<String, AvroVirtualNodeOperationStatus>? = null
@@ -85,7 +84,7 @@ class VirtualNodeStatusCacheServiceImpl @Activate constructor(
         return cache[requestId]
     }
 
-    override fun setStatus(requestId: String, newStatus: VirtualNodeOperationStatus) {
+    override fun setStatus(requestId: String, newStatus: AvroVirtualNodeOperationStatus) {
 
         cache[requestId] = newStatus
         val record = Record(

@@ -35,8 +35,23 @@ class GroupParametersEntity(
     val epoch: Int,
 
     @Column(name = "parameters", nullable = false, updatable = false)
-    val parameters: ByteArray
+    val parameters: ByteArray,
+
+    @Column(name = "signature_public_key", nullable = true, updatable = false)
+    val signaturePublicKey: ByteArray?,
+
+    @Column(name = "signature_content", nullable = true, updatable = false)
+    val signatureContent: ByteArray?,
+
+    @Column(name = "signature_spec", nullable = true, updatable = false)
+    val signatureSpec: String?,
 ) {
+    fun isSigned(): Boolean {
+        return signatureSpec != null
+                && signatureContent != null
+                && signaturePublicKey != null
+    }
+
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
         if (other == null) return false

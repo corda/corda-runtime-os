@@ -1,5 +1,6 @@
 package net.corda.crypto.client
 
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
@@ -8,12 +9,10 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.PublicKey
-import kotlin.jvm.Throws
 
 /**
  * The crypto operations client to generate fresh keys, sign, find or filter public keys, some HSM related queries.
@@ -145,7 +144,7 @@ interface CryptoOpsClient : Lifecycle {
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
-    ): DigitalSignature.WithKey
+    ): DigitalSignatureWithKey
 
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.
@@ -162,7 +161,7 @@ interface CryptoOpsClient : Lifecycle {
         digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
-    ): DigitalSignature.WithKey
+    ): DigitalSignatureWithKey
 
     /**
      * Returns list of keys satisfying the filter condition. All filter values are combined as AND.

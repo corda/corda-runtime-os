@@ -7,6 +7,8 @@ import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
@@ -27,6 +29,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
@@ -34,6 +37,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.security.PublicKey
 
 @Suppress("LongParameterList")
@@ -49,6 +54,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private companion object {
         const val SERIAL_CONST = "1"
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
         val sessionKeyRegex = String.format("$PARTY_SESSION_KEYS.id", "[0-9]+").toRegex()
     }
@@ -57,8 +63,16 @@ internal class MGMRegistrationMemberInfoHandler(
     fun buildAndPersistMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): MemberInfo {
-        return buildMgmInfo(holdingIdentity, context).also {
+    ): SignedMemberInfo {
+        logger.info("Started building mgm member info.")
+        return SignedMemberInfo(
+            buildMgmInfo(holdingIdentity, context),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf()),
+                ByteBuffer.wrap(byteArrayOf())
+            ),
+            CryptoSignatureSpec("", null, null)
+        ).also {
             persistMemberInfo(holdingIdentity, it)
         }
     }
@@ -96,7 +110,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: MemberInfo) {
+    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SignedMemberInfo) {
         val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
         if (persistenceResult is MembershipPersistenceResult.Failure) {
             throw MGMRegistrationMemberInfoHandlingException(

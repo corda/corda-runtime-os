@@ -11,6 +11,7 @@ import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
@@ -22,12 +23,13 @@ import kotlin.concurrent.withLock
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
-    private val consumerConfig: ResolvedConsumerConfig,
+    consumerConfig: ResolvedConsumerConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup,
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
+    private var headerSerializer: MessageHeaderSerializer
 ) : CordaConsumer<K, V> {
 
     companion object {
@@ -163,22 +165,31 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
         if (!recordsAvailable(fromOffset, topicPartition, timeout)) return emptyList()
 
-        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
-
-        val result = dbRecords.takeWhile {
+        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords).takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
-        }.map { dbRecord ->
-            CordaConsumerRecord(
-                dbRecord.topic,
-                dbRecord.partition,
-                dbRecord.recordOffset,
-                deserializeKey(dbRecord.key),
-                deserializeValue(dbRecord.value),
-                dbRecord.timestamp.toEpochMilli()
-            )
         }
-        if (result.isNotEmpty()) {
-            seek(topicPartition, result.last().offset + 1)
+
+        val result = dbRecords.mapNotNull { dbRecord ->
+            val deserializedValue = deserializeValue(dbRecord.value)
+            val isDeserialized = deserializedValue != null || dbRecord.value == null
+
+            if (isDeserialized) {
+                CordaConsumerRecord(
+                    dbRecord.topic,
+                    dbRecord.partition,
+                    dbRecord.recordOffset,
+                    deserializeKey(dbRecord.key),
+                    deserializedValue,
+                    dbRecord.timestamp.toEpochMilli(),
+                    headerSerializer.deserialize(dbRecord.headers ?: "{}")
+                )
+            } else {
+                null
+            }
+        }
+
+        if (dbRecords.isNotEmpty()) {
+            seek(topicPartition, dbRecords.last().recordOffset + 1)
         }
         return result
     }
