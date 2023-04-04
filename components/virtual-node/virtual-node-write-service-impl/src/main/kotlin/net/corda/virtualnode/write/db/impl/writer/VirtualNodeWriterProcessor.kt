@@ -21,6 +21,7 @@ import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -263,7 +264,7 @@ internal class VirtualNodeWriterProcessor(
                         )
                     ) {
                         logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
-                        throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                        throw VirtualNodeOperationBadRequestException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
                 }
 
