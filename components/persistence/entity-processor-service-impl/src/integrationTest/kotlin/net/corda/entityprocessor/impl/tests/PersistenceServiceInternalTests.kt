@@ -10,6 +10,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
@@ -162,8 +163,9 @@ class PersistenceServiceInternalTests {
         val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
 
         EXTERNAL_EVENT_CONTEXT.contextProperties = KeyValuePairList(
-            cpkFileHashes
-            .mapIndexed { idx, hash -> KeyValuePair("corda.cpk.hash.$idx", hash.toString()) }
+            cpkFileHashes.mapIndexed { idx, hash ->
+                KeyValuePair(listOf(CPK_FILE_CHECKSUM, idx).joinToString("."), hash.toString())
+            }
         )
 
         sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
@@ -267,8 +269,9 @@ class PersistenceServiceInternalTests {
             PersistEntities(listOf(sandboxOne.serialize(dog.instance))),
             EXTERNAL_EVENT_CONTEXT.apply {
                 contextProperties = KeyValuePairList(
-                    cpkFileHashesTwo
-                        .mapIndexed { idx, hash -> KeyValuePair("corda.cpk.hash.$idx", hash.toString()) }
+                    cpkFileHashesTwo.mapIndexed { idx, hash ->
+                        KeyValuePair(listOf(CPK_FILE_CHECKSUM, idx).joinToString("."), hash.toString())
+                    }
                 )
             }
         )

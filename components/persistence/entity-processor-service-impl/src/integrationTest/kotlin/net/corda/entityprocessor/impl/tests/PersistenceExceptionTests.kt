@@ -27,6 +27,7 @@ import net.corda.persistence.common.getSerializationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -110,7 +111,7 @@ class PersistenceExceptionTests {
         // Insert some non-existent CPK hashes to our external event to trigger CPK not available error
         ignoredRequest.flowExternalEventContext.contextProperties = KeyValuePairList(
             mutableListOf(
-                KeyValuePair("corda.cpk.hash.0", "SHA-256:DEADBEEF")
+                KeyValuePair("$CPK_FILE_CHECKSUM.0", "SHA-256:DEADBEEF")
             )
         )
 
@@ -120,7 +121,7 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull()
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
@@ -156,7 +157,7 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull()
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
@@ -179,8 +180,9 @@ class PersistenceExceptionTests {
                 oldRequest.holdingIdentity,
                 unknownCommand,
                 ExternalEventContext("request id", "flow id", KeyValuePairList(
-                    cpkFileHashes
-                        .mapIndexed { idx, hash -> KeyValuePair("corda.cpk.hash.$idx", hash.toString()) }
+                    cpkFileHashes.mapIndexed { idx, hash ->
+                        KeyValuePair(listOf(CPK_FILE_CHECKSUM, idx).joinToString("."), hash.toString())
+                    }
                 ))
             )
 
@@ -202,7 +204,7 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull()
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.

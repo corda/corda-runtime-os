@@ -1,6 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
@@ -65,7 +66,7 @@ class EntityMessageProcessor(
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
                         val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                            .filter { it.key.startsWith("corda.cpk.hash.") }
+                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
                             .map { it.value.toSecureHash() }
                             .toSet()
 

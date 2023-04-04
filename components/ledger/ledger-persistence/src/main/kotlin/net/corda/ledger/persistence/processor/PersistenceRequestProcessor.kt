@@ -9,8 +9,9 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
-import net.corda.utilities.withMDC
 import net.corda.utilities.trace
+import net.corda.utilities.withMDC
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
@@ -43,7 +44,7 @@ class PersistenceRequestProcessor(
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
                         val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                            .filter { it.key.startsWith("corda.cpk.hash.") }
+                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
                             .map { it.value.toSecureHash() }
                             .toSet()
 
