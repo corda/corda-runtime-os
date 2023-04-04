@@ -198,7 +198,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         return when {
             inSyncPartitions.isNotEmpty() -> {
                 eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
-                    log.debug { "Received ${it.size} events to process" }
+                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
                 }
             }
             partitionsToSync.isEmpty() -> {
@@ -207,7 +207,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     if (inSyncPartitions.isEmpty() && it.isNotEmpty()) {
                         // This shouldn't happen - it implies events have been returned from partitions that haven't
                         // been synced yet.
-                        log.warn("${it.size} events were returned from non-synced partitions.")
+                        log.warn(
+                            "${it.size} events on keys ${it.joinToString { it.key.toString() }} " +
+                                    "were returned from non-synced partitions."
+                        )
                     }
                 }
             }
@@ -218,7 +221,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     if (inSyncPartitions.isEmpty() && it.isNotEmpty()) {
                         // This shouldn't happen - it implies events have been returned from partitions that haven't
                         // been synced yet.
-                        log.warn("${it.size} events were returned from non-synced partitions.")
+                        log.warn(
+                            "${it.size} events on keys ${it.joinToString { it.key.toString() }} " +
+                                    "were returned from non-synced partitions."
+                        )
                     }
                 }
             }
