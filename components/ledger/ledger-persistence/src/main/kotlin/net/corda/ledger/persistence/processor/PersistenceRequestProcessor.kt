@@ -3,7 +3,6 @@ package net.corda.ledger.persistence.processor
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
-import net.corda.ledger.common.data.transaction.InvalidTransactionMetadataException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.messaging.api.processor.DurableProcessor
@@ -15,7 +14,7 @@ import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
+import javax.persistence.PersistenceException
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -61,16 +60,13 @@ class PersistenceRequestProcessor(
                                     responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
                                 }
 
-                                // treat failed pre-conditions in ledger code as platform errors - no point retrying
-                                // the same request.
-                                is IllegalStateException,
-                                is IllegalArgumentException,
-                                is InvalidTransactionMetadataException -> {
-                                    responseFactory.platformErrorResponse(request.flowExternalEventContext, e)
+                                is PersistenceException -> {
+                                    responseFactory.errorResponse(request.flowExternalEventContext, e)
                                 }
 
+                                // if we don't consider it explicitly retryable, it's a platform error
                                 else -> {
-                                    responseFactory.errorResponse(request.flowExternalEventContext, e)
+                                    responseFactory.platformErrorResponse(request.flowExternalEventContext, e)
                                 }
                             }
                         )

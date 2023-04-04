@@ -4,7 +4,6 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.common.json.validation.WrappedJsonSchema
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.ledger.common.data.transaction.InvalidTransactionMetadataException
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -78,15 +77,12 @@ class WireTransactionFactoryImpl @Activate constructor(
         privacySalt: PrivacySalt
     ): WireTransaction {
         checkComponentGroups(componentGroupLists.values)
-        val metadata = try {
+        val metadata =
             parseMetadata(
                 requireNotNull(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]?.first()) {
                     "There must be a metadata component group at index 0 with a single leaf"
                 }
             )
-        } catch ( e: Exception ){
-            throw InvalidTransactionMetadataException(e)
-        }
 
         val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
             componentGroupLists.getOrElse(index) { arrayListOf() }
