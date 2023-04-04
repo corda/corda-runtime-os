@@ -1,8 +1,11 @@
 -tester: biz.aQute.tester.junit-platform
--runee: JavaSE-11
 -runfw: org.apache.felix.framework
--runtrace: true
 -resolve.effective: resolve, active
+-runee: JavaSE-11
+-runtrace: true
+
+-runvm: \
+    --illegal-access=deny
 
 #uncomment to remote debug
 # -runjdb: 5005

@@ -8,6 +8,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
@@ -62,7 +63,7 @@ class VerifierTest {
     fun `verify call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
 
-        verifier.verify(publicKey, signature, signatureSpec, data)
+        verifier.verify(publicKey, signature.bytes.array(), signatureSpec, data)
 
         verify(signatureVerificationService).verify(
             eq(data),
@@ -98,7 +99,7 @@ class VerifierTest {
         val badSignatureSpec = CryptoSignatureSpec(null, null, null)
 
         assertThrows<CordaRuntimeException> {
-            verifier.verify(publicKey, signature, badSignatureSpec, data)
+            verifier.verify(publicKey, signature.bytes.array(), badSignatureSpec, data)
         }
     }
 
@@ -132,7 +133,29 @@ class VerifierTest {
         ).doThrow(CryptoSignatureException("Not verified"))
 
         assertThrows<CryptoSignatureException> {
-            verifier.verify(publicKey, signature, signatureSpec, data)
+            verifier.verify(publicKey, signature.bytes.array(), signatureSpec, data)
+        }
+    }
+
+    @Test
+    fun `verify fails if signature key is not part of the acceptable keys`() {
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
+
+        assertThrows<IllegalArgumentException> {
+            verifier.verify(publicKeys, signature, signatureSpec, byteArrayOf(44, 1))
+        }
+    }
+
+    @Test
+    fun `verify pass if signature key is part of the acceptable keys`() {
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
+
+        assertDoesNotThrow {
+            verifier.verify(publicKeys + publicKey, signature, signatureSpec, byteArrayOf(44, 1))
         }
     }
 }

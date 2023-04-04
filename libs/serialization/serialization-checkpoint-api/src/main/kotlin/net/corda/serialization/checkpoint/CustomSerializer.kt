@@ -1,6 +1,6 @@
 package net.corda.serialization.checkpoint
 
-import net.corda.v5.base.types.ByteSequence
+import net.corda.base.internal.ByteSequence
 
 //Implemented in other modules
 interface CheckpointInternalCustomSerializer<OBJ> {

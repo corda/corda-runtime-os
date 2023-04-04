@@ -7,6 +7,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.service.impl.actions.DistributeMemberInfoActionHandler
@@ -25,7 +26,8 @@ class MembershipActionsProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     merkleTreeProvider: MerkleTreeProvider,
     membershipConfig: SmartConfig,
-    groupReaderProvider: MembershipGroupReaderProvider
+    groupReaderProvider: MembershipGroupReaderProvider,
+    locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
 ): DurableProcessor<String, MembershipActionsRequest> {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -39,7 +41,8 @@ class MembershipActionsProcessor(
         cordaAvroSerializationFactory,
         merkleTreeProvider,
         membershipConfig,
-        groupReaderProvider
+        groupReaderProvider,
+        locallyHostedIdentitiesService,
     )
 
     override fun onNext(events: List<Record<String, MembershipActionsRequest>>): List<Record<String, *>> {

@@ -8,7 +8,45 @@ Worker deployment.
 {{- $optionalArgs := dict }}
 {{- if gt (len .) 3 }}{{ $optionalArgs = index . 3 }}{{ end }}
 {{- with index . 1 }}
-{{-   with .service }}
+{{- with .ingress }}
+{{- if gt (len .hosts) 0 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $workerName | quote }}
+  labels:
+    {{- include "corda.workerLabels" ( list $ $worker ) | nindent 4 }}
+  {{- with .annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .className }}
+  ingressClassName: {{ . | quote }}
+  {{- end }}
+  tls:
+  {{- range .hosts }}
+    - hosts:
+        - {{ . | quote }}
+      secretName: {{ . | quote }}
+  {{- end }}
+  rules:
+  {{- range .hosts }}
+    - host: {{ . | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $workerName | quote }}
+                port:
+                  name: http
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- with .service }}
 ---
 apiVersion: v1
 kind: Service

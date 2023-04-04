@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
@@ -13,7 +14,6 @@ import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -38,7 +38,7 @@ class UtxoTransactionBuilderBaseTest {
     fun `should be able to build a utxo transaction and sign it with a key`() {
         // Given a key has been generated on the node, so the SigningService can sign with it
         val signingService = mock<SigningService>()
-        whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
+        whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpecs.ECDSA_SHA256)))
             .thenReturn(DigitalSignatureWithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
         whenever(signingService.findMySigningKeys(any())).thenReturn(mapOf(publicKeys[0] to publicKeys[0]))
 

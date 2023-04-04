@@ -29,6 +29,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:metrics")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:platform-info')
     implementation project(":libs:sandbox")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(":libs:serialization:serialization-checkpoint-api")

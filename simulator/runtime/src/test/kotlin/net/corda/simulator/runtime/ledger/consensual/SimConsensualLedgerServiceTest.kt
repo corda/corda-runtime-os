@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.ledger.consensual
 
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
@@ -14,7 +15,6 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -67,7 +67,7 @@ class SimConsensualLedgerServiceTest {
         )
 
         // When we get a builder
-        val createdBuilder = ledgerService.getTransactionBuilder()
+        val createdBuilder = ledgerService.createTransactionBuilder()
 
         // Then it should be created by the factory
         assertThat(createdBuilder, `is`(builder))
@@ -100,7 +100,7 @@ class SimConsensualLedgerServiceTest {
         val sessions = publicKeys.minus(publicKeys[0]).map {
             val signature = DigitalSignatureAndMetadata(
                 toSignature(it).signature,
-                DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
+                DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), mapOf())
             )
             val flowSession = mock<FlowSession>()
             whenever(flowSession.receive<Any>(any())).thenReturn(listOf(signature), Unit)
@@ -224,7 +224,7 @@ class SimConsensualLedgerServiceTest {
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
         DigitalSignatureWithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
-        DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
+        DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), mapOf())
     )
 
     data class NameConsensualState(val name: String, private val participants: List<PublicKey>) : ConsensualState {

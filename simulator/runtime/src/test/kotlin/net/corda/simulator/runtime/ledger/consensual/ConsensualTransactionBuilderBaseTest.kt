@@ -1,12 +1,12 @@
 package net.corda.simulator.runtime.ledger.consensual
 
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MemberInfo
@@ -57,7 +57,7 @@ class ConsensualTransactionBuilderBaseTest {
     @Test
     fun `should be able to build a consensual transaction and sign with a key`() {
         // Given a key has been generated on the node, so the SigningService can sign with it
-        whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpec.ECDSA_SHA256)))
+        whenever(signingService.sign(any(), eq(publicKeys[0]), eq(SignatureSpecs.ECDSA_SHA256)))
             .thenReturn(DigitalSignatureWithKeyId(publicKeys[0].fullIdHash(), "My fake signed things".toByteArray()))
 
         // And our configuration has a special clock

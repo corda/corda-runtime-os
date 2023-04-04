@@ -20,7 +20,6 @@ class CheckpointInitializerImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService
-
 ) : CheckpointInitializer {
     override fun initialize(
         checkpoint: FlowCheckpoint,

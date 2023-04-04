@@ -54,12 +54,12 @@ data class ConnectionConfiguration(
     /**
      * Time after which a message delivery is considered failed
      */
-    val responseTimeout: Duration = Duration.ofSeconds(1),
+    val responseTimeout: Duration = Duration.ofSeconds(3),
 
     /**
      * Time after which a message is retried, when previously failed.
      */
-    val retryDelay: Duration = Duration.ofSeconds(1),
+    val retryDelay: Duration = Duration.ofSeconds(2),
 
     /**
      * initial duration to wait before trying to reconnect disconnection.

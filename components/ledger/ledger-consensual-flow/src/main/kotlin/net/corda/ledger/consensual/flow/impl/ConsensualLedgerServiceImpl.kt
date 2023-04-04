@@ -36,7 +36,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
 ) : ConsensualLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun getTransactionBuilder(): ConsensualTransactionBuilder =
+    override fun createTransactionBuilder(): ConsensualTransactionBuilder =
         ConsensualTransactionBuilderImpl(
             consensualSignedTransactionFactory
         )
