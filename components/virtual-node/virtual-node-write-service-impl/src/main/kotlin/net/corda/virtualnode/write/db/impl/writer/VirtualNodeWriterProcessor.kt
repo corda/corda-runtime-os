@@ -248,10 +248,10 @@ internal class VirtualNodeWriterProcessor(
                 // Compare new state to current state
                 when (inMaintenance) {
                     true -> if (newState == OperationalStatus.INACTIVE)
-                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
 
                     false -> if (newState == OperationalStatus.ACTIVE)
-                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
                 }
 
                 val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
