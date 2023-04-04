@@ -1,7 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.verifiers
 
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -32,9 +32,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("No endpoint URL was provided.")
     }
 
     @Test
@@ -43,10 +44,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.0.connectionURL" to "https://www.r3.com:8080",
             "corda.endpoints.1.connectionURL" to "https://www.corda.net:8888",
         )
-
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("No endpoint protocol was provided.")
     }
 
     @Test
@@ -67,9 +68,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("Provided endpoint URLs are incorrectly numbered.")
     }
 
     @Test
@@ -90,9 +92,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("Provided endpoint protocols are incorrectly numbered.")
     }
 
     @Test
@@ -104,9 +107,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("Endpoint URL ('hi there') is not a valid URL.")
     }
 
     @Test
@@ -118,9 +122,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("The port of the endpoint URL ('https://r3.com/') was not specified or had an invalid value.")
     }
 
     @Test
@@ -132,9 +137,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("The host of the endpoint URL ('https://:4995/') was not specified or had an invalid value.")
     }
 
     @Test
@@ -146,9 +152,10 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("The scheme of the endpoint URL ('http://www.corda.net:8888') was not https.")
     }
 
     @Test
@@ -160,8 +167,9 @@ class P2pEndpointVerifierTest {
             "corda.endpoints.1.protocolVersion" to "1",
         )
 
-        assertThrows<IllegalArgumentException> {
+        assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+         .hasMessageContaining("Endpoint URL ('https://username:password@www.corda.net:8888') had user info specified, which must not be specified.")
     }
 }
