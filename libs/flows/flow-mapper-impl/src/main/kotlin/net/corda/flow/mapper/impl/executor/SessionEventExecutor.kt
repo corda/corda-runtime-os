@@ -6,19 +6,15 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
-import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.flow.state.session.SessionState
-import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.session.manager.Constants
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -44,7 +40,7 @@ class SessionEventExecutor(
         return if (flowMapperState == null) {
             handleNullState()
         } else {
-            processOtherSessionEvents(flowMapperState)
+            processOtherSessionEvents(flowMapperState, instant)
         }
     }
 
@@ -52,16 +48,24 @@ class SessionEventExecutor(
         val eventPayload = sessionEvent.payload
 
         return if (eventPayload !is SessionError) {
-            log.warn("Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
-                    "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent")
+            log.warn(
+                "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
+                        "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
+            )
             val sessionId = sessionEvent.sessionId
             FlowMapperResult(
                 null, listOf(
                     Record(
                         Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
                             SessionEvent(
-                                MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
-                                sessionEvent.initiatedIdentity, 0, emptyList(),
+                                MessageDirection.OUTBOUND,
+                                instant,
+                                sessionEvent.sessionId,
+                                null,
+                                sessionEvent.initiatingIdentity,
+                                sessionEvent.initiatedIdentity,
+                                0,
+                                emptyList(),
                                 SessionError(
                                     ExceptionEnvelope(
                                         "FlowMapper-SessionExpired",
@@ -76,54 +80,44 @@ class SessionEventExecutor(
                 )
             )
         } else {
-            log.warn("Flow mapper received error event from counterparty for session which does not exist. Session may have expired. " +
-                    "Ignoring event. Key: $eventKey, Event: $sessionEvent")
+            log.warn(
+                "Flow mapper received error event from counterparty for session which does not exist. Session may have expired. " +
+                        "Ignoring event. Key: $eventKey, Event: $sessionEvent"
+            )
             FlowMapperResult(null, listOf())
         }
+    }
+
+    private fun generateAck(instant: Instant): SessionEvent {
+        return SessionEvent.newBuilder()
+            .setMessageDirection(MessageDirection.OUTBOUND)
+            .setTimestamp(instant)
+            .setSequenceNum(null)
+            .setInitiatingIdentity(sessionEvent.initiatingIdentity)
+            .setInitiatedIdentity(sessionEvent.initiatedIdentity)
+            .setSessionId(sessionEvent.sessionId)
+            .setReceivedSequenceNum(sessionEvent.sequenceNum)
+            .setOutOfOrderSequenceNums(emptyList())
+            .setPayload(SessionAck())
+            .build()
     }
 
     /**
      * Output the session event to the correct topic and key
      */
-
-
-    //bin this and extract the info from the CLOSE msg
-    private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
-            Pair<HoldingIdentity, HoldingIdentity> {
-        return if (sessionState.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
-            Pair(sessionState.counterpartyIdentity, identity)
-        } else {
-            Pair(identity, sessionState.counterpartyIdentity)
-        }
-    }
-
-    private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
-        val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
-        return SessionEvent.newBuilder()
-            .setMessageDirection(MessageDirection.OUTBOUND)
-            .setTimestamp(instant)
-            .setSequenceNum(null)
-            .setInitiatingIdentity(initiatingIdentity)
-            .setInitiatedIdentity(initiatedIdentity)
-            .setSessionId(sessionState.sessionId)
-            .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
-            .setOutOfOrderSequenceNums(outOfOrderSeqNums)
-            .setPayload(SessionAck())
-            .build()
-    }
-
-    private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
+    private fun processOtherSessionEvents(flowMapperState: FlowMapperState, instant: Instant): FlowMapperResult {
         val state = flowMapperState.status
-        val event = sessionEvent.payload //ReceivedSeqNum for above for A is sequenceNum from CLOSE of PartyB, OutOfOrder is emptylist()
+        val event = sessionEvent.payload
         if (state == FlowMapperStateType.CLOSING || event !is SessionError) {
-
-            //ACK
-            //generate Ack from SessionManagerImpl (lift private method?), extract last generated number from a Close to make the message.
-
-            generateAck()
+        //generate Ack from SessionManagerImpl (lift private method?), extract last generated number from a Close to make the message.
+            generateAck(instant)
 
             val outputRecord = if (messageDirection == MessageDirection.INBOUND) {
-                Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+                Record(
+                    outputTopic,
+                    sessionEvent.sessionId,
+                    appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
+                )
             } else {
                 Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
             }
@@ -133,7 +127,11 @@ class SessionEventExecutor(
         } else if (state == FlowMapperStateType.OPEN) {
 
             val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
+                Record(
+                    outputTopic,
+                    sessionEvent.sessionId,
+                    appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
+                )
             } else {
                 Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
             }
