@@ -108,7 +108,6 @@ internal class MemberOpsAsyncProcessor(
             }
 
             logger.info("Processing registration ${request.requestId} to ${holdingIdentity.x500Name}.")
-            // CORE-10367: return the status update command as part of the onNext
             val records = registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
             Outcome.SUCCESS to records.toList()
@@ -126,7 +125,6 @@ internal class MemberOpsAsyncProcessor(
                 logger.warn("Registration ${request.requestId} failed. Will retry soon.", e)
                 Outcome.FAILED_CAN_RETRY to emptyList()
             } else {
-                // CORE-10367: return the status update command as part of the onNext
                 val records = membershipPersistenceClient.setRegistrationRequestStatus(
                     holdingIdentity,
                     registrationId.toString(),

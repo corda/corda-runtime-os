@@ -38,17 +38,23 @@ import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
@@ -330,18 +336,18 @@ class MGMRegistrationServiceTest {
                     assertThat(persistedMgm?.memberContext?.items?.map { item -> item.key })
                         .containsExactlyInAnyOrderElementsOf(
                             listOf(
-                                net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM.format(0),
-                                net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH.format(0),
-                                net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH,
-                                net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY.format(0),
-                                net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION.format(0),
+                                GROUP_ID,
+                                PARTY_NAME,
+                                PARTY_SESSION_KEYS_PEM.format(0),
+                                SESSION_KEYS_HASH.format(0),
+                                ECDH_KEY,
+                                PLATFORM_VERSION,
+                                SOFTWARE_VERSION,
+                                MEMBER_CPI_NAME,
+                                MEMBER_CPI_VERSION,
+                                MEMBER_CPI_SIGNER_HASH,
+                                URL_KEY.format(0),
+                                PROTOCOL_VERSION.format(0),
                             )
                         )
                     assertThat(persistedMgm?.mgmContext?.items?.map { item -> item.key })
