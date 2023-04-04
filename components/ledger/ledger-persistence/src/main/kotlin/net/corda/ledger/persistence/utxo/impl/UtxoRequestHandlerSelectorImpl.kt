@@ -37,6 +37,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService(),
             sandbox.getSerializationService(),
             sandbox.getSandboxSingletonService(),
+            sandbox.getSandboxSingletonService(),
+            sandbox.getSandboxSingletonService(),
             UTCClock()
         )
         return when (val req = request.request) {

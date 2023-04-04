@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 class VaultNamedQueryRegistryImpl @Activate constructor(): VaultNamedQueryRegistry, UsedByPersistence {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(VaultNamedQueryRegistryImpl::class.java)
     }
     private val queryStorage = ConcurrentHashMap<String, VaultNamedQuery>()
 

@@ -27,7 +27,7 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
 ) : UsedByPersistence, CustomMetadataConsumer {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(VaultNamedQueryFactoryProvider::class.java)
     }
 
     @Suspendable

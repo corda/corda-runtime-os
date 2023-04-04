@@ -3,6 +3,8 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
+import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryStorage
+import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonUtilities.extractJsonDataFromTransaction
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -12,6 +14,7 @@ import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -25,6 +28,8 @@ class UtxoPersistenceServiceImpl constructor(
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
+    private val factoryStorage: ContractStateVaultJsonFactoryStorage,
+    private val jsonMarshallingService: JsonMarshallingService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
@@ -153,7 +158,9 @@ class UtxoPersistenceServiceImpl constructor(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 visibleStateIndex,
                 consumed = false,
-                CustomRepresentation("{\"temp\": \"value\"}"),
+                CustomRepresentation(
+                    extractJsonDataFromTransaction(transaction, factoryStorage, jsonMarshallingService)
+                ),
                 nowUtc
             )
         }

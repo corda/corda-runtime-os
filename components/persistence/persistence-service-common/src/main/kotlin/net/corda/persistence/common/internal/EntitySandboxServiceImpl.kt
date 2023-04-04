@@ -27,6 +27,7 @@ import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
+import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -88,6 +89,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val namedQueryFactories = sandboxService.registerLedgerNamedQueryFactories(ctx)
+        val contractStateJsonFactories = sandboxService.registerLedgerContractStateJsonFactories(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
         putTokenStateObservers(ctx, cpks)
 
@@ -115,6 +117,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             customSerializers.close()
             customCrypto.close()
             namedQueryFactories.close()
+            contractStateJsonFactories.close()
         }
     }
 
@@ -222,6 +225,16 @@ class EntitySandboxServiceImpl @Activate constructor(
             sandboxGroupContext,
             serviceNames = { metadata -> metadata.cordappManifest.ledgerNamedQueryClasses },
             serviceMarkerType = VaultNamedQueryFactory::class.java
+        )
+    }
+
+    private fun SandboxGroupContextComponent.registerLedgerContractStateJsonFactories(
+        sandboxGroupContext: SandboxGroupContext
+    ): AutoCloseable {
+        return registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.ledgerStateJsonFactories },
+            serviceMarkerType = ContractStateVaultJsonFactory::class.java
         )
     }
 }
