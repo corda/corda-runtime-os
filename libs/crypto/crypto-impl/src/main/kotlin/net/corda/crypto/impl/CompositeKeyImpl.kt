@@ -185,7 +185,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
      * key tree in question, and the total combined weight of all children is calculated for every intermediary node.
      * If all thresholds are satisfied, the composite key requirement is considered to be met.
      */
-    override fun isFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
+    override fun isFulfilledBy(keysToCheck: Set<PublicKey>): Boolean {
         // We validate keys only when checking if they're matched, as this checks sub keys as a result.
         // Doing these checks at deserialization/construction time would result in duplicate checks.
         checkValidity()
