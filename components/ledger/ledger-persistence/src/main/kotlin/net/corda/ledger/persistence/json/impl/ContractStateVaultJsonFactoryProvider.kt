@@ -1,6 +1,6 @@
 package net.corda.ledger.persistence.json.impl
 
-import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryStorage
+import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
@@ -22,12 +22,12 @@ import org.slf4j.LoggerFactory
     scope = ServiceScope.PROTOTYPE
 )
 class ContractStateVaultJsonFactoryProvider @Activate constructor(
-    @Reference(service = ContractStateVaultJsonFactoryStorage::class)
-    private val factoryStorage: ContractStateVaultJsonFactoryStorage,
+    @Reference(service = ContractStateVaultJsonFactoryRegistry::class)
+    private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
 
     // The default internal implementation of `ContractStateVaultJsonFactory`
     @Reference(service = ContractStateVaultJsonFactory::class)
-    private val internalFactory: ContractStateVaultJsonFactory<ContractState>
+    private val internalFactory: ContractStateVaultJsonFactory<out ContractState>
 ) : UsedByPersistence, CustomMetadataConsumer {
 
     private companion object {
@@ -41,7 +41,7 @@ class ContractStateVaultJsonFactoryProvider @Activate constructor(
 
     @Suspendable
     override fun accept(context: MutableSandboxGroupContext) {
-        val metadataServices = context.getMetadataServices<ContractStateVaultJsonFactory<*>>()
+        val metadataServices = context.getMetadataServices<ContractStateVaultJsonFactory<out ContractState>>()
 
         if (logger.isDebugEnabled) {
             if (metadataServices.size == 1) {
@@ -52,8 +52,7 @@ class ContractStateVaultJsonFactoryProvider @Activate constructor(
         }
 
         metadataServices.forEach {
-            @Suppress("unchecked_cast")
-            factoryStorage.registerJsonFactory(it as ContractStateVaultJsonFactory<ContractState>)
+            factoryStorage.registerJsonFactory(it)
         }
     }
 }

@@ -6,7 +6,7 @@ import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryImpl
-import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryStorageImpl
+import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -17,6 +17,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -50,7 +51,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Suppress("unchecked_cast")
-    private val storage = ContractStateVaultJsonFactoryStorageImpl().apply {
+    private val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
         registerJsonFactory(ContractStateVaultJsonFactoryImpl())
         registerJsonFactory(DummyStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
         registerJsonFactory(InvalidStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
@@ -91,7 +92,57 @@ class UtxoPersistenceServiceImplTest {
 
         val persisted = persistedJsonStrings.entries.first()
 
-        assertThat(persisted.value.json).isEqualTo("{}")
+        assertJsonContentEquals(
+            expected = """
+                {
+                    "net.corda.ledger.persistence.utxo.impl.InvalidState" : {
+                    
+                    },
+                    "net.corda.v5.ledger.utxo.ContractState" : {
+                    
+                    }
+                }
+            """.trimIndent(),
+            actual = persisted.value.json
+        )
+    }
+
+    @Test
+    fun `Persisting a transaction with an empty string JSON factory will result in storing {}`() {
+        val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
+            registerJsonFactory(EmptyStateJsonFactory()) // Register the factory that returns empty string
+        }
+
+        val singlePersistenceService = UtxoPersistenceServiceImpl(
+            mockEmFactory,
+            mockRepository,
+            mock(),
+            mock(),
+            storage,
+            JsonMarshallingServiceImpl(),
+            UTCClock()
+        )
+
+        val tx = createMockTransaction(listOf(
+            createStateAndRef(EmptyState())
+        ))
+
+        singlePersistenceService.persistTransaction(tx)
+
+        assertThat(persistedJsonStrings).hasSize(1)
+
+        val persisted = persistedJsonStrings.entries.first()
+
+        assertJsonContentEquals(
+            expected = """
+                {
+                    "net.corda.ledger.persistence.utxo.impl.EmptyState" : {
+                    
+                    }
+                }
+            """.trimIndent(),
+            actual = persisted.value.json
+        )
     }
 
     @Test
@@ -105,20 +156,18 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
 
-        assertThat(reformatJsonString("""
+        assertJsonContentEquals(
+            expected = """
             {
               "net.corda.v5.ledger.utxo.ContractState" : {
-                "participants" : "[]"
               },
               "net.corda.ledger.persistence.utxo.impl.DummyState" : {
                 "dummyField" : "DUMMY",
                 "dummyField2" : "DUMMY"
               }
             }
-        """.trimIndent()
-        )).isEqualTo(
-            // We need to reformat. By default, `JsonMarshallingService` is not pretty printed
-            reformatJsonString(persisted.value.json)
+            """.trimIndent(),
+            actual = persisted.value.json
         )
     }
 
@@ -133,16 +182,14 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
 
-        assertThat(
-            // We need to reformat. By default, `JsonMarshallingService` is not pretty printed
-            reformatJsonString(persisted.value.json)
-        ).isEqualTo(reformatJsonString("""
+        assertJsonContentEquals(
+            expected = """
             {
                 "net.corda.v5.ledger.utxo.ContractState" : {
-                    "participants" : "[]" 
                 }
             }
-            """.trimIndent())
+            """.trimIndent(),
+            actual = persisted.value.json
         )
     }
 
@@ -153,7 +200,7 @@ class UtxoPersistenceServiceImplTest {
             mockRepository,
             mock(),
             mock(),
-            ContractStateVaultJsonFactoryStorageImpl(), // Empty storage
+            ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             JsonMarshallingServiceImpl(),
             UTCClock()
         )
@@ -193,13 +240,16 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    private fun reformatJsonString(jsonString: String): String {
+    private fun assertJsonContentEquals(
+        expected: String,
+        actual: String
+    ) {
         val om = ObjectMapper()
-        return om
-            .writerWithDefaultPrettyPrinter()
-            .writeValueAsString(
-                om.readValue(jsonString, Any::class.java)
-            )
+
+        assertEquals(
+            om.readTree(expected),
+            om.readTree(actual)
+        )
     }
 }
 
@@ -227,5 +277,16 @@ private class InvalidStateJsonFactory : ContractStateVaultJsonFactory<InvalidSta
     override fun getStateType(): Class<InvalidState> = InvalidState::class.java
     override fun create(state: InvalidState, jsonMarshallingService: JsonMarshallingService): String {
         return "INVALID"
+    }
+}
+
+private class EmptyState : ContractState {
+    override fun getParticipants(): MutableList<PublicKey> = mutableListOf()
+}
+
+private class EmptyStateJsonFactory : ContractStateVaultJsonFactory<EmptyState> {
+    override fun getStateType(): Class<EmptyState> = EmptyState::class.java
+    override fun create(state: EmptyState, jsonMarshallingService: JsonMarshallingService): String {
+        return ""
     }
 }

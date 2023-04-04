@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
-import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryStorage
+import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -20,6 +20,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -30,7 +31,7 @@ class UtxoPersistenceServiceImpl constructor(
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
-    private val factoryStorage: ContractStateVaultJsonFactoryStorage,
+    private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
     private val jsonMarshallingService: JsonMarshallingService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
@@ -236,25 +237,33 @@ class UtxoPersistenceServiceImpl constructor(
 
     private fun extractJsonDataFromState(
         contractState: ContractState,
-        factoryStorage: ContractStateVaultJsonFactoryStorage,
+        factoryStorage: ContractStateVaultJsonFactoryRegistry,
         jsonMarshallingService: JsonMarshallingService
     ): String {
-        // This block will fail with JsonProcessingException if either:
-        // - the JSON string is invalid from any of the factories
-        // - the concatenated map from the different factory outputs is invalid
-        return try {
-            val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
-                it.stateType.name to jsonMarshallingService.parse(
-                    // We need to parse the output string to make it an actual JSON format
-                    it.create(contractState, jsonMarshallingService), Any::class.java
-                )
-            }
+        val jsonMap = factoryStorage.getFactoriesForClass(contractState).sortedBy {
+            it.stateType.name // Sort the factories by class name, to make the JSON order deterministic
+        }.associate {
 
-            // Reformat the whole map as a string
+            val jsonToParse = @Suppress("unchecked_cast")
+            (it as ContractStateVaultJsonFactory<ContractState>)
+                .create(contractState, jsonMarshallingService)
+                .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
+
+            it.stateType.name to try {
+                jsonMarshallingService.parse(jsonToParse, Any::class.java)
+            } catch (e: JsonProcessingException) {
+                log.warn("Error while processing factory for class: ${it.stateType.name}. " +
+                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.")
+                jsonMarshallingService.parse("{}", Any::class.java)
+            }
+        }
+
+        return try {
             jsonMarshallingService.format(jsonMap)
         } catch (e: JsonProcessingException) {
-            log.warn("Error while processing JSON, reverting to empty JSON representation.")
-            "{}" // Empty JSON string if we encountered an exception
+            // Since we validate the factory outputs one-by-one this should not happen.
+            log.warn("Error while formatting combined JSON, defaulting to empty JSON.")
+            "{}"
         }
     }
 }

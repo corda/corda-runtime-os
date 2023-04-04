@@ -18,7 +18,6 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImplTest
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -39,7 +38,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySalt
-import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryStorage
+import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
@@ -91,7 +90,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: UtxoRepository
-    private lateinit var factoryStorage: ContractStateVaultJsonFactoryStorage
+    private lateinit var factoryStorage: ContractStateVaultJsonFactoryRegistry
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
