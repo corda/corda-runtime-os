@@ -8,6 +8,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.addNewNotaryService
 import net.corda.membership.lib.notaryServiceRegex
@@ -58,23 +59,18 @@ object StaticNetworkGroupParametersUtils {
                 notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
 
+        val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
         return if (notaryServiceNumber != null) {
-            updateExistingNotaryService(
+            notaryUpdater.updateExistingNotaryService(
                 deserializedParams,
                 notaryDetails,
                 notaryServiceNumber,
-                currentProtocolVersions,
-                keyEncodingService,
-                logger,
-                clock
+                currentProtocolVersions
             ).second
         } else {
-            addNewNotaryService(
+            notaryUpdater.addNewNotaryService(
                 deserializedParams,
                 notaryDetails,
-                keyEncodingService,
-                logger,
-                clock
             ).second
         }
     }

@@ -141,11 +141,13 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Success(PersistentMemberInfo())
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
+        throw NotImplementedError("Not implemented for test service")
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Success(PersistentMemberInfo())
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
+        throw NotImplementedError("Not implemented for test service")
 
     override fun updateStaticNetworkInfo(info: StaticNetworkInfo): MembershipPersistenceResult<StaticNetworkInfo> {
         return MembershipPersistenceResult.Success(info)

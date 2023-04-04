@@ -1182,7 +1182,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `suspendMember returns the correct result`() {
-            mockPersistenceResponse(SuspendMemberResponse(mock()))
+            mockPersistenceResponse(SuspendMemberResponse(mock(), mock()))
 
             val result = membershipPersistenceClient.suspendMember(
                 ourHoldingIdentity,
@@ -1251,7 +1251,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `activateMember returns the correct result`() {
-            mockPersistenceResponse(ActivateMemberResponse(mock()))
+            mockPersistenceResponse(ActivateMemberResponse(mock(), mock()))
 
             val result = membershipPersistenceClient.activateMember(
                 ourHoldingIdentity,

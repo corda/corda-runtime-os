@@ -116,11 +116,13 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
+        MembershipPersistenceResult.Failure("Unsupported")
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<PersistentMemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+    ):MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
+        MembershipPersistenceResult.Failure("Unsupported")
 
     override fun updateStaticNetworkInfo(
         info: StaticNetworkInfo

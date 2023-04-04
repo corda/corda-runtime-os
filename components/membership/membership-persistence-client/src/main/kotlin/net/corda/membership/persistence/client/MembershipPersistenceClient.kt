@@ -283,7 +283,7 @@ interface MembershipPersistenceClient : Lifecycle {
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceResult<PersistentMemberInfo>
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>>
 
     /**
      * Activates a previously suspended member.
@@ -300,7 +300,7 @@ interface MembershipPersistenceClient : Lifecycle {
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceResult<PersistentMemberInfo>
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>>
 
     /**
      * Update an existing static network info configuration in the cluster DB. The initial snapshot for a static

@@ -424,13 +424,15 @@ class MembershipPersistenceClientImpl(
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<PersistentMemberInfo> {
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             SuspendMember(memberX500Name.toString(), serialNumber, reason)
         ).execute()
         return when (val payload = result.payload) {
-            is SuspendMemberResponse -> MembershipPersistenceResult.Success(payload.memberInfo)
+            is SuspendMemberResponse -> MembershipPersistenceResult.Success(
+                payload.memberInfo to payload.groupParameters?.let { groupParametersFactory.create(it) }
+            )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $payload")
         }
@@ -438,13 +440,15 @@ class MembershipPersistenceClientImpl(
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<PersistentMemberInfo> {
+    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             ActivateMember(memberX500Name.toString(), serialNumber, reason)
         ).execute()
         return when (val payload = result.payload) {
-            is ActivateMemberResponse -> MembershipPersistenceResult.Success(payload.memberInfo)
+            is ActivateMemberResponse -> MembershipPersistenceResult.Success(
+                payload.memberInfo to payload.groupParameters?.let { groupParametersFactory.create(it) }
+            )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $payload")
         }
