@@ -14,7 +14,11 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.UUID
 
 class CheckForPendingRegistrationHandlerTest {
@@ -61,7 +65,7 @@ class CheckForPendingRegistrationHandlerTest {
     @Test
     fun `do nothing when there is a registration in-progress for member`() {
         with(handler.invoke(RegistrationState(registrationId, member, mgm), Record(TOPIC, KEY, inputCommand))) {
-            assertThat(updatedState).isNull()
+            assertThat(updatedState).isNotNull
             assertThat(outputStates).isEmpty()
         }
     }

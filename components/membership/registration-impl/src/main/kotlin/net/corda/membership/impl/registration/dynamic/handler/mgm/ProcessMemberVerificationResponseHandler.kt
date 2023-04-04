@@ -109,7 +109,7 @@ internal class ProcessMemberVerificationResponseHandler(
             val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
-                    "$registrationId-${mgm.toCorda().shortHash}",
+                    key,
                     RegistrationCommand(ApproveRegistration())
                 )
             } else null

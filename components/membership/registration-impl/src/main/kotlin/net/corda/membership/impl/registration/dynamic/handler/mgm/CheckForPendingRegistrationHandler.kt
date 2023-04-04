@@ -9,7 +9,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -41,7 +41,7 @@ class CheckForPendingRegistrationHandler(
                     logger.info("There is a registration in progress for member ${state.registeringMember}" +
                             " with ID `${state.registrationId}`. The service will wait until processing the previous " +
                             "request finishes.")
-                    Pair(null, null)
+                    Pair(state, null)
                 } ?: run {
                     getNextRequest(command)
                 }
@@ -51,17 +51,17 @@ class CheckForPendingRegistrationHandler(
                             "for member ${command.member.x500Name}." +
                             "Registration is discarded."
                 )
-                Pair(null, null)
+                Pair(state, null)
             }
         } catch (ex: Exception) {
             logger.warn("Exception happened while looking for the next request to process. Will re-try again.", ex)
-            increaseNumberOfRetries(command)
+            Pair(state, increaseNumberOfRetries(command))
         }
         return if(outputCommand != null) {
             RegistrationHandlerResult(
                 outputState,
                 listOf(
-                    Record(Schemas.Membership.REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
+                    Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
                 )
             )
         } else {
@@ -90,8 +90,6 @@ class CheckForPendingRegistrationHandler(
         }
     }
 
-    private fun increaseNumberOfRetries(command: CheckForPendingRegistration) = Pair(
-        null,
+    private fun increaseNumberOfRetries(command: CheckForPendingRegistration) =
         CheckForPendingRegistration(command.mgm, command.member, command.numberOfRetriesSoFar + 1)
-    )
 }

@@ -11,7 +11,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
-import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -192,14 +192,15 @@ class MembershipP2PProcessorTest {
                     .hasSize(1)
                 it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
                 it.assertThat(this.first().value).isInstanceOf(RegistrationCommand::class.java)
-                it.assertThat(this.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+                it.assertThat(this.first().key).isEqualTo("${member.toCorda().shortHash}")
 
                 val value = this.first().value as RegistrationCommand
-                it.assertThat(value.command).isInstanceOf(StartRegistration::class.java)
-                val command = value.command as StartRegistration
-                it.assertThat(command.destination).isEqualTo(mgm)
-                it.assertThat(command.source).isEqualTo(member)
+                it.assertThat(value.command).isInstanceOf(QueueRegistration::class.java)
+                val command = value.command as QueueRegistration
+                it.assertThat(command.mgm).isEqualTo(mgm)
+                it.assertThat(command.member).isEqualTo(member)
                 it.assertThat(command.memberRegistrationRequest).isEqualTo(registrationRequest)
+                it.assertThat(command.numberOfRetriesSoFar).isEqualTo(0)
             }
         }
     }
@@ -291,7 +292,7 @@ class MembershipP2PProcessorTest {
                 it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
                 val command = this.first().value as? RegistrationCommand
                 it.assertThat(command?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
-                it.assertThat(this.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+                it.assertThat(this.first().key).isEqualTo("${member.toCorda().shortHash}")
                 val response = command?.command as ProcessMemberVerificationResponse
                 it.assertThat(response.verificationResponse).isEqualTo(verificationResponse)
             }

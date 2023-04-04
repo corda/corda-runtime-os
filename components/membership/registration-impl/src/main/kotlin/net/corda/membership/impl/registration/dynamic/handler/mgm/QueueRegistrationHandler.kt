@@ -27,22 +27,22 @@ internal class QueueRegistrationHandler(
 
     override fun invoke(state: RegistrationState?, key: String, command: QueueRegistration): RegistrationHandlerResult {
         val registrationId = command.memberRegistrationRequest.registrationId
-        val (outputState, outputCommand) = try {
+        val outputCommand = try {
             if (command.numberOfRetriesSoFar < MAX_RETRIES) {
-                queueRequest(state, key, command, registrationId)
+                queueRequest(key, command, registrationId)
             } else {
                 logger.warn(
                     "Max re-tries exceeded for registration with ID `$registrationId`." +
                             " Registration is discarded."
                 )
-                Pair(null, emptyList())
+                emptyList()
             }
         } catch (ex: Exception) {
             logger.warn("Exception happened while queueing the request with ID `$registrationId`. Will re-try again.")
-            increaseNumberOfRetries(state, key, command)
+            increaseNumberOfRetries(key, command)
         }
 
-        return RegistrationHandlerResult(outputState, outputCommand)
+        return RegistrationHandlerResult(state, outputCommand)
     }
 
     private fun QueueRegistration.toRegistrationRequest(): RegistrationRequest {
@@ -58,8 +58,8 @@ internal class QueueRegistrationHandler(
     }
 
     private fun queueRequest(
-        state: RegistrationState?, key: String, command: QueueRegistration, registrationId: String
-    ): Pair<RegistrationState?, List<Record<String, RegistrationCommand>>> {
+        key: String, command: QueueRegistration, registrationId: String
+    ): List<Record<String, RegistrationCommand>> {
         logger.info(
             "MGM queueing registration request for ${command.member.x500Name} " +
                     "with request ID `$registrationId`."
@@ -72,31 +72,25 @@ internal class QueueRegistrationHandler(
             "MGM put registration request for ${command.member.x500Name} " +
                     "with request ID `$registrationId` into the queue."
         )
-        return Pair(
-            state,
-            listOf(
-                Record(
-                    REGISTRATION_COMMAND_TOPIC,
-                    key,
-                    RegistrationCommand((CheckForPendingRegistration(command.mgm, command.member, 0)))
-                )
+        return listOf(
+            Record(
+                REGISTRATION_COMMAND_TOPIC,
+                key,
+                RegistrationCommand((CheckForPendingRegistration(command.mgm, command.member, 0)))
             )
         )
     }
 
-    private fun increaseNumberOfRetries(state: RegistrationState?, key: String, command: QueueRegistration) = Pair(
-        state,
-        listOf(
-            Record(
-                REGISTRATION_COMMAND_TOPIC,
-                key,
-                RegistrationCommand(
-                    QueueRegistration(
-                        command.mgm,
-                        command.member,
-                        command.memberRegistrationRequest,
-                        command.numberOfRetriesSoFar + 1
-                    )
+    private fun increaseNumberOfRetries(key: String, command: QueueRegistration) = listOf(
+        Record(
+            REGISTRATION_COMMAND_TOPIC,
+            key,
+            RegistrationCommand(
+                QueueRegistration(
+                    command.mgm,
+                    command.member,
+                    command.memberRegistrationRequest,
+                    command.numberOfRetriesSoFar + 1
                 )
             )
         )

@@ -3,7 +3,7 @@ package net.corda.membership.impl.p2p.handler
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
@@ -39,15 +39,15 @@ internal class RegistrationRequestHandler(
             val registrationRequest = avroSchemaRegistry.deserialize<MembershipRegistrationRequest>(
                 ByteBuffer.wrap(decryptPayload(payload, header.destination.toCorda()))
             )
-            val registrationId = registrationRequest.registrationId
             return Record(
                 REGISTRATION_COMMAND_TOPIC,
-                "$registrationId-${header.destination.toCorda().shortHash}",
+                "${header.source.toCorda().shortHash}",
                 RegistrationCommand(
-                    StartRegistration(
+                    QueueRegistration(
                         header.destination,
                         header.source,
-                        registrationRequest
+                        registrationRequest,
+                        0
                     )
                 )
             )
