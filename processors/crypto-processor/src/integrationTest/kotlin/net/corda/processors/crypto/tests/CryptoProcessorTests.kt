@@ -2,6 +2,8 @@ package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.sha256Bytes
@@ -69,11 +71,9 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -723,8 +723,8 @@ class CryptoProcessorTests {
     ) {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
-            "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> SignatureSpec.RSASSA_PSS_SHA256
+            "EC" -> SignatureSpecImpl("SHA512withECDSA")
+            "RSA" -> SignatureSpecs.RSASSA_PSS_SHA256
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = opsClient.sign(

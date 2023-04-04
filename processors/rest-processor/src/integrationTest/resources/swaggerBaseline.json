@@ -4019,6 +4019,25 @@
           }
         }
       },
+      "CpiIdentifier_1" : {
+        "required" : [ "name", "signerSummaryHash", "version" ],
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "$ref" : "#/components/schemas/SecureHash"
+          },
+          "version" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "CpiMetadata" : {
         "required" : [ "cpiFileChecksum", "cpiFileFullChecksum", "cpks", "id", "timestamp" ],
         "type" : "object",
@@ -4946,6 +4965,70 @@
           }
         }
       },
+      "Route" : {
+        "required" : [ "active", "channelName", "externalReceiveTopicName", "inactiveResponseType" ],
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "channelName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "externalReceiveTopicName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "inactiveResponseType" : {
+            "nullable" : false,
+            "example" : "IGNORE",
+            "enum" : [ "ERROR", "IGNORE" ]
+          }
+        }
+      },
+      "RouteConfiguration" : {
+        "required" : [ "currentRoutes", "previousVersionRoutes" ],
+        "type" : "object",
+        "properties" : {
+          "currentRoutes" : {
+            "$ref" : "#/components/schemas/Routes"
+          },
+          "previousVersionRoutes" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/Routes"
+            }
+          }
+        }
+      },
+      "Routes" : {
+        "required" : [ "cpiIdentifier", "routes" ],
+        "type" : "object",
+        "properties" : {
+          "cpiIdentifier" : {
+            "$ref" : "#/components/schemas/CpiIdentifier_1"
+          },
+          "routes" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/Route"
+            }
+          }
+        }
+      },
+      "SecureHash" : {
+        "type" : "object",
+        "properties" : { }
+      },
       "StartFlowParameters" : {
         "required" : [ "clientRequestId", "flowClassName", "requestBody" ],
         "type" : "object",
@@ -5178,6 +5261,9 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "externalMessagingRouteConfiguration" : {
+            "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
             "nullable" : false,

@@ -198,6 +198,7 @@ class DistributeMemberInfoActionHandlerTest {
         merkleTreeProvider,
         config,
         groupReaderProvider,
+        mock(),
         signerFactory,
         merkleTreeGenerator,
         p2pRecordsFactory,

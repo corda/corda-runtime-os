@@ -4,10 +4,10 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import net.corda.base.internal.ByteSequence
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
-import net.corda.v5.base.types.ByteSequence
 
 class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : CheckpointInternalCustomSerializer<OBJ>) {
 

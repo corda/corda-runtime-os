@@ -5,6 +5,7 @@ package com.r3.corda.notary.plugin.common
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
@@ -21,7 +22,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
@@ -37,10 +37,10 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
                              requestingPartyKey: PublicKey,
                              serializationService: SerializationService,
                              signatureVerifier: DigitalSignatureVerificationService,
-                             signature: NotarizationRequestSignature,
+                             signatureAndSpec: NotarizationRequestSignature,
                              digestService: DigestService
 ) {
-    val digitalSignature = signature.digitalSignature
+    val digitalSignature = signatureAndSpec.digitalSignature
     val digestAlgorithmOfSignatureKeyId = digitalSignature.by.algorithm
     val requestingPartyKeyId =
         requestingPartyKey.fullIdHash(digestService, digestAlgorithmOfSignatureKeyId)
@@ -58,7 +58,7 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
             expectedSignedBytes,
             digitalSignature.bytes,
             requestingPartyKey,
-            SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
+            signatureAndSpec.signatureSpec
         )
     } catch (e: Exception) {
         throw IllegalStateException("Error while verifying request signature.", e)
@@ -70,16 +70,21 @@ fun validateRequestSignature(notarizationRequest: NotarizationRequest,
 fun generateRequestSignature(notarizationRequest: NotarizationRequest,
                              memberInfo: MemberInfo,
                              serializationService: SerializationService,
-                             signingService: SigningService
+                             signingService: SigningService,
+                             signatureSpecService: SignatureSpecService
 ): NotarizationRequestSignature {
     val serializedRequest = serializationService.serialize(notarizationRequest).bytes
     val myLegalIdentity = memberInfo.ledgerKeys.first()
-    val signature = signingService.sign(
-        serializedRequest,
-        myLegalIdentity,
-        SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
-    )
-    return NotarizationRequestSignature(signature, memberInfo.platformVersion)
+    val signatureSpec =
+        signatureSpecService.defaultSignatureSpec(myLegalIdentity)
+            ?: throw IllegalStateException("Default signature spec not found for key")
+    val signature =
+        signingService.sign(
+            serializedRequest,
+            myLegalIdentity,
+            signatureSpec
+        )
+    return NotarizationRequestSignature(signature, signatureSpec, memberInfo.platformVersion)
 }
 
 /**
