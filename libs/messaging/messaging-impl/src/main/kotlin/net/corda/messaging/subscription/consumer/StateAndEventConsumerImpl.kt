@@ -92,7 +92,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun onPartitionsSynchronized(partitions: Set<CordaTopicPartition>) {
         // Remove the assignment from the state consumer. There's no need to read back from the state topic, as from
         // now on the pattern will rely on the in-memory state.
-        log.info("$partitions are now in sync. Resuming event feed. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
+        log.info(
+            "$partitions are now in sync. Resuming event feed. " +
+                    "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
+        )
         updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
 
         eventConsumer.resume(partitions)
@@ -107,7 +110,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun onPartitionsRevoked(partitions: Set<CordaTopicPartition>) {
-        log.info("Removing partitions: $partitions. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
+        log.info(
+            "Removing partitions: $partitions. " +
+                    "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
+        )
         // Remove any assignments and clear state from tracked partitions.
         updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
         partitionsToSync.removeAll(partitions)
