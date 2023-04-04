@@ -2,7 +2,7 @@ package net.corda.crypto.cipher.suite
 
 import net.corda.crypto.cipher.suite.mocks.generateKeyPair
 import net.corda.crypto.cipher.suite.mocks.specs
-import net.corda.v5.base.types.ByteArrays.toHexString
+import net.corda.v5.base.util.ByteArrays.toHexString
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest

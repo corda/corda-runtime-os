@@ -26,6 +26,7 @@ import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.test.util.time.toSafeWindowsPrecision
 import net.corda.v5.base.types.LayeredPropertyMap
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -71,7 +72,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             masterKeyAlias = null,
             externalId = "e-$unique",
             encodingVersion = null,
-            timestamp = Instant.now(),
+            timestamp = Instant.now().toSafeWindowsPrecision(),
             hsmId = "hi-$unique".take(36),
             status = SigningKeyStatus.NORMAL
         )
@@ -327,8 +328,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf]!!
         }
         val found = query(emf,0, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
-        assertThat(found).containsExactlyElementsOf(
-            allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.take(2))
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyElementsOf(
+                allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.take(2))
     }
 
     @ParameterizedTest
@@ -339,8 +342,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createdKeys[emf]!!
         }
         val found = query(emf,2, 2, SigningKeyOrderBy.ALIAS, mapOf("tenantId" to defaultTenantId))
-        assertThat(found).containsExactlyElementsOf(
-            allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.drop(2).take(2))
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyElementsOf(
+                allKeys.filter { it.tenantId == defaultTenantId }.sortedBy { it.alias }.drop(2).take(2))
     }
 
     @ParameterizedTest
@@ -352,8 +357,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         }
         val found = query(
             emf,0, 2, SigningKeyOrderBy.CATEGORY_DESC, mapOf("category" to allKeys.first().category))
-        assertThat(found).containsExactlyElementsOf(
-            allKeys.filter { it.category == allKeys.first().category }.sortedByDescending { it.category }.take(2))
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyElementsOf(
+                allKeys.filter { it.category == allKeys.first().category }.sortedByDescending { it.category }.take(2))
     }
 
     @ParameterizedTest
@@ -366,11 +373,13 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val found = query(
             emf,0, 2,
             SigningKeyOrderBy.ALIAS, mapOf("schemeCodeName" to allKeys.first().schemeCodeName))
-        assertThat(found).containsExactlyElementsOf(
-            allKeys
-                .filter { it.schemeCodeName == allKeys.first().schemeCodeName }
-                .sortedBy { it.alias }
-                .take(2))
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyElementsOf(
+                allKeys
+                    .filter { it.schemeCodeName == allKeys.first().schemeCodeName }
+                    .sortedBy { it.alias }
+                    .take(2))
     }
 
     @ParameterizedTest
@@ -384,11 +393,13 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             emf,0, 2,
             SigningKeyOrderBy.ALIAS,
             mapOf("alias" to allKeys.first{ null != it.externalId }.alias!!))
-        assertThat(found).containsExactlyElementsOf(
-            allKeys
-                .filter { it.alias == allKeys.first().alias }
-                .sortedBy { it.alias }
-                .take(2))
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyElementsOf(
+                allKeys
+                    .filter { it.alias == allKeys.first().alias }
+                    .sortedBy { it.alias }
+                    .take(2))
     }
 
     @ParameterizedTest
@@ -402,11 +413,13 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             emf,0, 2,
             SigningKeyOrderBy.ALIAS,
             mapOf("externalId" to allKeys.first { null != it.externalId }.externalId!!))
-        assertThat(found).containsExactlyElementsOf(
-            allKeys
-                .filter { it.externalId == allKeys.first().externalId }
-                .sortedBy { it.externalId }
-                .take(2))
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyElementsOf(
+                allKeys
+                    .filter { it.externalId == allKeys.first().externalId }
+                    .sortedBy { it.externalId }
+                    .take(2))
     }
 
     private fun query(
@@ -415,7 +428,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         take: Int,
         orderBy: SigningKeyOrderBy,
         filters: Map<String, String>,
-    ): Collection<SigningKeyInfo> {
+    ): List<SigningKeyInfo> {
         val repo = SigningRepositoryImpl(
             emf,
             defaultTenantId,
@@ -424,7 +437,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createLayeredPropertyMapFactory(),
         )
 
-        return repo.query(skip, take, orderBy, filters)
+        return repo.query(skip, take, orderBy, filters).toList()
     }
 
 
@@ -447,9 +460,11 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val lookFor = allKeys.map {
             parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService))
         }
-        val found = repo.lookupByPublicKeyHashes(lookFor.toSet())
+        val found = repo.lookupByPublicKeyHashes(lookFor.toSet()).toList()
 
-        assertThat(found).containsExactlyInAnyOrderElementsOf(allKeys)
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyInAnyOrderElementsOf(allKeys)
     }
 
     @ParameterizedTest
@@ -503,8 +518,10 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val lookFor = allKeys.map {
             ShortHash.of(parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService)))
         }
-        val found = repo.lookupByPublicKeyShortHashes(lookFor.toSet())
-        assertThat(found).containsExactlyInAnyOrderElementsOf(allKeys)
+        val found = repo.lookupByPublicKeyShortHashes(lookFor.toSet()).toList()
+        assertThat(found)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+            .containsExactlyInAnyOrderElementsOf(allKeys)
 
         // additionally going to assert that looking up by full hash should result in the same
         val lookFor2 = allKeys.map {
