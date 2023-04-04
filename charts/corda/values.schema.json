@@ -170,7 +170,8 @@
             "title": "Metrics configuration",
             "additionalProperties": false,
             "required": [
-                "scrape"
+                "scrape",
+                "podMonitor"
             ],
             "properties": {
                 "scrape": {
@@ -180,40 +181,40 @@
                     "examples": [
                         true
                     ]
+                },
+                "podMonitor": {
+                    "type": "object",
+                    "default": {},
+                    "title": "Pod monitor configuration",
+                    "required": [
+                        "enabled"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "Enable pod monitor creation to identify endpoints to scrape",
+                            "examples": [
+                                false
+                            ]
+                        },
+                        "labels": {
+                            "type": "object",
+                            "default": {},
+                            "title": "Labels that can be used so PodMonitor is discovered by Prometheus",
+                            "examples": [{}]
+                        }
+                    },
+                    "examples": [
+                        {
+                            "enabled": false
+                        }
+                    ]
                 }
             },
             "examples": [
                 {
                     "scrape": false
-                }
-            ]
-        },
-        "podMonitor": {
-            "type": "object",
-            "title": "PodMonitor configuration",
-            "additionalProperties": false,
-            "required": [
-                "enabled"
-            ],
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "title": "enable pod monitor creation to identify endpoints to scrape",
-                    "examples": [
-                        false
-                    ]
-                },
-                "labels": {
-                    "type": "object",
-                    "default": {},
-                    "title": "labels that can be used so PodMonitor is discovered by Prometheus",
-                    "examples": [{}]
-                }
-            },
-            "examples": [
-                {
-                    "enabled": false
                 }
             ]
         },
