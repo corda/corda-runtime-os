@@ -83,7 +83,6 @@ class InboundMessageProcessorTest {
     )
     private val loggingInterceptor = LoggingInterceptor.setupLogging()
 
-
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
         on { invokeIfValid<Unit>(any(), any(), any()) } doAnswer {
             @Suppress("unchecked_cast")

@@ -2,11 +2,6 @@ package net.corda.membership.impl.read.reader
 
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE
-import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
-import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED
-import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
-import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -61,16 +56,17 @@ class MembershipGroupReaderImpl(
 
     private fun List<MemberInfo>.filterBy(filter: MembershipStatusFilter): List<MemberInfo> {
         return when (filter) {
-            PENDING -> filter { it.status == MEMBER_STATUS_PENDING }
-            ACTIVE -> filter { it.status == MEMBER_STATUS_ACTIVE }
-            ACTIVE_IF_PRESENT_OR_PENDING -> groupBy { it.name }.flatMap {
-                it.value.filterBy(ACTIVE).ifEmpty {
-                    it.value.filterBy(PENDING)
+            MembershipStatusFilter.PENDING -> this.filter { it.status == MEMBER_STATUS_PENDING }
+            MembershipStatusFilter.ACTIVE -> this.filter { it.status == MEMBER_STATUS_ACTIVE }
+            MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING ->
+                this.groupBy { it.name }.flatMap { memberEntry ->
+                    memberEntry.value.filterBy(MembershipStatusFilter.ACTIVE).ifEmpty {
+                        memberEntry.value.filterBy(MembershipStatusFilter.PENDING)
+                    }
                 }
-            }
-            ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING -> groupBy { it.name }.flatMap {
-                it.value.filterBy(ACTIVE_OR_SUSPENDED).ifEmpty {
-                    it.value.filterBy(PENDING)
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING -> groupBy { it.name }.flatMap {
+                it.value.filterBy(MembershipStatusFilter.ACTIVE_OR_SUSPENDED).ifEmpty {
+                    it.value.filterBy(MembershipStatusFilter.PENDING)
                 }
             }
             else -> this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
