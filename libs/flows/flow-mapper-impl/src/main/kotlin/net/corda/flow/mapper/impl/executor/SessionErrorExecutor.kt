@@ -22,17 +22,17 @@ class SessionErrorExecutor(
         when (state) {
             FlowMapperStateType.ERROR -> {
                 //we get the error and are already in error - log and ignore
-                SessionErrorExecutor.log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
+                log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.OPEN -> {
                 //we get the error but aren't in error - log and forward error to flow
-                SessionErrorExecutor.log.warn(errorMsg + "Forwarding event. Key: $eventKey, Event: $sessionEvent")
+                log.warn(errorMsg + "Forwarding event. Key: $eventKey, Event: $sessionEvent")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING -> {
-                //log and ignore
-                SessionErrorExecutor.log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
+                //we get the error but aren't in error - log and ignore
+                log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
                 FlowMapperResult(null, listOf())
             }
         }
