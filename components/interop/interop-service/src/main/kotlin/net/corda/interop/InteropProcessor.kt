@@ -117,7 +117,7 @@ class InteropProcessor(
                 }
             }.apply {
                 val (newDestinationIdentity, newSourceIdentity) = getSourceAndDestinationIdentity(sessionEvent)
-                logger.info("INBOUND: $newSourceIdentity -> $newDestinationIdentity, $facadeRequest")
+                logger.info("INBOUND: $newSourceIdentity -> $newDestinationIdentity, $facadeRequest, ${sessionEvent.sessionId}")
             }
             ))
         } else { //MessageDirection.OUTBOUND
@@ -128,7 +128,8 @@ class InteropProcessor(
             val translatedDestination = destinationIdentity.apply {
                 groupId = INTEROP_GROUP_ID
             }
-            logger.info("OUTBOUND: $translatedSource -> $translatedDestination")
+            logger.info("OUTBOUND: $translatedSource -> $translatedDestination," +
+                    " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}")
             Record(
                 P2P_OUT_TOPIC, sessionEvent.sessionId,
                 AppMessage(

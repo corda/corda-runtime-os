@@ -12,7 +12,6 @@ import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSes
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-//import net.corda.messaging.interop.FacadeInvocation
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
@@ -64,12 +63,8 @@ class FlowMessagingImpl @Activate constructor(
         // For now, the flow mapper sends back the invocation
         // TODO: CORE-10240 return an actual FacadeInvocationResponse result
         val session = createInteropFlowSession(memberName)
-        val response = try {
-            val request = "Hello" //FacadeInvocation(memberName, facadeName, methodName, payload)
-            session.sendAndReceive(String::class.java, request)
-        } finally {
-            session.close()
-        }
+        val response =
+            session.sendAndReceive(String::class.java, facadeName)
         return response//.payload
     }
 
