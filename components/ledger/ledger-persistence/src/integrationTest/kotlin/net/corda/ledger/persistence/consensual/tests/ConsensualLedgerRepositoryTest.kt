@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
@@ -34,6 +35,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySalt
+import net.corda.libs.packaging.core.CpkMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
@@ -72,6 +74,7 @@ class ConsensualLedgerRepositoryTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualRepository
     private lateinit var persistenceService: ConsensualPersistenceService
+    private lateinit var cpiInfoReadService: CpiInfoReadService
 
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
@@ -94,8 +97,11 @@ class ConsensualLedgerRepositoryTest {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val cpiInfoReadService = setup.fetchService<CpiInfoReadService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
-            val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+            val cpkMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)?.cpksMetadata!!
+            val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+            val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
             wireTransactionFactory = ctx.getSandboxSingletonService()
             digestService = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()

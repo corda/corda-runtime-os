@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.tests
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -24,6 +25,7 @@ import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
@@ -93,6 +95,7 @@ class UtxoLedgerMessageProcessorTests {
     private lateinit var responseFactory: ResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
+    private lateinit var cpiInfoReadService: CpiInfoReadService
 
     @BeforeAll
     fun setup(
@@ -111,6 +114,7 @@ class UtxoLedgerMessageProcessorTests {
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
                 .createAvroDeserializer({}, EntityResponse::class.java)
             delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
+            cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -118,7 +122,9 @@ class UtxoLedgerMessageProcessorTests {
     fun `persistTransaction for utxo ledger deserialises the transaction and persists`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+        val cpkMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)?.cpksMetadata!!
+        val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
         val transaction = createTestTransaction(ctx)
 
