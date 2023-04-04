@@ -578,7 +578,8 @@ class SessionManagerTest {
             .thenReturn(listOf(OUR_PARTY, ourSecondParty))
         val secondMembershipGroupReader = mock<MembershipGroupReader>()
         whenever(membershipGroupReader.lookupBySessionKey(
-            eq(PublicKeyHash.parse(messageDigest.hash(PEER_KEY.public.encoded))), eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING)
+            eq(PublicKeyHash.parse(messageDigest.hash(PEER_KEY.public.encoded))),
+            eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING)
         )).thenReturn(secondPeerMemberInfo)
         whenever(membershipGroupReaderProvider.getGroupReader(ourSecondParty)).thenReturn(secondMembershipGroupReader)
 
