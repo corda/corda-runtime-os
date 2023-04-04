@@ -10,12 +10,15 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
+import net.corda.data.flow.state.session.SessionState
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.session.manager.Constants
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -82,13 +85,42 @@ class SessionEventExecutor(
     /**
      * Output the session event to the correct topic and key
      */
+
+
+    //bin this and extract the info from the CLOSE msg
+    private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
+            Pair<HoldingIdentity, HoldingIdentity> {
+        return if (sessionState.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            Pair(sessionState.counterpartyIdentity, identity)
+        } else {
+            Pair(identity, sessionState.counterpartyIdentity)
+        }
+    }
+
+    private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
+        val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
+        return SessionEvent.newBuilder()
+            .setMessageDirection(MessageDirection.OUTBOUND)
+            .setTimestamp(instant)
+            .setSequenceNum(null)
+            .setInitiatingIdentity(initiatingIdentity)
+            .setInitiatedIdentity(initiatedIdentity)
+            .setSessionId(sessionState.sessionId)
+            .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
+            .setOutOfOrderSequenceNums(outOfOrderSeqNums)
+            .setPayload(SessionAck())
+            .build()
+    }
+
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val state = flowMapperState.status
-        val event = sessionEvent.payload
+        val event = sessionEvent.payload //ReceivedSeqNum for above for A is sequenceNum from CLOSE of PartyB, OutOfOrder is emptylist()
         if (state == FlowMapperStateType.CLOSING || event !is SessionError) {
 
             //ACK
             //generate Ack from SessionManagerImpl (lift private method?), extract last generated number from a Close to make the message.
+
+            generateAck()
 
             val outputRecord = if (messageDirection == MessageDirection.INBOUND) {
                 Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
