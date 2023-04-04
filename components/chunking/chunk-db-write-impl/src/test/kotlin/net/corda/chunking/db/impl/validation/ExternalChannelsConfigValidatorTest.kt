@@ -39,7 +39,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a.b.c",
-                            "type": "send"
+                            "type": "SEND"
                         },
                       ]
                     }
@@ -62,11 +62,11 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a.b.c",
-                            "type": "send"
+                            "type": "SEND"
                         },
                         {
                             "name": "1.2.3",
-                            "type": "send-receive"
+                            "type": "SEND_RECEIVE"
                         }
                       ]
                     }
@@ -129,7 +129,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a.b.c",
-                            "type": "send"
+                            "type": "SEND"
                         }
                       ],
                       "unknown": "value"
@@ -153,7 +153,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a.b.c",
-                            "type": "send",
+                            "type": "SEND",
                             "unknown": "value"
                         }
                       ]
@@ -177,7 +177,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "nam": "a.b.c",
-                            "type": "send"
+                            "type": "SEND"
                         }
                       ],
                     }
@@ -200,7 +200,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a.b.c",
-                            "typ": "send"
+                            "typ": "SEND"
                         }
                       ],
                     }
@@ -222,7 +222,7 @@ class ExternalChannelsConfigValidatorTest {
                     {
                       "channels": [
                         {
-                            "type": "send"
+                            "type": "SEND"
                         }
                       ],
                     }
@@ -267,7 +267,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a.b.c"
-                            "type": "send1"
+                            "type": "SEND1"
                         }
                       ],
                     }
@@ -290,7 +290,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": "a:b:c"
-                            "type": "send"
+                            "type": "SEND"
                         }
                       ],
                     }
@@ -313,7 +313,7 @@ class ExternalChannelsConfigValidatorTest {
                       "channels": [
                         {
                             "name": ""
-                            "type": "send"
+                            "type": "SEND"
                         }
                       ],
                     }

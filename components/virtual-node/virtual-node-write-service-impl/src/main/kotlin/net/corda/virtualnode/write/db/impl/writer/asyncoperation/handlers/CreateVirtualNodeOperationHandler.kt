@@ -1,9 +1,10 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
+import java.time.Instant
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
@@ -12,14 +13,12 @@ import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.toCorda
-import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
 import org.slf4j.Logger
-import java.time.Instant
 
 @Suppress("LongParameterList")
 internal class CreateVirtualNodeOperationHandler(
@@ -100,7 +99,7 @@ internal class CreateVirtualNodeOperationHandler(
                     vNodeDbs,
                     cpiMetadata.id,
                     request.updateActor,
-                    externalMessagingRouteConfig = externalMessagingRouteConfig
+                    externalMessagingRouteConfig
                 )
             }
 
@@ -122,7 +121,7 @@ internal class CreateVirtualNodeOperationHandler(
                     holdingId,
                     cpiMetadata.id,
                     vNodeConnections,
-                    externalMessagingRouteConfig = null
+                    externalMessagingRouteConfig
                 )
             )
 

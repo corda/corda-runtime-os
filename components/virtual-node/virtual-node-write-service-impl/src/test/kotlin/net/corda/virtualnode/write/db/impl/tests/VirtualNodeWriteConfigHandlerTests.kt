@@ -42,7 +42,12 @@ class VirtualNodeWriteConfigHandlerTests {
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
         val event = ConfigChangedEvent(
             setOf(REST_CONFIG, MESSAGING_CONFIG),
-            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config, EXTERNAL_MESSAGING_CONFIG to config)
+            mapOf(
+                REST_CONFIG to config,
+                BOOT_CONFIG to config,
+                MESSAGING_CONFIG to config,
+                EXTERNAL_MESSAGING_CONFIG to config
+            )
         )
         eventHandler.processEvent(event, coordinator)
 
@@ -99,7 +104,12 @@ class VirtualNodeWriteConfigHandlerTests {
 
         val event = ConfigChangedEvent(
             setOf(REST_CONFIG, MESSAGING_CONFIG),
-            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config, EXTERNAL_MESSAGING_CONFIG to config)
+            mapOf(
+                REST_CONFIG to config,
+                BOOT_CONFIG to config,
+                MESSAGING_CONFIG to config,
+                EXTERNAL_MESSAGING_CONFIG to config
+            )
         )
 
         eventHandler.processEvent(event, coordinator)

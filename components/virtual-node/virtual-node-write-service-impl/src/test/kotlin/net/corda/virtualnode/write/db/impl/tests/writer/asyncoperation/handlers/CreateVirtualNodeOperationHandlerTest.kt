@@ -6,6 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
+import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -46,7 +47,7 @@ class CreateVirtualNodeOperationHandlerTest {
     private val vaultPlatformManagedVirtualNodeDb = getVNodeDb(VAULT, true)
     private val cryptoUserManagedVirtualNodeDb = getVNodeDb(CRYPTO, false)
     private val uniquenessPlatformManagedVirtualNodeDb = getVNodeDb(UNIQUENESS, true)
-
+    private val externalMessagingRouteConfig = """{ "dummy": "dummy" }"""
     private val virtualNodeDbs = mapOf(
         VAULT to vaultPlatformManagedVirtualNodeDb,
         CRYPTO to cryptoUserManagedVirtualNodeDb,
@@ -56,6 +57,10 @@ class CreateVirtualNodeOperationHandlerTest {
     private val createVirtualNodeService = mock<CreateVirtualNodeService>().apply {
         whenever(validateRequest(any())).thenReturn(null)
         whenever(getCpiMetaData(CPI_CHECKSUM1.toString())).thenReturn(CPI_METADATA1)
+    }
+
+    private val externalMessagingRouteConfigGenerator = mock<ExternalMessagingRouteConfigGenerator>().apply {
+        whenever(generateConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
     }
 
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {
@@ -72,7 +77,7 @@ class CreateVirtualNodeOperationHandlerTest {
         recordFactory,
         groupPolicyParser,
         statusPublisher,
-        mock(),
+        externalMessagingRouteConfigGenerator,
         mock()
     )
 
@@ -153,7 +158,7 @@ class CreateVirtualNodeOperationHandlerTest {
             virtualNodeDbs,
             CPI_IDENTIFIER1,
             request.updateActor,
-            null
+            externalMessagingRouteConfig
         )
     }
 
@@ -163,7 +168,7 @@ class CreateVirtualNodeOperationHandlerTest {
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(null))).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
             dbConnections
         )
         whenever(
@@ -171,7 +176,7 @@ class CreateVirtualNodeOperationHandlerTest {
                 ALICE_HOLDING_ID1,
                 CPI_IDENTIFIER1,
                 dbConnections,
-                externalMessagingRouteConfig = null
+                externalMessagingRouteConfig
             )
         ).thenReturn(
             virtualNodeInfoRecord
@@ -192,7 +197,7 @@ class CreateVirtualNodeOperationHandlerTest {
         val mgmInfoRecord = Record("mgm", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(null))).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
             dbConnections
         )
         whenever(
@@ -200,7 +205,7 @@ class CreateVirtualNodeOperationHandlerTest {
                 ALICE_HOLDING_ID1,
                 CPI_IDENTIFIER1,
                 dbConnections,
-                externalMessagingRouteConfig = null
+                externalMessagingRouteConfig
             )
         ).thenReturn(
             virtualNodeInfoRecord
@@ -266,7 +271,7 @@ class CreateVirtualNodeOperationHandlerTest {
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(null))).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
             dbConnections
         )
         whenever(
@@ -274,7 +279,7 @@ class CreateVirtualNodeOperationHandlerTest {
                 ALICE_HOLDING_ID1,
                 CPI_IDENTIFIER1,
                 dbConnections,
-                externalMessagingRouteConfig = null
+                externalMessagingRouteConfig
             )
         ).thenReturn(virtualNodeInfoRecord)
 
