@@ -11,11 +11,14 @@ import java.time.Duration
 @Component(service = [FlowFiberCache::class])
 class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
 
+    private val maximumSize = java.lang.Long.getLong("net.corda.flow.fiber.cache.maximumSize", 10)
+    private val expireAfterWriteSeconds = java.lang.Long.getLong("net.corda.flow.fiber.cache.expireAfterWriteSeconds", 60)
+
     private val cache: Cache<String, Any> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
-            .maximumSize(10)
-            .expireAfterWrite(Duration.ofMinutes(5))
+            .maximumSize(maximumSize)
+            .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
 
     override fun put(flowId: String, fiber: Any) {
