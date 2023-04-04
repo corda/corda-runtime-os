@@ -1,10 +1,5 @@
 package net.corda.p2p.linkmanager.inbound
 
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.records.EventLogRecord
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
@@ -23,15 +18,21 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.membership.InvalidNetworkStatusForMessaging
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
@@ -42,6 +43,7 @@ internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val networkMessagingValidator: NetworkMessagingValidator,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val clock: Clock
 ) :
@@ -62,20 +64,34 @@ internal class InboundMessageProcessor(
                     payload.header.sessionId,
                     AvroSealedClasses.DataMessage.Authenticated(payload)
                 )
+
                 is AuthenticatedEncryptedDataMessage -> processDataMessage(
                     payload.header.sessionId,
                     AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
                 )
+
                 is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
                     processSessionMessage(message)
                 }
+
                 is UnauthenticatedMessage -> {
                     logger.debug {
                         "Processing unauthenticated message ${payload.header.messageId}"
                     }
                     recordInboundMessagesMetric(payload)
-                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
+                    try {
+                        networkMessagingValidator.validate(
+                            payload.header.source.toCorda(),
+                            payload.header.destination.toCorda()
+                        )
+                        listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
+                    } catch (ex: InvalidNetworkStatusForMessaging) {
+                        logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
+                                "messaging because ${ex.reason}")
+                        emptyList()
+                    }
                 }
+
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
                     emptyList()
@@ -104,12 +120,13 @@ internal class InboundMessageProcessor(
                     } else {
                         logger.warn(
                             "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
-                                "the inbound message processor." +
-                                " Not going to reply to session initiation for session ${payload.header.sessionId}."
+                                    "the inbound message processor." +
+                                    " Not going to reply to session initiation for session ${payload.header.sessionId}."
                         )
                         emptyList()
                     }
                 }
+
                 else -> {
                     listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
                 }
@@ -126,15 +143,22 @@ internal class InboundMessageProcessor(
                 checkAllowedCommunication(sessionDirection.counterparties) {
                     messages.addAll(
                         processLinkManagerPayload(
-                            sessionDirection.counterparties, sessionDirection.session, sessionId, message
+                            sessionDirection.counterparties,
+                            sessionDirection.session,
+                            sessionId,
+                            message
                         )
                     )
                 }
             }
+
             is SessionManager.SessionDirection.Outbound -> {
                 checkAllowedCommunication(sessionDirection.counterparties) {
                     MessageConverter.extractPayload(
-                        sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer
+                        sessionDirection.session,
+                        sessionId,
+                        message,
+                        MessageAck::fromByteBuffer
                     )?.let {
                         when (val ack = it.ack) {
                             is AuthenticatedMessageAck -> {
@@ -153,10 +177,11 @@ internal class InboundMessageProcessor(
                     }
                 }
             }
+
             is SessionManager.SessionDirection.NoSession -> {
                 logger.warn(
                     "Received message with SessionId = $sessionId for which there is no active session." +
-                        " The message was discarded."
+                            " The message was discarded."
                 )
             }
         }
@@ -176,7 +201,7 @@ internal class InboundMessageProcessor(
         if (sessionSource == messageSource.toCorda() && sessionDestination == messageDestination.toCorda()) {
             logger.debug {
                 "Processing message ${innerMessage.message.header.messageId} " +
-                    "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
+                        "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
             recordInboundMessagesMetric(innerMessage.message)
@@ -185,14 +210,14 @@ internal class InboundMessageProcessor(
         } else if (sessionSource != messageSource.toCorda()) {
             logger.warn(
                 "The identity in the message's source header ($messageSource)" +
-                    " does not match the session's source identity ($sessionSource)," +
-                    " which indicates a spoofing attempt! The message was discarded."
+                        " does not match the session's source identity ($sessionSource)," +
+                        " which indicates a spoofing attempt! The message was discarded."
             )
         } else {
             logger.warn(
                 "The identity in the message's destination header ($messageDestination)" +
-                    " does not match the session's destination identity ($sessionDestination)," +
-                    " which indicates a spoofing attempt! The message was discarded"
+                        " does not match the session's destination identity ($sessionDestination)," +
+                        " which indicates a spoofing attempt! The message was discarded"
             )
         }
     }
@@ -210,6 +235,7 @@ internal class InboundMessageProcessor(
                     logger.debug { "Processing heartbeat message from session $sessionId" }
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
+
                 is AuthenticatedMessageAndKey -> {
                     checkIdentityBeforeProcessing(
                         counterparties,
@@ -218,6 +244,7 @@ internal class InboundMessageProcessor(
                         messages
                     )
                 }
+
                 else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
             }
         }
@@ -277,19 +304,29 @@ internal class InboundMessageProcessor(
 
     private fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
         message.header.let {
-            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
+            recordInboundMessagesMetric(
+                it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName
+            )
         }
     }
 
     private fun recordInboundMessagesMetric(message: UnauthenticatedMessage) {
         message.header.let {
-            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
+            recordInboundMessagesMetric(
+                it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName
+            )
         }
     }
 
-    private fun recordInboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
+    private fun recordInboundMessagesMetric(
+        source: String,
+        dest: String,
+        group: String,
+        subsystem: String,
+        messageType: String
+    ) {
         CordaMetrics.Metric.InboundMessageCount.builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
             .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
@@ -299,17 +336,15 @@ internal class InboundMessageProcessor(
             .build().increment()
     }
 
-    private fun <T> checkAllowedCommunication(counterparties: SessionManager.Counterparties, func: () -> T): T? {
-        val reader = membershipGroupReaderProvider.getGroupReader(counterparties.ourId)
-        val memberInfoSet = setOf(reader.lookup(counterparties.ourId.x500Name), reader.lookup(counterparties.counterpartyId.x500Name))
-        if (memberInfoSet.contains(null)) {
-            if (memberInfoSet.none { it?.isMgm == true }) {
-                logger.warn("TODO")
-                return null
-            }
-        }
-        return func.invoke()
-    }
+    private fun <T> checkAllowedCommunication(
+        counterparties: SessionManager.Counterparties,
+        func: () -> T
+    ) = networkMessagingValidator.invokeIfValid(
+        counterparties.counterpartyId,
+        counterparties.ourId,
+        func
+    )
+
 
     override val keyClass = String::class.java
     override val valueClass = LinkInMessage::class.java

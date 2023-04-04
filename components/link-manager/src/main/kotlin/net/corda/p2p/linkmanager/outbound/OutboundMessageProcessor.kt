@@ -10,7 +10,6 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -27,6 +26,8 @@ import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.Component
 import net.corda.metrics.CordaMetrics
+import net.corda.p2p.linkmanager.membership.InvalidNetworkStatusForMessaging
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -43,6 +44,7 @@ internal class OutboundMessageProcessor(
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val networkMessagingValidator: NetworkMessagingValidator,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock
@@ -129,10 +131,17 @@ internal class OutboundMessageProcessor(
             return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
         }
         return if (source.groupId != destination.groupId) {
-            return "group IDs do not match"
+            "group IDs do not match"
         } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
-            return "source ID is not locally hosted"
-        } else null
+            "source ID is not locally hosted"
+        } else {
+            try {
+                networkMessagingValidator.validate(source.toCorda(), destination.toCorda())
+                null
+            } catch (ex: InvalidNetworkStatusForMessaging) {
+                ex.reason
+            }
+        }
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
@@ -152,8 +161,7 @@ internal class OutboundMessageProcessor(
 
         val destMemberInfo = membershipGroupReaderProvider.lookup(
             message.header.source.toCorda(),
-            message.header.destination.toCorda(),
-            MembershipStatusFilter.ALL_STATUSES
+            message.header.destination.toCorda()
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
@@ -235,7 +243,7 @@ internal class OutboundMessageProcessor(
             membershipGroupReaderProvider.lookup(
                 source,
                 destination,
-                MembershipStatusFilter.ALL_STATUSES
+                messageAndKey.message.header.statusFilter
             ) != null
         ) {
             val markers = if (isReplay) {

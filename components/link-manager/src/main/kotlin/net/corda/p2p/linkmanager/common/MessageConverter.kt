@@ -115,7 +115,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
-                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING,
             )
         }
 

@@ -3,6 +3,7 @@ package net.corda.membership.impl.read.reader
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
@@ -248,10 +249,33 @@ class MembershipGroupReaderImplTest {
     }
 
     @Test
-    fun `lookup returns members of all statuses`() {
+    fun `ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING filter returns active instead of pending`() {
+        val allMembers = listOf(aliceActiveMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo)
+        mockMemberList(allMembers)
+        assertEquals(
+            listOf(aliceActiveMemberInfo, bobSuspendedMemberInfo),
+            membershipGroupReaderImpl.lookup(ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING)
+        )
+    }
+
+    @Test
+    fun `ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING filter returns suspended instead of pending`() {
         val allMembers = listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo)
         mockMemberList(allMembers)
-        assertEquals(allMembers, membershipGroupReaderImpl.lookup(MembershipStatusFilter.ALL_STATUSES))
+        assertEquals(
+            listOf(aliceSuspendedMemberInfo, bobSuspendedMemberInfo),
+            membershipGroupReaderImpl.lookup(ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING)
+        )
+    }
+
+    @Test
+    fun `ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING filter returns pending if not active or suspended is available`() {
+        val allMembers = listOf(alicePendingMemberInfo, bobSuspendedMemberInfo)
+        mockMemberList(allMembers)
+        assertEquals(
+            listOf(alicePendingMemberInfo, bobSuspendedMemberInfo),
+            membershipGroupReaderImpl.lookup(ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING)
+        )
     }
 
     @Test
