@@ -1,9 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.time.Duration
-import java.util.UUID
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,7 +7,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
@@ -34,6 +29,9 @@ import net.corda.schema.Schemas.getStateAndEventDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.util.*
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(

@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     override val eventConsumer: CordaConsumer<K, E>,

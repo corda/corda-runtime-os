@@ -16,10 +16,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.never
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
@@ -449,6 +449,85 @@ class StateAndEventConsumerImplTest {
 
         verify(stateConsumer, never()).poll(any())
         verify(stateAndEventListener, never()).onPartitionSynced(any())
+    }
+
+    @Test
+    fun `assigning partitions updates state and event consumers correctly`() {
+        val (listener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitions = (0..3).map { CordaTopicPartition(TOPIC, it) }
+        val statePartitions = partitions.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }
+        whenever(stateConsumer.beginningOffsets(statePartitions)).thenReturn(
+            statePartitions.associateWith { 0L }
+        )
+        whenever(stateConsumer.endOffsets(statePartitions)).thenReturn(
+            // By using the partition number as an offset, one partition should be treated as in sync (0) and the others
+            // out of sync.
+            statePartitions.associateWith { it.partition.toLong() }
+        )
+        whenever(stateConsumer.assignment())
+            .thenReturn(setOf())
+            .thenReturn(statePartitions.toSet())
+        val needsSync = partitions.filter {
+            it.partition != 0
+        }
+        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(), false)
+        val stateAndEventConsumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            listener
+        )
+
+        stateAndEventConsumer.onPartitionsAssigned(partitions.toSet())
+
+        val eventConsumerOrder = inOrder(eventConsumer)
+        eventConsumerOrder.verify(eventConsumer, times(1)).pause(needsSync)
+
+        val stateConsumerOrder = inOrder(stateConsumer)
+        // Check all partitions assigned
+        stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
+        stateConsumerOrder.verify(stateConsumer, times(1)).assign(statePartitions.toSet())
+        // Calculate in sync vs needs syncing
+        stateConsumerOrder.verify(stateConsumer, times(1)).beginningOffsets(statePartitions)
+        stateConsumerOrder.verify(stateConsumer, times(1)).endOffsets(statePartitions)
+        // Set up needs sync partitions and remove those already in sync
+        stateConsumerOrder.verify(stateConsumer, times(1)).seekToBeginning(
+            needsSync.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }
+        )
+        stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
+        stateConsumerOrder.verify(stateConsumer, times(1)).assign(
+            needsSync.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }.toSet()
+        )
+
+        // Should notify that a partition was synced with no states
+        verify(listener).onPartitionSynced(mapOf())
+    }
+
+    @Test
+    fun `revoking partitions updates the state consumer correctly`() {
+        val (listener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(), false)
+        val stateAndEventConsumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            listener
+        )
+        val partitions = (0..3).map { CordaTopicPartition(TOPIC, it) }.toSet()
+        val revokedPartitions = (0..1).map { CordaTopicPartition(TOPIC, it) }.toSet()
+        whenever(stateConsumer.assignment()).thenReturn(
+            partitions.map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }.toSet()
+        )
+
+        stateAndEventConsumer.onPartitionsRevoked(revokedPartitions)
+
+        val stateConsumerOrder = inOrder(stateConsumer)
+        stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
+        stateConsumerOrder.verify(stateConsumer, times(1)).assign(
+            (partitions - revokedPartitions).map { CordaTopicPartition(getStateAndEventStateTopic(it.topic), it.partition) }.toSet()
+        )
     }
 
     private fun setupMocks(): Mocks {
