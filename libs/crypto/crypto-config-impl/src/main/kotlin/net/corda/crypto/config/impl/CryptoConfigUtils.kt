@@ -148,7 +148,6 @@ private const val HSM_ID = "hsmId"
 const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
 const val MAXIMUM_SIZE = "maximumSize"
 private const val SIGNING_SERVICE_OBJ = "signingService"
-private const val HSM_SERVICE_OBJ = "hsmService"
 private const val HSM_MAP = "hsmMap"
 private const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
 private const val BUS_PROCESSORS_OBJ = "busProcessors"
@@ -232,13 +231,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to 60,
                         CryptoSigningServiceConfig.CacheConfig::maximumSize.name to 10000
                     )
-                )
-            )
-        )
-        .withValue(
-            HSM_SERVICE_OBJ, ConfigValueFactory.fromMap(
-                mapOf(
-                    CryptoHSMServiceConfig::downstreamMaxAttempts.name to 3
                 )
             )
         )
