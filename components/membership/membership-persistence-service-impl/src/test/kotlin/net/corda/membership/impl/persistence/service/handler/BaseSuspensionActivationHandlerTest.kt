@@ -269,7 +269,11 @@ class BaseSuspensionActivationHandlerTest {
     fun `changeMemberStatus throws exception if serial number is outdated`() {
         mockMemberInfoEntity(serial = 6L)
 
-        invokeTestFunctionWithError(::invokeSuspend, "serial number does not match", InvalidEntityUpdateException::class.java)
+        invokeTestFunctionWithError(
+            ::invokeSuspend,
+            "does not match the current version",
+            InvalidEntityUpdateException::class.java
+        )
     }
 
     @Test
