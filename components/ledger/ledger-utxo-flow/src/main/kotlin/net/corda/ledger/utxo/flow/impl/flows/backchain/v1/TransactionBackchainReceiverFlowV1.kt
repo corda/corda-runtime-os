@@ -104,10 +104,12 @@ class TransactionBackchainReceiverFlowV1(
             retrievedTransaction.dependencies.let { dependencies ->
                 val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
                 log.trace {
+                    val ignoredDependencies = dependencies - unseenDependencies
                     "Backchain resolution of $initialTransactionIds - Adding dependencies for transaction ${retrievedTransaction.id} " +
-                            "dependencies: $unseenDependencies to transactions to retrieve"
+                            "dependencies: $unseenDependencies to transactions to retrieve. Ignoring dependencies: $ignoredDependencies " +
+                            "as they have already been seen."
                 }
-                sortedTransactionIds.add(retrievedTransaction.id, unseenDependencies)
+                sortedTransactionIds.add(retrievedTransaction.id, dependencies)
                 transactionsToRetrieve.addAll(unseenDependencies)
             }
         }

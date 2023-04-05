@@ -30,6 +30,8 @@ class UtxoLedgerTransactionVerifier(
          */
         verifySignatories(transaction.signatories)
         verifyInputsAndOutputs(transaction.inputStateRefs, transaction.outputContractStates)
+        verifyNoDuplicateInputsOrReferences(transaction.inputStateRefs, transaction.referenceStateRefs)
+        verifyNoInputAndReferenceOverlap(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyCommands(transaction.commands)
         verifyNotaryIsWhitelisted()
 
@@ -39,7 +41,6 @@ class UtxoLedgerTransactionVerifier(
         verifyInputNotaries()
         verifyInputsAreOlderThanOutputs()
     }
-
 
     private fun verifyInputNotaries() {
         val allInputs = transaction.inputTransactionStates + transaction.referenceTransactionStates
