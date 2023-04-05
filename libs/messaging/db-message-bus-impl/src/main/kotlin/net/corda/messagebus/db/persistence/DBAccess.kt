@@ -332,6 +332,9 @@ class DBAccess(
 
     fun getEarliestRecordOffset(topicPartitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
         return executeWithErrorHandling("read earliest offsets") { entityManager ->
+            val s = entityManager.delegate as? org.hibernate.engine.spi.SessionImplementor
+            val m = s?.connection()?.metaData
+            println("TTT ${m?.url}")
             topicPartitions.associateWith {
                 entityManager.createQuery(
                     """
