@@ -209,7 +209,7 @@ class FlowSessionManagerImpl @Activate constructor(
         val matchedSessions = statuses.map {
             getSessionsWithStatus(checkpoint, sessionIds, it)
         }.flatten()
-        return sessionIds.map { getAndRequireSession(checkpoint, it) } - matchedSessions.toSet()
+        return matchedSessions
     }
 
     override fun doAllSessionsHaveStatusIn(

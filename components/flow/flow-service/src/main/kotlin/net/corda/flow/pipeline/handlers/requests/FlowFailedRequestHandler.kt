@@ -42,13 +42,16 @@ class FlowFailedRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
         recordFlowRuntimeMetric(checkpoint, FlowStates.FAILED.toString())
 
+        val sessionIds = checkpoint.sessions.map { it.sessionId }
+        val sessionToError = sessionIds - flowSessionManager.getSessionsWithStatuses(
+            checkpoint,
+            sessionIds,
+            setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
+        ).map { it.sessionId }.toSet()
+
         flowSessionManager.sendErrorMessages(
             checkpoint,
-            flowSessionManager.getSessionsWithStatuses(
-                checkpoint,
-                checkpoint.sessions.map { it.sessionId },
-                setOf(SessionStateType.CLOSED, SessionStateType.ERROR)
-            ).map { it.sessionId },
+            sessionToError,
             request.exception,
             Instant.now()
         )

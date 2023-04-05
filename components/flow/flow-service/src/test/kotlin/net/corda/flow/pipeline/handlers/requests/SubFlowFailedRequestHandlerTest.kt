@@ -21,6 +21,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.ArgumentMatchers.anySet
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -89,7 +90,7 @@ class SubFlowFailedRequestHandlerTest {
             testContext.flowSessionManager.getSessionsWithStatuses(
                 testContext.flowCheckpoint,
                 SESSION_IDS,
-                any()
+                setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
             )
         ).thenReturn(emptyList())
         whenever(
@@ -119,19 +120,12 @@ class SubFlowFailedRequestHandlerTest {
     ) {
         flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
+            testContext.flowSessionManager.getSessionsWithStatuses(
                 testContext.flowCheckpoint,
                 SESSION_IDS,
-                SessionStateType.ERROR
+                setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
             )
-        ).thenReturn(listOf(sessionState1))
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(listOf(sessionState2))
+        ).thenReturn(listOf(sessionState1, sessionState2))
         whenever(
             testContext.flowSessionManager.sendErrorMessages(
                 eq(testContext.flowCheckpoint),
@@ -160,17 +154,10 @@ class SubFlowFailedRequestHandlerTest {
     ) {
         flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
+            testContext.flowSessionManager.getSessionsWithStatuses(
                 testContext.flowCheckpoint,
                 SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(sessionStates)
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.CLOSED
+                setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
             )
         ).thenReturn(sessionStates)
         whenever(
@@ -196,10 +183,10 @@ class SubFlowFailedRequestHandlerTest {
     @Test
     fun `Throws exception when session does not exist within checkpoint`() {
         whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
+            testContext.flowSessionManager.getSessionsWithStatuses(
+                eq(testContext.flowCheckpoint),
+                eq(SESSION_IDS),
+                anySet()
             )
         ).thenThrow(FlowSessionStateException("Session does not exist"))
 

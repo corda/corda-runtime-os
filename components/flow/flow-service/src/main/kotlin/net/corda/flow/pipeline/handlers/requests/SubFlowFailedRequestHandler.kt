@@ -36,14 +36,16 @@ class SubFlowFailedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
         try {
+            val sessionToError = request.sessionIds - flowSessionManager.getSessionsWithStatuses(
+                checkpoint,
+                request.sessionIds,
+                setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
+            ).map { it.sessionId }.toSet()
+
             checkpoint.putSessionStates(
                 flowSessionManager.sendErrorMessages(
                     checkpoint,
-                    flowSessionManager.getSessionsWithStatuses(
-                        checkpoint,
-                        request.sessionIds,
-                        setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
-                    ).map { it.sessionId },
+                    sessionToError,
                     request.throwable,
                     Instant.now()
                 )
