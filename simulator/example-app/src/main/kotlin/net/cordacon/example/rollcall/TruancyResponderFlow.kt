@@ -13,7 +13,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import java.util.UUID
@@ -62,11 +61,12 @@ class TruancyResponderFlow : ResponderFlow {
             return
         }
 
+        val signatureSpec = record.signatureSpec
         verificationService.verify(
             serializationService.serialize(record.absentees).bytes,
             record.signature.bytes,
             keyOfSignature,
-            SignatureSpec.ECDSA_SHA256
+            signatureSpec
         )
         log.info("Records verified; persisting records")
 

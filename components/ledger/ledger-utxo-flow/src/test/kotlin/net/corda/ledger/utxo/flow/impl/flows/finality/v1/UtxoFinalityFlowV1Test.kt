@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -29,9 +30,9 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
@@ -489,13 +490,13 @@ class UtxoFinalityFlowV1Test {
         whenever(txAfterBobSignature.addSignature(invalidNotarySignature)).thenReturn(notarizedTx)
 
         whenever(txAfterBobSignature.verifyNotarySignature(invalidNotarySignature)).thenThrow(
-            CordaRuntimeException("Notary's signature has not been created by the transaction's notary")
+            TransactionSignatureException(TX_ID, "Notary's signature has not been created by the transaction's notary", null)
         )
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(invalidNotarySignature))
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(CordaRuntimeException::class.java)
+            .isInstanceOf(TransactionSignatureException::class.java)
             .hasMessageContaining("Notary's signature has not been created by the transaction's notary")
 
         verify(initialTx).verifySignatorySignature(eq(signature0))
@@ -949,7 +950,7 @@ class UtxoFinalityFlowV1Test {
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
             DigitalSignatureWithKeyId(publicKey.fullIdHash(), byteArray),
-            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
+            DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
         )
     }
 

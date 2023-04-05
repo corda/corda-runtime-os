@@ -170,7 +170,8 @@
             "title": "Metrics configuration",
             "additionalProperties": false,
             "required": [
-                "scrape"
+                "scrape",
+                "podMonitor"
             ],
             "properties": {
                 "scrape": {
@@ -179,6 +180,41 @@
                     "title": "enable scraping of worker metrics through Prometheus annotations",
                     "examples": [
                         true
+                    ]
+                },
+                "podMonitor": {
+                    "type": "object",
+                    "default": {},
+                    "title": "Pod monitor configuration",
+                    "required": [
+                        "enabled"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "Enable pod monitor creation to identify endpoints to scrape",
+                            "examples": [
+                                false
+                            ]
+                        },
+                        "labels": {
+                            "type": "object",
+                            "default": {},
+                            "title": "Labels that can be used so PodMonitor is discovered by Prometheus",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "examples": [{}]
+                        }
+                    },
+                    "examples": [
+                        {
+                            "enabled": false
+                        }
                     ]
                 }
             },
@@ -1338,6 +1374,60 @@
                                         }
                                     ]
                                 },
+                                "ingress": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "REST worker ingress configuration",
+                                    "required": [
+                                        "annotations",
+                                        "hosts"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for REST worker ingress",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {
+                                                    "cert-manager.io/cluster-issuer": "production",
+                                                    "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                                }
+                                            ]
+                                        },
+                                        "className": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the className for the REST worker ingress",
+                                            "examples": [
+                                                "nginx"
+                                            ]
+                                        },
+                                        "hosts": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the hosts for REST worker ingress",
+                                            "items": {},
+                                            "examples": [
+                                                ["rest-worker-1234.dev.corda.cloud"]
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "annotations": {
+                                                "cert-manager.io/cluster-issuer": "production",
+                                                "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                            },
+                                            "className": "nginx",
+                                            "hosts": [
+                                                "rest-worker-1234.dev.corda.cloud"
+                                            ]
+                                        }
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "title": "REST Worker TLS configuration",
@@ -1429,6 +1519,16 @@
                                         "externalTrafficPolicy": "",
                                         "loadBalancerSourceRanges": [],
                                         "annotations": {}
+                                    },
+                                    "ingress": {
+                                        "annotations": {
+                                            "cert-manager.io/cluster-issuer": "production",
+                                            "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                        },
+                                        "className": "nginx",
+                                        "hosts": [
+                                            "rest-worker-1234.dev.corda.cloud"
+                                        ]
                                     }
                                 }
                             ]
@@ -1708,6 +1808,16 @@
                         "externalTrafficPolicy": "",
                         "loadBalancerSourceRanges": [],
                         "annotations": {}
+                    },
+                    "ingress": {
+                        "annotations": {
+                            "cert-manager.io/cluster-issuer": "production",
+                            "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                        },
+                        "className": "nginx",
+                        "hosts": [
+                            "rest-worker-1234.dev.corda.cloud"
+                        ]
                     }
                 },
                 "p2pLinkManager": {

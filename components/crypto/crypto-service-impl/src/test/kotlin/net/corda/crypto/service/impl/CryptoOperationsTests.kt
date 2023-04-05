@@ -1,10 +1,8 @@
 package net.corda.crypto.service.impl
 
-import java.security.KeyPair
-import java.security.PublicKey
-import java.util.UUID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
@@ -48,6 +46,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.security.KeyPair
+import java.security.PublicKey
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -314,7 +315,7 @@ class CryptoOperationsTests {
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val scheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        val rsaPss = SignatureSpec.RSASSA_PSS_SHA256
+        val rsaPss = SignatureSpecs.RSASSA_PSS_SHA256
         val info = signingAliasedKeys.getValue(scheme)
         assertEquals(info.publicKey.algorithm, "RSA")
         val customSignature1 = info.signingService.sign(
@@ -331,7 +332,7 @@ class CryptoOperationsTests {
     fun `Should generate fresh RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val scheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        val rsaPss = SignatureSpec.RSASSA_PSS_SHA256
+        val rsaPss = SignatureSpecs.RSASSA_PSS_SHA256
         val info = signingFreshKeys.getValue(scheme)
         assertNotNull(info.publicKey)
         assertEquals(info.publicKey.algorithm, "RSA")

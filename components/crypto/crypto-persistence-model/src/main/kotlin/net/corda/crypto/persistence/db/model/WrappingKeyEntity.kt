@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.db.model
 
 import net.corda.db.schema.DbSchema
 import java.time.Instant
+import java.util.*
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -14,21 +15,28 @@ import javax.persistence.Table
  * The records are immutable.
  */
 @Entity
+@Suppress("LongParameterList")
 @Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
 class WrappingKeyEntity(
+    @Id
+    @Column(name = "id", nullable = false)
+    val id: UUID,
+
     /**
      * Key alias must be unique across all tenants. The key can be reused by different tenants.
      */
-    @Id
     @Column(name = "alias", nullable = false, updatable = false, length = 64)
     val alias: String,
+
+    @Column(name = "generation", nullable = false, updatable = false)
+    var generation: Int,
 
     /**
      * When the key was generated.
      */
     @Column(name = "created", nullable = false, updatable = false)
     var created: Instant,
-
+    
     /**
      * Encoding version of the key.
      */
@@ -42,11 +50,30 @@ class WrappingKeyEntity(
     var algorithmName: String,
 
     /**
-     * Key material for the wrapping key. It's encrypted by by another key which is obtained through the configuration.
+     * Key material for the wrapping key. It's encrypted by another wrapping key.
      */
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition = "BLOB")
     var keyMaterial: ByteArray,
+
+    /**
+     * When the key should be rotated, if ever. Null indicates no rotation scheduled.
+     */
+    @Column(name = "rotation_date", nullable = false)
+    var rotationDate: Instant,
+
+    /**
+     * If true, the parent key is in the database and parentKeyReference is an id.
+     * If false, the parent key is in Corda smart config, and parentkeyReference is the config path.
+     */
+    @Column(name = "is_parent_key_managed")
+    var isParentKeyManaged: Boolean,
+
+    /**
+     * The id of the key used to wrap this wrapping key, or a config path.
+     */
+    @Column(name = "parent_key_reference", nullable = false, updatable = false)
+    var parentKeyReference: String,
 ) {
     override fun hashCode() = alias.hashCode()
-    override fun equals(other: Any?) = other != null && other is WrappingKeyEntity && other.alias.equals(alias)
+    override fun equals(other: Any?) = other != null && other is WrappingKeyEntity && other.id.equals(id)
 }

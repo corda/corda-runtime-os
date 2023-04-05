@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.base.internal.OpaqueBytes
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SnappyEncodingAllowList
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
@@ -19,7 +20,6 @@ import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.OpaqueBytes
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64

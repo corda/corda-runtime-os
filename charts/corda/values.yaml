@@ -38,6 +38,12 @@ logging:
 metrics:
   # -- enable scraping of worker metrics through Prometheus annotations
   scrape: true
+  # -- Pod monitor configuration for scraping metrics. Please note that the corresponding CRD must exist in the environment
+  podMonitor:
+    # -- Enable pod monitor creation to identify endpoints to scrape
+    enabled: false
+    # -- Labels that can be used so PodMonitor is discovered by Prometheus
+    labels: {}
 
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
 dumpHostPath: ""
@@ -715,6 +721,14 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for REST worker service
       annotations: {}
+    # REST worker ingress configuration
+    ingress:
+      # -- the annotations for the REST worker ingress
+      annotations: {}
+      # -- the className for the REST worker ingress
+      className: ""
+      # -- the hosts for the REST worker ingress
+      hosts: []
     # REST worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the REST worker

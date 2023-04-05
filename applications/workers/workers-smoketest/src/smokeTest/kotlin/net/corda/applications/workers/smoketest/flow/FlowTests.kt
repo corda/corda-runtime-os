@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -14,6 +15,7 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
+import net.corda.e2etest.utilities.createKeyFor
 import net.corda.e2etest.utilities.getConfig
 import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
 import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -975,7 +978,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Notary - Non-validating plugin executes successfully when using the same state for input and ref`() {
+    fun `Notary - Non-validating plugin returns error when using the same state for input and ref`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
@@ -1004,13 +1007,15 @@ class FlowTests {
             inputStates = listOf(issuedStates.first()),
             refStates = listOf(issuedStates.first())
         ) { consumeResult ->
-            val flowResultMap = consumeResult.mapFlowJsonResult()
             assertAll({
-                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-                assertAll({
-                    assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(1)
-                    assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(1)
-                })
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                // This will fail when building the transaction BEFORE reaching the plugin logic so
+                // we don't expect notarization error here
+                assertThat(consumeResult.flowError?.message).contains(
+                    "A state cannot be both an input and a reference input in the same " +
+                            "transaction. Offending states: $issuedStates"
+
+                )
             })
         }
     }
