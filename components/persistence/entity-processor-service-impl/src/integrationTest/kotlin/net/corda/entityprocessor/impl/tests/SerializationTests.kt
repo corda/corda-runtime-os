@@ -7,9 +7,9 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -74,8 +74,7 @@ class SerializationTests {
                 BasicMocks.dbConnectionManager()
             )
 
-        val cpkMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)?.cpksMetadata!!
-        val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
 
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 

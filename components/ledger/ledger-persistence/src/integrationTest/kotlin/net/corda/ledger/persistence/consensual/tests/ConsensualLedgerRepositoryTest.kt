@@ -35,7 +35,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySalt
-import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
@@ -99,8 +99,7 @@ class ConsensualLedgerRepositoryTest {
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
             val cpiInfoReadService = setup.fetchService<CpiInfoReadService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
-            val cpkMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)?.cpksMetadata!!
-            val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+            val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
             wireTransactionFactory = ctx.getSandboxSingletonService()
             digestService = ctx.getSandboxSingletonService()

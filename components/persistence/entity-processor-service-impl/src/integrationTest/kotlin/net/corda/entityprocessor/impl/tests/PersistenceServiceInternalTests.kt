@@ -41,7 +41,6 @@ import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -52,6 +51,7 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -159,8 +159,7 @@ class PersistenceServiceInternalTests {
         dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
         entitySandboxService = createEntitySandbox(dbConnectionManager)
 
-        val cpkMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)?.cpksMetadata!!
-        val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
 
         EXTERNAL_EVENT_CONTEXT.contextProperties = KeyValuePairList(
             cpkFileHashes.mapIndexed { idx, hash ->
@@ -240,8 +239,7 @@ class PersistenceServiceInternalTests {
 
         val myEntitySandboxService = createEntitySandbox(myDbConnectionManager)
 
-        val cpkMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)?.cpksMetadata!!
-        val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
 
         val sandboxOne = myEntitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
@@ -261,8 +259,7 @@ class PersistenceServiceInternalTests {
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
-        val cpkMetadataTwo = cpiInfoReadService.get(virtualNodeInfoTwo.cpiIdentifier)?.cpksMetadata!!
-        val cpkFileHashesTwo = cpkMetadataTwo.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+        val cpkFileHashesTwo = cpiInfoReadService.getCpkFileHashes(virtualNodeInfoTwo)
 
         val request = EntityRequest(
             virtualNodeInfoTwo.holdingIdentity.toAvro(),

@@ -24,6 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -172,8 +173,7 @@ class PersistenceExceptionTests {
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
 
         val vNodeInfo = virtualNodeInfoReadService.get(oldRequest.holdingIdentity.toCorda())!!
-        val cpkMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)?.cpksMetadata!!
-        val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(vNodeInfo)
 
         val badRequest =
             EntityRequest(
@@ -235,9 +235,7 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val cpkMetadata = cpiInfoReadService.get(virtualNodeInfoOne.cpiIdentifier)?.cpksMetadata!!
-        val cpkFileHashes = cpkMetadata.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
-
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfoOne)
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity, cpkFileHashes)
 
         // create dog using dog-aware sandbox
