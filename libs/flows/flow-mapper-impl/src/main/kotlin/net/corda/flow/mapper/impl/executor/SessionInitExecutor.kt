@@ -15,7 +15,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.util.*
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -49,18 +48,18 @@ class SessionInitExecutor(
         }
     }
 
-    @Suppress("ForbiddenComment")
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
-                    messageDirection,
-                    sessionEvent,
-                    sessionInit
-                )
+                messageDirection,
+                sessionEvent,
+                sessionInit
+            )
+
         log.info("INTEROP outputTopic=$outputTopic, isInterop=$isInteropSessionInit, " +
                 "direction=$messageDirection, sessionInit")
         return FlowMapperResult(
-            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, false),
+            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, isInteropSessionInit),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
         )
     }
@@ -87,16 +86,14 @@ class SessionInitExecutor(
             sessionInit.flowId = null
             sessionEvent.payload = sessionInit
 
-            if (!isInteropSessionInit) {
-                SessionInitOutputs(
-                    tmpFLowEventKey,
-                    sessionEvent.sessionId,
+            SessionInitOutputs(
+                tmpFLowEventKey,
+                sessionEvent.sessionId,
+                if (!isInteropSessionInit)
                     generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
-                )
-            } else {
-                log.info("INTEROP outputTopic=$outputTopic, messageDirection=$messageDirection, sessionInit")
-                SessionInitOutputs(tmpFLowEventKey, sessionEvent, FlowMapperEvent(sessionEvent))
-            }
+                else
+                    FlowMapperEvent(sessionEvent)
+            )
         }
     }
 

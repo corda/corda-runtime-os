@@ -92,7 +92,8 @@ class SessionEventExecutor(
             Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
         if (flowMapperState.isInteropSession) {
-            log.info("INTEROP outputTopic=$outputTopic, direction=$messageDirection, ${sessionEvent.payload::class.java}")
+            log.info("INTEROP outputTopic=$outputTopic, direction=$messageDirection, ${sessionEvent.payload::class.java}." +
+                    "state $flowMapperState")
         }
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
     }
