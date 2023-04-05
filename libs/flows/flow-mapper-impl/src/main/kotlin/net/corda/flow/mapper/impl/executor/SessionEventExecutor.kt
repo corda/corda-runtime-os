@@ -85,13 +85,14 @@ class SessionEventExecutor(
             if (!sessionEvent.isInteropEvent()) {
                 Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
             } else {
-                log.info("INTEROP outputTopic=$outputTopic, messageDirection=$messageDirection")
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
             }
         } else {
             Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
-        log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, direction=$messageDirection")
+        if (!sessionEvent.isInteropEvent()) {
+            log.info("INTEROP outputTopic=$outputTopic, direction=$messageDirection, ${sessionEvent.payload::class.java}")
+        }
         return FlowMapperResult(flowMapperState, listOf(outputRecord))
     }
 }

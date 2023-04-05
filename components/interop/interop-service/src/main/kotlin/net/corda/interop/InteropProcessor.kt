@@ -5,7 +5,6 @@ package net.corda.interop
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-//import net.corda.data.KeyValuePair
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -19,6 +18,7 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.InteropAliasProcessor.Companion.addAliasSubstringToOrganisationName
+import net.corda.interop.InteropAliasProcessor.Companion.removeAliasSubstringFromOrganisationName
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -71,13 +71,16 @@ class InteropProcessor(
         }
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
+            logger.info("IN  (start): $sourceIdentity -> $destinationIdentity" +
+                    " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}")
+
             val destinationAlias = destinationIdentity
 
             val realHoldingIdentity = getRealHoldingIdentityFromAliasMapping(
                 InteropAliasProcessor.getRealHoldingIdentity(destinationAlias.toCorda().x500Name.toString()))
 
             if (realHoldingIdentity == null) {
-                logger.info("Could not find a holding identity for alias $destinationAlias.")
+                logger.warn("Could not find a holding identity for alias $destinationAlias.")
                 return StateAndEventProcessor.Response(state, emptyList())
             }
 
@@ -118,33 +121,41 @@ class InteropProcessor(
                 ), listOf(Record(FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent.apply {
                 if (isInitiatingIdentityDestination()) {
                     initiatingIdentity = initiatingIdentity.apply {
-                        x500Name = InteropAliasProcessor.removeAliasSubstringFromOrganisationName(this.toCorda()).x500Name.toString()
+                        x500Name = removeAliasSubstringFromOrganisationName(this.toCorda()).x500Name.toString()
                         groupId = realHoldingIdentity.groupId
                     }
                 }
                 if (isInitiatedIdentityDestination()) {
                     initiatedIdentity = initiatedIdentity.apply {
-                        x500Name = InteropAliasProcessor.removeAliasSubstringFromOrganisationName(this.toCorda()).x500Name.toString()
+                        x500Name = removeAliasSubstringFromOrganisationName(this.toCorda()).x500Name.toString()
                         groupId = realHoldingIdentity.groupId
                     }
                 }
             }.apply {
-                val (newDestinationIdentity, newSourceIdentity) = getSourceAndDestinationIdentity(sessionEvent)
-                logger.info("INBOUND: $newSourceIdentity -> $newDestinationIdentity, $facadeRequest")
+                val (newDest, newSource) = if(isInitiatingIdentityDestination())
+                    Pair(initiatingIdentity, initiatedIdentity)
+                else
+                    Pair(initiatedIdentity, initiatingIdentity)
+                    logger.info("IN  (end): $newSource -> $newDest,"+
+                            " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}," +
+                            " $facadeRequest")
             }
             ))))
         } else { //MessageDirection.OUTBOUND
             //TODO taken from FlowMapperHelper function generateAppMessage
+            logger.info("OUT (start): $sourceIdentity -> $destinationIdentity," +
+                    " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}")
             val translatedSource = sourceIdentity.apply {
                 x500Name = addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
                 groupId = INTEROP_GROUP_ID
             }
-            val translatedDestination = (destinationIdentity).apply {
+            val translatedDestination = destinationIdentity.apply {
                 groupId = INTEROP_GROUP_ID
                 val alisFromState = state?.aliasHoldingIdentity
                 if (alisFromState != null) x500Name = alisFromState
             }
-            logger.info("OUTBOUND: $translatedSource -> $translatedDestination")
+            logger.info("OUT (end): $translatedSource -> $translatedDestination," +
+                    " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}")
 
             return StateAndEventProcessor.Response(
                 state,
