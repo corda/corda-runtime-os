@@ -16,7 +16,9 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.flow.utils.toKeyValuePairList
+import net.corda.flow.utils.toMap
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -155,8 +157,11 @@ class UtxoLedgerMessageProcessorTests {
             virtualNodeInfo.holdingIdentity,
             FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
             EXTERNAL_EVENT_CONTEXT.apply {
-                this.contextProperties = cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
-            }
+            this.contextProperties = keyValuePairListOf(
+                this.contextProperties.toMap() +
+                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+            )
+        }
         )
 
         responses =
