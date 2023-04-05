@@ -13,8 +13,7 @@
     "ledgerVersion",
     "componentGroups",
     "platformVersion",
-    "schemaVersion",
-    "membershipGroupParametersHash"
+    "schemaVersion"
   ],
   "properties": {
     "ledgerModel": {
@@ -253,7 +252,10 @@
     },
     "membershipGroupParametersHash": {
       "title": "Membership group parameter's hash",
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "default": "",
       "examples": [
         "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90"
@@ -328,6 +330,10 @@
             "enum": [
               null
             ]
+          },
+          "membershipGroupParametersHash": {
+            "title": "Membership group parameter's hash",
+            "type": "null"
           }
         }
       }
@@ -349,10 +355,15 @@
               "NOTARY_CHANGE",
               "GENERAL"
             ]
+          },
+          "membershipGroupParametersHash": {
+            "title": "Membership group parameter's hash",
+            "type": "string"
           }
         },
         "required": [
-          "transactionSubtype"
+          "transactionSubtype",
+          "membershipGroupParametersHash"
         ]
       }
     }

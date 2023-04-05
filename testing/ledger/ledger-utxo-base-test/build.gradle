@@ -11,6 +11,7 @@ dependencies {
     api project(':testing:ledger:ledger-utxo-testkit')
 
     implementation project(':components:ledger:ledger-utxo-flow')
+    implementation project(':components:membership:membership-group-read')
     implementation project(':libs:flows:flow-api')
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

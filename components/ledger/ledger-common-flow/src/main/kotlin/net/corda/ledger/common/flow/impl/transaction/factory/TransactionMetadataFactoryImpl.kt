@@ -6,7 +6,6 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -25,9 +24,7 @@ class TransactionMetadataFactoryImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider,
-    @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private val platformInfoProvider: PlatformInfoProvider
 ) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
     override fun create(ledgerSpecificMetadata: Map<String, Any>): TransactionMetadata {
         val metadata = mapOf(
@@ -35,20 +32,9 @@ class TransactionMetadataFactoryImpl @Activate constructor(
             TransactionMetadataImpl.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
             TransactionMetadataImpl.CPI_METADATA_KEY to getCpiSummary(),
             TransactionMetadataImpl.CPK_METADATA_KEY to getCpkSummaries(),
-            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-            TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to getCurrentMgmGroupParametersHash()
+            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION
         )
         return TransactionMetadataImpl(metadata + ledgerSpecificMetadata)
-    }
-
-    private fun getCurrentMgmGroupParametersHash(): String {
-        val holdingIdentity = currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity
-        val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-        val groupParameters = groupReader.signedGroupParameters
-        requireNotNull(groupParameters) {
-            "Group parameters could not be accessed!"
-        }
-        return groupParameters.hash.toString()
     }
 
     private fun getCpkSummaries() = currentSandboxGroupContext

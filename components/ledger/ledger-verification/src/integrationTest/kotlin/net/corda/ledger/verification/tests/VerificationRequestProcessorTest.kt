@@ -267,7 +267,8 @@ class VerificationRequestProcessorTest {
                 listOf(command)
             ),
             ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
-            transactionSubType = "GENERAL"
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "MEMBERSHIP_GROUP_PARAMETERS_HASH"
         )
         val inputStateAndRefs: List<StateAndRef<*>> = listOf()
         val referenceStateAndRefs: List<StateAndRef<*>> = listOf()

@@ -1,4 +1,4 @@
-package net.corda.ledger.common.test
+package net.corda.ledger.utxo.test
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.membership.lib.SignedGroupParameters
