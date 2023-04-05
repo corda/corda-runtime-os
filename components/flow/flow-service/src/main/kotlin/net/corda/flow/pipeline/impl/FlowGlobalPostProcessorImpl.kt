@@ -83,9 +83,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
-        if (isInterop(context)) {
-            return true
-        }
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)

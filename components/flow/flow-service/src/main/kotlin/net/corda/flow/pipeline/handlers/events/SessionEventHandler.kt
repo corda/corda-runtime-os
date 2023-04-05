@@ -120,11 +120,12 @@ class SessionEventHandler @Activate constructor(
                     e
                 )
             }
+
             val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
             initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
-                .setInitiatorType(if (sessionId.contains("INTEROP")) FlowInitiatorType.INTEROP else FlowInitiatorType.P2P)
+                .setInitiatorType(if (initialSessionState.isInteropSession) FlowInitiatorType.INTEROP else FlowInitiatorType.P2P)
                 .setRequestId(sessionId)
                 .setIdentity(initiatedIdentity)
                 .setCpiId(sessionInit.cpiId)
