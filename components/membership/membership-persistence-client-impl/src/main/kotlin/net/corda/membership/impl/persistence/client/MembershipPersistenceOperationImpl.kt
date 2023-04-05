@@ -18,10 +18,10 @@ import java.util.concurrent.TimeoutException
 /**
  * An implementation of the MembershipPersistenceOperation.
  *
- * @param sender - An RPC sender to enable the send request.
+ * @param sender An RPC sender to enable the send request.
  * @param request The persistence request (to be sent either via the RPC sender or to
  *   create the asynchronous command from).
- * @param convertResult - A function to convert the result from the
+ * @param convertResult A function to convert the result from the
  *   MembershipPersistenceResponse payload to either a successful
  *   result (Either.Left) or a failure message (Either.Right)
  */

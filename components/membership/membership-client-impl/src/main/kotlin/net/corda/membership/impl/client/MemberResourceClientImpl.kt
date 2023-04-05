@@ -46,7 +46,6 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -270,7 +269,7 @@ class MemberResourceClientImpl @Activate constructor(
                 )
             }
             val sent = clock.instant()
-            return try {
+            val persistenceSuccess = try {
                 val context = keyValuePairListSerializer.serialize(
                     registrationContext.filterNot { it.key == SERIAL }.toWire()
                 )
@@ -291,34 +290,37 @@ class MemberResourceClientImpl @Activate constructor(
                 )
                 when (val result = persistentOperation.execute()) {
                     is MembershipPersistenceResult.Failure -> {
+                        logger.warn(
+                            "Could not persist registration request for holding identity ID" +
+                                " [$holdingIdentityShortHash]. ${result.errorMsg}",
+                        )
                         asyncPublisher.publish(persistentOperation.createAsyncCommands().toList())
-                        throw CordaRuntimeException(result.errorMsg)
+                        false
                     }
-                    is MembershipPersistenceResult.Success -> RegistrationRequestProgressDto(
-                        requestId,
-                        sent,
-                        SubmittedRegistrationStatus.SUBMITTED,
-                        true,
-                        "Submitting registration request was successful.",
-                        MemberInfoSubmittedDto(registrationContext)
-                    )
+                    is MembershipPersistenceResult.Success -> true
                 }
             } catch (e: Exception) {
                 logger.warn(
                     "Could not persist registration request for holding identity ID" +
                         " [$holdingIdentityShortHash].",
-                    e
+                    e,
                 )
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    sent,
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    false,
-                    "Submitting registration request was successful. " +
-                        "The request will be available in the API eventually.",
-                    MemberInfoSubmittedDto(emptyMap())
-                )
+                false
             }
+            val reason = if (persistenceSuccess) {
+                "Submitting registration request was successful."
+            } else {
+                "Submitting registration request was successful. " +
+                    "The request will be available in the API eventually."
+            }
+            return RegistrationRequestProgressDto(
+                requestId,
+                sent,
+                SubmittedRegistrationStatus.SUBMITTED,
+                persistenceSuccess,
+                reason,
+                MemberInfoSubmittedDto(registrationContext),
+            )
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
