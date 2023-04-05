@@ -3,6 +3,7 @@ package net.corda.messaging.subscription
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.utilities.QqqTicker
 import org.slf4j.Logger
 import java.lang.IllegalStateException
 import java.util.concurrent.locks.ReentrantLock
@@ -96,6 +97,7 @@ class ThreadLooper(
         }
 
         fun start() {
+            QqqTicker.tick("ThreadLooper::StoppableThread::start")
             lock.withLock {
                 if (thread != null) return
 

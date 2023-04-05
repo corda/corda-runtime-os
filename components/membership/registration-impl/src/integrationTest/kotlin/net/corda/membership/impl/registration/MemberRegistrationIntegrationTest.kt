@@ -244,7 +244,9 @@ class MemberRegistrationIntegrationTest {
                 logger.info("Required services started.")
             }
             QqqTicker.tick("setup 6")
+            println("----------------- Report: -----------------")
             QqqTicker.report()
+            println("-----------------")
         }
 
         fun setupConfig() {

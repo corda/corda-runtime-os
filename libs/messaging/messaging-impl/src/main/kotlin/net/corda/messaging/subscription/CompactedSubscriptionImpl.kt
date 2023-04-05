@@ -16,6 +16,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.QqqTicker
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -65,6 +66,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun runConsumeLoop() {
         var attempts = 0
+        QqqTicker.tick("runConsumeLoop($subscriptionName) 1")
         while (!threadLooper.loopStopped) {
             attempts++
             try {
@@ -80,10 +82,15 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     val partitions = it.getPartitions(
                         config.topic
                     )
+                    QqqTicker.tick("runConsumeLoop($subscriptionName) 2")
                     it.assign(partitions)
+                    QqqTicker.tick("runConsumeLoop($subscriptionName) 3")
                     pollAndProcessSnapshot(it)
+                    QqqTicker.tick("runConsumeLoop($subscriptionName) 4")
                     threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
+                    QqqTicker.tick("runConsumeLoop($subscriptionName) 5")
                     pollAndProcessRecords(it)
+                    QqqTicker.tick("runConsumeLoop($subscriptionName) 6")
                 }
                 attempts = 0
             } catch (ex: Exception) {
