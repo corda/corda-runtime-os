@@ -69,7 +69,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash))
         val expectedCpiMetadata =
-            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy", emptySet())
+            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy", emptySet()) // The empty set should be replaced
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
