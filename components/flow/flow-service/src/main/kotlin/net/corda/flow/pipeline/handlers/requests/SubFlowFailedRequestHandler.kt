@@ -8,10 +8,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.getSessionsToError
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,12 +36,18 @@ class SubFlowFailedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
         try {
-            checkpoint.putSessionStates(flowSessionManager.sendErrorMessages(
-                checkpoint,
-                getSessionsToError(checkpoint, request.sessionIds, flowSessionManager),
-                request.throwable,
-                Instant.now()
-            ))
+            checkpoint.putSessionStates(
+                flowSessionManager.sendErrorMessages(
+                    checkpoint,
+                    flowSessionManager.getSessionsWithStatuses(
+                        checkpoint,
+                        request.sessionIds,
+                        setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
+                    ).map { it.sessionId },
+                    request.throwable,
+                    Instant.now()
+                )
+            )
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)

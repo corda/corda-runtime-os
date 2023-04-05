@@ -3,13 +3,13 @@ package net.corda.flow.pipeline.handlers.requests
 import java.time.Instant
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.getSessionsToError
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
@@ -44,7 +44,11 @@ class FlowFailedRequestHandler @Activate constructor(
 
         flowSessionManager.sendErrorMessages(
             checkpoint,
-            getSessionsToError(checkpoint, checkpoint.sessions.map { it.sessionId }, flowSessionManager),
+            flowSessionManager.getSessionsWithStatuses(
+                checkpoint,
+                checkpoint.sessions.map { it.sessionId },
+                setOf(SessionStateType.CLOSED, SessionStateType.ERROR)
+            ).map { it.sessionId },
             request.exception,
             Instant.now()
         )
