@@ -10,7 +10,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
 internal object X509CertificateSerializer : Serializer<X509Certificate>() {
-    override fun read(kryo: Kryo, input: Input, type: Class<X509Certificate>): X509Certificate {
+    override fun read(kryo: Kryo, input: Input, type: Class<out X509Certificate>): X509Certificate {
         return CertificateFactory.getInstance("X.509")
             .generateCertificate(input.readBytesWithLength().inputStream()) as X509Certificate
     }

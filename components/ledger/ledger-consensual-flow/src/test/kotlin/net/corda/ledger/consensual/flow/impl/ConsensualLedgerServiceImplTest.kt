@@ -10,14 +10,14 @@ import kotlin.test.assertIs
 
 class ConsensualLedgerServiceImplTest: ConsensualLedgerTest() {
     @Test
-    fun `getTransactionBuilder should return a Transaction Builder`() {
-        val transactionBuilder = consensualLedgerService.getTransactionBuilder()
+    fun `createTransactionBuilder should return a Transaction Builder`() {
+        val transactionBuilder = consensualLedgerService.createTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
     }
 
     @Test
-    fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val transactionBuilder = consensualLedgerService.getTransactionBuilder()
+    fun `ConsensualLedgerServiceImpl's createTransactionBuilder() can build a SignedTransaction`() {
+        val transactionBuilder = consensualLedgerService.createTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)
             .toSignedTransaction()

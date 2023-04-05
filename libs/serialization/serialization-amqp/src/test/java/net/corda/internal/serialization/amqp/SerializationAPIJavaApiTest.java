@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.base.internal.ByteSequence;
+import net.corda.base.internal.OpaqueBytesSubSequence;
 import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.serialization.EncodingAllowList;
 import net.corda.serialization.ObjectWithCompatibleContext;
 import net.corda.serialization.SerializationContext;
 import net.corda.serialization.SerializationEncoding;
 import net.corda.serialization.SerializationFactory;
-import net.corda.v5.base.types.ByteSequence;
-import net.corda.v5.base.types.OpaqueBytesSubSequence;
 import net.corda.v5.serialization.SerializationCustomSerializer;
 import net.corda.v5.serialization.SerializedBytes;
 import org.jetbrains.annotations.NotNull;

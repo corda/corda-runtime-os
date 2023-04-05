@@ -9,6 +9,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowEventHandler::class])
 class StartFlowEventHandler @Activate constructor(
@@ -16,9 +17,14 @@ class StartFlowEventHandler @Activate constructor(
     private val checkpointInitializer: CheckpointInitializer
 ) : FlowEventHandler<StartFlow> {
 
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override val type = StartFlow::class.java
 
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
+        log.info("Flow [${context.checkpoint.flowId}] started")
         checkpointInitializer.initialize(
             context.checkpoint,
             WaitingFor(WaitingForStartFlow),

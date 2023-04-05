@@ -239,6 +239,56 @@
             "properties": {},
             "examples": [{}]
         },
+        "tolerations": {
+            "type": "array",
+            "default": [],
+            "title": "custom tolerations for all workers and bootstrap jobs",
+            "required": [
+                "key",
+                "effect"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "default": "",
+                    "title": "toleration key",
+                    "examples": [
+                        "corda"
+                    ]
+                },
+                "operator": {
+                    "type": "string",
+                    "default": "Equal",
+                    "title": "toleration operator",
+                    "examples": [
+                        "Equal"
+                    ]
+                },
+                "value": {
+                    "type": "string",
+                    "default": "",
+                    "title": "toleration value",
+                    "examples": [
+                        "testing"
+                    ]
+                },
+                "effect": {
+                    "type": "string",
+                    "default": "",
+                    "title": "toleration effect",
+                    "examples": [
+                        "NoSchedule"
+                    ]
+                }
+            },
+            "examples": [{
+                "key": "corda",
+                "operator": "Equal",
+                "value": "testing",
+                "effect": "NoSchedule"
+            }]
+        },
         "db": {
             "type": "object",
             "default": {},
@@ -1287,6 +1337,116 @@
                                             "annotations": {}
                                         }
                                     ]
+                                },
+                                "ingress": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "REST worker ingress configuration",
+                                    "required": [
+                                        "annotations",
+                                        "hosts"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for REST worker ingress",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {
+                                                    "cert-manager.io/cluster-issuer": "production",
+                                                    "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                                }
+                                            ]
+                                        },
+                                        "className": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the className for the REST worker ingress",
+                                            "examples": [
+                                                "nginx"
+                                            ]
+                                        },
+                                        "hosts": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the hosts for REST worker ingress",
+                                            "items": {},
+                                            "examples": [
+                                                ["rest-worker-1234.dev.corda.cloud"]
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "annotations": {
+                                                "cert-manager.io/cluster-issuer": "production",
+                                                "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                            },
+                                            "className": "nginx",
+                                            "hosts": [
+                                                "rest-worker-1234.dev.corda.cloud"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "title": "REST Worker TLS configuration",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "secretName": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The name of the Kubernetes secret containing the certificate, private key and CA certificate. If not specified, a new secret will be created and certificates/keys generated."
+                                        },
+                                        "generation": {
+                                            "type": "object",
+                                            "title": "Optional parameters to be used during TLS certificate generation.",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "altNames": {
+                                                    "type": "array",
+                                                    "title": "Alternative names to be included in a certificate when generated."
+                                                }
+                                            }
+                                        },
+                                        "crt": {
+                                            "title": "TLS Certificate configuration",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the certificate value"
+                                                }
+                                            }
+                                        },
+                                        "key": {
+                                            "title": "TLS Certificate private key configuration",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the private key value"
+                                                }
+                                            }
+                                        },
+                                        "ca": {
+                                            "title": "Certification Authority(CA) certificates chain configuration",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKey": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "the key in the secret corresponding to the CA certificate chain value"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             "examples": [
@@ -1323,6 +1483,16 @@
                                         "externalTrafficPolicy": "",
                                         "loadBalancerSourceRanges": [],
                                         "annotations": {}
+                                    },
+                                    "ingress": {
+                                        "annotations": {
+                                            "cert-manager.io/cluster-issuer": "production",
+                                            "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                        },
+                                        "className": "nginx",
+                                        "hosts": [
+                                            "rest-worker-1234.dev.corda.cloud"
+                                        ]
                                     }
                                 }
                             ]
@@ -1602,6 +1772,16 @@
                         "externalTrafficPolicy": "",
                         "loadBalancerSourceRanges": [],
                         "annotations": {}
+                    },
+                    "ingress": {
+                        "annotations": {
+                            "cert-manager.io/cluster-issuer": "production",
+                            "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                        },
+                        "className": "nginx",
+                        "hosts": [
+                            "rest-worker-1234.dev.corda.cloud"
+                        ]
                     }
                 },
                 "p2pLinkManager": {

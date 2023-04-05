@@ -18,7 +18,7 @@ class X500PrincipalSerializer: Serializer<X500Principal>() {
         output.writeString(obj.name)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<X500Principal>): X500Principal {
+    override fun read(kryo: Kryo, input: Input, type: Class<out X500Principal>): X500Principal {
         return X500Principal(input.readString())
     }
 }

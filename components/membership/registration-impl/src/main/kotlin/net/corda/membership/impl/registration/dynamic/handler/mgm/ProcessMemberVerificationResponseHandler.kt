@@ -142,9 +142,9 @@ internal class ProcessMemberVerificationResponseHandler(
         registrationId: String
     ): RegistrationStatus {
         val proposedMemberInfo = membershipQueryClient
-            .queryRegistrationRequestStatus(mgm, registrationId)
+            .queryRegistrationRequest(mgm, registrationId)
             .getOrThrow()
-            ?.memberContext
+            ?.memberProvidedContext
             ?.toMap()
             ?: throw CordaRuntimeException(
                 "Could not read the proposed MemberInfo for registration request " +

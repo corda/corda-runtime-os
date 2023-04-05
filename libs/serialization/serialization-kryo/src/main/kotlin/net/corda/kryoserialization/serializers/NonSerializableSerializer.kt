@@ -13,6 +13,6 @@ internal object NonSerializableSerializer : Serializer<NonSerializable>() {
         throw UnsupportedOperationException(message)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<NonSerializable>) =
+    override fun read(kryo: Kryo, input: Input, type: Class<out NonSerializable>) =
         throw IllegalStateException("Should not reach here!")
 }

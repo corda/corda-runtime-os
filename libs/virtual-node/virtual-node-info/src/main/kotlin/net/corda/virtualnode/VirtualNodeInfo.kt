@@ -43,6 +43,8 @@ data class VirtualNodeInfo(
     val vaultDbOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
     /** The requestId of an operation that is in progress on this virtual node. Null if no operation is in progress */
     val operationInProgress: String? = null,
+    /** The route configuration for the external messaging. Null if no configuration was provided.*/
+    val externalMessagingRouteConfig: String? = null,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
@@ -60,24 +62,24 @@ typealias VirtualNodeInfoAvro = net.corda.data.virtualnode.VirtualNodeInfo
 
 fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
     with (holdingIdentity) {
-        VirtualNodeInfoAvro(
-            toAvro(),
-            cpiIdentifier.toAvro(),
-            vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() },
-            vaultDmlConnectionId.toString(),
-            cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
-            cryptoDmlConnectionId.toString(),
-            uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() },
-            uniquenessDmlConnectionId.toString(),
-            hsmConnectionId?.let { hsmConnectionId.toString() },
-            flowP2pOperationalStatus.toAvro(),
-            flowStartOperationalStatus.toAvro(),
-            flowOperationalStatus.toAvro(),
-            vaultDbOperationalStatus.toAvro(),
-            operationInProgress,
-            version,
-            timestamp
-        )
+        VirtualNodeInfoAvro.newBuilder()
+            .setHoldingIdentity(toAvro())
+            .setCpiIdentifier(cpiIdentifier.toAvro())
+            .setVaultDdlConnectionId(vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() })
+            .setVaultDmlConnectionId(vaultDmlConnectionId.toString())
+            .setCryptoDdlConnectionId(cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() })
+            .setCryptoDmlConnectionId(cryptoDmlConnectionId.toString())
+            .setUniquenessDdlConnectionId(uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() })
+            .setUniquenessDmlConnectionId(uniquenessDmlConnectionId.toString())
+            .setHsmConnectionId(hsmConnectionId?.let { hsmConnectionId.toString() })
+            .setFlowP2pOperationalStatus(flowP2pOperationalStatus.toAvro())
+            .setFlowStartOperationalStatus(flowStartOperationalStatus.toAvro())
+            .setFlowOperationalStatus(flowOperationalStatus.toAvro())
+            .setVaultDbOperationalStatus(vaultDbOperationalStatus.toAvro())
+            .setOperationInProgress(operationInProgress)
+            .setVersion(version)
+            .setTimestamp(timestamp)
+            .build()
     }
 
 fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
@@ -97,6 +99,7 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         OperationalStatus.fromAvro(flowOperationalStatus),
         OperationalStatus.fromAvro(vaultDbOperationalStatus),
         operationInProgress,
+        externalMessagingRouteConfig,
         version,
         timestamp,
         false

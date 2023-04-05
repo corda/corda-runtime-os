@@ -48,7 +48,7 @@ internal class PersistMemberInfoHandler(
             logger.info("Persisting member information.")
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
                 request.members.forEach {
-                    val memberInfo = memberInfoFactory.create(it)
+                    val memberInfo = memberInfoFactory.create(it.persistentMemberInfo)
                     val currentMemberInfo = em.find(
                         MemberInfoEntity::class.java,
                         MemberInfoEntityPrimaryKey(
@@ -61,11 +61,11 @@ internal class PersistMemberInfoHandler(
                     if (currentMemberInfo?.serialNumber == memberInfo.serial) {
                         val currentMemberContext = deserialize(currentMemberInfo.memberContext)
                         val currentMgmContext = deserialize(currentMemberInfo.mgmContext)
-                        if (currentMemberContext.items != it.memberContext.items) {
+                        if (currentMemberContext.items != it.persistentMemberInfo.memberContext.items) {
                             throw MembershipPersistenceException("Cannot update member info with same serial number " +
                                 "(${memberInfo.serial}): member context differs from original.")
                         }
-                        if (currentMgmContext.toMap().removeTime() != it.mgmContext.toMap().removeTime()) {
+                        if (currentMgmContext.toMap().removeTime() != it.persistentMemberInfo.mgmContext.toMap().removeTime()) {
                             throw MembershipPersistenceException("Cannot update member info with same serial number " +
                                 "(${memberInfo.serial}): mgm context differs from original.")
                         }
@@ -78,9 +78,12 @@ internal class PersistMemberInfoHandler(
                         memberInfo.status == MEMBER_STATUS_PENDING,
                         memberInfo.status,
                         clock.instant(),
-                        serializeContext(it.memberContext),
-                        serializeContext(it.mgmContext),
-                        memberInfo.serial
+                        serializeContext(it.persistentMemberInfo.memberContext),
+                        it.memberSignature.publicKey.array(),
+                        it.memberSignature.bytes.array(),
+                        it.memberSignatureSpec.signatureName,
+                        serializeContext(it.persistentMemberInfo.mgmContext),
+                        memberInfo.serial,
                     )
                     em.merge(entity)
                 }

@@ -2,27 +2,34 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 import java.util.Objects
 
+@Suppress("TooManyFunctions")
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val transactionSignatureService: TransactionSignatureService,
+    private val transactionSignatureService: TransactionSignatureServiceInternal,
     override val wireTransaction: WireTransaction,
     private val signatures: List<DigitalSignatureAndMetadata>
 ) : ConsensualSignedTransactionInternal {
+
+    private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
+    private val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        toLedgerTransaction().requiredSignatories
+    }
 
     init {
         require(signatures.isNotEmpty()) {
@@ -58,49 +65,81 @@ class ConsensualSignedTransactionImpl(
         )
     }
 
-    override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.filter {
-            try {
-                transactionSignatureService.verifySignature(this, it)
-                true
-            } catch (e: Exception) {
-                false
-            }
-        }.map { it.by }.toSet()
-        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
-        return requiredSignatories.filter {
-            !KeyUtils.isKeyFulfilledBy(
-                it,
-                appliedSignatories
-            ) // isFulfilledBy() helps to make this working with CompositeKeys.
-        }.toSet()
+    private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
+        val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to signatories for the relevant algorithm
+            requiredSignatories.map { signatory ->
+                getKeyOrLeafKeys(signatory).map {
+                    transactionSignatureService.getIdOfPublicKey(
+                        it, keyId.algorithm
+                    ) to it
+                }
+            }.flatten().toMap()
+        }
+        return keyIdToPublicKey[keyId]
     }
 
-    @Suspendable
-    override fun verifySignatures() {
-        val appliedSignatories = signatures.filter {
-            try {
-                transactionSignatureService.verifySignature(this, it)
-                true
-            } catch (e: Exception) {
-                throw TransactionSignatureException(
-                    id,
-                    "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
-                    e
-                )
-            }
-        }.map { it.by }.toSet()
+    // Unknown signatures are ignored
+    override fun getMissingSignatories(): Set<PublicKey> {
+        return getMissingSignatories(getPublicKeysToSignatorySignatures())
+    }
 
-        // isFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = toLedgerTransaction()
-            .requiredSignatories
-            .filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }
-            .toSet()
+    // Unknown signatures are ignored
+    override fun verifySignatures() {
+        val publicKeysToSignatures =
+            getPublicKeysToSignatorySignatures()
+
+        val missingSignatories = getMissingSignatories(publicKeysToSignatures)
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
                 missingSignatories,
-                "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"
+                "Transaction $id is missing signatures for signatories (encoded) ${
+                    missingSignatories.map { it.encoded }
+                }"
+            )
+        }
+        publicKeysToSignatures.forEach { (publicKey, signature) ->
+            try {
+                transactionSignatureService.verifySignature(this, signature, publicKey)
+            } catch (e: Exception) {
+                throw TransactionSignatureException(
+                    id,
+                    "Failed to verify signature of $signature from $publicKey for transaction $id. Message: ${e.message}",
+                    e
+                )
+            }
+        }
+    }
+
+    private fun getMissingSignatories(publicKeysToSignatures: Map<PublicKey, DigitalSignatureAndMetadata>): Set<PublicKey> {
+        val publicKeysWithSignatures = publicKeysToSignatures.keys.toHashSet()
+
+        // TODO CORE-12207 isKeyFulfilledBy is not the most efficient
+        // isKeyFulfilledBy() helps to make this working with CompositeKeys.
+        return requiredSignatories
+            .filterNot { KeyUtils.isKeyFulfilledBy(it, publicKeysWithSignatures) }
+            .toSet()
+    }
+
+    private fun getPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
+        return signatures.mapNotNull { // We do not care about non-notary/non-signatory keys
+            (getSignatoryKeyFromKeyId(it.by) ?: return@mapNotNull null) to it
+        }
+            .toMap()
+    }
+
+    override fun verifySignature(signature: DigitalSignatureAndMetadata) {
+        val publicKey = getSignatoryKeyFromKeyId(signature.by)
+            ?: return
+
+        try {
+            transactionSignatureService.verifySignature(this, signature, publicKey)
+        } catch (e: Exception) {
+            throw TransactionSignatureException(
+                id,
+                "Failed to verify signature of ${signature.signature} from $publicKey for transaction $id. Message: ${e.message}",
+                e
             )
         }
     }
@@ -132,5 +171,12 @@ class ConsensualSignedTransactionImpl(
 
     override fun getSignatures(): List<DigitalSignatureAndMetadata> {
         return signatures
+    }
+
+    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
+        return when (publicKey) {
+            is CompositeKey -> publicKey.leafKeys.toList()
+            else -> listOf(publicKey)
+        }
     }
 }

@@ -63,14 +63,12 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                             "maximumSize": 1000
                         }
                     },
+                    "defaultWrappingKey" : "root1",
+                    "wrappingKeys" : [
+                         {"alias": "root1", "passphrase": "B"}
+                    ],
                     "wrappingKeyMap": {
                         "name": "CACHING",
-                        "salt": "<plain-text-value>",
-                        "passphrase": {
-                            "configSecret": {
-                                "encryptedSecret": "<encrypted-value>"
-                            }
-                        },
                         "cache": {
                             "expireAfterAccessMins": 60,
                             "maximumSize": 100
@@ -82,7 +80,7 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                             "name": "..",
                             "cfg": {}
                         }
-                    }
+                    },
                 }
             }
         },
@@ -118,11 +116,6 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
                 ],
                 "cfg": {
                     "username": "user",
-                    "passphrase": {
-                        "configSecret": {
-                            "encryptedSecret": "<encrypted-value>"
-                        }
-                    },
                     "partition": "whatever"
                 }
             }
@@ -244,6 +237,7 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
 // TODO - get this from the JSON config schema, or eliminate this function
+@Suppress("LongMethod")
 fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         .withValue(
@@ -299,29 +293,44 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                             "CORDA.GOST3410.GOST3411",
                             "CORDA.SPHINCS-256"
                         ),
-                        CryptoHSMConfig.HSMConfig::cfg.name to mapOf(
-                            "keyMap" to mapOf(
-                                "name" to "CACHING",
-                                "cache" to mapOf(
-                                    "expireAfterAccessMins" to 60,
-                                    "maximumSize" to 1000
+                        CryptoHSMConfig.HSMConfig::cfg.name to ConfigValueFactory.fromMap(
+                            mapOf(
+                                "defaultWrappingKey" to ConfigValueFactory.fromAnyRef("root1"),
+                                "wrappingKeys" to listOf(
+                                    ConfigValueFactory.fromAnyRef(
+                                        mapOf(
+                                            "alias" to "root1",
+                                            "salt" to wrappingKeySalt,
+                                            "passphrase" to wrappingKeyPassphrase,
+                                        )
+                                    )
+                                ),
+                                "keyMap" to ConfigValueFactory.fromMap(
+                                    mapOf(
+                                        "name" to "CACHING",
+                                        "cache" to ConfigValueFactory.fromMap(
+                                            mapOf(
+                                                "expireAfterAccessMins" to 60,
+                                                "maximumSize" to 1000
+                                            )
+                                        )
+
+                                    )
+                                ),
+                                "wrappingKeyMap" to mapOf(
+                                    "name" to "CACHING",
+                                    "cache" to mapOf(
+                                        "expireAfterAccessMins" to 60,
+                                        "maximumSize" to 1000
+                                    )
+                                ),
+                                "wrapping" to mapOf(
+                                    "name" to "DEFAULT"
                                 )
-                            ),
-                            "wrappingKeyMap" to mapOf(
-                                "name" to "CACHING",
-                                "salt" to wrappingKeySalt,
-                                "passphrase" to wrappingKeyPassphrase,
-                                "cache" to mapOf(
-                                    "expireAfterAccessMins" to 60,
-                                    "maximumSize" to 1000
-                                )
-                            ),
-                            "wrapping" to mapOf(
-                                "name" to "DEFAULT"
                             )
                         )
                     )
-                )
+            )
             )
         )
         .withValue(

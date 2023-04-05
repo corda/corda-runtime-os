@@ -12,7 +12,6 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -352,7 +351,7 @@ class MerkleTreeTest {
             val notInProofLeaves = (0 until treeSize).filter { (i in powerSet) }
             if (notInProofLeaves.isNotEmpty()) {
                 val extraIndex = notInProofLeaves.first()
-                val extraLeaf = IndexedMerkleLeaf(extraIndex,
+                val extraLeaf = IndexedMerkleLeafImpl(extraIndex,
                     nonceHashDigestProvider.leafNonce(extraIndex),
                     merkleTree.leaves[extraIndex]
                 )

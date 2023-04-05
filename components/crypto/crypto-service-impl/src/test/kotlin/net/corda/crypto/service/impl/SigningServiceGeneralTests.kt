@@ -1,12 +1,10 @@
 package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import java.security.PublicKey
-import java.time.Instant
-import java.util.UUID
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
@@ -30,12 +28,13 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -46,6 +45,9 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.security.PublicKey
+import java.time.Instant
+import java.util.UUID
 
 class SigningServiceGeneralTests {
     companion object {
@@ -55,7 +57,10 @@ class SigningServiceGeneralTests {
         @JvmStatic
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
-        }
+       }
+
+        @JvmStatic
+        fun keyOrders() = KeyOrderBy.values()
     }
 
     @Test
@@ -77,7 +82,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
-                signatureSpec = SignatureSpec("NONE"),
+                signatureSpec = SignatureSpecImpl("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
@@ -104,7 +109,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
-                signatureSpec = SignatureSpec("NONE"),
+                signatureSpec = SignatureSpecImpl("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
@@ -300,39 +305,39 @@ class SigningServiceGeneralTests {
         )
     }
 
-    @Test
-    fun `Should pass order by to lookup function`() {
-        KeyOrderBy.values().forEach { orderBy ->
-            val skip = 17
-            val take = 21
-            val tenantId: String = UUID.randomUUID().toString()
-            val repo = mock<SigningRepository> {
-                on { query(any(), any(), any(), any()) } doReturn emptyList()
-            }
-            val signingService = SigningServiceImpl(
-                signingRepositoryFactory = { repo },
-                cryptoServiceFactory = mock(),
-                schemeMetadata = schemeMetadata,
-                digestService = mock(),
-                cache = mock(),
-            )
-            val filter = emptyMap<String, String>()
-            val result = signingService.querySigningKeys(
-                tenantId,
-                skip,
-                take,
-                orderBy,
-                filter
-            )
-            assertThat(result).isNotNull
-            assertThat(result.size).isEqualTo(0)
-            verify(repo, times(1)).query(
-                skip,
-                take,
-                SigningKeyOrderBy.valueOf(orderBy.toString()),
-                filter
-            )
+
+    @ParameterizedTest
+    @MethodSource("keyOrders")
+    fun `Should pass order by to lookup function`(orderBy: KeyOrderBy) {
+        val skip = 17
+        val take = 21
+        val tenantId: String = UUID.randomUUID().toString()
+        val repo = mock<SigningRepository> {
+            on { query(any(), any(), any(), any()) } doReturn emptyList()
         }
+        val signingService = SigningServiceImpl(
+            signingRepositoryFactory = { repo },
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata,
+            digestService = mock(),
+            cache = mock(),
+        )
+        val filter = emptyMap<String, String>()
+        val result = signingService.querySigningKeys(
+            tenantId,
+            skip,
+            take,
+            orderBy,
+            filter
+        )
+        assertThat(result).isNotNull
+        assertThat(result.size).isEqualTo(0)
+        verify(repo, times(1)).query(
+            skip,
+            take,
+            SigningKeyOrderBy.valueOf(orderBy.toString()),
+            filter
+        )
     }
 
     @Test

@@ -22,7 +22,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.http.HttpRequest
-import net.corda.p2p.gateway.messaging.http.HttpServerListener
+import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
@@ -45,7 +45,7 @@ internal class InboundMessageHandler(
     messagingConfiguration: SmartConfig,
     commonComponents: CommonComponents,
     private val avroSchemaRegistry: AvroSchemaRegistry
-) : HttpServerListener, LifecycleWithDominoTile {
+) : RequestListener, LifecycleWithDominoTile {
 
     init {
         // Setting max limits for variable-length fields to prevent malicious clients from trying to trigger large memory allocations.
@@ -104,14 +104,14 @@ internal class InboundMessageHandler(
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
-    override fun onRequest(request: HttpRequest) {
-        dominoTile.withLifecycleLock { handleRequest(request) }
+    override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+        dominoTile.withLifecycleLock { handleRequest(httpWriter, request) }
     }
 
-    private fun handleRequest(request: HttpRequest) {
+    private fun handleRequest(httpWriter: HttpWriter, request: HttpRequest) {
         if (!isRunning) {
             logger.error("Received message from ${request.source}, while handler is stopped. Discarding it and returning error code.")
-            server.writeResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, request.source)
+            httpWriter.write(HttpResponseStatus.SERVICE_UNAVAILABLE, request.source)
             return
         }
 
@@ -120,7 +120,7 @@ internal class InboundMessageHandler(
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
             logger.warn("Received invalid message, which could not be deserialized", e)
-            server.writeResponse(HttpResponseStatus.BAD_REQUEST, request.source)
+            httpWriter.write(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
 
@@ -129,11 +129,11 @@ internal class InboundMessageHandler(
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                server.writeResponse(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
+                httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                server.writeResponse(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
+                httpWriter.write(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
             }
         }
     }

@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
@@ -24,8 +24,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class ConsensualSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serialisationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    @Reference(service = TransactionSignatureServiceInternal::class)
+    private val transactionSignatureService: TransactionSignatureServiceInternal
 ) : CheckpointInternalCustomSerializer<ConsensualSignedTransactionInternal>, UsedByFlow {
     override val type: Class<ConsensualSignedTransactionInternal> get() = ConsensualSignedTransactionInternal::class.java
 
@@ -34,7 +34,7 @@ class ConsensualSignedTransactionKryoSerializer @Activate constructor(
         output.writeClassAndObject(obj.signatures)
     }
 
-    override fun read(input: CheckpointInput, type: Class<ConsensualSignedTransactionInternal>): ConsensualSignedTransactionInternal {
+    override fun read(input: CheckpointInput, type: Class<out ConsensualSignedTransactionInternal>): ConsensualSignedTransactionInternal {
         val wireTransaction = input.readClassAndObject() as WireTransaction
         @Suppress("unchecked_cast")
         val signatures = input.readClassAndObject() as List<DigitalSignatureAndMetadata>

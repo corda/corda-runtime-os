@@ -107,6 +107,16 @@ class DBAccess(
         }
     }
 
+    fun getAllTopics(): Set<String> {
+        return executeWithErrorHandling("retrieve all the topics") { entityManager ->
+            val builder = entityManager.criteriaBuilder
+            val query = builder.createQuery(TopicEntry::class.java)
+            query.select(query.from(TopicEntry::class.java))
+            val results = entityManager.createQuery(query).resultList
+            results.map { it.topic }.toSet()
+        }
+    }
+
     /**
      * If auto topic creation is enabled then will create the topic
      */

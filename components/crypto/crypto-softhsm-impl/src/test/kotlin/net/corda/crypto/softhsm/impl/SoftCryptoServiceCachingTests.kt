@@ -155,7 +155,7 @@ class SoftCryptoServiceCachingTests {
         var findCount = 0
         val testCryptoRepositoryWrapping = TestWrappingRepository()
         val countingWrappingRepository: WrappingRepository = object : WrappingRepository {
-            override fun saveKey(alias: String, key: WrappingKeyInfo) {
+            override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo {
                 saveCount++
                 return testCryptoRepositoryWrapping.saveKey(alias, key)
             }

@@ -4,6 +4,11 @@
 -resolve.effective: resolve,active
 -runtrace: true
 
+-runvm: \
+    --add-opens, 'java.base/java.lang.invoke=ALL-UNNAMED',\
+    --add-opens, 'java.base/java.util=ALL-UNNAMED',\
+    --illegal-access=deny
+
 -runrequires: \
     bnd.identity;id='net.corda.ledger-common-flow',\
     bnd.identity;id='${project.archivesBaseName}-tests',\

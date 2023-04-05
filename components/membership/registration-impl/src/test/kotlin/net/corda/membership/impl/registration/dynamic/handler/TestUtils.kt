@@ -39,6 +39,7 @@ object TestUtils {
                 val notaryDetails = MemberNotaryDetails(
                     holdingIdentity.x500Name,
                     "Notary Plugin A",
+                    listOf(1, 2),
                     listOf(mock())
                 )
                 whenever(mock.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)

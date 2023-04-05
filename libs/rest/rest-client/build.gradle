@@ -45,3 +45,6 @@ dependencies {
     integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
 }
 
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-opens', 'java.base/java.net=ALL-UNNAMED'
+}

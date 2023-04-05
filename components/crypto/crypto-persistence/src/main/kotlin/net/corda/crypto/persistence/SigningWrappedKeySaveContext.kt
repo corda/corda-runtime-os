@@ -6,7 +6,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 @Suppress("LongParameterList")
 class SigningWrappedKeySaveContext(
     val key: GeneratedWrappedKey,
-    val masterKeyAlias: String?,
+    val masterKeyAlias: String?, // TODO rename wrappingKeyAlias
     override val externalId: String?,
     override val alias: String?,
     override val category: String,

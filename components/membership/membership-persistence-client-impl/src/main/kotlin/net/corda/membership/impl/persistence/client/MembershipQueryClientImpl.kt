@@ -3,10 +3,11 @@ package net.corda.membership.impl.persistence.client
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.common.RegistrationStatusDetails
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryApprovalRules
@@ -16,6 +17,7 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
@@ -25,13 +27,13 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -123,23 +125,10 @@ class MembershipQueryClientImpl(
         }
     }
 
-    private fun RegistrationStatusDetails.toStatus() : RegistrationRequestStatus {
-        return RegistrationRequestStatus(
-            status = this.registrationStatus,
-            registrationId = this.registrationId,
-            registrationSent = this.registrationSent,
-            registrationLastModified = this.registrationLastModified,
-            protocolVersion = this.registrationProtocolVersion,
-            memberContext = this.memberProvidedContext,
-            reason = this.reason,
-            serial = this.serial,
-        )
-    }
-
-    override fun queryRegistrationRequestStatus(
+    override fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
-    ): MembershipQueryResult<RegistrationRequestStatus?> {
+    ): MembershipQueryResult<RegistrationRequestDetails?> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryRegistrationRequest(registrationId)
@@ -147,7 +136,7 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is RegistrationRequestQueryResponse -> {
                 MembershipQueryResult.Success(
-                    payload.registrationRequest?.toStatus()
+                    payload.registrationRequest
                 )
             }
             is PersistenceFailedResponse -> {
@@ -163,12 +152,12 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(
+    override fun queryRegistrationRequests(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
         limit: Int?
-    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
+    ): MembershipQueryResult<List<RegistrationRequestDetails>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
@@ -176,7 +165,7 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
                 MembershipQueryResult.Success(
-                    payload.registrationRequests.map { it.toStatus() }
+                    payload.registrationRequests
                 )
             }
             is PersistenceFailedResponse -> {
@@ -297,6 +286,19 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
             else -> MembershipQueryResult.Failure("Failed to retrieve approval rules.")
+        }
+    }
+
+    override fun queryStaticNetworkInfo(
+        groupId: String
+    ): MembershipQueryResult<StaticNetworkInfo> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(),
+            QueryStaticNetworkInfo(groupId)
+        ).execute()
+        return when (val payload = result.payload) {
+            is StaticNetworkInfoQueryResponse -> MembershipQueryResult.Success(payload.info)
+            else -> MembershipQueryResult.Failure("Failed to retrieve static network configuration.")
         }
     }
 }

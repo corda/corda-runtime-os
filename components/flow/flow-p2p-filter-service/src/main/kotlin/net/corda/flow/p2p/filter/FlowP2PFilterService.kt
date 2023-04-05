@@ -23,7 +23,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Component(service = [FlowP2PFilterService::class], immediate = true)
+@Component(service = [FlowP2PFilterService::class])
 class FlowP2PFilterService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
