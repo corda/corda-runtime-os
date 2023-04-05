@@ -33,13 +33,10 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
@@ -134,7 +131,7 @@ class InteropServiceIntegrationTest {
         return listOf(inboundMsg, inboundMsg, outboundMsg)
     }
 
-    //@Disabled("The test fails on jenkins however works locally, fix in CORE-12134") //TODO CORE-12134
+    @Disabled("The test fails on jenkins however works locally, fix in CORE-12134") //TODO CORE-12134
     @Test
     fun `verify interop processor sends messages to flow mapper event topic and p2p out topic`() {
         interopService.start()
