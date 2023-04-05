@@ -27,7 +27,7 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
-import net.corda.p2p.linkmanager.membership.InvalidNetworkStatusForMessaging
+import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
@@ -44,9 +44,9 @@ internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val networkMessagingValidator: NetworkMessagingValidator,
     private val inboundAssignmentListener: InboundAssignmentListener,
-    private val clock: Clock
+    private val clock: Clock,
+    private val networkMessagingValidator: NetworkMessagingValidator = NetworkMessagingValidator(membershipGroupReaderProvider),
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
@@ -77,16 +77,25 @@ internal class InboundMessageProcessor(
                         "Processing unauthenticated message ${payload.header.messageId}"
                     }
                     recordInboundMessagesMetric(payload)
-                    try {
-                        networkMessagingValidator.validate(
-                            payload.header.source.toCorda(),
-                            payload.header.destination.toCorda()
-                        )
-                        listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
-                    } catch (ex: InvalidNetworkStatusForMessaging) {
-                        logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
-                                "messaging because ${ex.reason}")
-                        emptyList()
+                    val validationResult = networkMessagingValidator.validate(
+                        payload.header.source.toCorda(),
+                        payload.header.destination.toCorda()
+                    )
+                    when(validationResult) {
+                        is NetworkStatusValidationResult.Pass -> {
+                            listOf(
+                                Record(
+                                    Schemas.P2P.P2P_IN_TOPIC,
+                                    LinkManager.generateKey(),
+                                    AppMessage(payload)
+                                )
+                            )
+                        }
+                        is NetworkStatusValidationResult.Fail -> {
+                            logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
+                                    "messaging because ${validationResult.reason}")
+                            emptyList()
+                        }
                     }
                 }
                 else -> {

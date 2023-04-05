@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.inbound
 
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
@@ -25,16 +24,18 @@ import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.EncryptionResult
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
+import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
@@ -88,15 +89,16 @@ class InboundMessageProcessorTest {
             @Suppress("unchecked_cast")
             (it.arguments[2] as (() -> Unit)).invoke()
         }
+        on { validate(any(), any()) } doReturn NetworkStatusValidationResult.Pass
     }
 
     private val processor = InboundMessageProcessor(
         sessionManager,
         membersAndGroups.second,
         membersAndGroups.first,
-        networkMessagingValidator,
         assignedListener,
-        mockTimeFacilitiesProvider.clock
+        mockTimeFacilitiesProvider.clock,
+        networkMessagingValidator
     )
 
     private val status = MembershipStatusFilter.ACTIVE

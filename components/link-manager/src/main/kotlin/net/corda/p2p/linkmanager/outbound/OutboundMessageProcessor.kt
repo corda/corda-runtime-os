@@ -26,7 +26,7 @@ import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.Component
 import net.corda.metrics.CordaMetrics
-import net.corda.p2p.linkmanager.membership.InvalidNetworkStatusForMessaging
+import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
@@ -44,10 +44,10 @@ internal class OutboundMessageProcessor(
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val networkMessagingValidator: NetworkMessagingValidator,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
-    private val clock: Clock
+    private val clock: Clock,
+    private val networkMessagingValidator: NetworkMessagingValidator = NetworkMessagingValidator(membershipGroupReaderProvider)
 ) : EventLogProcessor<String, AppMessage> {
 
     override val keyClass = String::class.java
@@ -135,11 +135,9 @@ internal class OutboundMessageProcessor(
         } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
             "source ID is not locally hosted"
         } else {
-            try {
-                networkMessagingValidator.validate(source.toCorda(), destination.toCorda())
-                null
-            } catch (ex: InvalidNetworkStatusForMessaging) {
-                ex.reason
+            when(val result = networkMessagingValidator.validate(source.toCorda(), destination.toCorda())) {
+                is NetworkStatusValidationResult.Pass -> null
+                is NetworkStatusValidationResult.Fail -> result.reason
             }
         }
     }

@@ -13,7 +13,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
-import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
@@ -38,7 +37,6 @@ internal class OutboundLinkManager(
         linkManagerHostingMap,
         groupPolicyProvider,
         membershipGroupReaderProvider,
-        NetworkMessagingValidator(membershipGroupReaderProvider),
         commonComponents.inboundAssignmentListener,
         commonComponents.messagesPendingSession,
         clock

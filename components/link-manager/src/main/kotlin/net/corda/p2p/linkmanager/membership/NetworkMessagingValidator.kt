@@ -19,19 +19,21 @@ class NetworkMessagingValidator(private val membershipGroupReaderProvider: Membe
     /**
      * Validates whether [source] can participate in messaging with [destination].
      *
-     * @throws InvalidNetworkStatusForMessaging if validation failed
+     * @returns NetworkStatusValidationResult indicating the result of the validation.
      */
-    fun validate(source: HoldingIdentity, destination: HoldingIdentity) {
+    fun validate(source: HoldingIdentity, destination: HoldingIdentity): NetworkStatusValidationResult {
         val sourceMemberInfo = getMemberInfo(source, source.x500Name)
         val destinationMemberInfo = getMemberInfo(source, destination.x500Name)
 
-        if (!canMessage(sourceMemberInfo, destinationMemberInfo)
+        return if (!canMessage(sourceMemberInfo, destinationMemberInfo)
             || !canMessage(destinationMemberInfo, sourceMemberInfo)
         ) {
-            throw InvalidNetworkStatusForMessaging(
+            NetworkStatusValidationResult.Fail(
                 "network membership status for the source identity is (${sourceMemberInfo?.status}) and the " +
-                        "source's network membership status is (${destinationMemberInfo?.status})."
+                        "destination's network membership status is (${destinationMemberInfo?.status})."
             )
+        } else {
+            NetworkStatusValidationResult.Pass
         }
     }
 
@@ -45,15 +47,15 @@ class NetworkMessagingValidator(private val membershipGroupReaderProvider: Membe
         source: HoldingIdentity,
         destination: HoldingIdentity,
         func: () -> T
-    ): T? = try {
-        validate(source, destination)
-        func.invoke()
-    } catch (ex: InvalidNetworkStatusForMessaging) {
-        logger.warn(
-            "Failed validation for allowed messaging from [${destination.x500Name}] to " +
-                    "[${source.x500Name}] in group [${source.groupId}] because ${ex.reason}"
-        )
-        null
+    ): T? = when (val result = validate(source, destination)) {
+        is NetworkStatusValidationResult.Pass -> func()
+        is NetworkStatusValidationResult.Fail -> {
+            logger.warn(
+                "Failed validation for allowed messaging from [${destination.x500Name}] to " +
+                        "[${source.x500Name}] in group [${source.groupId}] because ${result.reason}"
+            )
+            null
+        }
     }
 
     /**
@@ -81,3 +83,8 @@ class NetworkMessagingValidator(private val membershipGroupReaderProvider: Membe
     }
 }
 
+
+sealed class NetworkStatusValidationResult {
+    object Pass : NetworkStatusValidationResult()
+    data class Fail(val reason: String) : NetworkStatusValidationResult()
+}

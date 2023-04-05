@@ -24,7 +24,7 @@ import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
-import net.corda.p2p.linkmanager.membership.InvalidNetworkStatusForMessaging
+import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -35,9 +35,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -77,10 +75,7 @@ class OutboundMessageProcessorTest {
     }
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
-        on { invokeIfValid<Unit>(any(), any(), any()) } doAnswer {
-            @Suppress("unchecked_cast")
-            (it.arguments[2] as (() -> Unit)).invoke()
-        }
+        on { validate(any(), any()) } doReturn NetworkStatusValidationResult.Pass
     }
 
     private val processor = OutboundMessageProcessor(
@@ -88,10 +83,10 @@ class OutboundMessageProcessorTest {
         hostingMap,
         membersAndGroups.second,
         membersAndGroups.first,
-        networkMessagingValidator,
         assignedListener,
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
+        networkMessagingValidator
     )
 
     @Test
@@ -251,9 +246,7 @@ class OutboundMessageProcessorTest {
     fun `authenticated messages are dropped if membership messaging validation fails`() {
         whenever(
             networkMessagingValidator.validate(any(), any())
-        ).doThrow(
-            InvalidNetworkStatusForMessaging("foo-bar")
-        )
+        ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -486,10 +479,10 @@ class OutboundMessageProcessorTest {
             hostingMap,
             groupPolicyProvider,
             membersAndGroups.first,
-            networkMessagingValidator,
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
+            networkMessagingValidator,
         )
 
         val payload = "test"
@@ -523,9 +516,7 @@ class OutboundMessageProcessorTest {
     fun `unauthenticated messages are dropped if network membership validation fails`() {
         whenever(
             networkMessagingValidator.validate(any(), any())
-        ).doThrow(
-            InvalidNetworkStatusForMessaging("foo-bar")
-        )
+        ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
             UnauthenticatedMessageHeader(

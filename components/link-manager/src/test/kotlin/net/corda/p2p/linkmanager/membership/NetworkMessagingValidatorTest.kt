@@ -11,7 +11,6 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.KStubbing
@@ -103,12 +102,12 @@ class NetworkMessagingValidatorTest {
     @ParameterizedTest
     @MethodSource("allowedMessagingGroups")
     fun `validate performs as expected`(testConfig: TestConfig) {
-        val test = { networkMessagingValidator.validate(testConfig.sender, testConfig.receiver) }
+        val result = networkMessagingValidator.validate(testConfig.sender, testConfig.receiver)
 
         if (testConfig.canMessage) {
-            assertDoesNotThrow(test)
+            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Pass::class.java)
         } else {
-            assertThrows<InvalidNetworkStatusForMessaging>(test)
+            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Fail::class.java)
         }
     }
 
