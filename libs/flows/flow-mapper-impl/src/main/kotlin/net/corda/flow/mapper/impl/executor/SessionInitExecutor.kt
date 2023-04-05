@@ -57,7 +57,7 @@ class SessionInitExecutor(
                     sessionEvent,
                     sessionInit
                 )
-        log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, " +
+        log.info("INTEROP outputTopic=$outputTopic, isInterop=$isInteropSessionInit, " +
                 "direction=$messageDirection, sessionInit")
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, false),
