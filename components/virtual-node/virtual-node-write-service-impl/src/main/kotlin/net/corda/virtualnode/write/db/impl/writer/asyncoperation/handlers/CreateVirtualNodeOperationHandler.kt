@@ -99,7 +99,7 @@ internal class CreateVirtualNodeOperationHandler(
                     vNodeDbs,
                     cpiMetadata.id,
                     request.updateActor,
-                    externalMessagingRouteConfig = externalMessagingRouteConfig
+                    externalMessagingRouteConfig
                 )
             }
 
@@ -121,7 +121,7 @@ internal class CreateVirtualNodeOperationHandler(
                     holdingId,
                     cpiMetadata.id,
                     vNodeConnections,
-                    externalMessagingRouteConfig = null
+                    externalMessagingRouteConfig
                 )
             )
 
