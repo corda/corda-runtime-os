@@ -57,7 +57,7 @@ object QqqTicker {
         val maxs = ticks.reversed().zipWithNext { last, tick ->
             val took = Duration.between(last.time, tick.time).toMillis()
             val per = took.toDouble() / duration.toDouble()
-            if(per > 0.05) {
+            if(per > 0.001) {
                 val text = "\t From ${last.display()} to ${tick.display()} " +
                         "took $took millis (${df.format(per)})"
                 logger.info(text)

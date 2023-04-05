@@ -15,6 +15,7 @@ import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionExceptio
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
+import net.corda.utilities.QqqTicker
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -76,6 +77,7 @@ class RegistrationProxyImpl @Activate constructor(
      * Handle lifecycle events.
      */
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        QqqTicker.tick("RegistrationProxyImpl::handleEvent -> $event")
         when (event) {
             is StartEvent -> {
                 logger.info(

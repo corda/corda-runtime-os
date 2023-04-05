@@ -15,6 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.QqqTicker
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -87,6 +88,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
+        QqqTicker.tick("ConfigurationReadServiceImpl::start")
         lifecycleCoordinator.start()
     }
 

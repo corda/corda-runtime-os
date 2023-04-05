@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.utilities.QqqTicker
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -31,6 +32,7 @@ class TestGroupPolicyProviderImpl @Activate constructor(
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()) { event, coordinator ->
             if (event is StartEvent) {
+                QqqTicker.tick("TestGroupPolicyProviderImpl started")
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
@@ -55,6 +57,7 @@ class TestGroupPolicyProviderImpl @Activate constructor(
 
     override fun start() {
         logger.info("TestGroupPolicyProvider starting.")
+        QqqTicker.tick("TestGroupPolicyProviderImpl start")
         coordinator.start()
     }
 

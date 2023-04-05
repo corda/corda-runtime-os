@@ -26,6 +26,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.utilities.debug
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.QqqTicker
 import org.slf4j.LoggerFactory
 
 internal class ConfigReadServiceEventHandler(
@@ -65,6 +66,7 @@ internal class ConfigReadServiceEventHandler(
     }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        QqqTicker.tick("ConfigReadServiceEventHandler::processEvent($event)")
         when (event) {
             is StartEvent -> {
                 logger.debug { "Configuration read service starting up." }
@@ -108,6 +110,7 @@ internal class ConfigReadServiceEventHandler(
             is RegistrationStatusChangeEvent -> {
                 // Only registration is on the subscription
                 if (event.status == LifecycleStatus.UP) {
+                    QqqTicker.tick("ConfigReadServiceEventHandler going UP")
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(LifecycleStatus.DOWN)

@@ -28,7 +28,6 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.utilities.QqqTicker
 import org.slf4j.LoggerFactory
 
 /**
@@ -133,7 +132,6 @@ class ComplexDominoTile(
 
     private inner class Handler(private val configurationChangeHandler: ConfigurationChangeHandler<*>) : ConfigurationHandler {
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-            QqqTicker.tick("onNewConfiguration for ${coordinatorName.componentName} ($changedKeys)")
             if (changedKeys.contains(configurationChangeHandler.key)) {
                 val newConfiguration = config[configurationChangeHandler.key]
                 if (newConfiguration != null) {
@@ -148,7 +146,6 @@ class ComplexDominoTile(
     }
 
     private fun updateState(newState: DominoTileState) {
-        QqqTicker.tick("updateState: ${coordinatorName.componentName} -> $newState")
         val oldState = currentInternalState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
@@ -250,7 +247,6 @@ class ComplexDominoTile(
     }
 
     private fun <C> handleConfigChange(configurationChangeHandler: ConfigurationChangeHandler<C>, config: Config) {
-        QqqTicker.tick("handleConfigChange: ${coordinatorName.componentName}")
         val newConfiguration = try {
             configurationChangeHandler.configFactory(config)
         } catch (e: Exception) {
@@ -279,7 +275,6 @@ class ComplexDominoTile(
     }
 
     private fun handleChildStarted() {
-        QqqTicker.tick("handleChildStarted: ${coordinatorName.componentName}")
         if (internalState != Started) {
             if (shouldNotWaitForChildren()) {
                 logger.info("Starting resources, since all children are now up.")

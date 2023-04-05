@@ -22,7 +22,6 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.utilities.QqqTicker
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
@@ -117,7 +116,6 @@ abstract class SubscriptionDominoTileBase(
     }
 
     private fun createAndStartSubscription() {
-        QqqTicker.tick("createAndStartSubscription ${coordinatorName.componentName}")
         coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
         val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
             ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
@@ -135,7 +133,6 @@ abstract class SubscriptionDominoTileBase(
                     if(event.registration == subscriptionRegistration.get()) {
                         when(event.status) {
                             LifecycleStatus.UP -> {
-                                QqqTicker.tick("processEvent ready ${coordinatorName.componentName}")
                                 updateState(Started)
                             }
                             LifecycleStatus.DOWN -> {
@@ -157,7 +154,6 @@ abstract class SubscriptionDominoTileBase(
 
     private fun statusChanged(name: LifecycleCoordinatorName, status: LifecycleStatus) {
         val oldStatus = latestChildStateMap.put(name, status)
-        QqqTicker.tick("statusChanged $status ${coordinatorName.componentName}")
         when(status) {
             LifecycleStatus.UP -> {
                 val notReady = latestChildStateMap.entries.filter {

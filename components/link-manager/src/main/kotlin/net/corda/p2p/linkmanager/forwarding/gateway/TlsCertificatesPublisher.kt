@@ -17,7 +17,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.schema.Schemas.P2P.GATEWAY_TLS_CERTIFICATES
-import net.corda.utilities.QqqTicker
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import java.util.concurrent.CompletableFuture
@@ -84,7 +83,6 @@ internal class TlsCertificatesPublisher(
         override val keyClass = String::class.java
         override val valueClass = GatewayTlsCertificates::class.java
         override fun onSnapshot(currentData: Map<String, GatewayTlsCertificates>) {
-            QqqTicker.tick("Got TlsCertificatesPublisher snapshot")
             publishedIds.putAll(
                 currentData.mapValues {
                     it.value.tlsCertificates.toSet()
@@ -109,7 +107,6 @@ internal class TlsCertificatesPublisher(
     }
     private val subscriptionConfig = SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_CERTIFICATES)
     private val subscription = {
-        QqqTicker.tick("Create TlsCertificatesPublisher subscriber")
         subscriptionFactory.createCompactedSubscription(
             subscriptionConfig,
             Processor(),

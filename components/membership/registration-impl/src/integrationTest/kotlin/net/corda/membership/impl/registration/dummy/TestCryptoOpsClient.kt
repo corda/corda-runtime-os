@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.utilities.QqqTicker
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
@@ -45,6 +46,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<CryptoOpsClient>()) { event, coordinator ->
             if (event is StartEvent) {
+                QqqTicker.tick("TestCryptoOpsClientImpl::started")
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
@@ -207,6 +209,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
 
     override fun start() {
         logger.info("TestCryptoOpsClient starting.")
+        QqqTicker.tick("TestCryptoOpsClientImpl::start")
         coordinator.start()
     }
 

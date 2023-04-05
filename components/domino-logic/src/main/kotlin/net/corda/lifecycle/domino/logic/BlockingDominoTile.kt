@@ -7,7 +7,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StopEvent
-import net.corda.utilities.QqqTicker
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -50,9 +49,7 @@ class BlockingDominoTile(componentName: String,
 
     override fun start() {
         coordinator.start()
-        QqqTicker.tick("start ${coordinatorName.componentName}")
         startTile.whenComplete { _, exception ->
-            QqqTicker.tick("startTile completed ${coordinatorName.componentName}")
             if (exception == null) {
                 coordinator.postEvent(AsynchronousReady)
             } else {

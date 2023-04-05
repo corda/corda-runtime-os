@@ -66,6 +66,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
+import net.corda.utilities.QqqTicker
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
@@ -185,6 +186,7 @@ class MemberRegistrationIntegrationTest {
         @JvmStatic
         @BeforeAll
         fun setUp() {
+            QqqTicker.tick("setup 1")
             val coordinator = lifecycleCoordinatorFactory.createCoordinator<MemberRegistrationIntegrationTest> { e, c ->
                 if (e is StartEvent) {
                     logger.info("Starting test coordinator")
@@ -200,7 +202,11 @@ class MemberRegistrationIntegrationTest {
                     logger.info("Test coordinator is ${e.status}")
                     c.updateStatus(e.status)
                 }
-            }.also { it.start() }
+            }.also {
+                QqqTicker.tick("setup 2")
+                it.start()
+                QqqTicker.tick("setup 3")
+            }
 
             keyValuePairListDeserializer = serializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
             requestDeserializer =
@@ -218,6 +224,7 @@ class MemberRegistrationIntegrationTest {
             configurationReadService.bootstrapConfig(bootConfig)
 
 
+            QqqTicker.tick("setup 4")
             testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
                 VirtualNodeInfo(
                     holdingIdentity = HoldingIdentity(memberName, groupId),
@@ -229,11 +236,15 @@ class MemberRegistrationIntegrationTest {
                 )
             )
 
+            QqqTicker.reset()
+            QqqTicker.tick("setup 5")
             eventually(10.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
             }
+            QqqTicker.tick("setup 6")
+            QqqTicker.report()
         }
 
         fun setupConfig() {
