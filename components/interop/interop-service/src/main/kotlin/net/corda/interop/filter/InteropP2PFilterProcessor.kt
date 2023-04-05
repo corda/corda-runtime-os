@@ -36,8 +36,6 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
             authMessage.header.subsystem != SUBSYSTEM
         ) return@mapNotNull null
 
-        logger.info("Processing message from p2p.in. Key: $key." )
-
         processInteropMessage(authMessage.payload, key)
     }
 

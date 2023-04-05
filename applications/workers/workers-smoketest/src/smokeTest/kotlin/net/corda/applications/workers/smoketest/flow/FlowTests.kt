@@ -1178,11 +1178,12 @@ class FlowTests {
         val args = mapOf(
             "facadeName" to "None",
             "methodName" to "None",
-            "payload" to payload
+            "payload" to payload,
+            "alias" to charlyX500
         )
 
-        val requestId = startRpcFlow(aliceHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
-        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowStatus.flowError).isNull()

@@ -28,13 +28,18 @@ class InteropAliasProcessor(
             return identityMappingCache[recipientId]
         }
 
+        private const val ALIAS = " Alias"
         fun removeAliasSubstringFromOrganisationName(holdIdentity: net.corda.virtualnode.HoldingIdentity):
                 net.corda.virtualnode.HoldingIdentity {
             val oldName = holdIdentity.x500Name
+            val (commonName, organization) = if (oldName.commonName != null)
+                Pair(oldName.commonName?.replace(ALIAS, ""), oldName.organization)
+            else
+                Pair(oldName.commonName, oldName.organization.replace(ALIAS, ""))
             val newName = MemberX500Name(
-                oldName.commonName,
+                commonName,
                 oldName.organizationUnit,
-                oldName.organization.replace(" Alias", ""),
+                organization,
                 oldName.locality,
                 oldName.state, oldName.country
             )
@@ -44,19 +49,19 @@ class InteropAliasProcessor(
         fun addAliasSubstringToOrganisationName(holdIdentity: net.corda.virtualnode.HoldingIdentity):
                 net.corda.virtualnode.HoldingIdentity {
             val oldName = holdIdentity.x500Name
+            val (commonName, organization) = if (oldName.commonName != null)
+                Pair(oldName.commonName + ALIAS, oldName.organization)
+            else
+                Pair(oldName.commonName, oldName.organization + ALIAS)
             val newName = MemberX500Name(
-                oldName.commonName,
+                commonName,
                 oldName.organizationUnit,
-                oldName.organization + " Alias",
+                organization,
                 oldName.locality,
                 oldName.state, oldName.country
             )
             return holdIdentity.copy(x500Name = newName)
         }
-
-        fun addAliasSubstringToOrganisationName(newIdentity: HostedIdentityEntry): net.corda.virtualnode.HoldingIdentity =
-             addAliasSubstringToOrganisationName(newIdentity.holdingIdentity.toCorda())
-
     }
 
     override fun onNext(
@@ -89,7 +94,7 @@ class InteropAliasProcessor(
         val newIdentity = entry
         val holdIdentity = newIdentity.holdingIdentity.toCorda()
         if (!holdIdentity.x500Name.organization.contains("Alias")) {
-            val syntheticName = addAliasSubstringToOrganisationName(newIdentity)
+            val syntheticName = addAliasSubstringToOrganisationName(newIdentity.holdingIdentity.toCorda())
             val syntheticIdentities = listOf(interopMembersProducer.createHostedAliasIdentity(syntheticName))
             logger.info("Adding $syntheticIdentities")
             publisher.publish(syntheticIdentities)
