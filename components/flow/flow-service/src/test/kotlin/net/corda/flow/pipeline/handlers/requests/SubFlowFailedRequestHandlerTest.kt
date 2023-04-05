@@ -86,17 +86,10 @@ class SubFlowFailedRequestHandlerTest {
     ) {
         flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
+            testContext.flowSessionManager.getSessionsWithStatuses(
                 testContext.flowCheckpoint,
                 SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(emptyList())
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.CLOSED
+                any()
             )
         ).thenReturn(emptyList())
         whenever(

@@ -26,7 +26,7 @@ class FlowFailedRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
     private val flowError = Exception("error message")
     private val ioRequest = FlowIORequest.FlowFailed(flowError)
-    private val handler = FlowFailedRequestHandler(testContext.flowMessageFactory,testContext.flowRecordFactory)
+    private val handler = FlowFailedRequestHandler(testContext.flowMessageFactory,testContext.flowRecordFactory,testContext.flowSessionManager)
 
     @Test
     fun `Updates the waiting for to nothing`() {
