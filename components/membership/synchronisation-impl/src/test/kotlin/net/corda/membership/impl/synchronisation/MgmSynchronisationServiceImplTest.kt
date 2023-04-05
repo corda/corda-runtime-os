@@ -30,6 +30,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -62,7 +63,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -163,7 +163,7 @@ class MgmSynchronisationServiceImplTest {
 
     private val memberInfos = listOf(mgmInfo, aliceInfo, bobInfo, daisyInfo)
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
-    private val groupParameters: GroupParameters = mock()
+    private val groupParameters: InternalGroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
         on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
@@ -189,9 +189,11 @@ class MgmSynchronisationServiceImplTest {
         on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
         on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
-        on { generateTree(
-            argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }
-        ) } doReturn matchingMerkleTree
+        on {
+            generateTree(
+                argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }
+            )
+        } doReturn matchingMerkleTree
     }
     private val signatures = createSignatures(memberInfosWithoutMgm)
     private val signature = createSignatures(listOf(bobInfo))
@@ -207,7 +209,7 @@ class MgmSynchronisationServiceImplTest {
             PERSISTENCE_EXCEPTION
         )
         on {
-            queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfosWithoutMgm.map { it.holdingIdentity } ))
+            queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfosWithoutMgm.map { it.holdingIdentity }))
         } doReturn MembershipQueryResult.Success(
             signatures
         )
@@ -464,7 +466,7 @@ class MgmSynchronisationServiceImplTest {
 
     @Test
     fun `processing requests fails when component is not running`() {
-        val ex = assertFailsWith<IllegalStateException>{ synchronisationService.processSyncRequest(mock()) }
+        val ex = assertFailsWith<IllegalStateException> { synchronisationService.processSyncRequest(mock()) }
         assertThat(ex.message).isEqualTo("MgmSynchronisationService is currently inactive.")
     }
 
@@ -475,7 +477,13 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(alice)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(
+            any(),
+            any(),
+            capturedList.capture(),
+            any(),
+            eq(groupParameters)
+        )
         verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
@@ -490,7 +498,13 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(bob)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(
+            any(),
+            any(),
+            capturedList.capture(),
+            any(),
+            eq(groupParameters)
+        )
         verify(mockPublisher, times(1)).publish(eq(listOf(record2)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)

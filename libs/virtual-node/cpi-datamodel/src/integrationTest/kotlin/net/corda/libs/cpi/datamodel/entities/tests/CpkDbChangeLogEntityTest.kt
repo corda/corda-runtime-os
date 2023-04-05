@@ -15,7 +15,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.orm.utils.use
 import net.corda.test.util.dsl.entities.cpx.cpi
 import net.corda.test.util.dsl.entities.cpx.cpk
 import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
@@ -25,25 +24,20 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.*
-import javax.persistence.EntityManager
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkDbChangeLogEntityTest {
 
     private val dbConfig: EntityManagerConfiguration =
         DbUtils.getEntityManagerConfiguration("cpk_changelog_db")
-
-    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
-    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
-    private fun transaction(callback: EntityManager.() -> Unit): Unit = EntityManagerFactoryFactoryImpl().create(
+    private val emf = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         CpiEntities.classes.toList(),
         dbConfig
-    ).use { em ->
-        em.transaction {
-            it.callback()
-        }
-    }
+    )
+
+    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
+    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -62,7 +56,7 @@ class CpkDbChangeLogEntityTest {
 
     @AfterAll
     fun cleanUp() {
-        dbConfig.close()
+        emf.close()
     }
 
     @Test
@@ -79,15 +73,15 @@ class CpkDbChangeLogEntityTest {
             "other-content"
         )
 
-        transaction {
-            persist(cpi)
-            cpkDbChangeLogRepository.put(this, changeLog1)
-            cpkDbChangeLogRepository.put(this, changeLog2)
+        emf.transaction {
+            it.persist(cpi)
+            cpkDbChangeLogRepository.put(it, changeLog1)
+            cpkDbChangeLogRepository.put(it, changeLog2)
         }
 
-        transaction {
+        emf.transaction {
             val queriedChangelogs = cpkDbChangeLogRepository.findByFileChecksum(
-                this,
+                it,
                 setOf(cpk1.id.cpkFileChecksum, cpk2.id.cpkFileChecksum)
             ).groupBy { it.id.cpkFileChecksum }
 
@@ -123,23 +117,23 @@ class CpkDbChangeLogEntityTest {
             "unrelated-content"
         )
 
-        transaction {
-            persist(cpi)
-            cpkDbChangeLogRepository.put(this, changeLog1)
-            cpkDbChangeLogRepository.put(this, changeLog2)
-            persist(unrelatedCpi)
-            cpkDbChangeLogRepository.put(this, changeLog3)
+        emf.transaction {
+            it.persist(cpi)
+            cpkDbChangeLogRepository.put(it, changeLog1)
+            cpkDbChangeLogRepository.put(it, changeLog2)
+            it.persist(unrelatedCpi)
+            cpkDbChangeLogRepository.put(it, changeLog3)
         }
 
-        transaction {
+        emf.transaction {
             val queriedChangelogs1 = cpkDbChangeLogRepository.findByCpiId(
-                this,
+                it,
                 CpiIdentifier(cpi.name, cpi.version, parseSecureHash(cpi.signerSummaryHash))
             ).toSet()
             assertThat(queriedChangelogs1).isEqualTo(setOf(changeLog1, changeLog2))
 
             val queriedChangelogs2 = cpkDbChangeLogRepository.findByCpiId(
-                this,
+                it,
                 CpiIdentifier(unrelatedCpi.name, unrelatedCpi.version, parseSecureHash(unrelatedCpi.signerSummaryHash))
             ).toSet()
             assertThat(queriedChangelogs2).isEqualTo(setOf(changeLog3))
@@ -150,12 +144,12 @@ class CpkDbChangeLogEntityTest {
     fun `can persist CPK changelog audit trail`() {
         val audit = cpkDbChangeLogAudit { }
 
-        transaction {
-            cpkDbChangeLogAuditRepository.put(this, audit)
+        emf.transaction {
+            cpkDbChangeLogAuditRepository.put(it, audit)
         }
 
-        transaction {
-            val loadedDbLog = cpkDbChangeLogAuditRepository.findById(this, audit.id)
+        emf.transaction {
+            val loadedDbLog = cpkDbChangeLogAuditRepository.findById(it, audit.id)
             assertThat(loadedDbLog).isEqualTo(audit)
         }
     }
@@ -217,21 +211,21 @@ class CpkDbChangeLogEntityTest {
             filePath("shared_$cpkRand.xml")
         }
 
-        transaction {
-            persist(originalCpi)
-            cpkDbChangeLogRepository.put(this, changelog1)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog1))
-            cpkDbChangeLogRepository.put(this, changelog2)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog2))
-            cpkDbChangeLogRepository.put(this, changelog3)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog3))
-            cpkDbChangeLogRepository.put(this, sharedChangelog)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(sharedChangelog))
+        emf.transaction {
+            it.persist(originalCpi)
+            cpkDbChangeLogRepository.put(it, changelog1)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(changelog1))
+            cpkDbChangeLogRepository.put(it, changelog2)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(changelog2))
+            cpkDbChangeLogRepository.put(it, changelog3)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(changelog3))
+            cpkDbChangeLogRepository.put(it, sharedChangelog)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(sharedChangelog))
         }
 
-        transaction {
+        emf.transaction {
             val currentCpkChangelogs = cpkDbChangeLogRepository.findByCpiId(
-                this,
+                it,
                 CpiIdentifier(cpiName, cpiVersion, cpiSignerSummaryHash)
             ).toSet()
 
@@ -266,20 +260,20 @@ class CpkDbChangeLogEntityTest {
             filePath("cpk6.xml")
         }
 
-        transaction {
-            merge(updatedCpi)
-            cpkDbChangeLogRepository.update(this, changelog5)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog5))
-            cpkDbChangeLogRepository.update(this, changelog6)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog6))
+        emf.transaction {
+            it.merge(updatedCpi)
+            cpkDbChangeLogRepository.update(it, changelog5)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(changelog5))
+            cpkDbChangeLogRepository.update(it, changelog6)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(changelog6))
             // simulating persisting changelog for shared CPK again
-            cpkDbChangeLogRepository.update(this, sharedChangelog)
-            cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(sharedChangelog))
+            cpkDbChangeLogRepository.update(it, sharedChangelog)
+            cpkDbChangeLogAuditRepository.put(it, cpkDbChangeLogAudit(sharedChangelog))
         }
 
-        transaction {
+        emf.transaction {
             val loadedCpkChangelogs = cpkDbChangeLogRepository.findByCpiId(
-                this,
+                it,
                 CpiIdentifier(cpiName, cpiVersion, cpiSignerSummaryHash)
             ).toSet()
 
@@ -292,12 +286,12 @@ class CpkDbChangeLogEntityTest {
         val (cpi1, _) = TestObject.createCpiWithCpks(2)
         val (cpi2, _) = TestObject.createCpiWithCpks()
 
-        transaction {
-            persist(cpi1)
-            persist(cpi2)
+        emf.transaction {
+            it.persist(cpi1)
+            it.persist(cpi2)
 
             val changeLogs = cpkDbChangeLogRepository.findByCpiId(
-                this,
+                it,
                 CpiIdentifier(cpi1.name, cpi1.version, parseSecureHash(cpi1.signerSummaryHash))
             )
             assertThat(changeLogs).isEmpty()

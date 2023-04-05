@@ -23,7 +23,8 @@ internal interface CreateVirtualNodeService {
         holdingIdentity: HoldingIdentity,
         vNodeDbs: Map<VirtualNodeDbType,VirtualNodeDb>,
         cpiId: CpiIdentifier,
-        updateActor: String
+        updateActor: String,
+        externalMessagingRouteConfig: String?
     ): VirtualNodeDbConnections
 
     fun publishRecords(records: List<Record<*, *>>)

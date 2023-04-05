@@ -38,7 +38,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -418,7 +418,7 @@ class UtxoPersistenceServiceImplTest {
                         ).bytes
                     )
                     assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        digest("SHA-256", signature.by.encoded).toString()
+                        signature.by.toString()
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
@@ -477,7 +477,7 @@ class UtxoPersistenceServiceImplTest {
                         transaction,
                         index,
                         serializationService.serialize(signature).bytes,
-                        digest("SHA-256", signature.by.encoded).toString(),
+                        signature.by.toString(),
                         createdTs
                     )
                 }

@@ -86,7 +86,12 @@ osgiRun {
     // Required by Quasar, Kryo and Kryo serializers.
     // Discovered using:
     //     $ java --illegal-access=warn -jar <application.jar>
-    addOpensAttribute.addAll 'java.base/java.lang', 'java.base/java.lang.invoke', 'java.base/java.nio', 'java.base/java.util'
+    addOpensAttribute.addAll \
+        'java.base/java.lang',\
+        'java.base/java.lang.invoke',\
+        'java.base/java.nio',\
+        'java.base/java.time',\
+        'java.base/java.util'
 }
 
 @CompileStatic

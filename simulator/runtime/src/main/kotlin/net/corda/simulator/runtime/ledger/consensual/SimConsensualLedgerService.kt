@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.ledger.consensual
 
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.bytes
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.ConsensualTransactionEntity
@@ -11,7 +13,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
@@ -59,7 +60,7 @@ class SimConsensualLedgerService(
         return ConsensualSignedTransactionBase.fromEntity(entity, signingService, serializationService, configuration)
     }
 
-    override fun getTransactionBuilder(): ConsensualTransactionBuilder {
+    override fun createTransactionBuilder(): ConsensualTransactionBuilder {
         return consensualTransactionBuilderFactory.createConsensualTxBuilder(
             signingService,
             memberLookup,
@@ -92,10 +93,10 @@ class SimConsensualLedgerService(
         val serializer = SimpleJsonMarshallingService()
         val bytesToSign = serializer.format(signedTransaction.toLedgerTransaction().states).toByteArray()
         val signatures = publicKeys.map {
-            val signature = signingService.sign(bytesToSign, it, SignatureSpec.ECDSA_SHA256)
+            val signature = signingService.sign(bytesToSign, it, SignatureSpecs.ECDSA_SHA256)
             DigitalSignatureAndMetadata(
                 signature,
-                DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
+                DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), mapOf())
             )
         }
         return signatures

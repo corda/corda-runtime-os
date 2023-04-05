@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseMemberInfo
@@ -15,7 +17,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -24,12 +25,12 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
 
@@ -70,7 +71,7 @@ class UtxoTransactionFinalityHandlerTest {
         val sessions = publicKeys.minus(publicKeys[0]).map {
             val signature = DigitalSignatureAndMetadata(
                 toSignatureWithMetadata(it).signature,
-                DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
+                DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), mapOf())
             )
             val flowSession = mock<FlowSession>()
             whenever(flowSession.receive<Any>(any())).thenReturn(listOf(signature))
@@ -91,7 +92,7 @@ class UtxoTransactionFinalityHandlerTest {
         // Then the transaction should get signed by the counterparties and notary
         assertThat(finalTx.id, `is`(transaction.id))
         assertThat(finalTx.signatures.size, `is`(4))
-        assertThat(finalTx.signatures.map { it.by }.toSet(), `is`(publicKeys.plus(notaryKey).toSet()))
+        assertThat(finalTx.signatures.map { it.by }.toSet(), `is`(publicKeys.plus(notaryKey).map { it.fullIdHash() }.toSet()))
 
         // And it should have been persisted
         verify(persistenceService, times(1)).persist(

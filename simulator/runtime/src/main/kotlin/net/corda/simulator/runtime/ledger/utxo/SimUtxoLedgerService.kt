@@ -47,7 +47,7 @@ class SimUtxoLedgerService(
     private val finalityHandler = UtxoTransactionFinalityHandler(
         memberLookup, signingService, notarySigningService, persistenceService, backchainHandler)
 
-    override fun getTransactionBuilder(): UtxoTransactionBuilder {
+    override fun createTransactionBuilder(): UtxoTransactionBuilder {
         return utxoTransactionBuilderFactory.createUtxoTransactionBuilder(
             signingService, persistenceService, configuration, notaryLookup)
     }

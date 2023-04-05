@@ -32,7 +32,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 
-@Component(service = [FlowMapperService::class], immediate = true)
+@Component(service = [FlowMapperService::class])
 class FlowMapperService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,

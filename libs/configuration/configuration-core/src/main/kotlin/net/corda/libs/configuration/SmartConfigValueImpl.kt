@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueType
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsLookupService
+import net.corda.schema.configuration.ConfigKeys
 
 class SmartConfigValueImpl(
     private val typeSafeConfigValue: ConfigValue,
@@ -41,7 +42,7 @@ class SmartConfigValueImpl(
 
     override fun unwrapped(): Any {
         val unwrapped = typeSafeConfigValue.unwrapped()
-        if (unwrapped is Map<*,*> && unwrapped.containsKey(SmartConfig.SECRET_KEY)) {
+        if (unwrapped is Map<*,*> && unwrapped.containsKey(ConfigKeys.SECRET_KEY)) {
             @Suppress("UNCHECKED_CAST")
             return secretsLookupService.getValue(ConfigFactory.parseMap(unwrapped as Map<String,Any>))
         }

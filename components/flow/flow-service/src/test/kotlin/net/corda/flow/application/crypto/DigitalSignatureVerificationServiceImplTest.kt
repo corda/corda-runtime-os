@@ -26,4 +26,9 @@ class DigitalSignatureVerificationServiceImplTest {
         whenever(signatureService.verify(any(), any(), any(), any<SignatureSpec>())).thenThrow(CryptoSignatureException("oops!"))
         assertThrows<CryptoSignatureException> { signingService.verify(byteArrayOf(), byteArrayOf(), mock(), mock()) }
     }
+
+    @Test
+    fun `fails when verifying against a different signature spec`() {
+
+    }
 }

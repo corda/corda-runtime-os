@@ -29,8 +29,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
-    implementation "net.corda:corda-base"
 
+    api project(':libs:base-internal')
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
@@ -44,7 +44,12 @@ dependencies {
     implementation "org.apache.qpid:proton-j:$protonjVersion"
     implementation 'org.slf4j:slf4j-api'
 
+    testImplementation project(':libs:crypto:cipher-suite')
+    testImplementation project(':libs:crypto:cipher-suite-impl')
+    testImplementation project(':libs:crypto:crypto-core')
+    testImplementation project(':libs:crypto:crypto-serialization-impl')
     testImplementation project(':testing:test-serialization')
+    testImplementation project(':libs:crypto:cipher-suite')
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

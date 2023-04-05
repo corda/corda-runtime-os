@@ -221,6 +221,7 @@ class VirtualNodeRestResourceImplTest {
             operational,
             operational,
             null,
+            null,
             -1,
             mock(),
             false

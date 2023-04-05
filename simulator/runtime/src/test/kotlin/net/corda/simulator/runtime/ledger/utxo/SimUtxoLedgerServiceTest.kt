@@ -52,7 +52,7 @@ class SimUtxoLedgerServiceTest {
         whenever(fiber.createNotaryLookup()).thenReturn(notaryLookup)
         whenever(fiber.createMemberLookup(alice)).thenReturn(mock())
         whenever(fiber.createNotarySigningService()).thenReturn(mock())
-        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", notaryKey))
+        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey))
     }
 
     @Test
@@ -75,7 +75,7 @@ class SimUtxoLedgerServiceTest {
         )
 
         // When we get a builder
-        val createdBuilder = ledgerService.getTransactionBuilder()
+        val createdBuilder = ledgerService.createTransactionBuilder()
 
         // Then it should be created by the factory
         assertThat(createdBuilder, `is`(builder))
@@ -163,7 +163,7 @@ class SimUtxoLedgerServiceTest {
     @Test
     fun `should be able to resolve stateRef to stateAndRef`(){
         val serializationService = BaseSerializationService()
-        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", notaryKey))
+        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", emptySet(), notaryKey))
         val entityId = UtxoTransactionOutputEntityId(
             "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
             0

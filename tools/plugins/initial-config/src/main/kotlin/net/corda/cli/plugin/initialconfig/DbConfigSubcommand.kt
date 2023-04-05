@@ -3,12 +3,14 @@ package net.corda.cli.plugin.initialconfig
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.io.FileWriter
+import java.lang.IllegalArgumentException
 import java.time.Instant
 import java.util.UUID
 
@@ -17,6 +19,9 @@ import java.util.UUID
     description = ["Create the SQL statements to insert the connection manager config for database"]
 )
 class DbConfigSubcommand : Runnable {
+    enum class SecretsServiceType {
+        CORDA, VAULT
+    }
 
     @Option(
         names = ["-n", "--name"],
@@ -47,8 +52,7 @@ class DbConfigSubcommand : Runnable {
 
     @Option(
         names = ["-p", "--password"],
-        required = true,
-        description = ["Password name for the database connection. Required."]
+        description = ["Password name for the database connection. Used only by CORDA type secrets service."]
     )
     var password: String? = null
 
@@ -66,15 +70,13 @@ class DbConfigSubcommand : Runnable {
 
     @Option(
         names = ["-s", "--salt"],
-        required = true,
-        description = ["Salt for the encrypting secrets service"]
+        description = ["Salt for the encrypting secrets service. Used only by CORDA type secrets service."]
     )
     var salt: String? = null
 
     @Option(
         names = ["-e", "--passphrase"],
-        required = true,
-        description = ["Passphrase for the encrypting secrets service"]
+        description = ["Passphrase for the encrypting secrets service. Used only by CORDA type secrets service."]
     )
     var passphrase: String? = null
 
@@ -84,8 +86,47 @@ class DbConfigSubcommand : Runnable {
     )
     var location: String? = null
 
+    @Option(
+        names = ["-v", "--vault-path"],
+        description = ["Vault path of the secret located in HashiCorp Vault. Used only by VAULT type secrets service."]
+    )
+    var vaultPath: String? = null
+
+    @Option(
+        names = ["-k", "--key"],
+        description = ["Vault key for the secrets service. Used only by VAULT type secrets service."]
+    )
+    var vaultKey: String? = null
+
+    @Option(
+        names = ["-t", "--type"],
+        description = ["Secrets service type. Valid values: \${COMPLETION-CANDIDATES}. Default: \${DEFAULT-VALUE}. " +
+                "CORDA generates a Config snippet based on 'passphrase' and 'salt' which are the same passphrase and " +
+                "salt you would pass in at Corda bootstrapping to use built in Corda decryption to hide secrets in the Config. " +
+                "VAULT generates a configuration compatible with the HashiCorp Vault Corda addon, available to Corda Enterprise. " +
+                "For VAULT Config generation you must supply the 'vault-path' parameter as well as the key of the secret."]
+    )
+    var type: SecretsServiceType = SecretsServiceType.CORDA
+
     override fun run() {
-        val secretsService = EncryptionSecretsServiceImpl(passphrase!!, salt!!)
+        val secretsService: SecretsCreateService = when (type) {
+            SecretsServiceType.CORDA -> EncryptionSecretsServiceImpl(
+                checkParamPassed(passphrase)
+                { "'passphrase' must be set for CORDA type secrets." },
+                checkParamPassed(salt)
+                { "'salt' must be set for CORDA type secrets." })
+
+            SecretsServiceType.VAULT -> VaultSecretConfigGenerator(
+                checkParamPassed(vaultPath)
+                { "'vaultPath' must be set for VAULT type secrets." })
+        }
+
+        val value = when (type) {
+            SecretsServiceType.CORDA -> checkParamPassed(password)
+                { "'password' must be set for CORDA type secrets." }
+            SecretsServiceType.VAULT -> checkParamPassed(vaultKey)
+                { "'vaultPath' must be set for VAULT type secrets." }
+        }
 
         val dbConnectionConfig = DbConnectionConfig(
             id = UUID.randomUUID(),
@@ -94,7 +135,7 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createConfigDbConfig(jdbcUrl!!, username!!, password!!, jdbcPoolMaxSize, secretsService)
+            config = createConfigDbConfig(jdbcUrl!!, username!!, value, jdbcPoolMaxSize, secretsService)
         ).also { it.version = 0 }
 
 
@@ -110,6 +151,12 @@ class DbConfigSubcommand : Runnable {
             }
         }
     }
+
+    private inline fun checkParamPassed(value: String?, lazyMessage: () -> String) = if (value.isNullOrBlank()) {
+        throw IllegalArgumentException(lazyMessage())
+    } else {
+        value
+    }
 }
 
 /**
@@ -117,7 +164,7 @@ class DbConfigSubcommand : Runnable {
  *
  * @param jdbcUrl URL for the database
  * @param usernmae
- * @param password
+ * @param value
  * @param jdcbPoolMaxSize
  * @param secretsService a factory that can produce representations of secrets
  * @return a string containing a JSON config
@@ -127,14 +174,14 @@ class DbConfigSubcommand : Runnable {
 fun createConfigDbConfig(
     jdbcUrl: String,
     username: String,
-    password: String,
+    value: String,
     jdbcPoolMaxSize: Int,
     secretsService: SecretsCreateService
 ): String {
     return "{\"database\":{" +
             "\"jdbc\":" +
             "{\"url\":\"$jdbcUrl\"}," +
-            "\"pass\":${createSecureConfig(secretsService, password, "corda-config-database-password")}," +
+            "\"pass\":${createSecureConfig(secretsService, value, "corda-config-database-password")}," +
             "\"user\":\"$username\"," +
             "\"pool\":" +
             "{\"max_size\":$jdbcPoolMaxSize}}}"

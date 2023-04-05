@@ -30,7 +30,7 @@ internal object LinkedHashMapIteratorSerializer : Serializer<Iterator<*>>() {
         kryo.writeClassAndObject(output, current)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<Iterator<*>>): Iterator<*> {
+    override fun read(kryo: Kryo, input: Input, type: Class<out Iterator<*>>): Iterator<*> {
         val outerMap = kryo.readClassAndObject(input) as Map<*, *>
         return when (type) {
             KEY_ITERATOR_CLASS -> {

@@ -1,8 +1,6 @@
 package net.corda.crypto.cipher.suite
 
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ParameterizedSignatureSpec
-import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
@@ -12,7 +10,7 @@ import java.security.spec.PSSParameterSpec
 class SignatureSpecUtilsTests {
     @Test
     fun `getParamsSafely should return null for SignatureSpec`() {
-        val spec = SignatureSpec("SHA256withECDSA")
+        val spec = SignatureSpecImpl("SHA256withECDSA")
         assertNull(spec.getParamsSafely())
     }
 

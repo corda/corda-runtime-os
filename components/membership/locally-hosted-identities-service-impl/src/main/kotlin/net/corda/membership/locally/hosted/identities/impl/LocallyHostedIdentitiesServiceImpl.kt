@@ -20,6 +20,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.crypto.publicKeyFactory
 import net.corda.utilities.millis
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -28,16 +29,20 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.io.Reader
+import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [LocallyHostedIdentitiesService::class])
+@Suppress("LongParameterList")
 class LocallyHostedIdentitiesServiceImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val configurationReadService: ConfigurationReadService,
     private val certificateFactory: CertificateFactory,
+    private val publicKeyFactory: (Reader) -> PublicKey?,
     private val sleeper: ((Long) -> Unit),
 ) : LocallyHostedIdentitiesService {
     @Activate constructor(
@@ -46,15 +51,16 @@ class LocallyHostedIdentitiesServiceImpl(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService
-    ): this(
+        configurationReadService: ConfigurationReadService,
+    ) : this(
         coordinatorFactory,
         subscriptionFactory,
         configurationReadService,
         CertificateFactory.getInstance("X.509"),
+        ::publicKeyFactory,
         {
             Thread.sleep(it)
-        }
+        },
     )
     private companion object {
         const val FOLLOW_CHANGES_RESOURCE_NAME = "LocallyHostedIdentitiesServiceImpl.followStatusChangesByName"
@@ -67,18 +73,18 @@ class LocallyHostedIdentitiesServiceImpl(
     }
 
     private val identities = ConcurrentHashMap<HoldingIdentity, IdentityInfo>()
-    private val coordinator = coordinatorFactory.createCoordinator<LocallyHostedIdentitiesService> {event, _ ->
+    private val coordinator = coordinatorFactory.createCoordinator<LocallyHostedIdentitiesService> { event, _ ->
         handleEvent(event)
     }
 
     private fun handleEvent(event: LifecycleEvent) {
-        when(event) {
+        when (event) {
             is StartEvent -> {
                 coordinator.createManagedResource(FOLLOW_CHANGES_RESOURCE_NAME) {
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        )
+                        ),
                     )
                 }
             }
@@ -88,26 +94,26 @@ class LocallyHostedIdentitiesServiceImpl(
                         FOLLOW_CHANGES_RESOURCE_NAME,
                         WAIT_FOR_CONFIG_RESOURCE_NAME,
                         SUBSCRIPTION_RESOURCE_NAME,
-                    )
+                    ),
                 )
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                        coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
-                            configurationReadService.registerComponentForUpdates(
-                                coordinator,
-                                setOf(
-                                    ConfigKeys.BOOT_CONFIG,
-                                    ConfigKeys.MESSAGING_CONFIG,
-                                )
-                            )
+                    coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
+                        configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(
+                                ConfigKeys.BOOT_CONFIG,
+                                ConfigKeys.MESSAGING_CONFIG,
+                            ),
+                        )
                     }
                 } else {
                     coordinator.closeManagedResources(
                         setOf(
-                            WAIT_FOR_CONFIG_RESOURCE_NAME
-                        )
+                            WAIT_FOR_CONFIG_RESOURCE_NAME,
+                        ),
                     )
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
@@ -118,7 +124,7 @@ class LocallyHostedIdentitiesServiceImpl(
                     subscriptionFactory.createCompactedSubscription(
                         subscriptionConfig = SubscriptionConfig(
                             groupName = SUBSCRIPTION_GROUP_NAME,
-                            Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
+                            Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
                         ),
                         processor = Processor(),
                         messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
@@ -130,7 +136,7 @@ class LocallyHostedIdentitiesServiceImpl(
         }
     }
 
-    private inner class Processor: CompactedProcessor<String, HostedIdentityEntry> {
+    private inner class Processor : CompactedProcessor<String, HostedIdentityEntry> {
         override val keyClass = String::class.java
         override val valueClass = HostedIdentityEntry::class.java
 
@@ -144,7 +150,7 @@ class LocallyHostedIdentitiesServiceImpl(
             if (newEntry == null) {
                 if (oldValue != null) {
                     identities.remove(
-                        oldValue.holdingIdentity.toCorda()
+                        oldValue.holdingIdentity.toCorda(),
                     )
                 }
             } else {
@@ -159,18 +165,31 @@ class LocallyHostedIdentitiesServiceImpl(
             }
             coordinator.updateStatus(LifecycleStatus.UP)
         }
-
     }
     private fun addEntry(newEntry: HostedIdentityEntry) {
-        val info = newEntry.toIdentityInfo()
-        identities[info.identity] = info
+        newEntry.toIdentityInfo()?.also { info ->
+            identities[info.identity] = info
+        }
     }
 
-    private fun HostedIdentityEntry.toIdentityInfo(): IdentityInfo {
-        return IdentityInfo(
-            identity = this.holdingIdentity.toCorda(),
-            tlsCertificates = this.tlsCertificates.toCertificates(),
+    private fun HostedIdentityEntry.toIdentityInfo(): IdentityInfo? {
+        val preferredSessionKeyPem = this.preferredSessionKeyAndCert.sessionPublicKey
+        val preferredSessionKey = publicKeyFactory(
+            preferredSessionKeyPem.reader(),
         )
+        return if (preferredSessionKey == null) {
+            logger.warn(
+                "Hosted Identity entry for ${this.holdingIdentity.toCorda()} had invalid " +
+                    "preferred session key (preferredSessionKeyPem). Ignoring this record.",
+            )
+            null
+        } else {
+            IdentityInfo(
+                identity = this.holdingIdentity.toCorda(),
+                tlsCertificates = this.tlsCertificates.toCertificates(),
+                preferredSessionKey = preferredSessionKey,
+            )
+        }
     }
 
     private fun Collection<String>.toCertificates(): List<X509Certificate> {
@@ -184,7 +203,7 @@ class LocallyHostedIdentitiesServiceImpl(
     private fun getIdentityInfo(
         identity: HoldingIdentity,
         retries: Int,
-    ) : IdentityInfo? {
+    ): IdentityInfo? {
         if (!isRunning) {
             throw CordaRuntimeException("Service is not ready")
         }
@@ -192,7 +211,7 @@ class LocallyHostedIdentitiesServiceImpl(
         if (known != null) {
             return known
         }
-        if(retries <= 0) {
+        if (retries <= 0) {
             logger.warn("Identity {} is unknown!", identity)
             return null
         }
@@ -201,7 +220,7 @@ class LocallyHostedIdentitiesServiceImpl(
         return getIdentityInfo(identity, retries - 1)
     }
 
-    override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo?  =
+    override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo? =
         getIdentityInfo(identity, defaultRetries)
 
     override val isRunning

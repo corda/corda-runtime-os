@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -16,7 +17,6 @@ import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransac
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,7 +36,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
-    private val transactionSignatureService = mock<TransactionSignatureService>()
+    private val transactionSignatureService = mock<TransactionSignatureServiceInternal>()
 
     private lateinit var consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
 

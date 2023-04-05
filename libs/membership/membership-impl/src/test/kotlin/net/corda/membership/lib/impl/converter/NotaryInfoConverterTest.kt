@@ -22,9 +22,10 @@ class NotaryInfoConverterTest {
     @Suppress("SpreadOperator")
     private companion object {
         val notaryService = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
-        const val NOTARY_PLUGIN = "testPlugin"
+        const val NOTARY_PROTOCOL = "testProtocol"
         const val NAME = "name"
-        const val PLUGIN = "plugin"
+        const val PROTOCOL = "flow.protocol.name"
+        const val PROTOCOL_VERSIONS = "flow.protocol.version.%s"
         const val KEYS = "keys.%s"
         const val KEY_VALUE = "encoded_key"
         val key: PublicKey = mock()
@@ -45,23 +46,33 @@ class NotaryInfoConverterTest {
 
         val correctContext = sortedMapOf(
             NAME to notaryService.toString(),
-            PLUGIN to NOTARY_PLUGIN,
+            PROTOCOL to NOTARY_PROTOCOL,
+            *convertNotaryProtocolVersions().toTypedArray(),
             *convertNotaryKeys().toTypedArray()
         )
 
         val contextWithoutName = sortedMapOf(
-            PLUGIN to NOTARY_PLUGIN,
+            PROTOCOL to NOTARY_PROTOCOL,
+            *convertNotaryProtocolVersions().toTypedArray(),
             *convertNotaryKeys().toTypedArray()
         )
 
-        val contextWithoutPlugin = sortedMapOf(
+        val contextWithoutProtocol = sortedMapOf(
             NAME to notaryService.toString(),
+            *convertNotaryProtocolVersions().toTypedArray(),
             *convertNotaryKeys().toTypedArray()
         )
 
         val contextWithoutKeys = sortedMapOf(
             NAME to notaryService.toString(),
-            PLUGIN to NOTARY_PLUGIN
+            PROTOCOL to NOTARY_PROTOCOL,
+            *convertNotaryProtocolVersions().toTypedArray(),
+        )
+
+        val contextWithoutVersions = sortedMapOf(
+            NAME to notaryService.toString(),
+            PROTOCOL to NOTARY_PROTOCOL,
+            *convertNotaryKeys().toTypedArray(),
         )
 
         val converters = listOf(
@@ -76,6 +87,12 @@ class NotaryInfoConverterTest {
                     i
                 ) to keyEncodingService.encodeAsString(notaryKey)
             }
+
+        fun convertNotaryProtocolVersions(): List<Pair<String, String>> = List(3) { index ->
+            String.format(
+                PROTOCOL_VERSIONS, index
+            ) to (index + 1).toString()
+        }
     }
 
     private fun convertToNotaryInfo(context: SortedMap<String, String>): NotaryInfo =
@@ -92,7 +109,8 @@ class NotaryInfoConverterTest {
         val result = convertToNotaryInfo(correctContext)
         assertSoftly {
             it.assertThat(result.name).isEqualTo(notaryService)
-            it.assertThat(result.pluginClass).isEqualTo(NOTARY_PLUGIN)
+            it.assertThat(result.protocol).isEqualTo(NOTARY_PROTOCOL)
+            it.assertThat(result.protocolVersions).containsExactlyInAnyOrder(1, 2, 3)
             it.assertThat(result.publicKey).isEqualTo(compositeKeyForNonEmptyKeys)
         }
     }
@@ -102,7 +120,8 @@ class NotaryInfoConverterTest {
         val result = convertToNotaryInfo(contextWithoutKeys)
         assertSoftly {
             it.assertThat(result.name).isEqualTo(notaryService)
-            it.assertThat(result.pluginClass).isEqualTo(NOTARY_PLUGIN)
+            it.assertThat(result.protocol).isEqualTo(NOTARY_PROTOCOL)
+            it.assertThat(result.protocolVersions).containsExactlyInAnyOrder(1, 2, 3)
             it.assertThat(result.publicKey).isEqualTo(compositeKeyForEmptyKeys)
         }
     }
@@ -116,10 +135,18 @@ class NotaryInfoConverterTest {
     }
 
     @Test
-    fun `exception is thrown when notary service's plugin type is missing`() {
+    fun `exception is thrown when notary service's protocol is missing`() {
         val ex = assertThrows<ValueNotFoundException> {
-            convertToNotaryInfo(contextWithoutPlugin)
+            convertToNotaryInfo(contextWithoutProtocol)
         }
-        assertThat(ex.message).contains("plugin")
+        assertThat(ex.message).contains("flow.protocol.name")
+    }
+
+    @Test
+    fun `exception is thrown when notary service's protocol versions list is missing`() {
+        val ex = assertThrows<ValueNotFoundException> {
+            convertToNotaryInfo(contextWithoutVersions)
+        }
+        assertThat(ex.message).contains("flow.protocol.version")
     }
 }
