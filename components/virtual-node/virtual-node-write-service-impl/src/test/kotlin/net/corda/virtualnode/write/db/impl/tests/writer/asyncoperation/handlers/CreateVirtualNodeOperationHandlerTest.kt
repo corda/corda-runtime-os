@@ -271,7 +271,7 @@ class CreateVirtualNodeOperationHandlerTest {
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
 
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), eq(externalMessagingRouteConfig))).thenReturn(
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
             dbConnections
         )
         whenever(
