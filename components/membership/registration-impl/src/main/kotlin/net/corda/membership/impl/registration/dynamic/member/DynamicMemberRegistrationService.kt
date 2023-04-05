@@ -316,7 +316,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 val currentInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                 require(currentInfo == null) {
-                    "Re-registration is disabled."
+                    "Re-registration is not supported."
                 }
 
                 val serialInfo = context[SERIAL]?.toLong()

@@ -620,14 +620,14 @@ class DynamicMemberRegistrationServiceTest {
     @Nested
     inner class FailedRegistrationTests {
         @Test
-        fun `re-registration is disabled`() {
+        fun `re-registration is not supported yet`() {
             postConfigChangedEvent()
             registrationService.start()
             whenever(groupReader.lookup(eq(memberName), any())).doReturn(mock())
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
-            assertThat(exception).hasMessageContaining("Re-registration is disabled.")
+            assertThat(exception).hasMessageContaining("Re-registration is not supported.")
         }
 
         @Test
