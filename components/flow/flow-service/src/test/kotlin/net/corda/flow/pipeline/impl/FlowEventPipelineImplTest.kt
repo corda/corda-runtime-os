@@ -62,6 +62,7 @@ class FlowEventPipelineImplTest {
         whenever(waitingFor).thenReturn(waitingForWakeup)
         whenever(inRetryState).thenReturn(false)
         whenever(holdingIdentity).thenReturn(mockHoldingIdentity)
+        whenever(flowId).thenReturn("flow_id_111")
     }
 
     private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
