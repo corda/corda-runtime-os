@@ -106,9 +106,11 @@ internal class ConfigReadServiceEventHandler(
             }
 
             is RegistrationStatusChangeEvent -> {
-                // Only registration is on the subscription
+                // Only registration is on the subscriptions
                 if (event.status == LifecycleStatus.UP) {
-                    coordinator.updateStatus(LifecycleStatus.UP)
+                    if (event.registration == configSubReg) {
+                        coordinator.updateStatus(LifecycleStatus.UP)
+                    }
                 } else {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
