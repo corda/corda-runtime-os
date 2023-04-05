@@ -2,6 +2,8 @@ package net.corda.membership.service.impl
 
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
+import net.corda.data.membership.async.request.RetriableFailure
+import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -14,20 +16,20 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
-import net.corda.utilities.time.Clock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Long.max
+import java.util.concurrent.TimeUnit
 
 internal class CommandsRetryManager(
     coordinatorFactory: LifecycleCoordinatorFactory,
     publisherFactory: PublisherFactory,
     messagingConfig: SmartConfig,
-    private val clock: Clock,
 ) : Resource, StateAndEventListener<String, MembershipAsyncRequestState> {
     private companion object {
         const val PUBLISHER_NAME = "MembershipServiceAsyncCommandsRetryManager"
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val WAIT_AFTER_FAILURE_IN_SECONDS = 10L
+        const val WAIT_AFTER_SENT_TO_MGM_SECONDS = 40L
     }
     private val publisher = publisherFactory.createPublisher(
         publisherConfig = PublisherConfig(PUBLISHER_NAME),
@@ -56,7 +58,7 @@ internal class CommandsRetryManager(
             publisher.publish(
                 listOf(
                     event.event,
-                )
+                ),
             )
         }
     }
@@ -85,18 +87,18 @@ internal class CommandsRetryManager(
     }
 
     private fun addTimer(key: String, state: MembershipAsyncRequestState) {
-        val durationInMillis = max(
-            0,
-            state.retryAfter.toEpochMilli() -
-                clock.instant().toEpochMilli()
-        )
+        val durationInSeconds = when (state.cause) {
+            is SentToMgmWaitingForNetwork -> WAIT_AFTER_SENT_TO_MGM_SECONDS
+            is RetriableFailure -> WAIT_AFTER_FAILURE_IN_SECONDS
+            else -> WAIT_AFTER_FAILURE_IN_SECONDS
+        }
         val event = Record(
             MEMBERSHIP_ASYNC_REQUEST_TOPIC,
             key,
             state.request,
         )
-        logger.debug("Request $key will be retried in $durationInMillis milliseconds")
-        coordinator.setTimer("retry-$key", durationInMillis) {
+        logger.debug("Request $key will be retried in $durationInSeconds seconds")
+        coordinator.setTimer("retry-$key", TimeUnit.SECONDS.toMillis(durationInSeconds)) {
             RetryEvent(event, it)
         }
     }

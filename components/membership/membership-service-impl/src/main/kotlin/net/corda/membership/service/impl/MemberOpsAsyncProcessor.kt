@@ -3,9 +3,10 @@ package net.corda.membership.service.impl
 import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
-import net.corda.data.membership.async.request.RegistrationAsyncRequest
-import net.corda.data.membership.async.request.RetryCondition
+import net.corda.data.membership.async.request.RetriableFailure
+import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -13,116 +14,174 @@ import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.WAIT_FOR_MGM_SESSION
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 internal class MemberOpsAsyncProcessor(
     private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val membershipConfig: SmartConfig,
     private val clock: Clock,
 ) : StateAndEventProcessor<String, MembershipAsyncRequestState, MembershipAsyncRequest> {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MAX_RETRIES = 10
-        const val WAIT_BETWEEN_REQUESTS_AFTER_FAILURE_IN_SECONDS = 2L
-        const val WAIT_TO_P2P_IN_SECONDS = 40L
     }
 
-    private enum class Outcome {
-        SUCCESS_NO_CONDITION,
-        SUCCESS_WITH_CONDITION,
-        FAILED_CANNOT_RETRY,
-        FAILED_CAN_RETRY,
+    private val waitForMgmSeconds by lazy {
+        TimeUnit.MINUTES.toSeconds(membershipConfig.getLong("$TTLS.$WAIT_FOR_MGM_SESSION"))
     }
 
     override fun onNext(
         state: MembershipAsyncRequestState?,
         event: Record<String, MembershipAsyncRequest>,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
-        val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
-        val canRetry = numberOfRetriesSoFar < MAX_RETRIES
-        val condition = state?.retryCondition
-        val outcome = when (val request = event.value?.request) {
-            is RegistrationAsyncRequest -> {
-                register(request, canRetry, condition)
-            }
-            else -> {
-                logger.warn("Can not handle: $request")
-                Outcome.FAILED_CANNOT_RETRY
-            }
-        }
-
-        return when (outcome) {
-            Outcome.SUCCESS_NO_CONDITION -> StateAndEventProcessor.Response(
-                updatedState = null,
-                responseEvents = emptyList(),
-                markForDLQ = false,
-            )
-            Outcome.FAILED_CANNOT_RETRY -> StateAndEventProcessor.Response(
+        val value = event.value
+        if (value?.request == null) {
+            return StateAndEventProcessor.Response(
                 updatedState = null,
                 responseEvents = emptyList(),
                 markForDLQ = true,
             )
-            Outcome.FAILED_CAN_RETRY -> StateAndEventProcessor.Response(
-                updatedState = MembershipAsyncRequestState(
-                    event.value,
-                    numberOfRetriesSoFar + 1,
-                    RetryCondition.NO_CONDITION,
-                    clock.instant().plusSeconds(WAIT_BETWEEN_REQUESTS_AFTER_FAILURE_IN_SECONDS),
-                ),
-                markForDLQ = false,
-                responseEvents = emptyList(),
-            )
-            Outcome.SUCCESS_WITH_CONDITION -> StateAndEventProcessor.Response(
-                updatedState = MembershipAsyncRequestState(
-                    event.value,
-                    numberOfRetriesSoFar + 1,
-                    RetryCondition.IS_STATE_SENT_TO_MGM,
-                    clock.instant().plusSeconds(WAIT_TO_P2P_IN_SECONDS),
-                ),
-                markForDLQ = false,
-                responseEvents = emptyList(),
-            )
         }
+        return register(value, state)
     }
 
     override val keyClass = String::class.java
     override val eventValueClass = MembershipAsyncRequest::class.java
     override val stateValueClass = MembershipAsyncRequestState::class.java
 
-    private fun register(
-        request: RegistrationAsyncRequest,
-        canRetry: Boolean,
-        condition: RetryCondition?
-    ): Outcome {
-        val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-        val holdingIdentity =
-            virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-        if (holdingIdentity == null) {
-            logger.warn(
-                "Registration ${request.requestId} failed." +
-                    " Could not find holding identity associated with ${request.holdingIdentityId}"
+    private fun createFailureWithoutRetryResponse(): StateAndEventProcessor.Response<MembershipAsyncRequestState> =
+        StateAndEventProcessor.Response(
+            updatedState = null,
+            responseEvents = emptyList(),
+            markForDLQ = true,
+        )
+    private fun persistAndCreateFailureWithoutRetryResponse(
+        holdingIdentity: HoldingIdentity,
+        registrationId: UUID,
+        message: String?,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
+        // CORE-10367: return the status update command as part of the onNext
+        membershipPersistenceClient.setRegistrationRequestStatus(
+            holdingIdentity,
+            registrationId.toString(),
+            RegistrationStatus.INVALID,
+            message?.take(255),
+        )
+        return createFailureWithoutRetryResponse()
+    }
+
+    private fun createMoveOnResponse(): StateAndEventProcessor.Response<MembershipAsyncRequestState> =
+        StateAndEventProcessor.Response(
+            updatedState = null,
+            responseEvents = emptyList(),
+            markForDLQ = false,
+        )
+
+    private fun createFailureWithRetryResponse(
+        value: MembershipAsyncRequest,
+        retries: Int,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
+        return StateAndEventProcessor.Response(
+            updatedState = MembershipAsyncRequestState(
+                value,
+                RetriableFailure(retries - 1),
+            ),
+            responseEvents = emptyList(),
+            markForDLQ = false,
+        )
+    }
+
+    private fun createSentToMgmResponse(
+        value: MembershipAsyncRequest,
+        state: MembershipAsyncRequestState?,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
+        val currentCause = state?.cause
+        val newCause = if (currentCause is SentToMgmWaitingForNetwork) {
+            currentCause
+        } else {
+            SentToMgmWaitingForNetwork(
+                clock.instant().plusSeconds(waitForMgmSeconds),
             )
-            return Outcome.FAILED_CAN_RETRY
         }
+        return StateAndEventProcessor.Response(
+            updatedState = MembershipAsyncRequestState(
+                value,
+                newCause,
+            ),
+            responseEvents = emptyList(),
+            markForDLQ = false,
+        )
+    }
+
+    private fun MembershipAsyncRequestState?.retries(): Int {
+        return (this?.cause as? RetriableFailure)?.numberOfRetriesToGo ?: MAX_RETRIES
+    }
+
+    private fun register(
+        value: MembershipAsyncRequest,
+        state: MembershipAsyncRequestState?,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
+        val request = value.request
         val registrationId = try {
             UUID.fromString(request.requestId)
         } catch (e: IllegalArgumentException) {
             logger.warn("Registration ${request.requestId} failed. Invalid request ID.", e)
-            return Outcome.FAILED_CANNOT_RETRY
+            return createFailureWithoutRetryResponse()
+        }
+        val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
+        val holdingIdentity =
+            virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+        if (holdingIdentity == null) {
+            val retries = state.retries()
+            return if (retries <= 0) {
+                logger.warn(
+                    "Registration ${request.requestId} failed." +
+                        " Could not find holding identity associated with ${request.holdingIdentityId} for too long." +
+                        " Will not retry nor persist the state.",
+                )
+                createFailureWithoutRetryResponse()
+            } else {
+                logger.warn(
+                    "Registration ${request.requestId} failed." +
+                        " Could not find holding identity associated with ${request.holdingIdentityId}",
+                )
+                createFailureWithRetryResponse(value, retries)
+            }
+        }
+        val cause = state?.cause
+        if (cause is SentToMgmWaitingForNetwork) {
+            if (cause.stopRetriesAfter.isBefore(clock.instant())) {
+                val message = "Registration request ${state.request.request} had been sent to the MGM too long"
+                logger.warn(
+                    "Registration request ${state.request.request} had been sent to the MGM too long ago and no " +
+                        "response had been received. Will not retry it.",
+                )
+                return persistAndCreateFailureWithoutRetryResponse(
+                    holdingIdentity,
+                    registrationId,
+                    message,
+                )
+            }
         }
         return try {
             val requestStatus = membershipQueryClient.queryRegistrationRequest(
                 holdingIdentity,
-                request.requestId
+                request.requestId,
             ).getOrThrow()
-            if (condition == RetryCondition.IS_STATE_SENT_TO_MGM) {
+            if (cause is SentToMgmWaitingForNetwork) {
                 if ((requestStatus == null) ||
                     (requestStatus.registrationStatus == RegistrationStatus.NEW) ||
                     (requestStatus.registrationStatus == RegistrationStatus.SENT_TO_MGM)
@@ -130,12 +189,12 @@ internal class MemberOpsAsyncProcessor(
                     logger.info("Request $registrationId had not received any reply from the MGM. Trying again...")
                 } else {
                     // This request had already moved on.
-                    return Outcome.SUCCESS_NO_CONDITION
+                    return createMoveOnResponse()
                 }
             } else {
                 if ((requestStatus != null) && (requestStatus.registrationStatus != RegistrationStatus.NEW)) {
                     // This request had already passed this state. no need to continue.
-                    return Outcome.SUCCESS_NO_CONDITION
+                    return createMoveOnResponse()
                 }
             }
 
@@ -143,31 +202,26 @@ internal class MemberOpsAsyncProcessor(
             // CORE-10367: return the status update command as part of the onNext
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
-            Outcome.SUCCESS_WITH_CONDITION
+            createSentToMgmResponse(value, state)
         } catch (e: InvalidMembershipRegistrationException) {
-            // CORE-10367: return the status update command as part of the onNext
-            membershipPersistenceClient.setRegistrationRequestStatus(
-                holdingIdentity,
-                registrationId.toString(),
-                RegistrationStatus.INVALID,
-                e.message?.take(255),
-            )
             logger.warn("Registration ${request.requestId} failed. Invalid registration request.", e)
-            Outcome.FAILED_CANNOT_RETRY
+            persistAndCreateFailureWithoutRetryResponse(
+                holdingIdentity,
+                registrationId,
+                e.message,
+            )
         } catch (e: Exception) {
-            if (canRetry) {
-                logger.warn("Registration ${request.requestId} failed. Will retry soon.", e)
-                Outcome.FAILED_CAN_RETRY
-            } else {
-                // CORE-10367: return the status update command as part of the onNext
-                membershipPersistenceClient.setRegistrationRequestStatus(
+            val retries = state.retries()
+            if (retries <= 0) {
+                logger.warn("Registration ${value.request.requestId} failed too many times. Will not retry again.", e)
+                persistAndCreateFailureWithoutRetryResponse(
                     holdingIdentity,
-                    registrationId.toString(),
-                    RegistrationStatus.INVALID,
-                    e.message?.take(255),
+                    registrationId,
+                    e.message,
                 )
-                logger.warn("Registration ${request.requestId} failed too many times. Will not retry again", e)
-                Outcome.FAILED_CANNOT_RETRY
+            } else {
+                logger.warn("Registration ${request.requestId} failed. Will retry soon.", e)
+                createFailureWithRetryResponse(value, retries)
             }
         }
     }

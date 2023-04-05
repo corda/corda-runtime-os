@@ -11,7 +11,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
-import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
@@ -534,7 +533,7 @@ class MemberResourceClientTest {
                 assertThat(record.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
                 assertThat(record.key.toString()).isEqualTo(HOLDING_IDENTITY_ID)
                 val value = record.value as? MembershipAsyncRequest
-                val request = value?.request as? RegistrationAsyncRequest
+                val request = value?.request
                 assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
             }
