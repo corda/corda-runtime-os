@@ -14,22 +14,23 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
     private val maximumSize = java.lang.Long.getLong("net.corda.flow.fiber.cache.maximumSize", 10)
     private val expireAfterWriteSeconds = java.lang.Long.getLong("net.corda.flow.fiber.cache.expireAfterWriteSeconds", 60)
 
-    private val cache: Cache<String, Any> = CacheFactoryImpl().build(
+    private val cache: Cache<FlowFiberCacheKey, Any> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
+            .weakValues()
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
 
-    override fun put(flowId: String, fiber: Any) {
-        cache.put(flowId, fiber)
+    override fun put(key: FlowFiberCacheKey, fiber: Any) {
+        cache.put(key, fiber)
     }
 
-    override fun get(flowId: String): Any? {
-        return cache.getIfPresent(flowId)
+    override fun get(key: FlowFiberCacheKey): Any? {
+        return cache.getIfPresent(key)
     }
 
-    override fun remove(flowId: String) {
-        cache.invalidate(flowId)
+    override fun remove(key: FlowFiberCacheKey) {
+        cache.invalidate(key)
     }
 }
