@@ -63,5 +63,5 @@ interface TransactionMetadataInternal : TransactionMetadata {
      *
      * @return Membership group parameters hash
      */
-    fun getMembershipGroupParametersHash(): String
+    fun getMembershipGroupParametersHash(): String?
 }

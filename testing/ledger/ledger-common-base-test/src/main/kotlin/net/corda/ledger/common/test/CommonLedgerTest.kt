@@ -15,13 +15,11 @@ import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadata
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.mockPlatformInfoProvider
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 
 abstract class CommonLedgerTest {
 
     val currentSandboxGroupContext: CurrentSandboxGroupContext = mockCurrentSandboxGroupContext()
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mockMembershipGroupReaderProvider()
 
     val cipherSchemeMetadata = CipherSchemeMetadataImpl()
 
@@ -44,8 +42,7 @@ abstract class CommonLedgerTest {
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
     val transactionMetadataFactory = TransactionMetadataFactoryImpl(
         currentSandboxGroupContext,
-        mockPlatformInfoProvider(),
-        membershipGroupReaderProvider
+        mockPlatformInfoProvider()
     )
 
     val wireTransactionKryoSerializer = WireTransactionKryoSerializer(wireTransactionFactory)

@@ -18,6 +18,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -56,6 +57,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
     private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -105,8 +108,19 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
         TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
-        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure
+        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
+        TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to getCurrentMgmGroupParametersHash()
     )
+
+    private fun getCurrentMgmGroupParametersHash(): String {
+        val holdingIdentity = currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity
+        val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+        val groupParameters = groupReader.signedGroupParameters
+        requireNotNull(groupParameters) {
+            "Group parameters could not be accessed!"
+        }
+        return groupParameters.hash.toString()
+    }
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray {
         return jsonValidator.canonicalize(jsonMarshallingService.format(metadata)).toByteArray()

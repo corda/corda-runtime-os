@@ -30,7 +30,8 @@ fun UtxoSignedTransactionFactory.createExample(
         jsonValidator,
         componentGroups,
         ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
-        transactionSubType = "GENERAL"
+        transactionSubType = "GENERAL",
+        memberShipGroupParametersHash = "MEMBERSHIP_GROUP_PARAMETERS_HASH"
     )
     return create(wireTransaction, listOf(getSignatureWithMetadataExample()))
 }

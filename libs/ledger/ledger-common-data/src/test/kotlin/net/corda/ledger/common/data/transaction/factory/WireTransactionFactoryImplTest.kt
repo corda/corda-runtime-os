@@ -135,7 +135,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     fun `Creating a WireTransaction with Consensual settings with transaction subtype throws`() {
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-            transactionSubType = "GENERAL")
+            transactionSubType = "GENERAL"
+        )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
         assertThatThrownBy {
@@ -153,7 +154,9 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     fun `Creating a WireTransaction with Utxo settings`() {
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
-            transactionSubType = "GENERAL")
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
         wireTransactionFactory.create(
@@ -164,10 +167,12 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     }
 
     @Test
-    fun `Creating a WireTransaction with Consensual settings without transaction subtype throws`() {
+    fun `Creating a WireTransaction with UTXO settings without transaction subtype throws`() {
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
-            transactionSubType = null)
+            transactionSubType = null,
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
         assertThatThrownBy {
@@ -182,10 +187,34 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     }
 
     @Test
-    fun `Creating a WireTransaction with Consensual settings with unknown transaction subtype throws`() {
+    fun `Creating a WireTransaction with UTXO settings without membership group parameters hash subtype throws`() {
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
-            transactionSubType = "UNKNOWN")
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = null
+        )
+        val metadataJson = jsonMarshallingService.format(metadata)
+        val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        println(canonicalJson)
+        assertThatThrownBy {
+            wireTransactionFactory.create(
+                listOf(
+                    listOf(canonicalJson.toByteArray()),
+                ), privacySalt
+            )
+        }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("membershipGroupParametersHash: null found, string expected")
+    }
+
+
+    @Test
+    fun `Creating a WireTransaction with UTXO settings with unknown transaction subtype throws`() {
+        val metadata = transactionMetadataExample(
+            ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
+            transactionSubType = "UNKNOWN",
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
         assertThatThrownBy {

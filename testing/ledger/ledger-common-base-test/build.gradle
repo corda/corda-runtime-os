@@ -22,7 +22,6 @@ dependencies {
     implementation project(":libs:serialization:json-validator")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
-    implementation project(':components:membership:membership-group-read')
 
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

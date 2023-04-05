@@ -17,9 +17,11 @@ fun WireTransactionFactory.createExample(
     componentGroups: List<List<ByteArray>> = defaultComponentGroups,
     ledgerModel: String = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
     transactionSubType: String? = null,
+    memberShipGroupParametersHash: String? = null,
     metadata: TransactionMetadata = transactionMetadataExample(
         ledgerModel = ledgerModel,
-        transactionSubType = transactionSubType
+        transactionSubType = transactionSubType,
+        memberShipGroupParametersHash = memberShipGroupParametersHash
     )
 ): WireTransaction {
     val metadataJson = jsonMarshallingService.format(metadata)

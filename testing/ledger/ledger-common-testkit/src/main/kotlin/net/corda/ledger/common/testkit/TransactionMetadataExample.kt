@@ -14,12 +14,22 @@ fun transactionMetadataExample(
     cpkPackageSeed: String? = null,
     cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample(cpkPackageSeed),
     ledgerModel: String = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-    transactionSubType: String? = null
+    transactionSubType: String? = null,
+    memberShipGroupParametersHash: String? = null
 ): TransactionMetadata {
     val transactionSubTypePart = if (transactionSubType == null) {
         emptyMap()
     } else {
-        mapOf(TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to transactionSubType)
+        mapOf(
+            TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to transactionSubType,
+        )
+    }
+    val memberShipGroupParametersHashPart = if (memberShipGroupParametersHash == null) {
+        emptyMap()
+    } else {
+        mapOf(
+            TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to memberShipGroupParametersHash
+        )
     }
     val componenGroupStructure = listOf(
         listOf("metadata"),
@@ -47,7 +57,6 @@ fun transactionMetadataExample(
             TransactionMetadataImpl.CPK_METADATA_KEY to cpkMetadata,
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
             TransactionMetadataImpl.COMPONENT_GROUPS_KEY to componenGroupStructure,
-            TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to "MEMBERSHIP_GROUP_PARAMETERS_HASH"
-        ) + transactionSubTypePart
+        ) + transactionSubTypePart + memberShipGroupParametersHashPart
     )
 }

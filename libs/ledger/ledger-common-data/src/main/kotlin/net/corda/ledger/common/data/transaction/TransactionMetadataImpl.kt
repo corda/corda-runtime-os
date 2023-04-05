@@ -90,7 +90,7 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         }
     }
 
-    override fun getMembershipGroupParametersHash(): String = this[MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY].toString()
+    override fun getMembershipGroupParametersHash(): String? = this[MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY]?.toString()
 
     override fun getPlatformVersion(): Int {
         val version = this[PLATFORM_VERSION_KEY].toString()
