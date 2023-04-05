@@ -6,6 +6,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -45,7 +47,9 @@ class MockMembershipService @Activate constructor(
                 get() = TODO("Not yet implemented")
             override val owningMember: MemberX500Name
                 get() = TODO("Not yet implemented")
-            override val groupParameters: GroupParameters?
+            override val groupParameters: InternalGroupParameters?
+                get() = TODO("Not yet implemented")
+            override val signedGroupParameters: SignedGroupParameters?
                 get() = TODO("Not yet implemented")
 
             override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
@@ -97,10 +101,6 @@ class MockMembershipService @Activate constructor(
                     }
 
                     override fun getName(): MemberX500Name {
-                        TODO("Not yet implemented")
-                    }
-
-                    override fun getSessionInitiationKeys(): MutableList<PublicKey> {
                         TODO("Not yet implemented")
                     }
 
