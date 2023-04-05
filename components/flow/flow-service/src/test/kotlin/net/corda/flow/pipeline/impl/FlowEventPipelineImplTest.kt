@@ -8,6 +8,7 @@ import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberCache
+import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.Interruptable
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
@@ -58,11 +59,12 @@ class FlowEventPipelineImplTest {
     }
 
     private val mockHoldingIdentity = mock<HoldingIdentity>()
+    private val mockFlowId = "flow_id_111"
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(waitingFor).thenReturn(waitingForWakeup)
         whenever(inRetryState).thenReturn(false)
         whenever(holdingIdentity).thenReturn(mockHoldingIdentity)
-        whenever(flowId).thenReturn("flow_id_111")
+        whenever(flowId).thenReturn(mockFlowId)
     }
 
     private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
@@ -175,7 +177,8 @@ class FlowEventPipelineImplTest {
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
         val flowResult = FlowIORequest.SubFlowFinished(emptyList())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
-        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult, mock())
+        val cacheableFiber = mock<Any>()
+        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult, cacheableFiber)
 
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowFiberFuture.future.get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)).thenReturn(
@@ -188,6 +191,7 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
         verify(checkpoint).serializedFiber = expectedFiber
+        verify(flowFiberCache).put(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)), eq(cacheableFiber))
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with flow completion result")
@@ -205,6 +209,7 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, waitingForWakeup.value)
         verify(checkpoint).serializedFiber = expectedFiber
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -221,6 +226,7 @@ class FlowEventPipelineImplTest {
         pipeline.runOrContinue(RUN_OR_CONTINUE_TIMEOUT)
         verify(flowRunner).runFlow(any(), any())
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -246,6 +252,7 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(any(), any())
         verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
         verify(checkpoint, never()).serializedFiber
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -263,6 +270,7 @@ class FlowEventPipelineImplTest {
         verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
         verify(runFlowFiberFuture.interruptable).attemptInterrupt()
         verify(checkpoint, never()).serializedFiber
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
