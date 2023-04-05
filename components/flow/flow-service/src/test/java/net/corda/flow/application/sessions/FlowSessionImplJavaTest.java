@@ -55,6 +55,7 @@ public class FlowSessionImplJavaTest {
     private final FlowSession session = new FlowSessionImpl(
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
+            false,
             flowFiberService,
             serializationService,
             flowContext,

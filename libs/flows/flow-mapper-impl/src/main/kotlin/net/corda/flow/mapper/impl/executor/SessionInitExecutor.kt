@@ -1,6 +1,7 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
@@ -15,6 +16,7 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -33,8 +35,13 @@ class SessionInitExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val isInteropSessionInit = sessionInit.contextSessionProperties?.let { properties ->
+        val map = properties.items.associate { it.key to it.value }
+        map[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true") ?: false
+    } ?: false
+
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, sessionEvent.isInteropEvent())
+    private val outputTopic = getSessionEventOutputTopic(messageDirection, isInteropSessionInit)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -57,7 +64,7 @@ class SessionInitExecutor(
 
         // Send a session confirm message in response to the session init.
         // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
-        if (sessionEvent.isInteropEvent()) {
+        if (isInteropSessionInit) {
             val hackyConfirm = Record(
                 Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
                 sessionEvent.sessionId,
@@ -71,19 +78,19 @@ class SessionInitExecutor(
                         sessionEvent.initiatedIdentity,
                         0,
                         emptyList(),
-                        SessionConfirm(KeyValuePairList(emptyList()))
+                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair(Constants.FLOW_SESSION_IS_INTEROP, "true"))))
                     )
                 )
             )
 
             return FlowMapperResult(
-                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, true),
                 listOf(hackyConfirm)
             )
         }
 
         return FlowMapperResult(
-            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, false),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
         )
     }

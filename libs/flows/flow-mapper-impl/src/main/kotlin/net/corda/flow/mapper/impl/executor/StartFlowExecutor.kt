@@ -24,7 +24,7 @@ class StartFlowExecutor(
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             val flowId = generateFlowId()
-            val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN)
+            val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN, false)
             val flowEvent = FlowEvent(flowId, startRPCFlow)
             FlowMapperResult(
                 newState,
