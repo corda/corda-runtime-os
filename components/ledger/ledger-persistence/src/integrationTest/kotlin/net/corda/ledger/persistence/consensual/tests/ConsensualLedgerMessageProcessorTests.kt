@@ -16,7 +16,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
-import net.corda.flow.utils.keyValuePairListOf
+import net.corda.flow.utils.toKeyValuePairList
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -36,6 +36,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -127,11 +128,7 @@ class ConsensualLedgerMessageProcessorTests {
             virtualNodeInfo.holdingIdentity,
             persistTransaction,
             UtxoLedgerMessageProcessorTests.EXTERNAL_EVENT_CONTEXT.apply {
-                this.contextProperties = keyValuePairListOf(
-                    cpkFileHashes
-                        .mapIndexed{ idx, hash -> listOf("", idx).joinToString(".") to hash.toString()}
-                        .toMap()
-                )
+                this.contextProperties = cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
             }
         )
 

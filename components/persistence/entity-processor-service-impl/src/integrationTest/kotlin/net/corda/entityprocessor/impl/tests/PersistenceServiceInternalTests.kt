@@ -4,7 +4,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -41,6 +40,7 @@ import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
+import net.corda.flow.utils.toKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -160,15 +160,9 @@ class PersistenceServiceInternalTests {
         entitySandboxService = createEntitySandbox(dbConnectionManager)
 
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
-
-        EXTERNAL_EVENT_CONTEXT.contextProperties = KeyValuePairList(
-            cpkFileHashes.mapIndexed { idx, hash ->
-                KeyValuePair(listOf(CPK_FILE_CHECKSUM, idx).joinToString("."), hash.toString())
-            }
-        )
-
         sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
+        EXTERNAL_EVENT_CONTEXT.contextProperties = cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
 
         // migrate DB schema
         dogClass = sandbox.sandboxGroup.getDogClass()
@@ -265,11 +259,7 @@ class PersistenceServiceInternalTests {
             virtualNodeInfoTwo.holdingIdentity.toAvro(),
             PersistEntities(listOf(sandboxOne.serialize(dog.instance))),
             EXTERNAL_EVENT_CONTEXT.apply {
-                contextProperties = KeyValuePairList(
-                    cpkFileHashesTwo.mapIndexed { idx, hash ->
-                        KeyValuePair(listOf(CPK_FILE_CHECKSUM, idx).joinToString("."), hash.toString())
-                    }
-                )
+                contextProperties = cpkFileHashesTwo.toKeyValuePairList(CPK_FILE_CHECKSUM)
             }
         )
         val processor = EntityMessageProcessor(

@@ -19,7 +19,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
-import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.flow.utils.toKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
@@ -179,11 +179,11 @@ class PersistenceExceptionTests {
             EntityRequest(
                 oldRequest.holdingIdentity,
                 unknownCommand,
-                ExternalEventContext("request id", "flow id", KeyValuePairList(
-                    cpkFileHashes.mapIndexed { idx, hash ->
-                        KeyValuePair(listOf(CPK_FILE_CHECKSUM, idx).joinToString("."), hash.toString())
-                    }
-                ))
+                ExternalEventContext(
+                    "request id",
+                    "flow id",
+                    cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
+                )
             )
 
         val entitySandboxService =
