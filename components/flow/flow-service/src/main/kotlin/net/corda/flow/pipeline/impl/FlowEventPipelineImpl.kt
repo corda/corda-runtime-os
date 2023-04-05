@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberCache
+import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
@@ -184,17 +185,19 @@ class FlowEventPipelineImpl(
         }
         when (flowResult) {
             is FlowIORequest.FlowFinished -> {
-                flowFiberCache.remove(context.checkpoint.flowId)
+                flowFiberCache.remove(FlowFiberCacheKey(context.checkpoint.holdingIdentity, context.checkpoint.flowId))
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 output = flowResult
             }
             is FlowIORequest.FlowSuspended<*> -> {
-                flowResult.cacheableFiber?.let { flowFiberCache.put(context.checkpoint.flowId, it) }
+                flowResult.cacheableFiber?.let {
+                    flowFiberCache.put(FlowFiberCacheKey(context.checkpoint.holdingIdentity, context.checkpoint.flowId), it)
+                }
                 context.checkpoint.serializedFiber = flowResult.fiber
                 output = flowResult.output
             }
             is FlowIORequest.FlowFailed -> {
-                flowFiberCache.remove(context.checkpoint.flowId)
+                flowFiberCache.remove(FlowFiberCacheKey(context.checkpoint.holdingIdentity, context.checkpoint.flowId))
                 output = flowResult
             }
             else -> throw FlowFatalException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")

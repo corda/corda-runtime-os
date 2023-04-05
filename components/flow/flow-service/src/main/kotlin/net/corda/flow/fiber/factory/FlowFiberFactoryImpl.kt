@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.fiber.FlowFiberCache
+import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Activate
@@ -71,12 +72,16 @@ class FlowFiberFactoryImpl @Activate constructor(
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
         val cachedFiber: FlowFiberImpl? = try {
-            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowId) as FlowFiberImpl?
+            flowFiberCache.get(
+                FlowFiberCacheKey(flowFiberExecutionContext.flowCheckpoint.holdingIdentity, flowFiberExecutionContext.flowCheckpoint.flowId)
+            ) as FlowFiberImpl?
         } catch (e: Exception) {
             // shouldn't really be possible to get in here
             logger.warn("Failure casting flow fiber from checkpoint for flow ${flowFiberExecutionContext.flowCheckpoint.flowId}. " +
                     "Removing and skipping cache.")
-            flowFiberCache.remove(flowFiberExecutionContext.flowCheckpoint.flowId)
+            flowFiberCache.remove(
+                FlowFiberCacheKey(flowFiberExecutionContext.flowCheckpoint.holdingIdentity, flowFiberExecutionContext.flowCheckpoint.flowId)
+            )
             null
         }
         return cachedFiber ?: flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
