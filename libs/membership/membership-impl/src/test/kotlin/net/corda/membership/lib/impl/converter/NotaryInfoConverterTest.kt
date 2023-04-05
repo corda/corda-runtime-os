@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -40,8 +41,8 @@ class NotaryInfoConverterTest {
             CompositeKeyNodeAndWeight(it, 1)
         }
         val compositeKeyProvider: CompositeKeyProvider = mock {
-            on { create(eq(weightedKeys), eq(null)) } doReturn compositeKeyForNonEmptyKeys
-            on { create(eq(emptyList()), eq(null)) } doReturn compositeKeyForEmptyKeys
+            on { create(eq(weightedKeys), any()) } doReturn compositeKeyForNonEmptyKeys
+            on { create(eq(emptyList()), any()) } doReturn compositeKeyForEmptyKeys
         }
 
         val correctContext = sortedMapOf(
