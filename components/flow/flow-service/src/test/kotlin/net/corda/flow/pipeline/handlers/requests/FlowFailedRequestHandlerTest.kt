@@ -36,7 +36,7 @@ class FlowFailedRequestHandlerTest {
     }
 
     private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
-    private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
+    private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2; this.status = SessionStateType.CLOSED }
     private val sessionState3 = SessionState().apply { this.sessionId = SESSION_ID_3; this.status = SessionStateType.ERROR }
     private val record = Record("", "", FlowEvent())
 
@@ -99,7 +99,7 @@ class FlowFailedRequestHandlerTest {
     }
 
     @Test
-    fun `Sends session error messages to non-closed and non-errored sessions and creates a Wakeup record when the flow has sessions to error`() {
+    fun `Sends session error messages to non-closed and non-errored sessions`() {
         val statusRecord = Record("", FLOW_KEY, FlowStatus())
         val cleanupRecord = Record("", FLOW_KEY.toString(), FlowMapperEvent())
         val flowStatus = FlowStatus()
@@ -110,11 +110,11 @@ class FlowFailedRequestHandlerTest {
                 SESSION_IDS,
                 setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
             )
-        ).thenReturn(listOf(sessionState1, sessionState2))
+        ).thenReturn(listOf(sessionState1))
         whenever(
             testContext.flowSessionManager.sendErrorMessages(
                 eq(testContext.flowCheckpoint),
-                eq(listOf(SESSION_ID_3)),
+                eq(listOf(SESSION_ID_2, SESSION_ID_3)),
                 eq(flowError),
                 any()
             )
