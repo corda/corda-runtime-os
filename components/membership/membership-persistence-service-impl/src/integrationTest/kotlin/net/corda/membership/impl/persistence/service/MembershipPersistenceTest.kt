@@ -524,829 +524,829 @@ class MembershipPersistenceTest {
         }
     }
 
-//    @Test
-//    fun `registration requests can persist over RPC topic`() {
-//        val registrationId = randomUUID().toString()
-//        val status = RegistrationStatus.SENT_TO_MGM
-//
-//        val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
-//            viewOwningHoldingIdentity,
-//            RegistrationRequest(
-//                RegistrationStatus.SENT_TO_MGM,
-//                registrationId,
-//                registeringHoldingIdentity,
-//                ByteBuffer.wrap(
-//                    cordaAvroSerializer.serialize(
-//                        KeyValuePairList(
-//                            listOf(
-//                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-//                            )
-//                        )
-//                    )
-//                ),
-//                CryptoSignatureWithKey(
-//                    ByteBuffer.wrap(byteArrayOf()),
-//                    ByteBuffer.wrap(byteArrayOf())
-//                ),
-//                CryptoSignatureSpec("", null, null),
-//                REGISTRATION_SERIAL,
-//            )
-//        )
-//
-//        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(RegistrationRequestEntity::class.java, registrationId)
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
-//        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-//        assertThat(persistedEntity.status).isEqualTo(status.toString())
-//
-//        val persistedMemberContext = persistedEntity.context.deserializeContextAsMap()
-//        with(persistedMemberContext.entries) {
-//            assertThat(size).isEqualTo(1)
-//            assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
-//            assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
-//        }
-//    }
-//
-//    @Test
-//    fun `persistGroupPolicy can persist over RPC topic`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM ${GroupPolicyEntity::class.java.simpleName}").executeUpdate()
-//        }
-//        val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
-//        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1, 1)
-//        assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
-//        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2, 2)
-//        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(GroupPolicyEntity::class.java, 1L)
-//        }
-//        assertThat(cordaAvroDeserializer.deserialize(persistedEntity.properties)!!.toMap()).isEqualTo(
-//            groupPolicy1.entries.associate { it.key to it.value }
-//        )
-//        val secondPersistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(GroupPolicyEntity::class.java, 2L)
-//        }
-//        assertThat(cordaAvroDeserializer.deserialize(secondPersistedEntity.properties)!!.toMap()).isEqualTo(
-//            groupPolicy2.entries.associate { it.key to it.value }
-//        )
-//    }
-//
-//    @Test
-//    fun `persistGroupParametersInitialSnapshot can persist over RPC topic`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
-//        }
-//        val persisted =
-//            membershipPersistenceClientWrapper.persistGroupParametersInitialSnapshot(viewOwningHoldingIdentity)
-//        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                GroupParametersEntity::class.java,
-//                1
-//            )
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        assertThat(persistedEntity.epoch).isEqualTo(1)
-//        with(persistedEntity.parameters) {
-//            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-//            assertThat(deserialized.size).isEqualTo(2)
-//            assertThat(deserialized[EPOCH_KEY]).isEqualTo("1")
-//            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-//        }
-//    }
-//
-//    @Test
-//    fun `persistGroupParameters can persist over RPC topic`() {
-//        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
-//        val pubKey = generator.genKeyPair().public
-//
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
-//            val entity = GroupParametersEntity(
-//                epoch = 1,
-//                parameters = cordaAvroSerializer.serialize(
-//                    KeyValuePairList(
-//                        listOf(
-//                            KeyValuePair(EPOCH_KEY, "1"),
-//                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-//                        )
-//                    )
-//                )!!,
-//                signaturePublicKey = keyEncodingService.encodeAsByteArray(pubKey),
-//                signatureContent = byteArrayOf(1),
-//                signatureSpec = RSA_SHA256.signatureName
-//            )
-//            it.persist(entity)
-//        }
-//        val params = mapOf(
-//            EPOCH_KEY to "2",
-//            MODIFIED_TIME_KEY to clock.instant().toString()
-//        )
-//        val groupParameters = layeredPropertyMapFactory.create<TestGroupParametersImpl>(params)
-//            .apply {
-//                serialisedParams = cordaAvroSerializer.serialize(
-//                    KeyValuePairList(params.map { KeyValuePair(it.key, it.value) })
-//                )
-//                publicKey = pubKey
-//            }
-//        val persisted = membershipPersistenceClientWrapper
-//            .persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
-//        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                GroupParametersEntity::class.java,
-//                2
-//            )
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        with(persistedEntity.parameters) {
-//            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-//            assertThat(deserialized.size).isEqualTo(2)
-//            assertThat(deserialized[EPOCH_KEY]).isEqualTo("2")
-//            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-//        }
-//    }
-//
-//    @Test
-//    fun `addNotaryToGroupParameters can persist new notary service over RPC topic`() {
-//        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
-//            val entity = GroupParametersEntity(
-//                epoch = 50,
-//                parameters = cordaAvroSerializer.serialize(
-//                    KeyValuePairList(
-//                        listOf(
-//                            KeyValuePair(EPOCH_KEY, "50"),
-//                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-//                        )
-//                    )
-//                )!!,
-//                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
-//                signatureContent = byteArrayOf(1),
-//                signatureSpec = RSA_SHA256.signatureName
-//            )
-//            it.persist(entity)
-//        }
-//
-//        val groupId = randomUUID().toString()
-//        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
-//        val endpointUrl = "https://localhost:8080"
-//        val notaryServiceName = "O=New Service, L=London, C=GB"
-//        val notaryServicePlugin = "Notary Plugin"
-//        val notaryKey = generator.generateKeyPair().public
-//        val notaryKeyHash = notaryKey.calculateHash()
-//        val memberContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
-//                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-//                KeyValuePair(GROUP_ID, groupId),
-//                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
-//                KeyValuePair(PLATFORM_VERSION, "11"),
-//                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-//                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
-//                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
-//                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
-//                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
-//                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), keyEncodingService.encodeAsString(notaryKey)),
-//                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
-//                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
-//            ).sorted()
-//        )
-//        val mgmContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
-//                KeyValuePair(SERIAL, "1"),
-//            ).sorted()
-//        )
-//        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
-//        val expectedGroupParameters = listOf(
-//            KeyValuePair(EPOCH_KEY, "51"),
-//            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
-//            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-//        )
-//
-//        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-//
-//        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
-//            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
-//            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
-//                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
-//        }
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                GroupParametersEntity::class.java,
-//                51
-//            )
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        with(persistedEntity.parameters) {
-//            val deserialized = cordaAvroDeserializer.deserialize(this)!!
-//            val deserializedList = deserialized.items
-//            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
-//            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
-//                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
-//            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
-//        }
-//    }
-//
-//    @Test
-//    fun `addNotaryToGroupParameters can persist notary to existing notary service over RPC topic`() {
-//        val groupId = randomUUID().toString()
-//        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
-//        val endpointUrl = "http://localhost:8080"
-//        val notaryServiceName = "O=New Service, L=London, C=GB"
-//        val notaryServicePlugin = "Notary Plugin"
-//        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
-//        val notaryKey = generator.generateKeyPair().public
-//        val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
-//        val notaryKeyHash = notaryKey.calculateHash()
-//        val memberContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
-//                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-//                KeyValuePair(GROUP_ID, groupId),
-//                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
-//                KeyValuePair(PLATFORM_VERSION, "11"),
-//                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-//                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
-//                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
-//                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
-//                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1), "2"),
-//                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
-//                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
-//                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
-//                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
-//            ).sorted()
-//        )
-//        val mgmContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
-//                KeyValuePair(SERIAL, "1"),
-//            ).sorted()
-//        )
-//        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
-//            val entity = GroupParametersEntity(
-//                epoch = 100,
-//                parameters = cordaAvroSerializer.serialize(
-//                    KeyValuePairList(
-//                        listOf(
-//                            KeyValuePair(EPOCH_KEY, "100"),
-//                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-//                        )
-//                    )
-//                )!!,
-//                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
-//                signatureContent = byteArrayOf(1),
-//                signatureSpec = RSA_SHA256.signatureName
-//            )
-//            it.persist(entity)
-//        }
-//        val expectedGroupParameters = listOf(
-//            KeyValuePair(EPOCH_KEY, "101"),
-//            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
-//            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
-//        )
-//
-//        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-//
-//        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
-//            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
-//            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
-//                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
-//        }
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                GroupParametersEntity::class.java,
-//                101
-//            )
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        with(persistedEntity.parameters) {
-//            val deserialized = cordaAvroDeserializer.deserialize(this)!!
-//            val deserializedList = deserialized.items
-//            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
-//            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
-//                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
-//            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
-//        }
-//    }
-//
-//    @Test
-//    fun `addNotaryToGroupParameters can persist notary with rotated keys over RPC topic`() {
-//        val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
-//        val groupId = randomUUID().toString()
-//        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
-//        val endpointUrl = "http://localhost:8080"
-//        val notaryServiceName = "O=New Service, L=London, C=GB"
-//        val notaryServicePlugin = "Notary Plugin"
-//        val notaryKey = with(keyGenerator) {
-//            generateKeyPair().public
-//        }
-//        val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
-//        val notaryKeyHash = notaryKey.calculateHash()
-//        val memberContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
-//                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
-//                KeyValuePair(GROUP_ID, groupId),
-//                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
-//                KeyValuePair(PLATFORM_VERSION, "11"),
-//                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
-//                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
-//                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
-//                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
-//                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
-//                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
-//                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
-//                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
-//            ).sorted()
-//        )
-//        val mgmContext = KeyValuePairList(
-//            listOf(
-//                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
-//                KeyValuePair(SERIAL, "1"),
-//            ).sorted()
-//        )
-//        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
-//        val oldNotaryKey = with(keyGenerator) {
-//            keyEncodingService.encodeAsString(generateKeyPair().public)
-//        }
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
-//            val entity = GroupParametersEntity(
-//                epoch = 150,
-//                parameters = cordaAvroSerializer.serialize(
-//                    KeyValuePairList(
-//                        listOf(
-//                            KeyValuePair(EPOCH_KEY, "150"),
-//                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-//                            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey)
-//                        )
-//                    )
-//                )!!,
-//                signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public),
-//                signatureContent = byteArrayOf(1),
-//                signatureSpec = RSA_SHA256.signatureName
-//            )
-//            it.persist(entity)
-//        }
-//        val expectedGroupParameters = listOf(
-//            KeyValuePair(EPOCH_KEY, "151"),
-//            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
-//            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-//            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey),
-//            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
-//        )
-//
-//        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-//
-//        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
-//            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
-//            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
-//                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
-//        }
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                GroupParametersEntity::class.java,
-//                151
-//            )
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        with(persistedEntity.parameters) {
-//            val deserialized = cordaAvroDeserializer.deserialize(this)!!
-//            val deserializedList = deserialized.items
-//            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
-//            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
-//                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
-//            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
-//        }
-//    }
-//
-//    @Test
-//    fun `member infos can persist over RPC topic`() {
-//        val result = persistMember(x500Name, MEMBER_STATUS_ACTIVE)
-//
-//        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                MemberInfoEntity::class.java,
-//                MemberInfoEntityPrimaryKey(
-//                    groupId, x500Name.toString(), false
-//                )
-//            )
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        assertThat(persistedEntity.groupId).isEqualTo(groupId)
-//        assertThat(persistedEntity.memberX500Name).isEqualTo(x500Name.toString())
-//        assertThat(persistedEntity.serialNumber).isEqualTo(1)
-//        assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-//        assertThat(persistedEntity.memberSignatureKey).isEqualTo(signatureKey)
-//        assertThat(persistedEntity.memberSignatureContent).isEqualTo(signatureContent)
-//        assertThat(persistedEntity.memberSignatureSpec).isEqualTo(signatureSpec.signatureName)
-//
-//        val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
-//        assertThat(persistedMgmContext)
-//            .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
-//            .containsEntry(SERIAL, "1")
-//
-//        val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
-//        assertThat(persistedMemberContext)
-//            .containsEntry(String.format(URL_KEY, "0"), ENDPOINT_URL)
-//            .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
-//            .containsEntry(GROUP_ID, groupId)
-//            .containsEntry(PARTY_NAME, x500Name.toString())
-//            .containsEntry(PLATFORM_VERSION, "5000")
-//            .containsEntry(SOFTWARE_VERSION, "5.0.0")
-//    }
-//
-//    @Test
-//    fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
-//        // 1. Persist a member
-//        val memberPersistentResult = persistMember(registeringX500Name, MEMBER_STATUS_PENDING)
-//
-//        assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//        val memberEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                MemberInfoEntity::class.java,
-//                MemberInfoEntityPrimaryKey(
-//                    groupId, registeringX500Name.toString(), true
-//                )
-//            )
-//        }
-//        assertThat(memberEntity.status).isEqualTo(MEMBER_STATUS_PENDING)
-//
-//        // 2. Persist a request
-//        val registrationId = randomUUID().toString()
-//        val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId)
-//
-//        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val requestEntity = vnodeEmf.createEntityManager().use {
-//            it.find(RegistrationRequestEntity::class.java, registrationId)
-//        }
-//        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
-//
-//        val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
-//            viewOwningHoldingIdentity,
-//            registeringHoldingIdentity,
-//            registrationId,
-//        ).getOrThrow()
-//
-//        assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-//        assertThat(approveResult.groupId).isEqualTo(groupId)
-//        assertThat(approveResult.name).isEqualTo(registeringHoldingIdentity.x500Name)
-//        val newMemberEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                MemberInfoEntity::class.java,
-//                MemberInfoEntityPrimaryKey(
-//                    groupId, registeringX500Name.toString(), false
-//                )
-//            )
-//        }
-//        assertThat(newMemberEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-//        val newRequestEntity = vnodeEmf.createEntityManager().use {
-//            it.find(RegistrationRequestEntity::class.java, registrationId)
-//        }
-//        assertThat(newRequestEntity.status).isEqualTo(RegistrationStatus.APPROVED.toString())
-//    }
-//
-//    @Test
-//    fun `queryMembersSignatures returns the member signatures`() {
-//        membershipQueryClient.start()
-//        eventually {
-//            assertThat(membershipPersistenceClient.isRunning).isTrue
-//        }
-//
-//        val memberAndRegistrationId = mutableMapOf<HoldingIdentity, String>()
-//
-//        val signatures = (1..5).associate { index ->
-//            val registrationId = randomUUID().toString()
-//            val holdingId = createTestHoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
-//            memberAndRegistrationId[holdingId] = registrationId
-//            val publicKey = "pk-$index".toByteArray()
-//            val signature = "signature-$index".toByteArray()
-//            val signatureSpec = CryptoSignatureSpec("spec-$index", null, null)
-//            persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
-//
-//            val cryptoSignatureWithKey = CryptoSignatureWithKey(
-//                ByteBuffer.wrap(publicKey),
-//                ByteBuffer.wrap(signature)
-//            )
-//            val context = KeyValuePairList(
-//                listOf(
-//                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-//                )
-//            )
-//            membershipPersistenceClientWrapper.persistRegistrationRequest(
-//                viewOwningHoldingIdentity,
-//                RegistrationRequest(
-//                    RegistrationStatus.SENT_TO_MGM,
-//                    registrationId,
-//                    holdingId,
-//                    ByteBuffer.wrap(
-//                        cordaAvroSerializer.serialize(
-//                            context
-//                        )
-//                    ),
-//                    cryptoSignatureWithKey,
-//                    signatureSpec,
-//                    REGISTRATION_SERIAL,
-//                )
-//            ).getOrThrow()
-//
-//            holdingId to (
-//                    cryptoSignatureWithKey to signatureSpec
-//            )
-//        }
-//
-//        // before approval only non-pending information is available
-//        assertThrows<MembershipPersistenceException> {
-//            membershipQueryClient.queryMembersSignatures(
-//                viewOwningHoldingIdentity,
-//                signatures.keys
-//            ).getOrThrow()
-//        }
-//
-//        memberAndRegistrationId.forEach {
-//            membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
-//                viewOwningHoldingIdentity, it.key, it.value
-//            ).getOrThrow()
-//        }
-//
-//        val resultsAfterApproval = membershipQueryClient.queryMembersSignatures(
-//            viewOwningHoldingIdentity,
-//            signatures.keys
-//        ).getOrThrow()
-//        assertThat(resultsAfterApproval).containsAllEntriesOf(signatures)
-//    }
-//
-//    @Test
-//    fun `setRegistrationRequestStatus updates the registration request status`() {
-//        val registrationId = randomUUID().toString()
-//        val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
-//            viewOwningHoldingIdentity,
-//            RegistrationRequest(
-//                RegistrationStatus.SENT_TO_MGM,
-//                registrationId,
-//                registeringHoldingIdentity,
-//                ByteBuffer.wrap(
-//                    cordaAvroSerializer.serialize(
-//                        KeyValuePairList(
-//                            listOf(
-//                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-//                            )
-//                        )
-//                    )
-//                ),
-//                CryptoSignatureWithKey(
-//                    ByteBuffer.wrap(byteArrayOf()),
-//                    ByteBuffer.wrap(byteArrayOf())
-//                ),
-//                CryptoSignatureSpec("", null, null),
-//                REGISTRATION_SERIAL,
-//            )
-//        )
-//
-//        assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val persistedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(RegistrationRequestEntity::class.java, registrationId)
-//        }
-//        assertThat(persistedEntity).isNotNull
-//        assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
-//        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-//        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
-//
-//        val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
-//            viewOwningHoldingIdentity,
-//            registrationId,
-//            RegistrationStatus.PENDING_AUTO_APPROVAL
-//        )
-//
-//        assertThat(updateRegRequestStatusResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val updatedEntity = vnodeEmf.createEntityManager().use {
-//            it.find(RegistrationRequestEntity::class.java, registrationId)
-//        }
-//        assertThat(updatedEntity).isNotNull
-//        assertThat(updatedEntity.registrationId).isEqualTo(registrationId)
-//        assertThat(updatedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-//        assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
-//    }
-//
-//    @Test
-//    fun `addApprovalRule persists the approval rule and returns the rule ID`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
-//        }
-//        val ruleDetails = membershipPersistenceClientWrapper.addApprovalRule(
-//            viewOwningHoldingIdentity,
-//            ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
-//        ).getOrThrow()
-//
-//        val approvalRuleEntity = vnodeEmf.createEntityManager().use {
-//            it.find(
-//                ApprovalRulesEntity::class.java,
-//                ApprovalRulesEntityPrimaryKey(
-//                    ruleDetails.ruleId,
-//                    ApprovalRuleType.STANDARD.name
-//                )
-//            )
-//        }
-//        with(approvalRuleEntity) {
-//            assertThat(ruleRegex).isEqualTo(RULE_REGEX)
-//            assertThat(ruleType).isEqualTo(ApprovalRuleType.STANDARD.name)
-//            assertThat(ruleLabel).isEqualTo(RULE_LABEL)
-//        }
-//    }
-//
-//    @Test
-//    fun `deleteApprovalRule deletes the approval rule from the db`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
-//        }
-//        val testRule = ApprovalRulesEntity(RULE_ID, ApprovalRuleType.STANDARD.name, RULE_REGEX, RULE_LABEL)
-//        vnodeEmf.transaction {
-//            it.persist(testRule)
-//        }
-//
-//        membershipPersistenceClientWrapper.deleteApprovalRule(
-//            viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
-//        ).getOrThrow()
-//
-//        vnodeEmf.createEntityManager().use {
-//            assertThat(
-//                it.find(
-//                    ApprovalRulesEntity::class.java,
-//                    ApprovalRulesEntityPrimaryKey(
-//                        RULE_ID,
-//                        ApprovalRuleType.STANDARD.name
-//                    )
-//                )
-//            ).isNull()
-//        }
-//    }
-//
-//    @Test
-//    fun `getApprovalRules retrieves all approval rules`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
-//        }
-//        membershipQueryClient.start()
-//        eventually {
-//            assertThat(membershipPersistenceClient.isRunning).isTrue
-//        }
-//        val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
-//        val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
-//        val entities = listOf(
-//            ApprovalRulesEntity(rule1.ruleId, ApprovalRuleType.STANDARD.name, rule1.ruleRegex, rule1.ruleLabel),
-//            ApprovalRulesEntity(rule2.ruleId, ApprovalRuleType.STANDARD.name, rule2.ruleRegex, rule2.ruleLabel)
-//        )
-//        vnodeEmf.transaction { em ->
-//            entities.forEach { em.persist(it) }
-//        }
-//
-//        val result = membershipQueryClient.getApprovalRules(
-//            viewOwningHoldingIdentity,
-//            ApprovalRuleType.STANDARD
-//        ).getOrThrow()
-//
-//        assertThat(result.size).isEqualTo(2)
-//        assertThat(result).containsAll(listOf(rule1, rule2))
-//    }
-//
-//    @Test
-//    fun `queryRegistrationRequests retrieves the expected registration requests`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
-//        }
-//        membershipQueryClient.start()
-//        eventually {
-//            assertThat(membershipPersistenceClient.isRunning).isTrue
-//        }
-//        // Persist a request pending manual approval
-//        val registrationId1 = randomUUID().toString()
-//        val requestPersistentResult =
-//            persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.PENDING_MANUAL_APPROVAL)
-//        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//        // Persist a completed request
-//        val registrationId2 = randomUUID().toString()
-//        val requestPersistentResult2 =
-//            persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
-//        assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//        // Persist a new request
-//        val registrationId3 = randomUUID().toString()
-//        val requestPersistentResult3 = persistRequest(
-//            HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId), registrationId3
-//        )
-//        assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-//
-//        val result1 = membershipQueryClient.queryRegistrationRequests(
-//            viewOwningHoldingIdentity,
-//            null,
-//            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
-//        ).getOrThrow()
-//        assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
-//
-//        val result2 = membershipQueryClient.queryRegistrationRequests(
-//            viewOwningHoldingIdentity,
-//            viewOwningHoldingIdentity.x500Name,
-//            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
-//        ).getOrThrow()
-//        assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
-//
-//        val result3 = membershipQueryClient.queryRegistrationRequests(
-//            viewOwningHoldingIdentity,
-//            null,
-//            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
-//        ).getOrThrow()
-//        assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
-//
-//        val result4 = membershipQueryClient.queryRegistrationRequests(viewOwningHoldingIdentity).getOrThrow()
-//        assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
-//    }
-//
-//    @Test
-//    fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
-//        }
-//        membershipQueryClient.start()
-//        eventually {
-//            assertThat(membershipPersistenceClient.isRunning).isTrue
-//        }
-//        // Persist a request pending manual approval
-//        val registrationId = randomUUID().toString()
-//        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
-//        // Persist 3 requests with NEW (queue 3 requests)
-//        val queuedRegistrationIds = mutableListOf<String>()
-//        (1..3).forEach {
-//            val id = randomUUID().toString()
-//            queuedRegistrationIds.add(id)
-//            persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
-//        }
-//
-//        val result = membershipQueryClient.queryRegistrationRequests(
-//            viewOwningHoldingIdentity,
-//            registeringHoldingIdentity.x500Name,
-//            listOf(RegistrationStatus.NEW),
-//            1
-//        ).getOrThrow()
-//        assertThat(result.singleOrNull()?.registrationId).isEqualTo(queuedRegistrationIds.first())
-//    }
-//
-//    @Test
-//    fun `queryRegistrationRequest returns empty list when there were no queued requests`() {
-//        vnodeEmf.transaction {
-//            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
-//        }
-//        membershipQueryClient.start()
-//        eventually {
-//            assertThat(membershipPersistenceClient.isRunning).isTrue
-//        }
-//        // Persist a request pending manual approval
-//        val registrationId = randomUUID().toString()
-//        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
-//
-//        val result = membershipQueryClient.queryRegistrationRequests(
-//            viewOwningHoldingIdentity,
-//            registeringHoldingIdentity.x500Name,
-//            listOf(RegistrationStatus.NEW),
-//            1
-//        ).getOrThrow()
-//        assertThat(result).isEmpty()
-//    }
+    @Test
+    fun `registration requests can persist over RPC topic`() {
+        val registrationId = randomUUID().toString()
+        val status = RegistrationStatus.SENT_TO_MGM
+
+        val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
+            viewOwningHoldingIdentity,
+            RegistrationRequest(
+                RegistrationStatus.SENT_TO_MGM,
+                registrationId,
+                registeringHoldingIdentity,
+                ByteBuffer.wrap(
+                    cordaAvroSerializer.serialize(
+                        KeyValuePairList(
+                            listOf(
+                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                            )
+                        )
+                    )
+                ),
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf())
+                ),
+                CryptoSignatureSpec("", null, null),
+                REGISTRATION_SERIAL,
+            )
+        )
+
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
+        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
+        assertThat(persistedEntity.status).isEqualTo(status.toString())
+
+        val persistedMemberContext = persistedEntity.context.deserializeContextAsMap()
+        with(persistedMemberContext.entries) {
+            assertThat(size).isEqualTo(1)
+            assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
+            assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
+        }
+    }
+
+    @Test
+    fun `persistGroupPolicy can persist over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ${GroupPolicyEntity::class.java.simpleName}").executeUpdate()
+        }
+        val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
+        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1, 1)
+        assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
+        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2, 2)
+        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(GroupPolicyEntity::class.java, 1L)
+        }
+        assertThat(cordaAvroDeserializer.deserialize(persistedEntity.properties)!!.toMap()).isEqualTo(
+            groupPolicy1.entries.associate { it.key to it.value }
+        )
+        val secondPersistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(GroupPolicyEntity::class.java, 2L)
+        }
+        assertThat(cordaAvroDeserializer.deserialize(secondPersistedEntity.properties)!!.toMap()).isEqualTo(
+            groupPolicy2.entries.associate { it.key to it.value }
+        )
+    }
+
+    @Test
+    fun `persistGroupParametersInitialSnapshot can persist over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+        }
+        val persisted =
+            membershipPersistenceClientWrapper.persistGroupParametersInitialSnapshot(viewOwningHoldingIdentity)
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                1
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.epoch).isEqualTo(1)
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
+            assertThat(deserialized.size).isEqualTo(2)
+            assertThat(deserialized[EPOCH_KEY]).isEqualTo("1")
+            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `persistGroupParameters can persist over RPC topic`() {
+        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        val pubKey = generator.genKeyPair().public
+
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 1,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "1"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                        )
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(pubKey),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+        val params = mapOf(
+            EPOCH_KEY to "2",
+            MODIFIED_TIME_KEY to clock.instant().toString()
+        )
+        val groupParameters = layeredPropertyMapFactory.create<TestGroupParametersImpl>(params)
+            .apply {
+                serialisedParams = cordaAvroSerializer.serialize(
+                    KeyValuePairList(params.map { KeyValuePair(it.key, it.value) })
+                )
+                publicKey = pubKey
+            }
+        val persisted = membershipPersistenceClientWrapper
+            .persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                2
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
+            assertThat(deserialized.size).isEqualTo(2)
+            assertThat(deserialized[EPOCH_KEY]).isEqualTo("2")
+            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `addNotaryToGroupParameters can persist new notary service over RPC topic`() {
+        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 50,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "50"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                        )
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+
+        val groupId = randomUUID().toString()
+        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val endpointUrl = "https://localhost:8080"
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryServicePlugin = "Notary Plugin"
+        val notaryKey = generator.generateKeyPair().public
+        val notaryKeyHash = notaryKey.calculateHash()
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), keyEncodingService.encodeAsString(notaryKey)),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
+            ).sorted()
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
+        )
+        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "51"),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryKey)),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
+            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
+        }
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                51
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `addNotaryToGroupParameters can persist notary to existing notary service over RPC topic`() {
+        val groupId = randomUUID().toString()
+        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val endpointUrl = "http://localhost:8080"
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryServicePlugin = "Notary Plugin"
+        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        val notaryKey = generator.generateKeyPair().public
+        val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
+        val notaryKeyHash = notaryKey.calculateHash()
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1), "2"),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
+            ).sorted()
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
+        )
+        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 100,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "100"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+                        )
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "101"),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), notaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
+            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
+        }
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                101
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `addNotaryToGroupParameters can persist notary with rotated keys over RPC topic`() {
+        val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        val groupId = randomUUID().toString()
+        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val endpointUrl = "http://localhost:8080"
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryServicePlugin = "Notary Plugin"
+        val notaryKey = with(keyGenerator) {
+            generateKeyPair().public
+        }
+        val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
+        val notaryKeyHash = notaryKey.calculateHash()
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryServiceName),
+                KeyValuePair(NOTARY_SERVICE_PROTOCOL, notaryServicePlugin),
+                KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0), "1"),
+                KeyValuePair("${ROLES_PREFIX}.0", "notary"),
+                KeyValuePair(String.format(NOTARY_KEY_PEM, 0), notaryKeyAsString),
+                KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
+            ).sorted()
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
+        )
+        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val oldNotaryKey = with(keyGenerator) {
+            keyEncodingService.encodeAsString(generateKeyPair().public)
+        }
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 150,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "150"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+                            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+                            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey)
+                        )
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(keyGenerator.genKeyPair().public),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "151"),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
+            assertThat(this).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(this.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
+        }
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                151
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `member infos can persist over RPC topic`() {
+        val result = persistMember(x500Name, MEMBER_STATUS_ACTIVE)
+
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(
+                    groupId, x500Name.toString(), false
+                )
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.groupId).isEqualTo(groupId)
+        assertThat(persistedEntity.memberX500Name).isEqualTo(x500Name.toString())
+        assertThat(persistedEntity.serialNumber).isEqualTo(1)
+        assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedEntity.memberSignatureKey).isEqualTo(signatureKey)
+        assertThat(persistedEntity.memberSignatureContent).isEqualTo(signatureContent)
+        assertThat(persistedEntity.memberSignatureSpec).isEqualTo(signatureSpec.signatureName)
+
+        val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
+        assertThat(persistedMgmContext)
+            .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
+            .containsEntry(SERIAL, "1")
+
+        val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
+        assertThat(persistedMemberContext)
+            .containsEntry(String.format(URL_KEY, "0"), ENDPOINT_URL)
+            .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
+            .containsEntry(GROUP_ID, groupId)
+            .containsEntry(PARTY_NAME, x500Name.toString())
+            .containsEntry(PLATFORM_VERSION, "5000")
+            .containsEntry(SOFTWARE_VERSION, "5.0.0")
+    }
+
+    @Test
+    fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
+        // 1. Persist a member
+        val memberPersistentResult = persistMember(registeringX500Name, MEMBER_STATUS_PENDING)
+
+        assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val memberEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(
+                    groupId, registeringX500Name.toString(), true
+                )
+            )
+        }
+        assertThat(memberEntity.status).isEqualTo(MEMBER_STATUS_PENDING)
+
+        // 2. Persist a request
+        val registrationId = randomUUID().toString()
+        val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId)
+
+        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val requestEntity = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
+
+        val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity,
+            registrationId,
+        ).getOrThrow()
+
+        assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(approveResult.groupId).isEqualTo(groupId)
+        assertThat(approveResult.name).isEqualTo(registeringHoldingIdentity.x500Name)
+        val newMemberEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(
+                    groupId, registeringX500Name.toString(), false
+                )
+            )
+        }
+        assertThat(newMemberEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        val newRequestEntity = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(newRequestEntity.status).isEqualTo(RegistrationStatus.APPROVED.toString())
+    }
+
+    @Test
+    fun `queryMembersSignatures returns the member signatures`() {
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+
+        val memberAndRegistrationId = mutableMapOf<HoldingIdentity, String>()
+
+        val signatures = (1..5).associate { index ->
+            val registrationId = randomUUID().toString()
+            val holdingId = createTestHoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
+            memberAndRegistrationId[holdingId] = registrationId
+            val publicKey = "pk-$index".toByteArray()
+            val signature = "signature-$index".toByteArray()
+            val signatureSpec = CryptoSignatureSpec("spec-$index", null, null)
+            persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
+
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(
+                ByteBuffer.wrap(publicKey),
+                ByteBuffer.wrap(signature)
+            )
+            val context = KeyValuePairList(
+                listOf(
+                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                )
+            )
+            membershipPersistenceClientWrapper.persistRegistrationRequest(
+                viewOwningHoldingIdentity,
+                RegistrationRequest(
+                    RegistrationStatus.SENT_TO_MGM,
+                    registrationId,
+                    holdingId,
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            context
+                        )
+                    ),
+                    cryptoSignatureWithKey,
+                    signatureSpec,
+                    REGISTRATION_SERIAL,
+                )
+            ).getOrThrow()
+
+            holdingId to (
+                    cryptoSignatureWithKey to signatureSpec
+            )
+        }
+
+        // before approval only non-pending information is available
+        assertThrows<MembershipPersistenceException> {
+            membershipQueryClient.queryMembersSignatures(
+                viewOwningHoldingIdentity,
+                signatures.keys
+            ).getOrThrow()
+        }
+
+        memberAndRegistrationId.forEach {
+            membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
+                viewOwningHoldingIdentity, it.key, it.value
+            ).getOrThrow()
+        }
+
+        val resultsAfterApproval = membershipQueryClient.queryMembersSignatures(
+            viewOwningHoldingIdentity,
+            signatures.keys
+        ).getOrThrow()
+        assertThat(resultsAfterApproval).containsAllEntriesOf(signatures)
+    }
+
+    @Test
+    fun `setRegistrationRequestStatus updates the registration request status`() {
+        val registrationId = randomUUID().toString()
+        val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
+            viewOwningHoldingIdentity,
+            RegistrationRequest(
+                RegistrationStatus.SENT_TO_MGM,
+                registrationId,
+                registeringHoldingIdentity,
+                ByteBuffer.wrap(
+                    cordaAvroSerializer.serialize(
+                        KeyValuePairList(
+                            listOf(
+                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                            )
+                        )
+                    )
+                ),
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf())
+                ),
+                CryptoSignatureSpec("", null, null),
+                REGISTRATION_SERIAL,
+            )
+        )
+
+        assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
+        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
+
+        val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
+            viewOwningHoldingIdentity,
+            registrationId,
+            RegistrationStatus.PENDING_AUTO_APPROVAL
+        )
+
+        assertThat(updateRegRequestStatusResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val updatedEntity = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(updatedEntity).isNotNull
+        assertThat(updatedEntity.registrationId).isEqualTo(registrationId)
+        assertThat(updatedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
+        assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
+    }
+
+    @Test
+    fun `addApprovalRule persists the approval rule and returns the rule ID`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
+        }
+        val ruleDetails = membershipPersistenceClientWrapper.addApprovalRule(
+            viewOwningHoldingIdentity,
+            ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+        ).getOrThrow()
+
+        val approvalRuleEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(
+                    ruleDetails.ruleId,
+                    ApprovalRuleType.STANDARD.name
+                )
+            )
+        }
+        with(approvalRuleEntity) {
+            assertThat(ruleRegex).isEqualTo(RULE_REGEX)
+            assertThat(ruleType).isEqualTo(ApprovalRuleType.STANDARD.name)
+            assertThat(ruleLabel).isEqualTo(RULE_LABEL)
+        }
+    }
+
+    @Test
+    fun `deleteApprovalRule deletes the approval rule from the db`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
+        }
+        val testRule = ApprovalRulesEntity(RULE_ID, ApprovalRuleType.STANDARD.name, RULE_REGEX, RULE_LABEL)
+        vnodeEmf.transaction {
+            it.persist(testRule)
+        }
+
+        membershipPersistenceClientWrapper.deleteApprovalRule(
+            viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
+        ).getOrThrow()
+
+        vnodeEmf.createEntityManager().use {
+            assertThat(
+                it.find(
+                    ApprovalRulesEntity::class.java,
+                    ApprovalRulesEntityPrimaryKey(
+                        RULE_ID,
+                        ApprovalRuleType.STANDARD.name
+                    )
+                )
+            ).isNull()
+        }
+    }
+
+    @Test
+    fun `getApprovalRules retrieves all approval rules`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
+        val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
+        val entities = listOf(
+            ApprovalRulesEntity(rule1.ruleId, ApprovalRuleType.STANDARD.name, rule1.ruleRegex, rule1.ruleLabel),
+            ApprovalRulesEntity(rule2.ruleId, ApprovalRuleType.STANDARD.name, rule2.ruleRegex, rule2.ruleLabel)
+        )
+        vnodeEmf.transaction { em ->
+            entities.forEach { em.persist(it) }
+        }
+
+        val result = membershipQueryClient.getApprovalRules(
+            viewOwningHoldingIdentity,
+            ApprovalRuleType.STANDARD
+        ).getOrThrow()
+
+        assertThat(result.size).isEqualTo(2)
+        assertThat(result).containsAll(listOf(rule1, rule2))
+    }
+
+    @Test
+    fun `queryRegistrationRequests retrieves the expected registration requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId1 = randomUUID().toString()
+        val requestPersistentResult =
+            persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a completed request
+        val registrationId2 = randomUUID().toString()
+        val requestPersistentResult2 =
+            persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
+        assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a new request
+        val registrationId3 = randomUUID().toString()
+        val requestPersistentResult3 = persistRequest(
+            HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId), registrationId3
+        )
+        assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val result1 = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            null,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+        ).getOrThrow()
+        assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
+
+        val result2 = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            viewOwningHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+        ).getOrThrow()
+        assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
+
+        val result3 = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            null,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        ).getOrThrow()
+        assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
+
+        val result4 = membershipQueryClient.queryRegistrationRequests(viewOwningHoldingIdentity).getOrThrow()
+        assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
+    }
+
+    @Test
+    fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        // Persist 3 requests with NEW (queue 3 requests)
+        val queuedRegistrationIds = mutableListOf<String>()
+        (1..3).forEach {
+            val id = randomUUID().toString()
+            queuedRegistrationIds.add(id)
+            persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
+        }
+
+        val result = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.NEW),
+            1
+        ).getOrThrow()
+        assertThat(result.singleOrNull()?.registrationId).isEqualTo(queuedRegistrationIds.first())
+    }
+
+    @Test
+    fun `queryRegistrationRequest returns empty list when there were no queued requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+
+        val result = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.NEW),
+            1
+        ).getOrThrow()
+        assertThat(result).isEmpty()
+    }
 
     @Test
     fun `suspendMember can persist suspended member info over RPC topic`() {
