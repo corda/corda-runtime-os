@@ -119,7 +119,6 @@ class LocallyHostedIdentitiesServiceImpl(
                 }
             }
             is ConfigChangedEvent -> {
-                logger.info("ConfigChangedEvent" )
                 coordinator.createManagedResource(SUBSCRIPTION_RESOURCE_NAME) {
                     subscriptionFactory.createCompactedSubscription(
                         subscriptionConfig = SubscriptionConfig(

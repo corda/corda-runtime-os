@@ -1179,7 +1179,7 @@ class FlowTests {
             "facadeName" to "None",
             "methodName" to "None",
             "payload" to payload,
-            "alias" to charlyX500
+            "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
         )
 
         val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")

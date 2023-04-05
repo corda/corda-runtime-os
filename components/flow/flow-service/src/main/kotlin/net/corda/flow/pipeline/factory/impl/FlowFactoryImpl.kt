@@ -17,7 +17,6 @@ import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.LoggerFactory
 
 @Component(service = [FlowFactory::class])
 @Suppress("Unused")
@@ -28,9 +27,6 @@ class FlowFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService
 ) : FlowFactory {
 
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return try {
             val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
@@ -57,7 +53,6 @@ class FlowFactoryImpl @Activate constructor(
         isInteropFlow: Boolean
     ): FlowLogicAndArgs {
         return try {
-            log.info("createInitiatedFlow flowStartContext.flowClassName=${flowStartContext.flowClassName}" )
             val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                 flowStartContext.flowClassName,
                 ResponderFlow::class.java
@@ -73,7 +68,6 @@ class FlowFactoryImpl @Activate constructor(
 
             InitiatedFlow(logic, flowSession)
         } catch (e: Exception) {
-            log.warn("createInitiatedFlow error flowStartContext.flowClassName=${flowStartContext.flowClassName}", e)
             throw FlowFatalException(
                 "Could not create initiated flow ${flowStartContext.flowClassName} for " +
                         "virtual node ${flowStartContext.identity}: ${e.message}", e

@@ -27,6 +27,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -84,9 +85,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            log.info (
+            log.debug {
                 "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
-            )
+            }
 
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
@@ -142,7 +143,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             // starting at all. We'll still log that the error was seen.
             log.warn(
                 "Could not create a flow status message for a failed flow with ID $id as " +
-                        "the flow start context was missing.", e
+                        "the flow start context was missing."
             )
             listOf()
         }

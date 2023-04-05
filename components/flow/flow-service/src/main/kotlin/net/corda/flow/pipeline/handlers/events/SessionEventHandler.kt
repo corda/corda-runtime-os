@@ -120,7 +120,6 @@ class SessionEventHandler @Activate constructor(
                     e
                 )
             }
-
             val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
             initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
