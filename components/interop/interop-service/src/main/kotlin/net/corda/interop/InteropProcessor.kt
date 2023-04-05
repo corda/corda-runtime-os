@@ -69,12 +69,15 @@ class InteropProcessor(
             logger.warn("Dropping message with payload of type ${sessionEvent::class.java}, required SessionEvent type.")
             return StateAndEventProcessor.Response(state, emptyList())
         }
-        val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
+        //val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
-            logger.info("IN  (start): $sourceIdentity -> $destinationIdentity" +
-                    " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}")
-
-            val destinationAlias = destinationIdentity
+            val (destinationAlias, oldSource) = if(sessionEvent.isInitiatingIdentityDestination())
+                Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+            else
+                Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+            logger.info("INBOUND  (start): $oldSource -> $destinationAlias" +
+                    " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}, " +
+                    "initiating=${sessionEvent.initiatingIdentity}, initatied=${sessionEvent.initiatedIdentity}")
 
             val realHoldingIdentity = getRealHoldingIdentityFromAliasMapping(
                 InteropAliasProcessor.getRealHoldingIdentity(destinationAlias.toCorda().x500Name.toString()))
@@ -136,14 +139,15 @@ class InteropProcessor(
                     Pair(initiatingIdentity, initiatedIdentity)
                 else
                     Pair(initiatedIdentity, initiatingIdentity)
-                    logger.info("IN  (end): $newSource -> $newDest,"+
+                    logger.info("INBOUND  (end): $newSource -> $newDest,"+
                             " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}," +
                             " $facadeRequest")
             }
             ))))
         } else { //MessageDirection.OUTBOUND
+            val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
             //TODO taken from FlowMapperHelper function generateAppMessage
-            logger.info("OUT (start): $sourceIdentity -> $destinationIdentity," +
+            logger.info("OUTBOUND (start): $sourceIdentity -> $destinationIdentity," +
                     " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}")
             val translatedSource = sourceIdentity.apply {
                 x500Name = addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
@@ -154,7 +158,7 @@ class InteropProcessor(
                 val alisFromState = state?.aliasHoldingIdentity
                 if (alisFromState != null) x500Name = alisFromState
             }
-            logger.info("OUT (end): $translatedSource -> $translatedDestination," +
+            logger.info("OUTBOUND (end): $translatedSource -> $translatedDestination," +
                     " ${sessionEvent.payload::class.java}, ${sessionEvent.sessionId}/${sessionEvent.sequenceNum}")
 
             return StateAndEventProcessor.Response(
