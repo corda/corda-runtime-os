@@ -1,13 +1,10 @@
 package net.corda.messaging.subscription.consumer
 
-import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
@@ -15,8 +12,13 @@ import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     override val eventConsumer: CordaConsumer<K, E>,
@@ -31,6 +33,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         //short timeout for state polling to not starve the event poller
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
+
+        // Event poll timeout
+        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
+
+        private const val STATE_TOPIC_SUFFIX = ".state"
     }
 
     //single threaded executor per state and event consumer
@@ -46,9 +53,93 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val initialProcessorTimeout = maxPollInterval / 4
 
     private val currentStates = partitionState.currentStates
-    private val partitionsToSync = partitionState.partitionsToSync
+    private val partitionsToSync: MutableSet<CordaTopicPartition> = ConcurrentHashMap<CordaTopicPartition, Unit>().keySet(Unit)
+    private val inSyncPartitions: MutableSet<CordaTopicPartition> = ConcurrentHashMap<CordaTopicPartition, Unit>().keySet(Unit)
 
     private var pollIntervalCutoff = 0L
+
+    override fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>) {
+        log.info("Assigning partitions: $partitions. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
+        // Split these partitions into those that need synchronizing (i.e. those with states on) and those that do not
+        val statePartitions = partitions.map { it.toStatePartition() }
+        updateStateConsumerAssignment(partitions, StatePartitionOperation.ADD)
+        val beginningOffsets = stateConsumer.beginningOffsets(statePartitions)
+        val endOffsets = stateConsumer.endOffsets(statePartitions)
+        val (needsSync, inSync) = partitions.partition {
+            val statePartition = it.toStatePartition()
+            val beginning = beginningOffsets[statePartition] ?: 0L
+            val end = endOffsets[statePartition] ?: 0L
+            beginning < end
+        }
+
+        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
+
+        // Out of sync partitions need assigning to the state consumer to bring us into sync.
+        partitionsToSync.addAll(needsSync)
+        eventConsumer.pause(needsSync)
+        stateConsumer.seekToBeginning(needsSync.map { it.toStatePartition() })
+
+        // Mark all those already in sync as such.
+        inSyncPartitions.addAll(inSync)
+        updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
+        stateAndEventListener?.let { listener ->
+            for (partition in inSync) {
+                listener.onPartitionSynced(getStatesForPartition(partition.partition))
+            }
+        }
+    }
+
+    private fun onPartitionsSynchronized(partitions: Set<CordaTopicPartition>) {
+        // Remove the assignment from the state consumer. There's no need to read back from the state topic, as from
+        // now on the pattern will rely on the in-memory state.
+        log.info(
+            "$partitions are now in sync. Resuming event feed. " +
+                    "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
+        )
+        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
+
+        eventConsumer.resume(partitions)
+        partitionsToSync.removeAll(partitions)
+        inSyncPartitions.addAll(partitions)
+
+        stateAndEventListener?.let { listener ->
+            for (partition in partitions) {
+                listener.onPartitionSynced(getStatesForPartition(partition.partition))
+            }
+        }
+    }
+
+    override fun onPartitionsRevoked(partitions: Set<CordaTopicPartition>) {
+        log.info(
+            "Removing partitions: $partitions. " +
+                    "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
+        )
+        // Remove any assignments and clear state from tracked partitions.
+        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
+        partitionsToSync.removeAll(partitions)
+        inSyncPartitions.removeAll(partitions)
+    }
+
+    private enum class StatePartitionOperation {
+        ADD,
+        REMOVE
+    }
+
+    private fun updateStateConsumerAssignment(
+        partitions: Collection<CordaTopicPartition>,
+        operation: StatePartitionOperation
+    ) {
+        val statePartitions = partitions.map {
+            it.toStatePartition()
+        }.toSet()
+        val oldAssignment = stateConsumer.assignment()
+        val newAssignment = when (operation) {
+            StatePartitionOperation.ADD -> oldAssignment + statePartitions
+            StatePartitionOperation.REMOVE -> oldAssignment - statePartitions
+        }
+        log.debug { "Assigning partitions $newAssignment to the state consumer" }
+        stateConsumer.assign(newAssignment)
+    }
 
     override fun getInMemoryStateValue(key: K): S? {
         currentStates.forEach {
@@ -69,15 +160,20 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
             log.debug { "Processing state: $state" }
-            // Do not update in memory state unless we are syncing as we are already guaranteed to have the latest state
-            if (partitionsToSync.containsKey(state.partition)) {
+            // This condition should always be true. This can however guard against a potential race where the partition
+            // is revoked while states are being processed, resulting in the partition no longer being required to sync.
+            val partition = CordaTopicPartition(state.topic.removeSuffix(STATE_TOPIC_SUFFIX), state.partition)
+            if (partition in partitionsToSync) {
                 updateInMemoryState(state)
             }
         }
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {
-            log.info("State consumer in group ${config.group} is syncing partitions: $partitionsToSync")
-            resumeConsumerAndExecuteListener(removeAndReturnSyncedPartitions())
+            log.debug { "State consumer in group ${config.group} is syncing partitions: $partitionsToSync" }
+            val syncedPartitions = removeAndReturnSyncedPartitions()
+            if (syncedPartitions.isNotEmpty()) {
+                onPartitionsSynchronized(syncedPartitions)
+            }
         }
     }
 
@@ -88,40 +184,59 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
-        val partitionsSynced = mutableSetOf<CordaTopicPartition>()
-        val statePartitionsToSync = partitionsToSync.toMap()
-        for (partition in statePartitionsToSync) {
-            val partitionId = partition.key
-            val stateTopic = getStateAndEventStateTopic(config.topic)
-            val stateTopicPartition = CordaTopicPartition(stateTopic, partitionId)
-            val stateConsumerPollPosition = stateConsumer.position(stateTopicPartition)
-            val endOffset = partition.value
-            if (stateConsumerPollPosition >= endOffset) {
-                log.info(
-                    "State partition $stateTopicPartition is now up to date for consumer in group ${config.group}. " +
-                            "Poll position $stateConsumerPollPosition, recorded end offset $endOffset"
-                )
-                partitionsToSync.remove(partitionId)
-                partitionsSynced.add(CordaTopicPartition(config.topic, partitionId))
-            }
-        }
-
-        return partitionsSynced
+        val statePartitions = partitionsToSync.map { it.toStatePartition() }
+        val endOffsets = stateConsumer.endOffsets(statePartitions)
+        return partitionsToSync.filter {
+            val statePartition = it.toStatePartition()
+            val position = stateConsumer.position(statePartition)
+            val endOffset = endOffsets[statePartition] ?: 0L
+            position >= endOffset
+        }.toSet()
     }
 
-    private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<CordaTopicPartition>) {
-        if (partitionsSynced.isEmpty()) {
-            return
-        }
-
-        log.info("State consumer in group ${config.group} is up to date for $partitionsSynced. Resuming event feed.")
-        eventConsumer.resume(partitionsSynced)
-
-        stateAndEventListener?.let { listener ->
-            for (partition in partitionsSynced) {
-                listener.onPartitionSynced(getStatesForPartition(partition.partition))
+    override fun pollEvents(): List<CordaConsumerRecord<K, E>> {
+        return when {
+            inSyncPartitions.isNotEmpty() -> {
+                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
+                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
+                }
+            }
+            partitionsToSync.isEmpty() -> {
+                // Call poll more frequently to trigger a rebalance of the event consumer.
+                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
+                    if (inSyncPartitions.isEmpty() && it.isNotEmpty()) {
+                        // This shouldn't happen - it implies events have been returned from partitions that haven't
+                        // been synced yet.
+                        log.warn(
+                            "${it.size} events on keys ${it.joinToString { it.key.toString() }} " +
+                                    "were returned from non-synced partitions."
+                        )
+                    }
+                }
+            }
+            System.currentTimeMillis() > pollIntervalCutoff -> {
+                // Poll here to keep us in the consumer group.
+                pollIntervalCutoff = getNextPollIntervalCutoff()
+                eventConsumer.poll(Duration.ZERO).also {
+                    if (inSyncPartitions.isEmpty() && it.isNotEmpty()) {
+                        // This shouldn't happen - it implies events have been returned from partitions that haven't
+                        // been synced yet.
+                        log.warn(
+                            "${it.size} events on keys ${it.joinToString { it.key.toString() }} " +
+                                    "were returned from non-synced partitions."
+                        )
+                    }
+                }
+            }
+            else -> {
+                listOf()
             }
         }
+    }
+
+    override fun resetEventOffsetPosition() {
+        log.debug { "Last committed offset position reset for the event consumer." }
+        eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
     }
 
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
@@ -174,7 +289,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 // Only partitions previously paused by the caller
                 .intersect(pausedPartitions)
                 // Only those partitions that are not actively being synced.
-                .filter { !partitionsToSync.containsKey(it.partition) }
+                .filter { !partitionsToSync.contains(it) }
 
             log.debug { "Rebalance occurred while polling from paused consumer, resuming partitions: $partitionsToResume" }
             eventConsumer.resume(partitionsToResume)
@@ -261,9 +376,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
             pollWithCleanUpAndExceptionOnRebalance("Rebalance occurred while resetting poll interval", eventConsumerAssignmentToPause) {}
 
-            stateConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { state ->
-                log.warn("Polling from paused stateConsumer has lost state with key: ${state.key}, this will likely cause " +
-                        "execution problems for states with this id")
+            if (partitionsToSync.isNotEmpty()) {
+                stateConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { state ->
+                    log.warn(
+                        "Polling from paused stateConsumer has lost state with key: ${state.key}, this will likely cause " +
+                                "execution problems for states with this id"
+                    )
+                }
             }
 
             // Resume only those partitions currently assigned and previously paused.
@@ -296,5 +415,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun getStatesForPartition(partitionId: Int): Map<K, S> {
         return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
+    }
+
+    private fun CordaTopicPartition.toStatePartition() : CordaTopicPartition {
+        return CordaTopicPartition(getStateAndEventStateTopic(this.topic), this.partition)
     }
 }
