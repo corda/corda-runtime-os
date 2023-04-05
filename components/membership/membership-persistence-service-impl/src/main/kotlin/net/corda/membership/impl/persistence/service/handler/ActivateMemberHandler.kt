@@ -36,7 +36,7 @@ internal class ActivateMemberHandler(
             val updatedMemberInfo = updateStatus(
                 em,
                 request.activatedMember,
-                context.holdingIdentity.groupId,
+                context.holdingIdentity,
                 currentMemberInfo,
                 currentMgmContext,
                 MEMBER_STATUS_ACTIVE

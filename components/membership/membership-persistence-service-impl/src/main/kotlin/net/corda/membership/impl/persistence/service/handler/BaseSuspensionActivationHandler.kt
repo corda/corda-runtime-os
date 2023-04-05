@@ -64,7 +64,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
     protected fun updateStatus(
         em: EntityManager,
         memberName: String,
-        groupId: String,
+        mgmHoldingIdentity: HoldingIdentity,
         currentMemberInfo: MemberInfoEntity,
         currentMgmContext: KeyValuePairList,
         newStatus: String
@@ -84,7 +84,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
 
         em.merge(
             MemberInfoEntity(
-                groupId,
+                mgmHoldingIdentity.groupId,
                 memberName,
                 false,
                 newStatus,
@@ -99,7 +99,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
         )
 
         return PersistentMemberInfo(
-            HoldingIdentity(memberName, groupId),
+            mgmHoldingIdentity,
             keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext),
             mgmContext,
         )
@@ -118,7 +118,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
 
             val currentMgmContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.mgmContext)
                 ?: throw MembershipPersistenceException("Failed to deserialize the MGM-provided context.")
-            updateStatus(em, memberName, context.holdingIdentity.groupId, currentMemberInfo, currentMgmContext, newStatus)
+            updateStatus(em, memberName, context.holdingIdentity, currentMemberInfo, currentMgmContext, newStatus)
         }
     }
 }

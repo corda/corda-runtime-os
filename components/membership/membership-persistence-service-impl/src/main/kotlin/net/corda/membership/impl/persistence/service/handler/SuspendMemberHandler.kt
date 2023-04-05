@@ -36,7 +36,6 @@ internal class SuspendMemberHandler(
     }
     override fun invoke(context: MembershipRequestContext, request: SuspendMember): SuspendMemberResponse {
         val (updatedMemberInfo, updatedGroupParameters) = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            logger.info("HERE!!!!!")
             val currentMemberInfo = findMember(
                 em,
                 request.suspendedMember,
@@ -55,7 +54,7 @@ internal class SuspendMemberHandler(
             val updatedMemberInfo = updateStatus(
                 em,
                 request.suspendedMember,
-                context.holdingIdentity.groupId,
+                context.holdingIdentity,
                 currentMemberInfo,
                 currentMgmContext,
                 MEMBER_STATUS_SUSPENDED
@@ -68,7 +67,6 @@ internal class SuspendMemberHandler(
 
             updatedMemberInfo to updatedGroupParameters
         }
-        logger.info("DONE!!!!!")
         return SuspendMemberResponse(updatedMemberInfo, updatedGroupParameters)
     }
 
