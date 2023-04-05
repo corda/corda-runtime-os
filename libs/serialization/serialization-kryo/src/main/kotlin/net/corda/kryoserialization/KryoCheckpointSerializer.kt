@@ -34,7 +34,7 @@ class KryoCheckpointSerializer(
                 kryo.writeClassAndObject(this, obj)
             }
         } catch (ex: Exception) {
-            log.error("Failed to serialize: $ex")
+            log.error("Failed to serialize", ex)
             throw ex
         }
     }
