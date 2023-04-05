@@ -22,8 +22,8 @@
           },
           "type": {
             "enum": [
-              "send",
-              "send-receive"
+              "SEND",
+              "SEND_RECEIVE"
             ],
             "description": "Specifies whether a channel is uni or bi-directional, i.e., if external services can use the channel to only receive messages or also send messages."
           }
