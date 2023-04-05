@@ -33,7 +33,6 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, sessionEvent.isInteropEvent())
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -81,8 +80,10 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
+        val outputTopic = getSessionEventOutputTopic(messageDirection, flowMapperState.isInteropSession)
+
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-            if (!sessionEvent.isInteropEvent()) {
+            if (!flowMapperState.isInteropSession) {
                 Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
             } else {
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
@@ -90,7 +91,7 @@ class SessionEventExecutor(
         } else {
             Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
-        if (!sessionEvent.isInteropEvent()) {
+        if (flowMapperState.isInteropSession) {
             log.info("INTEROP outputTopic=$outputTopic, direction=$messageDirection, ${sessionEvent.payload::class.java}")
         }
         return FlowMapperResult(flowMapperState, listOf(outputRecord))

@@ -53,7 +53,8 @@ class FlowFactoryImpl @Activate constructor(
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
         sandboxGroupContext: SandboxGroupContext,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropFlow: Boolean
     ): FlowLogicAndArgs {
         return try {
             log.info("createInitiatedFlow flowStartContext.flowClassName=${flowStartContext.flowClassName}" )
@@ -65,7 +66,8 @@ class FlowFactoryImpl @Activate constructor(
             val flowSession = flowSessionFactory.createInitiatedFlowSession(
                 flowStartContext.statusKey.id, // The ID on a start context is the session ID
                 MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
-                contextProperties
+                contextProperties,
+                isInteropFlow
             )
             val logic = flowClass.getDeclaredConstructor().newInstance()
 

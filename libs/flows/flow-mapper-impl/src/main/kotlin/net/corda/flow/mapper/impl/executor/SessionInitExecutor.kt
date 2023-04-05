@@ -12,6 +12,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -30,8 +31,13 @@ class SessionInitExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val isInteropSessionInit = sessionInit.contextSessionProperties?.let { properties ->
+        val map = properties.items.associate { it.key to it.value }
+        map[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true") ?: false
+    } ?: false
+
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection, sessionEvent.isInteropEvent())
+    private val outputTopic = getSessionEventOutputTopic(messageDirection, isInteropSessionInit)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -54,7 +60,7 @@ class SessionInitExecutor(
         log.info("INTEROP outputTopic=$outputTopic, isInterop=${sessionEvent.isInteropEvent()}, " +
                 "direction=$messageDirection, sessionInit")
         return FlowMapperResult(
-            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
+            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, false),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
         )
     }
@@ -81,7 +87,7 @@ class SessionInitExecutor(
             sessionInit.flowId = null
             sessionEvent.payload = sessionInit
 
-            if (!sessionEvent.isInteropEvent()) {
+            if (!isInteropSessionInit) {
                 SessionInitOutputs(
                     tmpFLowEventKey,
                     sessionEvent.sessionId,

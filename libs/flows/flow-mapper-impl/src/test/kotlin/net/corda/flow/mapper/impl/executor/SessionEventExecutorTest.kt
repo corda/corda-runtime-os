@@ -70,7 +70,7 @@ class SessionEventExecutorTest {
         val result = SessionEventExecutor(
             sessionId, payload,
             FlowMapperState(
-                "flowId1", null, FlowMapperStateType.OPEN
+                "flowId1", null, FlowMapperStateType.OPEN, false
             ),
             Instant.now(),
             sessionEventSerializer,
