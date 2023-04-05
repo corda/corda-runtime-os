@@ -100,7 +100,7 @@ internal class VirtualNodeEntity(
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
 
-    @Column(name = "external_messaging_route_config", nullable = true)
+    @Column(name = "external_messaging_route_config", nullable = true, columnDefinition = "jsonb")
     var externalMessagingRouteConfig: String? = null,
 
     @Column(name = "insert_ts", insertable = false)
