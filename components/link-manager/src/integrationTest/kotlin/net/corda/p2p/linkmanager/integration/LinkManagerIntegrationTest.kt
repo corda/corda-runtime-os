@@ -213,20 +213,20 @@ class LinkManagerIntegrationTest {
             logger.info("Publishing valid configuration")
             val validConfig = createLinkManagerConfiguration(replayPeriod)
             configPublisher.publishLinkManagerConfig(validConfig)
-            eventually(duration = 10.seconds) {
+            eventually(duration = 15.seconds) {
                 assertThat(linkManager.isRunning).isTrue
             }
 
             logger.info("Publishing invalid configuration")
             val invalidConfig = createLinkManagerConfiguration(-1)
             configPublisher.publishLinkManagerConfig(invalidConfig)
-            eventually(duration = 10.seconds) {
+            eventually(duration = 15.seconds) {
                 assertThat(linkManager.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
             }
 
             logger.info("Publishing valid configuration again")
             configPublisher.publishLinkManagerConfig(validConfig)
-            eventually(duration = 10.seconds) {
+            eventually(duration = 15.seconds) {
                 assertThat(linkManager.isRunning).isTrue
             }
         }

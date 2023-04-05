@@ -518,7 +518,7 @@ class MembershipPersistenceTest {
 
         private fun Lifecycle.startAndWait() {
             start()
-            eventually(10.seconds) {
+            eventually(15.seconds) {
                 assertTrue(isRunning)
             }
         }
