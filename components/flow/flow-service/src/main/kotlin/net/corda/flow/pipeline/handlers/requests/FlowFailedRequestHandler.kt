@@ -7,11 +7,13 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,19 +44,23 @@ class FlowFailedRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
         recordFlowRuntimeMetric(checkpoint, FlowStates.FAILED.toString())
 
-        val sessionIds = checkpoint.sessions.map { it.sessionId }
-        val sessionToError = sessionIds - flowSessionManager.getSessionsWithStatuses(
-            checkpoint,
-            sessionIds,
-            setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
-        ).map { it.sessionId }.toSet()
+        try {
+            val sessionIds = checkpoint.sessions.map { it.sessionId }
+            val sessionToError = sessionIds - flowSessionManager.getSessionsWithStatuses(
+                checkpoint,
+                sessionIds,
+                setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
+            ).map { it.sessionId }.toSet()
 
-        flowSessionManager.sendErrorMessages(
-            checkpoint,
-            sessionToError,
-            request.exception,
-            Instant.now()
-        )
+            flowSessionManager.sendErrorMessages(
+                checkpoint,
+                sessionToError,
+                request.exception,
+                Instant.now()
+            )
+        } catch (e: FlowSessionStateException) {
+            throw FlowFatalException(e.message, e)
+        }
 
         val status = flowMessageFactory.createFlowFailedStatusMessage(
             checkpoint,
