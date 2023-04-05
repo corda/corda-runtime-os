@@ -31,7 +31,7 @@ internal object LinkedHashMapEntrySerializer : Serializer<Map.Entry<*, *>>() {
         kryo.writeClassAndObject(output, e.value)
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<Map.Entry<*, *>>): Map.Entry<*, *> {
+    override fun read(kryo: Kryo, input: Input, type: Class<out Map.Entry<*, *>>): Map.Entry<*, *> {
         val key = kryo.readClassAndObject(input)
         val value = kryo.readClassAndObject(input)
         return constr.newInstance(0, key, value, null) as Map.Entry<*, *>

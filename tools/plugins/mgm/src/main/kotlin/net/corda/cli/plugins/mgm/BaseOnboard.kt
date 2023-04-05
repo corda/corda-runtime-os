@@ -6,11 +6,11 @@ import kong.unirest.Unirest
 import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
 import net.corda.cli.plugins.mgm.Helpers.urlFromClusterName
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -41,7 +41,7 @@ abstract class BaseOnboard : Runnable {
         fun createKeyStoreFile(keyStoreFile: File) {
             val keyPair = KeyPairGenerator.getInstance("RSA").genKeyPair()
             val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(
-                SignatureSpec.RSA_SHA256.signatureName
+                SignatureSpecs.RSA_SHA256.signatureName
             )
             val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId)
             val parameter = PrivateKeyFactory.createKey(keyPair.private.encoded)
@@ -319,7 +319,6 @@ abstract class BaseOnboard : Runnable {
             .body(
                 mapOf(
                     "memberRegistrationRequest" to mapOf(
-                        "action" to "requestJoin",
                         "context" to registrationContext
                     )
                 )

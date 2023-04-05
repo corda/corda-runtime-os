@@ -66,6 +66,13 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 }
 
+tasks.withType(Test).configureEach {
+    // Kryo needs reflective access to these packages.
+    jvmArgs '--add-opens', 'java.base/java.io=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+}
+
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
     from configurations.cpbs
 }

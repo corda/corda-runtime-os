@@ -1,9 +1,10 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -13,8 +14,8 @@ import java.security.PublicKey
 import java.time.Instant
 
 fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = Instant.now()) = DigitalSignatureAndMetadata(
-    DigitalSignature.WithKey(key, "some bytes".toByteArray()),
-    DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
+    DigitalSignatureWithKeyId(key.fullIdHash(), "some bytes".toByteArray()),
+    DigitalSignatureMetadata(timestamp, SignatureSpecImpl("dummySignatureName"), mapOf())
 )
 
 @BelongsToContract(TestUtxoContract::class)

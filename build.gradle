@@ -89,6 +89,7 @@ allprojects {
 
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
+            jvmArgs '--illegal-access=deny'
         }
     }
 
@@ -413,7 +414,7 @@ subprojects {
     configurations.configureEach {
         resolutionStrategy {
             // FORCE Gradle to use latest dynamic versions.
-             cacheDynamicVersionsFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
 
             // FORCE Gradle to use latest SNAPSHOT versions.
             cacheChangingModulesFor 0, 'seconds'

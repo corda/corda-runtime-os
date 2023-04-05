@@ -11,6 +11,7 @@ import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.serialization.CordaDBAvroDeserializerImpl
+import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -19,6 +20,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * Generate a DB-backed [CordaConsumer].
  */
+@Suppress("Unused")
 @Component(service = [CordaConsumerBuilder::class])
 class DBCordaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
@@ -56,7 +58,8 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             consumerGroup,
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz),
-            listener
+            listener,
+            MessageHeaderSerializerImpl()
         )
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -14,6 +15,7 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
+import net.corda.e2etest.utilities.createKeyFor
 import net.corda.e2etest.utilities.getConfig
 import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -38,6 +40,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
+import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -441,6 +445,25 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
     }
 
+    @Test
+    fun `CPI metadata is available in a flow`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "get_cpi_metadata"
+            data = emptyMap()
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val flowResult = awaitRpcFlowFinished(bobHoldingId, requestId).mapFlowJsonResult()
+        val result = jacksonObjectMapper.readValue<Map<String, Any>>(flowResult["result"] as String)
+
+        assertThat(result["cpiName"] as String).isEqualTo(applicationCpiName)
+        assertThat(result["cpiVersion"] as String).isNotNull.isNotEmpty
+        assertThat(result["cpiFileChecksum"] as String).isNotNull.isNotEmpty
+        assertThat(result["cpiSignerSummaryHash"] as String).isNotNull.isNotEmpty
+        assertThat(result["initialPlatformVersion"] as String).isNotNull.isNotEmpty
+        assertThat(result["initialSoftwareVersion"] as String).isNotNull.isNotEmpty
+    }
+
     private fun persistDog(id: UUID): FlowStatus {
         val requestBody = RpcSmokeTestInput().apply {
             command = "persistence_persist"
@@ -676,6 +699,19 @@ class FlowTests {
     }
 
     @Test
+    fun `Crypto - CompositeKeyGenerator works in flows`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_CompositeKeyGenerator_works_in_flows"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_CompositeKeyGenerator_works_in_flows")
+        assertThat(flowResult.result).isEqualTo("SUCCESS")
+    }
+
+    @Test
     fun `Context is propagated to initiated and sub flows`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "context_propagation"
@@ -698,31 +734,41 @@ class FlowTests {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "null",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               },
               "rpcSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               },
               "initiatedFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set",
-                "user3": "user3-set"
+                "user3": "user3-set",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "$applicationCpiName"
               },
               "initiatedSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "user2-set-ContextPropagationInitiatedFlow",
-                "user3": "user3-set"
+                "user3": "user3-set",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "$applicationCpiName"
               },
               "rpcFlowAtComplete": {
                 "platform": "account-zero",
                 "user1": "user1-set",
                 "user2": "null",
-                "user3": "null"
+                "user3": "null",
+                "cpiName": "$applicationCpiName",
+                "initiatingCpiName": "null"
               }
             }
             """.trimJson()

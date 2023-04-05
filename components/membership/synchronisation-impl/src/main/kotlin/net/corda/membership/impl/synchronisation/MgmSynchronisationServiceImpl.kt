@@ -21,7 +21,9 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -44,7 +46,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -68,6 +69,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         cryptoOpsClient: CryptoOpsClient,
         val membershipQueryClient: MembershipQueryClient,
         merkleTreeProvider: MerkleTreeProvider,
+        locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     ) {
         val merkleTreeGenerator by lazy {
             MerkleTreeGenerator(
@@ -86,7 +88,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         }
 
         val signerFactory by lazy {
-            SignerFactory(cryptoOpsClient)
+            SignerFactory(cryptoOpsClient, locallyHostedIdentitiesService)
         }
 
         val p2pRecordsFactory by lazy {
@@ -117,6 +119,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         membershipQueryClient: MembershipQueryClient,
         @Reference(service = MerkleTreeProvider::class)
         merkleTreeProvider: MerkleTreeProvider,
+        @Reference(service = LocallyHostedIdentitiesService::class)
+        locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     ) :
         this(
             InjectedServices(
@@ -129,6 +133,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 cryptoOpsClient,
                 membershipQueryClient,
                 merkleTreeProvider,
+                locallyHostedIdentitiesService,
             )
         )
     private companion object {
@@ -263,7 +268,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         private fun createMembershipPackage(
             mgm: MemberInfo,
             members: Collection<MemberInfo>,
-            groupParameters: GroupParameters,
+            groupParameters: InternalGroupParameters,
         ): MembershipPackage {
             val mgmSigner = services.signerFactory.createSigner(mgm)
             val signatures = services.membershipQueryClient

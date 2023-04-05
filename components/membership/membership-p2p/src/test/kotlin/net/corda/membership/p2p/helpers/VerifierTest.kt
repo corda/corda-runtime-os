@@ -8,6 +8,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
@@ -43,7 +44,7 @@ class VerifierTest {
     )
 
     @Test
-    fun `verify call the service with the correct arguments`() {
+    fun `verify without key call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
 
         verifier.verify(signature, signatureSpec, data)
@@ -59,7 +60,23 @@ class VerifierTest {
     }
 
     @Test
-    fun `verify fails if spec can not be found`() {
+    fun `verify call the service with the correct arguments`() {
+        val data = byteArrayOf(44, 1)
+
+        verifier.verify(publicKey, signature.bytes.array(), signatureSpec, data)
+
+        verify(signatureVerificationService).verify(
+            eq(data),
+            eq(rawSignature),
+            same(publicKey),
+            argThat<SignatureSpec> {
+                this.signatureName == SPEC
+            },
+        )
+    }
+
+    @Test
+    fun `verify without key fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
         val signature = CryptoSignatureWithKey(
             signature.publicKey,
@@ -69,6 +86,37 @@ class VerifierTest {
 
         assertThrows<CordaRuntimeException> {
             verifier.verify(signature, badSignatureSpec, data)
+        }
+    }
+
+    @Test
+    fun `verify fails if spec can not be found`() {
+        val data = byteArrayOf(44, 1)
+        val signature = CryptoSignatureWithKey(
+            signature.publicKey,
+            signature.bytes
+        )
+        val badSignatureSpec = CryptoSignatureSpec(null, null, null)
+
+        assertThrows<CordaRuntimeException> {
+            verifier.verify(publicKey, signature.bytes.array(), badSignatureSpec, data)
+        }
+    }
+
+    @Test
+    fun `verify without key fails if signature verification service fails`() {
+        val data = byteArrayOf(44, 1)
+        whenever(
+            signatureVerificationService.verify(
+                eq(data),
+                eq(rawSignature),
+                same(publicKey),
+                argThat<SignatureSpec> { this.signatureName == SPEC }
+            )
+        ).doThrow(CryptoSignatureException("Not verified"))
+
+        assertThrows<CryptoSignatureException> {
+            verifier.verify(signature, signatureSpec, data)
         }
     }
 
@@ -85,7 +133,29 @@ class VerifierTest {
         ).doThrow(CryptoSignatureException("Not verified"))
 
         assertThrows<CryptoSignatureException> {
-            verifier.verify(signature, signatureSpec, data)
+            verifier.verify(publicKey, signature.bytes.array(), signatureSpec, data)
+        }
+    }
+
+    @Test
+    fun `verify fails if signature key is not part of the acceptable keys`() {
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
+
+        assertThrows<IllegalArgumentException> {
+            verifier.verify(publicKeys, signature, signatureSpec, byteArrayOf(44, 1))
+        }
+    }
+
+    @Test
+    fun `verify pass if signature key is part of the acceptable keys`() {
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
+
+        assertDoesNotThrow {
+            verifier.verify(publicKeys + publicKey, signature, signatureSpec, byteArrayOf(44, 1))
         }
     }
 }

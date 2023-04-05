@@ -1,10 +1,20 @@
 package net.corda.virtualnode.rest.converters.impl
 
+import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializer
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.virtualnode.rest.converters.MessageConverter
 import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
+import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier as CpiIdentifierRestResponse
+import net.corda.libs.packaging.core.CpiIdentifier as CpiIdentifierDto
+import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo as VirtualNodeInfoRestResponse
+import net.corda.virtualnode.HoldingIdentity as HoldingIdentityDto
+import net.corda.virtualnode.VirtualNodeInfo as VirtualNodeInfoDto
 
-class MessageConverterImpl : MessageConverter {
+class MessageConverterImpl(
+    private val routeConfigSerializer: ExternalMessagingRouteConfigSerializer
+) : MessageConverter {
 
     // Avro Message states
     companion object {
@@ -18,7 +28,33 @@ class MessageConverterImpl : MessageConverter {
         const val ABORTED = "ABORTED"
     }
 
+    override fun convert(virtualNodeInfoDto: VirtualNodeInfoDto): VirtualNodeInfoRestResponse {
+        val routeConfig = virtualNodeInfoDto.externalMessagingRouteConfig?.let {
+            routeConfigSerializer.deserialize(it)
+        }
 
+        return with(virtualNodeInfoDto) {
+            VirtualNodeInfo(
+                holdingIdentity.toEndpointType(),
+                cpiIdentifier.toEndpointType(),
+                vaultDdlConnectionId?.toString(),
+                vaultDmlConnectionId.toString(),
+                cryptoDdlConnectionId?.toString(),
+                cryptoDmlConnectionId.toString(),
+                uniquenessDdlConnectionId?.toString(),
+                uniquenessDmlConnectionId.toString(),
+                hsmConnectionId.toString(),
+                flowP2pOperationalStatus,
+                flowStartOperationalStatus,
+                flowOperationalStatus,
+                vaultDbOperationalStatus,
+                operationInProgress,
+                routeConfig
+            )
+        }
+    }
+
+    @Suppress("LongMethod", "UseCheckOrError")
     override fun convert(
         status: AvroVirtualNodeOperationStatus,
         operation: String,
@@ -27,11 +63,11 @@ class MessageConverterImpl : MessageConverter {
 
         return when (status.state) {
             ACCEPTED -> {
-                AsyncOperationStatus.accepted(status.requestId,operation, status.latestUpdateTimestamp)
+                AsyncOperationStatus.accepted(status.requestId, operation, status.latestUpdateTimestamp)
             }
 
             IN_PROGRESS -> {
-                AsyncOperationStatus.inProgress(status.requestId,operation, status.latestUpdateTimestamp)
+                AsyncOperationStatus.inProgress(status.requestId, operation, status.latestUpdateTimestamp)
             }
 
             VALIDATION_FAILED -> {
@@ -44,7 +80,7 @@ class MessageConverterImpl : MessageConverter {
                 )
             }
 
-            LIQUIBASE_DIFF_CHECK_FAILED ->{
+            LIQUIBASE_DIFF_CHECK_FAILED -> {
                 AsyncOperationStatus.failed(
                     status.requestId,
                     operation,
@@ -54,7 +90,7 @@ class MessageConverterImpl : MessageConverter {
                 )
             }
 
-            MIGRATIONS_FAILED ->{
+            MIGRATIONS_FAILED -> {
                 AsyncOperationStatus.failed(
                     status.requestId,
                     operation,
@@ -64,7 +100,7 @@ class MessageConverterImpl : MessageConverter {
                 )
             }
 
-            UNEXPECTED_FAILURE ->{
+            UNEXPECTED_FAILURE -> {
                 AsyncOperationStatus.failed(
                     status.requestId,
                     operation,
@@ -73,7 +109,7 @@ class MessageConverterImpl : MessageConverter {
                 )
             }
 
-            ABORTED ->{
+            ABORTED -> {
                 AsyncOperationStatus.aborted(
                     status.requestId,
                     operation,
@@ -81,7 +117,7 @@ class MessageConverterImpl : MessageConverter {
                 )
             }
 
-            COMPLETED ->{
+            COMPLETED -> {
                 AsyncOperationStatus.succeeded(
                     status.requestId,
                     operation,
@@ -90,9 +126,20 @@ class MessageConverterImpl : MessageConverter {
                 )
             }
 
-            else ->{
+            else -> {
                 throw IllegalStateException("The virtual node operation status '${status.state}' is not recognized.")
             }
         }
     }
+
+    private fun HoldingIdentityDto.toEndpointType(): HoldingIdentityRestResponse =
+        HoldingIdentityRestResponse(
+            x500Name.toString(),
+            groupId,
+            shortHash.value,
+            fullHash
+        )
+
+    private fun CpiIdentifierDto.toEndpointType(): CpiIdentifierRestResponse =
+        CpiIdentifierRestResponse(name, version, signerSummaryHash.toString())
 }

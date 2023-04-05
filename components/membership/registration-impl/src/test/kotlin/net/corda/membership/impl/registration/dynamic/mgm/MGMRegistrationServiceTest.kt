@@ -14,6 +14,8 @@ import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -39,7 +41,6 @@ import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
-import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -60,6 +61,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
@@ -83,19 +85,21 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -113,7 +117,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.*
+import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
@@ -123,6 +129,8 @@ class MGMRegistrationServiceTest {
         const val ECDH_KEY_STRING = "5678"
         const val ECDH_KEY_ID = "BBC123456789"
         const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
+
+        private val trustrootCert = this::class.java.getResource("/r3Com.pem")!!.readText()
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -160,7 +168,9 @@ class MGMRegistrationServiceTest {
         on { encodeAsString(ecdhKey) } doReturn ECDH_KEY_STRING
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(
+            sessionCryptoSigningKey
+        )
         on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(ECDH_KEY_ID))) } doReturn listOf(ecdhCryptoSigningKey)
     }
     private val gatewayConfiguration = mock<SmartConfig> {
@@ -213,10 +223,10 @@ class MGMRegistrationServiceTest {
         )
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
-    private val mockGroupParametersList: KeyValuePairList = mock()
+    private val mockSignedGroupParameters: SignedGroupParameters = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryRegistrationRequestsStatus(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
+        on { queryRegistrationRequests(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
@@ -227,7 +237,9 @@ class MGMRegistrationServiceTest {
                 statusUpdate.capture()
             )
         } doReturn MembershipPersistenceResult.success()
-        on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
+        on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(
+            mockSignedGroupParameters
+        )
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -245,10 +257,7 @@ class MGMRegistrationServiceTest {
         on { get(eq(mgm)) } doReturn virtualNodeInfo
     }
     private val writerService: GroupParametersWriterService = mock()
-    private val mockGroupParameters: GroupParameters = mock()
-    private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(mockGroupParametersList) } doReturn mockGroupParameters
-    }
+
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -264,7 +273,6 @@ class MGMRegistrationServiceTest {
         platformInfoProvider,
         virtualNodeInfoReadService,
         writerService,
-        groupParametersFactory,
         configurationGetService,
     )
 
@@ -282,11 +290,14 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.trustroot.session.0"
-                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.trustroot.tls.0"
-                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.trustroot.session.0" to trustrootCert,
+        "corda.group.trustroot.tls.0" to trustrootCert,
     )
+
+    private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
+    val mockClock = Mockito.mockConstruction(UTCClock::class.java) {
+        mock, _ -> whenever(mock.instant()).thenReturn(validCertificateDate.toInstant())
+    }
 
     private fun postStartEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -320,6 +331,11 @@ class MGMRegistrationServiceTest {
             ),
             coordinator
         )
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        mockClock.close()
     }
 
     @Nested
@@ -434,10 +450,8 @@ class MGMRegistrationServiceTest {
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
-                        "trustroot.session.0"
-                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                        "trustroot.tls.0"
-                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                        "trustroot.session.0" to trustrootCert,
+                        "trustroot.tls.0" to trustrootCert,
                     ).entries
                 )
             registrationService.stop()
@@ -454,8 +468,17 @@ class MGMRegistrationServiceTest {
                 eq(mgm),
                 argThat {
                     this.size == 1 &&
-                            this.first().isMgm &&
-                            this.first().name == mgmName
+                            this.first().memberInfo.isMgm &&
+                            this.first().memberInfo.name == mgmName &&
+                            this.first().memberSignature == CryptoSignatureWithKey(
+                                ByteBuffer.wrap(byteArrayOf()),
+                                ByteBuffer.wrap(byteArrayOf())
+                            ) &&
+                            this.first().memberSignatureSpec == CryptoSignatureSpec(
+                                "",
+                                null,
+                                null
+                            )
                 }
             )
         }
@@ -472,14 +495,14 @@ class MGMRegistrationServiceTest {
 
         @Test
         fun `registration publishes initial group parameters snapshot to Kafka`() {
-            val groupParametersCaptor = argumentCaptor<GroupParameters>()
+            val groupParametersCaptor = argumentCaptor<SignedGroupParameters>()
             postConfigChangedEvent()
             registrationService.start()
 
             registrationService.register(registrationRequest, mgm, properties)
 
             verify(writerService).put(eq(mgm), groupParametersCaptor.capture())
-            assertThat(groupParametersCaptor.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(groupParametersCaptor.firstValue).isEqualTo(mockSignedGroupParameters)
         }
 
         @Test
@@ -546,8 +569,7 @@ class MGMRegistrationServiceTest {
             postConfigChangedEvent()
             val testProperties =
                 properties + mapOf(
-                    "corda.group.trustroot.tls.100" to
-                            "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                    "corda.group.trustroot.tls.100" to trustrootCert
                 )
             registrationService.start()
 

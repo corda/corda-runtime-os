@@ -1,6 +1,9 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
+import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
@@ -16,8 +19,6 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
@@ -52,9 +53,9 @@ class ConsensualReceiveFinalityFlowV1Test {
 
     private val memberInfo = mock<MemberInfo>()
 
-    private val publicKey1 = mock<PublicKey>()
-    private val publicKey2 = mock<PublicKey>()
-    private val publicKey3 = mock<PublicKey>()
+    private val publicKey1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+    private val publicKey2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+    private val publicKey3 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
 
     private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 2))
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 3))
@@ -116,7 +117,7 @@ class ConsensualReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+        whenever(signedTransaction.verifySignature(any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callReceiveFinalityFlow() }
@@ -232,14 +233,13 @@ class ConsensualReceiveFinalityFlowV1Test {
     private fun callReceiveFinalityFlow(validator: ConsensualTransactionValidator = ConsensualTransactionValidator { }) {
         val flow = ConsensualReceiveFinalityFlowV1(session, validator)
         flow.persistenceService = persistenceService
-        flow.transactionSignatureService = transactionSignatureService
         flow.call()
     }
 
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArray),
-            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
+            DigitalSignatureWithKeyId(publicKey.fullIdHash(), byteArray),
+            DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
         )
     }
 }

@@ -21,7 +21,13 @@ class GroupParametersEntityTest {
 
     private val epoch = 9
     private val parameters = "123".toByteArray()
-    private val entity = GroupParametersEntity(epoch, parameters)
+    private val entity = GroupParametersEntity(
+        epoch = epoch,
+        parameters = parameters,
+        signaturePublicKey = byteArrayOf(0),
+        signatureContent = byteArrayOf(1),
+        signatureSpec = "sig-spec"
+    )
     private val epochPath: Path<String> = mock()
     private val order: Order = mock()
     private val root: Root<GroupParametersEntity> = mock {
@@ -83,6 +89,59 @@ class GroupParametersEntityTest {
             verify(typedQuery).maxResults = eq(1)
             verify(typedQuery).resultList
 
+        }
+    }
+
+    @Nested
+    inner class IsSigned {
+
+        @Test
+        fun `can detect is signed`() {
+            assertThat(entity.isSigned()).isTrue
+        }
+
+        @Test
+        fun `can detect not signed`() {
+            assertThat(GroupParametersEntity(
+                epoch = epoch,
+                parameters = parameters,
+                signaturePublicKey = null,
+                signatureContent = null,
+                signatureSpec = null
+            ).isSigned()).isFalse
+        }
+
+        @Test
+        fun `can detect not signed is partial data available (no public key)`() {
+            assertThat(GroupParametersEntity(
+                epoch = epoch,
+                parameters = parameters,
+                signaturePublicKey = null,
+                signatureContent = byteArrayOf(1),
+                signatureSpec = "sig-spec"
+            ).isSigned()).isFalse
+        }
+
+        @Test
+        fun `can detect not signed is partial data available (no signature content)`() {
+            assertThat(GroupParametersEntity(
+                epoch = epoch,
+                parameters = parameters,
+                signaturePublicKey = byteArrayOf(0),
+                signatureContent = null,
+                signatureSpec = "sig-spec"
+            ).isSigned()).isFalse
+        }
+
+        @Test
+        fun `can detect not signed is partial data available (no signature spec)`() {
+            assertThat(GroupParametersEntity(
+                epoch = epoch,
+                parameters = parameters,
+                signaturePublicKey = byteArrayOf(0),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = null
+            ).isSigned()).isFalse
         }
     }
 }

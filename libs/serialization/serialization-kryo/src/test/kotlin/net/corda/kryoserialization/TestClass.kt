@@ -21,7 +21,7 @@ internal class TestClass(
             output.writeString(obj.someString)
         }
 
-        override fun read(input: CheckpointInput, type: Class<TestClass>): TestClass {
+        override fun read(input: CheckpointInput, type: Class<out TestClass>): TestClass {
             return TestClass(input.readInt(), input.readString())
         }
     }
@@ -33,7 +33,7 @@ internal class NonSerializableTestClass : NonSerializable {
         override fun write(output: CheckpointOutput, obj: NonSerializableTestClass) {
         }
 
-        override fun read(input: CheckpointInput, type: Class<NonSerializableTestClass>): NonSerializableTestClass {
+        override fun read(input: CheckpointInput, type: Class<out NonSerializableTestClass>): NonSerializableTestClass {
             return NonSerializableTestClass()
         }
     }

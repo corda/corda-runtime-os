@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp.custom
 
+import net.corda.base.internal.OpaqueBytes
+import net.corda.base.internal.OpaqueBytesSubSequence
 import net.corda.serialization.BaseProxySerializer
-import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.base.types.OpaqueBytesSubSequence
 
 /**
  * A serializer for [OpaqueBytesSubSequence] that uses a proxy object to write out only content included into sequence
@@ -17,5 +17,5 @@ class OpaqueBytesSubSequenceSerializer : BaseProxySerializer<OpaqueBytesSubSeque
     override fun toProxy(obj: OpaqueBytesSubSequence): OpaqueBytes
         = OpaqueBytes(obj.copyBytes())
     override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence
-        = OpaqueBytesSubSequence(proxy.bytes, proxy.offset, proxy.size)
+        = OpaqueBytesSubSequence(proxy.getBytes(), proxy.offset, proxy.size)
 }
