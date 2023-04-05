@@ -1,9 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.time.Duration
-import java.util.UUID
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,7 +7,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
@@ -34,6 +29,9 @@ import net.corda.schema.Schemas.getStateAndEventDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.util.*
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -46,10 +44,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
-
-    companion object {
-        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
-    }
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
@@ -184,7 +178,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
-                val batches = getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT)).iterator()
+                val batches = getEventsByBatch(stateAndEventConsumer.pollEvents()).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     rebalanceOccurred = tryProcessBatchOfEvents(batches.next())
                 }
@@ -350,7 +344,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         "producerClientId ${config.clientId}. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
-            eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+            stateAndEventConsumer.resetEventOffsetPosition()
         } else {
             val message = "Failed to process records from topic $eventTopic, group ${config.group}, " +
                     "producerClientId ${config.clientId}. " +
