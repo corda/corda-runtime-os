@@ -14,7 +14,7 @@ import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionS
 import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.ledger.common.testkit.mockPlatformInfoProvider
+import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 
 abstract class CommonLedgerTest {
@@ -42,7 +42,7 @@ abstract class CommonLedgerTest {
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
     val transactionMetadataFactory = TransactionMetadataFactoryImpl(
         currentSandboxGroupContext,
-        mockPlatformInfoProvider()
+        fakePlatformInfoProvider()
     )
 
     val wireTransactionKryoSerializer = WireTransactionKryoSerializer(wireTransactionFactory)
