@@ -110,8 +110,10 @@ internal class ConfigReadServiceEventHandler(
             is RegistrationStatusChangeEvent -> {
                 // Only registration is on the subscription
                 if (event.status == LifecycleStatus.UP) {
-                    QqqTicker.tick("ConfigReadServiceEventHandler going UP")
-                    coordinator.updateStatus(LifecycleStatus.UP)
+                    if (event.registration == configSubReg) {
+                        QqqTicker.tick("ConfigReadServiceEventHandler going UP")
+                        coordinator.updateStatus(LifecycleStatus.UP)
+                    }
                 } else {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
