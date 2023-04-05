@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
+import java.util.TreeMap
 
 @Suppress("unused")
 @Component(
@@ -26,20 +26,20 @@ class ContractStateVaultJsonFactoryRegistryImpl @Activate constructor()
         val logger: Logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryRegistryImpl::class.java)
     }
 
-    private val factoryStorage = ConcurrentHashMap<Class<out ContractState>, ContractStateVaultJsonFactory<out ContractState>>()
+    private val factoryStorage = TreeMap<String, ContractStateVaultJsonFactory<out ContractState>>()
 
     override fun registerJsonFactory(factory: ContractStateVaultJsonFactory<out ContractState>) {
-        if (factoryStorage.putIfAbsent(factory.stateType, factory) != null) {
-            logger.warn("Trying to register factory with type: $factory. " +
-                    "However, a factory with type: ${factoryStorage[factory.stateType]} is already registered " +
-                    "for state class ${factory.stateType}.")
+        if (factoryStorage.putIfAbsent(factory.stateType.name, factory) != null) {
+            logger.warn("Failed to register ${ContractStateVaultJsonFactory::class.java.name} of ${factory::class.java.name} " +
+                    "for state type ${factory.stateType::class.java.name} as ${factoryStorage[factory.stateType.name]} " +
+                    "is already registered for the same type.")
             throw IllegalArgumentException("A factory for state class ${factory.stateType} is already registered.")
         }
     }
 
     override fun getFactoriesForClass(state: ContractState): List<ContractStateVaultJsonFactory<out ContractState>> {
         return factoryStorage.filter {
-            it.key.isAssignableFrom(state::class.java)
+            it.value.stateType.isAssignableFrom(state::class.java)
         }.values.toList()
     }
 }

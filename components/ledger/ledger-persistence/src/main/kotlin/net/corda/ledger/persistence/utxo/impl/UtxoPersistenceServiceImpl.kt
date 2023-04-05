@@ -234,9 +234,7 @@ class UtxoPersistenceServiceImpl constructor(
     private fun extractJsonDataFromState(
         contractState: ContractState
     ): String {
-        val jsonMap = factoryStorage.getFactoriesForClass(contractState).sortedBy {
-            it.stateType.name // Sort the factories by class name, to make the JSON order deterministic
-        }.associate {
+        val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
 
             val jsonToParse = @Suppress("unchecked_cast")
             (it as ContractStateVaultJsonFactory<ContractState>)
@@ -245,7 +243,7 @@ class UtxoPersistenceServiceImpl constructor(
 
             it.stateType.name to try {
                 jsonMarshallingService.parse(jsonToParse, Any::class.java)
-            } catch (e: JsonProcessingException) {
+            } catch (e: Exception) {
                 log.warn("Error while processing factory for class: ${it.stateType.name}. " +
                         "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.")
                 jsonMarshallingService.parse("{}", Any::class.java)
