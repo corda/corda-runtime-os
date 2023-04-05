@@ -13,7 +13,6 @@ import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
