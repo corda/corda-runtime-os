@@ -5,6 +5,7 @@ import net.corda.crypto.core.CompositeKeyProvider
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.membership.NotaryInfo
@@ -96,9 +97,11 @@ class NotaryInfoConverterTest {
         }
     }
 
+    private class TestContext(map: LayeredPropertyMap) : LayeredPropertyMap by map
+
     private fun convertToNotaryInfo(context: SortedMap<String, String>): NotaryInfo =
         converters.find { it.type == NotaryInfo::class.java }?.convert(
-            LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            LayeredPropertyMapMocks.createConversionContext<TestContext>(
                 context,
                 converters,
                 ""

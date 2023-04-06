@@ -5,15 +5,6 @@ plugins {
 
 description 'Membership implementation'
 
-kotlin {
-    target {
-        compilations.integrationTest {
-            // Needed to expose internal LayeredContextImpl class to this task
-            associateWith compilations.test
-        }
-    }
-}
-
 dependencies {
     api project(':libs:layered-property-map')
 
