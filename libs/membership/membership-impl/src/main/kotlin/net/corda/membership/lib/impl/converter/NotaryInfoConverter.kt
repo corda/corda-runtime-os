@@ -48,7 +48,7 @@ class NotaryInfoConverter @Activate constructor(
             name,
             protocol,
             protocolVersions,
-            compositeKeyProvider.create(keysWithWeight, null)
+            compositeKeyProvider.create(keysWithWeight, 1)
         )
     }
 }
