@@ -31,14 +31,14 @@ class FlowMapperMessageProcessor(
 
     private val sessionP2PTtl = flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)
 
-    private val errorMsg = "This event is expired and will be %. Event: &, State: %."
+    private val errorMsg = "This event is expired and will be %. Event: % State: %"
 
     override fun onNext(
         state: FlowMapperState?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
         val key = event.key
-        logger.trace { "Received event: key: $key event: ${event.value}" }
+        logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
         return if (!isExpiredSessionEvent(value)) {
