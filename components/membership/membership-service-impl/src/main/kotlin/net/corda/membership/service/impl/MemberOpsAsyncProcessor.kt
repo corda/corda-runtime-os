@@ -62,10 +62,12 @@ internal class MemberOpsAsyncProcessor(
     override val eventValueClass = MembershipAsyncRequest::class.java
     override val stateValueClass = MembershipAsyncRequestState::class.java
 
-    private fun createFailureWithoutRetryResponse(): StateAndEventProcessor.Response<MembershipAsyncRequestState> =
+    private fun createFailureWithoutRetryResponse(
+        responseEvents: Collection<Record<*, *>>,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestState> =
         StateAndEventProcessor.Response(
             updatedState = null,
-            responseEvents = emptyList(),
+            responseEvents = responseEvents.toList(),
             markForDLQ = true,
         )
     private fun persistAndCreateFailureWithoutRetryResponse(
@@ -74,14 +76,13 @@ internal class MemberOpsAsyncProcessor(
         message: String?,
         status: RegistrationStatus,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
-        // CORE-10367: return the status update command as part of the onNext
-        membershipPersistenceClient.setRegistrationRequestStatus(
+        val records = membershipPersistenceClient.setRegistrationRequestStatus(
             holdingIdentity,
             registrationId.toString(),
             status,
             message?.take(255),
-        )
-        return createFailureWithoutRetryResponse()
+        ).createAsyncCommands()
+        return createFailureWithoutRetryResponse(records)
     }
 
     private fun createMoveOnResponse(): StateAndEventProcessor.Response<MembershipAsyncRequestState> =
@@ -108,6 +109,7 @@ internal class MemberOpsAsyncProcessor(
     private fun createSentToMgmResponse(
         value: MembershipAsyncRequest,
         state: MembershipAsyncRequestState?,
+        records: Collection<Record<*, *>>,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         val currentCause = state?.cause
         val newCause = if (currentCause is SentToMgmWaitingForNetwork) {
@@ -122,7 +124,7 @@ internal class MemberOpsAsyncProcessor(
                 value,
                 newCause,
             ),
-            responseEvents = emptyList(),
+            responseEvents = records.toList(),
             markForDLQ = false,
         )
     }
@@ -140,7 +142,9 @@ internal class MemberOpsAsyncProcessor(
             UUID.fromString(request.requestId)
         } catch (e: IllegalArgumentException) {
             logger.warn("Registration ${request.requestId} failed. Invalid request ID.", e)
-            return createFailureWithoutRetryResponse()
+            return createFailureWithoutRetryResponse(
+                emptyList(),
+            )
         }
         val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
         val holdingIdentity =
@@ -153,7 +157,9 @@ internal class MemberOpsAsyncProcessor(
                         " Could not find holding identity associated with ${request.holdingIdentityId} for too long." +
                         " Will not retry nor persist the state.",
                 )
-                createFailureWithoutRetryResponse()
+                createFailureWithoutRetryResponse(
+                    emptyList(),
+                )
             } else {
                 logger.warn(
                     "Registration ${request.requestId} failed." +
@@ -201,10 +207,9 @@ internal class MemberOpsAsyncProcessor(
             }
 
             logger.info("Processing registration ${request.requestId} to ${holdingIdentity.x500Name}.")
-            // CORE-10367: return the status update command as part of the onNext
-            registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
+            val records = registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
-            createSentToMgmResponse(value, state)
+            createSentToMgmResponse(value, state, records)
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration ${request.requestId} failed. Invalid registration request.", e)
             persistAndCreateFailureWithoutRetryResponse(

@@ -12,6 +12,7 @@ import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -29,6 +30,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -50,11 +52,39 @@ class MemberOpsAsyncProcessorTest {
     private val info = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn identity
     }
-    private val registrationProxy = mock<RegistrationProxy>()
+    private val registerCommands = listOf(
+        Record(
+            "topic1",
+            "key1",
+            551
+        )
+    )
+    private val registrationProxy = mock<RegistrationProxy> {
+        on { register(any(), any(), any()) } doReturn registerCommands
+    }
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn info
     }
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val setStatusCommands = listOf(
+        Record(
+            "topic2",
+            "key2",
+            552
+        )
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn setStatusCommands
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on {
+            setRegistrationRequestStatus(
+                any(),
+                any(),
+                any(),
+                anyOrNull()
+            )
+        } doReturn operation
+    }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
             queryRegistrationRequest(
@@ -114,7 +144,7 @@ class MemberOpsAsyncProcessorTest {
                         SentToMgmWaitingForNetwork(clock.instant().plusSeconds(10 * 60)),
                     ),
                     markForDLQ = false,
-                    responseEvents = emptyList(),
+                    responseEvents = registerCommands,
                 )
 
             )
@@ -154,7 +184,7 @@ class MemberOpsAsyncProcessorTest {
                 StateAndEventProcessor.Response(
                     updatedState = state,
                     markForDLQ = false,
-                    responseEvents = emptyList(),
+                    responseEvents = registerCommands,
                 )
             )
         }
@@ -193,7 +223,7 @@ class MemberOpsAsyncProcessorTest {
                 StateAndEventProcessor.Response(
                     updatedState = null,
                     markForDLQ = true,
-                    responseEvents = emptyList(),
+                    responseEvents = setStatusCommands,
                 )
             )
         }
@@ -338,7 +368,7 @@ class MemberOpsAsyncProcessorTest {
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
                     updatedState = null,
-                    responseEvents = emptyList(),
+                    responseEvents = setStatusCommands,
                     markForDLQ = true,
                 )
             )

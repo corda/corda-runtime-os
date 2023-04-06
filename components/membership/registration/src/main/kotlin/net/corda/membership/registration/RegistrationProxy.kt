@@ -2,6 +2,7 @@ package net.corda.membership.registration
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
+import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.HoldingIdentity
 import java.util.UUID
 import kotlin.jvm.Throws
@@ -36,5 +37,5 @@ interface RegistrationProxy : Lifecycle {
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    )
+    ): Collection<Record<*, *>>
 }

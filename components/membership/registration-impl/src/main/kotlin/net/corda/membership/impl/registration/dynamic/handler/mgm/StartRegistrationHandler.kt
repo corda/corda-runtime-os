@@ -93,12 +93,9 @@ internal class StartRegistrationHandler(
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
             logger.info("Persisting the received registration request.")
-            membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist the received registration request. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
-            }
+            membershipPersistenceClient
+                .persistRegistrationRequest(mgmHoldingId, registrationRequest)
+                .getOrThrow()
 
             validateRegistrationRequest(registrationRequest.serial != null) {
                 "Serial on the registration request should not be null."
@@ -153,7 +150,8 @@ internal class StartRegistrationHandler(
             )
 
             // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo)).also {
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
+                .execute().also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to persist pending member info. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
