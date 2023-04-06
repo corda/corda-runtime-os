@@ -202,15 +202,17 @@ class ApproveRegistrationHandlerTest {
         )
         verify(groupReaderProvider, never()).getGroupReader(any())
         assertThat(results.outputStates)
-            .hasSize(3)
-            .anySatisfy {
-                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
-                val value = (it.value as? MembershipActionsRequest)?.request
-                assertThat(value)
-                    .isNotNull
-                    .isInstanceOf(DistributeMemberInfo::class.java)
-                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(6)
-            }
+            .hasSize(4)
+
+        val actionsRequest = results.outputStates.single { it.topic == MEMBERSHIP_ACTIONS_TOPIC }
+        val distributeMemberInfo = (actionsRequest.value as? MembershipActionsRequest)?.request as? DistributeMemberInfo
+        assertThat(distributeMemberInfo?.minimumGroupParametersEpoch).isEqualTo(6)
+
+        val registrationCommand = results.outputStates.single { it.topic == REGISTRATION_COMMAND_TOPIC }
+        val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
+        assertThat(checkForPendingRegistration?.mgm).isEqualTo(owner.toAvro())
+        assertThat(checkForPendingRegistration?.member).isEqualTo(notary.toAvro())
+        assertThat(checkForPendingRegistration?.numberOfRetriesSoFar).isEqualTo(0)
     }
 
     @Test
