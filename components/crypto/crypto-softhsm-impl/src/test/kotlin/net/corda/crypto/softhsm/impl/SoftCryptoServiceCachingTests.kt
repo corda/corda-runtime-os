@@ -30,8 +30,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
-
 /**
  * Testing of the crypto service with caching.
  *
