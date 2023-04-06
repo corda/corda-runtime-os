@@ -110,12 +110,15 @@ class SessionEventExecutor(
         val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
                 "Session may have expired. "
 
-        when (state) {
+        return when (state) {
+            null -> {
+                log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
+                FlowMapperResult(null, listOf())
+            }
             FlowMapperStateType.CLOSING -> {
                 val outputRecord =
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, generateAck(instant)))
-
-                return FlowMapperResult(flowMapperState, listOf(outputRecord))
+                FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
             FlowMapperStateType.OPEN -> {
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
@@ -127,13 +130,11 @@ class SessionEventExecutor(
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
-
-                return FlowMapperResult(flowMapperState, listOf(outputRecord))
+                FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
             FlowMapperStateType.ERROR -> {
                 log.warn(errorMsg + "Ignoring event. Key: $eventKey, Event: $sessionEvent")
-
-                return FlowMapperResult(null, listOf())
+                FlowMapperResult(null, listOf())
             }
         }
     }

@@ -16,6 +16,7 @@ import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class SessionErrorExecutor(
     private val eventKey: String,
     private val sessionEvent: SessionEvent,
@@ -44,6 +45,10 @@ class SessionErrorExecutor(
 
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         when (flowMapperState.status) {
+            null -> {
+                log.warn(errorMsg.format("Ignored"))
+                FlowMapperResult(null, listOf())
+            }
             FlowMapperStateType.ERROR -> {
                 log.warn(errorMsg.format("Ignored"))
                 FlowMapperResult(null, listOf())
