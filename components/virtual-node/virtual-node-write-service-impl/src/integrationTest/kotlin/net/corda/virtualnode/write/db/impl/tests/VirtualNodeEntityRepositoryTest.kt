@@ -69,7 +69,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash))
         val expectedCpiMetadata =
-            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy", emptySet()) // The empty set should be replaced
+            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy", emptySet())
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -81,7 +81,7 @@ internal class VirtualNodeEntityRepositoryTest {
                 "Test Group Policy",
                 "Test Group ID",
                 "Request ID",
-                emptySet() // Todo: This should actually not be empty. We should be testing that this field is being properly set when the CpiMetadataLite is creeated
+                emptySet()
             )
         }
 
@@ -115,7 +115,7 @@ internal class VirtualNodeEntityRepositoryTest {
         cpiMetadata = repository.getCpiMetadataByChecksum("123456AbCdEf")
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
-        // Noll returned if not found
+        // Null returned if not found
         cpiMetadata = repository.getCpiMetadataByChecksum("111111")
         Assertions.assertThat(cpiMetadata).isNull()
     }

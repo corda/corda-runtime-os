@@ -15,10 +15,6 @@ class ExternalMessagingRouteConfigGeneratorImpl(
     private val channelsConfigSerializer: ExternalMessagingChannelConfigSerializer
 ) : ExternalMessagingRouteConfigGenerator {
 
-
-    // Todo
-    // This function probably should return List<Route> instead of a list
-    // The data should be then serialized when storing to the database
     override fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Set<CpkMetadata>): String {
         // Get the default configuration
         // cpi -> cpiMetadata.id
