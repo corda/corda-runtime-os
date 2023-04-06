@@ -31,8 +31,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
         val partitionId = partitions.first().partition
         val partitionState =
             StateAndEventPartitionState<String, String>(
-                mutableMapOf(partitionId to mutableMapOf()),
-                mutableMapOf(partitionId to Long.MAX_VALUE)
+                mutableMapOf(partitionId to mutableMapOf())
             )
         val rebalanceListener =
             StateAndEventConsumerRebalanceListenerImpl(
@@ -44,9 +43,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
             )
         rebalanceListener.onPartitionsRevoked(partitions)
 
-        val stateConsumer = stateAndEventConsumer.stateConsumer
-        verify(stateConsumer, times(1)).assignment()
-        verify(stateConsumer, times(1)).assign(any())
+        verify(stateAndEventConsumer, times(1)).onPartitionsRevoked(partitions)
         verify(stateAndEventListener, times(1)).onPartitionLost(any())
         verify(mapFactory, times(1)).destroyMap(any())
         assertThat(partitionState.dirty).isTrue
@@ -55,11 +52,9 @@ class StateAndEventConsumerRebalanceListenerImplTest {
     @Test
     fun testPartitionsAssigned() {
         val (stateAndEventListener, stateAndEventConsumer, mapFactory, partitions) = setupMocks()
-        val partitionId = partitions.first().partition
         val partitionState =
             StateAndEventPartitionState<String, String>(
-                mutableMapOf(),
-                mutableMapOf(partitionId to Long.MAX_VALUE)
+                mutableMapOf()
             )
         val rebalanceListener =
             StateAndEventConsumerRebalanceListenerImpl(
@@ -71,11 +66,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
             )
         rebalanceListener.onPartitionsAssigned(partitions)
 
-        val stateConsumer = stateAndEventConsumer.stateConsumer
-        val eventConsumer = stateAndEventConsumer.eventConsumer
-        verify(stateConsumer, times(1)).seekToBeginning(any())
-        verify(stateConsumer, times(1)).assign(any())
-        verify(eventConsumer, times(1)).pause(any())
+        verify(stateAndEventConsumer, times(1)).onPartitionsAssigned(partitions)
         verify(mapFactory, times(1)).createMap()
         assertThat(partitionState.dirty).isTrue
     }
@@ -88,8 +79,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
             2 to mutableMapOf("K2" to Pair(2L, "value2"))
         )
         val partitionState = StateAndEventPartitionState(
-            currentState,
-            mutableMapOf()
+            currentState
         )
 
         val rebalanceListener = StateAndEventConsumerRebalanceListenerImpl(

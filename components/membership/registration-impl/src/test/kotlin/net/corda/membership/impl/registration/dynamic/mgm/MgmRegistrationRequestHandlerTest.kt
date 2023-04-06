@@ -11,6 +11,7 @@ import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -53,10 +54,13 @@ class MgmRegistrationRequestHandlerTest {
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
     }
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistRegistrationRequest(any(), any())
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn operation
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
 
@@ -102,7 +106,7 @@ class MgmRegistrationRequestHandlerTest {
 
     @Test
     fun `expected exception thrown if registration request persistence fails`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(eq(holdingIdentity), any())).
+        whenever(operation.execute()).
             doReturn(MembershipPersistenceResult.Failure(""))
         val serialisedPayload = "test".toByteArray()
         whenever(cordaAvroSerializer.serialize(any())).thenReturn(serialisedPayload)

@@ -9,9 +9,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -43,6 +43,16 @@ class DeclineRegistrationHandlerTest {
         member,
         mgm
     )
+    private val commands = listOf(
+        Record(
+            "topic",
+            "key",
+            false,
+        )
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn commands
+    }
 
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
@@ -51,7 +61,7 @@ class DeclineRegistrationHandlerTest {
                 REGISTRATION_ID,
                 RegistrationStatus.DECLINED
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn operation
     }
 
     private val record = mock<Record<String, AppMessage>>()
@@ -87,8 +97,9 @@ class DeclineRegistrationHandlerTest {
         )
 
         assertThat(result.outputStates)
-            .hasSize(1)
+            .hasSize(2)
             .contains(record)
+            .containsAll(commands)
         with(result.updatedState) {
             assertThat(this?.registeringMember).isEqualTo(member)
             assertThat(this?.mgm).isEqualTo(mgm)

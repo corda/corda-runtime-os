@@ -3,6 +3,7 @@ package net.corda.flow.service
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -35,8 +36,10 @@ class FlowService @Activate constructor(
     @Reference(service = FlowExecutor::class)
     private val flowExecutor: FlowExecutor,
     @Reference(service = FlowWakeUpScheduler::class)
-    private val flowWakeUpScheduler: FlowWakeUpScheduler
-) : Lifecycle {
+    private val flowWakeUpScheduler: FlowWakeUpScheduler,
+    @Reference(service = ExternalMessagingRoutingService::class)
+    private val externalMessagingRoutingService: ExternalMessagingRoutingService,
+    ) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -86,6 +89,7 @@ class FlowService @Activate constructor(
                  */
                 flowWakeUpScheduler.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
+                externalMessagingRoutingService.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 

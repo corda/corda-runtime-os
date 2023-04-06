@@ -18,6 +18,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyVararg
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -62,10 +63,9 @@ class QueryRegistrationRequestsHandlerTest {
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<RegistrationRequestEntity>> {
         on { from(RegistrationRequestEntity::class.java) } doReturn root
-        on { select(root) } doReturn mock
-        on { where() } doReturn mock
-        on { where(any()) } doReturn mock
-        on { orderBy(order) } doReturn mock
+        on { select(any()) } doReturn mock
+        on { where(anyVararg()) } doReturn mock
+        on { orderBy(anyVararg<Order>()) } doReturn mock
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(any()) } doReturn KeyValuePairList(emptyList())
@@ -104,9 +104,7 @@ class QueryRegistrationRequestsHandlerTest {
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn serializationFactory
     }
-    private val context = mock<MembershipRequestContext> {
-        on { holdingIdentity } doReturn holdingIdentity
-    }
+    private val context = MembershipRequestContext(Instant.ofEpochSecond(0), null, holdingIdentity)
 
     private val handler = QueryRegistrationRequestsHandler(service)
 

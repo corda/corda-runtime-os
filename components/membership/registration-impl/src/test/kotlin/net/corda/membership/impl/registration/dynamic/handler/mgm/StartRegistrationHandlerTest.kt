@@ -35,6 +35,7 @@ import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -165,6 +166,9 @@ class StartRegistrationHandlerTest {
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
+    private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
 
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
@@ -194,8 +198,8 @@ class StartRegistrationHandlerTest {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistRegistrationRequest(any(), any()) } doReturn persistRegistrationRequestOperation
+            on { persistMemberInfo(any(), any()) } doReturn mock()
         }
         membershipQueryClient = mock {
             on {
@@ -224,7 +228,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).hasSize(2)
 
             assertRegistrationStarted()
 
@@ -268,8 +272,17 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if persistence of registration request fails`() {
+        val failure = object: MembershipPersistenceOperation<Unit> {
+            override fun execute(): MembershipPersistenceResult<Unit> {
+                return MembershipPersistenceResult.Failure("error")
+            }
+
+            override fun createAsyncCommands(): Collection<Record<*, *>> {
+                return emptyList()
+            }
+        }
         whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("error"))
+            .doReturn(failure)
 
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
@@ -433,7 +446,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).hasSize(1)
 
             assertDeclinedRegistration()
         }
@@ -460,8 +473,17 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member info fails to persist`() {
+        val failure = object: MembershipPersistenceOperation<Unit> {
+            override fun execute(): MembershipPersistenceResult<Unit> {
+                return MembershipPersistenceResult.Failure("error")
+            }
+
+            override fun createAsyncCommands(): Collection<Record<*, *>> {
+                return emptyList()
+            }
+        }
         whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
-            MembershipPersistenceResult.Failure("error")
+            failure
         )
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull

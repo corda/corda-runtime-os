@@ -138,7 +138,7 @@ internal class ConfigReadServiceEventHandlerTest {
         verify(configSubscription).start()
 
         configReadServiceEventHandler.processEvent(
-            RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP),
+            RegistrationStatusChangeEvent(configSubReg, LifecycleStatus.UP),
             coordinator
         )
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
