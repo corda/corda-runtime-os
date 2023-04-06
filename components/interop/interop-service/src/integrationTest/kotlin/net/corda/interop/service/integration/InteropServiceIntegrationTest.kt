@@ -117,8 +117,8 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        val sourceIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
-        val destinationIdentity = HoldingIdentity("CN=Alice Alias Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", groupId)
+        val sourceIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
+        val destinationIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=NC, C=US", groupId)
 
         val inboundSessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), session, 1, sourceIdentity, destinationIdentity, 0, listOf(),
@@ -133,7 +133,6 @@ class InteropServiceIntegrationTest {
         return listOf(inboundMsg, inboundMsg, outboundMsg)
     }
 
-    //@Disabled("The test fails on jenkins however works locally, fix in CORE-12134") //TODO CORE-12134
     @Test
     fun `verify interop processor sends messages to flow mapper event topic and p2p out topic`() {
         interopService.start()
@@ -145,6 +144,7 @@ class InteropServiceIntegrationTest {
         Thread.sleep(30000)
         publisher.publish(messagesToPublish(session))
 
+        //TODO CORE-12134
 //        val flowMapperExpectedOutputMessages = 2
 //        flowMapperExpectedOutputMessages.let { expectedMessageCount ->
 //            val mapperLatch = CountDownLatch(expectedMessageCount)

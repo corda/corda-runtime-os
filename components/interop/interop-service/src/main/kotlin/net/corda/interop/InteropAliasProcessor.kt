@@ -5,6 +5,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -12,8 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 class InteropAliasProcessor(
     private val publisher: Publisher,
     private val interopMembersProducer: InteropMembersProducer,
-    private val aliases: MutableList<Pair<net.corda.virtualnode.HoldingIdentity,
-            net.corda.virtualnode.HoldingIdentity>> = mutableListOf()
+    private val aliases: MutableList<Pair<HoldingIdentity, HoldingIdentity>> = mutableListOf()
 ) : CompactedProcessor<String, HostedIdentityEntry> {
     override val keyClass = String::class.java
     override val valueClass = HostedIdentityEntry::class.java
@@ -22,15 +22,14 @@ class InteropAliasProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @JvmStatic
-        var identityMappingCache = ConcurrentHashMap<String, net.corda.virtualnode.HoldingIdentity>()
+        var identityMappingCache = ConcurrentHashMap<String, HoldingIdentity>()
 
-        fun getRealHoldingIdentity(recipientId: String?): net.corda.virtualnode.HoldingIdentity? {
+        fun getRealHoldingIdentity(recipientId: String?): HoldingIdentity? {
             return identityMappingCache[recipientId]
         }
 
         private const val ALIAS = " Alias"
-        fun removeAliasSubstringFromOrganisationName(holdIdentity: net.corda.virtualnode.HoldingIdentity):
-                net.corda.virtualnode.HoldingIdentity {
+        fun removeAliasSubstringFromOrganisationName(holdIdentity: HoldingIdentity): HoldingIdentity {
             val oldName = holdIdentity.x500Name
             val (commonName, organization) = if (oldName.commonName != null)
                 Pair(oldName.commonName?.replace(ALIAS, ""), oldName.organization)
@@ -46,8 +45,7 @@ class InteropAliasProcessor(
             return holdIdentity.copy(x500Name = newName)
         }
 
-        fun addAliasSubstringToOrganisationName(holdIdentity: net.corda.virtualnode.HoldingIdentity):
-                net.corda.virtualnode.HoldingIdentity {
+        fun addAliasSubstringToOrganisationName(holdIdentity: HoldingIdentity): HoldingIdentity {
             val oldName = holdIdentity.x500Name
             val (commonName, organization) = if (oldName.commonName != null)
                 Pair(oldName.commonName + ALIAS, oldName.organization)

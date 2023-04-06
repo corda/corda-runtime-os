@@ -12,6 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
@@ -55,9 +56,8 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         payload: ByteBuffer,
         key: String
     ) : Record<String, FlowMapperEvent>? {
-        logger.info("About to process a message from p2p.in. Key: $key." )
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.info("Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent")
+        logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent"}
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
