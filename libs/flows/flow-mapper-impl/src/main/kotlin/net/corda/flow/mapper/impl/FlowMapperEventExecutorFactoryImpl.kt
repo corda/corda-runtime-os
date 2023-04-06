@@ -46,7 +46,15 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                 if (eventPayload is SessionInit) {
                     SessionInitExecutor(eventKey, sessionEvent, eventPayload, state, sessionEventSerializer, flowConfig)
                 } else if (eventPayload is SessionError) {
-                    SessionErrorExecutor(eventKey, sessionEvent, state)
+                    SessionErrorExecutor(
+                        eventKey,
+                        sessionEvent,
+                        state,
+                        instant,
+                        sessionEventSerializer,
+                        ::generateAppMessage,
+                        flowConfig
+                    )
                 } else {
                     SessionEventExecutor(
                         eventKey,
