@@ -1,6 +1,7 @@
 package net.corda.flow.application.sessions.impl
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
@@ -36,6 +37,7 @@ class FlowSessionImpl(
     }
 
     override fun getCounterparty(): MemberX500Name = counterparty
+
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
         val counterPartyFlowInfo = getCounterpartySessionContext()
@@ -46,8 +48,10 @@ class FlowSessionImpl(
             fiber.suspend(request)
             //If we are able to receive counterparty info this means the session initiation has been completed.
             setSessionConfirmed()
-            getCounterpartySessionContext() ?: throw CordaRuntimeException("Failed to get counterparties flow info. Session is in an " +
-                    "invalid state")
+            getCounterpartySessionContext() ?: throw CordaRuntimeException(
+                "Failed to get counterparties flow info. Session is in an " +
+                        "invalid state"
+            )
         }
     }
 
@@ -95,6 +99,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
+        verifySessionStatusNotErrorOrClose()
         requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
@@ -104,15 +109,16 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
+        verifySessionStatusNotErrorOrClose()
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
         setSessionConfirmed()
         return deserializeReceivedPayload(received, receiveType)
     }
-
     @Suspendable
     override fun send(payload: Any) {
+        verifySessionStatusNotErrorOrClose()
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
@@ -138,6 +144,16 @@ class FlowSessionImpl(
 
     private fun serialize(payload: Any): ByteArray {
         return serializationService.serialize(payload).bytes
+    }
+
+    private fun verifySessionStatusNotErrorOrClose() {
+        val status = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(
+            sourceSessionId
+        )?.status
+
+        if (setOf(SessionStateType.CLOSED, SessionStateType.ERROR).contains(status)) {
+            throw CordaRuntimeException("Session Status is ${status?.name ?: "NULL"}")
+        }
     }
 
     private fun <R : Any> deserializeReceivedPayload(
