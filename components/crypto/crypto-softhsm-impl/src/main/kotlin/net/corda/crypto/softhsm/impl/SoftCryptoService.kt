@@ -84,7 +84,8 @@ class SoftCryptoService(
     override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(wrappingKeyAlias != "") { "Alias must not be empty" }
         val isCached = wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null
-        val isAvailable = if (isCached) true else wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use {
+        val tenantId = computeTenantId(context)
+        val isAvailable = if (isCached) true else wrappingRepositoryFactory.create(tenantId).use {
             it.findKey(wrappingKeyAlias) != null
         }
         logger.trace {
@@ -110,19 +111,20 @@ class SoftCryptoService(
                 1,
                 parentKeyName
             )
-        wrappingRepositoryFactory.create(context.get("tenantId") ?: CryptoTenants.CRYPTO).use {
+        wrappingRepositoryFactory.create(tenantId).use {
             it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
         }
         logger.trace("Stored wrapping key alias $wrappingKeyAlias context ${context.toString()}")
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
+
     override fun delete(alias: String, context: Map<String, String>): Boolean =
         throw UnsupportedOperationException("The service does not support key deletion.")
 
     override fun deriveSharedSecret(
         spec: SharedSecretSpec,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): ByteArray {
         require(spec is SharedSecretWrappedSpec) {
             "The service supports only ${SharedSecretWrappedSpec::class.java}"
@@ -138,12 +140,13 @@ class SoftCryptoService(
         val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
         return deriveDHSharedSecret(
             provider,
-            getPrivateKey(spec.publicKey, spec.keyMaterialSpec),
+            getPrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
             spec.otherPublicKey
         )
     }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
+        val tenantId = computeTenantId(context)
         require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
@@ -161,8 +164,11 @@ class SoftCryptoService(
             keyPairGenerator.initialize(keySize, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        val wrappingKey = wrappingKeyCache?.get(spec.wrappingKeyAlias, ::getWrappingKeyUncached)
-            ?: getWrappingKeyUncached(spec.wrappingKeyAlias)
+        val wrappingKey =
+            wrappingKeyCache?.getIfPresent(spec.wrappingKeyAlias) ?: getWrappingKeyUncached(
+                spec.wrappingKeyAlias,
+                tenantId
+            )
 
         val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
@@ -172,6 +178,9 @@ class SoftCryptoService(
             encodingVersion = PRIVATE_KEY_ENCODING_VERSION
         )
     }
+
+    private fun computeTenantId(context: Map<String, String>) =
+        context.get("tennntId") ?: CryptoTenants.CRYPTO
 
     override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         require(spec is SigningWrappedSpec) {
@@ -187,7 +196,7 @@ class SoftCryptoService(
             "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
         logger.debug { "sign(spec=$spec)" }
-        return sign(spec, getPrivateKey(spec.publicKey, spec.keyMaterialSpec), data)
+        return sign(spec, getPrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)), data)
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
@@ -210,16 +219,15 @@ class SoftCryptoService(
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
-    private fun getWrappingKey(alias: String): WrappingKey =
-        wrappingKeyCache?.get(alias, ::getWrappingKeyUncached) ?: getWrappingKeyUncached(alias)
+    private fun getWrappingKey(alias: String, tenantId: String): WrappingKey =
+        wrappingKeyCache?.getIfPresent(alias) ?: getWrappingKeyUncached(alias, tenantId)
 
-    private fun getWrappingKeyUncached(alias: String): WrappingKey {
+    private fun getWrappingKeyUncached(alias: String, tenantId: String): WrappingKey {
         // use IllegalArgumentException instead for not found?
         // BUG - CORE-12253 -we look up the wrapping key in the CRYPTO tenant, but in
         // some cases it may have been stored in the vnode
-        val wrappingKeyInfo =
-            wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use { it.findKey(alias) }
-                ?: throw IllegalStateException("Wrapping key with alias $alias not found")
+        val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
+            ?: throw IllegalStateException("Wrapping key with alias $alias not found")
         require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
             "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
         }
@@ -234,11 +242,11 @@ class SoftCryptoService(
         return parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
-    private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
-        privateKeyCache?.get(publicKey) { getPrivateKeyUncached(spec) } ?: getPrivateKeyUncached(spec)
+    private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
+        privateKeyCache?.getIfPresent(publicKey) ?: getPrivateKeyUncached(spec, tenantId)
 
-    private fun getPrivateKeyUncached(spec: KeyMaterialSpec): PrivateKey {
-        return getWrappingKey(spec.wrappingKeyAlias).unwrap(spec.keyMaterial)
+    private fun getPrivateKeyUncached(spec: KeyMaterialSpec, tenantId: String): PrivateKey {
+        return getWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(spec.keyMaterial)
     }
 
     override fun close() {

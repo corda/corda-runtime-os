@@ -87,7 +87,7 @@ class SoftCryptoServiceCachingTests {
         assertFalse(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
         myCryptoService.createWrappingKey(wrappingKeyAlias, true, mapOf("tenantId" to vnodeTenantId))
         assertFalse(clusterWrappingRepository.keys.contains(wrappingKeyAlias))
-        assertTrue(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
+        assertThat(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
         val wrappingKey = wrappingKeyCache.getIfPresent(wrappingKeyAlias)
         assertNotNull(wrappingKey)
 
