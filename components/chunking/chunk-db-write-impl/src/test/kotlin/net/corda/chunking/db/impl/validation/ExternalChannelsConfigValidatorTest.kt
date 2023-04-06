@@ -5,14 +5,12 @@ import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.impl.ConfigurationValidatorFactoryImpl
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
-@Disabled("Temporary until the api is updated")
 class ExternalChannelsConfigValidatorTest {
 
     private val cordappConfigValidator =
