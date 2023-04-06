@@ -875,29 +875,60 @@ class InboundMessageProcessorTest {
         }
     }
 
-    @Test
-    fun `UnauthenticatedMessage will produce message in P2P in topic`() {
-        val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
-            on { messageId } doReturn "messageId"
-            on { source } doReturn myIdentity.toAvro()
-            on { destination } doReturn remoteIdentity.toAvro()
-            on { subsystem } doReturn "application-v1"
-        }
-        val unauthenticatedMessage = mock<UnauthenticatedMessage> {
-            on { header } doReturn unauthenticatedMessageHeader
-        }
-        val message = LinkInMessage(unauthenticatedMessage)
+    @Nested
+    inner class UnauthenticatedMessageTests {
+        @Test
+        fun `UnauthenticatedMessage will produce message in P2P in topic`() {
+            val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
+                on { messageId } doReturn "messageId"
+                on { source } doReturn myIdentity.toAvro()
+                on { destination } doReturn remoteIdentity.toAvro()
+                on { subsystem } doReturn "application-v1"
+            }
+            val unauthenticatedMessage = mock<UnauthenticatedMessage> {
+                on { header } doReturn unauthenticatedMessageHeader
+            }
+            val message = LinkInMessage(unauthenticatedMessage)
 
-        val records = processor.onNext(
-            listOf(
-                EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
+            val records = processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
+                )
             )
-        )
 
-        assertThat(records).hasSize(1).anySatisfy {
-            assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
-            assertThat(it.value).isInstanceOf(AppMessage::class.java)
-            assertThat((it.value as AppMessage).message).isEqualTo(unauthenticatedMessage)
+            assertThat(records).hasSize(1).anySatisfy {
+                assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
+                assertThat(it.value).isInstanceOf(AppMessage::class.java)
+                assertThat((it.value as AppMessage).message).isEqualTo(unauthenticatedMessage)
+            }
         }
+
+        @Test
+        fun `UnauthenticatedMessage will not produce message in P2P in topic if messaging is not allowed`() {
+            whenever(
+                networkMessagingValidator.validate(eq(myIdentity), eq(remoteIdentity))
+            ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
+            val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
+                on { messageId } doReturn "messageId"
+                on { source } doReturn myIdentity.toAvro()
+                on { destination } doReturn remoteIdentity.toAvro()
+                on { subsystem } doReturn "application-v1"
+            }
+            val unauthenticatedMessage = mock<UnauthenticatedMessage> {
+                on { header } doReturn unauthenticatedMessageHeader
+            }
+            val message = LinkInMessage(unauthenticatedMessage)
+
+            val records = processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
+                )
+            )
+
+            assertThat(records).isEmpty()
+            verify(networkMessagingValidator).validate(eq(myIdentity), eq(remoteIdentity))
+        }
+
+
     }
 }
