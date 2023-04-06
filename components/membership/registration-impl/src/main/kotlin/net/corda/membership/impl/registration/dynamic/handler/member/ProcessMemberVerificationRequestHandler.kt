@@ -50,11 +50,11 @@ internal class ProcessMemberVerificationRequestHandler(
 
         val registrationId = command.verificationRequest.registrationId
 
-        membershipPersistenceClient.setRegistrationRequestStatus(
+        val commands = membershipPersistenceClient.setRegistrationRequestStatus(
             member.toCorda(),
             registrationId,
             RegistrationStatus.PENDING_MEMBER_VERIFICATION,
-        )
+        ).createAsyncCommands()
 
         return RegistrationHandlerResult(
             null,
@@ -67,7 +67,7 @@ internal class ProcessMemberVerificationRequestHandler(
                         KeyValuePairList(payload)
                     )
                 )
-            )
+            ) + commands
         )
     }
 }

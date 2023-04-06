@@ -47,18 +47,18 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val entityTransaction = mock<EntityTransaction>()
     private val em = mock<EntityManager>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
-    private val migrationUtility = mock<MigrationUtility>() {
+    private val migrationUtility = mock<MigrationUtility> {
         whenever(it.areChangesetsDeployedOnVault(any(), any(), any())).thenReturn(false)
     }
     private val vnodeId = "123456789011"
 
     private val mockChangelog1 = mock<CpkDbChangeLog> { changelog ->
         whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()), "cpk1"))
-        whenever(changelog.content).thenReturn( "dog.xml")
+        whenever(changelog.content).thenReturn("dog.xml")
     }
     private val mockChangelog2 = mock<CpkDbChangeLog> { changelog ->
         whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()),"cpk1"))
-        whenever(changelog.content).thenReturn( "cat.xml")
+        whenever(changelog.content).thenReturn("cat.xml")
     }
     private val cpkDbChangelogs = listOf(mockChangelog1, mockChangelog2)
     private val mockCpkDbChangeLogRepository = mock<CpkDbChangeLogRepository> {
@@ -74,30 +74,35 @@ class VirtualNodeUpgradeOperationHandlerTest {
         virtualNodeRepository
     )
 
+    private val holdingIdentity = HoldingIdentity(
+        x500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB"),
+        groupId = "group-id"
+    )
     private val sshBytes = ByteArray(16)
     private val ssh = SecureHashImpl("SHA-256", sshBytes)
     private val sshString = ssh.toString()
     private val cpiName = "someCpi"
-    private val cpiId = CpiIdentifier(cpiName,"v1", ssh)
-    private val currentCpiId = mock<CpiIdentifier>() {
-        whenever(it.name).thenReturn(cpiName)
-        whenever(it.version).thenReturn("v1")
-        whenever(it.signerSummaryHash).thenReturn(ssh)
-    }
-    private val vNode = mock<VirtualNodeInfo>() {
-        whenever(it.cpiIdentifier).thenReturn(currentCpiId)
-        whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-        whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-        whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-        whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-    }
+    private val cpiId = CpiIdentifier(cpiName, "v1", ssh)
+    private val currentCpiId = CpiIdentifier(cpiName, "v1", ssh)
+    private val vNode = VirtualNodeInfo(
+        holdingIdentity,
+        currentCpiId,
+        vaultDmlConnectionId = UUID.randomUUID(),
+        cryptoDmlConnectionId = UUID.randomUUID(),
+        uniquenessDmlConnectionId = UUID.randomUUID(),
+        flowOperationalStatus = OperationalStatus.INACTIVE,
+        flowStartOperationalStatus = OperationalStatus.INACTIVE,
+        flowP2pOperationalStatus = OperationalStatus.INACTIVE,
+        vaultDbOperationalStatus = OperationalStatus.INACTIVE,
+        timestamp = Instant.now()
+    )
     private val groupName = "someGroup1"
     private val targetCpiChecksum = "targetCpi"
-    private val currentCpiMetadata = mock<CpiMetadataLite>() {
+    private val currentCpiMetadata = mock<CpiMetadataLite> {
         whenever(it.mgmGroupId).thenReturn(groupName)
     }
     private val targetCpiId = CpiIdentifier(cpiName, "v2", ssh)
-    private val targetCpiMetadata = mock<CpiMetadataLite>() {
+    private val targetCpiMetadata = mock<CpiMetadataLite> {
         whenever(it.mgmGroupId).thenReturn(groupName)
         whenever(it.id).thenReturn(targetCpiId)
     }
@@ -161,7 +166,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             eq(state)
         )).thenReturn(noInProgressOpVnodeInfo)
 
-        block.invoke()
+        block()
     }
 
     private fun withFailedOperation(state: VirtualNodeOperationStateDto, reason: String, block: () -> Unit) {
@@ -176,7 +181,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             eq(state)
         )).thenReturn(noInProgressOpVnodeInfo)
 
-        block.invoke()
+        block()
     }
 
     @BeforeEach
@@ -213,7 +218,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler validates it can find virtual node`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId)))
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId)))
             .thenReturn(null)
 
         withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "Holding identity $vnodeId not found") {
@@ -230,7 +235,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
             whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
         }
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(activeVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(activeVnode)
 
         withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "Virtual node must be in maintenance") {
             handler.handle(
@@ -243,7 +248,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler validates there is no operation in progress`() {
-        val vNode = mock<VirtualNodeInfo>() {
+        val vNode = mock<VirtualNodeInfo> {
             whenever(it.cpiIdentifier).thenReturn(currentCpiId)
             whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
             whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
@@ -251,7 +256,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
             whenever(it.operationInProgress).thenReturn("some-op")
         }
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(null)
 
         withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "Operation some-op already in progress") {
@@ -265,7 +270,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler can't find target CPI throws`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(null)
 
         withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "CPI with file checksum $targetCpiChecksum was not found") {
@@ -279,7 +284,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler can't find current CPI associated with target CPI throws`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(null)
@@ -299,7 +304,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler validates target CPI and current CPI are in the same group`() {
         val cpiInDifferentGroup = mock<CpiMetadataLite> { whenever(it.mgmGroupId).thenReturn("group-b") }
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(cpiInDifferentGroup)
@@ -315,7 +320,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler fails to upgrade, rolls back transaction`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(currentCpiMetadata)
@@ -339,7 +344,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     fun `upgrade handler successfully persists and publishes a single vnode info when no vault DDL provided`() {
         val requestTimestamp = Instant.now()
 
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(currentCpiMetadata)
@@ -361,7 +366,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     fun `migrations thrown an exception, operation is written with the details`() {
         val requestTimestamp = Instant.now()
 
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(currentCpiMetadata)
@@ -397,7 +402,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             )
         ).thenThrow(LiquibaseDiffCheckFailedException("outer error", java.lang.Exception("Inner error")))
 
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(currentCpiMetadata)
@@ -425,7 +430,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     fun `upgrade handler successfully persists, runs migrations with vault ddl, publishes vnode info and completes operation`() {
         val requestTimestamp = Instant.now()
 
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(currentCpiMetadata)
@@ -455,11 +460,11 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler successfully persists, no migrations required`() {
         val requestTimestamp = Instant.now()
-        val migrationUtility = mock<MigrationUtility>() {
+        val migrationUtility = mock<MigrationUtility> {
             whenever(it.areChangesetsDeployedOnVault(any(), any(), any())).thenReturn(false)
         }
 
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(currentCpiMetadata)

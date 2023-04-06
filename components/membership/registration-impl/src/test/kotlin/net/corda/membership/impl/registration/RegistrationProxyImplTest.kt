@@ -38,12 +38,13 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -149,15 +150,17 @@ class RegistrationProxyImplTest {
         startComponentAndDependencies()
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity1)
-        assertDoesNotThrow {
-            registrationProxy.register(registrationId, identity1, mock())
-        }
+
+        val replyOne = registrationProxy.register(registrationId, identity1, mock())
+
+        assertThat(replyOne).isEqualTo(registrationCommandsOne)
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol2::class.java.name), identity2)
-        assertDoesNotThrow {
-            registrationProxy.register(registrationId, identity2, mock())
-        }
+
+        val replyTwo = registrationProxy.register(registrationId, identity2, mock())
+
+        assertThat(replyTwo).isEqualTo(registrationCommandsTwo)
     }
 
     @Test
@@ -275,12 +278,31 @@ class RegistrationProxyImplTest {
         assertEquals(coordinatorStatus, LifecycleStatus.UP)
     }
 
+    companion object {
+        private val registrationCommandsOne =
+            listOf(
+                Record(
+                    "topic-1",
+                    "key-1",
+                    1,
+                )
+            )
+        private val registrationCommandsTwo =
+            listOf(
+                Record(
+                    "topic-2",
+                    "key-2",
+                    2,
+                )
+            )
+    }
+
     class RegistrationProtocol1 : AbstractRegistrationProtocol() {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) = Unit
+        ) = registrationCommandsOne
     }
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
@@ -288,16 +310,11 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) = Unit
+        ) = registrationCommandsTwo
     }
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
         var started = 0
-        override fun register(
-            registrationId: UUID,
-            member: HoldingIdentity,
-            context: Map<String, String>
-        ) = Unit
 
         override val isRunning = true
         override fun start() { started += 1 }

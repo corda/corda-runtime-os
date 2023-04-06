@@ -35,6 +35,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.Publisher
@@ -268,11 +269,11 @@ class MemberResourceClientImpl @Activate constructor(
                 )
             }
             val sent = clock.instant()
-            try {
+            val persistenceSuccess = try {
                 val context = keyValuePairListSerializer.serialize(
                     registrationContext.filterNot { it.key == SERIAL }.toWire()
                 )
-                membershipPersistenceClient.persistRegistrationRequest(
+                val persistentOperation = membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
                     RegistrationRequest(
                         RegistrationStatus.NEW,
@@ -286,31 +287,40 @@ class MemberResourceClientImpl @Activate constructor(
                         CryptoSignatureSpec("", null, null),
                         registrationContext[SERIAL]?.toLong(),
                     )
-                ).getOrThrow()
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    sent,
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    true,
-                    "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(registrationContext)
                 )
+                when (val result = persistentOperation.execute()) {
+                    is MembershipPersistenceResult.Failure -> {
+                        logger.warn(
+                            "Could not persist registration request for holding identity ID" +
+                                " [$holdingIdentityShortHash]. ${result.errorMsg}",
+                        )
+                        asyncPublisher.publish(persistentOperation.createAsyncCommands().toList())
+                        false
+                    }
+                    is MembershipPersistenceResult.Success -> true
+                }
             } catch (e: Exception) {
                 logger.warn(
                     "Could not persist registration request for holding identity ID" +
                         " [$holdingIdentityShortHash].",
-                    e
+                    e,
                 )
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    sent,
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    false,
-                    "Submitting registration request was successful. " +
-                        "The request will be available in the API eventually.",
-                    MemberInfoSubmittedDto(emptyMap())
-                )
+                false
             }
+            val reason = if (persistenceSuccess) {
+                "Submitting registration request was successful."
+            } else {
+                "Submitting registration request was successful. " +
+                    "The request will be available in the API eventually."
+            }
+            return RegistrationRequestProgressDto(
+                requestId,
+                sent,
+                SubmittedRegistrationStatus.SUBMITTED,
+                persistenceSuccess,
+                reason,
+                MemberInfoSubmittedDto(registrationContext),
+            )
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
