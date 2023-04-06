@@ -42,6 +42,7 @@ import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -94,6 +95,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
+    private lateinit var groupParametersFactory: GroupParametersFactory
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
@@ -139,6 +141,8 @@ class UtxoPersistenceServiceImplTest {
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
             factoryRegistry = ctx.getSandboxSingletonService()
+            groupParametersFactory = setup.fetchService(TIMEOUT_MILLIS)
+            // todo is this correct? Should not this be a sandbox service? Are there maybe another to use?
 
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
@@ -147,7 +151,8 @@ class UtxoPersistenceServiceImplTest {
                 digestService,
                 factoryRegistry,
                 jsonMarshallingService,
-                testClock
+                testClock,
+                groupParametersFactory
             )
         }
     }

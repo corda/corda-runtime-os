@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo
 
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.ComponentLeafDto
@@ -148,5 +149,22 @@ interface UtxoRepository {
         transactionId: String,
         transactionStatus: TransactionStatus,
         timestamp: Instant
+    )
+
+    /** Retrieves a signed group parameters */
+    fun findSignedGroupParameters(
+        entityManager: EntityManager,
+        hash: String
+    ): SignedGroupParameters?
+
+    /** Persists a signed group parameters */
+    @Suppress("LongParameterList")
+    fun persistSignedGroupParameters(
+        entityManager: EntityManager,
+        hash: String,
+        parameters: ByteArray,
+        signaturePublicKey: ByteArray,
+        signatureContent: ByteArray,
+        signatureSpec: String
     )
 }

@@ -13,12 +13,13 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
+import net.corda.ledger.common.flow.transaction.SignedGroupParametersContainer
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
-import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -58,6 +59,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
     private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
+    @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
+    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
@@ -67,8 +70,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
         signatories: Iterable<PublicKey>
     ): UtxoSignedTransaction {
-        val signedGroupParameters = getCurrentMgmGroupParameters()
-        val metadata = transactionMetadataFactory.create(utxoMetadata(signedGroupParameters))
+        val utxoMetadata = utxoMetadata()
+        val metadata = transactionMetadataFactory.create(utxoMetadata)
 
         verifyMetadata(metadata)
 
@@ -79,6 +82,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             "Number of component groups in metadata structure description does not match with the real number!"
         }
 
+        // todo verify signedGroupParameters in verify too since that will need that anyway: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 
         val signaturesWithMetadata =
@@ -106,20 +110,38 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         signaturesWithMetaData
     )
 
-    private fun utxoMetadata(signedGroupParameters: SignedGroupParameters) = mapOf(
+    @Suspendable
+    private fun utxoMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
         TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
         TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
-        TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to signedGroupParameters.hash.toString()
+        TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to getAndPersistCurrentMgmGroupParameters().hash.toString()
     )
 
-    private fun getCurrentMgmGroupParameters(): SignedGroupParameters {
+    private fun getCurrentMgmGroupParameters(): SignedGroupParametersContainer {
         val holdingIdentity = currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-        return requireNotNull(groupReader.signedGroupParameters) {
-            "Group parameters could not be accessed!"
+        val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
+            "Group parameters could not be accessed."
         }
+        requireNotNull(signedGroupParameters.signature) {
+            "Group parameters need to be signed."
+        }
+        requireNotNull(signedGroupParameters.signatureSpec) {
+            "Group parameters signature need a signature specification."
+        }
+        return with(signedGroupParameters){
+            SignedGroupParametersContainer(hash, bytes, signature, signatureSpec)
+        }
+    }
+
+    @Suspendable
+    private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParametersContainer {
+        val signedGroupParameters = getCurrentMgmGroupParameters()
+        // todo verify signedGroupParameters before persist: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
+        utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
+        return signedGroupParameters
     }
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray {
