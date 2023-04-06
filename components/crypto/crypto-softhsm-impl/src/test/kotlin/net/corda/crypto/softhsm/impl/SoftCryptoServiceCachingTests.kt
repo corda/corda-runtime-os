@@ -7,6 +7,7 @@ import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -16,6 +17,7 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.v5.base.util.EncodingUtils
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -24,9 +26,11 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.security.KeyPairGenerator
 import java.security.Provider
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Testing of the crypto service with caching.
@@ -49,6 +53,7 @@ class SoftCryptoServiceCachingTests {
         val rootWrappingKey =
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
+        val vnodeTenantId = EncodingUtils.toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         val clusterWrappingRepository = TestWrappingRepository()
         val vnodeWrappingRepository = TestWrappingRepository()
         val myCryptoService = SoftCryptoService(
@@ -79,7 +84,10 @@ class SoftCryptoServiceCachingTests {
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
 
         // set up a second level wrapping key
-        myCryptoService.createWrappingKey(wrappingKeyAlias, true, emptyMap())
+        assertFalse(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
+        myCryptoService.createWrappingKey(wrappingKeyAlias, true, mapOf("tenantId" to vnodeTenantId))
+        assertFalse(clusterWrappingRepository.keys.contains(wrappingKeyAlias))
+        assertTrue(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
         val wrappingKey = wrappingKeyCache.getIfPresent(wrappingKeyAlias)
         assertNotNull(wrappingKey)
 
