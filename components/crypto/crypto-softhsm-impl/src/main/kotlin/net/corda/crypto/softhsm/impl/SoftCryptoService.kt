@@ -215,6 +215,8 @@ class SoftCryptoService(
 
     private fun getWrappingKeyUncached(alias: String): WrappingKey {
         // use IllegalArgumentException instead for not found?
+        // BUG - CORE-12253 -we look up the wrapping key in the CRYPTO tenant, but in
+        // some cases it may have been stored in the vnode
         val wrappingKeyInfo =
             wrappingRepositoryFactory.create(CryptoTenants.CRYPTO).use { it.findKey(alias) }
                 ?: throw IllegalStateException("Wrapping key with alias $alias not found")
