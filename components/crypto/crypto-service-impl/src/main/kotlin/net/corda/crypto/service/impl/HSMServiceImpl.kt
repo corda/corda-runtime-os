@@ -79,29 +79,30 @@ class HSMServiceImpl @Activate constructor(
                 logger.warn("There is only SOFT HSM configured, will assign that.")
                 return assignSoftHSM(tenantId, category)
             }
-            val existing = store.findTenantAssociation(tenantId, category)
-            if(existing != null) {
-                logger.warn(
-                    "The ${existing.hsmId} HSM already assigned for tenant={}, category={}",
-                    tenantId,
-                    category)
-                ensureWrappingKey(existing)
-                return existing
-            }
-            val stats = hsmMap.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
-            val chosen = if (context.isPreferredPrivateKeyPolicy(CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
-                tryChooseAliased(stats)
-            } else {
-                tryChooseAny(stats)
-            }
-            val association = store.associate(
-                tenantId = tenantId,
-                category = category,
-                hsmId = chosen.hsmId,
-                masterKeyPolicy = hsmMap.getMasterKeyPolicy(chosen.hsmId)
-            )
-            ensureWrappingKey(association)
-            return association
+            throw UnsupportedOperationException("Only SOFT HSM is supported")
+//            val existing = store.findTenantAssociation(tenantId, category)
+//            if(existing != null) {
+//                logger.warn(
+//                    "The ${existing.hsmId} HSM already assigned for tenant={}, category={}",
+//                    tenantId,
+//                    category)
+//                ensureWrappingKey(existing)
+//                return existing
+//            }
+//            val stats = hsmMap.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
+//            val chosen = if (context.isPreferredPrivateKeyPolicy(CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
+//                tryChooseAliased(stats)
+//            } else {
+//                tryChooseAny(stats)
+//            }
+//            val association = store.associate(
+//                tenantId = tenantId,
+//                category = category,
+//                hsmId = chosen.hsmId,
+//                masterKeyPolicy = hsmMap.getMasterKeyPolicy(chosen.hsmId)
+//            )
+//            ensureWrappingKey(association)
+//            return association
         }
 
         fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo {

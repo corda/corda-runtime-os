@@ -6,7 +6,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -149,12 +148,11 @@ const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
 const val MAXIMUM_SIZE = "maximumSize"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_MAP = "hsmMap"
-private const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
 private const val BUS_PROCESSORS_OBJ = "busProcessors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
 private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
 private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
-private val HSM = "hsm"
+private const val HSM = "hsm"
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
     this[CRYPTO_CONFIG] ?: throw IllegalStateException(
@@ -170,22 +168,19 @@ fun SmartConfig.signingService(): CryptoSigningServiceConfig =
         throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
     }
 
+// TODO The below should be refactored, it no longer aligns with crypto config schema
 fun SmartConfig.hsmMap(): Map<String, CryptoHSMConfig> =
     try {
-        val set = getConfig(HSM_MAP)
-        set.root().keys.associateWith {
-            CryptoHSMConfig(set.getConfig(it))
-        }
+        mapOf(SOFT_HSM_ID to CryptoHSMConfig(getConfig(HSM)))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $HSM_MAP.", e)
     }
 
-fun SmartConfig.hsm(id: String): CryptoHSMConfig {
-    val path = String.format(HSM_MAP_ITEM_OBJ, id)
+fun SmartConfig.hsm(): CryptoHSMConfig {
     return try {
-        CryptoHSMConfig(getConfig(path))
+        CryptoHSMConfig(getConfig(HSM))
     } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $path.", e)
+        throw IllegalStateException("Failed to get $HSM.", e)
     }
 }
 

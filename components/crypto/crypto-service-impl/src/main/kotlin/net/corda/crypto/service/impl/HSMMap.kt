@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.persistence.HSMStore
 import net.corda.libs.configuration.SmartConfig
 
+@Suppress("unused")
 class HSMMap(
     cryptoConfig: SmartConfig,
     private val store: HSMStore
@@ -15,24 +16,24 @@ class HSMMap(
 
     val isOnlySoftHSM: Boolean get() = hsms.size == 1 && hsms.keys.first() == SOFT_HSM_ID
 
-    fun getHSMStats(category: String): List<HSMStats> {
-        val usages = store.getHSMUsage()
-        return hsms.filter {
-            it.key != SOFT_HSM_ID && it.value.hsm.categories.any { c ->
-                c.category == category || c.category == "*"
-            }
-        }.map {
-            HSMStats(
-                hsmId = it.key,
-                allUsages = usages.firstOrNull { u -> u.hsmId == it.key }?.usages ?: 0,
-                privateKeyPolicy = it.value.hsm.categories.first { c ->
-                    c.category == category || c.category == "*"
-                }.policy,
-                capacity = it.value.hsm.capacity
-            )
-        }
-    }
+//    fun getHSMStats(category: String): List<HSMStats> {
+//        val usages = store.getHSMUsage()
+//        return hsms.filter {
+//            it.key != SOFT_HSM_ID && it.value.categories.any { c ->
+//                c.category == category || c.category == "*"
+//            }
+//        }.map {
+//            HSMStats(
+//                hsmId = it.key,
+//                allUsages = usages.firstOrNull { u -> u.hsmId == it.key }?.usages ?: 0,
+//                privateKeyPolicy = it.value.categories.first { c ->
+//                    c.category == category || c.category == "*"
+//                }.policy,
+//                capacity = it.value.capacity
+//            )
+//        }
+//    }
 
     fun getMasterKeyPolicy(hsmId: String): MasterKeyPolicy =
-        hsms.getValue(hsmId).hsm.masterKeyPolicy
+        hsms.getValue(hsmId).masterKeyPolicy
 }
