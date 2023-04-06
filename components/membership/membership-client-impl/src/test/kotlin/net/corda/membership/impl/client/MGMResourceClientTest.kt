@@ -48,6 +48,7 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -161,8 +162,19 @@ class MGMResourceClientTest {
         MemberNotaryDetailsConverter(keyEncodingService),
         PublicKeyConverter(keyEncodingService)
     )
+    private val unitOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
 
     private val memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
+    private class Operation<T>(
+        private val result: MembershipPersistenceResult<T>,
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = result
+
+        override fun createAsyncCommands() = emptyList<Record<*, *>>()
+
+    }
 
     private val alice = createMemberInfo(mgmX500Name.toString())
     private val bob = createMemberInfo(memberName.toString(), isMgm = false)
@@ -509,13 +521,16 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
             val params = ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+            val operation = mock<MembershipPersistenceOperation<ApprovalRuleDetails>> {
+                on { execute() } doReturn MembershipPersistenceResult.Success(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
+            }
             whenever(
                 membershipPersistenceClient.addApprovalRule(
                     holdingIdentity,
                     params
                 )
             ).doReturn(
-                MembershipPersistenceResult.Success(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
+                operation
             )
 
             mgmResourceClient.addApprovalRule(
@@ -590,7 +605,7 @@ class MGMResourceClientTest {
                     RULE_TYPE
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                unitOperation
             )
 
             mgmResourceClient.deleteApprovalRule(
@@ -1121,7 +1136,7 @@ class MGMResourceClientTest {
                     mgmX500Name.toString(),
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                unitOperation
             )
 
             mgmResourceClient.mutualTlsAllowClientCertificate(
@@ -1178,7 +1193,7 @@ class MGMResourceClientTest {
                     mgmX500Name.toString(),
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                unitOperation
             )
 
             mgmResourceClient.mutualTlsDisallowClientCertificate(
@@ -1284,7 +1299,7 @@ class MGMResourceClientTest {
                     eq(holdingIdentity), uuidCaptor.capture(), eq(ownerX500Name), eq(ttl), eq(remark)
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                unitOperation
             )
 
             val token = mgmResourceClient.generatePreAuthToken(shortHash, ownerX500Name, ttl, remark)
@@ -1377,10 +1392,13 @@ class MGMResourceClientTest {
             val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
             val ttl = Instant.ofEpochSecond(100)
             val token = PreAuthToken(tokenId.toString(), ownerX500Name.toString(), ttl, PreAuthTokenStatus.REVOKED, "", "")
+            val operation = mock<MembershipPersistenceOperation<PreAuthToken>> {
+                on { getOrThrow() } doReturn token
+            }
             whenever(
                 membershipPersistenceClient.revokePreAuthToken(holdingIdentity, tokenId, null)
             ).doReturn(
-                MembershipPersistenceResult.Success(token)
+                operation
             )
 
             val revokedToken = mgmResourceClient.revokePreAuthToken(shortHash, tokenId, null)
@@ -1408,7 +1426,7 @@ class MGMResourceClientTest {
                     REASON
                 )
             ).doReturn(
-                MembershipPersistenceResult.Success(mock<PersistentMemberInfo>() to null)
+                Operation(MembershipPersistenceResult.Success(mock<PersistentMemberInfo>() to null))
             )
 
             mgmResourceClient.suspendMember(
@@ -1432,7 +1450,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockMemberInfo = mock<PersistentMemberInfo>()
             whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
-                .doReturn(MembershipPersistenceResult.Success(mockMemberInfo to null))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo to null)))
             mgmResourceClient.start()
             setUpRpcSender(null)
 
@@ -1471,7 +1489,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(mockFuture))
             val mockMemberInfo = mock<PersistentMemberInfo>()
             whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
-                .doReturn(MembershipPersistenceResult.Success(mockMemberInfo to null))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo to null)))
             mgmResourceClient.start()
             setUpRpcSender(null)
 
@@ -1555,7 +1573,7 @@ class MGMResourceClientTest {
                     REASON
                 )
             ).doReturn(
-                MembershipPersistenceResult.Success(mock<PersistentMemberInfo>() to null)
+                Operation(MembershipPersistenceResult.Success(mock<PersistentMemberInfo>() to null))
             )
 
             mgmResourceClient.activateMember(
@@ -1579,7 +1597,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockMemberInfo = mock<PersistentMemberInfo>()
             whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
-                .doReturn(MembershipPersistenceResult.Success(mockMemberInfo to null))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo to null)))
             mgmResourceClient.start()
             setUpRpcSender(null)
 
@@ -1618,7 +1636,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(mockFuture))
             val mockMemberInfo = mock<PersistentMemberInfo>()
             whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
-                .doReturn(MembershipPersistenceResult.Success(mockMemberInfo to null))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo to null)))
             mgmResourceClient.start()
             setUpRpcSender(null)
 

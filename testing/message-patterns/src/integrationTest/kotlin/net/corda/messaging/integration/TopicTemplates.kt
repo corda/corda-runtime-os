@@ -6,17 +6,8 @@ import net.corda.schema.Schemas.getStateAndEventStateTopic
 
 class TopicTemplates {
     companion object {
-        val TEST_TOPIC_PREFIX_VALUE = "testPrefix"
-        val TEST_TOPIC_PREFIX = if (getBundleContext().isDBBundle()) "" else TEST_TOPIC_PREFIX_VALUE
-        val RANDOM_ACCESS_TOPIC1 = "RandomAccessTopic1"
-        val RANDOM_ACCESS_TOPIC1_TEMPLATE = """topics = [ 
-                    { 
-                        topicName = "$TEST_TOPIC_PREFIX$RANDOM_ACCESS_TOPIC1" 
-                        numPartitions = 1 
-                        replicationFactor = 3 
-                    } 
-                ]"""
-
+        const val TEST_TOPIC_PREFIX_VALUE = "testPrefix"
+        private val TEST_TOPIC_PREFIX = if (getBundleContext().isDBBundle()) "" else TEST_TOPIC_PREFIX_VALUE
         const val COMPACTED_TOPIC1 = "CompactedTopic1"
         val COMPACTED_TOPIC1_TEMPLATE = """topics = [ 
                     { 
@@ -49,7 +40,7 @@ class TopicTemplates {
                         replicationFactor = 3 
                     } 
                 ]"""
-        const val DURABLE_TOPIC2 = "DurableTopic2"
+        private const val DURABLE_TOPIC2 = "DurableTopic2"
         val DURABLE_TOPIC2_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC2" 
@@ -57,7 +48,7 @@ class TopicTemplates {
                         replicationFactor = 3 
                     } 
                 ]"""
-        const val DURABLE_TOPIC3 = "DurableTopic3"
+        private const val DURABLE_TOPIC3 = "DurableTopic3"
         val DURABLE_TOPIC3_DLQ = getStateAndEventDLQTopic(DURABLE_TOPIC3)
         val DURABLE_TOPIC3_TEMPLATE = """topics = [ 
                     { 
@@ -90,7 +81,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val PUBSUB_TOPIC1 = "PubSubTopic1"
+        private const val PUBSUB_TOPIC1 = "PubSubTopic1"
         val PUBSUB_TOPIC1_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$PUBSUB_TOPIC1" 
@@ -295,7 +286,7 @@ class TopicTemplates {
                 ]"""
 
 
-        val RPC_TOPIC1 = "RPCTopic1"
+        const val RPC_TOPIC1 = "RPCTopic1"
         val RPC_TOPIC1_TEMPLATE = """topics = [
                     {
                         topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC1" 
@@ -307,7 +298,7 @@ class TopicTemplates {
                     }
                 ]"""
 
-        val RPC_RESPONSE_TOPIC1 = "RPCTopic1.resp"
+        private const val RPC_RESPONSE_TOPIC1 = "RPCTopic1.resp"
         val RPC_RESPONSE_TOPIC1_TEMPLATE = """topics = [
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC1"
@@ -319,7 +310,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        val RPC_TOPIC2 = "RPCTopic2"
+        const val RPC_TOPIC2 = "RPCTopic2"
         val RPC_TOPIC2_TEMPLATE = """topics = [
                     {
                         topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC2" 
@@ -331,7 +322,7 @@ class TopicTemplates {
                     }
                 ]"""
 
-        val RPC_RESPONSE_TOPIC2 = "RPCTopic2.resp"
+        private const val RPC_RESPONSE_TOPIC2 = "RPCTopic2.resp"
         val RPC_RESPONSE_TOPIC2_TEMPLATE = """topics = [
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC2"
@@ -343,7 +334,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        val RPC_TOPIC3 = "RPCTopic3"
+        const val RPC_TOPIC3 = "RPCTopic3"
         val RPC_TOPIC3_TEMPLATE = """topics = [
                     {
                         topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC3" 
@@ -355,7 +346,7 @@ class TopicTemplates {
                     }
                 ]"""
 
-        val RPC_RESPONSE_TOPIC3 = "RPCTopic3.resp"
+        private const val RPC_RESPONSE_TOPIC3 = "RPCTopic3.resp"
         val RPC_RESPONSE_TOPIC3_TEMPLATE = """topics = [
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC3"
@@ -367,7 +358,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        val RPC_TOPIC4 = "RPCTopic4"
+        const val RPC_TOPIC4 = "RPCTopic4"
         val RPC_TOPIC4_TEMPLATE = """topics = [
                     {
                         topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC4" 
@@ -379,7 +370,7 @@ class TopicTemplates {
                     }
                 ]"""
 
-        val RPC_RESPONSE_TOPIC4 = "RPCTopic4.resp"
+        private const val RPC_RESPONSE_TOPIC4 = "RPCTopic4.resp"
         val RPC_RESPONSE_TOPIC4_TEMPLATE = """topics = [
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC4"
@@ -391,7 +382,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        val RPC_TOPIC5 = "RPCTopic5"
+        const val RPC_TOPIC5 = "RPCTopic5"
         val RPC_TOPIC5_TEMPLATE = """topics = [
                     {
                         topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC5" 
@@ -403,7 +394,7 @@ class TopicTemplates {
                     }
                 ]"""
 
-        val RPC_RESPONSE_TOPIC5 = "RPCTopic5.resp"
+        private const val RPC_RESPONSE_TOPIC5 = "RPCTopic5.resp"
         val RPC_RESPONSE_TOPIC5_TEMPLATE = """topics = [
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC5"

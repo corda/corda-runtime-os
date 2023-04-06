@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dummy
 
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -8,12 +7,13 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -30,57 +30,55 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SignedMemberInfo>,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
-        version: Long
-    ) = MembershipPersistenceResult.success()
+        version: Long,
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<InternalGroupParameters> =
-        throw UnsupportedOperationException("not implemented for testing")
+    ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters,
-    ): MembershipPersistenceResult<InternalGroupParameters> = MembershipPersistenceResult.Success(groupParameters)
+    ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(groupParameters))
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo,
-    ): MembershipPersistenceResult<InternalGroupParameters> =
-        throw UnsupportedOperationException("not implemented for testing")
+    ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun setMemberAndRegistrationRequestAsApproved(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceResult<MemberInfo> = MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<MemberInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun mutualTlsRemoveCertificateFromAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
-    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun generatePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
@@ -88,49 +86,57 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ownerX500Name: MemberX500Name,
         ttl: Instant?,
         remarks: String?,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun consumePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         ownerX500Name: MemberX500Name,
         preAuthTokenId: UUID
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun revokePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
         remarks: String?,
-    ): MembershipPersistenceResult<PreAuthToken> = MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<PreAuthToken> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleParams: ApprovalRuleParams,
-    ): MembershipPersistenceResult<ApprovalRuleDetails> = MembershipPersistenceResult.Failure("Unsupported")
-
+    ): MembershipPersistenceOperation<ApprovalRuleDetails> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
         ruleType: ApprovalRuleType,
-    ) = MembershipPersistenceResult.success()
+    ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
-        MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
+        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ):MembershipPersistenceResult<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
-        MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> =
+        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
-    ): MembershipPersistenceResult<StaticNetworkInfo> = MembershipPersistenceResult.Failure("Unsupported")
+    ): MembershipPersistenceOperation<StaticNetworkInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override val isRunning = true
 
     override fun start() {}
 
     override fun stop() {}
+
+
+    private class MembershipPersistenceOperationImpl<T>(
+        private val results: MembershipPersistenceResult<T>
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = results
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> = emptyList()
+    }
 }

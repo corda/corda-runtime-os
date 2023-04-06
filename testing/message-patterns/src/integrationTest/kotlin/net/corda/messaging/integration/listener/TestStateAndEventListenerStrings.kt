@@ -1,6 +1,7 @@
 package net.corda.messaging.integration.listener
 
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 
 class TestStateAndEventListenerStrings(
@@ -15,9 +16,13 @@ class TestStateAndEventListenerStrings(
 
     private var onCommitCount = 0
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun onPartitionSynced(states: Map<String, String>) {
-        println("======== SYNCED PARTITION =======")
-        println(states.toString())
+        logger.info("======== SYNCED PARTITION =======")
+        logger.info(states.toString())
         if (!expectedSyncState.isNullOrEmpty()) {
             if (states == expectedSyncState) {
                 syncPartitionLatch?.countDown()
@@ -26,8 +31,8 @@ class TestStateAndEventListenerStrings(
     }
 
     override fun onPartitionLost(states: Map<String, String>) {
-        println("======== PARTITION LOST =======")
-        println(states.toString())
+        logger.info("======== PARTITION LOST =======")
+        logger.info(states.toString())
         if (!expectedPartitionLostState.isNullOrEmpty()) {
             if (states == expectedPartitionLostState) {
                 losePartitionLatch?.countDown()
@@ -43,8 +48,8 @@ class TestStateAndEventListenerStrings(
         if (expectedCommitState?.contains(updatedStates) == true) {
             commitStateLatch?.countDown()
         }
-        println("======== COMMIT =======")
-        println(updatedStates.toString())
+        logger.info("======== COMMIT =======")
+        logger.info(updatedStates.toString())
         onCommitCount++
     }
 }
