@@ -8,6 +8,7 @@ import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.fakeTransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
@@ -30,12 +31,14 @@ import org.mockito.kotlin.whenever
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
+    private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
+    private val mockMembershipGroupReaderProvider = mockMembershipGroupReaderProvider()
+
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     val mockFlowSandboxService = mock<FlowSandboxService>()
     val mockExternalEventExecutor = mock<ExternalEventExecutor>()
     val mockSerializationService = mock<SerializationService>()
-
 
     val mockNotaryLookup = mock<NotaryLookup>().also{
         val notaryExampleInfo = mock<NotaryInfo>().also {
@@ -73,7 +76,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         wireTransactionFactory,
         utxoLedgerTransactionFactory,
         mockUtxoLedgerTransactionVerificationService,
-        mockMembershipGroupReaderProvider()
+        mockUtxoLedgerGroupParametersPersistenceService,
+        mockMembershipGroupReaderProvider
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,
