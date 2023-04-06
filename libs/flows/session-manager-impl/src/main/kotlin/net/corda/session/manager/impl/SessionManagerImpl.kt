@@ -115,6 +115,10 @@ class SessionManagerImpl @Activate constructor(
         return Pair(sessionState, messagesToReturn)
     }
 
+    override fun errorSession(sessionState: SessionState) {
+        sessionState.status = SessionStateType.ERROR
+    }
+
     /**
      * If no heartbeat received from counterparty after session timeout has been reached, error the session
      * If no messages to send, and current time has surpassed the heartbeat window (message resend window), send a new ack.
@@ -142,7 +146,7 @@ class SessionManagerImpl @Activate constructor(
 
         return if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
-            sessionState.status = SessionStateType.ERROR
+            errorSession(sessionState)
             val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
             listOf(
                 generateErrorEvent(

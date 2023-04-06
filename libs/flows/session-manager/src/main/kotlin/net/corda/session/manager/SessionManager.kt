@@ -3,6 +3,7 @@ package net.corda.session.manager
 import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 
@@ -84,4 +85,10 @@ interface SessionManager {
      */
     fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<SessionState,
             List<SessionEvent>>
+
+    /**
+     * Sets the [SessionState.status] of the passed [SessionState] to [SessionStateType.ERROR].
+     * @param sessionState The session state.
+     */
+    fun errorSession(sessionState: SessionState)
 }
