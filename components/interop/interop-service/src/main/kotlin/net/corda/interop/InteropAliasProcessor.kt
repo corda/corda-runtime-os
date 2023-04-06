@@ -28,13 +28,14 @@ class InteropAliasProcessor(
             return identityMappingCache[recipientId]
         }
 
-        private const val ALIAS = " Alias"
+        private const val POSTFIX_DENOTING_ALIAS = " Alias"
+
         fun removeAliasSubstringFromOrganisationName(holdIdentity: HoldingIdentity): HoldingIdentity {
             val oldName = holdIdentity.x500Name
             val (commonName, organization) = if (oldName.commonName != null)
-                Pair(oldName.commonName?.replace(ALIAS, ""), oldName.organization)
+                Pair(oldName.commonName?.replace(POSTFIX_DENOTING_ALIAS, ""), oldName.organization)
             else
-                Pair(oldName.commonName, oldName.organization.replace(ALIAS, ""))
+                Pair(oldName.commonName, oldName.organization.replace(POSTFIX_DENOTING_ALIAS, ""))
             val newName = MemberX500Name(
                 commonName,
                 oldName.organizationUnit,
@@ -48,9 +49,9 @@ class InteropAliasProcessor(
         fun addAliasSubstringToOrganisationName(holdIdentity: HoldingIdentity): HoldingIdentity {
             val oldName = holdIdentity.x500Name
             val (commonName, organization) = if (oldName.commonName != null)
-                Pair(oldName.commonName + ALIAS, oldName.organization)
+                Pair(oldName.commonName + POSTFIX_DENOTING_ALIAS, oldName.organization)
             else
-                Pair(oldName.commonName, oldName.organization + ALIAS)
+                Pair(oldName.commonName, oldName.organization + POSTFIX_DENOTING_ALIAS)
             val newName = MemberX500Name(
                 commonName,
                 oldName.organizationUnit,
@@ -67,7 +68,7 @@ class InteropAliasProcessor(
         oldValue: HostedIdentityEntry?,
         currentData: Map<String, HostedIdentityEntry>
     ) {
-        logger.info("currentData=${currentData.size} newRecord${newRecord}")
+        logger.info("currentData=${currentData.size} newRecord=${newRecord}")
 
         if (oldValue != null) {
             identityMappingCache.remove(oldValue.holdingIdentity.x500Name.toString())
@@ -79,7 +80,7 @@ class InteropAliasProcessor(
     }
 
     override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
-        logger.info("onSnapshot ${currentData.size}")
+        logger.info("currentData=${currentData.size}")
         identityMappingCache.clear()
         currentData.values.forEach {
             addEntry(it)
@@ -94,14 +95,14 @@ class InteropAliasProcessor(
         if (!holdIdentity.x500Name.organization.contains("Alias")) {
             val syntheticName = addAliasSubstringToOrganisationName(newIdentity.holdingIdentity.toCorda())
             val syntheticIdentities = listOf(interopMembersProducer.createHostedAliasIdentity(syntheticName))
-            logger.info("Adding $syntheticIdentities")
+            logger.info("Adding hosted alias=$syntheticIdentities")
             publisher.publish(syntheticIdentities)
             aliases.add(Pair(syntheticName, holdIdentity))
             if (aliases.size >= 2) {
                 val syntheticMemberInfos = aliases.flatMap { (alias, real) ->
                     interopMembersProducer.createAliasMemberInfo(alias, real, aliases.map { it.first })
                 }
-                logger.info("Adding $syntheticMemberInfos")
+                logger.info("Adding alias member=$syntheticMemberInfos")
                 publisher.publish(syntheticMemberInfos)
             }
         }

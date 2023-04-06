@@ -16,6 +16,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -72,7 +73,7 @@ class InteropServiceIntegrationTest {
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
     @InjectService(timeout = 4000)
-    lateinit var membershipGroupReaderProvider: TestGroupReaderProvider
+    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
     @InjectService(timeout = 4000)
     lateinit var interopService: InteropService
