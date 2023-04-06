@@ -26,6 +26,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
+@Suppress("TooManyFunctions")
 @Component
 class SessionManagerImpl @Activate constructor(
     @Reference(service = SessionEventProcessorFactory::class)
