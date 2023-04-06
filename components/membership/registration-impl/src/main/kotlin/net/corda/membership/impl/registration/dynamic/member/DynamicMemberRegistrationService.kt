@@ -108,7 +108,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -150,7 +149,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        )
+        ): Collection<Record<*, *>>
     }
 
     private companion object {
@@ -235,7 +234,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
+        ): Collection<Record<*, *>> {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
             throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
@@ -251,7 +250,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
-        ) {
+        ): Collection<Record<*, *>> {
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -276,10 +275,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
             if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
-                    logger.info(customFieldsValid.reason)
-                    throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+                logger.info(customFieldsValid.reason)
+                throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
-            try {
+            return try {
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
@@ -362,7 +361,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     member.shortHash.value
                 )
 
-                membershipPersistenceClient.persistRegistrationRequest(
+                val commands = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.SENT_TO_MGM,
@@ -373,9 +372,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
                         serial = serialInfo,
                     )
-                ).getOrThrow()
+                ).createAsyncCommands()
 
-                publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                listOf(record) + commands
             } catch (e: InvalidMembershipRegistrationException) {
                 logger.warn("Registration failed.", e)
                 throw e
