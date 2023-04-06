@@ -127,7 +127,7 @@ internal class MemberOpsAsyncProcessor(
     }
 
     private fun MembershipAsyncRequestState?.retries(): Int {
-        return (this?.cause as? RetriableFailure)?.numberOfRetriesToGo ?: MAX_RETRIES
+        return (this?.cause as? RetriableFailure)?.numberOfRemainingRetries ?: MAX_RETRIES
     }
 
     private fun register(
