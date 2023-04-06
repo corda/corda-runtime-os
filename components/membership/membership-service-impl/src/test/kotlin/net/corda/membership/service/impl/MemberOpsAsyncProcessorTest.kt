@@ -379,7 +379,7 @@ class MemberOpsAsyncProcessorTest {
             verify(membershipPersistenceClient).setRegistrationRequestStatus(
                 identity,
                 id.toString(),
-                RegistrationStatus.INVALID,
+                RegistrationStatus.FAILED,
                 FAILURE_REASON,
             )
         }

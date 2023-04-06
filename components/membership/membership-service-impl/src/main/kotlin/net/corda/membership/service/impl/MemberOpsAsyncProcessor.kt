@@ -72,12 +72,13 @@ internal class MemberOpsAsyncProcessor(
         holdingIdentity: HoldingIdentity,
         registrationId: UUID,
         message: String?,
+        status: RegistrationStatus,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         // CORE-10367: return the status update command as part of the onNext
         membershipPersistenceClient.setRegistrationRequestStatus(
             holdingIdentity,
             registrationId.toString(),
-            RegistrationStatus.INVALID,
+            status,
             message?.take(255),
         )
         return createFailureWithoutRetryResponse()
@@ -173,6 +174,7 @@ internal class MemberOpsAsyncProcessor(
                     holdingIdentity,
                     registrationId,
                     message,
+                    RegistrationStatus.FAILED,
                 )
             }
         }
@@ -209,6 +211,7 @@ internal class MemberOpsAsyncProcessor(
                 holdingIdentity,
                 registrationId,
                 e.message,
+                RegistrationStatus.INVALID,
             )
         } catch (e: Exception) {
             val retries = state.retries()
@@ -218,6 +221,7 @@ internal class MemberOpsAsyncProcessor(
                     holdingIdentity,
                     registrationId,
                     e.message,
+                    RegistrationStatus.FAILED,
                 )
             } else {
                 logger.warn("Registration ${request.requestId} failed. Will retry soon.", e)

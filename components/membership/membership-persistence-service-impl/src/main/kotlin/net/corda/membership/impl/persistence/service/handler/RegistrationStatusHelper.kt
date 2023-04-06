@@ -21,6 +21,7 @@ internal object RegistrationStatusHelper {
             RegistrationStatus.PENDING_AUTO_APPROVAL -> 4
             RegistrationStatus.DECLINED -> 5
             RegistrationStatus.INVALID -> 5
+            RegistrationStatus.FAILED -> 5
             RegistrationStatus.APPROVED -> 5
         }
     }
