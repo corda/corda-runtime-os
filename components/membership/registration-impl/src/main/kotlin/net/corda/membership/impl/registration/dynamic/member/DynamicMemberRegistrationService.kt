@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
@@ -60,10 +61,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
@@ -107,7 +108,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -149,7 +149,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        )
+        ): Collection<Record<*, *>>
     }
 
     private companion object {
@@ -234,7 +234,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
+        ): Collection<Record<*, *>> {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
             throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
@@ -250,7 +250,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
-        ) {
+        ): Collection<Record<*, *>> {
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -275,10 +275,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
             if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
-                    logger.info(customFieldsValid.reason)
-                    throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+                logger.info(customFieldsValid.reason)
+                throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
-            try {
+            return try {
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
@@ -300,7 +300,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val memberSignature = cryptoOpsClient.sign(
                     member.shortHash.value,
                     publicKey,
-                    SignatureSpec(signatureSpec),
+                    SignatureSpecImpl(signatureSpec),
                     serializedMemberContext
                 ).let {
                     CryptoSignatureWithKey(
@@ -361,7 +361,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     member.shortHash.value
                 )
 
-                membershipPersistenceClient.persistRegistrationRequest(
+                val commands = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.SENT_TO_MGM,
@@ -372,9 +372,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
                         serial = serialInfo,
                     )
-                ).getOrThrow()
+                ).createAsyncCommands()
 
-                publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                listOf(record) + commands
             } catch (e: InvalidMembershipRegistrationException) {
                 logger.warn("Registration failed.", e)
                 throw e
@@ -508,7 +508,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
             if (specFromContext != null) {
                 key.validateSpecName(specFromContext)
-                return SignatureSpec(specFromContext)
+                return SignatureSpecImpl(specFromContext)
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +

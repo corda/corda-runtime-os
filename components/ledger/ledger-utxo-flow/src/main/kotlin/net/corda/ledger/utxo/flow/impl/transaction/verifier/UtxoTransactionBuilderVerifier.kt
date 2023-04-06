@@ -29,6 +29,8 @@ class UtxoTransactionBuilderVerifier(
          */
         verifySignatories(transactionBuilder.signatories)
         verifyInputsAndOutputs(transactionBuilder.inputStateRefs, transactionBuilder.outputStates)
+        verifyNoDuplicateInputsOrReferences(transactionBuilder.inputStateRefs, transactionBuilder.referenceStateRefs)
+        verifyNoInputAndReferenceOverlap(transactionBuilder.inputStateRefs, transactionBuilder.referenceStateRefs)
         verifyCommands(transactionBuilder.commands)
         verifyNotaryIsWhitelisted()
     }

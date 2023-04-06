@@ -3,10 +3,11 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeMemberInfo
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
@@ -25,6 +26,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
@@ -62,6 +65,13 @@ class ApproveRegistrationHandlerTest {
         createHoldingIdentity("mgm"),
         isMgm = true,
     )
+    private class SuccessOperation<T>(
+        private val result: T,
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = MembershipPersistenceResult.Success(result)
+
+        override fun createAsyncCommands() = emptyList<Record<*, *>>()
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setMemberAndRegistrationRequestAsApproved(
@@ -69,20 +79,20 @@ class ApproveRegistrationHandlerTest {
                 member,
                 registrationId
             )
-        } doReturn MembershipPersistenceResult.Success(memberInfo)
+        } doReturn SuccessOperation(memberInfo)
         on {
             setMemberAndRegistrationRequestAsApproved(
                 owner,
                 notary,
                 registrationId
             )
-        } doReturn MembershipPersistenceResult.Success(notaryInfo)
+        } doReturn SuccessOperation(notaryInfo)
         on {
             addNotaryToGroupParameters(
                 mgm.holdingIdentity,
                 notaryInfo
             )
-        } doReturn MembershipPersistenceResult.Success(mockSignedGroupParameters)
+        } doReturn SuccessOperation(mockSignedGroupParameters)
     }
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
@@ -201,12 +211,12 @@ class ApproveRegistrationHandlerTest {
         assertThat(results.outputStates)
             .hasSize(3)
             .anySatisfy {
-                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
+                val value = (it.value as? MembershipActionsRequest)?.request
                 assertThat(value)
                     .isNotNull
-                    .isInstanceOf(DistributeMembershipPackage::class.java)
-                assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(6)
+                    .isInstanceOf(DistributeMemberInfo::class.java)
+                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(6)
             }
     }
 
@@ -224,12 +234,12 @@ class ApproveRegistrationHandlerTest {
         assertThat(results.outputStates)
             .hasSize(3)
             .anySatisfy {
-                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
+                val value = (it.value as? MembershipActionsRequest)?.request
                 assertThat(value)
                     .isNotNull
-                    .isInstanceOf(DistributeMembershipPackage::class.java)
-                assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(5)
+                    .isInstanceOf(DistributeMemberInfo::class.java)
+                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(5)
             }
     }
 

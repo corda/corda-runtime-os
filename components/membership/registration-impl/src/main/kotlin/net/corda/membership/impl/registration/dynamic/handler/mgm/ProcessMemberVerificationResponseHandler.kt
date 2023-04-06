@@ -91,11 +91,11 @@ internal class ProcessMemberVerificationResponseHandler(
             }
 
             val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
-            membershipPersistenceClient.setRegistrationRequestStatus(
+            val setRegistrationRequestStatusCommands = membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
                 status
-            )
+            ).createAsyncCommands()
             val persistStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgm,
                 destination = member,
@@ -117,7 +117,7 @@ internal class ProcessMemberVerificationResponseHandler(
             listOfNotNull(
                 persistStatusMessage,
                 approveRecord,
-            )
+            ) + setRegistrationRequestStatusCommands
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
             listOf(

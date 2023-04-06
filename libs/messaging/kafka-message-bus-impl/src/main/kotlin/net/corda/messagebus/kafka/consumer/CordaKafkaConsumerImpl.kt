@@ -208,7 +208,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         partition: Int,
     ): Long {
         return if (currentChunks.isNotEmpty()) {
-            val earliestPartialChunkOffset = currentChunks.values.sortedBy { it.startOffset }.first().startOffset
+            val earliestPartialChunkOffset = currentChunks.values.minByOrNull { it.startOffset }!!.startOffset
             val recordsToBuffer = polledRecords.filter { it.offset() >= earliestPartialChunkOffset }
             bufferedRecords[partition] = recordsToBuffer
             earliestPartialChunkOffset
@@ -358,11 +358,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     ) {
         when {
             listener != null -> {
-                consumer.subscribe(topics, listener.toKafkaListener())
+                consumer.subscribe(topics, listener.toKafkaListener(config.topicPrefix))
             }
 
             defaultListener != null -> {
-                consumer.subscribe(topics, defaultListener?.toKafkaListener())
+                consumer.subscribe(topics, defaultListener?.toKafkaListener(config.topicPrefix))
             }
 
             else -> {
@@ -721,17 +721,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 }
 
-fun CordaConsumerRebalanceListener.toKafkaListener(): ConsumerRebalanceListener {
+fun CordaConsumerRebalanceListener.toKafkaListener(topicPrefix: String): ConsumerRebalanceListener {
     return object : ConsumerRebalanceListener {
         override fun onPartitionsRevoked(partitions: Collection<TopicPartition>) {
             this@toKafkaListener.onPartitionsRevoked(
-                partitions.map { CordaTopicPartition(it.topic(), it.partition()) }
+                partitions.toCordaTopicPartitions(topicPrefix)
             )
         }
 
         override fun onPartitionsAssigned(partitions: Collection<TopicPartition>) {
             this@toKafkaListener.onPartitionsAssigned(
-                partitions.map { CordaTopicPartition(it.topic(), it.partition()) }
+                partitions.toCordaTopicPartitions(topicPrefix)
             )
         }
     }

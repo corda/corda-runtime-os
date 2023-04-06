@@ -2,6 +2,8 @@ package net.corda.flow.state
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
@@ -33,8 +35,6 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
@@ -110,6 +110,7 @@ class FlowCheckpointImplTest {
             flowId = "F1"
             flowState = newFlowState
             pipelineState = newPipelineState
+            initialPlatformVersion = 50000
         }
     }
 
@@ -169,6 +170,13 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint()
 
         assertThat(createFlowCheckpoint(checkpoint).flowId).isEqualTo("F1")
+    }
+
+    @Test
+    fun `existing checkpoint - sets initial platform version`() {
+        val checkpoint = setupAvroCheckpoint()
+
+        assertThat(createFlowCheckpoint(checkpoint).initialPlatformVersion).isEqualTo(50000)
     }
 
     @Test

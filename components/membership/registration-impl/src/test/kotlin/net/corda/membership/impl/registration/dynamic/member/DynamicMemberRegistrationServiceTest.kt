@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
@@ -21,9 +22,9 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -59,10 +60,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -77,7 +78,7 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -284,13 +285,21 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val command = Record(
+        "topic",
+        "key",
+        "value"
+    )
+    private val persistenceOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(command)
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
                 any(),
                 any(),
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn persistenceOperation
     }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -340,11 +349,11 @@ class DynamicMemberRegistrationServiceTest {
 
     private val context = mapOf(
         "corda.session.keys.0.id" to SESSION_KEY_ID,
-        "corda.session.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+        "corda.session.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
-        "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+        "corda.ledger.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
     )
 
     @AfterEach
@@ -391,12 +400,12 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration successfully builds unauthenticated message and publishes it`() {
             postConfigChangedEvent()
             registrationService.start()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            registrationService.register(registrationResultId, member, context)
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-            val publishedMessageList = capturedPublishedList.firstValue
+            val publishedMessageList = registrationService.register(registrationResultId, member, context)
+
             SoftAssertions.assertSoftly {
-                it.assertThat(publishedMessageList.size).isEqualTo(1)
+                it.assertThat(publishedMessageList)
+                    .contains(command)
+                    .hasSize(2)
                 val publishedMessage = publishedMessageList.first()
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
                 it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
@@ -444,11 +453,11 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
             val context = mapOf(
                 "corda.session.keys.0.id" to SESSION_KEY_ID,
-                "corda.session.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.session.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
                 "corda.endpoints.0.connectionURL" to "https://localhost:1080",
                 "corda.endpoints.0.protocolVersion" to "1",
                 "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
-                "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.ledger.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
                 "corda.serial" to "12"
             )
             val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
@@ -471,7 +480,7 @@ class DynamicMemberRegistrationServiceTest {
                 )
             )
             assertThat(capturedRequest.firstValue.signatureSpec.signatureName)
-                .isEqualTo(SignatureSpec.ECDSA_SHA512.signatureName)
+                .isEqualTo(SignatureSpecs.ECDSA_SHA512.signatureName)
         }
 
         @Test
@@ -485,7 +494,7 @@ class DynamicMemberRegistrationServiceTest {
                     status.capture()
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                persistenceOperation
             )
 
             registrationService.register(registrationResultId, member, context)
@@ -596,11 +605,11 @@ class DynamicMemberRegistrationServiceTest {
                 "corda.endpoints.0.connectionURL" to "https://localhost:1080",
                 "corda.endpoints.0.protocolVersion" to "1",
                 "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
-                "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+                "corda.ledger.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
             ) +
                 keys.map { "corda.session.keys.${it.index}.id" to it.keyId.value } +
                 keys.map {
-                    "corda.session.keys.${it.index}.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName
+                    "corda.session.keys.${it.index}.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName
                 }
 
             registrationService.register(registrationResultId, member, context)
@@ -931,7 +940,7 @@ class DynamicMemberRegistrationServiceTest {
                 .containsEntry("corda.notary.keys.0.id", NOTARY_KEY_ID)
                 .containsEntry(String.format(NOTARY_KEY_PEM, 0), "1234")
                 .containsKey(String.format(NOTARY_KEY_HASH, 0))
-                .containsEntry(String.format(NOTARY_KEY_SPEC, 0), SignatureSpec.ECDSA_SHA256.signatureName)
+                .containsEntry(String.format(NOTARY_KEY_SPEC, 0), SignatureSpecs.ECDSA_SHA256.signatureName)
         }
 
         @Test
@@ -945,7 +954,7 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.register(registrationResultId, member, registrationContext)
 
             assertThat(memberContext.firstValue.toMap())
-                .containsEntry("corda.session.keys.0.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
+                .containsEntry("corda.session.keys.0.signature.spec", SignatureSpecs.ECDSA_SHA256.signatureName)
         }
 
         @Test
@@ -959,7 +968,7 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.register(registrationResultId, member, registrationContext)
 
             assertThat(memberContext.firstValue.toMap())
-                .containsEntry("corda.ledger.keys.0.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
+                .containsEntry("corda.ledger.keys.0.signature.spec", SignatureSpecs.ECDSA_SHA256.signatureName)
         }
 
         @Test

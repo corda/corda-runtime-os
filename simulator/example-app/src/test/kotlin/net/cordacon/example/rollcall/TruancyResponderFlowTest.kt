@@ -1,17 +1,18 @@
 package net.cordacon.example.rollcall
 
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.factories.SerializationServiceFactory
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert.assertThat
@@ -31,7 +32,7 @@ class TruancyResponderFlowTest {
         val simulator = Simulator()
         val serializationService = SerializationServiceFactory.create()
 
-        val initiatingFlow = object: ClientStartableFlow {
+        val initiatingFlow = object : ClientStartableFlow {
             @CordaInject
             lateinit var flowMessaging: FlowMessaging
 
@@ -41,15 +42,23 @@ class TruancyResponderFlowTest {
             @CordaInject
             lateinit var memberLookup: MemberLookup
 
+            @CordaInject
+            lateinit var signatureSpecService: SignatureSpecService
+
             override fun call(requestBody: ClientRequestBody): String {
                 val session = flowMessaging.initiateFlow(charlie)
+                val myKey = requireNotNull(memberLookup.myInfo().ledgerKeys[0])
+
+                val signatureSpec = signatureSpecService.defaultSignatureSpec(myKey)
+                    ?: throw IllegalStateException("Default signature spec not found for key")
 
                 val absentees = listOf(bob)
-                session.send(TruancyRecord(absentees, signingService.sign(
+                val signature = signingService.sign(
                     serializationService.serialize(absentees).bytes,
-                    memberLookup.myInfo().ledgerKeys[0],
-                    SignatureSpec.ECDSA_SHA256
-                )))
+                    myKey,
+                    signatureSpec
+                )
+                session.send(TruancyRecord(absentees, signature, signatureSpec))
                 return ""
             }
         }
@@ -73,7 +82,7 @@ class TruancyResponderFlowTest {
 
         val simulator = Simulator()
 
-        val initiatingFlow = object: ClientStartableFlow {
+        val initiatingFlow = object : ClientStartableFlow {
             @CordaInject
             lateinit var flowMessaging: FlowMessaging
 
@@ -83,14 +92,24 @@ class TruancyResponderFlowTest {
             @CordaInject
             lateinit var memberLookup: MemberLookup
 
+            @CordaInject
+            lateinit var signatureSpecService: SignatureSpecService
+
             override fun call(requestBody: ClientRequestBody): String {
                 val session = flowMessaging.initiateFlow(charlie)
 
-                session.send(TruancyRecord(listOf(bob), signingService.sign(
+                val myKey = memberLookup.myInfo().ledgerKeys[0]
+
+                val signatureSpec = signatureSpecService.defaultSignatureSpec(myKey)
+                    ?: throw InvalidParamsException("Default signature spec not found for key")
+
+                val signature = signingService.sign(
                     "Not the right bytes!".toByteArray(),
-                    memberLookup.myInfo().ledgerKeys[0],
-                    SignatureSpec.ECDSA_SHA256
-                )))
+                    myKey,
+                    signatureSpec
+                )
+
+                session.send(TruancyRecord(listOf(bob), signature, signatureSpec))
                 return ""
             }
         }

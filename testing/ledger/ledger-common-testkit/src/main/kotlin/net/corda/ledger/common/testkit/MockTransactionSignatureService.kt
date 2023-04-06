@@ -23,7 +23,7 @@ private class MockTransactionSignatureService: TransactionSignatureServiceIntern
         publicKey: PublicKey
     ) {}
 
-    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash?
+    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash
         = SecureHashImpl(
             digestAlgorithmName,
             MessageDigest.getInstance(digestAlgorithmName).digest(publicKey.encoded)

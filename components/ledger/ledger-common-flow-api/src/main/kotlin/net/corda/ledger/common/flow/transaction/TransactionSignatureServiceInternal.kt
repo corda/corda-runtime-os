@@ -9,5 +9,5 @@ interface TransactionSignatureServiceInternal : TransactionSignatureService {
     fun getIdOfPublicKey(
         publicKey: PublicKey,
         digestAlgorithmName: String
-    ): SecureHash?
+    ): SecureHash
 }

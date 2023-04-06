@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway
 
+import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
@@ -13,7 +14,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.openssl.PEMKeyPair

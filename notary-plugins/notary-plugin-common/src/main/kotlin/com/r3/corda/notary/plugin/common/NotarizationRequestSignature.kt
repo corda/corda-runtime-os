@@ -2,6 +2,7 @@ package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 
 /**
  * A wrapper around a digital signature used for notarization requests.
@@ -12,5 +13,6 @@ import net.corda.v5.crypto.DigitalSignature
 @CordaSerializable
 data class NotarizationRequestSignature(
     val digitalSignature: DigitalSignature.WithKeyId,
+    val signatureSpec: SignatureSpec,
     val platformVersion: Int
 )

@@ -43,6 +43,8 @@ data class VirtualNodeInfo(
     val vaultDbOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
     /** The requestId of an operation that is in progress on this virtual node. Null if no operation is in progress */
     val operationInProgress: String? = null,
+    /** The route configuration for the external messaging. Null if no configuration was provided.*/
+    val externalMessagingRouteConfig: String? = null,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
@@ -97,6 +99,7 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         OperationalStatus.fromAvro(flowOperationalStatus),
         OperationalStatus.fromAvro(vaultDbOperationalStatus),
         operationInProgress,
+        externalMessagingRouteConfig,
         version,
         timestamp,
         false

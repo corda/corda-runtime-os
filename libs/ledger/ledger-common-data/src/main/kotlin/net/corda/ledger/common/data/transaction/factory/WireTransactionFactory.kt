@@ -1,7 +1,7 @@
 package net.corda.ledger.common.data.transaction.factory
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.PrivacySalt
 
 interface WireTransactionFactory {
 

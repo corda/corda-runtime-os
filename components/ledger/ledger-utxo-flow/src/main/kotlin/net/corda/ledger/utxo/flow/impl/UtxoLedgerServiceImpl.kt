@@ -65,7 +65,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun getTransactionBuilder() =
+    override fun createTransactionBuilder() =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, notaryLookup)
 
     @Suppress("UNCHECKED_CAST")
@@ -181,7 +181,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         val receivedTransactionBuilder = flowEngine.subFlow(
             ReceiveAndUpdateTransactionBuilderFlow(
                 session,
-                getTransactionBuilder()
+                createTransactionBuilder()
             )
         )
         return UtxoBaselinedTransactionBuilder(

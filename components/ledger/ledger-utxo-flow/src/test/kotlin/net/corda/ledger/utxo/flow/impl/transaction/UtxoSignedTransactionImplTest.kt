@@ -13,7 +13,6 @@ import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -54,16 +53,15 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     }
 
     @Test
-    fun `verifyNotarySignatureAttached throws on unnotarized transaction`() {
+    fun `verifyAttachedNotarySignature throws on unnotarized transaction`() {
         Assertions.assertThatThrownBy { signedTransaction.verifyAttachedNotarySignature() }.isInstanceOf(
             TransactionSignatureException::class.java)
-            .hasMessageContaining("There are no notary")
+            .hasMessageContaining("did not fulfil requirements of notary service key")
 
     }
 
     @Test
-    @Disabled("Composite key validation does not look correct at the moment.")
-    fun `verifyNotarySignatureAttached does not throw on notarized transaction`() {
+    fun `verifyAttachedNotarySignature does not throw on notarized transaction`() {
         val sig = getSignatureWithMetadataExample(notaryNode1PublicKey)
         signedTransaction = signedTransaction.addSignature(sig)
         assertDoesNotThrow {
