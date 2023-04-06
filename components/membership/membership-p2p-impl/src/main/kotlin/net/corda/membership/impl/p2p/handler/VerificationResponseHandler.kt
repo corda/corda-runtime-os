@@ -27,7 +27,7 @@ internal class VerificationResponseHandler(
         val response = avroSchemaRegistry.deserialize<VerificationResponse>(payload)
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            "${header.source.toCorda().shortHash}-${header.source.groupId}",
+            "${header.source.x500Name}-${header.source.groupId}",
             RegistrationCommand(
                 ProcessMemberVerificationResponse(
                     response
