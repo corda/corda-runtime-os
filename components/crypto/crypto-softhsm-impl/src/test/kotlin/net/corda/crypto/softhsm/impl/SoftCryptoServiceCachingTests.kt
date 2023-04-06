@@ -7,6 +7,7 @@ import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepository
@@ -48,26 +49,32 @@ class SoftCryptoServiceCachingTests {
         val rootWrappingKey =
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
-        val myCryptoService =
-            SoftCryptoService(
-                privateKeyCache = privateKeyCache,
-                wrappingKeyCache = wrappingKeyCache,
-                defaultUnmanagedWrappingKeyName = "root",
-                unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
-                wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
-                    CountingWrappingKey(
-                        WrappingKeyImpl.generateWrappingKey(metadata),
-                        wrapCount,
-                        unwrapCount
-                    )
-                },
-                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                    KeyPairGenerator.getInstance(algorithm, provider)
-                },
-                schemeMetadata = schemeMetadata,
-                digestService = PlatformDigestServiceImpl(schemeMetadata),
-                wrappingRepositoryFactory = { net.corda.crypto.softhsm.impl.infra.TestWrappingRepository() }
-            )
+        val clusterWrappingRepository = TestWrappingRepository()
+        val vnodeWrappingRepository = TestWrappingRepository()
+        val myCryptoService = SoftCryptoService(
+            privateKeyCache = privateKeyCache,
+            wrappingKeyCache = wrappingKeyCache,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
+                CountingWrappingKey(
+                    WrappingKeyImpl.generateWrappingKey(metadata),
+                    wrapCount,
+                    unwrapCount
+                )
+            },
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            schemeMetadata = schemeMetadata,
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            wrappingRepositoryFactory = {
+                when (it) {
+                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    else -> vnodeWrappingRepository
+                }
+            }
+        )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
 
@@ -98,7 +105,6 @@ class SoftCryptoServiceCachingTests {
         // make spec objects with the public key material 
         val key1Spec = KeyMaterialSpec(keyPair1.keyMaterial, wrappingKeyAlias, keyPair1.encodingVersion)
         val key2Spec = KeyMaterialSpec(keyPair2.keyMaterial, wrappingKeyAlias, keyPair2.encodingVersion)
-
 
         val key1direct = wrappingKey.unwrap(key1Spec.keyMaterial)
         val key2direct = wrappingKey.unwrap(key2Spec.keyMaterial)
