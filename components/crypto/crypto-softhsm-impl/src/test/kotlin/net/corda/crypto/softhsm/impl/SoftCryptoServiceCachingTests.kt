@@ -3,6 +3,7 @@ package net.corda.crypto.softhsm.impl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
@@ -19,6 +20,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.security.KeyPairGenerator
+import java.security.Provider
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -46,17 +49,24 @@ class SoftCryptoServiceCachingTests {
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
         val myCryptoService =
-            makeSoftCryptoService(
+            SoftCryptoService(
                 privateKeyCache = privateKeyCache,
                 wrappingKeyCache = wrappingKeyCache,
-                rootWrappingKey = rootWrappingKey,
+                defaultUnmanagedWrappingKeyName = "root",
+                unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
                 wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
                     CountingWrappingKey(
                         WrappingKeyImpl.generateWrappingKey(metadata),
                         wrapCount,
                         unwrapCount
                     )
-                }
+                },
+                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                    KeyPairGenerator.getInstance(algorithm, provider)
+                },
+                schemeMetadata = schemeMetadata,
+                digestService = PlatformDigestServiceImpl(schemeMetadata),
+                wrappingRepositoryFactory = { net.corda.crypto.softhsm.impl.infra.TestWrappingRepository() }
             )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
