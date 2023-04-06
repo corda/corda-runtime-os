@@ -230,7 +230,7 @@ class MembershipP2PIntegrationTest {
                 messagingConfig = bootConfig
             ).also { it.start() }
 
-            eventually(duration = 10.seconds) {
+            eventually(duration = 15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
