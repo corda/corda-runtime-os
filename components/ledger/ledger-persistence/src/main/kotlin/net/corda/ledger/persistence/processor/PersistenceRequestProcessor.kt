@@ -48,6 +48,8 @@ class PersistenceRequestProcessor(
                             .map { it.value.toSecureHash() }
                             .toSet()
 
+                        log.warn("BM TEST - CPK file hashes from external event: $cpkFileHashes")
+
                         val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
                         delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
                     } catch (e: Exception) {

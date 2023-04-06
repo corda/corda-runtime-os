@@ -120,6 +120,8 @@ class ConsensualLedgerMessageProcessorTests {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
+        logger.warn("BM TEST - CPK file hashes from CPI info read: $cpkFileHashes")
+
         val transaction = createTestTransaction(ctx)
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
