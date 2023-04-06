@@ -72,13 +72,15 @@ class CryptoConfigSubcommand : Runnable {
 
     @CommandLine.Option(
         names = ["-ks", "--key-salt"],
-        description = ["Vault key for the wrapping key salt. Used only by VAULT type secrets service."]
+        description = ["Vault key for the wrapping key salt. Used only by VAULT type secrets service."],
+        defaultValue = "corda-master-wrapping-key-passphrase",
     )
     var vaultWrappingKeySalt: String? = null
 
     @CommandLine.Option(
         names = ["-kp", "--key-passphrase"],
-        description = ["Vault key for the wrapping key service passphrase. Used only by VAULT type secrets service."]
+        description = ["Vault key for the wrapping key service passphrase. Used only by VAULT type secrets service."],
+        defaultValue = "corda-master-wrapping-key-passphrase",
     )
     var vaultWrappingKeyPassphrase: String? = null
 
@@ -138,9 +140,9 @@ class CryptoConfigSubcommand : Runnable {
         val (passphraseSecretValue, saltSecretValue) = generateSecretValuesForType()
 
         val wrappingPassphraseSecret =
-            secretsService.createValue(passphraseSecretValue, "corda-master-wrapping-key-passphrase").root()
+            secretsService.createValue(passphraseSecretValue, vaultWrappingKeyPassphrase).root()
         val wrappingSaltSecret =
-            secretsService.createValue(saltSecretValue, "corda-master-wrapping-key-salt").root()
+            secretsService.createValue(saltSecretValue, vaultWrappingKeySalt).root()
         return Pair(wrappingPassphraseSecret, wrappingSaltSecret)
     }
 
