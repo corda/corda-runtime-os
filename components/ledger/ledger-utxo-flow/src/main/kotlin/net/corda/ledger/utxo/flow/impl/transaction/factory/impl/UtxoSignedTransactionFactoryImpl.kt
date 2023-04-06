@@ -82,7 +82,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             "Number of component groups in metadata structure description does not match with the real number!"
         }
 
-        // todo verify signedGroupParameters in verify too since that will need that anyway: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
+        // todo verify signedGroupParameters in verify too since that will need that anyway:
+        //  1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 
         val signaturesWithMetadata =
