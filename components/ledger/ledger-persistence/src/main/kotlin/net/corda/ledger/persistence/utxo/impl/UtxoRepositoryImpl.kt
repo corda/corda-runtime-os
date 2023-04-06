@@ -1,5 +1,8 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -22,6 +25,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
+import java.nio.ByteBuffer
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -439,6 +443,58 @@ class UtxoRepositoryImpl @Activate constructor(
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
             "Existing status for transaction with ID $transactionId can't be updated to $transactionStatus"
         }
+    }
+
+    override fun findSignedGroupParameters(entityManager: EntityManager, hash: String): SignedGroupParameters? {
+        return entityManager.createNativeQuery(
+            """
+                SELECT
+                    parameters,
+                    signature_public_key,
+                    signature_content,
+                    signature_spec
+                FROM {h-schema}utxo_group_parameters
+                WHERE hash = :hash""",
+            Tuple::class.java
+        )
+            .setParameter("hash", hash)
+            .resultListAsTuples()
+            .map { r ->
+                SignedGroupParameters(
+                    ByteBuffer.wrap(r.get(0) as ByteArray),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(r.get(1) as ByteArray),
+                        ByteBuffer.wrap(r.get(2) as ByteArray)
+                    ),
+                    CryptoSignatureSpec((r.get(3) as String), null, null)
+                )
+            }
+            .firstOrNull()
+    }
+
+    override fun persistSignedGroupParameters(
+        entityManager: EntityManager,
+        hash: String,
+        parameters: ByteArray,
+        signaturePublicKey: ByteArray,
+        signatureContent: ByteArray,
+        signatureSpec: String
+    ){
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_group_parameters(
+                hash, parameters, signature_public_key, signature_content, signature_spec)
+            VALUES (
+                :hash, :parameters, :signature_public_key, :signature_content, :signature_spec)
+            ON CONFLICT DO NOTHING"""
+        )
+            .setParameter("hash", hash)
+            .setParameter("parameters", parameters)
+            .setParameter("signature_public_key", signaturePublicKey)
+            .setParameter("signature_content", signatureContent)
+            .setParameter("signature_spec", signatureSpec)
+            .executeUpdate()
+            .logResult("signed group parameters [$hash]")
     }
 
     private fun Int.logResult(entity: String): Int {

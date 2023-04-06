@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
@@ -8,6 +9,8 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.SignedGroupParameters as CordaSignedGroupParameters
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -20,12 +23,14 @@ import net.corda.v5.ledger.utxo.StateRef
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl constructor(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
-    private val utcClock: Clock
+    private val utcClock: Clock,
+    private val groupParametersFactory: GroupParametersFactory
 ) : UtxoPersistenceService {
 
     override fun findTransaction(
@@ -214,6 +219,29 @@ class UtxoPersistenceServiceImpl constructor(
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
         entityManagerFactory.transaction { em ->
             repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
+        }
+    }
+
+    override fun findSignedGroupParameters(hash: String): SignedGroupParameters? {
+        entityManagerFactory.transaction { em ->
+            return repository.findSignedGroupParameters(em, hash)
+        }
+    }
+
+    override fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters) {
+        val cordaSignedGroupParameters = groupParametersFactory.create(signedGroupParameters) as CordaSignedGroupParameters
+        val hash = cordaSignedGroupParameters.hash.toString()
+        if (findSignedGroupParameters(hash) == null) {
+            entityManagerFactory.transaction { em ->
+                repository.persistSignedGroupParameters(
+                    em,
+                    hash = hash,
+                    parameters = signedGroupParameters.groupParameters.array(),
+                    signaturePublicKey = signedGroupParameters.mgmSignature.publicKey.array(),
+                    signatureContent = signedGroupParameters.mgmSignature.bytes.array(),
+                    signatureSpec = signedGroupParameters.mgmSignatureSpec.signatureName
+                )
+            }
         }
     }
 }

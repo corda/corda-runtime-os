@@ -12,4 +12,5 @@ dependencies {
     implementation 'net.corda:corda-ledger-common'
     implementation 'net.corda:corda-crypto'
     implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:crypto:crypto-core')
 }
