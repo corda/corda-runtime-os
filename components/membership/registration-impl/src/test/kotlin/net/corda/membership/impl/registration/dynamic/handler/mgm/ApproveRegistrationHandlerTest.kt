@@ -7,6 +7,7 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
@@ -223,16 +224,19 @@ class ApproveRegistrationHandlerTest {
             notary = memberInfo,
         )
         verify(groupReaderProvider, times(1)).getGroupReader(any())
+        assertThat(results.updatedState).isNull()
         assertThat(results.outputStates)
-            .hasSize(3)
-            .anySatisfy {
-                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
-                val value = (it.value as? MembershipActionsRequest)?.request
-                assertThat(value)
-                    .isNotNull
-                    .isInstanceOf(DistributeMemberInfo::class.java)
-                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(5)
-            }
+            .hasSize(4)
+
+        val actionsRequest = results.outputStates.single { it.topic == MEMBERSHIP_ACTIONS_TOPIC }
+        val distributeMemberInfo = (actionsRequest.value as? MembershipActionsRequest)?.request as? DistributeMemberInfo
+        assertThat(distributeMemberInfo?.minimumGroupParametersEpoch).isEqualTo(5)
+
+        val registrationCommand = results.outputStates.single { it.topic == REGISTRATION_COMMAND_TOPIC }
+        val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
+        assertThat(checkForPendingRegistration?.mgm).isEqualTo(owner.toAvro())
+        assertThat(checkForPendingRegistration?.member).isEqualTo(member.toAvro())
+        assertThat(checkForPendingRegistration?.numberOfRetriesSoFar).isEqualTo(0)
     }
 
     @Test
