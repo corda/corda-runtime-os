@@ -7,6 +7,7 @@ import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.registration.RegistrationStatusExt.order
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -214,7 +215,7 @@ internal class MemberOpsAsyncProcessor(
         ).getOrThrow()
         if (cause is SentToMgmWaitingForNetwork) {
             if ((requestStatus == null) ||
-                (requestStatus.registrationStatus <= RegistrationStatus.SENT_TO_MGM)
+                (requestStatus.registrationStatus.order <= RegistrationStatus.SENT_TO_MGM.order)
             ) {
                 logger.info("Request $registrationId had not received any reply from the MGM. Trying again...")
             } else {
@@ -222,7 +223,7 @@ internal class MemberOpsAsyncProcessor(
                 return createMoveOnResponse()
             }
         } else {
-            if ((requestStatus != null) && (requestStatus.registrationStatus > RegistrationStatus.NEW)) {
+            if ((requestStatus != null) && (requestStatus.registrationStatus.order > RegistrationStatus.NEW.order)) {
                 // This request had already passed this state. no need to continue.
                 return createMoveOnResponse()
             }
