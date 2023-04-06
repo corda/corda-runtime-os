@@ -25,5 +25,4 @@ class ExternalMessagingConfigProviderImpl(private val externalMessagingConfigDef
     override fun getDefaults(): ExternalMessagingConfigDefaults {
         return externalMessagingConfigDefaults
     }
-
 }
