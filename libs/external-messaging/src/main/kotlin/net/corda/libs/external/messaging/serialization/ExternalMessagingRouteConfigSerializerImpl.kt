@@ -12,7 +12,9 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.external.messaging.entities.RouteConfiguration
 import net.corda.libs.packaging.core.CpiIdentifier
+import org.osgi.service.component.annotations.Component
 
+@Component(service = [ExternalMessagingRouteConfigSerializer::class])
 class ExternalMessagingRouteConfigSerializerImpl : ExternalMessagingRouteConfigSerializer {
     private val objectMapper = ObjectMapper().apply {
         val module = SimpleModule()

@@ -10,4 +10,8 @@ class DbMessagingAdmin(
     override fun getTopics(): Set<String> {
         return dbAccess.getAllTopics()
     }
+
+    override fun close() {
+        // Does nothing on DB implementation
+    }
 }
