@@ -209,7 +209,9 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceOperation<Unit>
 
     /**
-     * Consumes a pre-auth token provided it exists for the member.
+     * Consumes a pre-auth token provided it exists for the member. If the token is successfully consumed, the returned
+     * operation will return upon execution [MembershipPersistenceResult.Success]. Otherwise, it will return
+     * [MembershipPersistenceResult.Failure].
      *
      * @param mgmHoldingIdentity The holding identity of the mgm.
      * @param preAuthTokenId A unique token identifier of the pre-auth token.
