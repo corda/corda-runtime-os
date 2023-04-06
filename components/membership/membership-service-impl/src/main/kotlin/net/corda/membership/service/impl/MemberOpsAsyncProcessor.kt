@@ -214,8 +214,7 @@ internal class MemberOpsAsyncProcessor(
         ).getOrThrow()
         if (cause is SentToMgmWaitingForNetwork) {
             if ((requestStatus == null) ||
-                (requestStatus.registrationStatus == RegistrationStatus.NEW) ||
-                (requestStatus.registrationStatus == RegistrationStatus.SENT_TO_MGM)
+                (requestStatus.registrationStatus <= RegistrationStatus.SENT_TO_MGM)
             ) {
                 logger.info("Request $registrationId had not received any reply from the MGM. Trying again...")
             } else {
@@ -223,7 +222,7 @@ internal class MemberOpsAsyncProcessor(
                 return createMoveOnResponse()
             }
         } else {
-            if ((requestStatus != null) && (requestStatus.registrationStatus != RegistrationStatus.NEW)) {
+            if ((requestStatus != null) && (requestStatus.registrationStatus > RegistrationStatus.NEW)) {
                 // This request had already passed this state. no need to continue.
                 return createMoveOnResponse()
             }
