@@ -102,6 +102,7 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -433,6 +434,7 @@ class DynamicMemberRegistrationServiceTest {
             }
         }
 
+        @Disabled
         @Test
         fun `registration request contains current serial for re-registration`() {
             postConfigChangedEvent()
@@ -625,6 +627,17 @@ class DynamicMemberRegistrationServiceTest {
 
     @Nested
     inner class FailedRegistrationTests {
+        @Test
+        fun `re-registration is not supported yet`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(mock())
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("Re-registration is not supported.")
+        }
+
         @Test
         fun `registration fails when coordinator is not running`() {
             val exception = assertThrows<NotReadyMembershipRegistrationException> {
