@@ -16,9 +16,6 @@ class ExternalMessagingRouteConfigGeneratorImpl(
 ) : ExternalMessagingRouteConfigGenerator {
 
     override fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Set<CpkMetadata>): String {
-        // Get the default configuration
-        // cpi -> cpiMetadata.id
-        // externalChannelConfig -> CpkMetadata cpiMetadata.cpks
         val routes = generateRoutes(holdingId, cpks)
         return routeConfigSerializer.serialize(
             RouteConfiguration(
