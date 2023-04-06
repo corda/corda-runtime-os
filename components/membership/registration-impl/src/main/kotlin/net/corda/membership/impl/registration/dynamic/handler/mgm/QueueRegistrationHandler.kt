@@ -61,7 +61,7 @@ internal class QueueRegistrationHandler(
         key: String, command: QueueRegistration, registrationId: String
     ): List<Record<String, RegistrationCommand>> {
         logger.info(
-            "MGM queueing registration request for ${command.member.x500Name} " +
+            "MGM queueing registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
                     "with request ID `$registrationId`."
         )
         membershipPersistenceClient.persistRegistrationRequest(
@@ -69,14 +69,14 @@ internal class QueueRegistrationHandler(
             command.toRegistrationRequest()
         ).getOrThrow()
         logger.info(
-            "MGM put registration request for ${command.member.x500Name} " +
+            "MGM put registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
                     "with request ID `$registrationId` into the queue."
         )
         return listOf(
             Record(
                 REGISTRATION_COMMAND_TOPIC,
                 key,
-                RegistrationCommand((CheckForPendingRegistration(command.mgm, command.member, 0)))
+                RegistrationCommand(CheckForPendingRegistration(command.mgm, command.member, 0))
             )
         )
     }

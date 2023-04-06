@@ -13,8 +13,6 @@ import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class CheckForPendingRegistrationHandler(
     private val membershipQueryClient: MembershipQueryClient,
@@ -26,20 +24,13 @@ class CheckForPendingRegistrationHandler(
 
     override val commandType = CheckForPendingRegistration::class.java
 
-    private val lock = ReentrantLock()
-
     override fun invoke(state: RegistrationState?, key: String, command: CheckForPendingRegistration): RegistrationHandlerResult {
-        return lock.withLock {
-            prepareCommand(state, key, command)
-        }
-    }
-
-    private fun prepareCommand(state: RegistrationState?, key: String, command: CheckForPendingRegistration): RegistrationHandlerResult {
         val (outputState, outputCommand) = try {
             if(command.numberOfRetriesSoFar < MAX_RETRIES) {
                 state?.let {
-                    logger.info("There is a registration in progress for member ${state.registeringMember}" +
-                            " with ID `${state.registrationId}`. The service will wait until processing the previous " +
+                    logger.info("There is a registration in progress for member ${state.registeringMember.x500Name} " +
+                            "from group `${state.registeringMember.groupId}` " +
+                            "with ID `${state.registrationId}`. The service will wait until processing the previous " +
                             "request finishes.")
                     Pair(state, null)
                 } ?: run {
@@ -48,13 +39,14 @@ class CheckForPendingRegistrationHandler(
             } else {
                 logger.warn(
                     "Max re-tries exceeded to get next registration request registration " +
-                            "for member ${command.member.x500Name}." +
+                            "for member ${command.member.x500Name} from group `${command.member.groupId}`. " +
                             "Registration is discarded."
                 )
                 Pair(state, null)
             }
         } catch (ex: Exception) {
-            logger.warn("Exception happened while looking for the next request to process. Will re-try again.", ex)
+            logger.warn("Exception happened while looking for the next request to process for member " +
+                    "${command.member.x500Name} from group `${command.member.groupId}`. Will re-try again.", ex)
             Pair(state, increaseNumberOfRetries(command))
         }
         return if(outputCommand != null) {
@@ -70,7 +62,8 @@ class CheckForPendingRegistrationHandler(
     }
 
     private fun getNextRequest(command: CheckForPendingRegistration): Pair<RegistrationState?, StartRegistration?> {
-        logger.info("Looking for the next request for member ${command.member.x500Name}.")
+        logger.info("Looking for the next request for member ${command.member.x500Name} from " +
+                "group `${command.member.groupId}`.")
         val nextRequest = membershipQueryClient.queryRegistrationRequests(
             command.mgm.toCorda(),
             command.member.toCorda().x500Name,
@@ -79,13 +72,14 @@ class CheckForPendingRegistrationHandler(
         ).getOrThrow().firstOrNull()
         // need to check if there were any results at all
         return if(nextRequest != null) {
-            logger.info("Retrieved next request for member ${command.member.x500Name} " +
+            logger.info("Retrieved next request for member ${command.member.x500Name} from " +
+                    "group `${command.member.groupId}` " +
                     "with ID `${nextRequest.registrationId}` from the database. Proceeding with registration.")
             // create state to make sure we process one registration at the same time
             Pair(RegistrationState(nextRequest.registrationId, command.member, command.mgm), StartRegistration())
         } else {
             logger.info("There are no registration requests queued " +
-                    "for member ${command.member.x500Name}.")
+                    "for member ${command.member.x500Name} from group `${command.member.groupId}`.")
             Pair(null, null)
         }
     }

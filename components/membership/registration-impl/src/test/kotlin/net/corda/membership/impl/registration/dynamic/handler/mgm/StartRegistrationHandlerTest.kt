@@ -197,7 +197,7 @@ class StartRegistrationHandlerTest {
         }
         membershipPersistenceClient = mock {
             on {
-                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED), anyOrNull())
+                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull())
             } doReturn MembershipPersistenceResult.success()
             on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
@@ -796,7 +796,9 @@ class StartRegistrationHandlerTest {
         fun getVerificationMode(condition: Boolean) = if (condition) times(1) else never()
 
         verify(membershipPersistenceClient, getVerificationMode(updateRegistrationRequest))
-            .setRegistrationRequestStatus(eq(mgmHoldingIdentity.toCorda()), any(), eq(RegistrationStatus.STARTED), anyOrNull())
+            .setRegistrationRequestStatus(
+                eq(mgmHoldingIdentity.toCorda()), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull()
+            )
 
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())

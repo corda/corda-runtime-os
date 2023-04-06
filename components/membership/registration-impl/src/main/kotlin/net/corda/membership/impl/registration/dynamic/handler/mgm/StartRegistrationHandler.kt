@@ -83,7 +83,9 @@ internal class StartRegistrationHandler(
             }
 
             logger.info("Updating the status of the registration request.")
-            membershipPersistenceClient.setRegistrationRequestStatus(mgmHoldingId, registrationId, RegistrationStatus.STARTED).also {
+            membershipPersistenceClient.setRegistrationRequestStatus(
+                mgmHoldingId, registrationId, RegistrationStatus.STARTED_PROCESSING_BY_MGM
+            ).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to update the status of the registration request. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg

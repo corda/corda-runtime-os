@@ -245,7 +245,7 @@ class  RegistrationProcessorTest {
     }
 
     @Test
-    fun `queue registration command - onNext can be called for start registration command`() {
+    fun `queue registration command - onNext can be called`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, queueRegistrationCommand))
         assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
@@ -255,7 +255,7 @@ class  RegistrationProcessorTest {
     }
 
     @Test
-    fun `check for pending registration command - onNext can be called for start registration command`() {
+    fun `check for pending registration command - onNext can be called`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, checkForPendingRegistrationCommand))
         assertThat(result.updatedState).isNotNull()
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
