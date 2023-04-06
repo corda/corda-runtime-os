@@ -46,18 +46,16 @@ class CryptoConfigUtilsTests {
         assertEquals(10000, signingService.cache.maximumSize)
         assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm(SOFT_HSM_ID)
-        assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
-        assertThat(softWorker.hsm.categories).hasSize(1)
-        assertEquals("*", softWorker.hsm.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.hsm.masterKeyPolicy)
-        assertNull(softWorker.hsm.masterKeyAlias)
-        assertEquals(-1, softWorker.hsm.capacity)
-        assertThat(softWorker.hsm.supportedSchemes).hasSize(8)
-        assertThat(softWorker.hsm.supportedSchemes).contains(
+        assertThat(softWorker.categories).hasSize(1)
+        assertEquals("*", softWorker.categories[0].category)
+        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
+        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertNull(softWorker.masterKeyAlias)
+        assertEquals(-1, softWorker.capacity)
+        assertThat(softWorker.supportedSchemes).hasSize(8)
+        assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
             "CORDA.ECDSA.SECP256R1",
             "CORDA.ECDSA.SECP256K1",
@@ -67,7 +65,7 @@ class CryptoConfigUtilsTests {
             "CORDA.GOST3410.GOST3411",
             "CORDA.SPHINCS-256"
         )
-        val hsmCfg = softWorker.hsm.cfg
+        val hsmCfg = softWorker.cfg
         assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
         assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
@@ -110,18 +108,16 @@ class CryptoConfigUtilsTests {
         assertEquals(10000, signingService.cache.maximumSize)
         assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm(SOFT_HSM_ID)
-        assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
-        assertThat(softWorker.hsm.categories).hasSize(1)
-        assertEquals("*", softWorker.hsm.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.hsm.masterKeyPolicy)
-        assertNull(softWorker.hsm.masterKeyAlias)
-        assertEquals(-1, softWorker.hsm.capacity)
-        assertThat(softWorker.hsm.supportedSchemes).hasSize(8)
-        assertThat(softWorker.hsm.supportedSchemes).contains(
+        assertThat(softWorker.categories).hasSize(1)
+        assertEquals("*", softWorker.categories[0].category)
+        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
+        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertNull(softWorker.masterKeyAlias)
+        assertEquals(-1, softWorker.capacity)
+        assertThat(softWorker.supportedSchemes).hasSize(8)
+        assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
             "CORDA.ECDSA.SECP256R1",
             "CORDA.ECDSA.SECP256K1",
@@ -131,7 +127,7 @@ class CryptoConfigUtilsTests {
             "CORDA.GOST3410.GOST3411",
             "CORDA.SPHINCS-256"
         )
-        val hsmCfg = softWorker.hsm.cfg
+        val hsmCfg = softWorker.cfg
         assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
         assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
@@ -242,12 +238,6 @@ class CryptoConfigUtilsTests {
         assertThrows<IllegalStateException> {
             config.retry
         }
-        assertThrows<IllegalStateException> {
-            config.workerTopicSuffix
-        }
-        assertThrows<IllegalStateException> {
-            config.hsm
-        }
         val categoryConfig = CryptoHSMConfig.CategoryConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
             categoryConfig.category
@@ -262,24 +252,20 @@ class CryptoConfigUtilsTests {
         assertThrows<IllegalStateException> {
             retryConfig.attemptTimeoutMills
         }
-        val hsmConfig = CryptoHSMConfig.HSMConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
-            hsmConfig.name
+            config.categories
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.categories
+            config.capacity
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.capacity
+            config.supportedSchemes
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.supportedSchemes
+            config.masterKeyPolicy
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.masterKeyPolicy
-        }
-        assertThrows<IllegalStateException> {
-            hsmConfig.cfg
+            config.cfg
         }
     }
 

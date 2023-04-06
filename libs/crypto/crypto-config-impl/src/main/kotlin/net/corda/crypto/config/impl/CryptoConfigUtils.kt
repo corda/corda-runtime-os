@@ -154,7 +154,7 @@ private const val BUS_PROCESSORS_OBJ = "busProcessors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
 private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
 private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
-private val DEFAULT_HSM_OBJ = String.format(HSM_MAP_ITEM_OBJ, SOFT_HSM_ID)
+private val HSM = "hsm"
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
     this[CRYPTO_CONFIG] ?: throw IllegalStateException(
@@ -235,67 +235,63 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
             )
         )
         .withValue(
-            DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
+            HSM, ConfigValueFactory.fromMap(
                 mapOf(
-                    CryptoHSMConfig::workerTopicSuffix.name to "",
                     CryptoHSMConfig::retry.name to mapOf(
                         CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
-                    CryptoHSMConfig::hsm.name to mapOf(
-                        CryptoHSMConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
-                        CryptoHSMConfig.HSMConfig::categories.name to listOf(
-                            mapOf(
-                                CryptoHSMConfig.CategoryConfig::category.name to "*",
-                                CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
-                            )
-                        ),
-                        CryptoHSMConfig.HSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                        CryptoHSMConfig.HSMConfig::capacity.name to -1,
-                        CryptoHSMConfig.HSMConfig::supportedSchemes.name to listOf(
-                            "CORDA.RSA",
-                            "CORDA.ECDSA.SECP256R1",
-                            "CORDA.ECDSA.SECP256K1",
-                            "CORDA.EDDSA.ED25519",
-                            "CORDA.X25519",
-                            "CORDA.SM2",
-                            "CORDA.GOST3410.GOST3411",
-                            "CORDA.SPHINCS-256"
-                        ),
-                        CryptoHSMConfig.HSMConfig::cfg.name to ConfigValueFactory.fromMap(
-                            mapOf(
-                                "defaultWrappingKey" to ConfigValueFactory.fromAnyRef("root1"),
-                                "wrappingKeys" to listOf(
-                                    ConfigValueFactory.fromAnyRef(
-                                        mapOf(
-                                            "alias" to "root1",
-                                            "salt" to wrappingKeySalt,
-                                            "passphrase" to wrappingKeyPassphrase,
-                                        )
-                                    )
-                                ),
-                                "keyMap" to ConfigValueFactory.fromMap(
+                    CryptoHSMConfig::categories.name to listOf(
+                        mapOf(
+                            CryptoHSMConfig.CategoryConfig::category.name to "*",
+                            CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
+                        )
+                    ),
+                    CryptoHSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
+                    CryptoHSMConfig::capacity.name to -1,
+                    CryptoHSMConfig::supportedSchemes.name to listOf(
+                        "CORDA.RSA",
+                        "CORDA.ECDSA.SECP256R1",
+                        "CORDA.ECDSA.SECP256K1",
+                        "CORDA.EDDSA.ED25519",
+                        "CORDA.X25519",
+                        "CORDA.SM2",
+                        "CORDA.GOST3410.GOST3411",
+                        "CORDA.SPHINCS-256"
+                    ),
+                    CryptoHSMConfig::cfg.name to ConfigValueFactory.fromMap(
+                        mapOf(
+                            "defaultWrappingKey" to ConfigValueFactory.fromAnyRef("root1"),
+                            "wrappingKeys" to listOf(
+                                ConfigValueFactory.fromAnyRef(
                                     mapOf(
-                                        "name" to "CACHING",
-                                        "cache" to ConfigValueFactory.fromMap(
-                                            mapOf(
-                                                "expireAfterAccessMins" to 60,
-                                                "maximumSize" to 1000
-                                            )
-                                        )
-
+                                        "alias" to "root1",
+                                        "salt" to wrappingKeySalt,
+                                        "passphrase" to wrappingKeyPassphrase,
                                     )
-                                ),
-                                "wrappingKeyMap" to mapOf(
-                                    "name" to "CACHING",
-                                    "cache" to mapOf(
-                                        "expireAfterAccessMins" to 60,
-                                        "maximumSize" to 1000
-                                    )
-                                ),
-                                "wrapping" to mapOf(
-                                    "name" to "DEFAULT"
                                 )
+                            ),
+                            "keyMap" to ConfigValueFactory.fromMap(
+                                mapOf(
+                                    "name" to "CACHING",
+                                    "cache" to ConfigValueFactory.fromMap(
+                                        mapOf(
+                                            "expireAfterAccessMins" to 60,
+                                            "maximumSize" to 1000
+                                        )
+                                    )
+
+                                )
+                            ),
+                            "wrappingKeyMap" to mapOf(
+                                "name" to "CACHING",
+                                "cache" to mapOf(
+                                    "expireAfterAccessMins" to 60,
+                                    "maximumSize" to 1000
+                                )
+                            ),
+                            "wrapping" to mapOf(
+                                "name" to "DEFAULT"
                             )
                         )
                     )
