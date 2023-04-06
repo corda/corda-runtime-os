@@ -13,10 +13,10 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     
-    implementation project(':libs:crypto:crypto-core')
-    implementation project(':libs:packaging:packaging-core')
-    implementation project(path: ':libs:virtual-node:virtual-node-info')
-    implementation project(path: ':libs:configuration:configuration-core')
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:packaging:packaging-core")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:configuration:configuration-core")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
