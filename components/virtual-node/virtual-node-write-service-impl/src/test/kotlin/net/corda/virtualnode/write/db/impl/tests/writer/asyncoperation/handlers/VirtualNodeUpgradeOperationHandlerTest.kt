@@ -7,9 +7,12 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
@@ -18,7 +21,6 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.LiquibaseDiffCheckFailedException
@@ -91,19 +93,31 @@ class VirtualNodeUpgradeOperationHandlerTest {
         whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
         whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
     }
-    private val groupName = "someGroup1"
+    private val groupPolicy = genGroupPolicy(UUID.randomUUID().toString())
+    private val groupId = GroupPolicyParser.groupIdFromJson(groupPolicy)
+
+    private fun genGroupPolicy(groupId: String): String {
+        return """
+                {
+                    "${GroupPolicyConstants.PolicyKeys.Root.GROUP_ID}": "$groupId",
+                    "${GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS}": {
+                        "${GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK}": {}
+                    }
+                }
+                """.trimIndent()
+    }
     private val targetCpiChecksum = "targetCpi"
-    private val currentCpiMetadata = mock<CpiMetadataLite>() {
-        whenever(it.mgmGroupId).thenReturn(groupName)
+    private val currentCpiMetadata = mock<CpiMetadata>() {
+        whenever(it.groupPolicy).thenReturn(groupPolicy)
     }
     private val targetCpiId = CpiIdentifier(cpiName, "v2", ssh)
-    private val targetCpiMetadata = mock<CpiMetadataLite>() {
-        whenever(it.mgmGroupId).thenReturn(groupName)
-        whenever(it.id).thenReturn(targetCpiId)
+    private val targetCpiMetadata = mock<CpiMetadata>() {
+        whenever(it.groupPolicy).thenReturn(groupPolicy)
+        whenever(it.cpiId).thenReturn(targetCpiId)
     }
 
     private val x500Name = MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
-    private val mockHoldingIdentity = HoldingIdentity(x500Name, groupName)
+    private val mockHoldingIdentity = HoldingIdentity(x500Name, groupId)
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val vaultDdlConnectionId = UUID.randomUUID()
     private val requestId = "req1"
@@ -286,7 +300,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
         withRejectedOperation(
             VirtualNodeOperationStateDto.VALIDATION_FAILED,
-            "CPI with name ${targetCpiMetadata.id.name}, version v1 was not found"
+            "CPI with name ${targetCpiMetadata.cpiId.name}, version v1 was not found"
         ) {
             handler.handle(
                 Instant.now(),
@@ -298,13 +312,13 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler validates target CPI and current CPI are in the same group`() {
-        val cpiInDifferentGroup = mock<CpiMetadataLite> { whenever(it.mgmGroupId).thenReturn("group-b") }
+        val cpiInDifferentGroup = mock<CpiMetadata> { whenever(it.groupPolicy).thenReturn(genGroupPolicy("group-b")) }
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
             .thenReturn(cpiInDifferentGroup)
 
-        withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "Expected MGM GroupId group-b but was someGroup1 in CPI") {
+        withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "Expected MGM GroupId group-b but was $groupId in CPI") {
             handler.handle(
                 Instant.now(),
                 requestId,
@@ -495,7 +509,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         assertThat(publishedRecord.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
 
         val holdingIdentity = publishedRecord.key
-        assertThat(holdingIdentity.groupId).isEqualTo(groupName)
+        assertThat(holdingIdentity.groupId).isEqualTo(GroupPolicyParser.groupIdFromJson(groupPolicy))
         assertThat(holdingIdentity.x500Name).isEqualTo(x500Name.toString())
 
         assertThat(publishedRecord.value).isNotNull

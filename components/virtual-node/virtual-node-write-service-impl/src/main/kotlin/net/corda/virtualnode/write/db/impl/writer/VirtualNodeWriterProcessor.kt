@@ -128,7 +128,7 @@ internal class VirtualNodeWriterProcessor(
                         return
                     }
 
-                    val cpiMetadataLite = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
@@ -165,7 +165,7 @@ internal class VirtualNodeWriterProcessor(
                     }
 
                     val changelogsToRun =
-                        changeLogsRepository.findByCpiId(em, cpiMetadataLite.id).groupBy { it.id.cpkFileChecksum }
+                        changeLogsRepository.findByCpiId(em, cpiMetadata.cpiId).groupBy { it.id.cpkFileChecksum }
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
@@ -178,7 +178,7 @@ internal class VirtualNodeWriterProcessor(
                             }
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI " +
-                                        "${cpiMetadataLite.id.name} - changelogs: [${changeLogs}]",
+                                        "${cpiMetadata.cpiId.name} - changelogs: [${changeLogs}]",
                                 e
                             )
                             respFuture.complete(
