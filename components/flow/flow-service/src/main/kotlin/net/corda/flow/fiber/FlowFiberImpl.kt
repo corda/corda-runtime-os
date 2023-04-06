@@ -35,7 +35,7 @@ class FlowFiberImpl(
     private var flowCompletion = CompletableFuture<FlowIORequest<*>>()
 
     @Transient
-    var suspensionOutcome: FlowContinuation? = null
+    private var suspensionOutcome: FlowContinuation? = null
 
     override fun getExecutionContext(): FlowFiberExecutionContext {
         return flowFiberExecutionContext!!
