@@ -1,12 +1,11 @@
 package net.corda.cli.plugin.initialconfig
 
-import com.typesafe.config.ConfigObject
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
-import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import picocli.CommandLine
 import picocli.CommandLine.ParameterException
@@ -75,14 +74,14 @@ class CryptoConfigSubcommand : Runnable {
         description = ["Vault key for the wrapping key salt. Used only by VAULT type secrets service."],
         defaultValue = "corda-master-wrapping-key-passphrase",
     )
-    var vaultWrappingKeySalt: String? = null
+    var vaultWrappingKeySalt: String = "corda-master-wrapping-key-passphrase"
 
     @CommandLine.Option(
         names = ["-kp", "--key-passphrase"],
         description = ["Vault key for the wrapping key service passphrase. Used only by VAULT type secrets service."],
         defaultValue = "corda-master-wrapping-key-passphrase",
     )
-    var vaultWrappingKeyPassphrase: String? = null
+    var vaultWrappingKeyPassphrase: String = "corda-master-wrapping-key-passphrase"
 
     @CommandLine.Option(
         names = ["-t", "--type"],
@@ -97,7 +96,8 @@ class CryptoConfigSubcommand : Runnable {
     override fun run() {
         val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets()
 
-        val config = createDefaultCryptoConfig(wrappingPassphraseSecret, wrappingSaltSecret).root().render(ConfigRenderOptions.concise())
+        val config = createDefaultCryptoConfig(wrappingPassphraseSecret.root(), wrappingSaltSecret.root()).root()
+            .render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
             section = CRYPTO_CONFIG,
@@ -124,26 +124,28 @@ class CryptoConfigSubcommand : Runnable {
         }
     }
 
-    private fun createWrappingPassphraseAndSaltSecrets(): Pair<ConfigObject, ConfigObject> {
-        val secretsService: SecretsCreateService = when (type) {
-            SecretsServiceType.CORDA -> EncryptionSecretsServiceImpl(
+    private fun createWrappingPassphraseAndSaltSecrets(): Pair<Config, Config> = when (type) {
+        SecretsServiceType.CORDA -> {
+            val ess = EncryptionSecretsServiceImpl(
                 checkParamPassed(passphrase)
                 { "'passphrase' must be set for CORDA type secrets." },
                 checkParamPassed(salt)
-                { "'salt' must be set for CORDA type secrets." })
-
-            SecretsServiceType.VAULT -> VaultSecretConfigGenerator(
-                checkParamPassed(vaultPath)
-                { "'vaultPath' must be set for VAULT type secrets." })
+                { "'salt' must be set for CORDA type secrets." }
+            )
+            val (passphraseSecretValue, saltSecretValue) = generateSecretValuesForType()
+            Pair(
+                ess.createValue(passphraseSecretValue, "unused"),
+                ess.createValue(saltSecretValue, "unused")
+            )
         }
-
-        val (passphraseSecretValue, saltSecretValue) = generateSecretValuesForType()
-
-        val wrappingPassphraseSecret =
-            secretsService.createValue(passphraseSecretValue, vaultWrappingKeyPassphrase).root()
-        val wrappingSaltSecret =
-            secretsService.createValue(saltSecretValue, vaultWrappingKeySalt).root()
-        return Pair(wrappingPassphraseSecret, wrappingSaltSecret)
+        SecretsServiceType.VAULT -> {
+            val vss = VaultSecretConfigGenerator(checkParamPassed(vaultPath)
+            { "'vaultPath' must be set for VAULT type secrets." })
+            Pair(
+                vss.createValue("unused", vaultWrappingKeyPassphrase),
+                vss.createValue("unused", vaultWrappingKeySalt)
+            )
+        }
     }
 
     private fun generateSecretValuesForType(): Pair<String, String> {
