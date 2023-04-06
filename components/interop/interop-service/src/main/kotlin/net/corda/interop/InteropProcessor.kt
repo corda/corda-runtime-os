@@ -48,6 +48,7 @@ class InteropProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SUBSYSTEM = "interop"
         const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        private const val POSTFIX_DENOTING_ALIAS = " Alias"
     }
 
     private val interopAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
@@ -155,8 +156,11 @@ class InteropProcessor(
                 x500Name = state?.aliasHoldingIdentity ?: addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
                 groupId = state?.groupId ?: INTEROP_GROUP_ID
             }
-            val translatedDestination = destinationIdentity.apply {
-                x500Name = addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString() //TODO
+            val translatedDestination = destinationIdentity.apply {//TODO review destination from initiating flow vs from initiated
+                val name = this.toCorda()
+                if (!name.toString().contains(POSTFIX_DENOTING_ALIAS)) {
+                    x500Name = addAliasSubstringToOrganisationName(name).x500Name.toString()
+                }
                 groupId = INTEROP_GROUP_ID
             }
             logLeaving("OUTBOUND", translatedSource, translatedDestination, sessionEvent)
