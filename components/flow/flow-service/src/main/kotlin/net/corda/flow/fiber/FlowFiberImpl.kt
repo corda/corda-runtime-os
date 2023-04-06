@@ -136,7 +136,7 @@ class FlowFiberImpl(
                 .recordCallable {
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }!!
-            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, fiber))
+            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, fiber.prepareForCaching()))
         }
 
         resetLoggingContext()
@@ -155,6 +155,13 @@ class FlowFiberImpl(
                     fillInStackTrace()
                 })
             else -> throw IllegalStateException(FiberExceptionConstants.INVALID_FLOW_RETURN)
+        }
+    }
+
+    private fun Fiber<*>.prepareForCaching() {
+        (this as FlowFiberImpl).apply {
+            flowFiberExecutionContext = null
+            suspensionOutcome = null
         }
     }
 
