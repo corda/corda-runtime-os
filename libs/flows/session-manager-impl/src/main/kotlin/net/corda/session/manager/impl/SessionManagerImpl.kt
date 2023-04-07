@@ -188,13 +188,16 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
     ): List<SessionEvent> {
+
         //get all events with a timestamp in the past, as well as any acks or errors
-        val eventsToSend = sessionState.sendEventsState.undeliveredMessages.filter(
-            when (sessionState.status) {
-                SessionStateType.CREATED -> { event: SessionEvent -> event.payload is SessionInit && event.timestamp <= instant }
-                else -> { event: SessionEvent -> event.timestamp <= instant || event.payload is SessionError }
-            }
-        )
+        val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
+            it.timestamp <= instant || it.payload is SessionError
+        }
+
+        //if any of the events are a [SessionInit], send only that. Otherwise, send all.
+        val eventsToSend =
+            sessionEvents.firstOrNull { event -> event.payload is SessionInit }?.let { listOf(it) }
+            ?: sessionEvents
 
         //update events with the latest ack info from the current state
         eventsToSend.forEach { eventToSend ->
