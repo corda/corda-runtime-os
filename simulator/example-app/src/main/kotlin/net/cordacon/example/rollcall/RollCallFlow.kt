@@ -1,5 +1,6 @@
 package net.cordacon.example.rollcall
 
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
@@ -51,6 +52,9 @@ class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStar
     @CordaInject
     lateinit var signingService: SigningService
 
+    @CordaInject
+    lateinit var signatureSpecService: SignatureSpecService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Initiating roll call")
@@ -98,12 +102,18 @@ class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStar
     private fun sendTruancyRecord(truancyOffice : MemberX500Name, truants: List<MemberX500Name>) {
         if (truants.isNotEmpty()) {
             val unsignedTruants = serializationService.serialize(truants)
-            val signedTruants = signingService.sign(
-                unsignedTruants.bytes,
-                memberLookup.myInfo().ledgerKeys[0],
-                SignatureSpec.ECDSA_SHA256
-            )
-            val truancySubFlow = TruancySubFlow(truancyOffice, TruancyRecord(truants, signedTruants))
+            val myKey = memberLookup.myInfo().ledgerKeys[0]
+            val signatureSpec =
+                signatureSpecService.defaultSignatureSpec(myKey)
+                    ?: throw IllegalStateException("Default signature spec not found for key")
+
+            val signedTruants =
+                signingService.sign(
+                    unsignedTruants.bytes,
+                    myKey,
+                    signatureSpec
+                )
+            val truancySubFlow = TruancySubFlow(truancyOffice, TruancyRecord(truants, signedTruants, signatureSpec))
             flowEngine.subFlow(truancySubFlow)
         }
     }
@@ -156,4 +166,4 @@ data class RollCallResponse(val response: String)
 data class AbsenceResponse(val response: String)
 
 @CordaSerializable
-data class TruancyRecord(val absentees: List<MemberX500Name>, val signature: DigitalSignature.WithKeyId)
+data class TruancyRecord(val absentees: List<MemberX500Name>, val signature: DigitalSignature.WithKeyId, val signatureSpec: SignatureSpec)

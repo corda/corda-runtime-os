@@ -237,7 +237,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
+        assertTrue(onNextLatch1.await(120, TimeUnit.SECONDS))
         stateEventSub1.close()
 
         val durableLatch = CountDownLatch(2)

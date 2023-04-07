@@ -20,6 +20,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -206,7 +207,7 @@ class MembershipGroupReaderProviderIntegrationTest {
 
     private fun MembershipGroupReaderProvider.getAliceGroupReader(): MembershipGroupReader {
         logger.info("Getting group reader for test.")
-        return eventually {
+        return eventually(duration = 15.seconds) {
             assertDoesNotThrow {
                 getGroupReader(aliceHoldingIdentity)
             }

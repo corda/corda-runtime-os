@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
@@ -47,7 +48,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
@@ -66,9 +66,9 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -228,7 +228,7 @@ class MemberRegistrationIntegrationTest {
                 )
             )
 
-            eventually {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -272,7 +272,7 @@ class MemberRegistrationIntegrationTest {
 
         val member = HoldingIdentity(memberName, groupId)
         val context = buildTestContext(member)
-        membershipGroupReaderProvider.loadMembers(member, createMemberList(context))
+        membershipGroupReaderProvider.loadMembers(member, createMemberList())
         val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message
         val registrationRequestSubscription = subscriptionFactory.createPubSubSubscription(
@@ -283,8 +283,13 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        registrationProxy.usingLifecycle {
+        val messages = registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
+        }
+        publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig).use {
+            it.publish(messages.toList()).forEach {
+                it.join()
+            }
         }
 
         // Wait for latch to countdown, so we know when processing has completed and results have been collected
@@ -316,7 +321,6 @@ class MemberRegistrationIntegrationTest {
                 val deserializedContext =
                     deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
 
-                assertThat(deserializedPayload.serial).isEqualTo(12)
                 with(deserializedContext.items) {
                     fun getValue(key: String) = first { pair -> pair.key == key }.value
 
@@ -347,7 +351,7 @@ class MemberRegistrationIntegrationTest {
         }
     }
 
-    private fun createMemberList(memberContext: Map<String, String>): List<MemberInfo> {
+    private fun createMemberList(): List<MemberInfo> {
         val mgmName = MemberX500Name("Corda MGM", "London", "GB")
         val mgmId = HoldingIdentity(mgmName, groupId).shortHash.value
         val ecdhKey = cryptoOpsClient.generateKeyPair(
@@ -370,16 +374,6 @@ class MemberRegistrationIntegrationTest {
                 sortedMapOf(
                     IS_MGM to "true",
                 )
-            ),
-            memberInfoFactory.create(
-                memberContext = (memberContext +
-                        mapOf(
-                            PARTY_NAME to memberName.toString(),
-                            PLATFORM_VERSION to "5000",
-                            SOFTWARE_VERSION to "5.0.0.0",
-                        )
-                        ).toSortedMap(),
-                mgmContext = sortedMapOf(SERIAL to "12")
             )
         )
     }
@@ -403,11 +397,11 @@ class MemberRegistrationIntegrationTest {
                 .publicKeyId()
         return mapOf(
             "corda.session.keys.0.id" to sessionKeyId,
-            "corda.session.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+            "corda.session.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
             "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
+            "corda.ledger.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
             CUSTOM_KEY to CUSTOM_VALUE
         )
     }

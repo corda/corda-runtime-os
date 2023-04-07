@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.bytes
@@ -51,6 +52,7 @@ import net.corda.membership.impl.synchronisation.dummy.MgmTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
+import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.EPOCH_KEY
@@ -62,6 +64,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -90,10 +93,10 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -171,6 +174,9 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var groupParametersWriterService: GroupParametersWriterService
+
+        @InjectService(timeout = 5000)
+        lateinit var testLocallyHostedIdentitiesService: TestLocallyHostedIdentitiesService
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
@@ -322,8 +328,15 @@ class SynchronisationIntegrationTest {
             virtualNodeInfoReadService.start()
             groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
+            testLocallyHostedIdentitiesService.setIdentityInfo(
+                IdentityInfo(
+                    mgm.toCorda(),
+                    emptyList(),
+                    mgmSessionKey,
+                )
+            )
 
-            eventually {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -491,7 +504,7 @@ class SynchronisationIntegrationTest {
         val members: List<MemberInfo> = mutableListOf(participantInfo)
         val signedMembers = members.map {
             val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
-            val memberSignatureSpec = SignatureSpec.ECDSA_SHA256
+            val memberSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
@@ -503,7 +516,7 @@ class SynchronisationIntegrationTest {
                     ByteBuffer.wrap(withKey.bytes)
                 )
             }
-            val mgmSignatureSpec = SignatureSpec.ECDSA_SHA256
+            val mgmSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
@@ -544,7 +557,7 @@ class SynchronisationIntegrationTest {
         val mgmSignatureGroupParameters = cryptoOpsClient.sign(
             mgm.toCorda().shortHash.value,
             mgmSessionKey,
-            SignatureSpec.ECDSA_SHA256,
+            SignatureSpecs.ECDSA_SHA256,
             serializedGroupParameters
         ).let { withKey ->
             CryptoSignatureWithKey(
@@ -555,7 +568,7 @@ class SynchronisationIntegrationTest {
         val signedGroupParameters = SignedGroupParameters(
             ByteBuffer.wrap(serializedGroupParameters),
             mgmSignatureGroupParameters,
-            CryptoSignatureSpec(SignatureSpec.ECDSA_SHA256.signatureName, null, null)
+            CryptoSignatureSpec(SignatureSpecs.ECDSA_SHA256.signatureName, null, null)
         )
 
         val membershipPackage = MembershipPackage.newBuilder()

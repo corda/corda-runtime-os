@@ -27,23 +27,35 @@ class TestInitialConfigPluginCrypto {
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        val outText = SystemLambda.tapSystemErrNormalized {
+        var outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config")
         }
         println(outText)
-        assertThat(outText).contains("Missing required options:")
+        assertThat(outText).contains("'passphrase' must be set for CORDA type secrets.")
         assertThat(outText).contains("-l, --location=<location>")
         assertThat(outText).contains("location to write the sql output to.")
         assertThat(outText).contains("-p, --passphrase=<passphrase>")
-        assertThat(outText).contains("Passphrase for the encrypting secrets service.")
         assertThat(outText).contains("-s, --salt=<salt>")
         assertThat(outText).contains("Salt for the encrypting secrets service.")
         assertThat(outText).contains("-wp, --wrapping-passphrase=<softHsmRootPassphrase>")
         assertThat(outText).contains("Passphrase for the SOFT HSM root wrapping key.")
         assertThat(outText).contains("-ws, --wrapping-salt=<softHsmRootSalt>")
         assertThat(outText).contains("Salt for the SOFT HSM root wrapping key.")
+    }
+
+
+    @Test
+    fun `Should output missing options when targetting Hashicorp Vault`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        var outText = SystemLambda.tapSystemErrNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute("create-crypto-config", "-t", "VAULT")
+        }
+        assertThat(outText).contains("'vaultPath' must be set for VAULT type secrets.")
     }
 
     @Suppress("MaxLineLength")
@@ -70,9 +82,10 @@ class TestInitialConfigPluginCrypto {
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
         assertThat(json).containsSubsequence("\"passphrase\":{\"configSecret\":{\"encryptedSecret\":")
-        assertGeneratedJson(json) {
-            assertEquals("master-salt", it.getString("wrappingKeyMap.salt"))
-            assertEquals("master-passphrase", it.getString("wrappingKeyMap.passphrase"))
+        assertGeneratedJson(json) { config: Config, factory: SmartConfigFactory ->
+            val key1 = factory.create(config.getConfigList("wrappingKeys")[0])
+            assertEquals("master-salt", key1.getString("salt"))
+            assertEquals("master-passphrase", key1.getString("passphrase"))
         }
     }
 
@@ -93,17 +106,49 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
-        assertGeneratedJson(json) {
-            assertThat(it.getValue("wrappingKeyMap.salt").render()).contains("configSecret")
-            assertThat(it.getValue("wrappingKeyMap.salt").render()).contains("encryptedSecret")
-            assertThat(it.getValue("wrappingKeyMap.passphrase").render()).contains("configSecret")
-            assertThat(it.getValue("wrappingKeyMap.passphrase").render()).contains("encryptedSecret")
+        assertGeneratedJson(json) { it: Config, _: SmartConfigFactory ->
+            val key1 = it.getObjectList("wrappingKeys")[0]
+            assertThat(key1.getValue("salt").render()).contains("configSecret")
+            assertThat(key1.getValue("salt").render()).contains("encryptedSecret")
+            assertThat(key1.getValue("passphrase").render()).contains("configSecret")
+            assertThat(key1.getValue("passphrase").render()).contains("encryptedSecret")
         }
     }
 
-    private fun assertGeneratedJson(json: String, wrappingKeyAssert: (Config) -> Unit) {
+    @Test
+    fun `Should be able to create vault initial crypto configuration with random wrapping key`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        val outText = SystemLambda.tapSystemOutNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute(
+                "create-crypto-config",
+                "-t", "VAULT",
+                "--vault-path", "cryptosecrets",
+                "--key-salt", "salt",
+                "--key-passphrase", "passphrase",
+            )
+        }
+        println(outText)
+        assertThat(outText).startsWith(expectedPrefix)
+        val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
+        val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
+        assertGeneratedJson(json) { it: Config, _: SmartConfigFactory ->
+            val key1 = it.getObjectList("wrappingKeys")[0]
+            assertThat(key1.getValue("salt").render()).doesNotContain("encryptedSecret")
+            assertThat(key1.getValue("passphrase").render()).doesNotContain("encryptedSecret")
+            assertThat(key1.getValue("salt").render()).contains("vaultKey")
+            assertThat(key1.getValue("salt").render()).contains("vaultPath")
+            assertThat(key1.getValue("passphrase").render()).contains("vaultKey")
+            assertThat(key1.getValue("passphrase").render()).contains("vaultPath")
+        }
+    }
+
+    private fun assertGeneratedJson(json: String, wrappingKeyAssert: (Config, SmartConfigFactory) -> Unit) {
         val smartConfigFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseString("""
+            ConfigFactory.parseString(
+                """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
@@ -143,7 +188,7 @@ class TestInitialConfigPluginCrypto {
             "CORDA.SPHINCS-256"
         )
         val hsmCfg = softWorker.hsm.cfg
-        wrappingKeyAssert(hsmCfg)
+        wrappingKeyAssert(hsmCfg, smartConfigFactory)
         assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
         assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))

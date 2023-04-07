@@ -108,11 +108,8 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
                 findSignatureKeyFromKeyId(signatureKeyId, notaryServiceInfo.publicKey)
                     ?: throw IllegalStateException("Signatory key id doesn't match received signature key id")
 
-            // TODO The below check is redundant now
-            // Since we are not calling finality flow for consuming transactions we need to verify that the signature
-            // is actually part of the notary service's composite key
             signatures.forEach {
-                require(KeyUtils.isKeyInSet(notaryServiceInfo.publicKey, listOf(notaryKeyThatSigned))) {
+                require(KeyUtils.isKeyFulfilledBy(notaryServiceInfo.publicKey, setOf(notaryKeyThatSigned))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }
@@ -218,9 +215,8 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         referenceStateRefs: List<String>,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
-        // CORE-11837: Use notary key instead
-        val myKey = memberLookup.myInfo().sessionInitiationKeys.first()
-        return utxoLedgerService.getTransactionBuilder()
+        val myKey = memberLookup.myInfo().ledgerKeys.first()
+        return utxoLedgerService.createTransactionBuilder()
                 .setNotary(notaryServerName)
                 .addCommand(TestCommand())
                 .run {
@@ -239,7 +235,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
                     repeat(outputStateCount) {
                         builder = builder.addOutputState(
-                            TestUtxoState("test", emptyList(), emptyList())
+                            TestUtxoState(1,"test", emptyList(), emptyList())
                         )
                     }
 

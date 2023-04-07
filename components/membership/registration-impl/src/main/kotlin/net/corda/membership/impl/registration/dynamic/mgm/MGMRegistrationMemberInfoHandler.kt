@@ -112,6 +112,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SignedMemberInfo) {
         val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
+            .execute()
         if (persistenceResult is MembershipPersistenceResult.Failure) {
             throw MGMRegistrationMemberInfoHandlingException(
                 "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"

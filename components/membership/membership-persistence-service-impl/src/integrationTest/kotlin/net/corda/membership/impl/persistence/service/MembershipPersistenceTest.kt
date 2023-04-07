@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs.RSA_SHA256
 import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.CordaAvroDeserializer
@@ -111,7 +112,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.SignatureSpec.RSA_SHA256
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -119,10 +119,13 @@ import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -515,7 +518,7 @@ class MembershipPersistenceTest {
 
         private fun Lifecycle.startAndWait() {
             start()
-            eventually(5.seconds) {
+            eventually(15.seconds) {
                 assertTrue(isRunning)
             }
         }
@@ -548,7 +551,7 @@ class MembershipPersistenceTest {
                 CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
             )
-        )
+        ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -575,10 +578,12 @@ class MembershipPersistenceTest {
         }
         val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
         val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1, 1)
+            .execute()
         assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
         val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2, 2)
+            .execute()
         assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
@@ -602,6 +607,7 @@ class MembershipPersistenceTest {
         }
         val persisted =
             membershipPersistenceClientWrapper.persistGroupParametersInitialSnapshot(viewOwningHoldingIdentity)
+                .execute()
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
@@ -656,6 +662,7 @@ class MembershipPersistenceTest {
             }
         val persisted = membershipPersistenceClientWrapper
             .persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
+            .execute()
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
@@ -735,6 +742,7 @@ class MembershipPersistenceTest {
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+            .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
@@ -827,6 +835,7 @@ class MembershipPersistenceTest {
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+            .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
@@ -924,6 +933,7 @@ class MembershipPersistenceTest {
         )
 
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+            .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
@@ -1133,7 +1143,7 @@ class MembershipPersistenceTest {
                 CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
             )
-        )
+        ).execute()
 
         assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -1149,7 +1159,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity,
             registrationId,
             RegistrationStatus.PENDING_AUTO_APPROVAL
-        )
+        ).execute()
 
         assertThat(updateRegRequestStatusResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
@@ -1543,7 +1553,7 @@ class MembershipPersistenceTest {
                     memberSignatureSpec,
                 )
             )
-        )
+        ).execute()
     }
 
     private fun persistRequest(
@@ -1573,7 +1583,7 @@ class MembershipPersistenceTest {
                 CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
             )
-        )
+        ).execute()
     }
 
     private class TestGroupParametersImpl(

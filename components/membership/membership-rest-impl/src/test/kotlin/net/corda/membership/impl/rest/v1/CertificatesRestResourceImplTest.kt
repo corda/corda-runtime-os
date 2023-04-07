@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
@@ -27,7 +28,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.SignatureSpec.ECDSA_SHA256
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -157,7 +157,7 @@ class CertificatesRestResourceImplTest {
                     cryptoOpsClient.sign(
                         eq(tenantId),
                         eq(publicKey),
-                        argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
+                        argThat<SignatureSpec> { this.signatureName == SignatureSpecs.ECDSA_SHA256.signatureName },
                         any(),
                         eq(emptyMap())
                     )
@@ -216,7 +216,7 @@ class CertificatesRestResourceImplTest {
             verify(cryptoOpsClient).sign(
                 eq(holdingIdentityShortHash),
                 eq(publicKey),
-                argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
+                argThat<SignatureSpec> { this.signatureName == SignatureSpecs.ECDSA_SHA256.signatureName },
                 any(),
                 eq(emptyMap())
             )
@@ -235,7 +235,7 @@ class CertificatesRestResourceImplTest {
             verify(cryptoOpsClient).sign(
                 eq(P2P),
                 eq(publicKey),
-                argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
+                argThat<SignatureSpec> { this.signatureName == SignatureSpecs.ECDSA_SHA256.signatureName },
                 any(),
                 eq(emptyMap())
             )

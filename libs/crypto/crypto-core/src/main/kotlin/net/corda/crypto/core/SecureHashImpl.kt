@@ -1,8 +1,8 @@
 package net.corda.crypto.core
 
+import net.corda.base.internal.OpaqueBytes
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.types.ByteArrays
-import net.corda.v5.base.types.OpaqueBytes
+import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SecureHash.DELIMITER
 import java.nio.ByteBuffer
@@ -44,7 +44,7 @@ fun parseSecureHash(algoNameAndHexString: String): SecureHash {
 
 val SecureHash.bytes: ByteArray
     get() =
-        (this as? SecureHashImpl)?.bytes
+        (this as? SecureHashImpl)?.getBytes()
             ?: throw IllegalArgumentException(
                 "User defined subtypes of ${SecureHash::class.java.simpleName} are not permitted"
             )

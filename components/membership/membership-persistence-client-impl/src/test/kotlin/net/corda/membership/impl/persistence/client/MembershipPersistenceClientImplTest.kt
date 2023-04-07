@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -57,8 +58,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -71,7 +72,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -175,7 +175,7 @@ class MembershipPersistenceClientImplTest {
         publicKey,
         signatureBytes
     )
-    private val mockSignatureSpec = SignatureSpec.ECDSA_SHA256
+    private val mockSignatureSpec = SignatureSpecs.ECDSA_SHA256
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsByteArray(publicKey) } doReturn publicKeyBytes
     }
@@ -229,6 +229,7 @@ class MembershipPersistenceClientImplTest {
     @Test
     fun `persist list of member info before starting component`() {
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
@@ -238,7 +239,7 @@ class MembershipPersistenceClientImplTest {
         val result = membershipPersistenceClient.persistRegistrationRequest(
             ourHoldingIdentity,
             ourRegistrationRequest
-        )
+        ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
@@ -373,6 +374,7 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse()
 
         membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
             verify(rpcSender).sendRequest(capture())
@@ -405,7 +407,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest)
+        membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest).execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
             verify(rpcSender).sendRequest(capture())
@@ -430,6 +432,8 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse()
 
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
+
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
     }
 
@@ -439,6 +443,8 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"), null)
 
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
+
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -449,6 +455,8 @@ class MembershipPersistenceClientImplTest {
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
+
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -458,7 +466,10 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
+
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
+
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -468,7 +479,10 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             reqIdOverride = "Group ID 3"
         )
+
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
+
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -478,7 +492,9 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
+
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
+            .execute()
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -488,7 +504,8 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1)
+            .execute()
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.success())
     }
@@ -502,8 +519,23 @@ class MembershipPersistenceClientImplTest {
         )
 
         val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
+            .execute()
 
-        assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+        assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Placeholder error"))
+    }
+
+    @Test
+    fun `persistGroupPolicy return failure for unexpected result`() {
+        val groupPolicy = mock<LayeredPropertyMap>()
+        postConfigChangedEvent()
+        mockPersistenceResponse(
+            1,
+        )
+
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
+            .execute()
+
+        assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Unexpected response: 1"))
     }
 
     @Test
@@ -518,6 +550,7 @@ class MembershipPersistenceClientImplTest {
         whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
         membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
+            .execute()
 
         val properties = (argument.firstValue.request as? PersistGroupPolicy)?.properties?.items
         assertThat(properties).containsExactly(
@@ -533,7 +566,7 @@ class MembershipPersistenceClientImplTest {
             ourHoldingIdentity,
             registrationId,
             RegistrationStatus.DECLINED
-        )
+        ).execute()
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
     }
 
@@ -550,6 +583,7 @@ class MembershipPersistenceClientImplTest {
             whenever(groupParametersFactory.create(mockAvroGroupParameters)).doReturn(mockGroupParameters)
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
+                .execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
             assertThat(result.getOrThrow()).isInstanceOf(SignedGroupParameters::class.java)
@@ -564,6 +598,7 @@ class MembershipPersistenceClientImplTest {
             )
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
+                .execute()
 
             assertThat(result).isEqualTo(
                 MembershipPersistenceResult.Failure<SignedGroupParameters>("Placeholder error")
@@ -578,6 +613,7 @@ class MembershipPersistenceClientImplTest {
             )
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<SignedGroupParameters>("Unexpected response: null"))
         }
@@ -600,6 +636,7 @@ class MembershipPersistenceClientImplTest {
             )
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, signedGroupParameters)
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Success(signedGroupParameters))
         }
@@ -617,8 +654,9 @@ class MembershipPersistenceClientImplTest {
             )
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
+                .execute()
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<SignedGroupParameters>("Placeholder error"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
         }
 
         @Test
@@ -634,6 +672,7 @@ class MembershipPersistenceClientImplTest {
             whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
+                .execute()
 
             val sentParams = (argument.firstValue.request as? PersistGroupParameters)?.groupParameters
             assertThat(sentParams)
@@ -667,6 +706,7 @@ class MembershipPersistenceClientImplTest {
             whenever(groupParametersFactory.create(mockAvroGroupParameters)).doReturn(mockGroupParameters)
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Success(mockGroupParameters))
         }
@@ -680,6 +720,7 @@ class MembershipPersistenceClientImplTest {
             )
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
         }
@@ -693,6 +734,7 @@ class MembershipPersistenceClientImplTest {
             )
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
         }
@@ -715,6 +757,7 @@ class MembershipPersistenceClientImplTest {
             whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
+                .execute()
 
             val notary = (argument.firstValue.request as? AddNotaryToGroupParameters)?.notary
             assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
@@ -752,6 +795,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
+                .execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -767,6 +811,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<ApprovalRuleDetails>("Unexpected response: null"))
         }
@@ -782,6 +827,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
+                .execute()
 
             val sentRequest = (argument.firstValue.request as? PersistApprovalRule)!!
             assertThat(sentRequest.rule).isEqualTo(RULE_REGEX)
@@ -804,6 +850,7 @@ class MembershipPersistenceClientImplTest {
                 RULE_ID,
                 PREAUTH
             )
+                .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.success())
         }
@@ -820,6 +867,7 @@ class MembershipPersistenceClientImplTest {
                 RULE_ID,
                 PREAUTH
             )
+                .execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -836,6 +884,7 @@ class MembershipPersistenceClientImplTest {
                 RULE_ID,
                 PREAUTH
             )
+                .execute()
 
             val sentRequest = (argument.firstValue.request as? DeleteApprovalRule)!!
             assertThat(sentRequest.ruleId).isEqualTo(RULE_ID)
@@ -884,6 +933,7 @@ class MembershipPersistenceClientImplTest {
                 bob,
                 registrationRequestId,
             )
+                .execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -900,6 +950,7 @@ class MembershipPersistenceClientImplTest {
                 bob,
                 registrationRequestId,
             )
+                .execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -918,6 +969,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(argument.firstValue.request).isInstanceOf(MutualTlsAddToAllowedCertificates::class.java)
         }
@@ -931,6 +983,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -944,6 +997,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -957,6 +1011,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -972,6 +1027,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(argument.firstValue.request).isInstanceOf(MutualTlsRemoveFromAllowedCertificates::class.java)
         }
@@ -985,6 +1041,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -998,6 +1055,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1011,6 +1069,7 @@ class MembershipPersistenceClientImplTest {
                 ourHoldingIdentity,
                 ourX500Name.toString(),
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1033,6 +1092,7 @@ class MembershipPersistenceClientImplTest {
             whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+                .execute()
 
             assertThat(argument.firstValue.request).isInstanceOf(AddPreAuthToken::class.java)
             val request = (argument.firstValue.request as AddPreAuthToken)
@@ -1048,6 +1108,7 @@ class MembershipPersistenceClientImplTest {
 
             val response =
                 membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+                    .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -1058,6 +1119,7 @@ class MembershipPersistenceClientImplTest {
 
             val response =
                 membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+                    .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1068,6 +1130,7 @@ class MembershipPersistenceClientImplTest {
 
             val response =
                 membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+                    .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1079,6 +1142,7 @@ class MembershipPersistenceClientImplTest {
             whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
+                .execute()
 
             assertThat(argument.firstValue.request).isInstanceOf(RevokePreAuthToken::class.java)
             val request = (argument.firstValue.request as RevokePreAuthToken)
@@ -1102,6 +1166,7 @@ class MembershipPersistenceClientImplTest {
             mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
 
             val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1111,6 +1176,7 @@ class MembershipPersistenceClientImplTest {
             mockPersistenceResponse("Placeholder error")
 
             val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1124,6 +1190,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 uuid
             )
+                .execute()
 
             verify(rpcSender).sendRequest(
                 argThat {
@@ -1144,6 +1211,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 uuid
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -1157,6 +1225,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 uuid
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1170,6 +1239,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 uuid
             )
+                .execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1189,7 +1259,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 null,
                 null
-            )
+            ).execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -1205,7 +1275,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 null,
                 null
-            )
+            ).execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1219,7 +1289,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 null,
                 null
-            )
+            ).execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1235,7 +1305,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 SERIAL,
                 REASON
-            )
+            ).execute()
 
             val sentRequest = (argument.firstValue.request as? SuspendMember)!!
             assertThat(sentRequest.suspendedMember).isEqualTo(bobX500Name.toString())
@@ -1258,7 +1328,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 null,
                 null
-            )
+            ).execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -1274,7 +1344,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 null,
                 null
-            )
+            ).execute()
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1288,7 +1358,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 null,
                 null
-            )
+            ).execute()
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1304,7 +1374,7 @@ class MembershipPersistenceClientImplTest {
                 bobX500Name,
                 SERIAL,
                 REASON
-            )
+            ).execute()
 
             val sentRequest = (argument.firstValue.request as? ActivateMember)!!
             assertThat(sentRequest.activatedMember).isEqualTo(bobX500Name.toString())
@@ -1337,7 +1407,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             mockPersistenceResponse(queryResponse)
 
-            val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
+            val output = membershipPersistenceClient.updateStaticNetworkInfo(info).execute()
 
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             verify(rpcSender).sendRequest(argument.capture())
@@ -1361,6 +1431,7 @@ class MembershipPersistenceClientImplTest {
             mockPersistenceResponse(PersistenceFailedResponse(error))
 
             val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
+                .execute()
 
             assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
             assertThat((output as MembershipPersistenceResult.Failure).errorMsg).isEqualTo(error)
@@ -1374,6 +1445,7 @@ class MembershipPersistenceClientImplTest {
             mockPersistenceResponse(BadResponse())
 
             val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
+                .execute()
 
             assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
             assertThat((output as MembershipPersistenceResult.Failure).errorMsg).contains("Unexpected response")

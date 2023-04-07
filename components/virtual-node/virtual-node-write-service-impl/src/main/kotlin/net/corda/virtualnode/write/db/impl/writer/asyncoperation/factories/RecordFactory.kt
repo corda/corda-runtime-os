@@ -10,7 +10,8 @@ internal interface RecordFactory {
     fun createVirtualNodeInfoRecord(
         holdingIdentity: HoldingIdentity,
         cpiIdentifier: CpiIdentifier,
-        dbConnections: VirtualNodeDbConnections
+        dbConnections: VirtualNodeDbConnections,
+        externalMessagingRouteConfig: String?
     ): Record<*, *>
 
     fun createMgmInfoRecord(

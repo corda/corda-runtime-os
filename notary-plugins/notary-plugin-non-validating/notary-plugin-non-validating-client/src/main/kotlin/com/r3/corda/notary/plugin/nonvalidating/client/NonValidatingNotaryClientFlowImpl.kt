@@ -1,16 +1,11 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
-import com.r3.corda.notary.plugin.common.NotarizationRequest
 import com.r3.corda.notary.plugin.common.NotarizationResponse
-import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
@@ -23,7 +18,7 @@ import org.slf4j.LoggerFactory
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
  * send-and-receive logic, and it will also initiate the server side of the non-validating notary.
  */
-@InitiatingFlow(protocol = "net.corda.notary.NonValidatingNotary")
+@InitiatingFlow(protocol = "com.r3.corda.notary.plugin.nonvalidating", version = [1])
 class NonValidatingNotaryClientFlowImpl(
     private val stx: UtxoSignedTransaction,
     private val notaryRepresentative: MemberX500Name
@@ -37,35 +32,19 @@ class NonValidatingNotaryClientFlowImpl(
     private lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    private lateinit var memberLookupService: MemberLookup
-
-    @CordaInject
-    private lateinit var serializationService: SerializationService
-
-    @CordaInject
-    private lateinit var signingService: SigningService
-
-    @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
 
     /**
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
-    @Suppress("LongParameterList")
     internal constructor(
         stx: UtxoSignedTransaction,
         notary: MemberX500Name,
         flowMessaging: FlowMessaging,
-        memberLookupService: MemberLookup,
-        serializationService: SerializationService,
-        signingService: SigningService,
         utxoLedgerService: UtxoLedgerService
     ): this(stx, notary) {
         this.flowMessaging = flowMessaging
-        this.serializationService = serializationService
-        this.memberLookupService = memberLookupService
-        this.signingService = signingService
         this.utxoLedgerService = utxoLedgerService
     }
 
@@ -129,22 +108,6 @@ class NonValidatingNotaryClientFlowImpl(
             .withTimeWindow()
             .build()
 
-        val notarizationRequest = NotarizationRequest(
-            stx.inputStateRefs,
-            stx.id
-        )
-
-        val requestSignature = generateRequestSignature(
-            notarizationRequest,
-            memberLookupService.myInfo(),
-            serializationService,
-            signingService
-        )
-
-        return NonValidatingNotarizationPayload(
-            filteredTx,
-            requestSignature,
-            stx.notaryKey
-        )
+        return NonValidatingNotarizationPayload(filteredTx, stx.notaryKey)
     }
 }

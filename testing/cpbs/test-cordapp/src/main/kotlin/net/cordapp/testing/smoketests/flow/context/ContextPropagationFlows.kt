@@ -17,8 +17,11 @@ data class FlowOutput(
     val platform: String,
     val user1: String,
     val user2: String,
-    val user3: String
+    val user3: String,
+    val cpiName: String,
+    val initiatingCpiName: String
 )
+
 
 @CordaSerializable
 data class MainSubFlowOutput(
@@ -42,6 +45,7 @@ data class ContextPropagationOutput(
 )
 
 private const val CORDA_ACCOUNT = "corda.account"
+private const val CORDA_INITIATOR_ACCOUNT = "corda.initiator.account"
 private const val ERROR_VALUE = "error"
 private const val NULL_VALUE = "null"
 
@@ -68,6 +72,9 @@ fun launchContextPropagationFlows(
     val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
     val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
+    val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+    val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
+
     // Sub flow will send its context back
     val mainSubFlowOutput = flowEngine.subFlow(ContextPropagationMainSubFlow())
 
@@ -75,7 +82,9 @@ fun launchContextPropagationFlows(
         platform = account,
         user1 = user1,
         user2 = user2,
-        user3 = user3
+        user3 = user3,
+        cpiName = cpiName,
+        initiatingCpiName = initiatingCpiName
     )
 
     // Refetch the original properties again to ensure nothing in the Flow execution path has corrupted them
@@ -83,43 +92,55 @@ fun launchContextPropagationFlows(
         platform = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE,
         user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE,
         user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE,
-        user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
+        user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE,
+        cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE,
+        initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
     )
 
     /* This is the expected output
        Values that are missing incorrectly will be marked as 'error'
-    {
-      "rpcFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "null",
-        "user3": "null"
-      },
-      "rpcSubFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "user2-set",
-        "user3": "null"
-      },
-      "initiatedFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "user2-set",
-        "user3": "user3-set"
-      },
-      "initiatedSubFlow": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "user2-set-ContextPropagationInitiatedFlow",
-        "user3": "user3-set"
-      },
-      "rpcFlowAtComplete": {
-        "platform": "account-zero",
-        "user1": "user1-set",
-        "user2": "null",
-        "user3": "null"
-      }
-    }
+        {
+          "rpcFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "null",
+            "user3": "null",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "null"
+          },
+          "rpcSubFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "user2-set",
+            "user3": "null",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "null"
+          },
+          "initiatedFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "user2-set",
+            "user3": "user3-set",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "$applicationCpiName"
+          },
+          "initiatedSubFlow": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "user2-set-ContextPropagationInitiatedFlow",
+            "user3": "user3-set",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "$applicationCpiName"
+          },
+          "rpcFlowAtComplete": {
+            "platform": "account-zero",
+            "user1": "user1-set",
+            "user2": "null",
+            "user3": "null",
+            "cpiName": "$applicationCpiName",
+            "initiatingCpiName": "null"
+          }
+        }
     */
     return jsonMarshallingService.format(
         ContextPropagationOutput(
@@ -167,12 +188,17 @@ class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
         // user3 is session specific
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
+        val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+        val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
+
         return MainSubFlowOutput(
             thisFlow = FlowOutput(
                 platform = account,
                 user1 = user1,
                 user2 = user2,
-                user3 = user3
+                user3 = user3,
+                cpiName = cpiName,
+                initiatingCpiName = initiatingCpiName
             ),
             initiatedFlow = initiatedFlowOutput
         )
@@ -187,11 +213,14 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+        val account = flowEngine.flowContextProperties.get(CORDA_INITIATOR_ACCOUNT) ?: ERROR_VALUE
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
         // Get user2 and user3 on flow entry
         val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
+
+        val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+        val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
 
         // This should never make it out of this flow, but should make it into the sub flow
         flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationInitiatedFlow")
@@ -204,7 +233,9 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
                     platform = account,
                     user1 = user1,
                     user2 = user2,
-                    user3 = user3
+                    user3 = user3,
+                    cpiName = cpiName,
+                    initiatingCpiName = initiatingCpiName
                 ),
                 initiatedSubFlow = subFlowOutput
             )
@@ -219,12 +250,15 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
 
     @Suspendable
     override fun call(): FlowOutput {
-        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+        val account = flowEngine.flowContextProperties.get(CORDA_INITIATOR_ACCOUNT) ?: ERROR_VALUE
 
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
         // Get user2 and user3 on flow entry
         val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
+
+        val cpiName = flowEngine.flowContextProperties.get("corda.cpiName") ?: NULL_VALUE
+        val initiatingCpiName = flowEngine.flowContextProperties.get("corda.initiator.cpiName") ?: NULL_VALUE
 
         // These should never make it out of this flow
         flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationInitiatedSubFlow")
@@ -234,7 +268,9 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
             platform = account,
             user1 = user1,
             user2 = user2,
-            user3 = user3
+            user3 = user3,
+            cpiName = cpiName,
+            initiatingCpiName = initiatingCpiName
         )
     }
 }

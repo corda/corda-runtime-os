@@ -106,6 +106,32 @@ class UtxoLedgerTransactionVerifierTest {
     }
 
     @Test
+    fun `throws an exception if the same input state appears twice`() {
+        whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef, stateRef))
+        assertThatThrownBy { verifier.verify() }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("Duplicate input states detected")
+    }
+
+    @Test
+    fun `throws an exception if the same reference state appears twice`() {
+        val referenceStateRef = mock<StateRef>()
+
+        whenever(transaction.referenceStateRefs).thenReturn(listOf(referenceStateRef, referenceStateRef))
+        assertThatThrownBy { verifier.verify() }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("Duplicate reference states detected")
+    }
+
+    @Test
+    fun `throws an exception if there are overlapping input and reference states`() {
+        whenever(transaction.referenceStateRefs).thenReturn(listOf(stateRef))
+        assertThatThrownBy { verifier.verify() }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("cannot be both an input and a reference input in the same transaction.")
+    }
+
+    @Test
     fun `throws an exception if the notary is not allowed`() {
         // TODO CORE-8956 Check the notary is in the group parameters whitelist
     }

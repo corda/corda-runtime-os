@@ -534,7 +534,7 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
                 "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME,
                 "corda.roles.0" to "notary",
                 "corda.notary.service.name" to "O=MyNotaryService-$uniqueName, L=London, C=GB",
-                "corda.notary.service.flow.protocol.name" to "net.corda.notary.NonValidatingNotary",
+                "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
                 "corda.notary.service.flow.protocol.version.0" to "1"
             )
         } else {

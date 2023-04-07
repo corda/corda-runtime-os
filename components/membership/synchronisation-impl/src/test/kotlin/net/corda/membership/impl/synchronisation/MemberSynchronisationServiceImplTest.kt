@@ -39,6 +39,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
@@ -47,7 +48,6 @@ import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -88,6 +88,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
@@ -253,9 +254,9 @@ class MemberSynchronisationServiceImplTest {
     }
     private val mgmMemberContext = mock<MemberContext> {
         on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
+        on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(mock())
     }
     private val mgmInfo = mock<MemberInfo> {
-        on { sessionInitiationKeys } doReturn listOf(mock())
         on { name } doReturn MemberX500Name.parse("O=MGM, L=London, C=GB")
         on { mgmProvidedContext } doReturn mgmMgmContext
         on { memberProvidedContext } doReturn mgmMemberContext
@@ -273,8 +274,12 @@ class MemberSynchronisationServiceImplTest {
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val verifier = mock<Verifier>()
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doAnswer {
-            MembershipPersistenceResult.Success(it.getArgument<SignedGroupParameters>(1))
+        on { persistGroupParameters(any(), any()) } doAnswer { invocation ->
+            mock {
+                on {
+                    getOrThrow()
+                } doReturn invocation.getArgument(1)
+            }
         }
     }
     private val groupParameters = mock<SignedGroupParameters>()
@@ -389,7 +394,7 @@ class MemberSynchronisationServiceImplTest {
                 any(),
                 capturedPersistedGroupParameters.capture()
             )
-        ).thenReturn(MembershipPersistenceResult.Success(mock()))
+        ).thenReturn(mock())
 
         synchronisationService.processMembershipUpdates(updates)
 

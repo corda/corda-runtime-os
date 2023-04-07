@@ -25,7 +25,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -33,6 +32,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
@@ -44,10 +44,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
@@ -124,6 +126,9 @@ class  RegistrationProcessorTest {
     private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn emptyList()
+    }
 
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -176,8 +181,9 @@ class  RegistrationProcessorTest {
             on { createAvroSerializer<Any>(any()) }.thenReturn(verificationRequestResponseSerializer)
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistRegistrationRequest(any(), any()) } doReturn operation
+            on { setRegistrationRequestStatus(any(), any(), any(), anyOrNull()) } doReturn operation
+            on { persistMemberInfo(any(), any()) } doReturn operation
         }
         membershipQueryClient = mock {
             on {
@@ -195,9 +201,6 @@ class  RegistrationProcessorTest {
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
             membershipQueryClient,
-            mock(),
-            mock(),
-            mock(),
             mock(),
             mock(),
         )
@@ -230,9 +233,24 @@ class  RegistrationProcessorTest {
     fun `process member verification request command - onNext can be called for command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, verificationRequestCommand))
         assertThat(result.updatedState).isNull()
-        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
-        assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
-            .isNotNull
+        assertThat(result.responseEvents)
+            .hasSize(1)
+            .anySatisfy {
+                assertThat((it.value as? AppMessage)?.message).isInstanceOf(AuthenticatedMessage::class.java)
+            }
+    }
+    @Test
+    fun `process member verification request command - onNext update the registration request state`() {
+        val record = Record(
+            "topic",
+            "key",
+            "value"
+        )
+        whenever(operation.createAsyncCommands()).doReturn(listOf(record))
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, verificationRequestCommand))
+
+        assertThat(result.responseEvents)
+            .contains(record)
     }
 
     @Test
