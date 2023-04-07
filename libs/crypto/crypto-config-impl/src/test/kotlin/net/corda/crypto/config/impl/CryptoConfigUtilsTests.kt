@@ -2,8 +2,6 @@ package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.validation.impl.ConfigurationValidatorFactoryImpl
@@ -15,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 

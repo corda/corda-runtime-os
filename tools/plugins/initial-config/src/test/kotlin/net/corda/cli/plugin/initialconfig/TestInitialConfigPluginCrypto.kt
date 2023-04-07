@@ -11,7 +11,6 @@ import net.corda.crypto.config.impl.hsmMap
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.signingService
-import net.corda.crypto.core.CryptoConsts
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
