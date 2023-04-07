@@ -174,7 +174,6 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 .build()
             sandboxTimer.recordCallable<CloseableSandboxGroupContext> {
                 val cpks = vnc.cpkFileChecksums.mapNotNull(cpkReadService::get)
-                logger.warn("BM TEST - CPK file hashes in SandboxGroupContextServiceImpl: $cpks")
                 if (cpks.size != vnc.cpkFileChecksums.size) {
                     val receivedIdentifiers = cpks.map { it.metadata.cpkId }
                     val missing = setOf(vnc.cpkFileChecksums) - setOf(receivedIdentifiers)

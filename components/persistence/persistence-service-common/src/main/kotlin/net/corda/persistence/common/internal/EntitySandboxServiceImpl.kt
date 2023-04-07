@@ -74,8 +74,6 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         val cpks = cpkFileHashes.mapNotNull { cpkReadService.get(it)?.metadata }
 
-        logger.warn("BM TEST - CPK file hashes in EntitySandboxServiceImpl.get(): $cpkFileHashes")
-
         return sandboxService.getOrCreate(getVirtualNodeContext(virtualNode, cpks)) { _, ctx ->
             initializeSandbox(cpks, virtualNode, ctx)
         }
