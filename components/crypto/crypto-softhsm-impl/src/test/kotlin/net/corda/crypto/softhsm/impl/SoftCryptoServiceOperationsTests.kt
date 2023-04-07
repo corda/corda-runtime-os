@@ -2,6 +2,7 @@ package net.corda.crypto.softhsm.impl
 
 import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
@@ -12,12 +13,12 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
-import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -37,6 +38,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.security.InvalidParameterException
+import java.security.KeyPairGenerator
+import java.security.Provider
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -68,11 +72,22 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
-        private val cryptoService = makeSoftCryptoService(
-            wrappingRepository = wrappingRepository,
+        private val cryptoService = SoftCryptoService(
+            wrappingRepositoryFactory = {
+                when (it) {
+                    CryptoTenants.CRYPTO -> wrappingRepository
+                    else -> throw InvalidParameterException(it)
+                }
+            },
             schemeMetadata = schemeMetadata,
-            rootWrappingKey = rootWrappingKey,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
             wrappingKeyCache = wrappingKeyCache,
+            privateKeyCache = null
         )
         private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER

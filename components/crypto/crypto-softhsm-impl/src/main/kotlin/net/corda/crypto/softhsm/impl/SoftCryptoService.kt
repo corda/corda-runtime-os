@@ -118,7 +118,6 @@ class SoftCryptoService(
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
     }
 
-
     override fun delete(alias: String, context: Map<String, String>): Boolean =
         throw UnsupportedOperationException("The service does not support key deletion.")
 
@@ -168,7 +167,9 @@ class SoftCryptoService(
             wrappingKeyCache?.getIfPresent(spec.wrappingKeyAlias) ?: getWrappingKeyUncached(
                 spec.wrappingKeyAlias,
                 tenantId
-            )
+            ).also {
+                wrappingKeyCache?.put(spec.wrappingKeyAlias, it)
+            }
 
         val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
@@ -220,7 +221,10 @@ class SoftCryptoService(
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
     private fun getWrappingKey(alias: String, tenantId: String): WrappingKey =
-        wrappingKeyCache?.getIfPresent(alias) ?: getWrappingKeyUncached(alias, tenantId)
+        wrappingKeyCache?.getIfPresent(alias) ?: getWrappingKeyUncached(alias, tenantId).also {
+            wrappingKeyCache?.put(alias, it)
+        }
+
 
     private fun getWrappingKeyUncached(alias: String, tenantId: String): WrappingKey {
         // use IllegalArgumentException instead for not found?
@@ -241,7 +245,10 @@ class SoftCryptoService(
     }
 
     private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
-        privateKeyCache?.getIfPresent(publicKey) ?: getPrivateKeyUncached(spec, tenantId)
+        privateKeyCache?.getIfPresent(publicKey) ?: getPrivateKeyUncached(spec, tenantId).also {
+            privateKeyCache?.put(publicKey, it)
+        }
+
 
     private fun getPrivateKeyUncached(spec: KeyMaterialSpec, tenantId: String): PrivateKey {
         return getWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(spec.keyMaterial)
