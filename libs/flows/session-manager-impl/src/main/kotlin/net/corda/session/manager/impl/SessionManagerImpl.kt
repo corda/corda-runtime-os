@@ -26,6 +26,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
+@Suppress("TooManyFunctions")
 @Component
 class SessionManagerImpl @Activate constructor(
     @Reference(service = SessionEventProcessorFactory::class)
@@ -115,6 +116,11 @@ class SessionManagerImpl @Activate constructor(
         return Pair(sessionState, messagesToReturn)
     }
 
+    override fun errorSession(sessionState: SessionState) : SessionState {
+        sessionState.status = SessionStateType.ERROR
+        return sessionState
+    }
+
     /**
      * If no heartbeat received from counterparty after session timeout has been reached, error the session
      * If no messages to send, and current time has surpassed the heartbeat window (message resend window), send a new ack.
@@ -142,11 +148,11 @@ class SessionManagerImpl @Activate constructor(
 
         return if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
-            sessionState.status = SessionStateType.ERROR
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
+            val updatedSessionState = errorSession(sessionState)
+            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
             listOf(
                 generateErrorEvent(
-                    sessionState,
+                    updatedSessionState,
                     initiatingIdentity,
                     initiatedIdentity,
                     "Session has timed out. No messages received since $lastReceivedMessageTime",
