@@ -24,6 +24,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.persistence.consensual.tests.ConsensualLedgerMessageProcessorTests
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
@@ -136,7 +137,15 @@ class UtxoLedgerMessageProcessorTests {
         val transactionStatus = TransactionStatus.VERIFIED.value
         val visibleStatesIndexes = listOf(0)
         val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, visibleStatesIndexes)
-        val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
+        val request = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            persistTransaction,
+            ConsensualLedgerMessageProcessorTests.EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    this.contextProperties.toMap() +
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                )
+            })
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
@@ -154,15 +163,14 @@ class UtxoLedgerMessageProcessorTests {
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
-            EXTERNAL_EVENT_CONTEXT.apply {
-            this.contextProperties = keyValuePairListOf(
-                this.contextProperties.toMap() +
-                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
-            )
-        }
-        )
+                virtualNodeInfo.holdingIdentity,
+                FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
+                EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    this.contextProperties.toMap() +
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                )
+            })
 
         responses =
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
