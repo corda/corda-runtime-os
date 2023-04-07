@@ -158,7 +158,7 @@ class TestInitialConfigPluginCrypto {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         assertThat(config.hsmMap()).hasSize(1)
-        val softWorker = config.hsm(CryptoConsts.SOFT_HSM_ID)
+        val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertThat(softWorker.categories).hasSize(1)

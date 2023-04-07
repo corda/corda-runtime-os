@@ -149,9 +149,8 @@ const val MAXIMUM_SIZE = "maximumSize"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_MAP = "hsmMap"
 private const val BUS_PROCESSORS_OBJ = "busProcessors"
-private const val OPS_BUS_PROCESSOR_OBJ = "ops"
-private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
-private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
+const val DEFAULT = "default"
+private const val RETRYING = "retrying"
 private const val HSM = "hsm"
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
@@ -186,21 +185,21 @@ fun SmartConfig.hsm(): CryptoHSMConfig {
 
 fun SmartConfig.opsBusProcessor(): CryptoBusProcessorConfig =
     try {
-        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(OPS_BUS_PROCESSOR_OBJ))
+        CryptoBusProcessorConfig(getConfig(RETRYING))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for ops operations.", e)
     }
 
 fun SmartConfig.flowBusProcessor(): CryptoBusProcessorConfig =
     try {
-        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(FLOW_BUS_PROCESSOR_OBJ))
+        CryptoBusProcessorConfig(getConfig(RETRYING))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for flow ops operations.", e)
     }
 
 fun SmartConfig.hsmRegistrationBusProcessor(): CryptoBusProcessorConfig =
     try {
-        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(HSM_REGISTRATION_BUS_PROCESSOR_OBJ))
+        CryptoBusProcessorConfig(getConfig(RETRYING))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for hsm registration operations.", e)
     }
@@ -294,35 +293,17 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
             )
         )
         .withValue(
-            BUS_PROCESSORS_OBJ, ConfigValueFactory.fromMap(
+            RETRYING, ConfigValueFactory.fromMap(
                 mapOf(
-                    OPS_BUS_PROCESSOR_OBJ to mapOf(
-                        CryptoBusProcessorConfig::maxAttempts.name to 3,
-                        CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
-                            listOf(
-                                200
-                            )
-                        ),
+                    CryptoBusProcessorConfig::maxAttempts.name to mapOf(
+                        DEFAULT to 3
                     ),
-                    FLOW_BUS_PROCESSOR_OBJ to mapOf(
-                        CryptoBusProcessorConfig::maxAttempts.name to 3,
-                        CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
-                            listOf(
-                                200
-                            )
-                        ),
-                    ),
-                    HSM_REGISTRATION_BUS_PROCESSOR_OBJ to mapOf(
-                        CryptoBusProcessorConfig::maxAttempts.name to 3,
-                        CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
-                            listOf(
-                                200
-                            )
-                        ),
+                    CryptoBusProcessorConfig::waitBetweenMills.name to mapOf(
+                        DEFAULT to ConfigValueFactory.fromIterable(listOf(200))
                     )
                 ),
             )
-    )
+        )
 
 
 private class ConfigurationSecretsImpl(

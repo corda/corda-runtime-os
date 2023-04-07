@@ -73,6 +73,7 @@ class HSMServiceImpl @Activate constructor(
 
         private val hsmMap = HSMMap(config, store)
 
+        @Suppress("unused_parameter")
         fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
             if(hsmMap.isOnlySoftHSM) {
