@@ -139,7 +139,7 @@ class SoftCryptoService(
         val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
         return deriveDHSharedSecret(
             provider,
-            getPrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
+            obtainAndStorePrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
             spec.otherPublicKey
         )
     }
@@ -163,14 +163,7 @@ class SoftCryptoService(
             keyPairGenerator.initialize(keySize, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        val wrappingKey =
-            wrappingKeyCache?.getIfPresent(spec.wrappingKeyAlias) ?: getWrappingKeyUncached(
-                spec.wrappingKeyAlias,
-                tenantId
-            ).also {
-                wrappingKeyCache?.put(spec.wrappingKeyAlias, it)
-            }
-
+        val wrappingKey = obtainAndStoreWrappingKey(spec.wrappingKeyAlias, tenantId)
         val keyMaterial = wrappingKey.wrap(keyPair.private)
         privateKeyCache?.put(keyPair.public, keyPair.private)
         return GeneratedWrappedKey(
@@ -197,7 +190,11 @@ class SoftCryptoService(
             "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
         logger.debug { "sign(spec=$spec)" }
-        return sign(spec, getPrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)), data)
+        return sign(
+            spec,
+            obtainAndStorePrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
+            data
+        )
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
@@ -220,39 +217,35 @@ class SoftCryptoService(
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
-    private fun getWrappingKey(alias: String, tenantId: String): WrappingKey =
-        wrappingKeyCache?.getIfPresent(alias) ?: getWrappingKeyUncached(alias, tenantId).also {
-            wrappingKeyCache?.put(alias, it)
+    private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
+        wrappingKeyCache?.getIfPresent(alias) ?: run {
+            // use IllegalArgumentException instead for not found?
+            val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
+                ?: throw IllegalStateException("Wrapping key with alias $alias not found")
+            require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+                "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+            }
+            val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
+            if (parentKey == null) {
+                throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
+            }
+            // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+            require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
+                "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+            }
+
+            return parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
+                wrappingKeyCache?.put(alias, it)
+            }
         }
 
-
-    private fun getWrappingKeyUncached(alias: String, tenantId: String): WrappingKey {
-        // use IllegalArgumentException instead for not found?
-        val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
-            ?: throw IllegalStateException("Wrapping key with alias $alias not found")
-        require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-            "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-        }
-        val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
-        if (parentKey == null) {
-            throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
-        }
-        // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-        require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
-            "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
-        }
-        return parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
-    }
-
-    private fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
-        privateKeyCache?.getIfPresent(publicKey) ?: getPrivateKeyUncached(spec, tenantId).also {
+    private fun obtainAndStorePrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
+        privateKeyCache?.getIfPresent(publicKey) ?: obtainAndStoreWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(
+            spec.keyMaterial
+        ).also {
             privateKeyCache?.put(publicKey, it)
         }
-
-
-    private fun getPrivateKeyUncached(spec: KeyMaterialSpec, tenantId: String): PrivateKey {
-        return getWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(spec.keyMaterial)
-    }
+    
 
     override fun close() {
     }
