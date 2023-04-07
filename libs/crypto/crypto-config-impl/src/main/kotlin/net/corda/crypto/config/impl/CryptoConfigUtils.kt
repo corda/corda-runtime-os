@@ -146,10 +146,9 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 private const val HSM_ID = "hsmId"
 const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
 const val MAXIMUM_SIZE = "maximumSize"
-private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_MAP = "hsmMap"
-private const val BUS_PROCESSORS_OBJ = "busProcessors"
 const val DEFAULT = "default"
+const val CACHING = "caching"
 private const val RETRYING = "retrying"
 private const val HSM = "hsm"
 
@@ -161,11 +160,8 @@ fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
 fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSecretsImpl(this)
 
 fun SmartConfig.signingService(): CryptoSigningServiceConfig =
-    try {
-        CryptoSigningServiceConfig(getConfig(SIGNING_SERVICE_OBJ))
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
-    }
+    CryptoSigningServiceConfig(this)
+
 
 // TODO The below should be refactored, it no longer aligns with crypto config schema
 fun SmartConfig.hsmMap(): Map<String, CryptoHSMConfig> =
@@ -219,11 +215,14 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         .withValue(
-            SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
+            CACHING,
+            ConfigValueFactory.fromMap(
                 mapOf(
-                    CryptoSigningServiceConfig::cache.name to mapOf(
-                        CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to 60,
-                        CryptoSigningServiceConfig.CacheConfig::maximumSize.name to 10000
+                    CacheConfig::expireAfterAccessMins.name to mapOf(
+                        DEFAULT to 60
+                    ),
+                    CacheConfig::maximumSize.name to mapOf(
+                        DEFAULT to 10000
                     )
                 )
             )
@@ -265,25 +264,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                                     )
                                 )
                             ),
-                            "keyMap" to ConfigValueFactory.fromMap(
-                                mapOf(
-                                    "name" to "CACHING",
-                                    "cache" to ConfigValueFactory.fromMap(
-                                        mapOf(
-                                            "expireAfterAccessMins" to 60,
-                                            "maximumSize" to 1000
-                                        )
-                                    )
-
-                                )
-                            ),
-                            "wrappingKeyMap" to mapOf(
-                                "name" to "CACHING",
-                                "cache" to mapOf(
-                                    "expireAfterAccessMins" to 60,
-                                    "maximumSize" to 1000
-                                )
-                            ),
                             "wrapping" to mapOf(
                                 "name" to "DEFAULT"
                             )
@@ -293,7 +273,8 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
             )
         )
         .withValue(
-            RETRYING, ConfigValueFactory.fromMap(
+            RETRYING,
+            ConfigValueFactory.fromMap(
                 mapOf(
                     CryptoBusProcessorConfig::maxAttempts.name to mapOf(
                         DEFAULT to 3

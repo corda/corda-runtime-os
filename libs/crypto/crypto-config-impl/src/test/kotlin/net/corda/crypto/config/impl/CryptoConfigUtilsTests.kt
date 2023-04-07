@@ -66,16 +66,10 @@ class CryptoConfigUtilsTests {
             "CORDA.SPHINCS-256"
         )
         val hsmCfg = softWorker.cfg
-        assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
-        assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
-        assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
         val wrappingKey1 = hsmCfg.getConfigList("wrappingKeys")[0]
         assertEquals("master-salt", wrappingKey1.getString("salt"))
         assertEquals("master-passphrase", wrappingKey1.getString("passphrase"))
         assertEquals("root1", wrappingKey1.getString("alias"))
-        assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
@@ -128,12 +122,6 @@ class CryptoConfigUtilsTests {
             "CORDA.SPHINCS-256"
         )
         val hsmCfg = softWorker.cfg
-        assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
-        assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
-        assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
-        assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
@@ -215,13 +203,12 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `CryptoSigningServiceConfig should throw IllegalStateException when is empty`() {
-        val config = CryptoSigningServiceConfig(
-            configFactory.create(ConfigFactory.empty())
-        )
         assertThrows<IllegalStateException> {
-            config.cache
+            CryptoSigningServiceConfig(
+                configFactory.create(ConfigFactory.empty())
+            )
         }
-        val cacheConfig = CryptoSigningServiceConfig.CacheConfig(
+        val cacheConfig = CacheConfig(
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<IllegalStateException> {
