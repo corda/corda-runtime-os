@@ -26,7 +26,6 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
-import net.corda.ledger.persistence.utxo.tests.UtxoLedgerMessageProcessorTests
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
@@ -131,7 +130,7 @@ class ConsensualLedgerMessageProcessorTests {
         val request = createRequest(
             virtualNodeInfo.holdingIdentity,
             persistTransaction,
-            UtxoLedgerMessageProcessorTests.EXTERNAL_EVENT_CONTEXT.apply {
+            EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
                     cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
@@ -156,7 +155,13 @@ class ConsensualLedgerMessageProcessorTests {
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
             virtualNodeInfo.holdingIdentity,
-            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
+            EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    this.contextProperties.toMap() +
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                )
+            }
         )
         responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
