@@ -330,7 +330,7 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                             )
                         )
                     )
-            )
+                )
             )
         )
         .withValue(
