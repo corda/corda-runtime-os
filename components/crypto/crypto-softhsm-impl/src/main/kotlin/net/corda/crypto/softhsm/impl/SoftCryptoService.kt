@@ -174,7 +174,7 @@ class SoftCryptoService(
     }
 
     private fun computeTenantId(context: Map<String, String>) =
-        context.get("tennntId") ?: CryptoTenants.CRYPTO
+        context.get("tenantId") ?: CryptoTenants.CRYPTO
 
     override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         require(spec is SigningWrappedSpec) {
