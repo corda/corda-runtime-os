@@ -87,8 +87,9 @@ interface SessionManager {
             List<SessionEvent>>
 
     /**
-     * Sets the [SessionState.status] of the passed [SessionState] to [SessionStateType.ERROR].
+     * Errors the passed [SessionState], returning the updated state.
      * @param sessionState The session state.
+     * @return The updated [SessionState] with status set to [SessionStateType.ERROR]
      */
-    fun errorSession(sessionState: SessionState)
+    fun errorSession(sessionState: SessionState): SessionState
 }

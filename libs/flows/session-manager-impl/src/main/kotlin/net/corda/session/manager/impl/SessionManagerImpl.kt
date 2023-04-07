@@ -116,8 +116,9 @@ class SessionManagerImpl @Activate constructor(
         return Pair(sessionState, messagesToReturn)
     }
 
-    override fun errorSession(sessionState: SessionState) {
+    override fun errorSession(sessionState: SessionState) : SessionState {
         sessionState.status = SessionStateType.ERROR
+        return sessionState
     }
 
     /**
@@ -147,11 +148,11 @@ class SessionManagerImpl @Activate constructor(
 
         return if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
-            errorSession(sessionState)
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
+            val updatedSessionState = errorSession(sessionState)
+            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
             listOf(
                 generateErrorEvent(
-                    sessionState,
+                    updatedSessionState,
                     initiatingIdentity,
                     initiatedIdentity,
                     "Session has timed out. No messages received since $lastReceivedMessageTime",
