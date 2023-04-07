@@ -58,7 +58,21 @@ class SoftCryptoServiceOperationsTests {
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
-        private val wrappingRepository = TestWrappingRepository(
+        private val tenantId = UUID.randomUUID().toString()
+        private val clusterWrappingRepository = TestWrappingRepository(
+            ConcurrentHashMap(
+                listOf(
+                    knownWrappingKeyAlias to WrappingKeyInfo(
+                        WRAPPING_KEY_ENCODING_VERSION,
+                        knownWrappingKey.algorithm,
+                        knownWrappingKeyMaterial,
+                        1,
+                        "root",
+                    )
+                ).toMap()
+            )
+        )
+        private val tenantWrappingRepository = TestWrappingRepository(
             ConcurrentHashMap(
                 listOf(
                     knownWrappingKeyAlias to WrappingKeyInfo(
@@ -75,7 +89,8 @@ class SoftCryptoServiceOperationsTests {
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
-                    CryptoTenants.CRYPTO -> wrappingRepository
+                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    tenantId -> tenantWrappingRepository
                     else -> throw InvalidParameterException(it)
                 }
             },
@@ -89,7 +104,6 @@ class SoftCryptoServiceOperationsTests {
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = null
         )
-        private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
         private val softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
@@ -398,8 +412,8 @@ class SoftCryptoServiceOperationsTests {
         val key2Missing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2Missing)
 
-        wrappingRepository.saveKey(alias1, info1)
-        wrappingRepository.saveKey(alias2, info2)
+        clusterWrappingRepository.saveKey(alias1, info1)
+        clusterWrappingRepository.saveKey(alias2, info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
@@ -420,14 +434,14 @@ class SoftCryptoServiceOperationsTests {
         val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
         assertEquals(expected1, key1FoundLater)
 
-        assertThat(wrappingRepository.findCounter[alias1]).isEqualTo(1)
-        assertThat(wrappingRepository.findCounter[alias2]).isEqualTo(1)
+        assertThat(clusterWrappingRepository.findCounter[alias1]).isEqualTo(1)
+        assertThat(clusterWrappingRepository.findCounter[alias2]).isEqualTo(1)
     }
 
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
-        wrappingRepository.saveKey(
+        clusterWrappingRepository.saveKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
@@ -444,7 +458,7 @@ class SoftCryptoServiceOperationsTests {
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
-        wrappingRepository.saveKey(
+        clusterWrappingRepository.saveKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
@@ -471,11 +485,11 @@ class SoftCryptoServiceOperationsTests {
     fun `wrapping key store can find keys that have been stored`() {
         val storeAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
-        assertNull(wrappingRepository.findKey(storeAlias))
-        assertNull(wrappingRepository.findKey(unknownAlias))
-        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
-        assertNotNull(wrappingRepository.findKey(storeAlias))
-        assertNull(wrappingRepository.findKey(unknownAlias))
+        assertNull(clusterWrappingRepository.findKey(storeAlias))
+        assertNull(clusterWrappingRepository.findKey(unknownAlias))
+        clusterWrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
+        assertNotNull(clusterWrappingRepository.findKey(storeAlias))
+        assertNull(clusterWrappingRepository.findKey(unknownAlias))
     }
 
     @Test
