@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.InputStream;
 
 /**
- * Digest extensions: Interface defining a custom digest calculation implementation. The interface should be implemented
+ * Interface defining a custom digest calculation implementation. The interface should be implemented
  * if a CPK developer wishes to provide support for digest algorithms beyond those supported by the Corda platform.
  * The implementation of the interface must be coupled with the implementation of the {@link DigestAlgorithmFactory} which
  * will be used to create the instances. For each algorithm there must be matching a pair of
@@ -43,10 +43,10 @@ import java.io.InputStream;
  */
 public interface DigestAlgorithm {
     /**
-     * Get the algorithm identifier, e.g. 'QUAD-SHA-256', the unique name (per Corda Platform and given CPK)
+     * Get the algorithm identifier, for example, 'QUAD-SHA-256', the unique name (per Corda Platform and given CPK)
      * of the digest algorithm. The name must match the names used by the corresponding [DigestAlgorithmFactory].
      *
-     * @return algorithm name as a string
+     * @return Algorithm name as a string.
      */
     @NotNull
     String getAlgorithm();
@@ -54,15 +54,15 @@ public interface DigestAlgorithm {
     /**
      * The length of the digest in bytes.
      *
-     * @return number of bytes in the digest as an int
+     * @return Number of bytes in the digest as an integer.
      */
     int getDigestLength();
 
     /**
      * Computes the digest of the byte array. The computation must be stateless and thread safe.
      *
-     * @param bytes the byte array to hash.
-     * @return the hash value of the bytes
+     * @param bytes The byte array to hash.
+     * @return The hash value of the bytes.
      */
     @NotNull
     byte[] digest(@NotNull byte[] bytes);
@@ -71,7 +71,7 @@ public interface DigestAlgorithm {
      * Computes the digest of the {@link InputStream} bytes. The computation must be stateless and thread safe.
      *
      * @param inputStream The [InputStream] to hash.
-     * @return the hash value of the [digestLength]
+     * @return The hash value of the [digestLength].
      */
     @NotNull
     byte[] digest(@NotNull InputStream inputStream);
