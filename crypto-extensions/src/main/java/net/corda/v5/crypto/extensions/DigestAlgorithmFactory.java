@@ -3,8 +3,8 @@ package net.corda.v5.crypto.extensions;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Digest extensions: Interface defining a factory creating a custom digest implementation. The interface
- * should be implemented if a CPK developer wishes to provide support for digest algorithms beyond supported
+ * Interface defining a factory creating a custom digest implementation. The interface
+ * should be implemented if a CPK developer wishes to provide support for digest algorithms beyond those supported
  * by the Corda Platform.
  * For each algorithm there must be matching a pair of [DigestAlgorithmFactory] and [DigestAlgorithm] implementations.
  *
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface DigestAlgorithmFactory {
     /**
-     * The algorithm name, e.g. 'QUAD-SHA-256', the unique name (per Corda Platform and given CPK)
+     * The algorithm name, for example, 'QUAD-SHA-256', the unique name (per Corda Platform and given CPK)
      * of the digest algorithm. The name must match the names used by the created [DigestAlgorithm].
      *
      * @return The algorithm name as a string.
