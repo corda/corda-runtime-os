@@ -1,8 +1,12 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CUSTOM1_HSM_ID
+import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CUSTOM2_HSM_ID
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -12,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class HSMServiceTests {
     companion object {
