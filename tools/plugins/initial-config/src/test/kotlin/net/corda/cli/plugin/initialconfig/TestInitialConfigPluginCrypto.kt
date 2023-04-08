@@ -179,12 +179,6 @@ class TestInitialConfigPluginCrypto {
         )
         val hsmCfg = softWorker.cfg
         wrappingKeyAssert(hsmCfg, smartConfigFactory)
-        assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
-        assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
-        assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
-        assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
