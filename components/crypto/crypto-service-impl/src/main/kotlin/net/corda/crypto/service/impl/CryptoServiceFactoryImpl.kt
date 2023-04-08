@@ -89,10 +89,11 @@ class CryptoServiceFactoryImpl @Activate constructor(
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String
+        private val cryptoConfig: SmartConfig
         private val hsmConfig: CryptoHSMConfig
 
         init {
-            val cryptoConfig = event.config.toCryptoConfig()
+            cryptoConfig = event.config.toCryptoConfig()
             // TODO HSM id boot param is to be deleted as per CORE-10050 - setting statically hsmId to "SOFT" for now.
 //            hsmId = bootConfig.bootstrapHsmId()
             hsmId = SOFT_HSM_ID
@@ -101,7 +102,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
             val retry = hsmConfig.retry
-            val cryptoService = cryptoServiceProvider.getInstance(hsmConfig.cfg)
+            val cryptoService = cryptoServiceProvider.getInstance(cryptoConfig)
             CryptoServiceDecorator.create(
                 cryptoService,
                 retry.maxAttempts,
