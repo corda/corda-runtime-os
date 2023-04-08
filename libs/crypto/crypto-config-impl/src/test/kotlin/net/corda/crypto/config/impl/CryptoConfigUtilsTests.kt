@@ -67,7 +67,6 @@ class CryptoConfigUtilsTests {
         assertEquals("master-salt", wrappingKey1.getString("salt"))
         assertEquals("master-passphrase", wrappingKey1.getString("passphrase"))
         assertEquals("root1", wrappingKey1.getString("alias"))
-        assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -118,8 +117,6 @@ class CryptoConfigUtilsTests {
             "CORDA.GOST3410.GOST3411",
             "CORDA.SPHINCS-256"
         )
-        val hsmCfg = softWorker.cfg
-        assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)

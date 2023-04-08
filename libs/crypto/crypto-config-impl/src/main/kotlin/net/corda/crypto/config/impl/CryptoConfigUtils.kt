@@ -263,9 +263,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                                         "passphrase" to wrappingKeyPassphrase,
                                     )
                                 )
-                            ),
-                            "wrapping" to mapOf(
-                                "name" to "DEFAULT"
                             )
                         )
                     )
