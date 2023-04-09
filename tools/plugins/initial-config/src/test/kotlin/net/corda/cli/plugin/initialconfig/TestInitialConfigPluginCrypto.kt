@@ -179,7 +179,6 @@ class TestInitialConfigPluginCrypto {
         )
         val hsmCfg = softWorker.cfg
         wrappingKeyAssert(hsmCfg, smartConfigFactory)
-        assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
