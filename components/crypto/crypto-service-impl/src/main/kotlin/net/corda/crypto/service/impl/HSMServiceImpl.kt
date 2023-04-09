@@ -72,7 +72,8 @@ class HSMServiceImpl @Activate constructor(
 
         private val hsmConfig = event.config.toCryptoConfig().hsm()
 
-        // TODO the below API needs to be removed
+        // TODO the below API needs to be removed as part of removing multi hsm concept
+        //  as per https://r3-cev.atlassian.net/browse/CORE-10562
         @Suppress("unused_parameter")
         fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
