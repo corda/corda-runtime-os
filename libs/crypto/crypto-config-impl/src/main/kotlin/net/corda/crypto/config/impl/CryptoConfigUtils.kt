@@ -5,7 +5,6 @@ package net.corda.crypto.config.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -161,15 +160,6 @@ fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSe
 
 fun SmartConfig.signingService(): CryptoSigningServiceConfig =
     CryptoSigningServiceConfig(this)
-
-
-// TODO The below should be refactored, it no longer aligns with crypto config schema
-fun SmartConfig.hsmMap(): Map<String, CryptoHSMConfig> =
-    try {
-        mapOf(SOFT_HSM_ID to CryptoHSMConfig(getConfig(HSM)))
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $HSM_MAP.", e)
-    }
 
 fun SmartConfig.hsm(): CryptoHSMConfig {
     return try {

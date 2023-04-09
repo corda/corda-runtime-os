@@ -41,7 +41,6 @@ class CryptoConfigUtilsTests {
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
@@ -96,7 +95,6 @@ class CryptoConfigUtilsTests {
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
@@ -294,14 +292,6 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.hsmRegistrationBusProcessor()
-        }
-    }
-
-    @Test
-    fun `hsmMap should throw IllegalStateException if value is not found`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.hsmMap()
         }
     }
 

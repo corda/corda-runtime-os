@@ -7,7 +7,6 @@ import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.hsmMap
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.signingService
@@ -156,7 +155,6 @@ class TestInitialConfigPluginCrypto {
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
