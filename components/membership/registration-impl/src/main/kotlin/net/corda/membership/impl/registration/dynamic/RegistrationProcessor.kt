@@ -114,6 +114,7 @@ class RegistrationProcessor(
     ): StateAndEventProcessor.Response<RegistrationState> {
         logger.info(
             "Processing registration command; " +
+                " key: ${event.key}" +
                 "state: ${state?.registrationId};" +
                 " event: ${event.value?.command?.javaClass?.simpleName}."
         )
@@ -166,6 +167,9 @@ class RegistrationProcessor(
         } catch (e: Exception) {
             logger.error("Unexpected error in handling registration command.", e)
             createEmptyResult()
+        }
+        result?.outputStates?.forEach {
+            logger.info("For ${event.key} in RegistrationProcessor::onNext returning ${it.value?.javaClass?.simpleName}")
         }
         return StateAndEventProcessor.Response(
             result?.updatedState,

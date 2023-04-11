@@ -56,6 +56,8 @@ internal class ProcessMemberVerificationRequestHandler(
             RegistrationStatus.PENDING_MEMBER_VERIFICATION,
         ).createAsyncCommands()
 
+        logger.info("For $registrationId in ProcessMemberVerificationRequestHandler creating VerificationResponse")
+
         return RegistrationHandlerResult(
             null,
             listOf(
