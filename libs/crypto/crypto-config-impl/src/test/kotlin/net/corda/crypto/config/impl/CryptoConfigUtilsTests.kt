@@ -14,7 +14,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class CryptoConfigUtilsTests {
     companion object {
@@ -45,7 +44,6 @@ class CryptoConfigUtilsTests {
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertNull(softWorker.masterKeyAlias)
         assertThat(softWorker.supportedSchemes).hasSize(8)
         assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
@@ -95,7 +93,6 @@ class CryptoConfigUtilsTests {
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertNull(softWorker.masterKeyAlias)
         assertThat(softWorker.supportedSchemes).hasSize(8)
         assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",

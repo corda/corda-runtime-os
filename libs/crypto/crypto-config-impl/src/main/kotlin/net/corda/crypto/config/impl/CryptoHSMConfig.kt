@@ -30,14 +30,6 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val masterKeyAlias: String? by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        if(config.hasPath(this::masterKeyAlias.name)) {
-            config.getString(this::masterKeyAlias.name)
-        } else {
-            null
-        }
-    }
-
     val supportedSchemes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
             config.getStringList(this::supportedSchemes.name)

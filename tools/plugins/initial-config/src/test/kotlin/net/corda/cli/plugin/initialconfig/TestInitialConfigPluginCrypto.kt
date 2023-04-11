@@ -13,7 +13,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 
@@ -158,7 +157,6 @@ class TestInitialConfigPluginCrypto {
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertNull(softWorker.masterKeyAlias)
         assertThat(softWorker.supportedSchemes).hasSize(8)
         assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
