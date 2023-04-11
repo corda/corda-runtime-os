@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
