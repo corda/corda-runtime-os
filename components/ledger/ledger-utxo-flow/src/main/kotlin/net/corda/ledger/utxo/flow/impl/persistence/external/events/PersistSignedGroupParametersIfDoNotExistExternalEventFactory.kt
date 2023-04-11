@@ -26,7 +26,6 @@ class PersistSignedGroupParametersIfDoNotExistExternalEventFactory constructor(
         @Reference(service = KeyEncodingService::class)
         keyEncodingService: KeyEncodingService
     ) : this(keyEncodingService, Clock.systemUTC())
-    // todo does this work?
 
     override fun createRequest(parameters: PersistSignedGroupParametersIfDoNotExistParameters): Any {
         return PersistSignedGroupParametersIfDoNotExist(

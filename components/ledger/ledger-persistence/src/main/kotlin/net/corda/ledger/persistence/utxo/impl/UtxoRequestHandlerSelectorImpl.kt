@@ -109,7 +109,6 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     request.flowExternalEventContext,
                     persistenceService,
                     responseFactory
-                    //UtxoOutputRecordFactoryImpl(responseFactory) todo
                 )
             }
             is PersistSignedGroupParametersIfDoNotExist -> {

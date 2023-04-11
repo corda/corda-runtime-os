@@ -82,7 +82,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             "Number of component groups in metadata structure description does not match with the real number!"
         }
 
-        // todo verify signedGroupParameters in verify too since that will need that anyway:
+        // todo CORE-8956 verify signedGroupParameters in verify too since that will need that anyway:
         //  1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 
@@ -140,7 +140,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Suspendable
     private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParametersContainer {
         val signedGroupParameters = getCurrentMgmGroupParameters()
-        // todo verify signedGroupParameters before persist: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
+        // todo CORE-8956 verify signedGroupParameters before persist: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         return signedGroupParameters
     }
