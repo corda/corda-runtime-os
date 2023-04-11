@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
@@ -13,6 +14,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -86,14 +88,16 @@ class DeclineRegistrationHandlerTest {
             RegistrationStatus.DECLINED
         )
 
+        assertThat(result.updatedState).isNull()
         assertThat(result.outputStates)
-            .hasSize(1)
+            .hasSize(2)
             .contains(record)
-        with(result.updatedState) {
-            assertThat(this?.registeringMember).isEqualTo(member)
-            assertThat(this?.mgm).isEqualTo(mgm)
-            assertThat(this?.registrationId).isEqualTo(REGISTRATION_ID)
-        }
+
+        val registrationCommand = result.outputStates.single { it.topic == Schemas.Membership.REGISTRATION_COMMAND_TOPIC }
+        val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
+        assertThat(checkForPendingRegistration?.mgm).isEqualTo(mgm)
+        assertThat(checkForPendingRegistration?.member).isEqualTo(member)
+        assertThat(checkForPendingRegistration?.numberOfRetriesSoFar).isEqualTo(0)
     }
 
     @Test
