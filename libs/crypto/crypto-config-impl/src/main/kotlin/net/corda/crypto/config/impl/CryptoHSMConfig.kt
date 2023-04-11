@@ -30,14 +30,6 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val supportedSchemes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        try {
-            config.getStringList(this::supportedSchemes.name)
-        } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::supportedSchemes.name}", e)
-        }
-    }
-
     val cfg: SmartConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
             config.getConfig(this::cfg.name)

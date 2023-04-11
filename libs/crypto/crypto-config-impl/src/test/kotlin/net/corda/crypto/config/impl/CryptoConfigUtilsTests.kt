@@ -44,17 +44,6 @@ class CryptoConfigUtilsTests {
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertThat(softWorker.supportedSchemes).hasSize(8)
-        assertThat(softWorker.supportedSchemes).contains(
-            "CORDA.RSA",
-            "CORDA.ECDSA.SECP256R1",
-            "CORDA.ECDSA.SECP256K1",
-            "CORDA.EDDSA.ED25519",
-            "CORDA.X25519",
-            "CORDA.SM2",
-            "CORDA.GOST3410.GOST3411",
-            "CORDA.SPHINCS-256"
-        )
         val hsmCfg = softWorker.cfg
         val wrappingKey1 = hsmCfg.getConfigList("wrappingKeys")[0]
         assertEquals("master-salt", wrappingKey1.getString("salt"))
@@ -93,17 +82,6 @@ class CryptoConfigUtilsTests {
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertThat(softWorker.supportedSchemes).hasSize(8)
-        assertThat(softWorker.supportedSchemes).contains(
-            "CORDA.RSA",
-            "CORDA.ECDSA.SECP256R1",
-            "CORDA.ECDSA.SECP256K1",
-            "CORDA.EDDSA.ED25519",
-            "CORDA.X25519",
-            "CORDA.SM2",
-            "CORDA.GOST3410.GOST3411",
-            "CORDA.SPHINCS-256"
-        )
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -212,9 +190,6 @@ class CryptoConfigUtilsTests {
         }
         assertThrows<IllegalStateException> {
             retryConfig.attemptTimeoutMills
-        }
-        assertThrows<IllegalStateException> {
-            config.supportedSchemes
         }
         assertThrows<IllegalStateException> {
             config.masterKeyPolicy

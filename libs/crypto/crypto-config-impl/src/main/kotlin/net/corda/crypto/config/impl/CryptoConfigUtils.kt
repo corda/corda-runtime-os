@@ -225,16 +225,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
                     CryptoHSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                    CryptoHSMConfig::supportedSchemes.name to listOf(
-                        "CORDA.RSA",
-                        "CORDA.ECDSA.SECP256R1",
-                        "CORDA.ECDSA.SECP256K1",
-                        "CORDA.EDDSA.ED25519",
-                        "CORDA.X25519",
-                        "CORDA.SM2",
-                        "CORDA.GOST3410.GOST3411",
-                        "CORDA.SPHINCS-256"
-                    ),
                     CryptoHSMConfig::cfg.name to ConfigValueFactory.fromMap(
                         mapOf(
                             "defaultWrappingKey" to ConfigValueFactory.fromAnyRef("root1"),
