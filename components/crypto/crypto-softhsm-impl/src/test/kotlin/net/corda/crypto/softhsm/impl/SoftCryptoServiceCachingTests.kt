@@ -3,9 +3,12 @@ package net.corda.crypto.softhsm.impl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepository
@@ -14,16 +17,19 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.v5.base.util.EncodingUtils
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.security.KeyPairGenerator
+import java.security.Provider
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
-
 /**
  * Testing of the crypto service with caching.
  *
@@ -45,24 +51,41 @@ class SoftCryptoServiceCachingTests {
         val rootWrappingKey =
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
-        val myCryptoService =
-            makeSoftCryptoService(
-                privateKeyCache = privateKeyCache,
-                wrappingKeyCache = wrappingKeyCache,
-                rootWrappingKey = rootWrappingKey,
-                wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
-                    CountingWrappingKey(
-                        WrappingKeyImpl.generateWrappingKey(metadata),
-                        wrapCount,
-                        unwrapCount
-                    )
+        val vnodeTenantId = EncodingUtils.toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        val clusterWrappingRepository = TestWrappingRepository()
+        val vnodeWrappingRepository = TestWrappingRepository()
+        val myCryptoService = SoftCryptoService(
+            privateKeyCache = privateKeyCache,
+            wrappingKeyCache = wrappingKeyCache,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            wrappingKeyFactory = { metadata: CipherSchemeMetadata ->
+                CountingWrappingKey(
+                    WrappingKeyImpl.generateWrappingKey(metadata),
+                    wrapCount,
+                    unwrapCount
+                )
+            },
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            schemeMetadata = schemeMetadata,
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            wrappingRepositoryFactory = {
+                when (it) {
+                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    else -> vnodeWrappingRepository
                 }
-            )
+            }
+        )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
 
         // set up a second level wrapping key
-        myCryptoService.createWrappingKey(wrappingKeyAlias, true, emptyMap())
+        assertFalse(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
+        myCryptoService.createWrappingKey(wrappingKeyAlias, true, mapOf("tenantId" to vnodeTenantId))
+        assertFalse(clusterWrappingRepository.keys.contains(wrappingKeyAlias))
+        assertThat(vnodeWrappingRepository.keys.contains(wrappingKeyAlias))
         val wrappingKey = wrappingKeyCache.getIfPresent(wrappingKeyAlias)
         assertNotNull(wrappingKey)
 
@@ -88,7 +111,6 @@ class SoftCryptoServiceCachingTests {
         // make spec objects with the public key material 
         val key1Spec = KeyMaterialSpec(keyPair1.keyMaterial, wrappingKeyAlias, keyPair1.encodingVersion)
         val key2Spec = KeyMaterialSpec(keyPair2.keyMaterial, wrappingKeyAlias, keyPair2.encodingVersion)
-
 
         val key1direct = wrappingKey.unwrap(key1Spec.keyMaterial)
         val key2direct = wrappingKey.unwrap(key2Spec.keyMaterial)
