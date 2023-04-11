@@ -4,7 +4,6 @@ import com.github.stefanbirkner.systemlambda.SystemLambda
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.MasterKeyPolicy
-import net.corda.crypto.config.impl.PrivateKeyPolicy
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
@@ -158,9 +157,6 @@ class TestInitialConfigPluginCrypto {
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertThat(softWorker.categories).hasSize(1)
-        assertEquals("*", softWorker.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
         assertNull(softWorker.masterKeyAlias)
         assertEquals(-1, softWorker.capacity)

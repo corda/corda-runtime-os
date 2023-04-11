@@ -44,9 +44,6 @@ class CryptoConfigUtilsTests {
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertThat(softWorker.categories).hasSize(1)
-        assertEquals("*", softWorker.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
         assertNull(softWorker.masterKeyAlias)
         assertEquals(-1, softWorker.capacity)
@@ -98,9 +95,6 @@ class CryptoConfigUtilsTests {
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertThat(softWorker.categories).hasSize(1)
-        assertEquals("*", softWorker.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
         assertNull(softWorker.masterKeyAlias)
         assertEquals(-1, softWorker.capacity)
@@ -217,22 +211,12 @@ class CryptoConfigUtilsTests {
         assertThrows<IllegalStateException> {
             config.retry
         }
-        val categoryConfig = CryptoHSMConfig.CategoryConfig(configFactory.create(ConfigFactory.empty()))
-        assertThrows<IllegalStateException> {
-            categoryConfig.category
-        }
-        assertThrows<IllegalStateException> {
-            categoryConfig.policy
-        }
         val retryConfig = CryptoHSMConfig.RetryConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
             retryConfig.maxAttempts
         }
         assertThrows<IllegalStateException> {
             retryConfig.attemptTimeoutMills
-        }
-        assertThrows<IllegalStateException> {
-            config.categories
         }
         assertThrows<IllegalStateException> {
             config.capacity

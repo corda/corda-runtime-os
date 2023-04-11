@@ -224,12 +224,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
-                    CryptoHSMConfig::categories.name to listOf(
-                        mapOf(
-                            CryptoHSMConfig.CategoryConfig::category.name to "*",
-                            CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
-                        )
-                    ),
                     CryptoHSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
                     CryptoHSMConfig::capacity.name to -1,
                     CryptoHSMConfig::supportedSchemes.name to listOf(
