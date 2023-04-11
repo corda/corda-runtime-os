@@ -85,11 +85,11 @@ class InboundMessageProcessorTest {
     private val loggingInterceptor = LoggingInterceptor.setupLogging()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
-        on { invokeIfValid<Unit>(any(), any(), any()) } doAnswer {
+        on { invokeIfValidInbound<Unit>(any(), any(), any()) } doAnswer {
             @Suppress("unchecked_cast")
             (it.arguments[2] as (() -> Unit)).invoke()
         }
-        on { validate(any(), any()) } doReturn NetworkStatusValidationResult.Pass
+        on { validateInbound(any(), any()) } doReturn NetworkStatusValidationResult.Pass
     }
 
     private val processor = InboundMessageProcessor(
@@ -375,7 +375,7 @@ class InboundMessageProcessorTest {
         @Test
         fun `AuthenticatedDataMessage with Inbound session which fails membership messaging validation will drop messages`() {
             whenever(
-                networkMessagingValidator.invokeIfValid<Unit>(any(), any(), any())
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
             ).doAnswer {
                 // do nothing to mimic failed validation
             }
@@ -397,13 +397,13 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
-            verify(networkMessagingValidator).invokeIfValid<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
         }
 
         @Test
         fun `AuthenticatedDataMessage with Outbound session which fails membership messaging validation will drop messages`() {
             whenever(
-                networkMessagingValidator.invokeIfValid<Unit>(any(), any(), any())
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
             ).doAnswer {
                 // do nothing to mimic failed validation
             }
@@ -426,7 +426,7 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(sessionManager, never()).messageAcknowledged(any())
-            verify(networkMessagingValidator).invokeIfValid<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
         }
     }
 
@@ -675,7 +675,7 @@ class InboundMessageProcessorTest {
         @Test
         fun `receiving data message with Inbound session that fails membership messaging validation will not produce any messages`() {
             whenever(
-                networkMessagingValidator.invokeIfValid<Unit>(any(), any(), any())
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
             ).doAnswer {
                 // do nothing to mimic failed validation
             }
@@ -699,13 +699,13 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
-            verify(networkMessagingValidator).invokeIfValid<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
         }
 
         @Test
         fun `receiving data message with Outbound session that fails membership messaging validation will not produce any messages`() {
             whenever(
-                networkMessagingValidator.invokeIfValid<Unit>(any(), any(), any())
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
             ).doAnswer {
                 // do nothing to mimic failed validation
             }
@@ -730,7 +730,7 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(sessionManager, never()).messageAcknowledged(any())
-            verify(networkMessagingValidator).invokeIfValid<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
         }
     }
 
@@ -906,7 +906,7 @@ class InboundMessageProcessorTest {
         @Test
         fun `UnauthenticatedMessage will not produce message in P2P in topic if messaging is not allowed`() {
             whenever(
-                networkMessagingValidator.validate(eq(myIdentity), eq(remoteIdentity))
+                networkMessagingValidator.validateInbound(eq(myIdentity), eq(remoteIdentity))
             ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
             val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
                 on { messageId } doReturn "messageId"
@@ -926,7 +926,7 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
-            verify(networkMessagingValidator).validate(eq(myIdentity), eq(remoteIdentity))
+            verify(networkMessagingValidator).validateInbound(eq(myIdentity), eq(remoteIdentity))
         }
 
 

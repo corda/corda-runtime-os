@@ -17,20 +17,47 @@ class NetworkMessagingValidator(private val membershipGroupReaderProvider: Membe
     }
 
     /**
-     * Validates whether [source] can participate in messaging with [destination].
+     * Validates whether [source] can participate in messaging with [destination] based on the network member list
+     * visible to [destination].
      *
      * @returns NetworkStatusValidationResult indicating the result of the validation.
      */
-    fun validate(source: HoldingIdentity, destination: HoldingIdentity): NetworkStatusValidationResult {
-        val sourceMemberInfo = getMemberInfo(source, source.x500Name)
-        val destinationMemberInfo = getMemberInfo(source, destination.x500Name)
+    fun validateInbound(
+        source: HoldingIdentity,
+        destination: HoldingIdentity
+    ) = validate(source, destination, ValidationDirection.Inbound)
+
+    /**
+     * Validates whether [source] can participate in messaging with [destination] based on the network member list
+     * visible to [source].
+     *
+     * @returns NetworkStatusValidationResult indicating the result of the validation.
+     */
+    fun validateOutbound(
+        source: HoldingIdentity,
+        destination: HoldingIdentity
+    ) = validate(source, destination, ValidationDirection.Outbound)
+
+    private fun validate(
+        source: HoldingIdentity,
+        destination: HoldingIdentity,
+        validationDirection: ValidationDirection
+    ): NetworkStatusValidationResult {
+        val memberListViewOwner = when(validationDirection) {
+            is ValidationDirection.Inbound -> destination
+            is ValidationDirection.Outbound -> source
+        }
+        val sourceMemberInfo = getMemberInfo(memberListViewOwner, source.x500Name)
+        val destinationMemberInfo = getMemberInfo(memberListViewOwner, destination.x500Name)
 
         return if (!canMessage(sourceMemberInfo, destinationMemberInfo)
             || !canMessage(destinationMemberInfo, sourceMemberInfo)
         ) {
             NetworkStatusValidationResult.Fail(
-                "network membership status for the source identity is (${sourceMemberInfo?.status}) and the " +
-                        "destination's network membership status is (${destinationMemberInfo?.status})."
+                "network membership status for the source identity (with name ${source.x500Name} in " +
+                        "group ${source.x500Name}) is (${sourceMemberInfo?.status}) and the destination's (with name " +
+                        "${destination.x500Name} in group ${destination.x500Name}) network membership status is " +
+                        "(${destinationMemberInfo?.status})."
             )
         } else {
             NetworkStatusValidationResult.Pass
@@ -40,14 +67,35 @@ class NetworkMessagingValidator(private val membershipGroupReaderProvider: Membe
     /**
      * Validates the input by calling [validate] and invokes [func] if validation succeeds.
      * If validation fails, no exception is thrown and [func] is not invoked.
+     * Validation is performed based on the network member list visible to [destination].
      *
      * @return result of [func] or null if validation failed.
      */
-    fun <T> invokeIfValid(
+    fun <T> invokeIfValidInbound(
         source: HoldingIdentity,
         destination: HoldingIdentity,
         func: () -> T
-    ): T? = when (val result = validate(source, destination)) {
+    ): T? = invokeIfValid(source, destination, ValidationDirection.Inbound, func)
+
+    /**
+     * Validates the input by calling [validate] and invokes [func] if validation succeeds.
+     * If validation fails, no exception is thrown and [func] is not invoked.
+     * Validation is performed based on the network member list visible to [source].
+     *
+     * @return result of [func] or null if validation failed.
+     */
+    fun <T> invokeIfValidOutbound(
+        source: HoldingIdentity,
+        destination: HoldingIdentity,
+        func: () -> T
+    ): T? = invokeIfValid(source, destination, ValidationDirection.Outbound, func)
+
+    private fun <T> invokeIfValid(
+        source: HoldingIdentity,
+        destination: HoldingIdentity,
+        validationDirection: ValidationDirection,
+        func: () -> T
+    ): T? = when (val result = validate(source, destination, validationDirection)) {
         is NetworkStatusValidationResult.Pass -> func()
         is NetworkStatusValidationResult.Fail -> {
             logger.warn(
@@ -81,6 +129,12 @@ class NetworkMessagingValidator(private val membershipGroupReaderProvider: Membe
         party == null || !party.isActive -> otherParty?.isMgm == true
         else -> otherParty?.isActive == true
     }
+
+    private sealed class ValidationDirection {
+        object Inbound : ValidationDirection()
+        object Outbound : ValidationDirection()
+    }
+
 }
 
 

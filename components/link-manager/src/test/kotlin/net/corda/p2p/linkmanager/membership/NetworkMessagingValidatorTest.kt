@@ -101,8 +101,8 @@ class NetworkMessagingValidatorTest {
 
     @ParameterizedTest
     @MethodSource("allowedMessagingGroups")
-    fun `validate performs as expected`(testConfig: TestConfig) {
-        val result = networkMessagingValidator.validate(testConfig.sender, testConfig.receiver)
+    fun `validate inbound performs as expected`(testConfig: TestConfig) {
+        val result = networkMessagingValidator.validateInbound(testConfig.sender, testConfig.receiver)
 
         if (testConfig.canMessage) {
             assertThat(result).isInstanceOf(NetworkStatusValidationResult.Pass::class.java)
@@ -113,9 +113,37 @@ class NetworkMessagingValidatorTest {
 
     @ParameterizedTest
     @MethodSource("allowedMessagingGroups")
-    fun `invokeIfValid performs as expected`(testConfig: TestConfig) {
+    fun `validate outbound performs as expected`(testConfig: TestConfig) {
+        val result = networkMessagingValidator.validateOutbound(testConfig.sender, testConfig.receiver)
+
+        if (testConfig.canMessage) {
+            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Pass::class.java)
+        } else {
+            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Fail::class.java)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("allowedMessagingGroups")
+    fun `invokeIfValidInbound performs as expected`(testConfig: TestConfig) {
         val output = assertDoesNotThrow {
-            networkMessagingValidator.invokeIfValid(testConfig.sender, testConfig.receiver, testLambda)
+            networkMessagingValidator.invokeIfValidInbound(testConfig.sender, testConfig.receiver, testLambda)
+        }
+
+        if (testConfig.canMessage) {
+            verify(testLambda).invoke()
+            assertThat(output).isNotNull.isEqualTo(TEST_LAMBDA_RETURN_VAL)
+        } else {
+            verify(testLambda, never()).invoke()
+            assertThat(output).isNull()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("allowedMessagingGroups")
+    fun `invokeIfValidOutbound performs as expected`(testConfig: TestConfig) {
+        val output = assertDoesNotThrow {
+            networkMessagingValidator.invokeIfValidInbound(testConfig.sender, testConfig.receiver, testLambda)
         }
 
         if (testConfig.canMessage) {

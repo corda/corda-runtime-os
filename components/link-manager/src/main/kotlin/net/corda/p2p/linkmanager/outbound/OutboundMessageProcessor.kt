@@ -135,7 +135,7 @@ internal class OutboundMessageProcessor(
         } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
             "source ID is not locally hosted"
         } else {
-            when(val result = networkMessagingValidator.validate(source.toCorda(), destination.toCorda())) {
+            when(val result = networkMessagingValidator.validateOutbound(source.toCorda(), destination.toCorda())) {
                 is NetworkStatusValidationResult.Pass -> null
                 is NetworkStatusValidationResult.Fail -> result.reason
             }

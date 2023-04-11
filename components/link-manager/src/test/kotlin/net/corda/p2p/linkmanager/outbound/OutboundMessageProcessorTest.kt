@@ -75,7 +75,7 @@ class OutboundMessageProcessorTest {
     }
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
-        on { validate(any(), any()) } doReturn NetworkStatusValidationResult.Pass
+        on { validateOutbound(any(), any()) } doReturn NetworkStatusValidationResult.Pass
     }
 
     private val processor = OutboundMessageProcessor(
@@ -245,7 +245,7 @@ class OutboundMessageProcessorTest {
     @Test
     fun `authenticated messages are dropped if membership messaging validation fails`() {
         whenever(
-            networkMessagingValidator.validate(any(), any())
+            networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
@@ -515,7 +515,7 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if network membership validation fails`() {
         whenever(
-            networkMessagingValidator.validate(any(), any())
+            networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(

@@ -77,7 +77,7 @@ internal class InboundMessageProcessor(
                         "Processing unauthenticated message ${payload.header.messageId}"
                     }
                     recordInboundMessagesMetric(payload)
-                    val validationResult = networkMessagingValidator.validate(
+                    val validationResult = networkMessagingValidator.validateInbound(
                         payload.header.source.toCorda(),
                         payload.header.destination.toCorda()
                     )
@@ -328,7 +328,7 @@ internal class InboundMessageProcessor(
     private fun <T> checkAllowedCommunication(
         counterparties: SessionManager.Counterparties,
         func: () -> T
-    ) = networkMessagingValidator.invokeIfValid(
+    ) = networkMessagingValidator.invokeIfValidInbound(
         counterparties.counterpartyId,
         counterparties.ourId,
         func
