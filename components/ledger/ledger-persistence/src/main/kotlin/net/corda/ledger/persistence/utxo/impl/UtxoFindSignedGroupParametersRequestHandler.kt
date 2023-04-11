@@ -3,6 +3,8 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.persistence.EntityResponse
+import net.corda.ledger.common.data.transaction.SignedGroupParametersContainer
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
@@ -22,10 +24,17 @@ class UtxoFindSignedGroupParametersRequestHandler(
         val signedGroupParameters = persistenceService.findSignedGroupParameters(
             findSignedGroupParameters.hash,
         )
+        val signedGroupParametersContainer = if(signedGroupParameters != null) {
+            with(signedGroupParameters) {
+                SignedGroupParametersContainer(hash, bytes, signature, signatureSpec)
+            }
+        } else {
+            null
+        }
         return listOf(responseFactory.successResponse(
             externalEventContext,
             EntityResponse(
-                listOfNotNull(signedGroupParameters)
+                listOfNotNull(signedGroupParametersContainer)
                     .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
             )
         ))

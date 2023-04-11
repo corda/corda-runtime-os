@@ -41,7 +41,3 @@ fun verifyContracts(
         throw ContractVerificationException(transaction.id, failureReasons)
     }
 }
-
-fun verifyMetadata(metadata: TransactionMetadata) {
-    println(metadata)
-}
