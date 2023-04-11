@@ -6,6 +6,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
@@ -39,14 +40,17 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -68,6 +72,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -81,6 +86,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
@@ -92,6 +98,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
@@ -1445,7 +1452,7 @@ class MGMResourceClientTest {
         }
 
         @Test
-        fun `suspendMember should publish the updated member info`() {
+        fun `suspendMember should publish the updated member info and request distribution`() {
             whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockMemberInfo = mock<PersistentMemberInfo>()
@@ -1477,6 +1484,36 @@ class MGMResourceClientTest {
                     )
                 )
             )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `suspendMember should publish the updated group parameters`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            val publisherCaptor = argumentCaptor<List<Record<String, Any>>>()
+            whenever(publisher.publish(publisherCaptor.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockMemberInfo = mock<PersistentMemberInfo>()
+            val serializedGroupParameters = "group-params".toByteArray()
+            val groupParameters = mock<InternalGroupParameters> {
+                on { bytes } doReturn serializedGroupParameters
+            }
+            whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockMemberInfo to groupParameters)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.suspendMember(shortHash, memberName, SERIAL, REASON)
+
+            val publishedParams = publisherCaptor.allValues.single().single { it.topic == Schemas.Membership.GROUP_PARAMETERS_TOPIC }.value
+                    as PersistentGroupParameters
+           assertThat(publishedParams.viewOwner).isEqualTo(holdingIdentity.toAvro())
+
+           assertThat(publishedParams.groupParameters.groupParameters)
+              .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+
+            assertThat(publishedParams.groupParameters.mgmSignature).isNull()
+            assertThat(publishedParams.groupParameters.mgmSignatureSpec).isNull()
+
             mgmResourceClient.stop()
         }
 

@@ -559,7 +559,7 @@ class MGMResourceClientImpl @Activate constructor(
             val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.suspendMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
-            publishMemberInfoAndRequestDistribution(
+            publishMessageBusRecords(
                 updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
             )
         }
@@ -571,7 +571,7 @@ class MGMResourceClientImpl @Activate constructor(
             val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.activateMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
-            publishMemberInfoAndRequestDistribution(
+            publishMessageBusRecords(
                 updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
             )
         }
@@ -588,7 +588,11 @@ class MGMResourceClientImpl @Activate constructor(
             return mgm to memberShortHash
         }
 
-        private fun publishMemberInfoAndRequestDistribution(
+        /**
+         * Publish the updated member info and request distribution via the message bus. Also, optionally publish the updated group
+         * parameters.
+         */
+        private fun publishMessageBusRecords(
             memberInfo: PersistentMemberInfo,
             groupParameters: InternalGroupParameters?,
             memberX500Name: MemberX500Name,
@@ -599,11 +603,10 @@ class MGMResourceClientImpl @Activate constructor(
             val serialNumber = memberInfoFactory.create(memberInfo).serial
             val publisher = coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)
             val recordForGroupParameters = groupParameters?.let {
-                val holdingIdentity = HoldingIdentity(memberX500Name, mgmHoldingIdentity.groupId)
                 listOf(Record(
                     GROUP_PARAMETERS_TOPIC,
-                    holdingIdentity.shortHash.toString(),
-                    it.toPersistentGroupParameters(holdingIdentity, keyEncodingService)
+                    mgmHoldingIdentity.shortHash.toString(),
+                    it.toPersistentGroupParameters(mgmHoldingIdentity, keyEncodingService)
                 ))} ?: emptyList()
             val distributionRequest = MembershipActionsRequest(DistributeMemberInfo(
                 mgmHoldingIdentity.toAvro(),

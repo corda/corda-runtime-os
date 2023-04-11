@@ -276,7 +276,8 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param serialNumber Serial number of the member's [MemberInfo].
      * @param reason Reason for suspension.
      *
-     * @return Membership persistence operation with the updated [MemberInfo].
+     * @return Membership persistence operation with the updated [MemberInfo] and the updated [InternalGroupParameters] (or null if not
+     * updated).
      */
     fun suspendMember(
         viewOwningIdentity: HoldingIdentity,
@@ -293,7 +294,8 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param serialNumber Serial number of the member's [MemberInfo].
      * @param reason Reason for activation.
      *
-     * @return Membership persistence operation with the updated [MemberInfo].
+     * @return Membership persistence operation with the updated [MemberInfo] and the updated [InternalGroupParameters] (or null if not
+     * updated).
      */
     fun activateMember(
         viewOwningIdentity: HoldingIdentity,
