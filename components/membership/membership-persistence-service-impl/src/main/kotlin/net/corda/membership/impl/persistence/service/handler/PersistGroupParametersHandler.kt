@@ -30,6 +30,7 @@ internal class PersistGroupParametersHandler(
     ): PersistGroupParametersResponse {
         val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
 
+            // Find the current parameters
             val serialisedGroupParameters = request.groupParameters.groupParameters.array()
             val groupParameters = deserializer.deserializeKeyValuePairList(serialisedGroupParameters)
             val epochFromRequest = groupParameters.toMap()[EPOCH_KEY]?.toInt()
