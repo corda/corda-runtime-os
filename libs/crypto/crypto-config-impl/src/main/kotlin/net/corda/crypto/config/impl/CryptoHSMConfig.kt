@@ -1,5 +1,6 @@
 package net.corda.crypto.config.impl
 
+import com.typesafe.config.ConfigList
 import net.corda.libs.configuration.SmartConfig
 
 class CryptoHSMConfig(private val config: SmartConfig) {
@@ -30,11 +31,19 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val cfg: SmartConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val wrappingKeys: ConfigList by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
-            config.getConfig(this::cfg.name)
+            config.getList(this::wrappingKeys.name)
         } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::cfg.name}", e)
+            throw IllegalStateException("Failed to get ${this::wrappingKeys.name}", e)
+        }
+    }
+
+    val defaultWrappingKey: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        try {
+            config.getString(this::defaultWrappingKey.name)
+        } catch (e: Throwable) {
+            throw IllegalStateException("Failed to get ${this::defaultWrappingKey.name}", e)
         }
     }
 

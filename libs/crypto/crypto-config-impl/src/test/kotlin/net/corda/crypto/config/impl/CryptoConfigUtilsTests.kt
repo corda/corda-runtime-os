@@ -1,6 +1,7 @@
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -44,11 +45,10 @@ class CryptoConfigUtilsTests {
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        val hsmCfg = softWorker.cfg
-        val wrappingKey1 = hsmCfg.getConfigList("wrappingKeys")[0]
-        assertEquals("master-salt", wrappingKey1.getString("salt"))
-        assertEquals("master-passphrase", wrappingKey1.getString("passphrase"))
-        assertEquals("root1", wrappingKey1.getString("alias"))
+        val wrappingKey1 = softWorker.wrappingKeys[0] as ConfigObject
+        assertEquals("master-salt", wrappingKey1["salt"]!!.unwrapped())
+        assertEquals("master-passphrase", wrappingKey1["passphrase"]!!.unwrapped())
+        assertEquals("root1", wrappingKey1["alias"]!!.unwrapped())
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -195,7 +195,10 @@ class CryptoConfigUtilsTests {
             config.masterKeyPolicy
         }
         assertThrows<IllegalStateException> {
-            config.cfg
+            config.wrappingKeys
+        }
+        assertThrows<IllegalStateException> {
+            config.defaultWrappingKey
         }
     }
 
