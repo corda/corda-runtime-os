@@ -10,6 +10,9 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -169,7 +172,23 @@ class RegistrationProcessor(
             createEmptyResult()
         }
         result?.outputStates?.forEach {
-            logger.info("For ${event.key} in RegistrationProcessor::onNext returning ${it.value?.javaClass?.simpleName}")
+            val value = it.value
+            if (value is RegistrationCommand) {
+                logger.info("For ${event.key} in RegistrationProcessor::onNext returning command ${value.command?.javaClass?.simpleName}")
+            } else if (value is AppMessage) {
+                val message = value.message
+                if (message is AuthenticatedMessage) {
+                    logger.info(
+                        "For ${event.key} in RegistrationProcessor::onNext returning auth message ${message.header.destination}"
+                    )
+                } else if (message is UnauthenticatedMessage) {
+                    logger.info(
+                        "For ${event.key} in RegistrationProcessor::onNext returning unauth message ${message.header.destination}"
+                    )
+                }
+            } else {
+                logger.info("For ${event.key} in RegistrationProcessor::onNext returning something ${value?.javaClass?.simpleName}")
+            }
         }
         return StateAndEventProcessor.Response(
             result?.updatedState,

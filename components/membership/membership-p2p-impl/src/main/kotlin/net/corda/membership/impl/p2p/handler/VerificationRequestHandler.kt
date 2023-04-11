@@ -26,6 +26,7 @@ internal class VerificationRequestHandler(
         logger.info("Received verification request from ${header.source}. Sending it to RegistrationManagementService to process.")
         val request = avroSchemaRegistry.deserialize<VerificationRequest>(payload)
         val registrationId = request.registrationId
+        logger.info("QQQ in VerificationRequestHandler creating ProcessMemberVerificationRequest for $registrationId")
         return Record(
             REGISTRATION_COMMAND_TOPIC,
             "$registrationId-${header.destination.toCorda().shortHash}",
