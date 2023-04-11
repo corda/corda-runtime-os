@@ -41,7 +41,7 @@ internal class RegistrationRequestHandler(
             )
             return Record(
                 REGISTRATION_COMMAND_TOPIC,
-                "${header.source.toCorda().shortHash}-${header.source.groupId}",
+                "${header.source.x500Name}-${header.source.groupId}",
                 RegistrationCommand(
                     QueueRegistration(
                         header.destination,
