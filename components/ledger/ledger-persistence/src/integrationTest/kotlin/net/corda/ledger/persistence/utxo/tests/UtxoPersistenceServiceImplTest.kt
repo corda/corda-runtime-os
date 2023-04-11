@@ -142,7 +142,6 @@ class UtxoPersistenceServiceImplTest {
             repository = ctx.getSandboxSingletonService()
             factoryRegistry = ctx.getSandboxSingletonService()
             groupParametersFactory = setup.fetchService(TIMEOUT_MILLIS)
-            // todo is this correct? Should not this be a sandbox service? Are there maybe another to use?
 
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
