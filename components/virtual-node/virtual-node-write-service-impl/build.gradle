@@ -7,7 +7,6 @@ description "Configuration Write Service Impl"
 
 dependencies {
     api project(':libs:virtual-node:virtual-node-info')
-    implementation project(path: ':libs:external-messaging')
 
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -31,6 +30,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:virtual-node:virtual-node-common')
     implementation project(':libs:virtual-node:virtual-node-datamodel')
+    implementation project(":libs:external-messaging")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'
