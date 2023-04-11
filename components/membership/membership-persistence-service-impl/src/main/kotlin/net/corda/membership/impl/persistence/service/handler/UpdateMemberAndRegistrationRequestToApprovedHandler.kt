@@ -46,7 +46,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
         request: UpdateMemberAndRegistrationRequestToApproved,
     ): UpdateMemberAndRegistrationRequestResponse {
         logger.info(
-            "Update member and registration request with registration ID ${request.registrationId} to approve.",
+            "Update member and registration request with registration ID ${request.registrationId} to approved.",
         )
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
