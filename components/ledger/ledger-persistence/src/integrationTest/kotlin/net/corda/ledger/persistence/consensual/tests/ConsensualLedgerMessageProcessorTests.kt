@@ -178,8 +178,6 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
-        // todo how this can be broken if the above ones are all OK?
-        // assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
