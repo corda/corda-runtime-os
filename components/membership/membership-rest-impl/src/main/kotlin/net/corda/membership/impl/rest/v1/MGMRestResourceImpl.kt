@@ -617,6 +617,8 @@ class MGMRestResourceImpl internal constructor(
             net.corda.data.membership.common.RegistrationStatus.NEW -> RegistrationStatus.NEW
             net.corda.data.membership.common.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
             net.corda.data.membership.common.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
+            net.corda.data.membership.common.RegistrationStatus.STARTED_PROCESSING_BY_MGM ->
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM
             net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
             net.corda.data.membership.common.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL

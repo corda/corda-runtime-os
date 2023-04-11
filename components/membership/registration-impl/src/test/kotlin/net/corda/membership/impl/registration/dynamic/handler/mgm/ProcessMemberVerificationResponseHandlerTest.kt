@@ -83,7 +83,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             )
         )
     )
-    private val expectedRegistrationTopicKey = "$REGISTRATION_ID-${mgm.toCorda().shortHash}"
+    private val expectedRegistrationTopicKey = "${member.x500Name}-${member.groupId}"
     private val state = RegistrationState(
         REGISTRATION_ID,
         member,
@@ -482,7 +482,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         regState: RegistrationState? = state,
         regCommand: Any = command
     ) = processMemberVerificationResponseHandler.invoke(
-        regState, Record(TOPIC, member.toString(), RegistrationCommand(regCommand))
+        regState, Record(TOPIC, "${member.x500Name}-${member.groupId}", RegistrationCommand(regCommand))
     )
 
     private fun mockApprovalRules(

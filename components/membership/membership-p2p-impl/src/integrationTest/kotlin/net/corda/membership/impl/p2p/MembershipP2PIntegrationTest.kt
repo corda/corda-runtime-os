@@ -20,7 +20,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
-import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -237,6 +237,7 @@ class MembershipP2PIntegrationTest {
             }
         }
 
+        @JvmStatic
         @AfterAll
         fun tearDown() {
             p2pSender.close()
@@ -297,7 +298,7 @@ class MembershipP2PIntegrationTest {
         val registrationRequestSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("membership_p2p_test_receiver", REGISTRATION_COMMAND_TOPIC),
             getTestStateAndEventProcessor { s, e ->
-                if(e.value?.command is StartRegistration) {
+                if(e.value?.command is QueueRegistration) {
                     completableResult.complete(Pair(s, e))
                 }
             },
@@ -373,19 +374,20 @@ class MembershipP2PIntegrationTest {
         assertThat(result?.second).isNotNull
         with(result!!.second) {
             assertThat(topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-            assertThat(key).isEqualTo("$registrationId-${destination.shortHash}")
+            assertThat(key).isEqualTo("${source.x500Name}-${source.groupId}")
             assertThat(value)
                 .isNotNull
                 .isInstanceOf(RegistrationCommand::class.java)
             assertThat(value!!.command)
                 .isNotNull
-                .isInstanceOf(StartRegistration::class.java)
+                .isInstanceOf(QueueRegistration::class.java)
 
-            with(value!!.command as StartRegistration) {
-                assertThat(this.destination.x500Name).isEqualTo(destination.x500Name.toString())
-                assertThat(this.destination.groupId).isEqualTo(groupId)
-                assertThat(this.source.x500Name).isEqualTo(source.x500Name.toString())
-                assertThat(this.source.groupId).isEqualTo(groupId)
+            with(value!!.command as QueueRegistration) {
+                assertThat(this.mgm.x500Name).isEqualTo(destination.x500Name.toString())
+                assertThat(this.mgm.groupId).isEqualTo(groupId)
+                assertThat(this.member.x500Name).isEqualTo(source.x500Name.toString())
+                assertThat(this.member.groupId).isEqualTo(groupId)
+                assertThat(this.numberOfRetriesSoFar).isEqualTo(0)
                 assertThat(memberRegistrationRequest).isNotNull
                 with(memberRegistrationRequest) {
                     assertThat(this.registrationId).isEqualTo(registrationId)

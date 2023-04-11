@@ -5,8 +5,10 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
@@ -19,8 +21,10 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.member.PersistMemberRegistrationStateHandler
 import net.corda.membership.impl.registration.dynamic.handler.member.ProcessMemberVerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.CheckForPendingRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.QueueRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
@@ -55,6 +59,12 @@ class RegistrationProcessor(
     private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)
 
     private val handlers = mapOf<Class<*>, RegistrationHandler<*>>(
+        QueueRegistration::class.java to QueueRegistrationHandler(
+            membershipPersistenceClient,
+        ),
+        CheckForPendingRegistration::class.java to CheckForPendingRegistrationHandler(
+            membershipQueryClient,
+        ),
         StartRegistration::class.java to StartRegistrationHandler(
             clock,
             memberInfoFactory,
@@ -62,7 +72,6 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
-            cordaAvroSerializationFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
@@ -115,6 +124,16 @@ class RegistrationProcessor(
         logger.info("Processing registration command.")
         val result = try {
             when (val command = event.value?.command) {
+                is QueueRegistration -> {
+                    logger.info("Received queue registration command.")
+                    handlers[QueueRegistration::class.java]?.invoke(state, event)
+                }
+
+                is CheckForPendingRegistration -> {
+                    logger.info("Received check for pending registration command.")
+                    handlers[CheckForPendingRegistration::class.java]?.invoke(state, event)
+                }
+
                 is StartRegistration -> {
                     logger.info("Received start registration command.")
                     handlers[StartRegistration::class.java]?.invoke(state, event)

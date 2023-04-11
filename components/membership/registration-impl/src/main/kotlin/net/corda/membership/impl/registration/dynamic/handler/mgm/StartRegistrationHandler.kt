@@ -1,16 +1,16 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
@@ -29,7 +29,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -55,7 +54,6 @@ internal class StartRegistrationHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
@@ -63,39 +61,35 @@ internal class StartRegistrationHandler(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val keyValuePairListDeserializer =
-        cordaAvroSerializationFactory.createAvroDeserializer({
-            logger.error("Deserialization of registration request KeyValuePairList failed.")
-        }, KeyValuePairList::class.java)
-
     override val commandType = StartRegistration::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
-        val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
-            with(command) {
-                Triple(
-                    toRegistrationRequest(),
-                    destination.toCorda(),
-                    source.toCorda()
-                )
-            }
+        if (state == null) throw MissingRegistrationStateException
+        val (registrationId, mgmHoldingId, pendingMemberHoldingId) = Triple(
+            state.registrationId, state.mgm.toCorda(), state.registeringMember.toCorda()
+        )
 
         val (outputCommand, outputStates) = try {
+            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
+            val registrationRequest = membershipQueryClient.queryRegistrationRequest(mgmHoldingId, registrationId).getOrThrow()
+            validateRegistrationRequest(registrationRequest != null) {
+                "Could not find registration request with ID `$registrationId`."
+            }
+            validateRegistrationRequest(registrationRequest!!.serial != null) {
+                "Serial on the registration request should not be null."
+            }
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
-            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
-            logger.info("Persisting the received registration request.")
-            membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
+            logger.info("Updating the status of the registration request.")
+            membershipPersistenceClient.setRegistrationRequestStatus(
+                mgmHoldingId, registrationId, RegistrationStatus.STARTED_PROCESSING_BY_MGM
+            ).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist the received registration request. Reason: " +
+                    "Failed to update the status of the registration request. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
                 }
-            }
-
-            validateRegistrationRequest(registrationRequest.serial != null) {
-                "Serial on the registration request should not be null."
             }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
@@ -142,8 +136,8 @@ internal class StartRegistrationHandler(
 
             val signedMemberInfo = SignedMemberInfo(
                 pendingMemberInfo,
-                registrationRequest.signature,
-                registrationRequest.signatureSpec
+                registrationRequest.memberSignature,
+                registrationRequest.memberSignatureSpec
             )
 
             // Persist pending member info
@@ -177,11 +171,7 @@ internal class StartRegistrationHandler(
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(
-                registrationRequest.registrationId,
-                pendingMemberHoldingId.toAvro(),
-                mgmHoldingId.toAvro()
-            ),
+            state,
             listOf(
                 Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
             ) + outputStates
@@ -199,9 +189,8 @@ internal class StartRegistrationHandler(
         }
     }
 
-    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
-        val memberContext = keyValuePairListDeserializer
-            .deserialize(registrationRequest.memberContext.array())
+    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): MemberInfo {
+        val memberContext = registrationRequest.memberProvidedContext
             ?.items?.associate { it.key to it.value }
             ?: emptyMap()
         validateRegistrationRequest(memberContext.isNotEmpty()) {
@@ -231,18 +220,6 @@ internal class StartRegistrationHandler(
                 "Registration request is targeted at non-MGM holding identity."
             }
         }!!
-    }
-
-    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
-        return RegistrationRequest(
-            RegistrationStatus.RECEIVED_BY_MGM,
-            memberRegistrationRequest.registrationId,
-            source.toCorda(),
-            memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.memberSignature,
-            memberRegistrationRequest.memberSignatureSpec,
-            memberRegistrationRequest.serial,
-        )
     }
 
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {

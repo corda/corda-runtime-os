@@ -370,6 +370,7 @@ class MemberResourceClientImpl @Activate constructor(
             RegistrationStatus.NEW -> RegistrationStatusDto.NEW
             RegistrationStatus.SENT_TO_MGM -> RegistrationStatusDto.SENT_TO_MGM
             RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusDto.RECEIVED_BY_MGM
+            RegistrationStatus.STARTED_PROCESSING_BY_MGM -> RegistrationStatusDto.STARTED_PROCESSING_BY_MGM
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL

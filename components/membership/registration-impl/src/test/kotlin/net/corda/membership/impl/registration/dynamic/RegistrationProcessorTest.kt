@@ -10,8 +10,12 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
@@ -66,28 +70,44 @@ class  RegistrationProcessorTest {
 
         const val testTopic = "topic"
         const val testTopicKey = "key"
+        const val SERIAL = 0L
 
         val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value")))
         val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap("456".toByteArray()),
             ByteBuffer.wrap("789".toByteArray())
         )
-        val registrationRequest =
-            MembershipRegistrationRequest(
+        val signatureSpec = CryptoSignatureSpec("", null, null)
+        val registrationRequest = MembershipRegistrationRequest(
+            registrationId,
+            memberContext.toByteBuffer(),
+            signature,
+            signatureSpec,
+            SERIAL,
+        )
+        val registrationRequestDetails =
+            RegistrationRequestDetails(
+                clock.instant(),
+                clock.instant(),
+                RegistrationStatus.RECEIVED_BY_MGM,
                 registrationId,
-                memberContext.toByteBuffer(),
+                1,
+                memberContext,
                 signature,
-                CryptoSignatureSpec("", null, null),
-                0L,
+                signatureSpec,
+                "",
+                SERIAL,
             )
 
-        val startRegistrationCommand = RegistrationCommand(
-            StartRegistration(
-                mgmHoldingIdentity,
-                holdingIdentity,
-                registrationRequest
-            )
+        val queueRegistrationCommand = RegistrationCommand(
+            QueueRegistration(mgmHoldingIdentity, holdingIdentity, registrationRequest, 0)
         )
+
+        val checkForPendingRegistrationCommand = RegistrationCommand(
+            CheckForPendingRegistration(mgmHoldingIdentity, holdingIdentity, 0)
+        )
+
+        val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
         val verificationRequest = VerificationRequest(
             registrationId,
@@ -186,6 +206,17 @@ class  RegistrationProcessorTest {
                     any()
                 )
             } doReturn MembershipQueryResult.Success(emptyList())
+            on {
+                queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId))
+            } doReturn MembershipQueryResult.Success(registrationRequestDetails)
+            on {
+                queryRegistrationRequests(
+                    eq(mgmHoldingIdentity.toCorda()),
+                    eq(holdingIdentity.toCorda().x500Name),
+                    eq(listOf(RegistrationStatus.RECEIVED_BY_MGM)),
+                    eq(1),
+                )
+            } doReturn MembershipQueryResult.Success(listOf(registrationRequestDetails))
         }
 
         processor = RegistrationProcessor(
@@ -214,8 +245,31 @@ class  RegistrationProcessorTest {
     }
 
     @Test
+    fun `queue registration command - onNext can be called`() {
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, queueRegistrationCommand))
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
+        assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
+            .isNotNull
+            .isInstanceOf(CheckForPendingRegistration::class.java)
+    }
+
+    @Test
+    fun `check for pending registration command - onNext can be called`() {
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, checkForPendingRegistrationCommand))
+        assertThat(result.updatedState).isNotNull()
+        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
+        assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
+            .isNotNull
+            .isInstanceOf(StartRegistration::class.java)
+    }
+
+    @Test
     fun `start registration command - onNext can be called for start registration command`() {
-        val result = processor.onNext(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = processor.onNext(
+            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity),
+            Record(testTopic, testTopicKey, startRegistrationCommand)
+        )
         assertThat(result.updatedState).isNotNull
         assertThat(result.responseEvents).isNotEmpty.hasSize(2)
         assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)

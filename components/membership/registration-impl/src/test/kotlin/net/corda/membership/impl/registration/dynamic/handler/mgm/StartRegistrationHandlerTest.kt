@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -12,9 +10,12 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
-import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
@@ -55,7 +56,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -96,28 +99,12 @@ class StartRegistrationHandlerTest {
             )
         )
 
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext)
+        val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
-        fun getStartRegistrationCommand(
-            holdingIdentity: HoldingIdentity,
-            memberContext: KeyValuePairList,
-            serial: Long? = 0L
-        ) = RegistrationCommand(
-                StartRegistration(
-                    mgmHoldingIdentity,
-                    holdingIdentity,
-                    MembershipRegistrationRequest(
-                        registrationId,
-                        memberContext.toByteBuffer(),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap("456".toByteArray()),
-                            ByteBuffer.wrap("789".toByteArray())
-                        ),
-                        CryptoSignatureSpec("", null, null),
-                        serial,
-                    )
-                )
-            )
+        val registrationState = getRegistrationState(registrationId, aliceHoldingIdentity, mgmHoldingIdentity)
+
+        fun getRegistrationState(registrationId: String, member: HoldingIdentity, mgm: HoldingIdentity) =
+            RegistrationState(registrationId, member, mgm)
     }
 
     // Class under test
@@ -182,19 +169,36 @@ class StartRegistrationHandlerTest {
         on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
 
+    private val registrationRequest = createRegistrationRequest()
+
+    private fun createRegistrationRequest(
+        context: KeyValuePairList = memberContext,
+        serial: Long? = 0L
+    ) = RegistrationRequestDetails(
+        clock.instant(),
+        clock.instant(),
+        RegistrationStatus.RECEIVED_BY_MGM,
+        registrationId,
+        1,
+        context,
+        CryptoSignatureWithKey(
+            ByteBuffer.wrap("456".toByteArray()),
+            ByteBuffer.wrap("789".toByteArray())
+        ),
+        CryptoSignatureSpec("", null, null),
+        "",
+        serial,
+    )
+
     @BeforeEach
     fun setUp() {
-        val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-            on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
-        }
-        val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-        }
         memberInfoFactory = mock {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on {
+                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull())
+            } doReturn MembershipPersistenceResult.success()
             on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
@@ -204,6 +208,9 @@ class StartRegistrationHandlerTest {
                     any()
                 )
             } doReturn MembershipQueryResult.Success(emptyList())
+            on {
+                queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId))
+            } doReturn MembershipQueryResult.Success(registrationRequest)
         }
 
         handler = StartRegistrationHandler(
@@ -213,14 +220,13 @@ class StartRegistrationHandlerTest {
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
-            cordaAvroSerializationFactory,
             registrationContextCustomFieldsVerifier
         )
     }
 
     @Test
     fun `invoke returns follow on records and an unchanged state`() {
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -236,27 +242,37 @@ class StartRegistrationHandlerTest {
             assertThat(pendingMemberRecord!!.viewOwningMember).isEqualTo(mgmHoldingIdentity)
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
-            persistMemberInfo = true
+            persistMemberInfo = true,
+            queryRegistrationRequest = true,
         )
     }
 
     @Test
     fun `serial is increased when building pending member info`() {
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 10L)))
         val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, 10L)
-        handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
         assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("11")
     }
 
     @Test
+    fun `exception is thrown when registration state is null`() {
+        assertThrows<MissingRegistrationStateException> {
+            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        }
+    }
+
+    @Test
     fun `declined if serial in the registration request is null`() {
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, null)
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = null)))
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -267,11 +283,11 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if persistence of registration request fails`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
+    fun `declined if updating the status of the registration request fails`() {
+        whenever(membershipPersistenceClient.setRegistrationRequestStatus(any(), any(), any(), anyOrNull()))
             .doReturn(MembershipPersistenceResult.Failure("error"))
 
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -280,8 +296,9 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -289,7 +306,7 @@ class StartRegistrationHandlerTest {
     fun `declined if target MGM is not an mgm`() {
         whenever(memberTypeChecker.getMgmMemberInfo(mgmHoldingIdentity.toCorda())).doReturn(null)
 
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -306,31 +323,7 @@ class StartRegistrationHandlerTest {
     fun `declined if target member is an mgm`() {
         whenever(memberTypeChecker.isMgm(aliceHoldingIdentity.toCorda())).doReturn(true)
 
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
-
-            assertDeclinedRegistration()
-        }
-    }
-
-    @Test
-    fun `declined if member context is empty`() {
-        with(
-            handler.invoke(
-                null,
-                Record(
-                    testTopic, testTopicKey, getStartRegistrationCommand(
-                        aliceHoldingIdentity,
-                        KeyValuePairList(
-                            emptyList()
-                        )
-                    )
-                )
-            )
-        ) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -339,8 +332,27 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
             verify = true,
+            queryRegistrationRequest = true,
+        )
+    }
+
+    @Test
+    fun `declined if member context is empty`() {
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(context = KeyValuePairList(emptyList()))))
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
+
+            assertDeclinedRegistration()
+        }
+        verifyServices(
+            updateRegistrationRequest = true,
+            verify = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -349,7 +361,7 @@ class StartRegistrationHandlerTest {
     fun `declined if customs fields in member fail validation`() {
         whenever(registrationContextCustomFieldsVerifier.verify(any()))
             .thenReturn(RegistrationContextCustomFieldsVerifier.Result.Failure(""))
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -358,9 +370,10 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -369,13 +382,8 @@ class StartRegistrationHandlerTest {
         val badHoldingIdentity = HoldingIdentity(MemberX500Name.parse("O=BadName,L=London,C=GB").toString(), groupId)
         with(
             handler.invoke(
-                null,
-                Record(
-                    testTopic, testTopicKey, getStartRegistrationCommand(
-                        badHoldingIdentity,
-                        memberContext
-                    )
-                )
+                RegistrationState(registrationId, badHoldingIdentity, mgmHoldingIdentity),
+                Record(testTopic, testTopicKey, startRegistrationCommand)
             )
         ) {
             assertThat(updatedState).isNotNull
@@ -386,9 +394,10 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -397,7 +406,7 @@ class StartRegistrationHandlerTest {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         with(
-            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -407,10 +416,11 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -426,10 +436,9 @@ class StartRegistrationHandlerTest {
         }
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, 1L)
-        with(
-            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
-        ) {
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 1L)))
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -442,7 +451,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member info has no endpoints`() {
         whenever(pendingMemberInfo.endpoints).thenReturn(emptyList())
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -451,10 +460,11 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -463,7 +473,7 @@ class StartRegistrationHandlerTest {
         whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
             MembershipPersistenceResult.Failure("error")
         )
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -472,11 +482,12 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
-            persistMemberInfo = true
+            persistMemberInfo = true,
+            queryRegistrationRequest = true,
         )
     }
 
@@ -497,7 +508,7 @@ class StartRegistrationHandlerTest {
             )
         ).thenReturn(MembershipQueryResult.Success(emptyList()))
 
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertRegistrationStarted()
     }
@@ -512,7 +523,7 @@ class StartRegistrationHandlerTest {
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
     }
@@ -527,7 +538,7 @@ class StartRegistrationHandlerTest {
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
     }
@@ -542,7 +553,7 @@ class StartRegistrationHandlerTest {
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
     }
@@ -557,11 +568,14 @@ class StartRegistrationHandlerTest {
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
-        val notaryResult = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val notaryResult = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         notaryResult.assertRegistrationStarted()
 
-        val memberStartRegistrationCommand = getStartRegistrationCommand(HoldingIdentity(notaryX500Name.toString(), groupId), memberContext)
-        val memberResult = handler.invoke(null, Record(testTopic, testTopicKey, memberStartRegistrationCommand))
+        val memberStartRegistrationCommand = startRegistrationCommand
+        val memberResult = handler.invoke(
+            RegistrationState(registrationId, HoldingIdentity(notaryX500Name.toString(), groupId), mgmHoldingIdentity),
+            Record(testTopic, testTopicKey, memberStartRegistrationCommand)
+        )
         memberResult.assertDeclinedRegistration()
     }
 
@@ -579,7 +593,7 @@ class StartRegistrationHandlerTest {
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
         whenever(mockGroupParameters.notaries).thenReturn(listOf(mockNotary))
 
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
     }
@@ -595,7 +609,7 @@ class StartRegistrationHandlerTest {
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
         whenever(groupReader.groupParameters).thenReturn(null)
 
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
     }
 
@@ -622,8 +636,11 @@ class StartRegistrationHandlerTest {
             )
         ).thenReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
 
-        val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity, memberContext)
-        val result = handler.invoke(null, Record(testTopic, testTopicKey, registrationCommand))
+        val registrationCommand = startRegistrationCommand
+        val result = handler.invoke(RegistrationState(
+            registrationId, bobHoldingIdentity, mgmHoldingIdentity),
+            Record(testTopic, testTopicKey, registrationCommand)
+        )
         result.assertDeclinedRegistration()
     }
 
@@ -636,7 +653,7 @@ class StartRegistrationHandlerTest {
             )
         ).thenReturn(MembershipQueryResult.Failure("error happened"))
 
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -654,7 +671,7 @@ class StartRegistrationHandlerTest {
                 IllegalArgumentException("bad-token")
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(memberMemberContext).parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)
             verify(membershipQueryClient, never()).queryPreAuthTokens(any(), any(), any(), any())
@@ -669,7 +686,7 @@ class StartRegistrationHandlerTest {
                 MembershipQueryResult.Failure("failed-query")
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
             result.assertDeclinedRegistration()
@@ -683,7 +700,7 @@ class StartRegistrationHandlerTest {
                 MembershipQueryResult.Success(emptyList())
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
             result.assertDeclinedRegistration()
@@ -698,7 +715,7 @@ class StartRegistrationHandlerTest {
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             result.assertRegistrationStarted()
         }
@@ -714,7 +731,7 @@ class StartRegistrationHandlerTest {
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             result.assertRegistrationStarted()
         }
@@ -730,7 +747,7 @@ class StartRegistrationHandlerTest {
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             result.assertRegistrationStarted()
         }
@@ -746,7 +763,7 @@ class StartRegistrationHandlerTest {
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
 
-            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             result.assertDeclinedRegistration()
         }
@@ -769,16 +786,19 @@ class StartRegistrationHandlerTest {
 
     @Suppress("LongParameterList")
     private fun verifyServices(
-        persistRegistrationRequest: Boolean = false,
+        updateRegistrationRequest: Boolean = false,
         verify: Boolean = false,
         verifyCustomFields: Boolean = false,
         queryMemberInfo: Boolean = false,
-        persistMemberInfo: Boolean = false
+        persistMemberInfo: Boolean = false,
+        queryRegistrationRequest: Boolean = false,
     ) {
         fun getVerificationMode(condition: Boolean) = if (condition) times(1) else never()
 
-        verify(membershipPersistenceClient, getVerificationMode(persistRegistrationRequest))
-            .persistRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), any())
+        verify(membershipPersistenceClient, getVerificationMode(updateRegistrationRequest))
+            .setRegistrationRequestStatus(
+                eq(mgmHoldingIdentity.toCorda()), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull()
+            )
 
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
@@ -791,5 +811,8 @@ class StartRegistrationHandlerTest {
 
         verify(memberTypeChecker, getVerificationMode(verify))
             .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))
+
+        verify(membershipQueryClient, getVerificationMode(queryRegistrationRequest))
+            .queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), any())
     }
 }

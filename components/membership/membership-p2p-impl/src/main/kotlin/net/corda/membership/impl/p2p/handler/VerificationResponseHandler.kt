@@ -8,7 +8,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
@@ -25,10 +24,9 @@ internal class VerificationResponseHandler(
     ): Record<String, RegistrationCommand> {
         logger.info("Received verification response from ${header.source}. Sending it to RegistrationManagementService to process.")
         val response = avroSchemaRegistry.deserialize<VerificationResponse>(payload)
-        val registrationId = response.registrationId
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            "$registrationId-${header.destination.toCorda().shortHash}",
+            "${header.source.x500Name}-${header.source.groupId}",
             RegistrationCommand(
                 ProcessMemberVerificationResponse(
                     response
