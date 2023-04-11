@@ -57,8 +57,7 @@ class StateAndEventBuilderImpl @Activate constructor(
 
         val partitionState =
             StateAndEventPartitionState(
-                mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(),
-                mutableMapOf()
+                mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>()
             )
 
         val mapFactory = object : MapFactory<K, Pair<Long, S>> {
