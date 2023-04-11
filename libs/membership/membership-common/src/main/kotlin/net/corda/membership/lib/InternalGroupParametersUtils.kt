@@ -7,6 +7,7 @@ import net.corda.data.membership.PersistentGroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import java.nio.ByteBuffer
+import net.corda.data.membership.SignedGroupParameters as AvroSignedGroupParameters
 
 fun InternalGroupParameters.toPersistentGroupParameters(
     owner: HoldingIdentity,
@@ -15,7 +16,7 @@ fun InternalGroupParameters.toPersistentGroupParameters(
     val signed = this as? SignedGroupParameters
     return PersistentGroupParameters(
         owner.toAvro(),
-        net.corda.data.membership.SignedGroupParameters(
+        AvroSignedGroupParameters(
             ByteBuffer.wrap(bytes),
             signed?.let {
                 CryptoSignatureWithKey(

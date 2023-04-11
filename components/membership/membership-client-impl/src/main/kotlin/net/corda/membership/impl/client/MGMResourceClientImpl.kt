@@ -559,7 +559,7 @@ class MGMResourceClientImpl @Activate constructor(
             val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.suspendMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
-            publishMessageBusRecords(
+            publishSuspensionActivationRecords(
                 updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
             )
         }
@@ -571,7 +571,7 @@ class MGMResourceClientImpl @Activate constructor(
             val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.activateMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
-            publishMessageBusRecords(
+            publishSuspensionActivationRecords(
                 updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
             )
         }
@@ -592,7 +592,7 @@ class MGMResourceClientImpl @Activate constructor(
          * Publish the updated member info and request distribution via the message bus. Also, optionally publish the updated group
          * parameters.
          */
-        private fun publishMessageBusRecords(
+        private fun publishSuspensionActivationRecords(
             memberInfo: PersistentMemberInfo,
             groupParameters: InternalGroupParameters?,
             memberX500Name: MemberX500Name,
