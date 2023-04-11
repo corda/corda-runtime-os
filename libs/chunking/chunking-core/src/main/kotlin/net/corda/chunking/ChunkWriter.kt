@@ -18,7 +18,7 @@ interface ChunkWriter {
      * @param inputStream a stream containing the binary - the caller should `close()` the stream
      * @return the [Request] information for this write.
      */
-    fun write(fileName: String, inputStream: InputStream) : Request
+    fun write(fileName: String?, inputStream: InputStream) : Request
 
     /**
      * When a chunk is created, it is passed to the [ChunkWriteCallback], it is up to the implementer to write the

@@ -42,7 +42,7 @@ fun assembleFileFromChunks(
 
     // Set up chunk reader.  If onComplete is never called, we've failed.
     val reader = chunkReaderFactory.create(cacheDir).apply {
-        onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
+        onComplete { originalFileName: String?, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
             fileName = originalFileName
             tempPath = tempPathOfBinary
             checksum = fileChecksum

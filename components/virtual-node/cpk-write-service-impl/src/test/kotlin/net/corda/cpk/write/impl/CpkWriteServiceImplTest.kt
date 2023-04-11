@@ -203,8 +203,8 @@ class CpkWriteServiceImplTest {
         assertTrue(chunks[2].data.equals(ByteBuffer.wrap(cpkData)))
         assertTrue(chunks[3].data.limit() == 0)
 
-        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
-        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[2].fileName)
+        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].properties.items.find { it.key == "FileName" }?.value)
+        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[2].properties.items.find { it.key == "FileName" }?.value)
     }
 
     @Test

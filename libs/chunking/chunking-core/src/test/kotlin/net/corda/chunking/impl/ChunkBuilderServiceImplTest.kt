@@ -36,21 +36,20 @@ class ChunkBuilderServiceImplTest {
 
     @Test
     fun `test final chunk has secure hash and empty bytes`() {
-        val chunk = chunkBuilderService.buildFinalChunk(id, chunkNumber, secureHash, offset, properties, fileName)
+        val chunk = chunkBuilderService.buildFinalChunk(id, chunkNumber, secureHash, offset, properties)
         assertThat(chunk.requestId).isEqualTo(id)
         assertThat(chunk.partNumber).isEqualTo(chunkNumber)
         assertThat(chunk.checksum).isEqualTo(secureHash.toAvro())
         assertThat(chunk.properties).isEqualTo(properties)
         assertThat(chunk.properties.items.find { it.key == fileNameIndex }?.value).isEqualTo(fileName)
         assertThat(chunk.properties.items.find { it.key == offsetIndex }?.value).isEqualTo(offset.toString())
-        assertThat(chunk.fileName).isEqualTo(fileName)
         assertThat(chunk.offset).isEqualTo(offset)
         assertThat(chunk.data.array().size).isEqualTo(0)
     }
 
     @Test
     fun `test chunk has np secure hash and empty bytes`() {
-        val chunk = chunkBuilderService.buildChunk(id, chunkNumber, chunkBytes, offset, properties, fileName)
+        val chunk = chunkBuilderService.buildChunk(id, chunkNumber, chunkBytes, offset, properties)
         assertThat(chunk.requestId).isEqualTo(id)
         assertThat(chunk.partNumber).isEqualTo(chunkNumber)
         assertThat(chunk.data).isEqualTo(chunkBytes)
@@ -58,7 +57,6 @@ class ChunkBuilderServiceImplTest {
         assertThat(chunk.properties).isEqualTo(properties)
         assertThat(chunk.properties.items.find { it.key == fileNameIndex }?.value).isEqualTo(fileName)
         assertThat(chunk.properties.items.find { it.key == offsetIndex }?.value).isEqualTo(offset.toString())
-        assertThat(chunk.fileName).isEqualTo(fileName)
         assertThat(chunk.offset).isEqualTo(offset)
     }
 }

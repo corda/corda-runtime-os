@@ -136,7 +136,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         val cpiUploadRequestId = tryWithExceptionHandling(logger,"Force CPI upload") {
             cpiUploadService.cpiUploadManager.uploadCpi(
                 upload.fileName, upload.content,
-                mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
+                mutableMapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
             )
         }
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)

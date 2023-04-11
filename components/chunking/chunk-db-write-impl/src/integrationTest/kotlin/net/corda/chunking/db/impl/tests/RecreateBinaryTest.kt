@@ -124,12 +124,12 @@ class RecreateBinaryTest {
         val originalFile = createFile()
         val chunks = createChunks(expectedFileName, originalFile)
 
-        var actualFileName = ""
+        var actualFileName: String? = ""
         var tempPath: Path? = null
         val destDir = fs.getPath("destDir").apply { Files.createDirectories(this) }
 
         val chunkReader = ChunkReaderFactoryImpl.create(destDir).apply {
-            this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash, _ ->
+            this.onComplete { originalFileName: String?, tempPathOfBinary: Path, _: SecureHash, _ ->
                 actualFileName = originalFileName
                 tempPath = tempPathOfBinary
             }

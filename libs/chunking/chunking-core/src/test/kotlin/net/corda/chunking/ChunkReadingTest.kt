@@ -211,7 +211,7 @@ class ChunkReadingTest {
         writer.write(ourFileName, Files.newInputStream(expectedPath))
 
         lateinit var actualPath: Path
-        lateinit var actualFileName: String
+        var actualFileName: String? = null
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
             onComplete { originalFileName, tempPathOfBinary, _, _ ->
                 actualPath = tempPathOfBinary

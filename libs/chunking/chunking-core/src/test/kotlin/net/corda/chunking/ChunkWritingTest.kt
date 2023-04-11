@@ -75,8 +75,9 @@ class ChunkWritingTest {
     @Test
     fun `chunk file name is set correctly`() {
         val fileName = randomFileName()
-        val writer = ChunkWriterFactory.create(1 * MB).apply {
-            onChunk { assertThat(it.fileName).isEqualTo(fileName.toString()) }
+        val writer = ChunkWriterFactory.create(1 * MB)
+        writer.apply {
+            this.onChunk { chunk -> assertThat(chunk.properties.items.find { it.key == "FileName" }?.value).isEqualTo(fileName) }
         }
 
         val path = createFile((32 * KB).toLong())
