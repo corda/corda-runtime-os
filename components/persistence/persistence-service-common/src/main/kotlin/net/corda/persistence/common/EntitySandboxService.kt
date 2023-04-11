@@ -2,6 +2,7 @@ package net.corda.persistence.common
 
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 
 interface EntitySandboxService {
@@ -11,5 +12,5 @@ interface EntitySandboxService {
      *
      * @throws [CordaRuntimeException] if not found
      */
-    fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext
+    fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): SandboxGroupContext
 }

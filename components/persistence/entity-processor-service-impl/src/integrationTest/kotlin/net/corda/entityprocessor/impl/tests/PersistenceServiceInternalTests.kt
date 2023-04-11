@@ -1,6 +1,7 @@
 package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -8,6 +9,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
@@ -38,6 +40,7 @@ import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
+import net.corda.flow.utils.toKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -48,6 +51,7 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -109,6 +113,7 @@ class PersistenceServiceInternalTests {
 
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
+    private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var responseFactory: ResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
@@ -136,6 +141,7 @@ class PersistenceServiceInternalTests {
         lifecycle.accept(sandboxSetup) { setup ->
             virtualNode = setup.fetchService(timeout = 10000)
             cpiInfoReadService = setup.fetchService(timeout = 10000)
+            cpkReadService = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
             responseFactory = setup.fetchService(timeout = 10000)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
@@ -153,7 +159,10 @@ class PersistenceServiceInternalTests {
         dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
         entitySandboxService = createEntitySandbox(dbConnectionManager)
 
-        sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+
+        EXTERNAL_EVENT_CONTEXT.contextProperties = cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
 
         // migrate DB schema
         dogClass = sandbox.sandboxGroup.getDogClass()
@@ -196,7 +205,7 @@ class PersistenceServiceInternalTests {
 
     @Test
     fun `persist`() {
-        val persistenceService = PersistenceServiceInternal(entitySandboxService::getClass, this::noOpPayloadCheck)
+        val persistenceService = PersistenceServiceInternal(sandbox::getClass, this::noOpPayloadCheck)
         val payload = PersistEntities(listOf(sandbox.serialize(sandbox.createDog("Rover").instance)))
 
         val entityManager = BasicMocks.entityManager()
@@ -224,7 +233,9 @@ class PersistenceServiceInternalTests {
 
         val myEntitySandboxService = createEntitySandbox(myDbConnectionManager)
 
-        val sandboxOne = myEntitySandboxService.get(virtualNodeInfo.holdingIdentity)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+
+        val sandboxOne = myEntitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
         // migrate DB schema
         val dogClass = sandboxOne.sandboxGroup.getDogClass()
@@ -242,10 +253,14 @@ class PersistenceServiceInternalTests {
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
+        val cpkFileHashesTwo = cpiInfoReadService.getCpkFileHashes(virtualNodeInfoTwo)
+
         val request = EntityRequest(
             virtualNodeInfoTwo.holdingIdentity.toAvro(),
             PersistEntities(listOf(sandboxOne.serialize(dog.instance))),
-            EXTERNAL_EVENT_CONTEXT
+            EXTERNAL_EVENT_CONTEXT.apply {
+                contextProperties = cpkFileHashesTwo.toKeyValuePairList(CPK_FILE_CHECKSUM)
+            }
         )
         val processor = EntityMessageProcessor(
             myEntitySandboxService,
@@ -476,7 +491,7 @@ class PersistenceServiceInternalTests {
         assertThat(results.size).isGreaterThanOrEqualTo(expected)
 
         // And check the types we've returned
-        val dogClass = entitySandboxService.getClass(virtualNodeInfo.holdingIdentity, DOG_CLASS_NAME)
+        val dogClass = sandbox.getClass(DOG_CLASS_NAME)
         results.forEach {
             assertThat(it).isInstanceOf(dogClass)
         }
@@ -495,7 +510,7 @@ class PersistenceServiceInternalTests {
         assertThat(resultsBalance.size).isEqualTo(expected - 4)
 
         // And check the types we've returned
-        val dogClass = entitySandboxService.getClass(virtualNodeInfo.holdingIdentity, DOG_CLASS_NAME)
+        val dogClass = sandbox.getClass(DOG_CLASS_NAME)
         val allResults = results1 + results2 + resultsBalance
         allResults.forEach {
             assertThat(it).isInstanceOf(dogClass)
@@ -590,7 +605,7 @@ class PersistenceServiceInternalTests {
         assertThat(results.size).isEqualTo(expected)
 
         // And check the types we've returned
-        val clazz = entitySandboxService.getClass(virtualNodeInfo.holdingIdentity, CAT_CLASS_NAME)
+        val clazz = sandbox.getClass(CAT_CLASS_NAME)
         results.forEach {
             assertThat(it).isInstanceOf(clazz)
         }
@@ -729,7 +744,7 @@ class PersistenceServiceInternalTests {
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager = BasicMocks.dbConnectionManager()) =
         EntitySandboxServiceFactory().create(
             virtualNode.sandboxGroupContextComponent,
-            cpiInfoReadService,
+            cpkReadService,
             virtualNodeInfoReadService,
             dbConnectionManager
         )
@@ -906,7 +921,7 @@ class PersistenceServiceInternalTests {
                         createRequest(
                             virtualNodeInfo.holdingIdentity,
                             PersistEntities(entities.map { sandbox.serialize(it) }),
-                            ExternalEventContext(requestId, "flow id", KeyValuePairList(emptyList()))
+                            EXTERNAL_EVENT_CONTEXT.apply { this.requestId = requestId }
                         )
                     )
                 )
