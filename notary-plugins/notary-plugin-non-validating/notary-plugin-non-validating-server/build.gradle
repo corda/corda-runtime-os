@@ -5,10 +5,6 @@ plugins {
     id 'corda.javadoc-generation'
 }
 
-ext {
-    releasable = true
-}
-
 description 'Corda Non-Validating Notary Plugin Server'
 
 group 'com.r3.corda.notary.plugin.nonvalidating'
