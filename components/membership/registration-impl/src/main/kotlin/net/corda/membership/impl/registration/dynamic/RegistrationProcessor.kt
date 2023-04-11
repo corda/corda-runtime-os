@@ -179,11 +179,15 @@ class RegistrationProcessor(
                 val message = value.message
                 if (message is AuthenticatedMessage) {
                     logger.info(
-                        "For ${event.key} in RegistrationProcessor::onNext returning auth message ${message.header.destination}"
+                        "For ${event.key} in RegistrationProcessor::onNext " +
+                            "returning auth message ${message.header.destination} " +
+                            " id ${message.header.messageId}"
                     )
                 } else if (message is UnauthenticatedMessage) {
                     logger.info(
-                        "For ${event.key} in RegistrationProcessor::onNext returning unauth message ${message.header.destination}"
+                        "For ${event.key} in RegistrationProcessor::onNext " +
+                                "returning unauth message ${message.header.destination}" +
+                                " id ${message.header.messageId}"
                     )
                 }
             } else {

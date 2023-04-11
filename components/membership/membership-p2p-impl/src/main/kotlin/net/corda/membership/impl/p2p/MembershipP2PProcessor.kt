@@ -73,6 +73,7 @@ class MembershipP2PProcessor(
                     logger.error("Unexpected exception occurred.", ex)
                     null
                 }
+                logger.info("QQQ receive message ${msg.id()} of type ${classType?.simpleName}")
                 val processor = try {
                     classType?.let { getHandler(it) }
                 } catch (ex: MembershipP2PException) {
@@ -103,6 +104,18 @@ class MembershipP2PProcessor(
     private fun Any.isMembershipSubsystem(): Boolean {
         return (this as? AuthenticatedMessage)?.isMembershipSubsystem() ?: false
                 || (this as? UnauthenticatedMessage)?.isMembershipSubsystem() ?: false
+    }
+
+    private fun Any.id(): String {
+        val m1 = this as? AuthenticatedMessage
+        if (m1 != null) {
+            return m1.header.messageId
+        }
+        val m2 = this as? UnauthenticatedMessage
+        if (m2 != null) {
+            return m2.header.messageId
+        }
+        return "Unexpected type"
     }
 
     private fun AuthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM
