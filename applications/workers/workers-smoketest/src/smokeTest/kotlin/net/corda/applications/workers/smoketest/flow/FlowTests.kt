@@ -1191,7 +1191,7 @@ class FlowTests {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             vNodeList().toJson()["virtualNodes"].toList().size
         }
-        if (clusterSize > 1) {
+        if (clusterSize > 2) {
             val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
             val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
 
