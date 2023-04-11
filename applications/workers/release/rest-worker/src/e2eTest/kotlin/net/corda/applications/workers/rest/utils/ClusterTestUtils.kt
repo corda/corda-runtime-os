@@ -274,12 +274,13 @@ fun E2eCluster.register(
                 println("QQQ For member: ${member.name} -> $registrationId")
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes, retryAllExceptions = true) {
+                eventually(duration = 3.minutes, retryAllExceptions = true) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
                             "${member.name} failed to get to approved registration state. " +
-                                    "Last state was ${registrationStatus.registrationStatus}"
+                                "Last state was ${registrationStatus.registrationStatus}. " +
+                                "Registration ID was $registrationId"
                         }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }

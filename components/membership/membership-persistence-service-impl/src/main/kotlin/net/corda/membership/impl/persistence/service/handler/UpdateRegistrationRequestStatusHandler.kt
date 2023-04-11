@@ -31,6 +31,10 @@ internal class UpdateRegistrationRequestStatusHandler(
                         "${request.registrationStatus}, will ignore the update"
                 )
             } else {
+                logger.info(
+                    "Updating registration request ${request.registrationId} status from $currentStatus" +
+                        " to ${request.registrationStatus}",
+                )
                 registrationRequest.status = request.registrationStatus.name
                 registrationRequest.lastModified = clock.instant()
                 registrationRequest.reason = request.reason
