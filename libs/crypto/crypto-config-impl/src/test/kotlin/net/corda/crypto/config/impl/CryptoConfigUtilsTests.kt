@@ -46,7 +46,6 @@ class CryptoConfigUtilsTests {
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
         assertNull(softWorker.masterKeyAlias)
-        assertEquals(-1, softWorker.capacity)
         assertThat(softWorker.supportedSchemes).hasSize(8)
         assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
@@ -97,7 +96,6 @@ class CryptoConfigUtilsTests {
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
         assertNull(softWorker.masterKeyAlias)
-        assertEquals(-1, softWorker.capacity)
         assertThat(softWorker.supportedSchemes).hasSize(8)
         assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
@@ -217,9 +215,6 @@ class CryptoConfigUtilsTests {
         }
         assertThrows<IllegalStateException> {
             retryConfig.attemptTimeoutMills
-        }
-        assertThrows<IllegalStateException> {
-            config.capacity
         }
         assertThrows<IllegalStateException> {
             config.supportedSchemes

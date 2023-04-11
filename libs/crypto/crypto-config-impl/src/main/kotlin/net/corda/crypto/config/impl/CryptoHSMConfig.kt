@@ -46,14 +46,6 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val capacity: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        try {
-            config.getInt(this::capacity.name)
-        } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::capacity.name}", e)
-        }
-    }
-
     val cfg: SmartConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
             config.getConfig(this::cfg.name)

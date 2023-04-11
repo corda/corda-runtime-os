@@ -225,7 +225,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
                     CryptoHSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                    CryptoHSMConfig::capacity.name to -1,
                     CryptoHSMConfig::supportedSchemes.name to listOf(
                         "CORDA.RSA",
                         "CORDA.ECDSA.SECP256R1",
