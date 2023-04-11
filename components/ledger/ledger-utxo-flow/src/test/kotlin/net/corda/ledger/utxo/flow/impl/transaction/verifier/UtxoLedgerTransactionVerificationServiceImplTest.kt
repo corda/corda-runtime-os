@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
@@ -7,6 +8,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
@@ -38,7 +40,8 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
     fun setup() {
         verificationService = UtxoLedgerTransactionVerificationServiceImpl(
             externalEventExecutor,
-            serializationService
+            serializationService,
+            mock()
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
@@ -62,8 +65,10 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         val wireTransaction = mock<WireTransaction>()
         val transactionMetadata = mock<TransactionMetadataInternal>()
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
+        whenever(transaction.metadata).thenReturn(transactionMetadata)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
+        whenever(transactionMetadata.getMembershipGroupParametersHash()).thenReturn("SHA-X:1234")
 
         assertDoesNotThrow {
             verificationService.verify(transaction)
@@ -93,8 +98,10 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         val transactionMetadata = mock<TransactionMetadataInternal>()
         whenever(transaction.id).thenReturn(transactionId)
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
+        whenever(transaction.metadata).thenReturn(transactionMetadata)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
+        whenever(transactionMetadata.getMembershipGroupParametersHash()).thenReturn("SHA-X:1234")
 
         val exception = assertThrows<TransactionVerificationException> {
             verificationService.verify(transaction)
