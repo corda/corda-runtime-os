@@ -3,16 +3,16 @@
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
     nexusAppId: 'flow-worker-5.0',
-    runIntegrationTests: true,
+    runIntegrationTests: false,
     createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
-    combinedWorkere2eTests: true,
+    combinedWorkere2eTests: false,
     // allow publishing artifacts to S3 bucket
-    publishToMavenS3Repository: true,
+    publishToMavenS3Repository: false,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
     )

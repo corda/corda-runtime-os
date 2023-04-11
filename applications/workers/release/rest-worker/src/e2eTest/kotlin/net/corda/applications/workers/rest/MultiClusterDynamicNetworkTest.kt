@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
+import java.util.Date
 
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
@@ -75,15 +76,20 @@ class MultiClusterDynamicNetworkTest {
      * Onboard group and return group ID.
      */
     private fun onboardMultiClusterGroup(mutualTls: Boolean): String {
+        println("QQQ starting onboardMultiClusterGroup")
         val mgm = clusterC.members[0]
+        println("QQQ mgm -> ${mgm.name}")
+        println("QQQ ${Date()} clusterC.p2pHost -> ${clusterC.clusterConfig.p2pHost}")
 
         clusterC.setSslConfiguration(mutualTls)
         clusterC.onboardMgm(mgm, tempDir, mutualTls = mutualTls)
+        println("QQQ ${Date()} MGM onboarded")
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.setSslConfiguration(mutualTls)
+            println("QQQ ${Date()} looking at ${cordaCluster.clusterConfig.p2pHost}")
             cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir) { certificatePem ->
                 if (mutualTls) {
                     clusterC.allowClientCertificates(certificatePem, mgm)

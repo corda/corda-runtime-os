@@ -23,6 +23,7 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
     }
 
     fun RegistrationRequestEntity.toDetails(): RegistrationRequestDetails {
+        logger.info("QQQ RegistrationRequestEntity -> ${this.registrationId}; ${this.status}")
         val context = keyValuePairListDeserializer.deserialize(this.context)
         val registrationProtocolVersion = context?.items?.firstOrNull {
             it.key == "registrationProtocolVersion"

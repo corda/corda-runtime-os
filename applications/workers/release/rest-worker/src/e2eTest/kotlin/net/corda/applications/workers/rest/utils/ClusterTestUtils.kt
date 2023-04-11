@@ -271,6 +271,7 @@ fun E2eCluster.register(
                     context,
                 )
             ).apply {
+                println("QQQ For member: ${member.name} -> $registrationId")
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
                 eventually(duration = 1.minutes, retryAllExceptions = true) {
@@ -400,6 +401,7 @@ fun E2eCluster.onboardMembers(
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
     members.forEach { member ->
+        println("QQQ onboarding ${member.name}")
         createVirtualNode(member, memberCpiChecksum)
 
         assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
