@@ -1,20 +1,13 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.NotarizationRequest
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
-import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
-import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -43,44 +36,18 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     private lateinit var clientService: LedgerUniquenessCheckerClientService
 
     @CordaInject
-    private lateinit var serializationService: SerializationService
-
-    @CordaInject
-    private lateinit var signatureVerifier: DigitalSignatureVerificationService
-
-    @CordaInject
-    private lateinit var memberLookup: MemberLookup
-
-    @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
-
-    @CordaInject
-    private lateinit var digestService: DigestService
-
-    @CordaInject
-    private lateinit var signatureSpecService: SignatureSpecService
 
     /**
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
-    @Suppress("LongParameterList")
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
-        serializationService: SerializationService,
-        signatureVerifier: DigitalSignatureVerificationService,
-        memberLookup: MemberLookup,
-        transactionSignatureService: TransactionSignatureService,
-        digestService: DigestService,
-        signatureSpecService: SignatureSpecService
+        transactionSignatureService: TransactionSignatureService
     ) : this() {
         this.clientService = clientService
-        this.serializationService = serializationService
-        this.signatureVerifier = signatureVerifier
-        this.memberLookup = memberLookup
         this.transactionSignatureService = transactionSignatureService
-        this.digestService = digestService
-        this.signatureSpecService = signatureSpecService
     }
 
     /**
@@ -102,25 +69,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             val txDetails = validateRequest(requestPayload)
 
-            val request = NotarizationRequest(txDetails.inputs, txDetails.id)
-
             if (logger.isTraceEnabled) {
-                logger.trace("Received notarization request for transaction {}", request.transactionId)
+                logger.trace("Received notarization request for transaction {}", txDetails.id)
             }
-
-            val otherMemberInfo = memberLookup.lookup(session.counterparty)
-                ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
-
-            val otherPartySessionKey = otherMemberInfo.ledgerKeys.first()
-
-            validateRequestSignature(
-                request,
-                otherPartySessionKey,
-                serializationService,
-                signatureVerifier,
-                requestPayload.requestSignature,
-                digestService
-            )
 
             verifyTransaction(requestPayload)
 

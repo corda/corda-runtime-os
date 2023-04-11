@@ -1,0 +1,19 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'External Messaging Configuration'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:packaging:packaging-core')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

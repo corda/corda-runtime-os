@@ -12,12 +12,16 @@ rVwmQ9GmruPVpC2wEPpFggbVL3/mtm61qoCi81hphd0W9yVhSVwVT0wQHw==
 -----END PUBLIC KEY-----
         """
 
-        const val PRIVATE_KEY_PEM = """
------BEGIN EC PRIVATE KEY-----
-MHcCAQEEIHRdEfnecOusz8jAMmaLW2VAlUm97ldXJNa5HOt5l96NoAoGCCqGSM49
-AwEHoUQDQgAE6T7NTQnXOUqt/eEEeUhwEHl4PARqAXdrHh4Ae+OWV0VQtDfJD0pl
-GtVshXsBhOBt4/fqJyNoxXDHi6rthUX3ww==
------END EC PRIVATE KEY-----
+        const val CERTIFICATE_PEM = """
+-----BEGIN CERTIFICATE-----
+MIIBSTCB8aADAgECAgECMAoGCCqGSM49BAMCMB4xCzAJBgNVBAYTAlVLMQ8wDQYD
+VQQDDAZyMy5jb20wHhcNMjMwNDA0MDkwMjA1WhcNMjMwNTA0MDkwMjA1WjAeMQsw
+CQYDVQQGEwJVSzEPMA0GA1UEAwwGcjMuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0D
+AQcDQgAE8kG/7nCMi4vlsOMByRqIEZ85/guWJ3FVLli4xzhfm6oBwwonvgWYpxCl
+BFeouJ/6fnb/LW8in9XdShP/kXrL+KMgMB4wDwYDVR0TAQH/BAUwAwEB/zALBgNV
+HQ8EBAMCAa4wCgYIKoZIzj0EAwIDRwAwRAIgaxHWXC7NXtd4XHPRgLqV+UcNS7NW
+ORC/w+12HlGG968CICBvpZAN2HHIlo2Vmgak+avL2zdIK6LQo0nXuY+4e0KT
+-----END CERTIFICATE-----
         """
     }
 
@@ -30,7 +34,7 @@ GtVshXsBhOBt4/fqJyNoxXDHi6rthUX3ww==
 
     @Test
     fun `factory return null for non public key source`() {
-        val key = publicKeyFactory(PRIVATE_KEY_PEM.reader())
+        val key = publicKeyFactory(CERTIFICATE_PEM.reader())
 
         assertThat(key).isNull()
     }

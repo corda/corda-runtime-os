@@ -19,33 +19,43 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 
 class TestInitialConfigPluginCrypto {
     @Test
-    @Disabled
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        val outText = SystemLambda.tapSystemErrNormalized {
+        var outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config")
         }
         println(outText)
-        assertThat(outText).contains("Missing required options:")
+        assertThat(outText).contains("'passphrase' must be set for CORDA type secrets.")
         assertThat(outText).contains("-l, --location=<location>")
         assertThat(outText).contains("location to write the sql output to.")
         assertThat(outText).contains("-p, --passphrase=<passphrase>")
-        assertThat(outText).contains("Passphrase for the encrypting secrets service.")
         assertThat(outText).contains("-s, --salt=<salt>")
         assertThat(outText).contains("Salt for the encrypting secrets service.")
         assertThat(outText).contains("-wp, --wrapping-passphrase=<softHsmRootPassphrase>")
         assertThat(outText).contains("Passphrase for the SOFT HSM root wrapping key.")
         assertThat(outText).contains("-ws, --wrapping-salt=<softHsmRootSalt>")
         assertThat(outText).contains("Salt for the SOFT HSM root wrapping key.")
+    }
+
+
+    @Test
+    fun `Should output missing options when targetting Hashicorp Vault`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        var outText = SystemLambda.tapSystemErrNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute("create-crypto-config", "-t", "VAULT")
+        }
+        assertThat(outText).contains("'vaultPath' must be set for VAULT type secrets.")
     }
 
     @Suppress("MaxLineLength")
@@ -102,6 +112,36 @@ class TestInitialConfigPluginCrypto {
             assertThat(key1.getValue("salt").render()).contains("encryptedSecret")
             assertThat(key1.getValue("passphrase").render()).contains("configSecret")
             assertThat(key1.getValue("passphrase").render()).contains("encryptedSecret")
+        }
+    }
+
+    @Test
+    fun `Should be able to create vault initial crypto configuration with random wrapping key`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        val outText = SystemLambda.tapSystemOutNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute(
+                "create-crypto-config",
+                "-t", "VAULT",
+                "--vault-path", "cryptosecrets",
+                "--key-salt", "salt",
+                "--key-passphrase", "passphrase",
+            )
+        }
+        println(outText)
+        assertThat(outText).startsWith(expectedPrefix)
+        val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
+        val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
+        assertGeneratedJson(json) { it: Config, _: SmartConfigFactory ->
+            val key1 = it.getObjectList("wrappingKeys")[0]
+            assertThat(key1.getValue("salt").render()).doesNotContain("encryptedSecret")
+            assertThat(key1.getValue("passphrase").render()).doesNotContain("encryptedSecret")
+            assertThat(key1.getValue("salt").render()).contains("vaultKey")
+            assertThat(key1.getValue("salt").render()).contains("vaultPath")
+            assertThat(key1.getValue("passphrase").render()).contains("vaultKey")
+            assertThat(key1.getValue("passphrase").render()).contains("vaultPath")
         }
     }
 
