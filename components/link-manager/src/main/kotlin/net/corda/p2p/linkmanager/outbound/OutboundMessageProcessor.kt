@@ -154,6 +154,7 @@ internal class OutboundMessageProcessor(
             message.header.destination.toCorda()
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
+            logger.info("QQQ processUnauthenticatedMessage ${message.header.messageId}")
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
@@ -220,10 +221,12 @@ internal class OutboundMessageProcessor(
         val destination = messageAndKey.message.header.destination.toCorda()
         if (linkManagerHostingMap.isHostedLocally(destination)) {
             return if (isReplay) {
+                logger.info("QQQ processAuthenticatedMessage 1 ${messageAndKey.message.header.messageId}")
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             } else {
+                logger.info("QQQ processAuthenticatedMessage 2 ${messageAndKey.message.header.messageId}")
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)

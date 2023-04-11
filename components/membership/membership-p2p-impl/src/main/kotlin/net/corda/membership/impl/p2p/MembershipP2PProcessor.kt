@@ -73,7 +73,7 @@ class MembershipP2PProcessor(
                     logger.error("Unexpected exception occurred.", ex)
                     null
                 }
-                logger.info("QQQ receive message ${msg.id()} of type ${classType?.simpleName}")
+                logger.info("QQQ my id is ${hashCode()} receive message ${msg.id()} of type ${classType?.simpleName}")
                 val processor = try {
                     classType?.let { getHandler(it) }
                 } catch (ex: MembershipP2PException) {

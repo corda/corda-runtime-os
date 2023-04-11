@@ -73,6 +73,7 @@ internal class InboundMessageProcessor(
                         "Processing unauthenticated message ${payload.header.messageId}"
                     }
                     recordInboundMessagesMetric(payload)
+                    logger.info("QQQ InboundMessageProcessor.onNext ${payload.header.messageId}")
                     listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }
                 else -> {
@@ -177,6 +178,7 @@ internal class InboundMessageProcessor(
                 "Processing message ${innerMessage.message.header.messageId} " +
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
+            logger.info("QQQ in checkIdentityBeforeProcessing innerMessage -> ${innerMessage.message.header.messageId}")
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
             recordInboundMessagesMetric(innerMessage.message)
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
