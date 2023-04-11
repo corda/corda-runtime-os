@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
@@ -79,7 +80,7 @@ fun ClusterInfo.onboardMember(
 
     val registrationId = register(holdingId, registrationContext, waitForApproval)
 
-    return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext)
+    return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
 }
 
 /**
@@ -249,11 +250,36 @@ fun ClusterInfo.createRegistrationContext(
 )
 
 /**
- * Metadata for a network onboarding attempt.
+ * Look up the current member list as viewed on a specific cluster by a specific holding ID.
+ * This can optionally be filtered by member status.
  */
-data class NetworkOnboardingMetadata(
-    val holdingId: String,
-    val x500Name: String,
-    val registrationId: String,
-    val registrationContext: Map<String, String>
-)
+fun ClusterInfo.lookup(
+    holdingId: String,
+    statuses: List<String> = emptyList()
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            val additionalQuery = statuses.joinToString(prefix = "?", separator = "&") { "statuses=$it" }
+            get("/api/v1/members/$holdingId$additionalQuery")
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }
+}
+
+/**
+ * Look up the current group parameters as viewed on a specific cluster by a specific holding ID.
+ */
+fun ClusterInfo.lookupGroupParameters(
+    holdingId: String
+) = cluster {
+    assertWithRetry {
+        timeout(30.seconds)
+        interval(2.seconds)
+        command {
+            get("/api/v1/members/$holdingId/group-parameters")
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }
+}

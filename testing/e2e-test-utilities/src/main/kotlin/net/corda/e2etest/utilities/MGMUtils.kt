@@ -4,6 +4,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
 import net.corda.utilities.seconds
 import java.io.File
@@ -52,7 +53,7 @@ fun ClusterInfo.onboardMgm(
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
     configureNetworkParticipant(mgmHoldingId, sessionKeyId)
 
-    return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext)
+    return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)
 }
 
 /**
@@ -289,3 +290,45 @@ private fun ClusterInfo.createMgmRegistrationContext(
     "corda.group.trustroot.tls.0" to caTrustRoot,
     "corda.group.trustroot.session.0" to caTrustRoot,
 )
+
+/**
+ * Suspend a member identified by [x500Name].
+ * Suspension is performed by the MGM identified by [mgmHoldingId].
+ */
+fun ClusterInfo.suspendMember(
+    mgmHoldingId: String,
+    x500Name: String
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post(
+                "/api/v1/mgm/$mgmHoldingId/suspend",
+                "{ \"x500Name\": \"$x500Name\" }"
+            )
+        }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+    }
+}
+
+/**
+ * Activate a member identified by [x500Name].
+ * Activation is performed by the MGM identified by [mgmHoldingId].
+ */
+fun ClusterInfo.activateMember(
+    mgmHoldingId: String,
+    x500Name: String
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post(
+                "/api/v1/mgm/$mgmHoldingId/activate",
+                "{ \"x500Name\": \"$x500Name\" }"
+            )
+        }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+    }
+}
