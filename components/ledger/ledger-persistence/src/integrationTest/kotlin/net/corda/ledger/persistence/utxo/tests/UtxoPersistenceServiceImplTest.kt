@@ -133,6 +133,8 @@ class UtxoPersistenceServiceImplTest {
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
+            factoryStorage = ctx.getSandboxSingletonService()
+
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
                 repository,
