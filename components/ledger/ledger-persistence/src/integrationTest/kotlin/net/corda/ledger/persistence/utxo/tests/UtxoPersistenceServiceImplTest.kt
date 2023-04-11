@@ -404,7 +404,7 @@ class UtxoPersistenceServiceImplTest {
                 .forEach { (dbRelevancy, visibleStateIndex) ->
                     assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(visibleStateIndex)
-                    assertThat(dbRelevancy.field<String>("customRepresentation")).isEqualTo("{\"temp\": \"value\"}")
+                    assertThat(dbRelevancy.field<String>("customRepresentation")).isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\": {}}")
                     assertThat(dbRelevancy.field<Instant>("consumed")).isNull()
                 }
 
