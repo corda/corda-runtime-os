@@ -85,32 +85,31 @@ class InteropProcessor(
                 return StateAndEventProcessor.Response(state, emptyList())
             }
 
-            val facadeRequest = when (val sessionPayload = sessionEvent.payload) {
-                is SessionInit -> sessionPayload::class.java  //InteropMessageTransformer.getFacadeRequest(
-                    //interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
-                //)
-                is SessionData -> sessionPayload::class.java  //{
-                    //val payload : ByteBuffer = sessionPayload.payload as ByteBuffer
-                    //InteropMessageTransformer.getFacadeRequest(interopAvroDeserializer.deserialize(payload.array())!!)
-                //}
-                else -> sessionPayload::class.java //null
+            val facadeName = when (val sessionPayload = sessionEvent.payload) {
+                is SessionInit -> null
+                is SessionData -> {
+                    val payload : ByteBuffer = sessionPayload.payload as ByteBuffer
+                    val message = String(payload.array())
+                    message
+                }
+                else -> null
             }
-            logger.trace(facadeRequest.toString())
-//            if (facadeRequest == null) {
-//                logger.info("Pass-through event ${sessionEvent::class.java} without FacadeRequest")
-//            } else {
-//                logger.info(
-//                    "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
-//                            " Key: ${event.key}, facade request: $facadeRequest."
-//                )
-//                val flowName = facadeToFlowMapperService.getFlowName(
-//                    realHoldingIdentity, facadeRequest.facadeId.toString(),
-//                    facadeRequest.methodName
-//                )
-//                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
-//                // this change is required for CORE-10426 Support For Façade Handlers
-//                logger.info("Flow name associated with facade request : $flowName")
-//            }
+
+            if (facadeName == null) {
+                logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
+            } else {
+                logger.info("Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
+                            " Key: ${event.key}, facade request: $facadeName."
+                )
+                val flowName = try {
+                    facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeName, "say-hello")
+                } catch (e: IllegalStateException) {
+                    logger.warn(e.message)
+                }
+                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
+                // this change is required for CORE-10426 Support For Façade Handlers
+                logger.info("Flow name associated with facade request : $flowName")
+            }
 
             return StateAndEventProcessor.Response(
                 InteropState(
@@ -218,7 +217,6 @@ class InteropProcessor(
         return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
     }
 
-    //TODO taken from FlowMapperHelper
     /**
      * Get the source and destination holding identity from the [sessionEvent].
      * @param sessionEvent Session event to extract identities from

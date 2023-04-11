@@ -5,19 +5,14 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
-import net.corda.e2etest.utilities.CLUSTER_URI
-import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
-import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
-import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
-import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.createKeyFor
@@ -47,6 +42,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import org.junit.jupiter.api.Disabled
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -1176,6 +1172,7 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
 
+    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12134
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
         val payload = "Hello world!"
@@ -1187,18 +1184,12 @@ class FlowTests {
             "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
         )
 
-        val clusterSize = cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            vNodeList().toJson()["virtualNodes"].toList().size
-        }
-        if (clusterSize > 2) {
-            val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
-            val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
 
-            assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(flowStatus.flowError).isNull()
-            assertThat(flowStatus.flowResult).isEqualTo(payload)
-        }
+        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowStatus.flowError).isNull()
+        assertThat(flowStatus.flowResult).isEqualTo(payload)
     }
 
     /**

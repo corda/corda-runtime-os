@@ -65,7 +65,7 @@ class FlowMessagingImpl @Activate constructor(
         val session = createInteropFlowSession(memberName)
         val response =
             session.sendAndReceive(String::class.java, facadeName)
-        return response//.payload
+        return response
     }
 
     @Suspendable
