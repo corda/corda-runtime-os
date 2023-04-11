@@ -89,10 +89,11 @@ class SessionInitExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                if (!isInteropSessionInit)
+                if (!isInteropSessionInit) {
                     generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
-                else
+                } else {
                     FlowMapperEvent(sessionEvent)
+                }
             )
         }
     }

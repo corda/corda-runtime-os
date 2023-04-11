@@ -109,7 +109,7 @@ class InteropService @Activate constructor(
         coordinator.createManagedResource("InteropAliasProcessor.subscription") {
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(GROUP_NAME, Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
-                InteropAliasProcessor(publisher!!, InteropMembersProducer()),
+                InteropAliasProcessor(publisher!!),
                 messagingConfig).also {
                 it.start()
             }

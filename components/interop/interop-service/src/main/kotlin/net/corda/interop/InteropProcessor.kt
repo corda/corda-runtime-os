@@ -18,7 +18,6 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.InteropAliasProcessor.Companion.addAliasSubstringToOrganisationName
-import net.corda.interop.InteropAliasProcessor.Companion.removeAliasSubstringFromOrganisationName
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -128,13 +127,13 @@ class InteropProcessor(
                         FlowMapperEvent(sessionEvent.apply {
                             if (isInitiatingIdentityDestination()) {
                                 initiatingIdentity = initiatingIdentity.apply {
-                                    x500Name = removeAliasSubstringFromOrganisationName(this.toCorda()).x500Name.toString()
+                                    x500Name = realHoldingIdentity.x500Name.toString()
                                     groupId = realHoldingIdentity.groupId
                                 }
                             }
                             if (isInitiatedIdentityDestination()) {
                                 initiatedIdentity = initiatedIdentity.apply {
-                                    x500Name = removeAliasSubstringFromOrganisationName(this.toCorda()).x500Name.toString()
+                                    x500Name = realHoldingIdentity.x500Name.toString()
                                     groupId = realHoldingIdentity.groupId
                                 }
                             }
@@ -154,14 +153,19 @@ class InteropProcessor(
             logEntering("OUTBOUND", sourceIdentity, destinationIdentity, sessionEvent)
             val translatedSource = sourceIdentity.apply {
                 x500Name = state?.aliasHoldingIdentity ?: addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
-                groupId = state?.groupId ?: INTEROP_GROUP_ID
+                groupId = state?.groupId ?: INTEROP_GROUP_ID // TODO For the first message need to find an alias group,
+            // as FlowProcessor assigns a real group of the source
             }
-            val translatedDestination = destinationIdentity.apply {//TODO review destination from initiating flow vs from initiated
+            val translatedDestination = destinationIdentity.apply {
+                //TODO review destination from initiating flow vs from initiated
                 val name = this.toCorda()
                 if (!name.toString().contains(POSTFIX_DENOTING_ALIAS)) {
+                    //TODO this should be always an alias (set by API or kept by responder flow
                     x500Name = addAliasSubstringToOrganisationName(name).x500Name.toString()
                 }
-                groupId = INTEROP_GROUP_ID
+                groupId = INTEROP_GROUP_ID // TODO For the first message need to find an alias group,
+                // as FlowProcessor assigns a real group of the source,
+                // for the following messages it should already have a alias group worth comparing with the session
             }
             logLeaving("OUTBOUND", translatedSource, translatedDestination, sessionEvent)
             return StateAndEventProcessor.Response(

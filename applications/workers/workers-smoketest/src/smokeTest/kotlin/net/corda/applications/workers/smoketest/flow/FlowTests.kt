@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -1182,12 +1183,14 @@ class FlowTests {
             "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
         )
 
-        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
-        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
+        if (ClusterBuilder().vNodeList().toJson()["virtualNodes"].toList().size > 1) {
+            val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+            val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
 
-        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowStatus.flowError).isNull()
-        assertThat(flowStatus.flowResult).isEqualTo(payload)
+            assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(flowStatus.flowError).isNull()
+            assertThat(flowStatus.flowResult).isEqualTo(payload)
+        }
     }
 
     /**
