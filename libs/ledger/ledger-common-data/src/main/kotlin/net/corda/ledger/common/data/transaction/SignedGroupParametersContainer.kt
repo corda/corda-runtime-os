@@ -1,10 +1,12 @@
-package net.corda.ledger.common.flow.transaction
+package net.corda.ledger.common.data.transaction
 
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.util.Objects
 
+@CordaSerializable
 data class SignedGroupParametersContainer(
     val hash: SecureHash,
     val bytes: ByteArray,

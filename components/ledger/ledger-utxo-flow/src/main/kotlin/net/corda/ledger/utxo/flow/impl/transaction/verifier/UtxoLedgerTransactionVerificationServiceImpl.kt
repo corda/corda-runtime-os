@@ -1,10 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
@@ -28,11 +30,20 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService
+    private val serializationService: SerializationService,
+    @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
+    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
 ) : UtxoLedgerTransactionVerificationService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
+        val membershipGroupParametersHashString =
+            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+        if (membershipGroupParametersHashString != null) {
+            // todo finish this in CORE-8956 (pass group params to verification service and verify properly.)
+            val membershipGroupParametersHash = parseSecureHash(membershipGroupParametersHashString)
+            utxoLedgerGroupParametersPersistenceService.find(membershipGroupParametersHash)
+        }
         val verificationResult = externalEventExecutor.execute(
             TransactionVerificationExternalEventFactory::class.java,
             TransactionVerificationParameters(

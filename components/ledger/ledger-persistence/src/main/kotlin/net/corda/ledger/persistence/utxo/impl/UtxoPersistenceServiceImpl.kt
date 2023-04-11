@@ -264,10 +264,11 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
-    override fun findSignedGroupParameters(hash: String): SignedGroupParameters? {
-        entityManagerFactory.transaction { em ->
-            return repository.findSignedGroupParameters(em, hash)
-        }
+    override fun findSignedGroupParameters(hash: String): CordaSignedGroupParameters? {
+        val signedGroupParameters = entityManagerFactory.transaction { em ->
+            repository.findSignedGroupParameters(em, hash)
+        } ?: return null
+        return groupParametersFactory.create(signedGroupParameters) as CordaSignedGroupParameters
     }
 
     override fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters) {
@@ -286,5 +287,4 @@ class UtxoPersistenceServiceImpl constructor(
             }
         }
     }
-
 }

@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.flow.transaction.SignedGroupParametersContainer
+import net.corda.ledger.common.data.transaction.SignedGroupParametersContainer
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSignedGroupParametersIfDoNotExistExternalEventFactory
@@ -42,7 +42,14 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
             if (it == null) {
                 null
             } else {
-                serializationService.deserialize<SignedGroupParametersContainer>(it.array()) // todo another format?
+                val groupParameters = serializationService.deserialize<SignedGroupParametersContainer>(it.array())
+                requireNotNull(groupParameters.signature){
+                    "Group parameters need to be signed."
+                }
+                requireNotNull(groupParameters.signatureSpec){
+                    "Group parameters signature need a signature specification."
+                }
+                return groupParameters
             }
         }
     }
@@ -62,5 +69,4 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
             )
         }
     }
-
 }

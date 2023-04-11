@@ -151,13 +151,13 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
-    /** Retrieves a signed group parameters */
+    /** Retrieves signed group parameters */
     fun findSignedGroupParameters(
         entityManager: EntityManager,
         hash: String
     ): SignedGroupParameters?
 
-    /** Persists a signed group parameters */
+    /** Persists signed group parameters */
     @Suppress("LongParameterList")
     fun persistSignedGroupParameters(
         entityManager: EntityManager,
