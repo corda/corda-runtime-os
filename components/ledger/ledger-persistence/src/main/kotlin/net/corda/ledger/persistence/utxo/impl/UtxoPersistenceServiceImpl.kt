@@ -277,11 +277,8 @@ class UtxoPersistenceServiceImpl constructor(
             entityManagerFactory.transaction { em ->
                 repository.persistSignedGroupParameters(
                     em,
-                    hash = hash,
-                    parameters = signedGroupParameters.groupParameters.array(),
-                    signaturePublicKey = signedGroupParameters.mgmSignature.publicKey.array(),
-                    signatureContent = signedGroupParameters.mgmSignature.bytes.array(),
-                    signatureSpec = signedGroupParameters.mgmSignatureSpec.signatureName
+                    hash,
+                    signedGroupParameters
                 )
             }
         }

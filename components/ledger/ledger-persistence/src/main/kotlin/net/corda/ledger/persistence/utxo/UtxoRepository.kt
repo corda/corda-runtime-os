@@ -158,13 +158,9 @@ interface UtxoRepository {
     ): SignedGroupParameters?
 
     /** Persists signed group parameters */
-    @Suppress("LongParameterList")
     fun persistSignedGroupParameters(
         entityManager: EntityManager,
         hash: String,
-        parameters: ByteArray,
-        signaturePublicKey: ByteArray,
-        signatureContent: ByteArray,
-        signatureSpec: String
+        signedGroupParameters: SignedGroupParameters
     )
 }

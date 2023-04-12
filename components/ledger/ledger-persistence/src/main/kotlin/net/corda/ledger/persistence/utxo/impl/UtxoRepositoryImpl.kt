@@ -15,7 +15,6 @@ import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.StateRef
@@ -44,8 +43,6 @@ import javax.persistence.Tuple
     scope = PROTOTYPE
 )
 class UtxoRepositoryImpl @Activate constructor(
-    @Reference
-    private val digestService: DigestService,
     @Reference
     private val serializationService: SerializationService,
     @Reference
@@ -469,17 +466,14 @@ class UtxoRepositoryImpl @Activate constructor(
                     CryptoSignatureSpec((r.get(3) as String), null, null)
                 )
             }
-            .firstOrNull()
+            .singleOrNull()
     }
 
     override fun persistSignedGroupParameters(
         entityManager: EntityManager,
         hash: String,
-        parameters: ByteArray,
-        signaturePublicKey: ByteArray,
-        signatureContent: ByteArray,
-        signatureSpec: String
-    ){
+        signedGroupParameters: SignedGroupParameters
+    ) {
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_group_parameters(
@@ -489,10 +483,10 @@ class UtxoRepositoryImpl @Activate constructor(
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("hash", hash)
-            .setParameter("parameters", parameters)
-            .setParameter("signature_public_key", signaturePublicKey)
-            .setParameter("signature_content", signatureContent)
-            .setParameter("signature_spec", signatureSpec)
+            .setParameter("parameters", signedGroupParameters.groupParameters.array())
+            .setParameter("signature_public_key", signedGroupParameters.mgmSignature.publicKey.array())
+            .setParameter("signature_content", signedGroupParameters.mgmSignature.bytes.array())
+            .setParameter("signature_spec", signedGroupParameters.mgmSignatureSpec.signatureName)
             .executeUpdate()
             .logResult("signed group parameters [$hash]")
     }
