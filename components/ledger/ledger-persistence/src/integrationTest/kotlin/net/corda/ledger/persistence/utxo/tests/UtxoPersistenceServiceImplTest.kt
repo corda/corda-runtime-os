@@ -93,7 +93,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
-    private lateinit var factoryStorage: ContractStateVaultJsonFactoryRegistry
+    private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
@@ -138,14 +138,14 @@ class UtxoPersistenceServiceImplTest {
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
-            factoryStorage = ctx.getSandboxSingletonService()
+            factoryRegistry = ctx.getSandboxSingletonService()
 
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
                 repository,
                 serializationService,
                 digestService,
-                factoryStorage,
+                factoryRegistry,
                 jsonMarshallingService,
                 testClock
             )
