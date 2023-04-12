@@ -1,8 +1,6 @@
 package net.corda.flow.mapper.integration
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -14,6 +12,7 @@ import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -33,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @ExtendWith(ServiceExtension::class)
 class FlowMapperIntegrationTest {
@@ -224,6 +225,33 @@ class FlowMapperIntegrationTest {
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputFlowEvent = outputEventPayload as FlowEvent
         assertThat(outputFlowEvent.payload::class.java).isEqualTo(SessionEvent::class.java)
+    }
+
+    @Test
+    fun `Receive SessionError in CLOSING - log and ignore`() {
+        val inputKey = "sessionId"
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+        val flowMapperEvent = FlowMapperEvent(sessionEvent)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.CLOSING)
+        val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+
+        val state = result.updatedState
+        val outputEvent = result.responseEvents
+
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
+        assertThat(outputEvent).isEmpty()
+    }
+
+    @Test
+    fun `Receive SessionError in OPEN`() {
+
+    }
+
+    //TODO - write trigger to get us into ERROR state
+    @Test
+    fun `Receive SessionError in ERROR`() {
+
     }
 
     private fun onNext(

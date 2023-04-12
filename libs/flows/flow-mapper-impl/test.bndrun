@@ -4,6 +4,9 @@
 -runee: JavaSE-11
 -runtrace: true
 
+# Enable debugging.
+# -runjdb: 1044
+
 -runvm: \
     --illegal-access=deny
 
