@@ -7,13 +7,7 @@ import java.time.Instant
 object RbacTestUtils {
 
     fun getAllRbacRoles(): List<RbacRole> {
-        return cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
+        return DEFAULT_CLUSTER.cluster {
             val bodyAsString = assertWithRetry {
                 command { getRbacRoles() }
                 condition { it.code == 200 }

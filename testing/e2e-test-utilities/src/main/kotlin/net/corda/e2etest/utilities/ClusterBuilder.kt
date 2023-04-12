@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import net.corda.rest.ResponseCode
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -16,7 +17,7 @@ import java.nio.file.Paths
 class ClusterBuilder {
     private var client: HttpsClient? = null
 
-    fun endpoint(uri: URI, username: String, password: String) {
+    private fun endpoint(uri: URI, username: String, password: String) {
         client = UnirestHttpsClient(uri, username, password)
     }
 
@@ -86,6 +87,11 @@ class ClusterBuilder {
 
     fun importCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile("/api/v1/certificates/cluster/$usage", file, alias)
+
+    fun hasCertificateChain(usage: String, alias: String): Boolean {
+        return client!!
+            .get("/api/v1/certificates/cluster/$usage/$alias").code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
+    }
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
@@ -304,7 +310,7 @@ class ClusterBuilder {
         )
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T): T = DEFAULT_CLUSTER.cluster(initialize)
 
 fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T

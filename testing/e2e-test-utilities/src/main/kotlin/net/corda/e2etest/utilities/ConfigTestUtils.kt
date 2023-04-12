@@ -19,13 +19,7 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
  * Get the current configuration (as a [JsonNode]) for the specified [section].
  */
 fun getConfig(section: String): JsonNode {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
             condition { it.code == OK.statusCode }
@@ -39,13 +33,7 @@ fun getConfig(section: String): JsonNode {
  * before updating.
  */
 fun updateConfig(config: String, section: String) {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return DEFAULT_CLUSTER.cluster {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
@@ -84,13 +72,7 @@ fun waitForConfigurationChange(
     expectServiceToBeDown: Boolean = true,
     timeout: Duration = Duration.ofMinutes(1)
 ) {
-    cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    DEFAULT_CLUSTER.cluster {
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable
             eventually(timeout) {

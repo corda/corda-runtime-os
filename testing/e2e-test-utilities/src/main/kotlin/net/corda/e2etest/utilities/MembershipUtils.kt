@@ -32,7 +32,6 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  * By default, this function will wait until the registration is approved, but this can be disabled so that after
  * registration is submitted, the status is not verified.
  *
- * @param clusterInfo Information about the target cluster including API endpoint and P2P host.
  * @param cpb The path to the CPB to use when creating the CPI.
  * @param cpiName The name to be used for the CPI.
  * @param groupPolicy The group policy file to be bundled with the CPB in the CPI.
@@ -52,6 +51,7 @@ fun ClusterInfo.onboardMember(
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ): NetworkOnboardingMetadata {
+    conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
@@ -206,10 +206,13 @@ fun ClusterInfo.waitForRegistrationStatus(
 fun registerStaticMember(
     holdingIdentityShortHash: String,
     isNotary: Boolean = false
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, isNotary)
+
+fun ClusterInfo.registerStaticMember(
+    holdingIdentityShortHash: String,
+    isNotary: Boolean = false
 ) {
     cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
         assertWithRetry {
             command { registerStaticMember(holdingIdentityShortHash, isNotary) }
             condition {

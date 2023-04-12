@@ -21,6 +21,7 @@ fun ClusterInfo.onboardMgm(
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm_$testRunUniqueId.cpi"
+    conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(mgmCpiName, resourceName, getMgmGroupPolicy())
     val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
 
