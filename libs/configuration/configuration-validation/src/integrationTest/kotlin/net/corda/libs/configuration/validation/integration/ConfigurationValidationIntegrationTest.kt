@@ -6,7 +6,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
@@ -82,7 +81,6 @@ class ConfigurationValidationIntegrationTest {
     @ParameterizedTest(name = "verify that a sensible default is created for config section: {0}")
     @ValueSource(strings = [
         MESSAGING_CONFIG,
-//        CRYPTO_CONFIG, // TODO Crypto defaulted values needs reviewing
         DB_CONFIG,
         FLOW_CONFIG,
         P2P_LINK_MANAGER_CONFIG,

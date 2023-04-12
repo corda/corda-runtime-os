@@ -68,7 +68,7 @@ class CryptoConfigUtilsTests {
         val config = createDefaultCryptoConfig("pass", "salt")
         val configJSON = config.root().render(ConfigRenderOptions.defaults())
         assertThat(configJSON.contains("passphrase"))
-        validator.validate(CRYPTO_CONFIG, Version(1, 0), config, false)
+        validator.validate(CRYPTO_CONFIG, Version(1, 0), config, true)
     }
 
     @Test
