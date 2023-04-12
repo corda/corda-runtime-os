@@ -51,7 +51,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
     private val executorService = executorServiceFactory()
 
     private val replayCalculator = AtomicReference<ReplayCalculator>()
-    data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
+    data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>, val caused: Exception)
     // Compute on this map is used during add/remove operations to ensure these are performed atomically.
     private val replayingMessageIdsPerCounterparties =
         ConcurrentHashMap<K, MutableSet<MessageId>>()
@@ -239,7 +239,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
         logger.info("QQQA scheduleForReplay of $messageId + delay ${delay.toDouble()/1000.0}", Exception("QQQA"))
         val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
-        replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
+        replayInfoPerMessageId.compute(messageId) { _, info ->
+            if (info != null) {
+                logger.info("QQQ scheduleForReplay again for $messageId", Exception("QQQB - second", info.caused))
+            }
+            info?.future?.cancel(false)
+            ReplayInfo(firstReplayPeriod, future, Exception("QQQB first"))
+        }
     }
 
     fun removeFromReplay(messageId: MessageId, counterparties: K) {
@@ -305,10 +311,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             } else {
                 oldReplayInfo.currentReplayPeriod
             }
-            logger.info("QQQA reschedule of $messageId to ${delay.toMillis().toDouble()/1000.0}")
+            val cause = Exception("QQQB", oldReplayInfo.caused)
+            logger.info("QQQA reschedule of $messageId to ${delay.toMillis().toDouble()/1000.0}", cause)
+            oldReplayInfo.future.cancel(false)
             ReplayInfo(
                 delay,
-                executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
+                executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS),
+                cause
             )
         }
     }
