@@ -5,6 +5,8 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
@@ -39,6 +41,26 @@ class SessionErrorExecutorTest {
         val outboundEvents = result.outputEvents
 
         Assertions.assertThat(state).isNull()
+        Assertions.assertThat(outboundEvents.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `Session error received with CLOSING state`() {
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
+
+        val result = SessionErrorExecutor(
+            sessionId, payload,
+            FlowMapperState(
+                "flowId1", null, FlowMapperStateType.CLOSING
+            ),
+            Instant.now(),
+            sessionEventSerializer,
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
+        ).execute()
+        val outboundEvents = result.outputEvents
+
         Assertions.assertThat(outboundEvents.size).isEqualTo(0)
     }
 
