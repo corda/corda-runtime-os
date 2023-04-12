@@ -31,12 +31,12 @@ class SessionErrorExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
-            "Session may have expired. This error event will be %. Key: $eventKey, Event: $sessionEvent"
+     private val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
+            "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            log.warn(errorMsg.format("Ignored"))
+            log.warn(errorMsg + "Ignoring event.")
             FlowMapperResult(null, listOf())
         } else {
             processSessionErrorEvents(flowMapperState)
@@ -46,15 +46,15 @@ class SessionErrorExecutor(
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         when (flowMapperState.status) {
             null -> {
-                log.warn(errorMsg.format("Ignored"))
+                log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.ERROR -> {
-                log.warn(errorMsg.format("Ignored"))
+                log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.OPEN -> {
-                log.warn(errorMsg.format("Forwarded"))
+                log.warn(errorMsg + "Forwarding event.")
                 val sessionId = sessionEvent.sessionId
                 FlowMapperResult(
                     flowMapperState, listOf(
@@ -85,11 +85,11 @@ class SessionErrorExecutor(
                 FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.CLOSING -> {
-                log.warn(errorMsg.format("Ignored"))
+                log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(null, listOf())
             }
         }
-        log.warn(errorMsg.format("Ignored"))
+        log.warn(errorMsg + "Ignoring event.")
         return FlowMapperResult(null, listOf())
     }
 }
