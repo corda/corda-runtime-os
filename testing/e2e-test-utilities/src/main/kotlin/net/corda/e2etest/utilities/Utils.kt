@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.net.URI
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
@@ -32,8 +31,8 @@ val DEFAULT_CLUSTER: ClusterInfo = ClusterBInfo
 
 // BUG:  Not sure if we should be requiring clients to use a method similar to this because we
 // return a full hash (64 chars?) but the same API only accepts the first 12 chars.
-fun truncateLongHash(shortHash:String):String {
-    return shortHash.substring(0,12)
+fun truncateLongHash(shortHash: String): String {
+    return shortHash.substring(0, 12)
 }
 
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
