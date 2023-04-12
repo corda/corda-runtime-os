@@ -13,13 +13,13 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
-import net.corda.ledger.common.data.transaction.SignedGroupParametersContainer
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -120,7 +120,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to getAndPersistCurrentMgmGroupParameters().hash.toString()
     )
 
-    private fun getCurrentMgmGroupParameters(): SignedGroupParametersContainer {
+    private fun getCurrentMgmGroupParameters(): SignedGroupParameters {
         val holdingIdentity = currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
         val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
@@ -132,13 +132,11 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         requireNotNull(signedGroupParameters.signatureSpec) {
             "Group parameters signature need a signature specification."
         }
-        return with(signedGroupParameters){
-            SignedGroupParametersContainer(hash, bytes, signature, signatureSpec)
-        }
+        return signedGroupParameters
     }
 
     @Suspendable
-    private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParametersContainer {
+    private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParameters {
         val signedGroupParameters = getCurrentMgmGroupParameters()
         // todo CORE-8956 verify signedGroupParameters before persist: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)

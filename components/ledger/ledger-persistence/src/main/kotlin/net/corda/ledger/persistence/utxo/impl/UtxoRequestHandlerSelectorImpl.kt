@@ -105,7 +105,6 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             is FindSignedGroupParameters -> {
                 return UtxoFindSignedGroupParametersRequestHandler(
                     req,
-                    sandbox.getSerializationService(),
                     request.flowExternalEventContext,
                     persistenceService,
                     responseFactory

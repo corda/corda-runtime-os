@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
-import net.corda.ledger.common.data.transaction.SignedGroupParametersContainer
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -20,7 +20,7 @@ interface UtxoLedgerGroupParametersPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun find(hash: SecureHash): SignedGroupParametersContainer?
+    fun find(hash: SecureHash): SignedGroupParameters?
 
     /**
      * Persist a [SignedGroupParametersContainer] to the store if it does not exist there yet.
@@ -31,6 +31,6 @@ interface UtxoLedgerGroupParametersPersistenceService {
      */
     @Suspendable
     fun persistIfDoesNotExist(
-        signedGroupParameters: SignedGroupParametersContainer,
+        signedGroupParameters: SignedGroupParameters,
     )
 }

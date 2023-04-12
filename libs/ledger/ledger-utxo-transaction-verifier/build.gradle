@@ -12,6 +12,7 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-utxo'
 
+    implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:utilities')
 
