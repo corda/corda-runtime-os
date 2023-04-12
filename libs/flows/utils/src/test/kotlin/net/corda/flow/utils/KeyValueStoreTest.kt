@@ -12,6 +12,8 @@ class KeyValueStoreTest {
         val KEY_VALUE_PAIR = KeyValuePair("key", "value")
     }
 
+    data class Cat(val name: String, val breed: String)
+
     @Test
     fun `mutableKeyValuePairList as a parameter to a container can be modified`() {
         data class Container(val list: KeyValuePairList)
@@ -118,5 +120,50 @@ class KeyValueStoreTest {
         val keyValuePairListAsMap = keyValuePairList.toMutableMap()
         assertThat(keyValuePairListAsMap).isInstanceOf(MutableMap::class.java).isEqualTo(map)
         assertThat(keyValuePairListAsMap.remove("key3", "value3")).isTrue
+    }
+
+    @Test
+    fun `test toKeyValuePairList with default prefix`() {
+        val cats = listOf(
+            Cat("Garfield", "Tabby"),
+            Cat("Sylvester", "Tuxedo"),
+            Cat("Tom", "Domestic Shorthair")
+        )
+        val expected = KeyValuePairList(
+            listOf(
+                KeyValuePair("Cat.0", "Cat(name=Garfield, breed=Tabby)"),
+                KeyValuePair("Cat.1", "Cat(name=Sylvester, breed=Tuxedo)"),
+                KeyValuePair("Cat.2", "Cat(name=Tom, breed=Domestic Shorthair)")
+            )
+        )
+        val actual = cats.toKeyValuePairList()
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `test toKeyValuePairList with custom prefix`() {
+        val colors = listOf("orange", "black", "gray")
+        val expected = KeyValuePairList(
+            listOf(
+                KeyValuePair("myCats.0", "orange"),
+                KeyValuePair("myCats.1", "black"),
+                KeyValuePair("myCats.2", "gray")
+            )
+        )
+        val actual = colors.toKeyValuePairList("myCats")
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `test toKeyValuePairList with null elements`() {
+        val colors = listOf("orange", null, "gray")
+        val expected = KeyValuePairList(
+            listOf(
+                KeyValuePair("String.0", "orange"),
+                KeyValuePair("String.1", "gray")
+            )
+        )
+        val actual = colors.toKeyValuePairList()
+        assertThat(actual).isEqualTo(expected)
     }
 }

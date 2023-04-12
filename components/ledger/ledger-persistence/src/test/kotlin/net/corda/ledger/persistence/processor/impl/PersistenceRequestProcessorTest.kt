@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.processor.impl
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -13,6 +14,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -27,6 +29,7 @@ class PersistenceRequestProcessorTest {
     private val delegatedRequestHandlerSelector = mock<DelegatedRequestHandlerSelector>()
     private val responseFactory = mock<ResponseFactory>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
+    private val cpkHashes = mutableSetOf<SecureHash>()
     private val sandbox = mock<SandboxGroupContext>()
 
     private val target = PersistenceRequestProcessor(
@@ -37,7 +40,7 @@ class PersistenceRequestProcessorTest {
 
     @BeforeEach
     fun setup() {
-        whenever(entitySandboxService.get(cordaHoldingIdentity)).thenReturn(sandbox)
+        whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenReturn(sandbox)
     }
 
     @Test
@@ -100,7 +103,9 @@ class PersistenceRequestProcessorTest {
     private fun createRequest(requestId: String): LedgerPersistenceRequest {
         return LedgerPersistenceRequest().apply {
             timestamp = Instant.MIN
-            flowExternalEventContext = ExternalEventContext(requestId, "f1", KeyValuePairList())
+            flowExternalEventContext = ExternalEventContext(
+                requestId, "f1", KeyValuePairList(listOf(KeyValuePair("key", "value")))
+            )
             ledgerType = LedgerTypes.CONSENSUAL
             holdingIdentity = ALICE_X500_HOLDING_ID
         }
