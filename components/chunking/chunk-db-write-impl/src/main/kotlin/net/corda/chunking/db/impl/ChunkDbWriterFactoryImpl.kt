@@ -133,7 +133,8 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
-        val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createCordappConfigValidator())
+        val externalChannelsConfigValidator =
+            ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createCordappConfigValidator())
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,
