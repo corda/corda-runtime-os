@@ -1,6 +1,7 @@
 package net.cordapp.testing.smoketests.flow
 
 import net.corda.v5.application.crypto.CompositeKeyGenerator
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -23,6 +24,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.testing.bundles.dogs.Dog
 import net.cordapp.testing.smoketests.flow.context.launchContextPropagationFlows
+import net.cordapp.testing.smoketests.flow.digest.CustomDigestAlgorithm
 import net.cordapp.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import net.cordapp.testing.smoketests.flow.messages.JsonSerializationFlowOutput
 import net.cordapp.testing.smoketests.flow.messages.JsonSerializationInput
@@ -69,7 +71,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "lookup_member_by_x500_name" to this::lookupMember,
         "json_serialization" to this::jsonSerialization,
         "get_cpi_metadata" to { getCpiMetadata() },
-        "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows
+        "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows,
+        "crypto_get_default_digest_algorithm" to this::getDefaultDigestAlgorithm,
+        "crypto_get_supported_digest_algorithms" to this::getSupportedDigestAlgorithms
     )
 
     @CordaInject
@@ -101,6 +105,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var compositeKeyGenerator: CompositeKeyGenerator
+
+    @CordaInject
+    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -462,6 +469,35 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         } else {
             "FAILURE"
         }
+    }
+
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun getDefaultDigestAlgorithm(input: RpcSmokeTestInput): String {
+        val defaultDigestAlgorithm = digestService.defaultDigestAlgorithm()
+        return if (defaultDigestAlgorithm == DigestAlgorithmName.SHA2_256) {
+            "SUCCESS"
+        } else
+            "FAILURE"
+    }
+
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun getSupportedDigestAlgorithms(input: RpcSmokeTestInput): String {
+        val supportedDigestAlgorithms = digestService.supportedDigestAlgorithms()
+        val expectedSupportedDigestAlgorithms = linkedSetOf(
+            DigestAlgorithmName.SHA2_256,
+            DigestAlgorithmName.SHA2_256D,
+            DigestAlgorithmName.SHA2_384,
+            DigestAlgorithmName.SHA2_512
+        ) +
+                // check it picks up custom digest algorithms too
+                setOf(DigestAlgorithmName(CustomDigestAlgorithm.algorithmName))
+
+        return if (expectedSupportedDigestAlgorithms == supportedDigestAlgorithms) {
+            "SUCCESS"
+        } else
+            "FAILURE"
     }
 
     @Suspendable

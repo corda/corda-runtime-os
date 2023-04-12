@@ -72,4 +72,16 @@ class DigestServiceImpl @Activate constructor(
         // Check any custom registered versions.
         customFactoriesProvider?.get(digestAlgorithmName.name)
             ?.getInstance()
+
+    override fun defaultDigestAlgorithm(): DigestAlgorithmName =
+        platformDigestService.defaultDigestAlgorithm()
+
+    override fun supportedDigestAlgorithms(): Set<DigestAlgorithmName> {
+        return platformDigestService.supportedDigestAlgorithms() +
+                (customFactoriesProvider?.let {
+                    it.getAllDigestAlgorithmNames().map { algorithmName ->
+                        DigestAlgorithmName(algorithmName)
+                    }
+                } ?: setOf())
+    }
 }
