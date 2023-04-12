@@ -2,6 +2,7 @@ package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
@@ -10,6 +11,7 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions
@@ -62,6 +64,53 @@ class SessionErrorExecutorTest {
         val outboundEvents = result.outputEvents
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `Session error received with ERROR state`() {
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
+
+        val result = SessionErrorExecutor(
+            sessionId, payload,
+            FlowMapperState(
+                "flowId1", null, FlowMapperStateType.ERROR
+            ),
+            Instant.now(),
+            sessionEventSerializer,
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
+        ).execute()
+        val outboundEvents = result.outputEvents
+
+        Assertions.assertThat(outboundEvents.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `Session error received with OPEN state`() {
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
+
+        val result = SessionErrorExecutor(
+            sessionId, payload,
+            FlowMapperState(
+                "flowId1", null, FlowMapperStateType.OPEN
+            ),
+            Instant.now(),
+            sessionEventSerializer,
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
+        ).execute()
+        val outboundEvents = result.outputEvents
+        val state = result.flowMapperState
+        Assertions.assertThat(state).isNotNull
+
+        Assertions.assertThat(outboundEvents.size).isEqualTo(1)
+        val outboundEvent = outboundEvents.first()
+        Assertions.assertThat(outboundEvent.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
+        Assertions.assertThat(outboundEvent.key).isEqualTo("flowId1")
+        Assertions.assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
+        Assertions.assertThat(payload.sessionId).isEqualTo(sessionId)
     }
 
     class AppMessageFactoryCaptor(val appMessage: AppMessage) {
