@@ -228,30 +228,44 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun `Receive SessionError in CLOSING - log and ignore`() {
+    fun `Receive SessionError in CLOSING state - ignore`() {
         val inputKey = "sessionId"
         val sessionEvent =
             buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.CLOSING)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
-
-        val state = result.updatedState
         val outputEvent = result.responseEvents
 
-        assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
         assertThat(outputEvent).isEmpty()
     }
 
     @Test
-    fun `Receive SessionError in OPEN`() {
+    fun `Receive SessionError in ERROR state - ignore`() {
+        val inputKey = "sessionId"
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+        val flowMapperEvent = FlowMapperEvent(sessionEvent)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.ERROR)
+        val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val outputEvent = result.responseEvents
 
+        assertThat(outputEvent).isEmpty()
     }
 
-    //TODO - write trigger to get us into ERROR state
     @Test
-    fun `Receive SessionError in ERROR`() {
+    fun `Receive SessionError in OPEN state - forward`() {
+        val inputKey = "sessionId"
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+        val flowMapperEvent = FlowMapperEvent(sessionEvent)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
+        val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val outputEvent = result.responseEvents.first()
 
+        val outputEventPayload = outputEvent.value ?: fail("Payload was null")
+        val outputFlowEvent = outputEventPayload as FlowEvent
+        assertThat(outputFlowEvent.payload::class.java).isEqualTo(SessionEvent::class.java)
     }
 
     private fun onNext(

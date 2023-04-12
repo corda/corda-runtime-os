@@ -2,6 +2,7 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
@@ -31,7 +32,10 @@ class SessionErrorExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-     private val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
+    private val messageDirection = sessionEvent.messageDirection
+    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+
+    private val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
             "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
     override fun execute(): FlowMapperResult {
@@ -44,7 +48,8 @@ class SessionErrorExecutor(
     }
 
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        when (flowMapperState.status) {
+        val sessionId = sessionEvent.sessionId
+        return when (flowMapperState.status) {
             null -> {
                 log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(null, listOf())
@@ -55,41 +60,42 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.OPEN -> {
                 log.warn(errorMsg + "Forwarding event.")
-                val sessionId = sessionEvent.sessionId
-                FlowMapperResult(
-                    flowMapperState, listOf(
-                        Record(
-                            Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
-                                SessionEvent(
-                                    MessageDirection.OUTBOUND,
-                                    instant,
-                                    sessionEvent.sessionId,
-                                    null,
-                                    sessionEvent.initiatingIdentity,
-                                    sessionEvent.initiatedIdentity,
-                                    0,
-                                    emptyList(),
-                                    SessionError(
-                                        ExceptionEnvelope(
-                                            "FlowMapper-SessionError",
-                                            "Received SessionError with sessionId $sessionId"
+                if (messageDirection == MessageDirection.OUTBOUND) {
+                    FlowMapperResult(
+                        flowMapperState, listOf(
+                            Record(
+                                Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
+                                    SessionEvent(
+                                        MessageDirection.OUTBOUND,
+                                        instant,
+                                        sessionEvent.sessionId,
+                                        null,
+                                        sessionEvent.initiatingIdentity,
+                                        sessionEvent.initiatedIdentity,
+                                        0,
+                                        emptyList(),
+                                        SessionError(
+                                            ExceptionEnvelope(
+                                                "FlowMapper-SessionError",
+                                                "Received SessionError with sessionId $sessionId"
+                                            )
                                         )
-                                    )
-                                ),
-                                sessionEventSerializer,
-                                flowConfig
+                                    ),
+                                    sessionEventSerializer,
+                                    flowConfig
+                                )
                             )
                         )
                     )
-                )
-                FlowMapperResult(flowMapperState, listOf())
+                } else {
+                    val outputRecord = Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+                    FlowMapperResult(flowMapperState, listOf(outputRecord))
+                }
             }
             FlowMapperStateType.CLOSING -> {
                 log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(null, listOf())
             }
         }
-        log.warn(errorMsg + "Ignoring event.")
-        return FlowMapperResult(null, listOf())
     }
 }
