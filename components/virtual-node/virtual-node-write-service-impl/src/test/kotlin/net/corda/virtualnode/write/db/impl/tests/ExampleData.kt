@@ -31,7 +31,7 @@ internal const val CPI_VERSION1 = "1.0"
 internal val CPI_CHECKSUM1 = SecureHashImpl("SHA-256","CPI_CHECKSUM1".toByteArray())
 internal val CPI_SIGNER_HASH1 = parseSecureHash("SHA-256:1234567890123456")
 internal val CPI_IDENTIFIER1 = CpiIdentifier(CPI_NAME1, CPI_VERSION1, CPI_SIGNER_HASH1)
-internal val CPI_METADATA1 = CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, GROUP_POLICY1)
+internal val CPI_METADATA1 = CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, GROUP_POLICY1, emptySet())
 
 internal fun getValidRequest(): VirtualNodeCreateRequest {
     return VirtualNodeCreateRequest().apply {
