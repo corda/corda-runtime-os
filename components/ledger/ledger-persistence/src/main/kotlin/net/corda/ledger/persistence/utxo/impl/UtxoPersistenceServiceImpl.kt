@@ -85,14 +85,15 @@ class UtxoPersistenceServiceImpl constructor(
             repository.resolveStateRefs(em, stateRefs, listOf(outputsInfoIdx, outputsIdx))
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associate { Pair(it.leafIndex, it.data) }
+            ?.associateBy { it.transactionId to it.leafIndex }
             ?: emptyMap()
+
         return componentGroups[outputsIdx]?.map {
-            val info = outputInfos[it.leafIndex]
+            val info = outputInfos[it.transactionId to it.leafIndex]
             requireNotNull(info) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
-            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
+            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
         } ?: emptyList()
     }
 

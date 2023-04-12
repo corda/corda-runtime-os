@@ -8,9 +8,11 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
+import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
@@ -41,6 +43,13 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )
+
+        val vaultNamedQueryExecutor = VaultNamedQueryExecutorImpl(
+            sandbox.getEntityManagerFactory(),
+            sandbox.getSandboxSingletonService(),
+            sandbox.getSerializationService()
+        )
+
         return when (val req = request.request) {
             is FindTransaction -> {
                 return UtxoFindTransactionRequestHandler(
@@ -96,6 +105,14 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     request.flowExternalEventContext,
                     externalEventResponseFactory,
                     persistenceService
+                )
+            }
+            is FindWithNamedQuery -> {
+                UtxoExecuteNamedQueryHandler(
+                    request.flowExternalEventContext,
+                    req,
+                    vaultNamedQueryExecutor,
+                    externalEventResponseFactory
                 )
             }
             else -> {

@@ -42,6 +42,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(':libs:utilities')
+    implementation project(':libs:flows:flow-api')
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

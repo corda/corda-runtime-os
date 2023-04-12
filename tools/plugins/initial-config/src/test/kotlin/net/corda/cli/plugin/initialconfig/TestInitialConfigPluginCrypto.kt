@@ -5,15 +5,11 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.cryptoConnectionFactory
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.hsmMap
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
-import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.signingService
-import net.corda.crypto.core.CryptoConsts
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -156,28 +152,20 @@ class TestInitialConfigPluginCrypto {
             listOf(EncryptionSecretsServiceFactory())
         )
         val config = smartConfigFactory.create(ConfigFactory.parseString(json))
-        val connectionFactory = config.cryptoConnectionFactory()
-        assertEquals(5, connectionFactory.expireAfterAccessMins)
-        assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
-        assertEquals(3, hsmService.downstreamMaxAttempts)
-        assertThat(config.hsmMap()).hasSize(1)
-        val softWorker = config.hsm(CryptoConsts.SOFT_HSM_ID)
-        assertEquals("", softWorker.workerTopicSuffix)
+        val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(CryptoConsts.SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
-        assertThat(softWorker.hsm.categories).hasSize(1)
-        assertEquals("*", softWorker.hsm.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.hsm.masterKeyPolicy)
-        assertNull(softWorker.hsm.masterKeyAlias)
-        assertEquals(-1, softWorker.hsm.capacity)
-        assertThat(softWorker.hsm.supportedSchemes).hasSize(8)
-        assertThat(softWorker.hsm.supportedSchemes).contains(
+        assertThat(softWorker.categories).hasSize(1)
+        assertEquals("*", softWorker.categories[0].category)
+        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
+        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertNull(softWorker.masterKeyAlias)
+        assertEquals(-1, softWorker.capacity)
+        assertThat(softWorker.supportedSchemes).hasSize(8)
+        assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
             "CORDA.ECDSA.SECP256R1",
             "CORDA.ECDSA.SECP256K1",
@@ -187,15 +175,8 @@ class TestInitialConfigPluginCrypto {
             "CORDA.GOST3410.GOST3411",
             "CORDA.SPHINCS-256"
         )
-        val hsmCfg = softWorker.hsm.cfg
+        val hsmCfg = softWorker.cfg
         wrappingKeyAssert(hsmCfg, smartConfigFactory)
-        assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
-        assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
-        assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
-        assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
-        assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)

@@ -1,14 +1,16 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.slf4j.LoggerFactory
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 // TODO - remove this when moving to repository pattern for everything.
@@ -23,7 +25,7 @@ internal class VirtualNodeEntityRepository(
     }
 
     /** Reads CPI metadata from the database. */
-    override fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
+    override fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadata? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null
@@ -45,14 +47,11 @@ internal class VirtualNodeEntityRepository(
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
 
-        val signerSummaryHash = parseSecureHash(cpiMetadataEntity.signerSummaryHash)
-        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = parseSecureHash(cpiMetadataEntity.fileChecksum)
-        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+        return cpiMetadataEntity.toDto()
     }
 
     /** Reads CPI metadata from the database. */
-    override fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
+    override fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadata? {
         val cpiMetadataEntity = entityManagerFactory.createEntityManager().use {
             it.transaction {
                 it.createQuery(
@@ -67,22 +66,20 @@ internal class VirtualNodeEntityRepository(
             }
         }
 
-        val signerSummaryHash = parseSecureHash(cpiMetadataEntity.signerSummaryHash)
-        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = parseSecureHash(cpiMetadataEntity.fileChecksum)
-        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+        return cpiMetadataEntity.toDto()
     }
 
-    override fun getCPIMetadataById(em: EntityManager, id: CpiIdentifier): CpiMetadataLite? {
-        return em.find(CpiMetadataEntity::class.java, id.toEntity())?.toLite()
+    override fun getCPIMetadataById(em: EntityManager, id: CpiIdentifier): CpiMetadata? {
+        return em.find(CpiMetadataEntity::class.java, id.toEntity())?.toDto()
     }
 
     private fun CpiIdentifier.toEntity(): CpiMetadataEntityKey =
         CpiMetadataEntityKey(name, version, signerSummaryHash.toString())
 
-    private fun CpiMetadataEntity.toLite(): CpiMetadataLite {
+    private fun CpiMetadataEntity.toDto(): CpiMetadata {
         val cpiId = CpiIdentifier(name, version, parseSecureHash(signerSummaryHash))
         val fileChecksum = parseSecureHash(fileChecksum)
-        return CpiMetadataLite(cpiId, fileChecksum, groupId, groupPolicy)
+        val cpks = cpks.map { CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata) }.toSet()
+        return CpiMetadata(cpiId, fileChecksum, cpks, groupPolicy, entityVersion, insertTimestamp!!)
     }
 }

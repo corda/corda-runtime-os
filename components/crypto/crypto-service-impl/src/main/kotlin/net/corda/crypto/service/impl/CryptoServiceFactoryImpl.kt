@@ -8,9 +8,9 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
-import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.HSMStore
@@ -80,6 +80,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     override fun isReady(): Boolean = bootConfig != null
 
+    @Suppress("unused_parameter")
     class Impl(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
@@ -88,20 +89,20 @@ class CryptoServiceFactoryImpl @Activate constructor(
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String
-
         private val cryptoConfig: SmartConfig
         private val hsmConfig: CryptoHSMConfig
 
         init {
             cryptoConfig = event.config.toCryptoConfig()
-            hsmId = bootConfig.bootstrapHsmId()
-            hsmConfig = cryptoConfig.hsm(hsmId)
+            // TODO HSM id boot param is to be deleted as per CORE-10050 - setting statically hsmId to "SOFT" for now.
+//            hsmId = bootConfig.bootstrapHsmId()
+            hsmId = SOFT_HSM_ID
+            hsmConfig = cryptoConfig.hsm()
         }
 
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-             val retry = hsmConfig.retry
-            val hsm = hsmConfig.hsm
-            val cryptoService = cryptoServiceProvider.getInstance(hsm.cfg)
+            val retry = hsmConfig.retry
+            val cryptoService = cryptoServiceProvider.getInstance(cryptoConfig)
             CryptoServiceDecorator.create(
                 cryptoService,
                 retry.maxAttempts,
