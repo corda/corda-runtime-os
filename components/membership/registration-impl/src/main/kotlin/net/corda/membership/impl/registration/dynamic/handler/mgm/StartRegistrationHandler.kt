@@ -77,6 +77,10 @@ internal class StartRegistrationHandler(
     override val commandType = StartRegistration::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
+        if (state != null) {
+            logger.info("Registration request ${command.memberRegistrationRequest.registrationId} had already started")
+            return RegistrationHandlerResult(state, emptyList())
+        }
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
                 Triple(

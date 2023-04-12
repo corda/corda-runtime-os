@@ -16,6 +16,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -70,6 +71,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -266,6 +268,23 @@ class StartRegistrationHandlerTest {
 
         assertThat(result.outputStates)
             .contains(authenticatedMessageRecord)
+    }
+
+    @Test
+    fun `invoke ignores the request if the state had been set`() {
+        handler.invoke(RegistrationState(), Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        verifyNoInteractions(memberTypeChecker)
+        verifyNoInteractions(membershipPersistenceClient)
+    }
+
+    @Test
+    fun `invoke with a state returns the state and no messages`() {
+        val state = RegistrationState()
+        val response = handler.invoke(state, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        assertThat(response.outputStates).isEmpty()
+        assertThat(response.updatedState).isSameAs(state)
     }
 
     @Test
