@@ -237,11 +237,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
     private fun scheduleForReplay(originalAttemptTimestamp: Long, messageId: MessageId, message: M) {
         val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
         val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
+        logger.info("QQQA scheduleForReplay of $messageId + delay ${delay.toDouble()/1000.0}")
         val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
         replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
     }
 
     fun removeFromReplay(messageId: MessageId, counterparties: K) {
+        logger.info("QQQA removeFromReplay of $messageId")
         replayingMessageIdsPerCounterparties.compute(counterparties) { _, replayingMessagesForCounterparties ->
             val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
             replayingMessagesForCounterparties?.remove(messageId)
@@ -270,6 +272,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
     }
 
     private fun replay(message: M, messageId: MessageId) {
+        logger.info("QQQA replaying of $messageId")
         val sentReplay = try {
             if (dominoTile.isRunning) {
                 replayMessage(message)
@@ -302,6 +305,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             } else {
                 oldReplayInfo.currentReplayPeriod
             }
+            logger.info("QQQA reschedule of $messageId to ${delay.toMillis().toDouble()/1000.0}")
             ReplayInfo(
                 delay,
                 executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
