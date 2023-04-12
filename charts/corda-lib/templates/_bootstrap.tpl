@@ -385,7 +385,10 @@ a second init container to execute the output SQL to the relevant database
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
-  args: [ '{{ .command | default "initial-config"}}', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
+  {{- if eq .name "db" }}
+  args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }}', '-c', '-l', '/tmp/working_dir', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]  
+  {{- else }}
+  args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
   
          {{- /* request admin access in some cases, onl when the optional admin argument to this function (named tempalte) is specified as true */ -}}
          {{- if eq (.admin | default "false") "true" -}} '-a',{{ " " -}}{{- end -}}
@@ -410,19 +413,23 @@ a second init container to execute the output SQL to the relevant database
                   
          
          {{- " '-l'" -}}, '/tmp/working_dir']
+   {{- end }}
   workingDir: /tmp/working_dir
   volumeMounts:
     - mountPath: /tmp/working_dir
       name: working-volume
     {{ include "corda.log4jVolumeMount" . | nindent 4 }}
   env:
+    {{- if eq .name "db" -}}
+      {{- include "corda.bootstrapClusterDbEnv" . | nindent 4 }}
+    {{- end -}}
     {{- if or (eq .name "rpc") (eq .name "rbac") (eq .name "vnodes") (eq .name "crypto") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
-    {{- if not (eq .name "rpc") -}}
+    {{- if and (not (eq .name "rpc")) (not (eq .name "db")) -}}
       {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
     {{- end -}}
-    {{- if or (eq .name "rbac") (eq .name "crypto")  (eq .name "vnodes") -}}
+    {{- if or (eq .name "rbac") (eq .name "crypto") (eq .name "vnodes") (eq .name "db") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}    
 
