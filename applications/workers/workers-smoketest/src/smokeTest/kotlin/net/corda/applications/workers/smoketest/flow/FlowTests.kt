@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -12,7 +13,10 @@ import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
+import net.corda.e2etest.utilities.USERNAME
+import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.createKeyFor
@@ -42,6 +46,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import kotlin.text.Typography.quote
 
@@ -1176,6 +1181,14 @@ class FlowTests {
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
         val payload = "Hello world!"
+
+        val cluster = cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            vNodeList().toJson()["virtualNodes"].toList()
+        }
+        val expected = 4
+        assertEquals(expected, cluster.size,
+            "Expected cluster size $expected, got ${cluster.size}, entries=$cluster")
 
         val args = mapOf(
             "facadeName" to "None",
