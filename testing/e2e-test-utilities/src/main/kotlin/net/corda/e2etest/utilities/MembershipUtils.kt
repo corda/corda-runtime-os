@@ -275,8 +275,8 @@ fun ClusterInfo.lookupGroupParameters(
     holdingId: String
 ) = cluster {
     assertWithRetry {
-        timeout(30.seconds)
-        interval(2.seconds)
+        timeout(15.seconds)
+        interval(1.seconds)
         command {
             get("/api/v1/members/$holdingId/group-parameters")
         }
