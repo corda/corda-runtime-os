@@ -131,9 +131,9 @@ internal class SandboxGroupContextCacheImpl private constructor(
     }
 
     private val caches: ConcurrentMap<SandboxGroupType, Cache<VirtualNodeContext, SandboxGroupContextWrapper>> =
-        ConcurrentHashMap(capacities.entries.associate { (type, capacity) ->
-            type to buildSandboxGroupTypeCache(type, capacity)
-        })
+        capacities.mapValuesTo(ConcurrentHashMap()) { (type, capacity) ->
+            buildSandboxGroupTypeCache(type, capacity)
+        }
 
     override fun flush(): CompletableFuture<*> {
         purgeExpiryQueue()
@@ -193,10 +193,10 @@ internal class SandboxGroupContextCacheImpl private constructor(
     ): SandboxGroupContext {
         purgeExpiryQueue()
 
-        val sandboxCache = caches.computeIfAbsent(virtualNodeContext.sandboxGroupType) {
+        val sandboxCache = caches.computeIfAbsent(virtualNodeContext.sandboxGroupType) { sandboxGroupType ->
             buildSandboxGroupTypeCache(
-                virtualNodeContext.sandboxGroupType,
-                capacities.forSandboxGroupType(virtualNodeContext.sandboxGroupType)
+                sandboxGroupType,
+                capacities.forSandboxGroupType(sandboxGroupType)
             )
         }
 
