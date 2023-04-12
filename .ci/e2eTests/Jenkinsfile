@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
+@Library('corda-shared-build-pipeline-steps@bm/CORE-9973') _
 
 endToEndPipeline(
     assembleAndCompile: false,
