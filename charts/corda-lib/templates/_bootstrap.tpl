@@ -69,7 +69,7 @@ spec:
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rbac" "clusterDb" "false" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "clusterDb" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}                
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "command" "create-user-config" "mode" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
+        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "command" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
         - name: create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -428,7 +428,7 @@ a second init container to execute the output SQL to the relevant database
 
 {{- define "corda.bootstrapInitialConfigGenerateAndApply" -}}
 {{- /* define 2 init containers, which run in sequence. First run corda-cli initial-config to generate some SQL, storing in a persistent volume called working-volume. Second is a postgres image which mounts the same persistent volume and executes the SQL. */ -}}  
-- name: create-initial-{{ .name }}-{{ .mode | default "db-config" }}
+- name: create-initial-{{ .name }}-{{ .namePostfix | default "db-config" }}
   image: {{ include "corda.bootstrapCliImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
@@ -444,7 +444,7 @@ a second init container to execute the output SQL to the relevant database
          {{- /* specify DB password - note again that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}   
          {{- " '-p'" -}}, {{- if .quotePassword }} '{{- else -}} {{ " " -}}{{- end -}}$({{ .environmentVariablePrefix -}}_PASSWORD){{- if .quotePassword }}'{{- end -}},
                  
-         {{- if not (eq .mode "admin") -}}
+         {{- if not (eq .name "rpc") -}}
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
              {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, 
@@ -461,7 +461,7 @@ a second init container to execute the output SQL to the relevant database
     {{- if or (eq .name "rpc") (eq .name "rbac") (eq .name "vnodes") (eq .name "crypto") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
-    {{- if not (eq .mode "admin") -}}
+    {{- if not (eq .name "rpc") -}}
       {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
     {{- end -}}
     {{- if or (eq .name "rbac") (eq .name "crypto")  (eq .name "vnodes") -}}
@@ -491,7 +491,7 @@ a second init container to execute the output SQL to the relevant database
       {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
       {{ include "corda.bootstrapCliEnv" . | nindent 4  -}} {{- /* JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
     {{- end }}
-- name: apply-initial-{{ .name }}-{{ .mode | default "db-config" }}
+- name: apply-initial-{{ .name }}-{{ .namePostfix | default "db-config" }}
   image: {{ include "corda.bootstrapDbClientImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
