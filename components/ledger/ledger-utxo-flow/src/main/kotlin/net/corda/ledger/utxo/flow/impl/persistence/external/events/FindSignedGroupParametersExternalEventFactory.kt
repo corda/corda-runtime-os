@@ -53,14 +53,13 @@ class FindSignedGroupParametersExternalEventFactory(
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FindSignedGroupParametersResponse): List<SignedGroupParameters> {
         return response.results.map {
-            requireNotNull(it.mgmSignature){
+            requireNotNull(it.mgmSignature) {
                 "Group parameters need to be signed."
             }
-            requireNotNull(it.mgmSignatureSpec){
+            requireNotNull(it.mgmSignatureSpec) {
                 "Group parameters signature need a signature specification."
             }
-            val result = groupParametersFactory.create(it)
-            result as SignedGroupParameters
+            groupParametersFactory.create(it) as SignedGroupParameters
         }
     }
 }
