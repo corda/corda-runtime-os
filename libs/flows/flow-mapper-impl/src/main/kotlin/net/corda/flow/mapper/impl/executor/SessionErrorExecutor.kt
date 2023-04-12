@@ -41,7 +41,7 @@ class SessionErrorExecutor(
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             log.warn(errorMsg + "Ignoring event.")
-            FlowMapperResult(null, listOf())
+            FlowMapperResult(flowMapperState, listOf())
         } else {
             processSessionErrorEvents(flowMapperState)
         }
@@ -51,12 +51,12 @@ class SessionErrorExecutor(
         val sessionId = sessionEvent.sessionId
         return when (flowMapperState.status) {
             null -> {
-                log.warn(errorMsg + "Ignoring event.")
+                log.warn("FlowMapperState with null status")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.ERROR -> {
                 log.warn(errorMsg + "Ignoring event.")
-                FlowMapperResult(null, listOf())
+                FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
                 log.warn(errorMsg + "Forwarding event.")
@@ -94,7 +94,7 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.CLOSING -> {
                 log.warn(errorMsg + "Ignoring event.")
-                FlowMapperResult(null, listOf())
+                FlowMapperResult(flowMapperState, listOf())
             }
         }
     }
