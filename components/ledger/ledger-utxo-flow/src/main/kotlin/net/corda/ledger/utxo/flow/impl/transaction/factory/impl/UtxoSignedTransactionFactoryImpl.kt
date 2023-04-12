@@ -13,14 +13,15 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
+import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -61,8 +62,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
-    @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    @Reference(service = CurrentGroupParametersService::class)
+    private val currentGroupParametersService: CurrentGroupParametersService,
+    @Reference(service = SignedGroupParametersVerifier::class)
+    private val signedGroupParametersVerifier: SignedGroupParametersVerifier
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -82,8 +85,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             "Number of component groups in metadata structure description does not match with the real number!"
         }
 
-        // todo CORE-8956 verify signedGroupParameters in verify too since that will need that anyway:
-        //  1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 
         val signaturesWithMetadata =
@@ -120,25 +121,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to getAndPersistCurrentMgmGroupParameters().hash.toString()
     )
 
-    private fun getCurrentMgmGroupParameters(): SignedGroupParameters {
-        val holdingIdentity = currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity
-        val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-        val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
-            "Group parameters could not be accessed."
-        }
-        requireNotNull(signedGroupParameters.signature) {
-            "Group parameters need to be signed."
-        }
-        requireNotNull(signedGroupParameters.signatureSpec) {
-            "Group parameters signature need a signature specification."
-        }
-        return signedGroupParameters
-    }
-
     @Suspendable
     private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParameters {
-        val signedGroupParameters = getCurrentMgmGroupParameters()
-        // todo CORE-8956 verify signedGroupParameters before persist: 1. bytes->hash, 2. bytes->signature, 3. signature is from MGM
+        val signedGroupParameters = currentGroupParametersService.get()
+        signedGroupParametersVerifier.verifySignature(signedGroupParameters, currentGroupParametersService.getMgmKeys())
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         return signedGroupParameters
     }

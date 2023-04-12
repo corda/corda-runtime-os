@@ -21,6 +21,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactio
 import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.ledger.utxo.testkit.notaryX500Name
+import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.NotaryLookup
@@ -32,7 +33,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
-    private val mockMembershipGroupReaderProvider = mockMembershipGroupReaderProvider()
+    private val mockCurrentGroupParametersService = mockCurrentGroupParametersService()
+    private val mockSignedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
 
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
@@ -77,7 +79,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         utxoLedgerTransactionFactory,
         mockUtxoLedgerTransactionVerificationService,
         mockUtxoLedgerGroupParametersPersistenceService,
-        mockMembershipGroupReaderProvider
+        mockCurrentGroupParametersService,
+        mockSignedGroupParametersVerifier
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,
