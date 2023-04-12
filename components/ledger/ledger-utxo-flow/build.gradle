@@ -60,6 +60,8 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    integrationTestRuntimeOnly project(':libs:membership:membership-impl')
+
     cpis project(path: ':testing:ledger:ledger-utxo-state-app', configuration: 'cordaCPB')
 }
 
