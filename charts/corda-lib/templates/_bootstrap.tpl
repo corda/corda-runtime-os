@@ -66,8 +66,8 @@ spec:
               name: working-volume
           env:
           {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rbac" "clusterDb" "false" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "clusterDb" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
+        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
+        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}                
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "command" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
         - name: create-db-users-and-grant
@@ -467,15 +467,18 @@ a second init container to execute the output SQL to the relevant database
     {{- if or (eq .name "rbac") (eq .name "crypto")  (eq .name "vnodes") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}    
+
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
     {{- if not (eq .name "rpc") -}}
       {{ include "corda.bootstrapCliEnv" . | nindent 4 -}}{{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
     {{- end -}}
+
     {{- if or (eq .name "rbac") (eq .name "vnodes") }}
     {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
     {{- end -}}
-    {{- /* TODO remove this and use the name instead */ -}}
-    {{- if eq .clusterDb "true" -}}
+    
+
+    {{- if eq .name "vnodes" -}}
       {{ include "corda.clusterDbEnv" . | nindent 4 -}}
     {{- end -}}
     {{- if eq .name "rpc" -}}
