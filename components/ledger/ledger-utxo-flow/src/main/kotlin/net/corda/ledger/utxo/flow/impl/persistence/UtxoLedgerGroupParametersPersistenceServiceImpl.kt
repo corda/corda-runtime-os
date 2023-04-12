@@ -8,7 +8,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSigned
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
