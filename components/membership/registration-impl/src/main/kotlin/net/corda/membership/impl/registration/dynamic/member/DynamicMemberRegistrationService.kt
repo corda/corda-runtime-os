@@ -467,11 +467,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
             }
             p2pEndpointVerifier.verifyContext(context)
+            val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
-            if (context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }) {
+            if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }

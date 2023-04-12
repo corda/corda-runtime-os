@@ -15,7 +15,7 @@ class ExternalMessagingRouteConfigGeneratorImpl(
     private val channelsConfigSerializer: ExternalMessagingChannelConfigSerializer
 ) : ExternalMessagingRouteConfigGenerator {
 
-    override fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Set<CpkMetadata>): String {
+    override fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String {
         val routes = generateRoutes(holdingId, cpks)
         return routeConfigSerializer.serialize(
             RouteConfiguration(
@@ -27,7 +27,7 @@ class ExternalMessagingRouteConfigGeneratorImpl(
 
     private fun generateRoutes(
         holdingId: HoldingIdentity,
-        cpks: Set<CpkMetadata>
+        cpks: Collection<CpkMetadata>
     ): List<Route> {
         val topicRoutes = cpks.mapNotNull { it.externalChannelsConfig }.map { externalChannelsConfigJsonStr ->
 

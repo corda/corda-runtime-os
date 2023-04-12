@@ -91,5 +91,13 @@ class SignatureSpecUtilsTests {
 
         override fun digestLength(platformDigestName: DigestAlgorithmName): Int =
             MessageDigest.getInstance(platformDigestName.name).digestLength
+
+        override fun defaultDigestAlgorithm(): DigestAlgorithmName {
+            TODO("Not yet implemented")
+        }
+
+        override fun supportedDigestAlgorithms(): Set<DigestAlgorithmName> {
+            TODO("Not yet implemented")
+        }
     }
 }
