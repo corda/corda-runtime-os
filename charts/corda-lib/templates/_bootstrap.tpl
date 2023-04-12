@@ -95,31 +95,7 @@ spec:
           {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
           {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
-        - name: create-initial-crypto-worker-config
-          image: {{ include "corda.bootstrapCliImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'initial-config', 'create-crypto-config', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
-          workingDir: /tmp/working_dir
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
-          env:
-            {{ include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
-        - name: apply-initial-crypto-worker-config
-          image: {{ include "corda.bootstrapDbClientImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/crypto-config.sql --dbname "dbname={{ include "corda.clusterDbName" . }} options=--search_path={{ .Values.db.cluster.schema }}"' ]
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-          env:
-          {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
+        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto" "command" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
 
       volumes:
         - name: working-volume
@@ -438,17 +414,21 @@ a second init container to execute the output SQL to the relevant database
          {{- /* request admin access in some cases, onl when the optional admin argument to this function (named tempalte) is specified as true */ -}}
          {{- if eq (.admin | default "false") "true" -}} '-a',{{ " " -}}{{- end -}}
          
-         {{- /* specify DB user - note that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}
-         {{- "'-u'" -}},{{ " " -}}{{- if .quoteUser }}'{{- end -}} $({{ .environmentVariablePrefix -}}_USERNAME){{- if .quoteUser }}'{{- end -}},
+         {{- if not (eq .command "create-crypto-config") -}}
+           {{- /* specify DB user - note that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}
+           {{- "'-u'" -}},{{ " " -}}{{- if .quoteUser }}'{{- end -}} $({{ .environmentVariablePrefix -}}_USERNAME){{- if .quoteUser }}'{{- end -}},
          
-         {{- /* specify DB password - note again that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}   
-         {{- " '-p'" -}}, {{- if .quotePassword }} '{{- else -}} {{ " " -}}{{- end -}}$({{ .environmentVariablePrefix -}}_PASSWORD){{- if .quotePassword }}'{{- end -}},
-                 
-         {{- if not (eq .name "rpc") -}}
+           {{- /* specify DB password - note again that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}   
+           {{- " '-p'" -}}, {{- if .quotePassword }} '{{- else -}} {{ " " -}}{{- end -}}$({{ .environmentVariablePrefix -}}_PASSWORD){{- if .quotePassword }}'{{- end -}},
+         {{- end -}}           
+         
+         {{- if and (not (eq .name "rpc")) (not (eq .command "create-crypto-config")) -}}
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
-             {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, 
-             {{- " '--salt'" -}}, "$(SALT)", '--passphrase', "$(PASSPHRASE)", 
+             {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, {{- " " -}}
+         {{- end -}}         
+         {{- if (not (eq .name "rpc")) -}}
+             {{- "'--salt'" -}}, "$(SALT)", '--passphrase', "$(PASSPHRASE)", 
          {{- end -}}
                   
          {{- " '-l'" -}}, '/tmp/working_dir']
@@ -483,12 +463,13 @@ a second init container to execute the output SQL to the relevant database
     {{- end -}}
     {{- if eq .name "rpc" -}}
       {{- include "corda.restApiAdminSecretEnv" . | nindent 4 }}
-    {{- else if not (or (eq .name "vnodes") (eq .name "rbac")) -}}
+    {{- else if (and (not (or (eq .name "vnodes") (eq .name "rbac"))) (not (eq .command "create-crypto-config"))) -}}
     {{ "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
       {{- include "corda.cryptoDbUserEnv" . | nindent 4 -}}
     {{- end -}}
+    
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
     {{- if (eq .name "rpc") -}}
       {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
