@@ -115,7 +115,7 @@ class UtxoLedgerTests {
             aliceHoldingId,
             mapOf(
                 "offset" to 0,
-                "limit" to 1000
+                "limit" to 100
             ),
             "net.cordapp.demo.utxo.UtxoCustomQueryDemoFlow"
         )
