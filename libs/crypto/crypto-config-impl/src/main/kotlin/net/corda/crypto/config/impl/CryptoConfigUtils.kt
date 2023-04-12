@@ -220,11 +220,10 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
         .withValue(
             HSM, ConfigValueFactory.fromMap(
                 mapOf(
-                    CryptoHSMConfig::retry.name to mapOf(
+                    CryptoHSMConfig::retrying.name to mapOf(
                         CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
-                    CryptoHSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
                     CryptoHSMConfig::defaultWrappingKey.name to ConfigValueFactory.fromAnyRef("root1"),
                     CryptoHSMConfig::wrappingKeys.name to listOf(
                         ConfigValueFactory.fromAnyRef(

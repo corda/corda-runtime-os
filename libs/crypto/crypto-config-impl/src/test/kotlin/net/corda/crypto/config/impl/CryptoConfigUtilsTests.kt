@@ -42,9 +42,8 @@ class CryptoConfigUtilsTests {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         val softWorker = config.hsm()
-        assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
-        assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
+        assertEquals(3, softWorker.retrying.maxAttempts)
         val wrappingKey1 = softWorker.wrappingKeys[0] as ConfigObject
         assertEquals("master-salt", wrappingKey1["salt"]!!.unwrapped())
         assertEquals("master-passphrase", wrappingKey1["passphrase"]!!.unwrapped())
@@ -79,9 +78,8 @@ class CryptoConfigUtilsTests {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         val softWorker = config.hsm()
-        assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
-        assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
+        assertEquals(3, softWorker.retrying.maxAttempts)
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -182,7 +180,7 @@ class CryptoConfigUtilsTests {
     fun `CryptoHSMConfig should throw IllegalStateException when is empty`() {
         val config = CryptoHSMConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
-            config.retry
+            config.retrying
         }
         val retryConfig = CryptoHSMConfig.RetryConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
@@ -190,9 +188,6 @@ class CryptoConfigUtilsTests {
         }
         assertThrows<IllegalStateException> {
             retryConfig.attemptTimeoutMills
-        }
-        assertThrows<IllegalStateException> {
-            config.masterKeyPolicy
         }
         assertThrows<IllegalStateException> {
             config.wrappingKeys

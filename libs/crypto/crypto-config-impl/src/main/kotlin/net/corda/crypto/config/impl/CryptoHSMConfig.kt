@@ -23,14 +23,6 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val masterKeyPolicy: MasterKeyPolicy by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        try {
-            config.getEnum(MasterKeyPolicy::class.java, this::masterKeyPolicy.name)
-        } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::masterKeyPolicy.name}", e)
-        }
-    }
-
     val wrappingKeys: ConfigList by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
             config.getList(this::wrappingKeys.name)
@@ -47,11 +39,11 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val retry: RetryConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val retrying: RetryConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
-            RetryConfig(config.getConfig(this::retry.name))
+            RetryConfig(config.getConfig(this::retrying.name))
         } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::retry.name}", e)
+            throw IllegalStateException("Failed to get ${this::retrying.name}", e)
         }
     }
 }

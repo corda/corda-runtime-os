@@ -96,7 +96,8 @@ class HSMServiceImpl @Activate constructor(
                 tenantId = tenantId,
                 category = category,
                 hsmId = SOFT_HSM_ID,
-                masterKeyPolicy = hsmConfig.masterKeyPolicy
+                // Defaulting the below to what it used be in crypto default config - but it probably needs be removed now
+                masterKeyPolicy = MasterKeyPolicy.UNIQUE
             )
             ensureWrappingKey(association)
             return association
@@ -108,21 +109,19 @@ class HSMServiceImpl @Activate constructor(
         }
 
         private fun ensureWrappingKey(association: HSMAssociationInfo) {
-            if (hsmConfig.masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
-                require(!association.masterKeyAlias.isNullOrBlank()) {
-                    "The master key alias is not specified."
-                }
-
-                val cryptoService = cryptoServiceFactory.getInstance(association.hsmId)
-                cryptoService.createWrappingKey(
-                    failIfExists = false,
-                    wrappingKeyAlias = association.masterKeyAlias
-                        ?: throw InvalidParamsException("no masterKeyAlias in association"),
-                    context = mapOf(
-                        CRYPTO_TENANT_ID to association.tenantId
-                    )
-                )
+            require(!association.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias is not specified."
             }
+
+            val cryptoService = cryptoServiceFactory.getInstance(association.hsmId)
+            cryptoService.createWrappingKey(
+                failIfExists = false,
+                wrappingKeyAlias = association.masterKeyAlias
+                    ?: throw InvalidParamsException("no masterKeyAlias in association"),
+                context = mapOf(
+                    CRYPTO_TENANT_ID to association.tenantId
+                )
+            )
         }
 
         private fun tryChooseAliased(stats: List<HSMStats>): HSMStats =

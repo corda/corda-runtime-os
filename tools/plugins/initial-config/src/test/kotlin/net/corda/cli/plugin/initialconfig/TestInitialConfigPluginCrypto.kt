@@ -1,11 +1,9 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigList
 import com.typesafe.config.ConfigObject
-import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
@@ -156,9 +154,8 @@ class TestInitialConfigPluginCrypto {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         val softWorker = config.hsm()
-        assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
-        assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
+        assertEquals(3, softWorker.retrying.maxAttempts)
         wrappingKeyAssert(softWorker.wrappingKeys, smartConfigFactory)
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
