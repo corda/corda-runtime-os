@@ -64,7 +64,7 @@ class SmokeTestWebsocketClient(
                 DEFAULT_CLUSTER.rest.uri.schemeSpecificPart,
                 DEFAULT_CLUSTER.rest.uri.fragment
             )
-        ) { "${this}api/v1" }
+        ) { "${this}/api/v1" }
     }
 
     private val httpClient = HttpClient(SslContextFactory.Client(true))
