@@ -108,7 +108,7 @@ spec:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             {{ include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }} 
+            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -454,7 +454,7 @@ SQL to the relevant database
     {{- if not (eq .mode "admin") -}}
       {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
     {{- end -}}
-    {{- if or (eq .name "rbac") -}}
+    {{- if or (eq .name "rbac") (eq .name "crypto") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}    
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
@@ -463,7 +463,7 @@ SQL to the relevant database
     {{- end -}}
     {{- if or (eq .name "rbac") (eq .name "vnodes") }}
     {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
-    {{- end }}
+    {{- end -}}
     {{- /* TODO remove this and use the name instead */ -}}
     {{- if eq .clusterDb "true" -}}
       {{ include "corda.clusterDbEnv" . | nindent 4 -}}
@@ -474,12 +474,12 @@ SQL to the relevant database
     {{ "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
-    {{- include "corda.cryptoDbUserEnv" . | nindent 4 }}
+      {{- include "corda.cryptoDbUserEnv" . | nindent 4 }}
     {{- end -}}
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
     {{- if (eq .name "rpc") -}}
-    {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
-    {{ include "corda.bootstrapCliEnv" . | nindent 4  -}} {{- /* JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
+      {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
+      {{ include "corda.bootstrapCliEnv" . | nindent 4  -}} {{- /* JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
     {{- end }}
 - name: apply-initial-{{ .name }}-{{ .mode | default "db-config" }}
   image: {{ include "corda.bootstrapDbClientImage" . }}
