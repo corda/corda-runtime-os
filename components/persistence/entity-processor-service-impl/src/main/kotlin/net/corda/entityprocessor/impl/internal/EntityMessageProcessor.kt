@@ -1,5 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
+import net.corda.crypto.core.parseSecureHash
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
@@ -21,13 +23,12 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.debug
 import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
-fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
-    this.get(holdingIdentity).sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
+fun SandboxGroupContext.getClass(fullyQualifiedClassName: String) =
+    this.sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -64,7 +65,13 @@ class EntityMessageProcessor(
                 withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
-                        val sandbox = entitySandboxService.get(holdingIdentity)
+                        val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                            .map { it.value.toSecureHash() }
+                            .toSet()
+
+                        val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+
                         processRequestWithSandbox(sandbox, request)
                     } catch (e: Exception) {
                         responseFactory.errorResponse(request.flowExternalEventContext, e)
@@ -79,13 +86,11 @@ class EntityMessageProcessor(
         sandbox: SandboxGroupContext,
         request: EntityRequest
     ): Record<String, FlowEvent> {
-        val holdingIdentity = request.holdingIdentity.toCorda()
-
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
 
-        val persistenceServiceInternal = PersistenceServiceInternal(entitySandboxService::getClass, payloadCheck)
+        val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payloadCheck)
 
         return entityManagerFactory.createEntityManager().transaction {
             when (val entityRequest = request.request) {
@@ -102,8 +107,7 @@ class EntityMessageProcessor(
                     persistenceServiceInternal.deleteEntitiesByIds(
                         serializationService,
                         it,
-                        entityRequest,
-                        holdingIdentity
+                        entityRequest
                     )
                 )
                 is MergeEntities -> responseFactory.successResponse(
@@ -112,11 +116,11 @@ class EntityMessageProcessor(
                 )
                 is FindEntities -> responseFactory.successResponse(
                     request.flowExternalEventContext,
-                    persistenceServiceInternal.find(serializationService, it, entityRequest, holdingIdentity)
+                    persistenceServiceInternal.find(serializationService, it, entityRequest)
                 )
                 is FindAll -> responseFactory.successResponse(
                     request.flowExternalEventContext,
-                    persistenceServiceInternal.findAll(serializationService, it, entityRequest, holdingIdentity)
+                    persistenceServiceInternal.findAll(serializationService, it, entityRequest)
                 )
                 is FindWithNamedQuery -> responseFactory.successResponse(
                     request.flowExternalEventContext,
@@ -131,4 +135,6 @@ class EntityMessageProcessor(
             }
         }
     }
+
+    private fun String.toSecureHash() = parseSecureHash(this)
 }

@@ -5,11 +5,6 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigList
 import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigValue
-import java.security.KeyPairGenerator
-import java.security.PrivateKey
-import java.security.Provider
-import java.security.PublicKey
-import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -18,6 +13,7 @@ import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.getEntityManagerFactory
@@ -25,7 +21,6 @@ import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.getStringOrDefault
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
@@ -38,7 +33,12 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
+import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.Provider
+import java.security.PublicKey
 import java.util.InvalidPropertiesFormatException
+import java.util.concurrent.TimeUnit
 
 const val KEY_MAP_TRANSIENT_NAME = "TRANSIENT"
 const val KEY_MAP_CACHING_NAME = "CACHING"
@@ -125,8 +125,11 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         @Suppress("ThrowsCount")
         fun getInstance(config: SmartConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
-            val wrappingKeyMapConfig = config.getConfig("wrappingKeyMap")
-            val keysList: ConfigList = config.getList("wrappingKeys")
+            val cachingConfig = config.getConfig("caching")
+            val expireAfterAccessMins = cachingConfig.getConfig("expireAfterAccessMins").getLong("default")
+            val maximumSize = cachingConfig.getConfig("maximumSize").getLong("default")
+            val hsmConfig = config.hsm().cfg
+            val keysList: ConfigList = hsmConfig.getList("wrappingKeys")
             val unmanagedWrappingKeys: Map<String, WrappingKey> =
                 keysList.map { it: ConfigValue ->
                     when (it) {
@@ -142,35 +145,23 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                         else -> throw InvalidParameterException("unexpected item ")
                     }
                 }.toMap()
-            val defaultUnmanagedWrappingKeyName = config.getString("defaultWrappingKey")
+            val defaultUnmanagedWrappingKeyName = hsmConfig.getString("defaultWrappingKey")
             require(unmanagedWrappingKeys.containsKey(defaultUnmanagedWrappingKeyName)) {
                 "default key $defaultUnmanagedWrappingKeyName must be in wrappingKeys"
             }
-            val wrappingKeyCacheConfig = wrappingKeyMapConfig.getConfig("cache")
             // TODO drop this compatibility code that supports name between KEY_MAP_TRANSIENT_NAME and if so disables caching
             val wrappingKeyCache: Cache<String, WrappingKey> = cacheFactoryImpl.build(
                 "HSM-Wrapping-Keys-Map",
                 Caffeine.newBuilder()
-                    .expireAfterAccess(wrappingKeyCacheConfig.getLong("expireAfterAccessMins"), TimeUnit.MINUTES)
-                    .maximumSize(
-                        if (wrappingKeyCacheConfig.getStringOrDefault("name", "") == KEY_MAP_TRANSIENT_NAME) 0
-                        else wrappingKeyCacheConfig.getLong("maximumSize")
-                    )
+                    .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(maximumSize)
             )
 
-            val privateKeyMapName = config.getConfig("keyMap").getStringOrDefault("name", KEY_MAP_CACHING_NAME)
-            if (privateKeyMapName != KEY_MAP_CACHING_NAME && privateKeyMapName != KEY_MAP_TRANSIENT_NAME)
-                throw java.lang.IllegalStateException("unknown name $privateKeyMapName")
-            val privateKeyMapCacheConfig = config.getConfig("keyMap").getConfig("cache")
             val privateKeyCache: Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
                 "HSM-Soft-Keys-Map",
                 Caffeine.newBuilder()
-                    .expireAfterAccess(privateKeyMapCacheConfig.getLong("expireAfterAccessMins"), TimeUnit.MINUTES)
-                    .maximumSize(
-                        if (privateKeyMapName == KEY_MAP_TRANSIENT_NAME) 0 else privateKeyMapCacheConfig.getLong(
-                            "maximumSize"
-                        )
-                    )
+                    .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(maximumSize)
             )
             return SoftCryptoService(
                 wrappingRepositoryFactory = ::openRepository,

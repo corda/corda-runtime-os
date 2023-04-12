@@ -21,6 +21,7 @@ import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -128,7 +129,7 @@ internal class VirtualNodeWriterProcessor(
                         return
                     }
 
-                    val cpiMetadataLite = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
@@ -165,7 +166,7 @@ internal class VirtualNodeWriterProcessor(
                     }
 
                     val changelogsToRun =
-                        changeLogsRepository.findByCpiId(em, cpiMetadataLite.id).groupBy { it.id.cpkFileChecksum }
+                        changeLogsRepository.findByCpiId(em, cpiMetadata.cpiId).groupBy { it.id.cpkFileChecksum }
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
@@ -178,7 +179,7 @@ internal class VirtualNodeWriterProcessor(
                             }
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI " +
-                                        "${cpiMetadataLite.id.name} - changelogs: [${changeLogs}]",
+                                        "${cpiMetadata.cpiId.name} - changelogs: [${changeLogs}]",
                                 e
                             )
                             respFuture.complete(
@@ -263,7 +264,7 @@ internal class VirtualNodeWriterProcessor(
                         )
                     ) {
                         logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
-                        throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                        throw VirtualNodeOperationBadRequestException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
                 }
 
