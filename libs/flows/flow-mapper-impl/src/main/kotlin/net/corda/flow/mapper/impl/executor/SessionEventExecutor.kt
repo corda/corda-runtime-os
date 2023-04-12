@@ -111,7 +111,7 @@ class SessionEventExecutor(
 
         return when (flowMapperState.status) {
             null -> {
-                log.warn("FlowMapperState with null status")
+                log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING -> {

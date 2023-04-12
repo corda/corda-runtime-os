@@ -51,7 +51,7 @@ class SessionErrorExecutor(
         val sessionId = sessionEvent.sessionId
         return when (flowMapperState.status) {
             null -> {
-                log.warn("FlowMapperState with null status")
+                log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.ERROR -> {
@@ -60,6 +60,7 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.OPEN -> {
                 log.warn(errorMsg + "Forwarding event.")
+                flowMapperState.status = FlowMapperStateType.ERROR
                 if (messageDirection == MessageDirection.OUTBOUND) {
                     FlowMapperResult(
                         flowMapperState, listOf(
@@ -94,6 +95,7 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.CLOSING -> {
                 log.warn(errorMsg + "Ignoring event.")
+                flowMapperState.status = FlowMapperStateType.ERROR
                 FlowMapperResult(flowMapperState, listOf())
             }
         }
