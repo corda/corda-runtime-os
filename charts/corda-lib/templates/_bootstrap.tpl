@@ -41,11 +41,11 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
       initContainers:
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "db" "command" "database" "subCommand" "spec" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true" "namePostfix" "schemas") | nindent 8 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}                
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "db" "command" "database" "subCommand" "spec" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true" "namePostfix" "schemas") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}                
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
         - name: create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -71,7 +71,7 @@ spec:
           {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
           {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
 
       volumes:
         - name: working-volume
@@ -378,7 +378,7 @@ Bootstrap declaration to declare an initial container for running corda-cli init
 a second init container to execute the output SQL to the relevant database
 */}}
 
-{{- define "corda.bootstrapInitialConfigGenerateAndApply" -}}
+{{- define "corda.generateAndExecuteSql" -}}
 {{- /* define 2 init containers, which run in sequence. First run corda-cli initial-config to generate some SQL, storing in a persistent volume called working-volume. Second is a postgres image which mounts the same persistent volume and executes the SQL. */ -}}  
 - name: create-{{- if not (eq .name "db") -}}initial-{{- end -}}{{ .name }}-{{ .namePostfix | default "db-config" }}
   image: {{ include "corda.bootstrapCliImage" . }}
