@@ -2,8 +2,9 @@ package net.corda.e2etest.utilities
 
 import net.corda.utilities.minutes
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 
-fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): String? {
+fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): String {
     val statusResponse = assertWithRetry {
         timeout(1.minutes)
         command { getVNodeStatus(requestId) }
@@ -29,4 +30,5 @@ fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): Stri
         .isEqualTo("SUCCEEDED")
 
     return  statusResponse.toJson()["resourceId"]?.textValue()
+        ?: fail("Virtual node status response did not include a resourceId field")
 }
