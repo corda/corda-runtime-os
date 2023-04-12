@@ -18,6 +18,7 @@ import net.corda.v5.ledger.utxo.FinalizationResult
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -78,6 +79,10 @@ class SimUtxoLedgerService(
         TODO("Not yet implemented")
     }
 
+    override fun <R : Any?> query(queryName: String, resultClass: Class<R>): VaultNamedParameterizedQuery<R> {
+        TODO("Not yet implemented")
+    }
+
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
         return findSignedTransaction(id)?.toLedgerTransaction()
     }
@@ -109,7 +114,7 @@ class SimUtxoLedgerService(
         val notaryInfo = fiber.getNotary()
 
         // For each entity fetched, convert it to StateAndRef
-        val stateAndRefs = result.map { utxoTransactionOutputEntity ->
+        val stateAndRefs = result.results.map { utxoTransactionOutputEntity ->
             val stateRef = StateRef(
                 parseSecureHash(utxoTransactionOutputEntity.transactionId),
                 utxoTransactionOutputEntity.index)

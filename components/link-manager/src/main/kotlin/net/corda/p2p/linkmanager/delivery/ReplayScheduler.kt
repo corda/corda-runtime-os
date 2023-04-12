@@ -235,10 +235,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
     }
 
     private fun scheduleForReplay(originalAttemptTimestamp: Long, messageId: MessageId, message: M) {
-        val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
-        val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
-        val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
-        replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
+        replayInfoPerMessageId.compute(messageId) { _, replayInfo ->
+            replayInfo?.future?.cancel(false)
+            val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
+            val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
+            val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
+            ReplayInfo(firstReplayPeriod, future)
+        }
     }
 
     fun removeFromReplay(messageId: MessageId, counterparties: K) {
@@ -297,6 +300,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
 
     private fun reschedule(message: M, messageId: MessageId, replayedBefore: Boolean) {
         replayInfoPerMessageId.computeIfPresent(messageId) { _, oldReplayInfo ->
+            oldReplayInfo.future.cancel(false)
             val delay = if (replayedBefore) {
                 replayCalculator.get().calculateReplayInterval(oldReplayInfo.currentReplayPeriod)
             } else {
