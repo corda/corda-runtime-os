@@ -17,10 +17,10 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
 
     override fun execute(): List<Record<*, *>> {
         requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignature){
-            "Group parameters need to be signed."
+            "SignedGroupParameters needs to be signed."
         }
         requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec){
-            "Group parameters signature need a signature specification."
+            "SignedGroupParameters needs a signature specification."
         }
         persistenceService.persistSignedGroupParametersIfDoNotExist(persistSignedGroupParametersIfDoNotExist.signedGroupParameters)
 

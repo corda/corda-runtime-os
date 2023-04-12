@@ -37,19 +37,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
                 FindSignedGroupParametersExternalEventFactory::class.java,
                 FindSignedGroupParametersParameters(hash.toString())
             )
-        }.singleOrNull().let {
-            if (it == null) {
-                null
-            } else {
-                requireNotNull(it.signature){
-                    "Group parameters need to be signed."
-                }
-                requireNotNull(it.signatureSpec){
-                    "Group parameters signature need a signature specification."
-                }
-                it
-            }
-        }
+        }.singleOrNull()
     }
 
     @Suspendable

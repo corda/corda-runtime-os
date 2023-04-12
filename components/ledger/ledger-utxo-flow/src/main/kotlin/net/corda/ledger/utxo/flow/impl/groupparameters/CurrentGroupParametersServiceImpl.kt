@@ -31,13 +31,13 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
     override fun get(): SignedGroupParameters {
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
         val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
-            "Group parameters could not be accessed."
+            "signedGroupParameters could not be accessed."
         }
         requireNotNull(signedGroupParameters.signature) {
-            "Group parameters need to be signed."
+            "signedGroupParameters needs to be signed."
         }
         requireNotNull(signedGroupParameters.signatureSpec) {
-            "Group parameters signature need a signature specification."
+            "signedGroupParameters needs a signature specification."
         }
         return signedGroupParameters
     }

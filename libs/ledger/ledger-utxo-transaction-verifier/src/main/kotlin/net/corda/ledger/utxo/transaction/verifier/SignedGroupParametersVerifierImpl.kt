@@ -41,7 +41,10 @@ class SignedGroupParametersVerifierImpl @Activate constructor(
     }
 
     private fun verifyHash(transaction: UtxoLedgerTransaction, signedGroupParameters: SignedGroupParameters) {
-        check((transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash() == signedGroupParameters.hash.toString()) {
+        check(
+            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash() ==
+                    signedGroupParameters.hash.toString()
+        ) {
             "The referenced hash in the metadata did not match with the one returned from the database."
         }
     }

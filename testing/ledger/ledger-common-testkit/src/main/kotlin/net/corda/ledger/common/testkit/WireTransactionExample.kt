@@ -27,13 +27,14 @@ fun WireTransactionFactory.createExample(
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
-    val allGroupLists = listOf(
-        listOf(canonicalJson.toByteArray()),
-    ) +
-            componentGroups +
-            List(
-                (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() - 1 - componentGroups.size,
-            ) { emptyList() }
+    val allGroupLists =
+        listOf(
+            listOf(canonicalJson.toByteArray()),
+        ) +
+        componentGroups +
+        List(
+            (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() - 1 - componentGroups.size,
+        ) { emptyList() }
     return create(allGroupLists)
 }
 
