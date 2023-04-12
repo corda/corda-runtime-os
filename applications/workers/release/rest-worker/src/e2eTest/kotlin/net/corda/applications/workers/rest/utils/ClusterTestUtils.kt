@@ -26,19 +26,19 @@ import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.JsonObject
 import net.corda.rest.ResponseCode
+import net.corda.rest.asynchronous.v1.AsyncOperationState.SUCCEEDED
 import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.test.util.eventually
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.time.Duration
 import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
@@ -149,8 +149,10 @@ fun E2eCluster.createVirtualNode(
     clusterHttpClientFor(VirtualNodeRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
+            val timeout = 1.minutes
 
-            eventually {
+            var requestId = ""
+            eventually(timeout) {
                 try {
                     val response = proxy.createVirtualNode(
                         CreateVirtualNodeRequest(
@@ -166,7 +168,8 @@ fun E2eCluster.createVirtualNode(
                     )
 
                     assertThat(response.responseCode).isEqualTo(ResponseCode.ACCEPTED)
-                    member.holdingId = response.responseBody.requestId
+
+                    requestId = response.responseBody.requestId
 
                 } catch (e: RequestErrorException) {
                     // It's possible that we get a 400 bad request if there is some lag between the CPI getting created
@@ -177,9 +180,14 @@ fun E2eCluster.createVirtualNode(
                 }
             }
 
+            assertNotEquals("", requestId, "Create VNode did not return a request ID")
+
             // Block until virtual node is created and available from the REST endpoint
-            eventually(Duration.ofSeconds(10)) {
-                assertDoesNotThrow { proxy.getVirtualNode(member.holdingId) }
+            eventually(timeout) {
+                val operationStatus = proxy.getVirtualNodeOperationStatus(requestId)
+                assertEquals(SUCCEEDED, operationStatus.status)
+                member.holdingId = operationStatus.resourceId
+                    ?: fail("Virtual node status response did not include a resourceId field")
             }
         }
 }
