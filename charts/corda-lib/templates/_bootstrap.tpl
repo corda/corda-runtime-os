@@ -68,32 +68,8 @@ spec:
           {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rbac" "clusterDb" "false" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
         {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "clusterDb" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
-        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto"  "admin" "false"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}
-        - name: create-initial-rpc-admin
-          image: {{ include "corda.bootstrapCliImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'initial-config', 'create-user-config', '-u', '$(REST_API_ADMIN_USERNAME)', '-p', '$(REST_API_ADMIN_PASSWORD)', '-l', '/tmp/working_dir']
-          workingDir: /tmp/working_dir
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
-          env:
-            {{ include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
-        - name: apply-initial-rpc-admin
-          image: {{ include "corda.bootstrapDbClientImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/rbac-config.sql --dbname "dbname={{ include "corda.clusterDbName" . }} options=--search_path={{ .Values.bootstrap.db.rbac.schema }}"' ]
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-          env:
-          {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
+        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}                
+        {{- include "corda.bootstrapInitialConfigGenerateAndApply" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "command" "create-user-config" "mode" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
         - name: create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -132,7 +108,7 @@ spec:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             {{ include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
+            {{ include "corda.bootstrapCliEnv" . | nindent 12 }} 
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -450,37 +426,67 @@ Bootstrap declaration to declare an initial container for running corda-cli init
 SQL to the relevant database
 */}}
 {{- define "corda.bootstrapInitialConfigGenerateAndApply" -}}
-- name: create-initial-{{ .name }}-db-config
+- name: create-initial-{{ .name }}-{{ .mode | default "db-config" }}
   image: {{ include "corda.bootstrapCliImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
-  args: [ 'initial-config', 'create-db-config',{{ " " -}}
-         {{- if eq (.admin | default "false") "true" -}} '-a',{{ " " -}}{{- end -}} '-u',{{ " " -}}{{- if .quoteUser }}'{{- end -}}$({{ .environmentVariablePrefix -}}_USERNAME){{- if .quoteUser }}'{{- end -}}, '-p', {{- if .quotePassword }} '{{- else -}} {{ " " -}}{{- end -}}$({{ .environmentVariablePrefix -}}_PASSWORD){{- if .quotePassword }}'{{- end -}}, '--name', 'corda-{{ .longName | default .name }}', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', '--jdbc-pool-max-size', {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+  args: [ 'initial-config', '{{ .command | default "create-db-config" }}',{{ " " -}}
+         {{- if eq (.admin | default "false") "true" -}} '-a',{{ " " -}}{{- end -}}
+         {{- "'-u'" -}},{{ " " -}}{{- if .quoteUser }}'{{- end -}} $({{ .environmentVariablePrefix -}}_USERNAME){{- if .quoteUser }}'{{- end -}}, 
+         {{- " '-p'" -}}, {{- if .quotePassword }} '{{- else -}} {{ " " -}}{{- end -}}$({{ .environmentVariablePrefix -}}_PASSWORD){{- if .quotePassword }}'{{- end -}},
+         {{- if not (eq .mode "admin") -}}
+             {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
+             {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
+             {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, 
+             {{- " '--salt'" -}}, "$(SALT)", '--passphrase', "$(PASSPHRASE)", 
+         {{- end -}}
+         {{- " '-l'" -}}, '/tmp/working_dir']
   workingDir: /tmp/working_dir
   volumeMounts:
     - mountPath: /tmp/working_dir
       name: working-volume
     {{ include "corda.log4jVolumeMount" . | nindent 4 }}
   env:
-    {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 }}
-    {{ include "corda.bootstrapCliEnv" . | nindent 4 }}
-    {{- if not (eq .name "crypto") }}
+    {{- if or (eq .name "rpc") (eq .name "rbac") (eq .name "vnodes") (eq .name "crypto") -}}
+       {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
+    {{- end -}}
+    {{- if not (eq .mode "admin") -}}
+      {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
+    {{- end -}}
+    {{- if or (eq .name "rbac") -}}
+       {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
+    {{- end -}}    
+    {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
+    {{- if not (eq .name "rpc") -}}
+      {{ include "corda.bootstrapCliEnv" . | nindent 4 -}} {{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
+    {{- end -}}
+    {{- if or (eq .name "rbac") (eq .name "vnodes") }}
     {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
     {{- end }}
+    {{- /* TODO remove this and use the name instead */ -}}
     {{- if eq .clusterDb "true" -}}
-    {{ include "corda.clusterDbEnv" . | nindent 4 -}}
-    {{- end }}
+      {{ include "corda.clusterDbEnv" . | nindent 4 -}}
+    {{- end -}}
+    {{- if eq .name "rpc" -}}
+      {{- include "corda.restApiAdminSecretEnv" . | nindent 4 }}
+    {{- else -}}
+    {{ "\n    " -}} {{- /* legacy whitespace compliance */ -}}
+    {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
-    {{ "\n    " -}}
-    {{ include "corda.cryptoDbUserEnv" . | nindent 4 }}
+    {{- include "corda.cryptoDbUserEnv" . | nindent 4 }}
+    {{- end -}}
+    {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
+    {{- if (eq .name "rpc") -}}
+    {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
+    {{ include "corda.bootstrapCliEnv" . | nindent 4  -}} {{- /* JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
     {{- end }}
-- name: apply-initial-{{ .name }}-db-config
+- name: apply-initial-{{ .name }}-{{ .mode | default "db-config" }}
   image: {{ include "corda.bootstrapDbClientImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
-  command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/db-config.sql --dbname "dbname={{ include "corda.clusterDbName" . }} options=--search_path={{ .Values.db.cluster.schema }}"' ]
+  command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/{{ .sqlFile | default "db-config.sql" }} --dbname "dbname={{ include "corda.clusterDbName" . }} options=--search_path={{ .searchPath | default .Values.db.cluster.schema }}"' ]
   volumeMounts:
     - mountPath: /tmp/working_dir
       name: working-volume
