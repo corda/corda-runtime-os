@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.utxo.query;
+package net.corda.v5.ledger.utxo.query.registration;
 
 /**
  * An interface representing a builder that has already been collected. After collecting, the only builder method that

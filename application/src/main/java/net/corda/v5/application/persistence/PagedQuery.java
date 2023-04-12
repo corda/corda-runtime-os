@@ -41,13 +41,32 @@ public interface PagedQuery<R> {
     PagedQuery<R> setOffset(int offset);
 
     /**
-     * Executes the {@link PagedQuery}
+     * Executes the {@link PagedQuery}.
      *
-     * @return List of entities found. Empty list if none were found.
+     * @return A {@link ResultSet} containing the results of executing the query.
      *
      * @throws CordaPersistenceException If there is an error executing the query.
      */
     @Suspendable
     @NotNull
-    List<R> execute();
+    ResultSet<R> execute();
+
+    /**
+     * A result set containing the results of calling {@link PagedQuery#execute()}.
+     *
+     * @param <R> The type of the results contained in the result set.
+     */
+    interface ResultSet<R> {
+
+        /**
+         * Extracts the results of a {@link ResultSet} from a previously executed query.
+         * <p>
+         * This method does not execute a query itself, call {@link PagedQuery#execute()} to execute a query and
+         * generate a {@link ResultSet}.
+         *
+         * @return The results contained in the result set.
+         */
+        @NotNull
+        List<R> getResults();
+    }
 }

@@ -1,5 +1,8 @@
-package net.corda.v5.ledger.utxo.query;
+package net.corda.v5.ledger.utxo.query.registration;
 
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector;
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter;
+import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -20,6 +23,8 @@ public interface VaultNamedQueryBuilder extends VaultNamedQueryBuilderBase {
 
     /**
      * Sets the filter function of the named query.
+     * Note that filtering will always be applied before mapping.
+     *
      * @param filter A filter object.
      *
      * @return A builder instance with the filter function set.
@@ -28,11 +33,13 @@ public interface VaultNamedQueryBuilder extends VaultNamedQueryBuilderBase {
 
     /**
      * Sets the mapper function of the named query.
-     * @param mapper A transformer object.
+     * Note that the transformation will always be applied after filtering.
+     *
+     * @param transformer A transformer object.
      *
      * @return A builder instance with the mapper function set.
      */
-    @NotNull VaultNamedQueryBuilder map(@NotNull VaultNamedQueryTransformer<?, ?> mapper);
+    @NotNull VaultNamedQueryBuilder map(@NotNull VaultNamedQueryTransformer<?, ?> transformer);
 
     /**
      * Sets the collector function of the named query.

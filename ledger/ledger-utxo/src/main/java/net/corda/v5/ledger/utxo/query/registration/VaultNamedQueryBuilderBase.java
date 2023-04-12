@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.utxo.query;
+package net.corda.v5.ledger.utxo.query.registration;
 
 /**
  * An interface representing the base query builder which only consists of a register method.

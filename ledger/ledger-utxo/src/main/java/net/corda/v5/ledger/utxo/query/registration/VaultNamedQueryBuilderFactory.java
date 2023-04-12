@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.utxo.query;
+package net.corda.v5.ledger.utxo.query.registration;
 
 import net.corda.v5.base.annotations.DoNotImplement;
 import org.jetbrains.annotations.NotNull;
