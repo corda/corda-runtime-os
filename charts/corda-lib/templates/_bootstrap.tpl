@@ -501,7 +501,7 @@ Bootstrap declaration to declare an initial container for running corda-cli init
 SQL to the relevant database
 */}}
 {{- define "corda.bootstrapInitialConfigGenerateAndApply" -}}
-- name: create-initial-rbac-db-config
+- name: create-initial-{{ .name }}
   image: {{ include "corda.bootstrapCliImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
