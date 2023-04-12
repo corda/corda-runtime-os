@@ -7,6 +7,7 @@ import net.corda.v5.crypto.SecureHash;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
+import java.util.Set;
 
 /**
  * Provides hashing capabilities to be used in all sandbox types.
@@ -53,4 +54,16 @@ public interface DigestService {
      */
     @Suspendable
     int digestLength(@NotNull DigestAlgorithmName digestName);
+
+    /**
+     * Returns the defaulted digest algorithm.
+     */
+    @NotNull
+    DigestAlgorithmName defaultDigestAlgorithm();
+
+    /**
+     * Returns the supported digest algorithms.
+     */
+    @NotNull
+    Set<DigestAlgorithmName> supportedDigestAlgorithms();
 }
