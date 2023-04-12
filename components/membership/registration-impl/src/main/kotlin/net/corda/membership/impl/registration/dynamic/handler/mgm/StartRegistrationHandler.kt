@@ -85,6 +85,7 @@ internal class StartRegistrationHandler(
                     source.toCorda()
                 )
             }
+        logger.info("QQQ In StartRegistrationHandler ${registrationRequest.registrationId}, state $state")
 
         val (outputCommand, outputStates) = try {
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {

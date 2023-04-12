@@ -116,7 +116,7 @@ class RegistrationProcessor(
         val result = try {
             when (val command = event.value?.command) {
                 is StartRegistration -> {
-                    logger.info("Received start registration command.")
+                    logger.info("Received start registration command ${event.key}.")
                     handlers[StartRegistration::class.java]?.invoke(state, event)
                 }
 
