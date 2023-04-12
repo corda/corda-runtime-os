@@ -459,7 +459,7 @@ SQL to the relevant database
     {{- end -}}    
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
     {{- if not (eq .name "rpc") -}}
-      {{ include "corda.bootstrapCliEnv" . | nindent 4 -}} {{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
+      {{ include "corda.bootstrapCliEnv" . | nindent 4 -}}{{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
     {{- end -}}
     {{- if or (eq .name "rbac") (eq .name "vnodes") }}
     {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
