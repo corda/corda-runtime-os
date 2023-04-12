@@ -470,11 +470,11 @@ SQL to the relevant database
     {{- end -}}
     {{- if eq .name "rpc" -}}
       {{- include "corda.restApiAdminSecretEnv" . | nindent 4 }}
-    {{- else if not (eq .name "vnodes") -}}
+    {{- else if not (or (eq .name "vnodes") (eq .name "rbac")) -}}
     {{ "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
-      {{- include "corda.cryptoDbUserEnv" . | nindent 4 }}
+      {{- include "corda.cryptoDbUserEnv" . | nindent 4 -}}
     {{- end -}}
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
     {{- if (eq .name "rpc") -}}
