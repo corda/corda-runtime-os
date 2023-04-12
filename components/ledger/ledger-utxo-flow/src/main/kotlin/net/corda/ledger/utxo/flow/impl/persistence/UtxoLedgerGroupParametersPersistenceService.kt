@@ -11,11 +11,11 @@ import net.corda.v5.crypto.SecureHash
 interface UtxoLedgerGroupParametersPersistenceService {
 
     /**
-     * Find a group parameters by its hash
+     * Find a [SignedGroupParameters] by its hash
      *
      * @param hash The hash of the group parameters.
      *
-     * @return The found signed group parameters, null if it could not be found in the persistence context.
+     * @return The found signed group parameters, null if it could not be found.
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
@@ -23,7 +23,7 @@ interface UtxoLedgerGroupParametersPersistenceService {
     fun find(hash: SecureHash): SignedGroupParameters?
 
     /**
-     * Persist a [SignedGroupParametersContainer] to the store if it does not exist there yet.
+     * Persist a [SignedGroupParameters] to the store if it does not exist there yet.
      *
      * @param signedGroupParameters Signed group parameters to persist.
      *
