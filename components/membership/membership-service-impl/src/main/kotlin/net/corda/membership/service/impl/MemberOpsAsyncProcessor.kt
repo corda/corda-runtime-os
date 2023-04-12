@@ -161,8 +161,7 @@ internal class MemberOpsAsyncProcessor(
             val retries = state.retries()
             val response = if (retries <= 0) {
                 logger.warn(
-                    "Registration ${request.requestId} failed." +
-                        " Could not find holding identity associated with ${request.holdingIdentityId} for too long." +
+                    " Could not find holding identity associated with ${request.holdingIdentityId} for too long." +
                         " Request will not be retried further.",
                 )
                 createFailureWithoutRetryResponse(
