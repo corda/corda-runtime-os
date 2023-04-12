@@ -33,6 +33,14 @@ class DigestServiceImpl : PlatformDigestService {
         return digestFor(platformDigestName).digestLength
     }
 
+    override fun defaultDigestAlgorithm(): DigestAlgorithmName {
+        TODO("Not yet implemented")
+    }
+
+    override fun supportedDigestAlgorithms(): Set<DigestAlgorithmName> {
+        TODO("Not yet implemented")
+    }
+
     private fun digestAs(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): ByteArray {
         return digestFor(digestAlgorithmName).get().digest(bytes)
     }

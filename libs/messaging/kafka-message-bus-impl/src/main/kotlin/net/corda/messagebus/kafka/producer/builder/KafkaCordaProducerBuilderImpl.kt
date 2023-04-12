@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
@@ -52,7 +53,12 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                 val producer = createKafkaProducer(kafkaProperties)
                 val maxAllowedMessageSize = messageBusConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
-                CordaKafkaProducerImpl(resolvedConfig, producer, producerChunkService)
+                CordaKafkaProducerImpl(
+                    resolvedConfig,
+                    producer,
+                    producerChunkService,
+                    KafkaClientMetrics(producer)
+                )
             },
             errorMessage = { "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
                     "with configuration: $messageBusConfig" },

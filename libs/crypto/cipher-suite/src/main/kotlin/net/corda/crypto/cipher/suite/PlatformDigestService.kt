@@ -38,4 +38,14 @@ interface PlatformDigestService {
      * @throws [IllegalArgumentException] if the digest algorithm is not supported.
      */
     fun digestLength(platformDigestName: DigestAlgorithmName): Int
+
+    /**
+     * Returns the defaulted digest algorithm.
+     */
+    fun defaultDigestAlgorithm(): DigestAlgorithmName
+
+    /**
+     * Returns the supported digest algorithms.
+     */
+    fun supportedDigestAlgorithms(): Set<DigestAlgorithmName>
 }

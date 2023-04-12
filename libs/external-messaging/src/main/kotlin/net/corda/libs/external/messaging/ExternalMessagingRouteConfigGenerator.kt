@@ -5,5 +5,5 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.virtualnode.HoldingIdentity
 
 interface ExternalMessagingRouteConfigGenerator {
-    fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Set<CpkMetadata>): String
+    fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String
 }
