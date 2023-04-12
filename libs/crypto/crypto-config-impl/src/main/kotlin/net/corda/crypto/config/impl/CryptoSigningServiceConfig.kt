@@ -5,30 +5,12 @@ import net.corda.libs.configuration.SmartConfig
 /**
  * The signing service configuration.
  */
-class CryptoSigningServiceConfig(private val config: SmartConfig) {
-    class CacheConfig(private val config: SmartConfig) {
-        val expireAfterAccessMins: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            try {
-                config.getLong(this::expireAfterAccessMins.name)
-            } catch (e: Throwable) {
-                throw IllegalStateException("Failed to get ${this::expireAfterAccessMins.name}", e)
-            }
-        }
+class CryptoSigningServiceConfig(config: SmartConfig) {
 
-        val maximumSize: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            try {
-                config.getLong(this::maximumSize.name)
-            } catch (e: Throwable) {
-                throw IllegalStateException("Failed to get ${this::maximumSize.name}", e)
-            }
-        }
-    }
-
-    val cache: CacheConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val cache: CacheConfig =
         try {
-            CacheConfig(config.getConfig(this::cache.name))
+            CacheConfig(config.getConfig(CACHING))
         } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::cache.name}", e)
+            throw IllegalStateException("Failed to get $CACHING", e)
         }
-    }
 }

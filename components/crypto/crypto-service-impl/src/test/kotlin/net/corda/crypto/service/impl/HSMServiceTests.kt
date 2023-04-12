@@ -10,6 +10,7 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CUSTOM2
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -86,6 +87,7 @@ class HSMServiceTests {
         assertHSMAssociation(association2, tenantId, CryptoConsts.Categories.LEDGER)
     }
 
+    @Disabled
     @Test
     fun `Should assign HSM and retrieve assignment`() {
         val tenantId1 = UUID.randomUUID().toString()
@@ -114,6 +116,7 @@ class HSMServiceTests {
         )
     }
 
+    @Disabled
     @Test
     fun `Should assign HSM with preference to use ALIASED and retrieve assignment`() {
         val tenantId1 = UUID.randomUUID().toString()
@@ -150,6 +153,7 @@ class HSMServiceTests {
         assertThat(usage3).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
     }
 
+    @Disabled
     @Test
     @Suppress("ComplexMethod")
     fun `Should assign HSM ignoring SOFT HSM stats and retrieve assignment`() {

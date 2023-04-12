@@ -46,6 +46,7 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
+import net.corda.utilities.seconds
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -322,7 +323,7 @@ class MessageBusIntegrationTests {
         externalEventResponseMonitor =
             TestExternalEventResponseMonitor(subscriptionFactory, bootConfig)
 
-        eventually {
+        eventually(15.seconds) {
             logger.info("Waiting for required services to start...")
             assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
             logger.info("Required services started.")

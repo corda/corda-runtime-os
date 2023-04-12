@@ -2,6 +2,7 @@ package net.corda.crypto.softhsm.impl
 
 import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
@@ -12,12 +13,12 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
-import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -37,6 +38,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.security.InvalidParameterException
+import java.security.KeyPairGenerator
+import java.security.Provider
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -54,7 +58,21 @@ class SoftCryptoServiceOperationsTests {
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
-        private val wrappingRepository = TestWrappingRepository(
+        private val tenantId = UUID.randomUUID().toString()
+        private val clusterWrappingRepository = TestWrappingRepository(
+            ConcurrentHashMap(
+                listOf(
+                    knownWrappingKeyAlias to WrappingKeyInfo(
+                        WRAPPING_KEY_ENCODING_VERSION,
+                        knownWrappingKey.algorithm,
+                        knownWrappingKeyMaterial,
+                        1,
+                        "root",
+                    )
+                ).toMap()
+            )
+        )
+        private val tenantWrappingRepository = TestWrappingRepository(
             ConcurrentHashMap(
                 listOf(
                     knownWrappingKeyAlias to WrappingKeyInfo(
@@ -68,13 +86,24 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
-        private val cryptoService = makeSoftCryptoService(
-            wrappingRepository = wrappingRepository,
+        private val cryptoService = SoftCryptoService(
+            wrappingRepositoryFactory = {
+                when (it) {
+                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    tenantId -> tenantWrappingRepository
+                    else -> throw InvalidParameterException(it)
+                }
+            },
             schemeMetadata = schemeMetadata,
-            rootWrappingKey = rootWrappingKey,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
             wrappingKeyCache = wrappingKeyCache,
+            privateKeyCache = null
         )
-        private val tenantId = UUID.randomUUID().toString()
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
         private val softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
@@ -383,8 +412,8 @@ class SoftCryptoServiceOperationsTests {
         val key2Missing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2Missing)
 
-        wrappingRepository.saveKey(alias1, info1)
-        wrappingRepository.saveKey(alias2, info2)
+        clusterWrappingRepository.saveKey(alias1, info1)
+        clusterWrappingRepository.saveKey(alias2, info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
@@ -405,14 +434,14 @@ class SoftCryptoServiceOperationsTests {
         val key1FoundLater = wrappingKeyCache.getIfPresent(alias1)
         assertEquals(expected1, key1FoundLater)
 
-        assertThat(wrappingRepository.findCounter[alias1]).isEqualTo(1)
-        assertThat(wrappingRepository.findCounter[alias2]).isEqualTo(1)
+        assertThat(clusterWrappingRepository.findCounter[alias1]).isEqualTo(1)
+        assertThat(clusterWrappingRepository.findCounter[alias2]).isEqualTo(1)
     }
 
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
-        wrappingRepository.saveKey(
+        clusterWrappingRepository.saveKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
@@ -429,7 +458,7 @@ class SoftCryptoServiceOperationsTests {
     @Test
     fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
-        wrappingRepository.saveKey(
+        clusterWrappingRepository.saveKey(
             alias, WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
@@ -456,11 +485,11 @@ class SoftCryptoServiceOperationsTests {
     fun `wrapping key store can find keys that have been stored`() {
         val storeAlias = UUID.randomUUID().toString()
         val unknownAlias = UUID.randomUUID().toString()
-        assertNull(wrappingRepository.findKey(storeAlias))
-        assertNull(wrappingRepository.findKey(unknownAlias))
-        wrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
-        assertNotNull(wrappingRepository.findKey(storeAlias))
-        assertNull(wrappingRepository.findKey(unknownAlias))
+        assertNull(clusterWrappingRepository.findKey(storeAlias))
+        assertNull(clusterWrappingRepository.findKey(unknownAlias))
+        clusterWrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
+        assertNotNull(clusterWrappingRepository.findKey(storeAlias))
+        assertNull(clusterWrappingRepository.findKey(unknownAlias))
     }
 
     @Test
