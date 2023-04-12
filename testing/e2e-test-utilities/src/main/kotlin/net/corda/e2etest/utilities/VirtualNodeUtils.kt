@@ -1,9 +1,11 @@
 package net.corda.e2etest.utilities
 
+import net.corda.utilities.minutes
 import org.assertj.core.api.Assertions.assertThat
 
 fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): String? {
     val statusResponse = assertWithRetry {
+        timeout(1.minutes)
         command { getVNodeStatus(requestId) }
         condition {
             if (it.code != 200) {
