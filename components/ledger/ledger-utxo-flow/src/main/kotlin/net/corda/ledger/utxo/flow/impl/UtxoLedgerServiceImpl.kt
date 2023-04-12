@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
@@ -8,6 +9,7 @@ import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdate
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
+import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
@@ -20,6 +22,7 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -32,6 +35,7 @@ import net.corda.v5.ledger.utxo.FinalizationResult
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -55,8 +59,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoLedgerPersistenceService::class) private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     @Reference(service = UtxoLedgerStateQueryService::class) private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup
-
+    @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
+    @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
+    @Reference(service = SerializationService::class) private val serializationService: SerializationService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -131,6 +136,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
             throw e.exception
         }
         return FinalizationResultImpl(flowEngine.subFlow(utxoReceiveFinalityFlow))
+    }
+
+    @Suspendable
+    override fun <R> query(queryName: String, resultClass: Class<R>): VaultNamedParameterizedQuery<R> {
+        return VaultNamedParameterizedQueryImpl(queryName, externalEventExecutor, serializationService, resultClass)
     }
 
     // Retrieve notary client plugin class for specified notary service identity. This is done in

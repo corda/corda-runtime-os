@@ -89,7 +89,7 @@ public class RollCallJavaTest {
         // Then persisted
         PersistenceService persistenceService = truantAuthVNode.getPersistenceService();
         PagedQuery<TruancyEntity> absenceResponses = persistenceService.findAll(TruancyEntity.class);
-        List<TruancyEntity> result = absenceResponses.execute();
+        List<TruancyEntity> result = absenceResponses.execute().getResults();
         Assertions.assertNotNull(result);
         Assertions.assertEquals(result.size(), 1);
         Assertions.assertEquals("CN=Bueller, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US",
