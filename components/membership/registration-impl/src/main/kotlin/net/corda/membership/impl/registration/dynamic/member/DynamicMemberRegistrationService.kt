@@ -26,6 +26,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
@@ -314,7 +315,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
