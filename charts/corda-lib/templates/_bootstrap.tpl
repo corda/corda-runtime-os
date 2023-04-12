@@ -454,7 +454,7 @@ SQL to the relevant database
     {{- if not (eq .mode "admin") -}}
       {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
     {{- end -}}
-    {{- if or (eq .name "rbac") (eq .name "crypto") -}}
+    {{- if or (eq .name "rbac") (eq .name "crypto")  (eq .name "vnodes") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}    
     {{- /* TODO remove this special case, it is just that the old template has these declarations later */ -}}
@@ -470,7 +470,7 @@ SQL to the relevant database
     {{- end -}}
     {{- if eq .name "rpc" -}}
       {{- include "corda.restApiAdminSecretEnv" . | nindent 4 }}
-    {{- else -}}
+    {{- else if not (eq .name "vnodes") -}}
     {{ "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
