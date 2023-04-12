@@ -1,11 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.data.transaction.SignedGroupParametersContainer
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSignedGroupParametersIfDoNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSignedGroupParametersIfDoNotExistParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.utilities.serialization.deserialize
@@ -32,30 +32,29 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
 ) : UtxoLedgerGroupParametersPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun find(hash: SecureHash): SignedGroupParametersContainer? {
+    override fun find(hash: SecureHash): SignedGroupParameters? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindSignedGroupParametersExternalEventFactory::class.java,
                 FindSignedGroupParametersParameters(hash.toString())
             )
-        }.firstOrNull().let {
+        }.singleOrNull().let {
             if (it == null) {
                 null
             } else {
-                val groupParameters = serializationService.deserialize<SignedGroupParametersContainer>(it.array())
-                requireNotNull(groupParameters.signature){
+                requireNotNull(it.signature){
                     "Group parameters need to be signed."
                 }
-                requireNotNull(groupParameters.signatureSpec){
+                requireNotNull(it.signatureSpec){
                     "Group parameters signature need a signature specification."
                 }
-                return groupParameters
+                it
             }
         }
     }
 
     @Suspendable
-    override fun persistIfDoesNotExist(signedGroupParameters: SignedGroupParametersContainer) {
+    override fun persistIfDoesNotExist(signedGroupParameters: SignedGroupParameters) {
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistSignedGroupParametersIfDoNotExistExternalEventFactory::class.java,
