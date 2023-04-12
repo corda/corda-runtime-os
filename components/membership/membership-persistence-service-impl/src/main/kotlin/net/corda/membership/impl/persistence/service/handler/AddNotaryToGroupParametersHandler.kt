@@ -13,7 +13,6 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.toMap
@@ -90,8 +89,11 @@ internal class AddNotaryToGroupParametersHandler(
         val (epoch, groupParameters) = if (notaryServiceNumber != null) {
             // Add notary to existing notary service, or update notary with rotated keys
             val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
-            val memberQuery = memberQueryBuilder.select(memberQueryBuilder.from(MemberInfoEntity::class.java))
-            val members = em.createQuery(memberQuery)
+            val memberRoot = memberQueryBuilder.from(MemberInfoEntity::class.java)
+            val memberQuery = memberQueryBuilder.select(memberRoot)
+                .where(criteriaBuilder.equal(memberRoot.get<String>("status"), MEMBER_STATUS_ACTIVE),
+                    criteriaBuilder.notEqual(memberRoot.get<String>("memberX500Name"), notaryInfo.name.toString()))
+            val otherMembers = em.createQuery(memberQuery)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .resultList.map {
                     memberInfoFactory.create(
@@ -99,10 +101,8 @@ internal class AddNotaryToGroupParametersHandler(
                         deserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
                     )
                 }
-            val currentProtocolVersions = members.filter {
-                it.notaryDetails?.serviceName.toString() == notaryServiceName &&
-                        it.name != notaryInfo.name &&
-                        it.status == MEMBER_STATUS_ACTIVE
+            val currentProtocolVersions = otherMembers.filter {
+                it.notaryDetails?.serviceName.toString() == notaryServiceName
             }.map {
                 it.notaryDetails!!.serviceProtocolVersions.toHashSet()
             }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()

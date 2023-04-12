@@ -6,7 +6,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -14,28 +13,16 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.virtualnode.toCorda
+import net.corda.utilities.time.Clock
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 
-internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persistenceHandlerServices: PersistenceHandlerServices) :
-    BasePersistenceHandler<REQUEST, RESPONSE>(persistenceHandlerServices) {
-
-    protected val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
-        cordaAvroSerializationFactory.createAvroDeserializer(
-            {
-                logger.error("Failed to deserialize key value pair list.")
-            },
-            KeyValuePairList::class.java
-        )
-    }
-    protected val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> by lazy {
-        cordaAvroSerializationFactory.createAvroSerializer {
-            logger.error("Failed to serialize key value pair list.")
-        }
-    }
-
-    protected fun findMember(
+internal class SuspensionActivationEntityOperations(
+    private val clock: Clock,
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>,
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
+) {
+    fun findMember(
         em: EntityManager,
         memberName: String,
         groupId: String,
@@ -61,7 +48,7 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
     }
 
     @Suppress("LongParameterList")
-    protected fun updateStatus(
+    fun updateStatus(
         em: EntityManager,
         memberName: String,
         mgmHoldingIdentity: HoldingIdentity,
@@ -98,27 +85,8 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
             )
         )
 
-        return PersistentMemberInfo(
-            mgmHoldingIdentity,
-            keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext),
-            mgmContext,
-        )
-    }
-
-    @Suppress("ThrowsCount")
-    fun changeMemberStatus(
-        context: MembershipRequestContext,
-        memberName: String,
-        memberSerial: Long?,
-        currentStatus: String,
-        newStatus: String,
-    ): PersistentMemberInfo {
-        return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val currentMemberInfo = findMember(em, memberName, context.holdingIdentity.groupId, memberSerial, currentStatus)
-
-            val currentMgmContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.mgmContext)
-                ?: throw MembershipPersistenceException("Failed to deserialize the MGM-provided context.")
-            updateStatus(em, memberName, context.holdingIdentity, currentMemberInfo, currentMgmContext, newStatus)
-        }
+        val memberContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext)
+            ?: throw MembershipPersistenceException("Failed to deserialize the member provided context.")
+        return PersistentMemberInfo(mgmHoldingIdentity, memberContext, mgmContext)
     }
 }

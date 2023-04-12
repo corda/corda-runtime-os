@@ -45,12 +45,10 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
-import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -72,7 +70,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -86,7 +83,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor

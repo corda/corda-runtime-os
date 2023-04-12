@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
@@ -12,8 +14,8 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
@@ -24,11 +26,27 @@ import javax.persistence.LockModeType
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BaseSuspensionActivationHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
+) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
     private companion object {
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
     private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
+    }
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroSerializer {
+            logger.error("Failed to serialize key value pair list.")
+        }
+    }
+    private val suspensionActivationEntityOperations =
+        SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
             "Failed to serialize key value pair list."
@@ -36,7 +54,7 @@ internal class SuspendMemberHandler(
     }
     override fun invoke(context: MembershipRequestContext, request: SuspendMember): SuspendMemberResponse {
         val (updatedMemberInfo, updatedGroupParameters) = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val currentMemberInfo = findMember(
+            val currentMemberInfo = suspensionActivationEntityOperations.findMember(
                 em,
                 request.suspendedMember,
                 context.holdingIdentity.groupId,
@@ -45,13 +63,8 @@ internal class SuspendMemberHandler(
             )
             val currentMgmContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.mgmContext)
                 ?: throw MembershipPersistenceException("Failed to deserialize the MGM-provided context.")
-            PersistentMemberInfo(
-                HoldingIdentity(request.suspendedMember, context.holdingIdentity.groupId),
-                keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext),
-                currentMgmContext,
-            )
 
-            val updatedMemberInfo = updateStatus(
+            val updatedMemberInfo = suspensionActivationEntityOperations.updateStatus(
                 em,
                 request.suspendedMember,
                 context.holdingIdentity,
@@ -59,7 +72,7 @@ internal class SuspendMemberHandler(
                 currentMgmContext,
                 MEMBER_STATUS_SUSPENDED
             )
-            val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).notaryDetails != null) {
+            val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
                 updateGroupParameters(em, updatedMemberInfo, HoldingIdentity(request.suspendedMember, context.holdingIdentity.groupId))
             } else {
                 null
@@ -105,8 +118,11 @@ internal class SuspendMemberHandler(
             return null
         }
         val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
-        val memberQuery = memberQueryBuilder.select(memberQueryBuilder.from(MemberInfoEntity::class.java))
-        val members = em.createQuery(memberQuery)
+        val memberRoot = memberQueryBuilder.from(MemberInfoEntity::class.java)
+        val memberQuery = memberQueryBuilder.select(memberRoot)
+            .where(criteriaBuilder.equal(memberRoot.get<String>("status"), MEMBER_STATUS_ACTIVE),
+                criteriaBuilder.notEqual(memberRoot.get<String>("memberX500Name"), notaryInfo.name.toString()))
+        val otherMembers = em.createQuery(memberQuery)
             .setLockMode(LockModeType.PESSIMISTIC_WRITE)
             .resultList.map {
                 memberInfoFactory.create(
@@ -114,10 +130,8 @@ internal class SuspendMemberHandler(
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
                 )
             }
-        val otherMembersOfSameNotaryService = members.filter {
-            it.notaryDetails?.serviceName.toString() == notaryServiceName &&
-                    it.name != notaryInfo.name &&
-                    it.status == MEMBER_STATUS_ACTIVE
+        val otherMembersOfSameNotaryService = otherMembers.filter { otherMemberInfo ->
+            otherMemberInfo.notaryDetails?.serviceName.toString() == notaryServiceName
         }.mapNotNull { it.notaryDetails }
 
         val (epoch, groupParameters) = if (otherMembersOfSameNotaryService.isEmpty()) {
