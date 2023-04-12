@@ -103,4 +103,10 @@ interface FlowIORequest<out R> {
         val parameters: Any,
         val contextProperties: Map<String, String>
     ) : FlowIORequest<Any>
+
+    data class SendExternalMessage(
+        val channelName: String,
+        val messageId: String,
+        val message: String,
+    ) : FlowIORequest<Any>
 }

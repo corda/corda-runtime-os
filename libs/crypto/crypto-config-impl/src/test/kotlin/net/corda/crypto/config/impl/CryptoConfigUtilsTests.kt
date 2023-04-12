@@ -2,8 +2,6 @@ package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.validation.impl.ConfigurationValidatorFactoryImpl
@@ -15,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -41,28 +38,20 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Default config should have expected values`() {
         val config = createDefaultCryptoConfig("master-passphrase", "master-salt")
-        val connectionFactory = config.cryptoConnectionFactory()
-        assertEquals(5, connectionFactory.expireAfterAccessMins)
-        assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
-        assertEquals(3, hsmService.downstreamMaxAttempts)
-        assertThat(config.hsmMap()).hasSize(1)
-        val softWorker = config.hsm(SOFT_HSM_ID)
-        assertEquals("", softWorker.workerTopicSuffix)
+        val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
-        assertThat(softWorker.hsm.categories).hasSize(1)
-        assertEquals("*", softWorker.hsm.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.hsm.masterKeyPolicy)
-        assertNull(softWorker.hsm.masterKeyAlias)
-        assertEquals(-1, softWorker.hsm.capacity)
-        assertThat(softWorker.hsm.supportedSchemes).hasSize(8)
-        assertThat(softWorker.hsm.supportedSchemes).contains(
+        assertThat(softWorker.categories).hasSize(1)
+        assertEquals("*", softWorker.categories[0].category)
+        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
+        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertNull(softWorker.masterKeyAlias)
+        assertEquals(-1, softWorker.capacity)
+        assertThat(softWorker.supportedSchemes).hasSize(8)
+        assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
             "CORDA.ECDSA.SECP256R1",
             "CORDA.ECDSA.SECP256K1",
@@ -72,18 +61,11 @@ class CryptoConfigUtilsTests {
             "CORDA.GOST3410.GOST3411",
             "CORDA.SPHINCS-256"
         )
-        val hsmCfg = softWorker.hsm.cfg
-        assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
-        assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
-        assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
+        val hsmCfg = softWorker.cfg
         val wrappingKey1 = hsmCfg.getConfigList("wrappingKeys")[0]
         assertEquals("master-salt", wrappingKey1.getString("salt"))
         assertEquals("master-passphrase", wrappingKey1.getString("passphrase"))
         assertEquals("root1", wrappingKey1.getString("alias"))
-        assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
-        assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -110,28 +92,20 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Test config should have expected values`() {
         val config = createDefaultCryptoConfig("pass", "salt")
-        val connectionFactory = config.cryptoConnectionFactory()
-        assertEquals(5, connectionFactory.expireAfterAccessMins)
-        assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
-        assertEquals(3, hsmService.downstreamMaxAttempts)
-        assertThat(config.hsmMap()).hasSize(1)
-        val softWorker = config.hsm(SOFT_HSM_ID)
-        assertEquals("", softWorker.workerTopicSuffix)
+        val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
-        assertEquals(SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
-        assertThat(softWorker.hsm.categories).hasSize(1)
-        assertEquals("*", softWorker.hsm.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.hsm.masterKeyPolicy)
-        assertNull(softWorker.hsm.masterKeyAlias)
-        assertEquals(-1, softWorker.hsm.capacity)
-        assertThat(softWorker.hsm.supportedSchemes).hasSize(8)
-        assertThat(softWorker.hsm.supportedSchemes).contains(
+        assertThat(softWorker.categories).hasSize(1)
+        assertEquals("*", softWorker.categories[0].category)
+        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
+        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
+        assertNull(softWorker.masterKeyAlias)
+        assertEquals(-1, softWorker.capacity)
+        assertThat(softWorker.supportedSchemes).hasSize(8)
+        assertThat(softWorker.supportedSchemes).contains(
             "CORDA.RSA",
             "CORDA.ECDSA.SECP256R1",
             "CORDA.ECDSA.SECP256K1",
@@ -141,14 +115,6 @@ class CryptoConfigUtilsTests {
             "CORDA.GOST3410.GOST3411",
             "CORDA.SPHINCS-256"
         )
-        val hsmCfg = softWorker.hsm.cfg
-        assertEquals("CACHING", hsmCfg.getString("keyMap.name"))
-        assertEquals(60, hsmCfg.getLong("keyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
-        assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
-        assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
-        assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -196,26 +162,10 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `Should be able to get CryptoHSM service config`() {
-        val config = createDefaultCryptoConfig(
-            "master-passphrase", "master-salt"
-        ).hsmService()
-        assertEquals(3, config.downstreamMaxAttempts)
-    }
-
-    @Test
     fun `Should throw IllegalStateException when signing service is missing`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.signingService()
-        }
-    }
-
-    @Test
-    fun `Should throw IllegalStateException when HSM service is missing`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.hsmService()
         }
     }
 
@@ -244,27 +194,13 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `CryptoConnectionsFactoryConfig should throw IllegalStateException when is empty`() {
-        val config = CryptoConnectionsFactoryConfig(
-            configFactory.create(ConfigFactory.empty())
-        )
-        assertThrows<IllegalStateException> {
-            config.expireAfterAccessMins
-        }
-        assertThrows<IllegalStateException> {
-            config.maximumSize
-        }
-    }
-
-    @Test
     fun `CryptoSigningServiceConfig should throw IllegalStateException when is empty`() {
-        val config = CryptoSigningServiceConfig(
-            configFactory.create(ConfigFactory.empty())
-        )
         assertThrows<IllegalStateException> {
-            config.cache
+            CryptoSigningServiceConfig(
+                configFactory.create(ConfigFactory.empty())
+            )
         }
-        val cacheConfig = CryptoSigningServiceConfig.CacheConfig(
+        val cacheConfig = CacheConfig(
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<IllegalStateException> {
@@ -281,12 +217,6 @@ class CryptoConfigUtilsTests {
         assertThrows<IllegalStateException> {
             config.retry
         }
-        assertThrows<IllegalStateException> {
-            config.workerTopicSuffix
-        }
-        assertThrows<IllegalStateException> {
-            config.hsm
-        }
         val categoryConfig = CryptoHSMConfig.CategoryConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
             categoryConfig.category
@@ -301,24 +231,20 @@ class CryptoConfigUtilsTests {
         assertThrows<IllegalStateException> {
             retryConfig.attemptTimeoutMills
         }
-        val hsmConfig = CryptoHSMConfig.HSMConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
-            hsmConfig.name
+            config.categories
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.categories
+            config.capacity
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.capacity
+            config.supportedSchemes
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.supportedSchemes
+            config.masterKeyPolicy
         }
         assertThrows<IllegalStateException> {
-            hsmConfig.masterKeyPolicy
-        }
-        assertThrows<IllegalStateException> {
-            hsmConfig.cfg
+            config.cfg
         }
     }
 
@@ -366,30 +292,6 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.hsmRegistrationBusProcessor()
-        }
-    }
-
-    @Test
-    fun `cryptoConnectionFactory should throw IllegalStateException if value is not found`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.cryptoConnectionFactory()
-        }
-    }
-
-    @Test
-    fun `hsmMap should throw IllegalStateException if value is not found`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.hsmMap()
-        }
-    }
-
-    @Test
-    fun `hsm(id) should throw IllegalStateException if id is not found`() {
-        val config = createDefaultCryptoConfig("master-passphrase", "master-salt")
-        assertThrows<IllegalStateException> {
-            config.hsm(UUID.randomUUID().toString())
         }
     }
 
