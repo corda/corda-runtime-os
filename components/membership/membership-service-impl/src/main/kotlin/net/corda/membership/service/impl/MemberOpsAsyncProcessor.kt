@@ -169,8 +169,8 @@ internal class MemberOpsAsyncProcessor(
                 )
             } else {
                 logger.warn(
-                    "Registration ${request.requestId} failed." +
-                        " Could not find holding identity associated with ${request.holdingIdentityId}",
+                    "Could not find holding identity associated with ${request.holdingIdentityId}. " +
+                            "Request ${request.requestId} will be retried later."
                 )
                 createFailureWithRetryResponse(value, retries)
             }
