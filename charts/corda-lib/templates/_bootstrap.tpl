@@ -422,25 +422,35 @@ Bootstrap Corda CLI environment variables
 
 
 {{/*
-Bootstrap declaration to declare an initial container for running corda-cli initial-config, then apply the output
-SQL to the relevant database
+Bootstrap declaration to declare an initial container for running corda-cli initial-config, then
+a second init container to execute the output SQL to the relevant database
 */}}
+
 {{- define "corda.bootstrapInitialConfigGenerateAndApply" -}}
+{{- /* define 2 init containers, which run in sequence. First run corda-cli initial-config to generate some SQL, storing in a persistent volume called working-volume. Second is a postgres image which mounts the same persistent volume and executes the SQL. */ -}}  
 - name: create-initial-{{ .name }}-{{ .mode | default "db-config" }}
   image: {{ include "corda.bootstrapCliImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
   args: [ 'initial-config', '{{ .command | default "create-db-config" }}',{{ " " -}}
+  
+         {{- /* request admin access in some cases, onl when the optional admin argument to this function (named tempalte) is specified as true */ -}}
          {{- if eq (.admin | default "false") "true" -}} '-a',{{ " " -}}{{- end -}}
-         {{- "'-u'" -}},{{ " " -}}{{- if .quoteUser }}'{{- end -}} $({{ .environmentVariablePrefix -}}_USERNAME){{- if .quoteUser }}'{{- end -}}, 
+         
+         {{- /* specify DB user - note that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}
+         {{- "'-u'" -}},{{ " " -}}{{- if .quoteUser }}'{{- end -}} $({{ .environmentVariablePrefix -}}_USERNAME){{- if .quoteUser }}'{{- end -}},
+         
+         {{- /* specify DB password - note again that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}   
          {{- " '-p'" -}}, {{- if .quotePassword }} '{{- else -}} {{ " " -}}{{- end -}}$({{ .environmentVariablePrefix -}}_PASSWORD){{- if .quotePassword }}'{{- end -}},
+                 
          {{- if not (eq .mode "admin") -}}
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
              {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, 
              {{- " '--salt'" -}}, "$(SALT)", '--passphrase', "$(PASSPHRASE)", 
          {{- end -}}
+                  
          {{- " '-l'" -}}, '/tmp/working_dir']
   workingDir: /tmp/working_dir
   volumeMounts:
